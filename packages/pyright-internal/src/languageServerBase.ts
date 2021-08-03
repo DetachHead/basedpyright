@@ -344,7 +344,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface {
             this.fs,
             this.console,
             this.createImportResolver.bind(this),
-            undefined,
+            // If not provided we try to load from fs
+            new ConfigOptions('/', 'basic'),
             this._serverOptions.extension,
             this.createBackgroundAnalysis(),
             this._serverOptions.maxAnalysisTimeInForeground,
@@ -992,6 +993,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface {
         } else if (params.rootPath) {
             this._workspaceMap.set(params.rootPath, this.createWorkspaceServiceInstance(undefined, params.rootPath));
         }
+        // Bug? Or do we need to send another event always?
+        this.updateSettingsForAllWorkspaces();
 
         const result: InitializeResult = {
             capabilities: {
