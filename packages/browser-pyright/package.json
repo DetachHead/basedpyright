@@ -37,10 +37,6 @@
         "LICENSE.txt"
     ],
     "main": "index.js",
-    "bin": {
-        "pyright": "index.js",
-        "pyright-langserver": "langserver.index.js"
-    },
     "dependencies": {
         "buffer": "^6.0.3",
         "path-browserify": "^1.0.1",
