@@ -344,8 +344,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface {
             this.fs,
             this.console,
             this.createImportResolver.bind(this),
-            // If not provided we try to load from fs
-            new ConfigOptions('/', 'basic'),
+            undefined,
             this._serverOptions.extension,
             this.createBackgroundAnalysis(),
             this._serverOptions.maxAnalysisTimeInForeground,

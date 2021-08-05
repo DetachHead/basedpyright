@@ -65,7 +65,7 @@ module.exports = (_, { mode }) => {
         },
         plugins: [
             new DefinePlugin({
-                process: { env: {}, execArgv: [] },
+                process: "{ env: {}, execArgv: [], cwd: () => '/' }",
             }),
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
