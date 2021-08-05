@@ -1,4 +1,3 @@
-import { Worker } from 'cluster';
 import { BrowserMessageReader, BrowserMessageWriter, createConnection } from 'vscode-languageserver/browser';
 import { PyrightServer } from './browser-server';
 

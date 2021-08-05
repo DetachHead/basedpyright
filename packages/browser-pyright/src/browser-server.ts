@@ -18,7 +18,7 @@ import { convertUriToPath, normalizeSlashes, resolvePaths } from 'pyright-intern
 import { ProgressReporter } from 'pyright-internal/common/progressReporter';
 import { LanguageServerBase, ServerSettings, WorkspaceServiceInstance } from 'pyright-internal/languageServerBase';
 import { CodeActionProvider } from 'pyright-internal/languageService/codeActionProvider';
-import { TestFileSystem } from 'pyright-internal/tests/harness/vfs/filesystem';
+import { FileSet, TestFileSystem } from 'pyright-internal/tests/harness/vfs/filesystem';
 import { WorkspaceMap } from 'pyright-internal/workspaceMap';
 import {
     CancellationToken,
@@ -32,6 +32,10 @@ import {
 } from 'vscode-languageserver';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
+
+interface BootstrapFilesRequest {
+    files: Record<string, string>;
+}
 
 export class PyrightServer extends LanguageServerBase {
     private _controller: CommandController;
@@ -47,13 +51,9 @@ export class PyrightServer extends LanguageServerBase {
 
         const workspaceMap = new WorkspaceMap();
         const fileWatcherProvider = nullFileWatcherProvider;
-        const fileSystem = new TestFileSystem(false, { cwd: normalizeSlashes('/') });
-        // Can we init this all with LSP? Something much more compact?
-        fileSystem.mkdirSync('/stubs');
-        fileSystem.writeFileSync(
-            '/stubs/microbit.py',
-            'class _Display:\n    def a_method(self, arg: int): pass\n\ndisplay = _Display()'
-        );
+        const fileSystem = new TestFileSystem(false, {
+            cwd: normalizeSlashes('/'),
+        });
 
         super(
             {
@@ -71,6 +71,14 @@ export class PyrightServer extends LanguageServerBase {
         );
 
         this._controller = new CommandController(this);
+    }
+
+    protected override setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
+        super.setupConnection(supportedCommands, supportedCodeActions);
+        // A non-standard way to bootstrap the file system for typeshed and stubs etc.
+        this._connection.onNotification('custom/bootstrapFiles', (request: BootstrapFilesRequest) => {
+            (this._serverOptions.fileSystem as TestFileSystem).apply(request.files);
+        });
     }
 
     async getSettings(workspace: WorkspaceServiceInstance): Promise<ServerSettings> {

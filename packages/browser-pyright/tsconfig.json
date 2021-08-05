@@ -2,6 +2,11 @@
     "extends": "../../tsconfig.json",
     "compilerOptions": {
         "outDir": "./out",
+        "lib": [
+            "es2019",
+            "WebWorker",
+            "ScriptHost"
+        ],
         "paths": {
             "pyright-internal/*": [
                 "../pyright-internal/src/*"
