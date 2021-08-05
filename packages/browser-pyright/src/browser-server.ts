@@ -33,7 +33,7 @@ import {
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
-interface BootstrapFilesRequest {
+interface BootstrapFileSystemParams {
     files: Record<string, string>;
 }
 
@@ -75,9 +75,9 @@ export class PyrightServer extends LanguageServerBase {
 
     protected override setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
         super.setupConnection(supportedCommands, supportedCodeActions);
-        // A non-standard way to bootstrap the file system for typeshed and stubs etc.
-        this._connection.onNotification('custom/bootstrapFiles', (request: BootstrapFilesRequest) => {
-            (this._serverOptions.fileSystem as TestFileSystem).apply(request.files);
+        // A non-standard way to bootstrap the file system for typeshed, stubs, config files etc.
+        this._connection.onNotification('custom/bootstrapFileSystem', (params: BootstrapFileSystemParams) => {
+            (this._serverOptions.fileSystem as TestFileSystem).apply(params.files);
         });
     }
 
