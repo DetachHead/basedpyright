@@ -17,7 +17,8 @@ module.exports = (_, { mode }) => {
             pyright: './src/worker.ts',
         },
         output: {
-            filename: '[name].worker.js',
+            // Use a hash for now, eventually a version. Maybe best done elsewhere but handy for now.
+            filename: '[name]-[contenthash].worker.js',
             path: outPath,
             devtoolModuleFilenameTemplate:
                 mode === 'development' ? '../[resource-path]' : monorepoResourceNameMapper('pyright'),
