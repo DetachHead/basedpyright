@@ -76,7 +76,7 @@ export class PyrightServer extends LanguageServerBase {
     protected override setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
         super.setupConnection(supportedCommands, supportedCodeActions);
         // A non-standard way to bootstrap the file system for typeshed, stubs, config files etc.
-        this._connection.onNotification('custom/bootstrapFileSystem', (params: BootstrapFileSystemParams) => {
+        this._connection.onNotification('pyright/bootstrapFileSystem', (params: BootstrapFileSystemParams) => {
             (this._serverOptions.fileSystem as TestFileSystem).apply(params.files);
         });
     }
