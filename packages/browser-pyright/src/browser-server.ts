@@ -93,7 +93,7 @@ export class PyrightServer extends LanguageServerBase {
             disableOrganizeImports: false,
             typeCheckingMode: 'basic',
             diagnosticSeverityOverrides: {},
-            logLevel: LogLevel.Log, // Info
+            logLevel: LogLevel.Info,
             autoImportCompletions: true,
         };
 
