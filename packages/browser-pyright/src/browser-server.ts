@@ -95,8 +95,6 @@ export class PyrightServer extends LanguageServerBase {
             diagnosticSeverityOverrides: {},
             logLevel: LogLevel.Log, // Info
             autoImportCompletions: true,
-
-            stubPath: '/stubs/',
         };
 
         try {
