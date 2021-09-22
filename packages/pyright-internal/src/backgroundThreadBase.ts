@@ -6,31 +6,38 @@
  * base class for background worker thread.
  */
 
-import { MessagePort, parentPort } from 'worker_threads';
-
 import { OperationCanceledException, setCancellationFolderName } from './common/cancellationUtils';
 import { ConfigOptions } from './common/configOptions';
 import { LogLevel } from './common/console';
 import * as debug from './common/debug';
 import { FileSystem } from './common/fileSystem';
-import { FileSpec } from './common/pathUtils';
+import { FileSpec, normalizeSlashes } from './common/pathUtils';
 import { createFromRealFileSystem } from './common/realFileSystem';
+import { MessagePort } from './common/workersHost';
 import { PyrightFileSystem } from './pyrightFileSystem';
+import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
-export class BackgroundThreadBase {
+export abstract class BackgroundThreadBase {
+    // Exposed for browser filesystem operations.
+    // In future these should go via fs.
+    protected _realFs: FileSystem;
     protected fs: FileSystem;
 
-    protected constructor(data: InitializationData) {
+    constructor(protected parentPort: MessagePort | null, data: InitializationData) {
         setCancellationFolderName(data.cancellationFolderName);
 
         // Stash the base directory into a global variable.
         (global as any).__rootDirectory = data.rootDirectory;
 
-        this.fs = new PyrightFileSystem(createFromRealFileSystem(this.getConsole()));
+        this._realFs = this.createRealFileSystem();
+        this.fs = new PyrightFileSystem(this._realFs);
     }
 
+    // Hook for Browser vs NodeJS file system.
+    protected abstract createRealFileSystem(): FileSystem;
+
     protected log(level: LogLevel, msg: string) {
-        parentPort?.postMessage({ requestType: 'log', data: { level: level, message: msg } });
+        this.parentPort?.postMessage({ requestType: 'log', data: { level: level, message: msg } });
     }
 
     protected getConsole() {

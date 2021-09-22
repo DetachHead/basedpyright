@@ -6,11 +6,14 @@
  * run analyzer from background thread
  */
 
-import { Worker } from 'worker_threads';
+import { workerData } from 'worker_threads';
 
 import { BackgroundAnalysisBase, BackgroundAnalysisRunnerBase, InitializationData } from './backgroundAnalysisBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConsoleInterface } from './common/console';
+import { FileSystem } from './common/fileSystem';
+import { createFromRealFileSystem } from './common/realFileSystem';
+import { createWorker, parentPort } from './common/workersHost';
 
 export class BackgroundAnalysis extends BackgroundAnalysisBase {
     constructor(console: ConsoleInterface) {
@@ -21,15 +24,16 @@ export class BackgroundAnalysis extends BackgroundAnalysisBase {
             cancellationFolderName: getCancellationFolderName(),
             runner: undefined,
         };
-
-        // this will load this same file in BG thread and start listener
-        const worker = new Worker(__filename, { workerData: initialData });
+        const worker = createWorker(initialData);
         this.setup(worker);
     }
 }
 
 export class BackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
     constructor() {
-        super();
+        super(parentPort(), workerData as InitializationData);
+    }
+    protected createRealFileSystem(): FileSystem {
+        return createFromRealFileSystem(this.getConsole());
     }
 }

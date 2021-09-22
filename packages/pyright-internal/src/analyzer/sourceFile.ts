@@ -15,7 +15,7 @@ import {
     MarkupKind,
 } from 'vscode-languageserver';
 import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
-import { isMainThread } from 'worker_threads';
+import { isMainThread } from '../common/workersHost';
 
 import * as SymbolNameUtils from '../analyzer/symbolNameUtils';
 import { OperationCanceledException } from '../common/cancellationUtils';
@@ -215,7 +215,7 @@ export class SourceFile {
         }
 
         // 'FG' or 'BG' based on current thread.
-        this._logTracker = logTracker ?? new LogTracker(console, isMainThread ? 'FG' : 'BG');
+        this._logTracker = logTracker ?? new LogTracker(console, isMainThread() ? 'FG' : 'BG');
     }
 
     getFilePath(): string {

@@ -49,8 +49,9 @@ module.exports = (_, { mode }) => {
                 path: require.resolve('path-browserify'),
                 // TOML parsing which we don't use
                 stream: false,
-                // Used for isMainThread so empty is probably fine
-                worker_threads: false,
+                // fileBasedCancellationUtils (we've removed the RealFileSystem)
+                fs: false,
+                os: false,
             },
         },
         module: {

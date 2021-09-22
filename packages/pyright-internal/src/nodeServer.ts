@@ -8,9 +8,12 @@
 
 import { Connection, ConnectionOptions } from 'vscode-languageserver';
 import { createConnection } from 'vscode-languageserver/node';
-import { isMainThread } from 'worker_threads';
+import { initializeWorkersHost, isMainThread } from './common/workersHost';
 
 import { getCancellationStrategyFromArgv } from './common/fileBasedCancellationUtils';
+import { NodeWorkersHost } from './common/nodeWorkersHost';
+
+initializeWorkersHost(new NodeWorkersHost());
 
 export function run(runServer: (connection: Connection) => void, runBackgroundThread: () => void) {
     if (process.env.NODE_ENV === 'production') {
@@ -18,7 +21,7 @@ export function run(runServer: (connection: Connection) => void, runBackgroundTh
         require('source-map-support').install();
     }
 
-    if (isMainThread) {
+    if (isMainThread()) {
         runServer(createConnection(getConnectionOptions()));
     } else {
         runBackgroundThread();

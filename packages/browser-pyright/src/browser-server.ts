@@ -8,17 +8,19 @@
 
 import { AnalysisResults } from 'pyright-internal/analyzer/analysis';
 import { isPythonBinary } from 'pyright-internal/analyzer/pythonPathUtils';
-import { BackgroundAnalysisBase } from 'pyright-internal/backgroundAnalysisBase';
+import { BackgroundAnalysisBase, BackgroundAnalysisRunnerBase } from 'pyright-internal/backgroundAnalysisBase';
+import { InitializationData } from 'pyright-internal/backgroundThreadBase';
 import { CommandController } from 'pyright-internal/commands/commandController';
 import { DefaultCancellationProvider } from 'pyright-internal/common/cancellationUtils';
-import { LogLevel } from 'pyright-internal/common/console';
-import { isString } from 'pyright-internal/common/core';
-import { nullFileWatcherProvider } from 'pyright-internal/common/fileSystem';
+import { ConsoleInterface, LogLevel } from 'pyright-internal/common/console';
+import { isDebugMode, isString } from 'pyright-internal/common/core';
+import { FileSystem, nullFileWatcherProvider } from 'pyright-internal/common/fileSystem';
 import { convertUriToPath, normalizeSlashes, resolvePaths } from 'pyright-internal/common/pathUtils';
 import { ProgressReporter } from 'pyright-internal/common/progressReporter';
+import { createWorker, parentPort } from 'pyright-internal/common/workersHost';
 import { LanguageServerBase, ServerSettings, WorkspaceServiceInstance } from 'pyright-internal/languageServerBase';
 import { CodeActionProvider } from 'pyright-internal/languageService/codeActionProvider';
-import { FileSet, TestFileSystem } from 'pyright-internal/tests/harness/vfs/filesystem';
+import { TestFileSystem } from 'pyright-internal/tests/harness/vfs/filesystem';
 import { WorkspaceMap } from 'pyright-internal/workspaceMap';
 import {
     CancellationToken,
@@ -27,18 +29,21 @@ import {
     CodeActionParams,
     Command,
     Connection,
+    CreateFile,
+    DeleteFile,
     ExecuteCommandParams,
+    InitializeParams,
+    InitializeResult,
     WorkDoneProgressServerReporter,
 } from 'vscode-languageserver';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
-interface BootstrapFileSystemParams {
-    files: Record<string, string>;
-}
+type InitialFiles = Record<string, string>;
 
 export class PyrightServer extends LanguageServerBase {
     private _controller: CommandController;
+    private _initialFiles: InitialFiles | undefined;
 
     constructor(connection: Connection) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -75,10 +80,38 @@ export class PyrightServer extends LanguageServerBase {
 
     protected override setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
         super.setupConnection(supportedCommands, supportedCodeActions);
-        // A non-standard way to bootstrap the file system for typeshed, stubs, config files etc.
-        this._connection.onNotification('pyright/bootstrapFileSystem', (params: BootstrapFileSystemParams) => {
-            (this._serverOptions.fileSystem as TestFileSystem).apply(params.files);
+        // A non-standard way to mutate the file system.
+        this._connection.onNotification('pyright/createFile', (params: CreateFile) => {
+            const filePath = convertUriToPath(this._serverOptions.fileSystem, params.uri);
+            (this._serverOptions.fileSystem as TestFileSystem).apply({ [filePath]: '' });
+            this._workspaceMap.forEach((workspace) => {
+                const backgroundAnalysis = workspace.serviceInstance.backgroundAnalysisProgram.backgroundAnalysis;
+                backgroundAnalysis?.createFile(params);
+                workspace.serviceInstance.invalidateAndForceReanalysis();
+            });
         });
+        this._connection.onNotification('pyright/deleteFile', (params: DeleteFile) => {
+            const filePath = convertUriToPath(this._serverOptions.fileSystem, params.uri);
+            this._serverOptions.fileSystem.unlinkSync(filePath);
+            this._workspaceMap.forEach((workspace) => {
+                const backgroundAnalysis = workspace.serviceInstance.backgroundAnalysisProgram.backgroundAnalysis;
+                backgroundAnalysis?.deleteFile(params);
+                workspace.serviceInstance.invalidateAndForceReanalysis();
+            });
+        });
+    }
+
+    protected override initialize(
+        params: InitializeParams,
+        supportedCommands: string[],
+        supportedCodeActions: string[]
+    ): InitializeResult {
+        const { files } = params.initializationOptions;
+        if (typeof files === 'object') {
+            this._initialFiles = files as InitialFiles;
+            (this._serverOptions.fileSystem as TestFileSystem).apply(files);
+        }
+        return super.initialize(params, supportedCommands, supportedCodeActions);
     }
 
     async getSettings(workspace: WorkspaceServiceInstance): Promise<ServerSettings> {
@@ -217,8 +250,12 @@ export class PyrightServer extends LanguageServerBase {
     }
 
     createBackgroundAnalysis(): BackgroundAnalysisBase | undefined {
-        // Disabled for now.
-        return undefined;
+        // Ignore cancellation restriction for now. Needs investigation for browser support.
+        const result = new BrowserBackgroundAnalysis(this.console);
+        if (this._initialFiles) {
+            result.initializeFileSystem(this._initialFiles);
+        }
+        return result;
     }
 
     protected executeCommand(params: ExecuteCommandParams, token: CancellationToken): Promise<any> {
@@ -283,5 +320,30 @@ export class PyrightServer extends LanguageServerBase {
                 }
             },
         };
+    }
+}
+
+export class BrowserBackgroundAnalysis extends BackgroundAnalysisBase {
+    constructor(console: ConsoleInterface) {
+        super(console);
+
+        const initialData: InitializationData = {
+            rootDirectory: (global as any).__rootDirectory as string,
+            cancellationFolderName: undefined,
+            runner: undefined,
+        };
+        const worker = createWorker(initialData);
+        this.setup(worker);
+    }
+}
+
+export class BrowserBackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
+    constructor(initialData: InitializationData) {
+        super(parentPort(), initialData);
+    }
+    createRealFileSystem(): FileSystem {
+        return new TestFileSystem(false, {
+            cwd: normalizeSlashes('/'),
+        });
     }
 }

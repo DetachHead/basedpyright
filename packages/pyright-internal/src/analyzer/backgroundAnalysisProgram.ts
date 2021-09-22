@@ -18,6 +18,7 @@ import { FileDiagnostics } from '../common/diagnosticSink';
 import { LanguageServiceExtension } from '../common/extensibility';
 import { Range } from '../common/textRange';
 import { IndexResults } from '../languageService/documentSymbolProvider';
+import { FileSet } from '../tests/harness/vfs/filesystem';
 import { AnalysisCompleteCallback, analyzeProgram } from './analysis';
 import { ImportResolver } from './importResolver';
 import { Indices, MaxAnalysisTime, Program } from './program';
@@ -94,6 +95,10 @@ export class BackgroundAnalysisProgram {
     setFileOpened(filePath: string, version: number | null, contents: string, isTracked: boolean) {
         this._backgroundAnalysis?.setFileOpened(filePath, version, [{ text: contents }], isTracked);
         this._program.setFileOpened(filePath, version, [{ text: contents }], isTracked);
+    }
+
+    initializeFileSystem(files: Record<string, string>) {
+        this._backgroundAnalysis?.initializeFileSystem(files);
     }
 
     updateOpenFileContents(

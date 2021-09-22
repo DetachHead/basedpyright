@@ -6,9 +6,9 @@
  * run analyzer from background thread
  */
 
-import { CancellationToken } from 'vscode-languageserver';
+import { CancellationToken, CreateFile, DeleteFile } from 'vscode-languageserver';
 import { TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
-import { MessageChannel, MessagePort, parentPort, threadId, Worker, workerData } from 'worker_threads';
+import { threadId } from './common/workersHost';
 
 import { AnalysisCompleteCallback, AnalysisResults, analyzeProgram, nullCallback } from './analyzer/analysis';
 import { ImportResolver } from './analyzer/importResolver';
@@ -34,18 +34,21 @@ import {
 } from './common/fileBasedCancellationUtils';
 import { FileSystem } from './common/fileSystem';
 import { LogTracker } from './common/logTracker';
+import { convertUriToPath } from './common/pathUtils';
 import { Range } from './common/textRange';
+import { createMessageChannel, MessagePort, MessageSourceSink } from './common/workersHost';
 import { IndexResults } from './languageService/documentSymbolProvider';
+import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
 export class BackgroundAnalysisBase {
-    private _worker: Worker | undefined;
+    private _worker: MessageSourceSink | undefined;
     private _onAnalysisCompletion: AnalysisCompleteCallback = nullCallback;
 
     protected constructor(protected console: ConsoleInterface) {
         // Don't allow instantiation of this type directly.
     }
 
-    protected setup(worker: Worker) {
+    protected setup(worker: MessageSourceSink) {
         this._worker = worker;
 
         // global channel to communicate from BG channel to main thread.
@@ -80,6 +83,21 @@ export class BackgroundAnalysisBase {
 
     setCompletionCallback(callback?: AnalysisCompleteCallback) {
         this._onAnalysisCompletion = callback ?? nullCallback;
+    }
+
+    // Server-side FS initialization for browser usecase.
+    initializeFileSystem(params: Record<string, string>) {
+        this.enqueueRequest({ requestType: 'initializeFileSystem', data: params });
+    }
+
+    // Server-side FS mutation for browser usecase.
+    createFile(params: CreateFile) {
+        this.enqueueRequest({ requestType: 'createFile', data: params });
+    }
+
+    // Server-side FS mutation for browser usecase.
+    deleteFile(params: DeleteFile) {
+        this.enqueueRequest({ requestType: 'deleteFile', data: params });
     }
 
     setConfigOptions(configOptions: ConfigOptions) {
@@ -128,7 +146,7 @@ export class BackgroundAnalysisBase {
         indices: Indices | undefined,
         token: CancellationToken
     ) {
-        const { port1, port2 } = new MessageChannel();
+        const { port1, port2 } = createMessageChannel();
 
         // Handle response from background thread to main thread.
         port1.on('message', (msg: AnalysisResponse) => {
@@ -165,6 +183,8 @@ export class BackgroundAnalysisBase {
                     debug.fail(`${msg.requestType} is not expected`);
             }
         });
+        port1.start();
+        port2.start();
 
         const cancellationId = getCancellationTokenId(token);
         this.enqueueRequest({ requestType, data: cancellationId, port: port2 });
@@ -185,7 +205,9 @@ export class BackgroundAnalysisBase {
     async getDiagnosticsForRange(filePath: string, range: Range, token: CancellationToken): Promise<Diagnostic[]> {
         throwIfCancellationRequested(token);
 
-        const { port1, port2 } = new MessageChannel();
+        const { port1, port2 } = createMessageChannel();
+        port1.start();
+        port2.start();
         const waiter = getBackgroundWaiter<Diagnostic[]>(port1);
 
         const cancellationId = getCancellationTokenId(token);
@@ -211,7 +233,7 @@ export class BackgroundAnalysisBase {
     ): Promise<any> {
         throwIfCancellationRequested(token);
 
-        const { port1, port2 } = new MessageChannel();
+        const { port1, port2 } = createMessageChannel();
         const waiter = getBackgroundWaiter(port1);
 
         const cancellationId = getCancellationTokenId(token);
@@ -246,7 +268,7 @@ export class BackgroundAnalysisBase {
     }
 }
 
-export class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
+export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
     private _configOptions: ConfigOptions;
     protected _importResolver: ImportResolver;
     private _program: Program;
@@ -256,18 +278,22 @@ export class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
         return this._program;
     }
 
-    protected constructor(private _extension?: LanguageServiceExtension) {
-        super(workerData as InitializationData);
+    protected constructor(
+        parentPort: MessagePort | null,
+        initializationData: InitializationData,
+        private _extension?: LanguageServiceExtension
+    ) {
+        super(parentPort, initializationData);
 
         // Stash the base directory into a global variable.
-        const data = workerData as InitializationData;
-        this.log(LogLevel.Info, `Background analysis(${threadId}) root directory: ${data.rootDirectory}`);
+        const data = initializationData;
+        this.log(LogLevel.Info, `Background analysis(${threadId()}) root directory: ${data.rootDirectory}`);
 
         this._configOptions = new ConfigOptions(data.rootDirectory);
         this._importResolver = this.createImportResolver(this.fs, this._configOptions);
 
         const console = this.getConsole();
-        this._logTracker = new LogTracker(console, `BG(${threadId})`);
+        this._logTracker = new LogTracker(console, `BG(${threadId()})`);
 
         this._program = new Program(
             this._importResolver,
@@ -279,23 +305,43 @@ export class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
     }
 
     start() {
-        this.log(LogLevel.Info, `Background analysis(${threadId}) started`);
+        this.log(LogLevel.Info, `Background analysis(${threadId()}) started`);
 
         // Get requests from main thread.
-        parentPort?.on('message', (msg: AnalysisRequest) => this.onMessage(msg));
+        this.parentPort?.on('message', (msg: AnalysisRequest) => this.onMessage(msg));
 
-        parentPort?.on('error', (msg) => debug.fail(`failed ${msg}`));
-        parentPort?.on('exit', (c) => {
+        this.parentPort?.on('error', (msg) => debug.fail(`failed ${msg}`));
+        this.parentPort?.on('exit', (c) => {
             if (c !== 0) {
                 debug.fail(`worker stopped with exit code ${c}`);
             }
         });
+
+        this.parentPort?.start();
     }
 
     protected onMessage(msg: AnalysisRequest) {
         this.log(LogLevel.Log, `Background analysis message: ${msg.requestType}`);
 
         switch (msg.requestType) {
+            // FS mutation support for browser usecase.
+            case 'initializeFileSystem': {
+                (this._realFs as TestFileSystem).apply(msg.data);
+                break;
+            }
+
+            case 'createFile': {
+                const filePath = convertUriToPath(this.fs, msg.data.uri);
+                (this._realFs as TestFileSystem).apply({ [filePath]: '' });
+                break;
+            }
+
+            case 'deleteFile': {
+                const filePath = convertUriToPath(this.fs, msg.data.uri);
+                this.fs.unlinkSync(filePath);
+                break;
+            }
+
             case 'analyze': {
                 const port = msg.port!;
                 const token = getCancellationTokenFromId(msg.data);
@@ -464,8 +510,8 @@ export class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
     }
 
     private _reportDiagnostics(diagnostics: FileDiagnostics[], filesLeftToAnalyze: number, elapsedTime: number) {
-        if (parentPort) {
-            this._onAnalysisCompletion(parentPort, {
+        if (this.parentPort) {
+            this._onAnalysisCompletion(this.parentPort, {
                 diagnostics,
                 filesInProgram: this.program.getFileCount(),
                 filesRequiringAnalysis: filesLeftToAnalyze,
@@ -549,7 +595,11 @@ export interface AnalysisRequest {
         | 'getDiagnosticsForRange'
         | 'writeTypeStub'
         | 'getSemanticTokens'
-        | 'setExperimentOptions';
+        | 'setExperimentOptions'
+        // Browser usecase
+        | 'initializeFileSystem'
+        | 'createFile'
+        | 'deleteFile';
 
     data: any;
     port?: MessagePort | undefined;

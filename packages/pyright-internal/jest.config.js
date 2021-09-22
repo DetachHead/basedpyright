@@ -23,4 +23,5 @@ module.exports = {
             },
         },
     },
+    setupFiles: ['./src/tests/setupTests.ts'],
 };
