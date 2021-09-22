@@ -31,6 +31,7 @@ import {
     CaseNode,
     ClassNode,
     DelNode,
+    DictionaryNode,
     ErrorNode,
     ExceptNode,
     FormatStringNode,
@@ -45,6 +46,7 @@ import {
     isExpressionNode,
     LambdaNode,
     ListComprehensionNode,
+    ListNode,
     MatchNode,
     MemberAccessNode,
     ModuleNode,
@@ -55,6 +57,7 @@ import {
     ParseNodeType,
     RaiseNode,
     ReturnNode,
+    SetNode,
     SliceNode,
     StatementListNode,
     StatementNode,
@@ -87,7 +90,7 @@ import { evaluateStaticBoolExpression } from './staticExpressions';
 import { Symbol } from './symbol';
 import * as SymbolNameUtils from './symbolNameUtils';
 import { getLastTypedDeclaredForSymbol, isFinalVariable } from './symbolUtils';
-import { TypeEvaluator } from './typeEvaluator';
+import { TypeEvaluator } from './typeEvaluatorTypes';
 import {
     AnyType,
     ClassType,
@@ -117,6 +120,7 @@ import {
     Variance,
 } from './types';
 import {
+    applySolvedTypeVars,
     CanAssignFlags,
     ClassMemberLookupFlags,
     convertToInstance,
@@ -125,6 +129,7 @@ import {
     doForEachSubtype,
     getDeclaredGeneratorReturnType,
     getGeneratorTypeArgs,
+    getTypeVarScopeId,
     isEllipsisType,
     isLiteralType,
     isLiteralTypeOrUnion,
@@ -226,7 +231,8 @@ export class Checker extends ParseTreeWalker {
                         if (
                             baseClassType &&
                             isInstantiableClass(baseClassType) &&
-                            !ClassType.isBuiltIn(baseClassType, 'Protocol')
+                            !ClassType.isBuiltIn(baseClassType, 'Protocol') &&
+                            !ClassType.isBuiltIn(baseClassType, 'Generic')
                         ) {
                             if (!ClassType.isProtocolClass(baseClassType)) {
                                 this._evaluator.addError(
@@ -565,14 +571,7 @@ export class Checker extends ParseTreeWalker {
     override visitCall(node: CallNode): boolean {
         this._validateIsInstanceCall(node);
 
-        if (ParseTreeUtils.isWithinDefaultParamInitializer(node) && !this._fileInfo.isStubFile) {
-            this._evaluator.addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportCallInDefaultInitializer,
-                DiagnosticRule.reportCallInDefaultInitializer,
-                Localizer.Diagnostic.defaultValueContainsCall(),
-                node
-            );
-        }
+        this._validateIllegalDefaultParamInitializer(node);
 
         if (
             this._fileInfo.diagnosticRuleSet.reportUnusedCallResult !== 'none' ||
@@ -632,6 +631,21 @@ export class Checker extends ParseTreeWalker {
 
     override visitFor(node: ForNode): boolean {
         this._evaluator.evaluateTypesForStatement(node);
+        return true;
+    }
+
+    override visitList(node: ListNode): boolean {
+        this._validateIllegalDefaultParamInitializer(node);
+        return true;
+    }
+
+    override visitSet(node: SetNode): boolean {
+        this._validateIllegalDefaultParamInitializer(node);
+        return true;
+    }
+
+    override visitDictionary(node: DictionaryNode): boolean {
+        this._validateIllegalDefaultParamInitializer(node);
         return true;
     }
 
@@ -771,7 +785,7 @@ export class Checker extends ParseTreeWalker {
                     subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
 
                     if (!isAnyOrUnknown(subtype) && !isNone(subtype)) {
-                        if (isClassInstance(subtype)) {
+                        if (isClass(subtype)) {
                             if (!derivesFromClassRecursive(subtype, baseExceptionType, /* ignoreUnknown */ false)) {
                                 diagAddendum.addMessage(
                                     Localizer.Diagnostic.exceptionTypeIncorrect().format({
@@ -1115,6 +1129,19 @@ export class Checker extends ParseTreeWalker {
 
         // Don't explore further.
         return false;
+    }
+
+    private _validateIllegalDefaultParamInitializer(node: ParseNode) {
+        if (this._fileInfo.diagnosticRuleSet.reportCallInDefaultInitializer !== 'none') {
+            if (ParseTreeUtils.isWithinDefaultParamInitializer(node) && !this._fileInfo.isStubFile) {
+                this._evaluator.addDiagnostic(
+                    this._fileInfo.diagnosticRuleSet.reportCallInDefaultInitializer,
+                    DiagnosticRule.reportCallInDefaultInitializer,
+                    Localizer.Diagnostic.defaultValueContainsCall(),
+                    node
+                );
+            }
+        }
     }
 
     // Determines whether the types of the two operands for an == or != operation
@@ -1476,22 +1503,24 @@ export class Checker extends ParseTreeWalker {
         implementation: FunctionType,
         diag: DiagnosticAddendum
     ): boolean {
+        const typeVarMap = new TypeVarMap(getTypeVarScopeId(implementation));
+
         // First check the parameters to see if they are assignable.
         let isLegal = this._evaluator.canAssignType(
             overload,
             implementation,
             diag,
-            /* typeVarMap */ undefined,
-            CanAssignFlags.SkipSolveTypeVars |
-                CanAssignFlags.SkipFunctionReturnTypeCheck |
-                CanAssignFlags.DisallowAssignFromAny
+            typeVarMap,
+            CanAssignFlags.SkipFunctionReturnTypeCheck | CanAssignFlags.ReverseTypeVarMatching
         );
 
         // Now check the return types.
         const overloadReturnType =
             overload.details.declaredReturnType || this._evaluator.getFunctionInferredReturnType(overload);
-        const implementationReturnType =
-            implementation.details.declaredReturnType || this._evaluator.getFunctionInferredReturnType(implementation);
+        const implementationReturnType = applySolvedTypeVars(
+            implementation.details.declaredReturnType || this._evaluator.getFunctionInferredReturnType(implementation),
+            typeVarMap
+        );
 
         const returnDiag = new DiagnosticAddendum();
         if (
@@ -1499,7 +1528,7 @@ export class Checker extends ParseTreeWalker {
                 implementationReturnType,
                 overloadReturnType,
                 returnDiag.createAddendum(),
-                /* typeVarMap */ undefined,
+                typeVarMap,
                 CanAssignFlags.SkipSolveTypeVars
             )
         ) {
@@ -1901,6 +1930,12 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
+        // Special case the '_' symbol, which is used in single dispatch
+        // code and other cases where the name does not matter.
+        if (name === '_') {
+            return;
+        }
+
         let otherDecls = symbol.getDeclarations().filter((decl) => decl !== primaryDecl);
 
         // If it's a function, we can skip any other declarations
@@ -2235,66 +2270,23 @@ export class Checker extends ParseTreeWalker {
             return transformPossibleRecursiveTypeAlias(subtype);
         });
 
-        if (derivesFromAnyOrUnknown(arg0Type)) {
-            return;
-        }
-
         const arg1Type = this._evaluator.getType(node.arguments[1].valueExpression);
         if (!arg1Type) {
             return;
         }
 
-        // Create a helper function that determines whether the specified
-        // type is valid for the isinstance or issubclass call.
-        const isSupportedTypeForIsInstance = (type: Type) => {
-            let isSupported = true;
-
-            doForEachSubtype(type, (subtype) => {
-                subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
-
-                switch (subtype.category) {
-                    case TypeCategory.Any:
-                    case TypeCategory.Unknown:
-                    case TypeCategory.Unbound:
-                        break;
-
-                    case TypeCategory.Class:
-                        // If it's a class, make sure that it has not been given explicit
-                        // type arguments. This will result in a TypeError exception.
-                        if (subtype.isTypeArgumentExplicit && !subtype.includeSubclasses) {
-                            isSupported = false;
-                        }
-                        break;
-
-                    case TypeCategory.None:
-                        if (!isInstanceCheck) {
-                            isSupported = false;
-                        } else {
-                            isSupported = TypeBase.isInstantiable(subtype);
-                        }
-                        break;
-
-                    case TypeCategory.Function:
-                        isSupported = TypeBase.isInstantiable(subtype);
-                        break;
-
-                    default:
-                        isSupported = false;
-                        break;
-                }
-            });
-
-            return isSupported;
-        };
-
         let isValidType = true;
         doForEachSubtype(arg1Type, (arg1Subtype) => {
             if (isClassInstance(arg1Subtype) && ClassType.isTupleClass(arg1Subtype) && arg1Subtype.tupleTypeArguments) {
-                if (arg1Subtype.tupleTypeArguments.some((typeArg) => !isSupportedTypeForIsInstance(typeArg))) {
+                if (
+                    arg1Subtype.tupleTypeArguments.some(
+                        (typeArg) => !this._isTypeSupportedTypeForIsInstance(typeArg, isInstanceCheck)
+                    )
+                ) {
                     isValidType = false;
                 }
             } else {
-                if (!isSupportedTypeForIsInstance(arg1Subtype)) {
+                if (!this._isTypeSupportedTypeForIsInstance(arg1Subtype, isInstanceCheck)) {
                     isValidType = false;
                 }
             }
@@ -2387,6 +2379,10 @@ export class Checker extends ParseTreeWalker {
                 Localizer.Diagnostic.protocolUsedInCall().format({ name: callName }),
                 node.arguments[1].valueExpression
             );
+        }
+
+        if (derivesFromAnyOrUnknown(arg0Type)) {
+            return;
         }
 
         const finalizeFilteredTypeList = (types: Type[]): Type => {
@@ -2498,6 +2494,53 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
+    // Determines whether the specified type is allowed as the second argument
+    // to an isinstance or issubclass check.
+    private _isTypeSupportedTypeForIsInstance(type: Type, isInstanceCheck: boolean) {
+        let isSupported = true;
+
+        doForEachSubtype(type, (subtype) => {
+            subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
+
+            switch (subtype.category) {
+                case TypeCategory.Any:
+                case TypeCategory.Unknown:
+                case TypeCategory.Unbound:
+                    break;
+
+                case TypeCategory.Class:
+                    // If it's a class, make sure that it has not been given explicit
+                    // type arguments. This will result in a TypeError exception.
+                    if (subtype.isTypeArgumentExplicit && !subtype.includeSubclasses) {
+                        isSupported = false;
+                    }
+                    break;
+
+                case TypeCategory.None:
+                    if (!isInstanceCheck) {
+                        isSupported = false;
+                    } else {
+                        isSupported = TypeBase.isInstantiable(subtype);
+                    }
+                    break;
+
+                case TypeCategory.Function:
+                    isSupported = TypeBase.isInstantiable(subtype);
+                    break;
+
+                case TypeCategory.Union:
+                    isSupported = this._isTypeSupportedTypeForIsInstance(subtype, isInstanceCheck);
+                    break;
+
+                default:
+                    isSupported = false;
+                    break;
+            }
+        });
+
+        return isSupported;
+    }
+
     private _isSymbolPrivate(nameValue: string, scopeType: ScopeType) {
         // All variables within the scope of a function or a list
         // comprehension are considered private.
@@ -2552,38 +2595,52 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        // If this symbol is an import alias (i.e. it's a local name rather than the original
-        // imported name), skip the private check.
-        if (primaryDeclaration.type === DeclarationType.Alias && primaryDeclaration.usesLocalName) {
+        if (primaryDeclaration.type === DeclarationType.Alias) {
+            // If this symbol is an import alias (i.e. it's a local name rather than the
+            // original imported name), skip the private check.
+            if (primaryDeclaration.usesLocalName) {
+                return;
+            }
+
+            const resolvedAliasInfo = this._evaluator.resolveAliasDeclarationWithInfo(
+                primaryDeclaration,
+                /* resolveLocalNames */ true
+            );
+
+            if (!resolvedAliasInfo) {
+                return;
+            }
+
+            primaryDeclaration = resolvedAliasInfo.declaration;
+
+            // If the alias resolved to a stub file or py.typed source file
+            // and the declaration is marked "externally visible", it is
+            // exempt from private usage checks.
+            if (!resolvedAliasInfo.isPrivate) {
+                return;
+            }
+        }
+
+        if (primaryDeclaration.node === node) {
             return;
         }
 
-        primaryDeclaration = this._evaluator.resolveAliasDeclaration(primaryDeclaration, /* resolveLocalNames */ true);
-        if (!primaryDeclaration || primaryDeclaration.node === node) {
-            return;
-        }
-
-        let classOrModuleNode: ClassNode | ModuleNode | undefined;
+        let classNode: ClassNode | undefined;
         if (primaryDeclaration.node) {
-            classOrModuleNode = ParseTreeUtils.getEnclosingClassOrModule(primaryDeclaration.node);
+            classNode = ParseTreeUtils.getEnclosingClass(primaryDeclaration.node);
         }
 
-        // If this is the name of a class, find the module or class that contains it rather
+        // If this is the name of a class, find the class that contains it rather
         // than constraining the use of the class name within the class itself.
-        if (
-            primaryDeclaration.node &&
-            primaryDeclaration.node.parent &&
-            primaryDeclaration.node.parent === classOrModuleNode &&
-            classOrModuleNode.nodeType === ParseNodeType.Class
-        ) {
-            classOrModuleNode = ParseTreeUtils.getEnclosingClassOrModule(classOrModuleNode);
+        if (primaryDeclaration.node && primaryDeclaration.node.parent && primaryDeclaration.node.parent === classNode) {
+            classNode = ParseTreeUtils.getEnclosingClass(classNode);
         }
 
         // If it's a class member, check whether it's a legal protected access.
         let isProtectedAccess = false;
-        if (classOrModuleNode && classOrModuleNode.nodeType === ParseNodeType.Class) {
+        if (classNode) {
             if (isProtectedName) {
-                const declClassTypeInfo = this._evaluator.getTypeOfClass(classOrModuleNode);
+                const declClassTypeInfo = this._evaluator.getTypeOfClass(classNode);
                 if (declClassTypeInfo && isInstantiableClass(declClassTypeInfo.decoratedType)) {
                     // If it's a member defined in a stub file, we'll assume that it's part
                     // of the public contract even if it's named as though it's private.
@@ -2616,7 +2673,7 @@ export class Checker extends ParseTreeWalker {
             }
         }
 
-        if (classOrModuleNode && !ParseTreeUtils.isNodeContainedWithin(node, classOrModuleNode)) {
+        if (classNode && !ParseTreeUtils.isNodeContainedWithin(node, classNode)) {
             if (isProtectedAccess) {
                 this._evaluator.addDiagnostic(
                     this._fileInfo.diagnosticRuleSet.reportPrivateUsage,
@@ -2628,9 +2685,7 @@ export class Checker extends ParseTreeWalker {
                 this._evaluator.addDiagnostic(
                     this._fileInfo.diagnosticRuleSet.reportPrivateUsage,
                     DiagnosticRule.reportPrivateUsage,
-                    classOrModuleNode.nodeType === ParseNodeType.Class
-                        ? Localizer.Diagnostic.privateUsedOutsideOfClass().format({ name: nameValue })
-                        : Localizer.Diagnostic.privateUsedOutsideOfModule().format({ name: nameValue }),
+                    Localizer.Diagnostic.privateUsedOutsideOfClass().format({ name: nameValue }),
                     node
                 );
             }
@@ -2848,11 +2903,15 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        if (!ClassType.hasAbstractMethods(classType)) {
+        if (!ClassType.supportsAbstractMethods(classType)) {
             return;
         }
 
         const abstractMethods = this._evaluator.getAbstractMethods(classType);
+        if (abstractMethods.length === 0) {
+            return;
+        }
+
         const diagAddendum = new DiagnosticAddendum();
         const errorsToDisplay = 2;
 
@@ -3077,6 +3136,12 @@ export class Checker extends ParseTreeWalker {
                 return;
             }
 
+            // If the symbol has no declaration, and the type is inferred,
+            // skip this check.
+            if (!symbol.hasTypedDeclarations()) {
+                return;
+            }
+
             // Get the symbol type defined in this class.
             const typeOfSymbol = this._evaluator.getEffectiveTypeOfSymbol(symbol);
 
@@ -3085,64 +3150,132 @@ export class Checker extends ParseTreeWalker {
                 return;
             }
 
-            // Get the symbol defined in the base class.
-            const baseClassAndSymbol = lookUpClassMember(classType, name, ClassMemberLookupFlags.SkipOriginalClass);
-
-            if (!baseClassAndSymbol || !isInstantiableClass(baseClassAndSymbol.classType)) {
-                return;
-            }
-
-            // If the base class doesn't provide a type declaration, we won't bother
-            // proceeding with additional checks. Type inference is too inaccurate
-            // in this case, plus it would be very slow.
-            if (!baseClassAndSymbol.symbol.hasTypedDeclarations()) {
-                return;
-            }
-
-            const baseClassSymbolType = partiallySpecializeType(
-                this._evaluator.getEffectiveTypeOfSymbol(baseClassAndSymbol.symbol),
-                baseClassAndSymbol.classType
-            );
-
-            if (isFunction(baseClassSymbolType) || isOverloadedFunction(baseClassSymbolType)) {
-                const diagAddendum = new DiagnosticAddendum();
-                let overrideFunction: FunctionType | undefined;
-
-                if (isFunction(typeOfSymbol)) {
-                    overrideFunction = typeOfSymbol;
-                } else if (isOverloadedFunction(typeOfSymbol)) {
-                    // Use the last overload.
-                    overrideFunction = typeOfSymbol.overloads[typeOfSymbol.overloads.length - 1];
+            for (const baseClass of classType.details.baseClasses) {
+                if (!isClass(baseClass)) {
+                    continue;
                 }
 
-                if (overrideFunction) {
-                    const exemptMethods = ['__init__', '__new__', '__init_subclass__'];
+                // Look up the base class in the MRO list. It's the same generic class
+                // but has already been specialized using the type variables of the classType.
+                const mroBaseClass = classType.details.mro.find(
+                    (mroClass) => isClass(mroClass) && ClassType.isSameGenericClass(mroClass, baseClass)
+                );
+                if (!mroBaseClass) {
+                    continue;
+                }
 
-                    // Don't enforce parameter names for dundered methods. Many of them
-                    // are misnamed in typeshed stubs, so this would result in many
-                    // false positives.
-                    const enforceParamNameMatch = !SymbolNameUtils.isDunderName(name);
+                const baseClassAndSymbol = lookUpClassMember(mroBaseClass, name, ClassMemberLookupFlags.Default);
 
-                    // Don't check certain magic functions or private symbols.
-                    if (!exemptMethods.some((exempt) => exempt === name) && !SymbolNameUtils.isPrivateName(name)) {
-                        if (
-                            !this._evaluator.canOverrideMethod(
-                                baseClassSymbolType,
-                                overrideFunction,
-                                diagAddendum,
-                                enforceParamNameMatch
-                            )
-                        ) {
-                            const decl = overrideFunction.details.declaration;
-                            if (decl && decl.type === DeclarationType.Function) {
+                if (!baseClassAndSymbol || !isInstantiableClass(baseClassAndSymbol.classType)) {
+                    continue;
+                }
+
+                // If the base class doesn't provide a type declaration, we won't bother
+                // proceeding with additional checks. Type inference is too inaccurate
+                // in this case, plus it would be very slow.
+                if (!baseClassAndSymbol.symbol.hasTypedDeclarations()) {
+                    continue;
+                }
+
+                const baseClassSymbolType = partiallySpecializeType(
+                    this._evaluator.getEffectiveTypeOfSymbol(baseClassAndSymbol.symbol),
+                    baseClassAndSymbol.classType
+                );
+
+                if (isFunction(baseClassSymbolType) || isOverloadedFunction(baseClassSymbolType)) {
+                    const diagAddendum = new DiagnosticAddendum();
+                    let overrideFunction: FunctionType | undefined;
+
+                    if (isFunction(typeOfSymbol)) {
+                        overrideFunction = typeOfSymbol;
+                    } else if (isOverloadedFunction(typeOfSymbol)) {
+                        // Use the last overload.
+                        overrideFunction = typeOfSymbol.overloads[typeOfSymbol.overloads.length - 1];
+                    }
+
+                    if (overrideFunction) {
+                        const exemptMethods = ['__init__', '__new__', '__init_subclass__'];
+
+                        // Don't enforce parameter names for dundered methods. Many of them
+                        // are misnamed in typeshed stubs, so this would result in many
+                        // false positives.
+                        const enforceParamNameMatch = !SymbolNameUtils.isDunderName(name);
+
+                        // Don't check certain magic functions or private symbols.
+                        if (!exemptMethods.some((exempt) => exempt === name) && !SymbolNameUtils.isPrivateName(name)) {
+                            if (
+                                !this._evaluator.canOverrideMethod(
+                                    baseClassSymbolType,
+                                    overrideFunction,
+                                    diagAddendum,
+                                    enforceParamNameMatch
+                                )
+                            ) {
+                                const decl = overrideFunction.details.declaration;
+                                if (decl && decl.type === DeclarationType.Function) {
+                                    const diag = this._evaluator.addDiagnostic(
+                                        this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
+                                        DiagnosticRule.reportIncompatibleMethodOverride,
+                                        Localizer.Diagnostic.incompatibleMethodOverride().format({
+                                            name,
+                                            className: baseClassAndSymbol.classType.details.name,
+                                        }) + diagAddendum.getString(),
+                                        decl.node.name
+                                    );
+
+                                    const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                                    if (diag && origDecl) {
+                                        diag.addRelatedInfo(
+                                            Localizer.DiagnosticAddendum.overriddenMethod(),
+                                            origDecl.path,
+                                            origDecl.range
+                                        );
+                                    }
+                                }
+                            }
+                        }
+
+                        if (isFunction(baseClassSymbolType)) {
+                            // Private names (starting with double underscore) are exempt from this check.
+                            if (!SymbolNameUtils.isPrivateName(name) && FunctionType.isFinal(baseClassSymbolType)) {
+                                const decl = getLastTypedDeclaredForSymbol(symbol);
+                                if (decl && decl.type === DeclarationType.Function) {
+                                    const diag = this._evaluator.addError(
+                                        Localizer.Diagnostic.finalMethodOverride().format({
+                                            name,
+                                            className: baseClassAndSymbol.classType.details.name,
+                                        }),
+                                        decl.node.name
+                                    );
+
+                                    const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                                    if (diag && origDecl) {
+                                        diag.addRelatedInfo(
+                                            Localizer.DiagnosticAddendum.finalMethod(),
+                                            origDecl.path,
+                                            origDecl.range
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    } else if (!isAnyOrUnknown(typeOfSymbol)) {
+                        // Special-case overrides of methods in '_TypedDict', since
+                        // TypedDict attributes aren't manifest as attributes but rather
+                        // as named keys.
+                        if (!ClassType.isBuiltIn(baseClassAndSymbol.classType, '_TypedDict')) {
+                            const decls = symbol.getDeclarations();
+                            if (decls.length > 0) {
+                                const lastDecl = decls[decls.length - 1];
                                 const diag = this._evaluator.addDiagnostic(
                                     this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
                                     DiagnosticRule.reportIncompatibleMethodOverride,
-                                    Localizer.Diagnostic.incompatibleMethodOverride().format({
+                                    Localizer.Diagnostic.methodOverridden().format({
                                         name,
                                         className: baseClassAndSymbol.classType.details.name,
-                                    }) + diagAddendum.getString(),
-                                    decl.node.name
+                                        type: this._evaluator.printType(typeOfSymbol, /* expandTypeAlias */ false),
+                                    }),
+                                    lastDecl.node
                                 );
 
                                 const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
@@ -3156,229 +3289,181 @@ export class Checker extends ParseTreeWalker {
                             }
                         }
                     }
+                } else if (isProperty(baseClassSymbolType)) {
+                    // Handle properties specially.
+                    if (!isProperty(typeOfSymbol)) {
+                        const decls = symbol.getDeclarations();
+                        if (decls.length > 0) {
+                            this._evaluator.addDiagnostic(
+                                this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
+                                DiagnosticRule.reportIncompatibleMethodOverride,
+                                Localizer.Diagnostic.propertyOverridden().format({
+                                    name,
+                                    className: baseClassAndSymbol.classType.details.name,
+                                }),
+                                decls[decls.length - 1].node
+                            );
+                        }
+                    } else {
+                        const basePropFields = (baseClassSymbolType as ClassType).details.fields;
+                        const subclassPropFields = (typeOfSymbol as ClassType).details.fields;
+                        const baseClassType = baseClassAndSymbol.classType;
 
-                    if (isFunction(baseClassSymbolType)) {
-                        // Private names (starting with double underscore) are exempt from this check.
-                        if (!SymbolNameUtils.isPrivateName(name) && FunctionType.isFinal(baseClassSymbolType)) {
-                            const decl = getLastTypedDeclaredForSymbol(symbol);
-                            if (decl && decl.type === DeclarationType.Function) {
-                                const diag = this._evaluator.addError(
-                                    Localizer.Diagnostic.finalMethodOverride().format({
-                                        name,
-                                        className: baseClassAndSymbol.classType.details.name,
-                                    }),
-                                    decl.node.name
+                        ['fget', 'fset', 'fdel'].forEach((methodName) => {
+                            const diagAddendum = new DiagnosticAddendum();
+                            const baseClassPropMethod = basePropFields.get(methodName);
+                            const subclassPropMethod = subclassPropFields.get(methodName);
+
+                            // Is the method present on the base class but missing in the subclass?
+                            if (baseClassPropMethod) {
+                                const baseClassMethodType = partiallySpecializeType(
+                                    this._evaluator.getEffectiveTypeOfSymbol(baseClassPropMethod),
+                                    baseClassType
                                 );
-
-                                const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
-                                if (diag && origDecl) {
-                                    diag.addRelatedInfo(
-                                        Localizer.DiagnosticAddendum.finalMethod(),
-                                        origDecl.path,
-                                        origDecl.range
-                                    );
-                                }
-                            }
-                        }
-                    }
-                } else if (!isAnyOrUnknown(typeOfSymbol)) {
-                    const decls = symbol.getDeclarations();
-                    if (decls.length > 0) {
-                        const lastDecl = decls[decls.length - 1];
-                        const diag = this._evaluator.addDiagnostic(
-                            this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
-                            DiagnosticRule.reportIncompatibleMethodOverride,
-                            Localizer.Diagnostic.methodOverridden().format({
-                                name,
-                                className: baseClassAndSymbol.classType.details.name,
-                                type: this._evaluator.printType(typeOfSymbol, /* expandTypeAlias */ false),
-                            }),
-                            lastDecl.node
-                        );
-
-                        const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
-                        if (diag && origDecl) {
-                            diag.addRelatedInfo(
-                                Localizer.DiagnosticAddendum.overriddenMethod(),
-                                origDecl.path,
-                                origDecl.range
-                            );
-                        }
-                    }
-                }
-            } else if (isProperty(baseClassSymbolType)) {
-                // Handle properties specially.
-                if (!isProperty(typeOfSymbol)) {
-                    const decls = symbol.getDeclarations();
-                    if (decls.length > 0) {
-                        this._evaluator.addDiagnostic(
-                            this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
-                            DiagnosticRule.reportIncompatibleMethodOverride,
-                            Localizer.Diagnostic.propertyOverridden().format({
-                                name,
-                                className: baseClassAndSymbol.classType.details.name,
-                            }),
-                            decls[decls.length - 1].node
-                        );
-                    }
-                } else {
-                    const basePropFields = (baseClassSymbolType as ClassType).details.fields;
-                    const subclassPropFields = (typeOfSymbol as ClassType).details.fields;
-                    const baseClassType = baseClassAndSymbol.classType;
-
-                    ['fget', 'fset', 'fdel'].forEach((methodName) => {
-                        const diagAddendum = new DiagnosticAddendum();
-                        const baseClassPropMethod = basePropFields.get(methodName);
-                        const subclassPropMethod = subclassPropFields.get(methodName);
-
-                        // Is the method present on the base class but missing in the subclass?
-                        if (baseClassPropMethod) {
-                            const baseClassMethodType = partiallySpecializeType(
-                                this._evaluator.getEffectiveTypeOfSymbol(baseClassPropMethod),
-                                baseClassType
-                            );
-                            if (isFunction(baseClassMethodType)) {
-                                if (!subclassPropMethod) {
-                                    // The method is missing.
-                                    diagAddendum.addMessage(
-                                        Localizer.DiagnosticAddendum.propertyMethodMissing().format({
-                                            name: methodName,
-                                        })
-                                    );
-                                    const decls = symbol.getDeclarations();
-                                    if (decls.length > 0) {
-                                        const diag = this._evaluator.addDiagnostic(
-                                            this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
-                                            DiagnosticRule.reportIncompatibleMethodOverride,
-                                            Localizer.Diagnostic.propertyOverridden().format({
-                                                name,
-                                                className: baseClassType.details.name,
-                                            }) + diagAddendum.getString(),
-                                            decls[decls.length - 1].node
+                                if (isFunction(baseClassMethodType)) {
+                                    if (!subclassPropMethod) {
+                                        // The method is missing.
+                                        diagAddendum.addMessage(
+                                            Localizer.DiagnosticAddendum.propertyMethodMissing().format({
+                                                name: methodName,
+                                            })
                                         );
+                                        const decls = symbol.getDeclarations();
+                                        if (decls.length > 0) {
+                                            const diag = this._evaluator.addDiagnostic(
+                                                this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
+                                                DiagnosticRule.reportIncompatibleMethodOverride,
+                                                Localizer.Diagnostic.propertyOverridden().format({
+                                                    name,
+                                                    className: baseClassType.details.name,
+                                                }) + diagAddendum.getString(),
+                                                decls[decls.length - 1].node
+                                            );
 
-                                        const origDecl = baseClassMethodType.details.declaration;
-                                        if (diag && origDecl) {
-                                            diag.addRelatedInfo(
-                                                Localizer.DiagnosticAddendum.overriddenMethod(),
-                                                origDecl.path,
-                                                origDecl.range
-                                            );
-                                        }
-                                    }
-                                } else {
-                                    const subclassMethodType = partiallySpecializeType(
-                                        this._evaluator.getEffectiveTypeOfSymbol(subclassPropMethod),
-                                        classType
-                                    );
-                                    if (isFunction(subclassMethodType)) {
-                                        if (
-                                            !this._evaluator.canOverrideMethod(
-                                                baseClassMethodType,
-                                                subclassMethodType,
-                                                diagAddendum.createAddendum()
-                                            )
-                                        ) {
-                                            diagAddendum.addMessage(
-                                                Localizer.DiagnosticAddendum.propertyMethodIncompatible().format({
-                                                    name: methodName,
-                                                })
-                                            );
-                                            const decl = subclassMethodType.details.declaration;
-                                            if (decl && decl.type === DeclarationType.Function) {
-                                                const diag = this._evaluator.addDiagnostic(
-                                                    this._fileInfo.diagnosticRuleSet.reportIncompatibleMethodOverride,
-                                                    DiagnosticRule.reportIncompatibleMethodOverride,
-                                                    Localizer.Diagnostic.propertyOverridden().format({
-                                                        name,
-                                                        className: baseClassType.details.name,
-                                                    }) + diagAddendum.getString(),
-                                                    decl.node.name
+                                            const origDecl = baseClassMethodType.details.declaration;
+                                            if (diag && origDecl) {
+                                                diag.addRelatedInfo(
+                                                    Localizer.DiagnosticAddendum.overriddenMethod(),
+                                                    origDecl.path,
+                                                    origDecl.range
                                                 );
-
-                                                const origDecl = baseClassMethodType.details.declaration;
-                                                if (diag && origDecl) {
-                                                    diag.addRelatedInfo(
-                                                        Localizer.DiagnosticAddendum.overriddenMethod(),
-                                                        origDecl.path,
-                                                        origDecl.range
+                                            }
+                                        }
+                                    } else {
+                                        const subclassMethodType = partiallySpecializeType(
+                                            this._evaluator.getEffectiveTypeOfSymbol(subclassPropMethod),
+                                            classType
+                                        );
+                                        if (isFunction(subclassMethodType)) {
+                                            if (
+                                                !this._evaluator.canOverrideMethod(
+                                                    baseClassMethodType,
+                                                    subclassMethodType,
+                                                    diagAddendum.createAddendum()
+                                                )
+                                            ) {
+                                                diagAddendum.addMessage(
+                                                    Localizer.DiagnosticAddendum.propertyMethodIncompatible().format({
+                                                        name: methodName,
+                                                    })
+                                                );
+                                                const decl = subclassMethodType.details.declaration;
+                                                if (decl && decl.type === DeclarationType.Function) {
+                                                    const diag = this._evaluator.addDiagnostic(
+                                                        this._fileInfo.diagnosticRuleSet
+                                                            .reportIncompatibleMethodOverride,
+                                                        DiagnosticRule.reportIncompatibleMethodOverride,
+                                                        Localizer.Diagnostic.propertyOverridden().format({
+                                                            name,
+                                                            className: baseClassType.details.name,
+                                                        }) + diagAddendum.getString(),
+                                                        decl.node.name
                                                     );
+
+                                                    const origDecl = baseClassMethodType.details.declaration;
+                                                    if (diag && origDecl) {
+                                                        diag.addRelatedInfo(
+                                                            Localizer.DiagnosticAddendum.overriddenMethod(),
+                                                            origDecl.path,
+                                                            origDecl.range
+                                                        );
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                    });
-                }
-            } else {
-                // This check can be expensive, so don't perform it if the corresponding
-                // rule is disabled.
-                if (this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride !== 'none') {
-                    const decls = symbol.getDeclarations();
-                    if (decls.length > 0) {
-                        const lastDecl = decls[decls.length - 1];
-                        // Verify that the override type is assignable to (same or narrower than)
-                        // the declared type of the base symbol.
-                        const diagAddendum = new DiagnosticAddendum();
-                        if (!this._evaluator.canAssignType(baseClassSymbolType, typeOfSymbol, diagAddendum)) {
-                            const diag = this._evaluator.addDiagnostic(
-                                this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride,
-                                DiagnosticRule.reportIncompatibleVariableOverride,
-                                Localizer.Diagnostic.symbolOverridden().format({
-                                    name,
-                                    className: baseClassAndSymbol.classType.details.name,
-                                }) + diagAddendum.getString(),
-                                lastDecl.node
-                            );
-
-                            const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
-                            if (diag && origDecl) {
-                                diag.addRelatedInfo(
-                                    Localizer.DiagnosticAddendum.overriddenSymbol(),
-                                    origDecl.path,
-                                    origDecl.range
+                        });
+                    }
+                } else {
+                    // This check can be expensive, so don't perform it if the corresponding
+                    // rule is disabled.
+                    if (this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride !== 'none') {
+                        const decls = symbol.getDeclarations();
+                        if (decls.length > 0) {
+                            const lastDecl = decls[decls.length - 1];
+                            // Verify that the override type is assignable to (same or narrower than)
+                            // the declared type of the base symbol.
+                            const diagAddendum = new DiagnosticAddendum();
+                            if (!this._evaluator.canAssignType(baseClassSymbolType, typeOfSymbol, diagAddendum)) {
+                                const diag = this._evaluator.addDiagnostic(
+                                    this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride,
+                                    DiagnosticRule.reportIncompatibleVariableOverride,
+                                    Localizer.Diagnostic.symbolOverridden().format({
+                                        name,
+                                        className: baseClassAndSymbol.classType.details.name,
+                                    }) + diagAddendum.getString(),
+                                    lastDecl.node
                                 );
+
+                                const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                                if (diag && origDecl) {
+                                    diag.addRelatedInfo(
+                                        Localizer.DiagnosticAddendum.overriddenSymbol(),
+                                        origDecl.path,
+                                        origDecl.range
+                                    );
+                                }
                             }
-                        }
 
-                        // Verify that a class variable isn't overriding an instance
-                        // variable or vice versa.
-                        const isBaseClassVar = baseClassAndSymbol.symbol.isClassVar();
-                        let isClassVar = symbol.isClassVar();
+                            // Verify that a class variable isn't overriding an instance
+                            // variable or vice versa.
+                            const isBaseClassVar = baseClassAndSymbol.symbol.isClassVar();
+                            let isClassVar = symbol.isClassVar();
 
-                        // If the subclass doesn't redeclare the type but simply assigns
-                        // it without declaring its type, we won't consider it an instance
-                        // variable.
-                        if (isBaseClassVar && !isClassVar) {
-                            if (!symbol.hasTypedDeclarations()) {
-                                isClassVar = true;
+                            // If the subclass doesn't redeclare the type but simply assigns
+                            // it without declaring its type, we won't consider it an instance
+                            // variable.
+                            if (isBaseClassVar && !isClassVar) {
+                                if (!symbol.hasTypedDeclarations()) {
+                                    isClassVar = true;
+                                }
                             }
-                        }
 
-                        if (isBaseClassVar !== isClassVar) {
-                            const unformattedMessage = symbol.isClassVar()
-                                ? Localizer.Diagnostic.classVarOverridesInstanceVar()
-                                : Localizer.Diagnostic.instanceVarOverridesClassVar();
+                            if (isBaseClassVar !== isClassVar) {
+                                const unformattedMessage = symbol.isClassVar()
+                                    ? Localizer.Diagnostic.classVarOverridesInstanceVar()
+                                    : Localizer.Diagnostic.instanceVarOverridesClassVar();
 
-                            const diag = this._evaluator.addDiagnostic(
-                                this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride,
-                                DiagnosticRule.reportIncompatibleVariableOverride,
-                                unformattedMessage.format({
-                                    name,
-                                    className: baseClassAndSymbol.classType.details.name,
-                                }),
-                                lastDecl.node
-                            );
-
-                            const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
-                            if (diag && origDecl) {
-                                diag.addRelatedInfo(
-                                    Localizer.DiagnosticAddendum.overriddenSymbol(),
-                                    origDecl.path,
-                                    origDecl.range
+                                const diag = this._evaluator.addDiagnostic(
+                                    this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride,
+                                    DiagnosticRule.reportIncompatibleVariableOverride,
+                                    unformattedMessage.format({
+                                        name,
+                                        className: baseClassAndSymbol.classType.details.name,
+                                    }),
+                                    lastDecl.node
                                 );
+
+                                const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                                if (diag && origDecl) {
+                                    diag.addRelatedInfo(
+                                        Localizer.DiagnosticAddendum.overriddenSymbol(),
+                                        origDecl.path,
+                                        origDecl.range
+                                    );
+                                }
                             }
                         }
                     }

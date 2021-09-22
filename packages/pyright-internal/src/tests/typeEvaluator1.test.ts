@@ -265,7 +265,7 @@ test('TypeNarrowing7', () => {
 test('TypeNarrowingIsinstance1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsinstance1.py']);
 
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 8);
 });
 
 test('TypeNarrowingAssert1', () => {
@@ -334,6 +334,18 @@ test('TypeNarrowingIsinstance4', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('TypeNarrowingIsinstance5', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsinstance5.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('TypeNarrowingIsinstance7', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsinstance7.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('TypeNarrowingIn1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIn1.py']);
 
@@ -346,10 +358,16 @@ test('TypeNarrowingLiteralMember1', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('TypeNarrowingTuple1', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingTuple1.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('TypeNarrowingTypedDict1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingTypedDict1.py']);
 
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('TypeNarrowingTypedDict2', () => {
@@ -430,6 +448,12 @@ test('Expressions8', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('Expressions9', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['expressions9.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('Unpack1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['unpack1.py']);
 
@@ -474,6 +498,12 @@ test('Lambda3', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('Lambda4', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['lambda4.py']);
+
+    TestUtils.validateResults(analysisResults, 1);
+});
+
 test('Function1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['function1.py']);
 
@@ -492,7 +522,7 @@ test('Function3', () => {
     // Analyze with Python 3.7 settings. This will generate more errors.
     configOptions.defaultPythonVersion = PythonVersion.V3_7;
     const analysisResults37 = TestUtils.typeAnalyzeSampleFiles(['function3.py'], configOptions);
-    TestUtils.validateResults(analysisResults37, 28);
+    TestUtils.validateResults(analysisResults37, 30);
 
     // Analyze with Python 3.8 settings.
     configOptions.defaultPythonVersion = PythonVersion.V3_8;
@@ -521,7 +551,7 @@ test('Function6', () => {
 test('Function7', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['function7.py']);
 
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('Function8', () => {
@@ -828,6 +858,20 @@ test('Optional1', () => {
     TestUtils.validateResults(analysisResults, 7);
 });
 
+test('Optional2', () => {
+    const configOptions = new ConfigOptions('.');
+
+    // Disable diagnostics.
+    configOptions.diagnosticRuleSet.reportOptionalOperand = 'none';
+    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['optional2.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 0);
+
+    // Turn on errors.
+    configOptions.diagnosticRuleSet.reportOptionalOperand = 'error';
+    analysisResults = TestUtils.typeAnalyzeSampleFiles(['optional2.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 1);
+});
+
 test('Tuples1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['tuples1.py']);
 
@@ -934,6 +978,12 @@ test('NamedTuples3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['namedTuples3.py']);
 
     TestUtils.validateResults(analysisResults, 2);
+});
+
+test('NamedTuples4', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['namedTuples4.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('Slots1', () => {

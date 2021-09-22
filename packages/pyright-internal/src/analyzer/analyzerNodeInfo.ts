@@ -18,6 +18,7 @@ import {
     ListComprehensionNode,
     ModuleNode,
     ParseNode,
+    ParseNodeType,
     StringNode,
 } from '../parser/parseNodes';
 import { AnalyzerFileInfo } from './analyzerFileInfo';
@@ -58,9 +59,9 @@ interface AnalyzerNodeInfo {
     // Info about the source file, used only on module nodes.
     fileInfo?: AnalyzerFileInfo;
 
-    // Map of expressions used within an execution scope (module,
+    // Set of expressions used within an execution scope (module,
     // function or lambda) that requires code flow analysis.
-    codeFlowExpressions?: Map<string, string>;
+    codeFlowExpressions?: Set<string>;
 
     // List of __all__ symbols in the module.
     dunderAllInfo?: DunderAllInfo | undefined;
@@ -129,9 +130,12 @@ export function setAfterFlowNode(node: ParseNode, flowNode: FlowNode) {
     analyzerNode.afterFlowNode = flowNode;
 }
 
-export function getFileInfo(node: ModuleNode): AnalyzerFileInfo | undefined {
+export function getFileInfo(node: ParseNode): AnalyzerFileInfo {
+    while (node.nodeType !== ParseNodeType.Module) {
+        node = node.parent!;
+    }
     const analyzerNode = node as AnalyzerNodeInfo;
-    return analyzerNode.fileInfo;
+    return analyzerNode.fileInfo!;
 }
 
 export function setFileInfo(node: ModuleNode, fileInfo: AnalyzerFileInfo) {
@@ -139,14 +143,14 @@ export function setFileInfo(node: ModuleNode, fileInfo: AnalyzerFileInfo) {
     analyzerNode.fileInfo = fileInfo;
 }
 
-export function getCodeFlowExpressions(node: ExecutionScopeNode): Map<string, string> | undefined {
+export function getCodeFlowExpressions(node: ExecutionScopeNode): Set<string> | undefined {
     const analyzerNode = node as AnalyzerNodeInfo;
     return analyzerNode.codeFlowExpressions;
 }
 
-export function setCodeFlowExpressions(node: ExecutionScopeNode, map: Map<string, string>) {
+export function setCodeFlowExpressions(node: ExecutionScopeNode, expressions: Set<string>) {
     const analyzerNode = node as AnalyzerNodeInfo;
-    analyzerNode.codeFlowExpressions = map;
+    analyzerNode.codeFlowExpressions = expressions;
 }
 
 export function getDunderAllInfo(node: ModuleNode): DunderAllInfo | undefined {

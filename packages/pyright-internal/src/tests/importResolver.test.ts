@@ -11,6 +11,7 @@ import { ConfigOptions } from '../common/configOptions';
 import { lib, sitePackages, typeshedFallback } from '../common/pathConsts';
 import { combinePaths, getDirectoryPath, normalizeSlashes } from '../common/pathUtils';
 import { PyrightFileSystem } from '../pyrightFileSystem';
+import { TestAccessHost } from './harness/testAccessHost';
 import { TestFileSystem } from './harness/vfs/filesystem';
 
 const libraryRoot = combinePaths(normalizeSlashes('/'), lib, sitePackages);
@@ -99,8 +100,8 @@ test('side by side files', () => {
     ];
 
     const fs = createFileSystem(files);
-    const configOptions = getConfigOption(fs);
-    const importResolver = new ImportResolver(fs, configOptions);
+    const configOptions = new ConfigOptions(normalizeSlashes('/'));
+    const importResolver = new ImportResolver(fs, configOptions, new TestAccessHost(fs.getModulePath(), [libraryRoot]));
 
     // Real side by side stub file win over virtual one.
     const sideBySideResult = importResolver.resolveImport(myFile, configOptions.findExecEnvironment(myFile), {
@@ -329,6 +330,13 @@ test('non py.typed library', () => {
     assert.strictEqual(files[1].path, importResult.resolvedPaths[importResult.resolvedPaths.length - 1]);
 });
 
+test('no empty import roots', () => {
+    const fs = createFileSystem([]);
+    const configOptions = new ConfigOptions(''); // Empty, like open-file mode.
+    const importResolver = new ImportResolver(fs, configOptions, new TestAccessHost(fs.getModulePath(), [libraryRoot]));
+    importResolver.getImportRoots(configOptions.getDefaultExecEnvironment()).forEach((path) => assert(path));
+});
+
 function getImportResult(
     files: { path: string; content: string }[],
     nameParts: string[],
@@ -347,10 +355,10 @@ function getImportResult(
     });
 
     const fs = createFileSystem(files);
-    const configOptions = getConfigOption(fs);
+    const configOptions = new ConfigOptions(normalizeSlashes('/'));
     setup(configOptions);
 
-    const importResolver = new ImportResolver(fs, configOptions);
+    const importResolver = new ImportResolver(fs, configOptions, new TestAccessHost(fs.getModulePath(), [libraryRoot]));
     const importResult = importResolver.resolveImport(file, configOptions.findExecEnvironment(file), {
         leadingDots: 0,
         nameParts: nameParts,
@@ -358,14 +366,6 @@ function getImportResult(
     });
 
     return importResult;
-}
-
-function getConfigOption(fs: PyrightFileSystem) {
-    const configOptions = new ConfigOptions(normalizeSlashes('/'));
-    configOptions.venvPath = fs.getModulePath();
-    configOptions.venv = fs.getModulePath();
-
-    return configOptions;
 }
 
 function createFileSystem(files: { path: string; content: string }[]): PyrightFileSystem {

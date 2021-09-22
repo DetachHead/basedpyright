@@ -7,14 +7,17 @@
  */
 
 import { AnalysisResults } from 'pyright-internal/analyzer/analysis';
+import { ImportResolver } from 'pyright-internal/analyzer/importResolver';
 import { isPythonBinary } from 'pyright-internal/analyzer/pythonPathUtils';
 import { BackgroundAnalysisBase, BackgroundAnalysisRunnerBase } from 'pyright-internal/backgroundAnalysisBase';
 import { InitializationData } from 'pyright-internal/backgroundThreadBase';
 import { CommandController } from 'pyright-internal/commands/commandController';
 import { DefaultCancellationProvider } from 'pyright-internal/common/cancellationUtils';
-import { ConsoleInterface, LogLevel } from 'pyright-internal/common/console';
-import { isDebugMode, isString } from 'pyright-internal/common/core';
+import { ConfigOptions } from 'pyright-internal/common/configOptions';
+import { ConsoleInterface, ConsoleWithLogLevel, LogLevel } from 'pyright-internal/common/console';
+import { isString } from 'pyright-internal/common/core';
 import { FileSystem, nullFileWatcherProvider } from 'pyright-internal/common/fileSystem';
+import { Host, NoAccessHost } from 'pyright-internal/common/host';
 import { convertUriToPath, normalizeSlashes, resolvePaths } from 'pyright-internal/common/pathUtils';
 import { ProgressReporter } from 'pyright-internal/common/progressReporter';
 import { createWorker, parentPort } from 'pyright-internal/common/workersHost';
@@ -54,6 +57,7 @@ export class PyrightServer extends LanguageServerBase {
         // be __dirname.
         const rootDirectory = (global as any).__rootDirectory || __dirname;
 
+        const console = new ConsoleWithLogLevel(connection.console);
         const workspaceMap = new WorkspaceMap();
         const fileWatcherProvider = nullFileWatcherProvider;
         const fileSystem = new TestFileSystem(false, {
@@ -72,7 +76,8 @@ export class PyrightServer extends LanguageServerBase {
                 maxAnalysisTimeInForeground,
                 supportedCodeActions: [CodeActionKind.QuickFix, CodeActionKind.SourceOrganizeImports],
             },
-            connection
+            connection,
+            console
         );
 
         this._controller = new CommandController(this);
@@ -119,7 +124,6 @@ export class PyrightServer extends LanguageServerBase {
             watchForSourceChanges: false,
             watchForLibraryChanges: false,
             watchForConfigChanges: false,
-
             openFilesOnly: true,
             useLibraryCodeForTypes: false,
             disableLanguageServices: false,
@@ -258,11 +262,19 @@ export class PyrightServer extends LanguageServerBase {
         return result;
     }
 
+    protected override createHost() {
+        return new NoAccessHost();
+    }
+
+    protected override createImportResolver(fs: FileSystem, options: ConfigOptions, host: Host): ImportResolver {
+        return new ImportResolver(fs, options, host);
+    }
+
     protected executeCommand(params: ExecuteCommandParams, token: CancellationToken): Promise<any> {
         return this._controller.execute(params, token);
     }
 
-    protected override isLongRunningCommand(command: string): boolean {
+    protected isLongRunningCommand(command: string): boolean {
         return this._controller.isLongRunningCommand(command);
     }
 
@@ -345,5 +357,12 @@ export class BrowserBackgroundAnalysisRunner extends BackgroundAnalysisRunnerBas
         return new TestFileSystem(false, {
             cwd: normalizeSlashes('/'),
         });
+    }
+    protected override createHost(): Host {
+        return new NoAccessHost();
+    }
+    protected createImportResolver(fs: FileSystem, options: ConfigOptions, host: Host): ImportResolver {
+        // A useful point to do lazy stub aquisition?
+        return new ImportResolver(fs, options, host);
     }
 }

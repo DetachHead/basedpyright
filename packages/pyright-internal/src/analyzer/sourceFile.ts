@@ -59,7 +59,7 @@ import { Scope } from './scope';
 import { SourceMapper } from './sourceMapper';
 import { SymbolTable } from './symbol';
 import { TestWalker } from './testWalker';
-import { TypeEvaluator } from './typeEvaluator';
+import { TypeEvaluator } from './typeEvaluatorTypes';
 
 // Limit the number of import cycles tracked per source file.
 const _maxImportCyclesPerFile = 4;
@@ -146,6 +146,8 @@ export class SourceFile {
     private _parseDiagnostics: Diagnostic[] = [];
     private _bindDiagnostics: Diagnostic[] = [];
     private _checkerDiagnostics: Diagnostic[] = [];
+    private _typeIgnoreLines: { [line: number]: boolean } = {};
+    private _typeIgnoreAll = false;
 
     // Settings that control which diagnostics should be output.
     private _diagnosticRuleSet = getBasicDiagnosticRuleSet();
@@ -202,6 +204,7 @@ export class SourceFile {
             if (
                 this._filePath.endsWith(normalizeSlashes('stdlib/collections/__init__.pyi')) ||
                 this._filePath.endsWith(normalizeSlashes('stdlib/asyncio/futures.pyi')) ||
+                this._filePath.endsWith(normalizeSlashes('stdlib/asyncio/tasks.pyi')) ||
                 this._filePath.endsWith(normalizeSlashes('stdlib/builtins.pyi')) ||
                 this._filePath.endsWith(normalizeSlashes('stdlib/_importlib_modulespec.pyi')) ||
                 this._filePath.endsWith(normalizeSlashes('stdlib/dataclasses.pyi')) ||
@@ -255,12 +258,11 @@ export class SourceFile {
 
         // Filter the diagnostics based on "type: ignore" lines.
         if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
-            const typeIgnoreLines = this._parseResults ? this._parseResults.tokenizerOutput.typeIgnoreLines : {};
-            if (Object.keys(typeIgnoreLines).length > 0) {
+            if (Object.keys(this._typeIgnoreLines).length > 0) {
                 diagList = diagList.filter((d) => {
                     if (d.category !== DiagnosticCategory.UnusedCode) {
                         for (let line = d.range.start.line; line <= d.range.end.line; line++) {
-                            if (typeIgnoreLines[line]) {
+                            if (this._typeIgnoreLines[line]) {
                                 return false;
                             }
                         }
@@ -308,7 +310,7 @@ export class SourceFile {
         // If there is a "type: ignore" comment at the top of the file, clear
         // the diagnostic list.
         if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
-            if (this._parseResults && this._parseResults.tokenizerOutput.typeIgnoreAll) {
+            if (this._typeIgnoreAll) {
                 diagList = [];
             }
         }
@@ -570,6 +572,8 @@ export class SourceFile {
                 const parseResults = parser.parseSourceFile(fileContents!, parseOptions, diagSink);
                 assert(parseResults !== undefined && parseResults.tokenizerOutput !== undefined);
                 this._parseResults = parseResults;
+                this._typeIgnoreLines = this._parseResults.tokenizerOutput.typeIgnoreLines;
+                this._typeIgnoreAll = this._parseResults.tokenizerOutput.typeIgnoreAll;
 
                 // Resolve imports.
                 timingStats.resolveImportsTime.timeOperation(() => {

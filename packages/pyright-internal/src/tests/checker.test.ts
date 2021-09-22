@@ -128,7 +128,7 @@ test('NoReturn2', () => {
 test('With1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with1.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('With2', () => {
@@ -176,14 +176,14 @@ test('Mro3', () => {
 test('DefaultInitializer1', () => {
     const configOptions = new ConfigOptions('.');
 
-    // By default, optional diagnostics are ignored.
+    // By default, the reportCallInDefaultInitializer is disabled.
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['defaultInitializer1.py'], configOptions);
     TestUtils.validateResults(analysisResults, 0);
 
     // Turn on errors.
     configOptions.diagnosticRuleSet.reportCallInDefaultInitializer = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['defaultInitializer1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('UnnecessaryIsInstance1', () => {
@@ -231,7 +231,7 @@ test('TypeIgnore1', () => {
     // Disable type ignore
     configOptions.diagnosticRuleSet.enableTypeIgnoreComments = false;
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('TypeIgnore2', () => {
@@ -243,7 +243,7 @@ test('TypeIgnore2', () => {
     // Disable type ignore
     configOptions.diagnosticRuleSet.enableTypeIgnoreComments = false;
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('TypeIgnore3', () => {
@@ -255,7 +255,7 @@ test('TypeIgnore3', () => {
     // Disable type ignore
     configOptions.diagnosticRuleSet.enableTypeIgnoreComments = false;
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore3.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('DuplicateImports1', () => {

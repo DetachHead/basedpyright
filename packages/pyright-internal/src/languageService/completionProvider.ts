@@ -21,7 +21,13 @@ import {
 
 import { ImportLookup } from '../analyzer/analyzerFileInfo';
 import * as AnalyzerNodeInfo from '../analyzer/analyzerNodeInfo';
-import { Declaration, DeclarationType, FunctionDeclaration, isFunctionDeclaration } from '../analyzer/declaration';
+import {
+    Declaration,
+    DeclarationType,
+    FunctionDeclaration,
+    isFunctionDeclaration,
+    VariableDeclaration,
+} from '../analyzer/declaration';
 import { isDefinedInFile } from '../analyzer/declarationUtils';
 import { convertDocStringToMarkdown, convertDocStringToPlainText } from '../analyzer/docStringConversion';
 import { ImportedModuleDescriptor, ImportResolver } from '../analyzer/importResolver';
@@ -31,14 +37,16 @@ import { isStubFile, SourceMapper } from '../analyzer/sourceMapper';
 import { Symbol, SymbolTable } from '../analyzer/symbol';
 import * as SymbolNameUtils from '../analyzer/symbolNameUtils';
 import { getLastTypedDeclaredForSymbol } from '../analyzer/symbolUtils';
+import { getTypedDictMembersForClass } from '../analyzer/typedDicts';
 import {
     getClassDocString,
     getModuleDocString,
     getOverloadedFunctionDocStringsInherited,
     getPropertyDocStringInherited,
-    getVariableInStubFileDocStrings,
+    getVariableDocString,
 } from '../analyzer/typeDocStringUtils';
-import { CallSignatureInfo, TypeEvaluator } from '../analyzer/typeEvaluator';
+import { CallSignatureInfo, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { printLiteralValue } from '../analyzer/typePrinter';
 import {
     ClassType,
     FunctionType,
@@ -52,6 +60,7 @@ import {
     isOverloadedFunction,
     isUnbound,
     isUnknown,
+    OverloadedFunctionType,
     Type,
     TypeBase,
     UnknownType,
@@ -61,14 +70,16 @@ import {
     getDeclaringModulesForType,
     getMembersForClass,
     getMembersForModule,
+    isLiteralType,
     isProperty,
 } from '../analyzer/typeUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
-import { ConfigOptions } from '../common/configOptions';
+import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import * as debug from '../common/debug';
 import { fail } from '../common/debug';
 import { TextEditAction } from '../common/editAction';
 import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
+import { PythonVersion } from '../common/pythonVersion';
 import * as StringUtils from '../common/stringUtils';
 import { comparePositions, Position } from '../common/textRange';
 import { TextRange } from '../common/textRange';
@@ -81,7 +92,6 @@ import {
     ErrorExpressionCategory,
     ErrorNode,
     ExpressionNode,
-    FunctionNode,
     ImportFromNode,
     IndexNode,
     isExpressionNode,
@@ -94,52 +104,64 @@ import {
     StringNode,
 } from '../parser/parseNodes';
 import { ParseResults } from '../parser/parser';
-import { Token } from '../parser/tokenizerTypes';
+import { StringTokenFlags, Token } from '../parser/tokenizerTypes';
 import { AbbreviationInfo, AutoImporter, AutoImportResult, ModuleSymbolMap } from './autoImporter';
 import { DocumentSymbolCollector } from './documentSymbolCollector';
 import { IndexResults } from './documentSymbolProvider';
 import { getAutoImportText, getFunctionDocStringFromType, getOverloadedFunctionTooltip } from './tooltipUtils';
 
-const _keywords: string[] = [
-    // Expression keywords
-    'True',
-    'False',
-    'None',
-    'and',
-    'or',
-    'await',
-    'not',
-    'is',
-    'lambda',
-    'yield',
+namespace Keywords {
+    const base: string[] = [
+        // Expression keywords
+        'True',
+        'False',
+        'None',
+        'and',
+        'or',
+        'not',
+        'is',
+        'lambda',
+        'yield',
 
-    // Statement keywords
-    'assert',
-    'async',
-    'break',
-    'case',
-    'class',
-    'continue',
-    'def',
-    'del',
-    'elif',
-    'else',
-    'except',
-    'finally',
-    'for',
-    'from',
-    'global',
-    'if',
-    'import',
-    'in',
-    'match',
-    'nonlocal',
-    'pass',
-    'raise',
-    'return',
-    'try',
-    'while',
-];
+        // Statement keywords
+        'assert',
+        'break',
+        'class',
+        'continue',
+        'def',
+        'del',
+        'elif',
+        'else',
+        'except',
+        'finally',
+        'for',
+        'from',
+        'global',
+        'if',
+        'import',
+        'in',
+        'nonlocal',
+        'pass',
+        'raise',
+        'return',
+        'try',
+        'while',
+    ];
+
+    const python3_5: string[] = [...base, 'async', 'await'];
+
+    const python3_10: string[] = [...python3_5, 'case', 'match'];
+
+    export function forVersion(version: PythonVersion): string[] {
+        if (version >= PythonVersion.V3_10) {
+            return python3_10;
+        }
+        if (version >= PythonVersion.V3_5) {
+            return python3_5;
+        }
+        return base;
+    }
+}
 
 enum SortCategory {
     // The order of the following is important. We use
@@ -292,6 +314,8 @@ export class CompletionProvider {
     // original completion algorithm and look for this symbol.
     private _itemToResolve: CompletionItem | undefined;
 
+    private _execEnv: ExecutionEnvironment;
+
     constructor(
         private _workspacePath: string,
         private _parseResults: ParseResults,
@@ -306,7 +330,9 @@ export class CompletionProvider {
         private _sourceMapper: SourceMapper,
         private _autoImportMaps: AutoImportMaps | undefined,
         private _cancellationToken: CancellationToken
-    ) {}
+    ) {
+        this._execEnv = this._configOptions.findExecEnvironment(this._filePath);
+    }
 
     getCompletionsForPosition(): CompletionResults | undefined {
         const offset = convertPositionToOffset(this._position, this._parseResults.tokenizerOutput.lines);
@@ -879,7 +905,7 @@ export class CompletionProvider {
                         return;
                     }
 
-                    const methodSignature = this._printMethodSignature(decl.node);
+                    const methodSignature = this._printMethodSignature(classResults.classType, decl);
 
                     let text: string;
                     if (isStubFile(this._filePath)) {
@@ -925,7 +951,22 @@ export class CompletionProvider {
         return TextEdit.replace(range, text);
     }
 
-    private _printMethodSignature(node: FunctionNode): string {
+    private _printMethodSignature(classType: ClassType, decl: FunctionDeclaration): string {
+        const node = decl.node;
+
+        let ellipsisForDefault: boolean | undefined;
+        if (isStubFile(this._filePath)) {
+            // In stubs, always use "...".
+            ellipsisForDefault = true;
+        } else if (classType.details.moduleName === decl.moduleName) {
+            // In the same file, always print the full default.
+            ellipsisForDefault = false;
+        }
+
+        const printFlags = isStubFile(this._filePath)
+            ? ParseTreeUtils.PrintExpressionFlags.ForwardDeclarations
+            : undefined;
+
         const paramList = node.parameters
             .map((param, index) => {
                 let paramString = '';
@@ -943,7 +984,14 @@ export class CompletionProvider {
                 // in current file.
                 const paramTypeAnnotation = this._evaluator.getTypeAnnotationForParameter(node, index);
                 if (paramTypeAnnotation) {
-                    paramString += ': ' + ParseTreeUtils.printExpression(paramTypeAnnotation);
+                    paramString += ': ' + ParseTreeUtils.printExpression(paramTypeAnnotation, printFlags);
+                }
+
+                if (param.defaultValue) {
+                    paramString += paramTypeAnnotation ? ' = ' : '=';
+
+                    const useEllipsis = ellipsisForDefault ?? !isSimpleDefault(param.defaultValue);
+                    paramString += useEllipsis ? '...' : ParseTreeUtils.printExpression(param.defaultValue, printFlags);
                 }
 
                 if (!paramString && !param.name && param.category === ParameterCategory.Simple) {
@@ -957,13 +1005,32 @@ export class CompletionProvider {
         let methodSignature = node.name.value + '(' + paramList + ')';
 
         if (node.returnTypeAnnotation) {
-            methodSignature += ' -> ' + ParseTreeUtils.printExpression(node.returnTypeAnnotation);
+            methodSignature += ' -> ' + ParseTreeUtils.printExpression(node.returnTypeAnnotation, printFlags);
         } else if (node.functionAnnotationComment) {
             methodSignature +=
-                ' -> ' + ParseTreeUtils.printExpression(node.functionAnnotationComment.returnTypeAnnotation);
+                ' -> ' +
+                ParseTreeUtils.printExpression(node.functionAnnotationComment.returnTypeAnnotation, printFlags);
         }
 
         return methodSignature;
+
+        function isSimpleDefault(node: ExpressionNode): boolean {
+            switch (node.nodeType) {
+                case ParseNodeType.Number:
+                case ParseNodeType.Constant:
+                    return true;
+                case ParseNodeType.String:
+                    return (node.token.flags & StringTokenFlags.Format) === 0;
+                case ParseNodeType.StringList:
+                    return node.strings.every(isSimpleDefault);
+                case ParseNodeType.UnaryOperation:
+                    return isSimpleDefault(node.expression);
+                case ParseNodeType.BinaryOperation:
+                    return isSimpleDefault(node.leftExpression) && isSimpleDefault(node.rightExpression);
+                default:
+                    return false;
+            }
+        }
     }
 
     private _printOverriddenMethodBody(
@@ -1171,13 +1238,20 @@ export class CompletionProvider {
         }
 
         // Add call argument completions.
-        this._addCallArgumentCompletions(parseNode, priorWord, priorText, postText, completionList);
+        this._addCallArgumentCompletions(
+            parseNode,
+            priorWord,
+            priorText,
+            postText,
+            /*atArgument*/ false,
+            completionList
+        );
 
         // Add symbols that are in scope.
         this._addSymbols(parseNode, priorWord, completionList);
 
         // Add keywords.
-        this._findMatchingKeywords(_keywords, priorWord).map((keyword) => {
+        this._findMatchingKeywords(Keywords.forVersion(this._execEnv.pythonVersion), priorWord).map((keyword) => {
             const completionItem = CompletionItem.create(keyword);
             completionItem.kind = CompletionItemKind.Keyword;
             completionList.items.push(completionItem);
@@ -1209,7 +1283,13 @@ export class CompletionProvider {
                     );
 
                     if (declaredTypeOfTarget) {
-                        this._addLiteralValuesForTargetType(declaredTypeOfTarget, priorText, postText, completionList);
+                        this._addLiteralValuesForTargetType(
+                            declaredTypeOfTarget,
+                            priorText,
+                            priorWord,
+                            postText,
+                            completionList
+                        );
                     }
                 }
             }
@@ -1257,6 +1337,7 @@ export class CompletionProvider {
         priorWord: string,
         priorText: string,
         postText: string,
+        atArgument: boolean,
         completionList: CompletionList
     ) {
         // If we're within the argument list of a call, add parameter names.
@@ -1285,10 +1366,12 @@ export class CompletionProvider {
             );
 
             if (comparePositions(this._position, callNameEnd) > 0) {
-                this._addNamedParameters(signatureInfo, priorWord, completionList);
+                if (!atArgument) {
+                    this._addNamedParameters(signatureInfo, priorWord, completionList);
+                }
 
                 // Add literals that apply to this parameter.
-                this._addLiteralValuesForArgument(signatureInfo, priorText, postText, completionList);
+                this._addLiteralValuesForArgument(signatureInfo, priorText, priorWord, postText, completionList);
             }
         }
     }
@@ -1296,6 +1379,7 @@ export class CompletionProvider {
     private _addLiteralValuesForArgument(
         signatureInfo: CallSignatureInfo,
         priorText: string,
+        priorWord: string,
         postText: string,
         completionList: CompletionList
     ) {
@@ -1312,7 +1396,7 @@ export class CompletionProvider {
             }
 
             const paramType = type.details.parameters[paramIndex].type;
-            this._addLiteralValuesForTargetType(paramType, priorText, postText, completionList);
+            this._addLiteralValuesForTargetType(paramType, priorText, priorWord, postText, completionList);
             return undefined;
         });
     }
@@ -1320,21 +1404,41 @@ export class CompletionProvider {
     private _addLiteralValuesForTargetType(
         type: Type,
         priorText: string,
+        priorWord: string,
         postText: string,
         completionList: CompletionList
     ) {
         const quoteValue = this._getQuoteValueFromPriorText(priorText);
-        doForEachSubtype(type, (subtype) => {
-            if (isClassInstance(subtype) && ClassType.isBuiltIn(subtype, 'str') && subtype.literalValue !== undefined) {
-                this._addStringLiteralToCompletionList(
-                    subtype.literalValue as string,
-                    quoteValue.stringValue,
-                    postText,
-                    quoteValue.quoteCharacter,
-                    completionList
-                );
+        this._getSubTypesWithLiteralValues(type).forEach((v) => {
+            if (ClassType.isBuiltIn(v, 'str')) {
+                const value = printLiteralValue(v, quoteValue.quoteCharacter);
+                if (quoteValue.stringValue === undefined) {
+                    this._addNameToCompletionList(value, CompletionItemKind.Constant, priorWord, completionList, {
+                        sortText: this._makeSortText(SortCategory.LiteralValue, v.literalValue as string),
+                    });
+                } else {
+                    this._addStringLiteralToCompletionList(
+                        value.substr(1, value.length - 2),
+                        quoteValue.stringValue,
+                        postText,
+                        quoteValue.quoteCharacter,
+                        completionList
+                    );
+                }
             }
         });
+    }
+
+    private _getSubTypesWithLiteralValues(type: Type) {
+        const values: ClassType[] = [];
+
+        doForEachSubtype(type, (subtype) => {
+            if (isClassInstance(subtype) && isLiteralType(subtype)) {
+                values.push(subtype);
+            }
+        });
+
+        return values;
     }
 
     private _getDictionaryKeys(indexNode: IndexNode, invocationNode: ParseNode) {
@@ -1349,8 +1453,32 @@ export class CompletionProvider {
         }
 
         // Must be dict type
-        if (!ClassType.isBuiltIn(baseType, 'dict')) {
+        if (!ClassType.isBuiltIn(baseType, 'dict') && !ClassType.isBuiltIn(baseType, 'Mapping')) {
             return [];
+        }
+
+        // See whether dictionary is typed using Literal types. If it is, return those literal keys.
+        // For now, we are not using __getitem__ since we don't have a way to get effective parameter type of __getitem__.
+        if (baseType.typeArguments?.length === 2) {
+            const keys: string[] = [];
+
+            this._getSubTypesWithLiteralValues(baseType.typeArguments[0]).forEach((v) => {
+                if (
+                    !ClassType.isBuiltIn(v, 'str') &&
+                    !ClassType.isBuiltIn(v, 'int') &&
+                    !ClassType.isBuiltIn(v, 'bool') &&
+                    !ClassType.isBuiltIn(v, 'bytes') &&
+                    !ClassType.isEnumClass(v)
+                ) {
+                    return;
+                }
+
+                keys.push(printLiteralValue(v, this._parseResults.tokenizerOutput.predominantSingleQuoteCharacter));
+            });
+
+            if (keys.length > 0) {
+                return keys;
+            }
         }
 
         // Must be local variable/parameter
@@ -1513,16 +1641,20 @@ export class CompletionProvider {
             const declaredTypeOfTarget = this._evaluator.getDeclaredTypeForExpression(parentNode.leftExpression);
 
             if (declaredTypeOfTarget) {
-                this._addLiteralValuesForTargetType(declaredTypeOfTarget, priorText, postText, completionList);
+                this._addLiteralValuesForTargetType(
+                    declaredTypeOfTarget,
+                    priorText,
+                    priorWord,
+                    postText,
+                    completionList
+                );
             }
         } else {
-            // Make sure we are not inside of the string literal.
             debug.assert(parseNode.nodeType === ParseNodeType.String);
 
             const offset = convertPositionToOffset(this._position, this._parseResults.tokenizerOutput.lines)!;
-            if (offset <= parentNode.start || TextRange.getEnd(parseNode) <= offset) {
-                this._addCallArgumentCompletions(parseNode, priorWord, priorText, postText, completionList);
-            }
+            const atArgument = parentNode.start < offset && offset < TextRange.getEnd(parseNode);
+            this._addCallArgumentCompletions(parseNode, priorWord, priorText, postText, atArgument, completionList);
         }
 
         return { completionList };
@@ -1570,7 +1702,7 @@ export class CompletionProvider {
             return false;
         }
 
-        const entries = this._evaluator.getTypedDictMembersForClass(baseType, /* allowNarrowed */ true);
+        const entries = getTypedDictMembersForClass(this._evaluator, baseType, /* allowNarrowed */ true);
         const quoteValue = priorText ? this._getQuoteValueFromPriorText(priorText) : undefined;
 
         entries.forEach((_, key) => {
@@ -1645,7 +1777,7 @@ export class CompletionProvider {
         const moduleSymbolMap = this._autoImportMaps.getModuleSymbolsMap();
         const excludes = new Set(completionList.items.filter((i) => !i.data?.autoImport).map((i) => i.label));
         const autoImporter = new AutoImporter(
-            this._configOptions.findExecEnvironment(this._filePath),
+            this._execEnv,
             this._importResolver,
             this._parseResults,
             this._position,
@@ -1901,6 +2033,12 @@ export class CompletionProvider {
         completionList: CompletionList,
         detail: SymbolDetail
     ) {
+        // If the symbol is a py.typed import that is not supposed to be re-exported,
+        // don't offer it as a completion suggestion.
+        if (symbol.isPrivatePyTypedImport()) {
+            return;
+        }
+
         let primaryDecl = getLastTypedDeclaredForSymbol(symbol);
         if (!primaryDecl) {
             const declarations = symbol.getDeclarations();
@@ -1943,13 +2081,6 @@ export class CompletionProvider {
                                         }
                                     }
                                     typeDetail = name + ': ' + this._evaluator.printType(type, expandTypeAlias);
-
-                                    const declWithDocString = symbol
-                                        .getDeclarations()
-                                        .find((decl) => decl.type === DeclarationType.Variable && !!decl.docString);
-                                    if (declWithDocString?.type === DeclarationType.Variable) {
-                                        documentation = declWithDocString.docString;
-                                    }
                                     break;
                                 }
 
@@ -2010,12 +2141,28 @@ export class CompletionProvider {
                                 }
                             }
 
-                            if (isModule(type)) {
+                            if (
+                                primaryDecl.type === DeclarationType.Variable &&
+                                primaryDecl.typeAliasName &&
+                                primaryDecl.docString
+                            ) {
+                                documentation = primaryDecl.docString;
+                            } else if (isModule(type)) {
                                 documentation = getModuleDocString(type, primaryDecl, this._sourceMapper);
                             } else if (isInstantiableClass(type)) {
                                 documentation = getClassDocString(type, primaryDecl, this._sourceMapper);
                             } else if (isFunction(type)) {
-                                documentation = getFunctionDocStringFromType(type, this._sourceMapper, this._evaluator);
+                                const functionType = detail.boundObject
+                                    ? (this._evaluator.bindFunctionToClassOrObject(
+                                          detail.boundObject,
+                                          type
+                                      ) as FunctionType)
+                                    : type;
+                                documentation = getFunctionDocStringFromType(
+                                    functionType,
+                                    this._sourceMapper,
+                                    this._evaluator
+                                );
                             } else if (isOverloadedFunction(type)) {
                                 const enclosingClass = isFunctionDeclaration(primaryDecl)
                                     ? ParseTreeUtils.getEnclosingClass(primaryDecl.node.name, false)
@@ -2023,8 +2170,14 @@ export class CompletionProvider {
                                 const classResults = enclosingClass
                                     ? this._evaluator.getTypeOfClass(enclosingClass)
                                     : undefined;
+                                const functionType = detail.boundObject
+                                    ? (this._evaluator.bindFunctionToClassOrObject(
+                                          detail.boundObject,
+                                          type
+                                      ) as OverloadedFunctionType)
+                                    : type;
                                 documentation = getOverloadedFunctionDocStringsInherited(
-                                    type,
+                                    functionType,
                                     primaryDecl,
                                     this._sourceMapper,
                                     this._evaluator,
@@ -2038,17 +2191,11 @@ export class CompletionProvider {
                                     this._evaluator
                                 );
                             } else if (primaryDecl?.type === DeclarationType.Variable) {
-                                const declWithDocString = symbol
+                                const decl = (symbol
                                     .getDeclarations()
-                                    .find((decl) => decl.type === DeclarationType.Variable && !!decl.docString);
-                                if (declWithDocString?.type === DeclarationType.Variable) {
-                                    documentation = declWithDocString.docString;
-                                } else {
-                                    documentation = getVariableInStubFileDocStrings(
-                                        primaryDecl,
-                                        this._sourceMapper
-                                    ).find((doc) => doc);
-                                }
+                                    .find((d) => d.type === DeclarationType.Variable && !!d.docString) ??
+                                    primaryDecl) as VariableDeclaration;
+                                documentation = getVariableDocString(decl, this._sourceMapper);
                             }
 
                             if (this._options.format === MarkupKind.Markdown) {
@@ -2351,7 +2498,6 @@ export class CompletionProvider {
     }
 
     private _getImportModuleCompletions(node: ModuleNameNode): CompletionResults {
-        const execEnvironment = this._configOptions.findExecEnvironment(this._filePath);
         const moduleDescriptor: ImportedModuleDescriptor = {
             leadingDots: node.leadingDots,
             hasTrailingDot: node.hasTrailingDot || false,
@@ -2361,9 +2507,8 @@ export class CompletionProvider {
 
         const completions = this._importResolver.getCompletionSuggestions(
             this._filePath,
-            execEnvironment,
-            moduleDescriptor,
-            similarityLimit
+            this._execEnv,
+            moduleDescriptor
         );
 
         const completionList = CompletionList.create();

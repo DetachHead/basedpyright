@@ -96,6 +96,32 @@ export function findNodeByOffset(node: ParseNode, offset: number): ParseNode | u
     return node;
 }
 
+export function getClassFullName(classNode: ParseNode, moduleName: string, className: string): string {
+    const nameParts: string[] = [className];
+
+    let curNode: ParseNode | undefined = classNode;
+
+    // Walk the parse tree looking for classes.
+    while (curNode) {
+        curNode = getEnclosingClass(curNode);
+        if (curNode) {
+            nameParts.push(curNode.name.value);
+        }
+    }
+
+    nameParts.push(moduleName);
+
+    return nameParts.reverse().join('.');
+}
+
+// Create an ID that is based on the location within the file.
+// This allows us to disambiguate between different types that
+// don't have unique names (those that are not created with class
+// declarations).
+export function getTypeSourceId(node: ParseNode): number {
+    return node.start;
+}
+
 export function printArgument(node: ArgumentNode, flags: PrintExpressionFlags) {
     let argStr = '';
     if (node.argumentCategory === ArgumentCategory.UnpackedList) {
@@ -140,7 +166,7 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
         }
 
         case ParseNodeType.UnaryOperation: {
-            return printOperator(node.operator) + ' ' + printExpression(node.expression, flags);
+            return printOperator(node.operator) + printExpression(node.expression, flags);
         }
 
         case ParseNodeType.BinaryOperation: {
@@ -616,10 +642,12 @@ export function getEvaluationNodeForAssignmentExpression(
 
             case ParseNodeType.ListComprehension:
                 sawListComprehension = true;
+                curNode = getEvaluationScopeNode(curNode.parent!);
                 break;
-        }
 
-        curNode = curNode.parent;
+            default:
+                return undefined;
+        }
     }
 
     return undefined;

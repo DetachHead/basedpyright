@@ -170,7 +170,6 @@ export namespace Localizer {
         export const annotationNotSupported = () => getRawString('Diagnostic.annotationNotSupported');
         export const annotationSpansStrings = () => getRawString('Diagnostic.annotationSpansStrings');
         export const annotationStringEscape = () => getRawString('Diagnostic.annotationStringEscape');
-        export const annotationTripleQuote = () => getRawString('Diagnostic.annotationTripleQuote');
         export const argAssignment = () =>
             new ParameterizedString<{ argType: string; paramType: string }>(getRawString('Diagnostic.argAssignment'));
         export const argAssignmentFunction = () =>
@@ -467,7 +466,6 @@ export namespace Localizer {
         export const namedTupleEmptyName = () => getRawString('Diagnostic.namedTupleEmptyName');
         export const namedTupleFirstArg = () => getRawString('Diagnostic.namedTupleFirstArg');
         export const namedTupleMultipleInheritance = () => getRawString('Diagnostic.namedTupleMultipleInheritance');
-        export const namedTupleNameString = () => getRawString('Diagnostic.namedTupleNameString');
         export const namedTupleNameType = () => getRawString('Diagnostic.namedTupleNameType');
         export const namedTupleNameUnique = () => getRawString('Diagnostic.namedTupleNameUnique');
         export const namedTupleNoTypes = () => getRawString('Diagnostic.namedTupleNoTypes');
@@ -566,6 +564,10 @@ export namespace Localizer {
         export const parenthesizedContextManagerIllegal = () =>
             getRawString('Diagnostic.parenthesizedContextManagerIllegal');
         export const positionArgAfterNamedArg = () => getRawString('Diagnostic.positionArgAfterNamedArg');
+        export const privateImportFromPyTypedModule = () =>
+            new ParameterizedString<{ name: string; module: string }>(
+                getRawString('Diagnostic.privateImportFromPyTypedModule')
+            );
         export const positionOnlyAfterArgs = () => getRawString('Diagnostic.positionOnlyAfterArgs');
         export const positionOnlyAfterKeywordOnly = () => getRawString('Diagnostic.positionOnlyAfterKeywordOnly');
         export const positionOnlyIncompatible = () => getRawString('Diagnostic.positionOnlyIncompatible');
@@ -948,6 +950,10 @@ export namespace Localizer {
         export const paramSpecOverload = () => getRawString('DiagnosticAddendum.paramSpecOverload');
         export const paramType = () =>
             new ParameterizedString<{ paramType: string }>(getRawString('DiagnosticAddendum.paramType'));
+        export const privateImportFromPyTypedSource = () =>
+            new ParameterizedString<{ module: string }>(
+                getRawString('DiagnosticAddendum.privateImportFromPyTypedSource')
+            );
         export const propertyMethodIncompatible = () =>
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.propertyMethodIncompatible'));
         export const propertyMethodMissing = () =>
@@ -958,6 +964,10 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.propertyMissingSetter'));
         export const protocolMemberClassVar = () =>
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.protocolMemberClassVar'));
+        export const protocolIncompatible = () =>
+            new ParameterizedString<{ sourceType: string; destType: string }>(
+                getRawString('DiagnosticAddendum.protocolIncompatible')
+            );
         export const protocolMemberMissing = () =>
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.protocolMemberMissing'));
         export const seeDeclaration = () => getRawString('DiagnosticAddendum.seeDeclaration');

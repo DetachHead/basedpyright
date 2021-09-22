@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Sequence,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     overload,
@@ -132,11 +133,11 @@ class ChildClass(ParentClass):
     def my_method11(self, a: int, b: int, *, c: str = "", **kwarg):
         return 1
 
-    def my_method12(self, a: str) -> int:
+    # This should generate an error because the type of 'a' is
+    # narrower than the original method.
+    def my_method12(self, a: int) -> int:
         return 1
 
-    # This should generate an error because the type of 'a' is
-    # wider than in the original method.
     def my_method13(self, a: Union[int, str]) -> int:
         return 1
 
@@ -147,7 +148,7 @@ class ChildClass(ParentClass):
 
     # This should generate an error because we're overriding a
     # method with a variable.
-    my_method15 = 3
+    my_method15: int = 3
 
     # This should generate an error because we're overriding a
     # method with a class.
@@ -330,3 +331,24 @@ class Derived3(Base3):
 
     def case(self, value: Any) -> Iterable[Any]:
         return []
+
+
+class Base4:
+    def a(self) -> int:
+        ...
+
+
+class Base5:
+    def a(self) -> int:
+        ...
+
+
+class C(Base4, Base5):
+    # This should generate two error if reportIncompatibleMethodOverride
+    # is enabled.
+    def a(self) -> float:
+        ...
+
+
+class MyObject(TypedDict):
+    values: List[str]

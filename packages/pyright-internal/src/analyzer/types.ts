@@ -254,6 +254,7 @@ export namespace ModuleType {
 export interface DataClassEntry {
     name: string;
     isClassVar: boolean;
+    isKeywordOnly: boolean;
     alias?: string | undefined;
     hasDefault?: boolean | undefined;
     defaultValueExpression?: ExpressionNode | undefined;
@@ -306,11 +307,6 @@ export const enum ClassTypeFlags {
     // @abstractmethod decorators.
     SupportsAbstractMethods = 1 << 9,
 
-    // The class has at least one abstract method or derives
-    // from a base class that is abstract without providing
-    // non-abstract overrides for all abstract methods.
-    HasAbstractMethods = 1 << 10,
-
     // Derives from property class and has the semantics of
     // a property (with optional setter, deleter).
     PropertyClass = 1 << 11,
@@ -358,8 +354,8 @@ export const enum ClassTypeFlags {
     // with keyword-only parameters?
     DataClassKeywordOnlyParams = 1 << 21,
 
-    // The class is a protocol that defines only a __call__ method.
-    CallbackProtocolClass = 1 << 22,
+    // Properties that are defined using the @classmethod decorator.
+    ClassProperty = 1 << 22,
 
     // Class is declared within a type stub file.
     DefinedInStub = 1 << 23,
@@ -491,6 +487,10 @@ export namespace ClassType {
     }
 
     export function cloneAsInstance(classType: ClassType) {
+        if (TypeBase.isInstance(classType)) {
+            return classType;
+        }
+
         const objectType = { ...classType };
         objectType.flags &= ~(TypeFlags.Instantiable | TypeFlags.NonCallable);
         objectType.flags |= TypeFlags.Instance;
@@ -499,6 +499,10 @@ export namespace ClassType {
     }
 
     export function cloneAsInstantiable(objectType: ClassType) {
+        if (TypeBase.isInstantiable(objectType)) {
+            return objectType;
+        }
+
         const classType = { ...objectType };
         classType.flags &= ~TypeFlags.Instance;
         classType.flags |= TypeFlags.Instantiable;
@@ -616,10 +620,6 @@ export namespace ClassType {
         return true;
     }
 
-    export function hasAbstractMethods(classType: ClassType) {
-        return !!(classType.details.flags & ClassTypeFlags.HasAbstractMethods);
-    }
-
     export function supportsAbstractMethods(classType: ClassType) {
         return !!(classType.details.flags & ClassTypeFlags.SupportsAbstractMethods);
     }
@@ -664,16 +664,16 @@ export namespace ClassType {
         return !!(classType.details.flags & ClassTypeFlags.PropertyClass);
     }
 
+    export function isClassProperty(classType: ClassType) {
+        return !!(classType.details.flags & ClassTypeFlags.ClassProperty);
+    }
+
     export function isFinal(classType: ClassType) {
         return !!(classType.details.flags & ClassTypeFlags.Final);
     }
 
     export function isProtocolClass(classType: ClassType) {
         return !!(classType.details.flags & ClassTypeFlags.ProtocolClass);
-    }
-
-    export function isCallbackProtocolClass(classType: ClassType) {
-        return !!(classType.details.flags & ClassTypeFlags.CallbackProtocolClass);
     }
 
     export function isDefinedInStub(classType: ClassType) {
@@ -1240,6 +1240,28 @@ export namespace FunctionType {
         return newFunction;
     }
 
+    export function cloneRemoveParamSpecVariadics(type: FunctionType) {
+        const newFunction = create(
+            type.details.name,
+            type.details.fullName,
+            type.details.moduleName,
+            type.details.flags,
+            type.flags,
+            type.details.docString
+        );
+
+        // Make a shallow clone of the details.
+        newFunction.details = { ...type.details };
+
+        // Remove the last two parameters, which are the *args and **kwargs.
+        newFunction.details.parameters = newFunction.details.parameters.slice(
+            0,
+            newFunction.details.parameters.length - 2
+        );
+
+        return newFunction;
+    }
+
     export function addDefaultParameters(functionType: FunctionType, useUnknown = false) {
         FunctionType.addParameter(functionType, {
             category: ParameterCategory.VarArgList,
@@ -1635,6 +1657,8 @@ export interface TypeVarDetails {
     recursiveTypeParameters?: TypeVarType[] | undefined;
 }
 
+export type ParamSpecAccess = 'args' | 'kwargs';
+
 export interface TypeVarType extends TypeBase {
     category: TypeCategory.TypeVar;
     details: TypeVarDetails;
@@ -1656,6 +1680,9 @@ export interface TypeVarType extends TypeBase {
     // Is this variadic TypeVar included in a Union[]? This allows us to
     // differentiate between Unpack[Vs] and Union[Unpack[Vs]].
     isVariadicInUnion?: boolean | undefined;
+
+    // Represents access to "args" or "kwargs" of a ParamSpec.
+    paramSpecAccess?: ParamSpecAccess;
 }
 
 export namespace TypeVarType {
@@ -1725,6 +1752,12 @@ export namespace TypeVarType {
         newInstance.details.variance = Variance.Invariant;
         newInstance.details.boundType = undefined;
         newInstance.details.constraints = [];
+        return newInstance;
+    }
+
+    export function cloneForParamSpecAccess(type: TypeVarType, access: ParamSpecAccess | undefined) {
+        const newInstance: TypeVarType = { ...type };
+        newInstance.paramSpecAccess = access;
         return newInstance;
     }
 
@@ -2052,6 +2085,22 @@ export function isTypeSame(type1: Type, type2: Type, ignorePseudoGeneric = false
                 return false;
             }
 
+            // Handle the case where this is a generic recursive type alias. Make
+            // sure that the type argument types match.
+            const type1TypeArgs = type1?.typeAliasInfo?.typeArguments || [];
+            const type2TypeArgs = type2?.typeAliasInfo?.typeArguments || [];
+            const typeArgCount = Math.max(type1TypeArgs.length, type2TypeArgs.length);
+
+            for (let i = 0; i < typeArgCount; i++) {
+                // Assume that missing type args are "Any".
+                const typeArg1 = i < type1TypeArgs.length ? type1TypeArgs[i] : AnyType.create();
+                const typeArg2 = i < type2TypeArgs.length ? type2TypeArgs[i] : AnyType.create();
+
+                if (!isTypeSame(typeArg1, typeArg2, ignorePseudoGeneric, recursionCount + 1)) {
+                    return false;
+                }
+            }
+
             if (type1.details === type2TypeVar.details) {
                 return true;
             }
@@ -2328,7 +2377,12 @@ function _addTypeIfUnique(unionType: UnionType, typeToAdd: UnionableType) {
 
             // If we're adding Literal[False] or Literal[True] to its
             // opposite, combine them into a non-literal 'bool' type.
-            if (ClassType.isBuiltIn(type, 'bool') && ClassType.isBuiltIn(typeToAdd, 'bool')) {
+            if (
+                ClassType.isBuiltIn(type, 'bool') &&
+                !type.condition &&
+                ClassType.isBuiltIn(typeToAdd, 'bool') &&
+                !typeToAdd.condition
+            ) {
                 if (typeToAdd.literalValue !== undefined && !typeToAdd.literalValue === type.literalValue) {
                     unionType.subtypes[i] = ClassType.cloneWithLiteral(type, undefined);
                     return;

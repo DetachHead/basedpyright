@@ -17,9 +17,9 @@ import {
     getModuleDocString,
     getOverloadedFunctionDocStringsInherited,
     getPropertyDocStringInherited,
-    getVariableInStubFileDocStrings,
+    getVariableDocString,
 } from '../analyzer/typeDocStringUtils';
-import { TypeEvaluator } from '../analyzer/typeEvaluator';
+import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import {
     FunctionType,
     isFunction,
@@ -73,7 +73,9 @@ export function getDocumentationPartsForTypeAndDecl(
     resolvedDecl: Declaration | undefined,
     evaluator: TypeEvaluator
 ): string[] {
-    if (isModule(type)) {
+    if (resolvedDecl?.type === DeclarationType.Variable && resolvedDecl.typeAliasName && resolvedDecl.docString) {
+        return [resolvedDecl.docString];
+    } else if (isModule(type)) {
         const doc = getModuleDocString(type, resolvedDecl, sourceMapper);
         if (doc) {
             return [doc];
@@ -102,8 +104,10 @@ export function getDocumentationPartsForTypeAndDecl(
             classResults?.classType
         );
     } else if (resolvedDecl?.type === DeclarationType.Variable) {
-        // See whether a variable symbol on the stub is actually a variable. If not, take the doc string.
-        return getVariableInStubFileDocStrings(resolvedDecl, sourceMapper);
+        const doc = getVariableDocString(resolvedDecl, sourceMapper);
+        if (doc) {
+            return [doc];
+        }
     } else if (resolvedDecl?.type === DeclarationType.Function) {
         // @property functions
         const doc = getPropertyDocStringInherited(resolvedDecl, sourceMapper, evaluator);

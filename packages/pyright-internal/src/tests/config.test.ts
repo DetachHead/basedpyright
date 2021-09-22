@@ -13,6 +13,7 @@ import { AnalyzerService } from '../analyzer/service';
 import { CommandLineOptions } from '../common/commandLineOptions';
 import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { NullConsole } from '../common/console';
+import { NoAccessHost } from '../common/host';
 import { combinePaths, getBaseFileName, normalizePath, normalizeSlashes } from '../common/pathUtils';
 import { PythonVersion } from '../common/pythonVersion';
 import { createFromRealFileSystem } from '../common/realFileSystem';
@@ -173,6 +174,7 @@ test('FindExecEnv1', () => {
     // a default environment with the root equal to that of the config.
     const file4 = '/nothing/bar.py';
     const defaultExecEnv = configOptions.findExecEnvironment(file4);
+    assert(defaultExecEnv.root);
     assert.strictEqual(normalizeSlashes(defaultExecEnv.root), normalizeSlashes(configOptions.projectRoot));
 });
 
@@ -190,7 +192,7 @@ test('PythonPlatform', () => {
             "extraPaths" : []
     }]}`);
 
-    configOptions.initializeFromJson(json, undefined, nullConsole);
+    configOptions.initializeFromJson(json, undefined, nullConsole, new NoAccessHost());
 
     const env = configOptions.executionEnvironments[0];
     assert.strictEqual(env.pythonPlatform, 'platform');

@@ -15,7 +15,7 @@ import { Declaration, DeclarationType } from '../analyzer/declaration';
 import { convertDocStringToMarkdown, convertDocStringToPlainText } from '../analyzer/docStringConversion';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper } from '../analyzer/sourceMapper';
-import { TypeEvaluator } from '../analyzer/typeEvaluator';
+import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import {
     getTypeAliasInfo,
     isClassInstance,
@@ -279,11 +279,7 @@ export class HoverProvider {
             return false;
         }
 
-        const initMethodMember = lookUpClassMember(
-            classType,
-            '__init__',
-            ClassMemberLookupFlags.SkipInstanceVariables | ClassMemberLookupFlags.SkipObjectBaseClass
-        );
+        const initMethodMember = lookUpClassMember(classType, '__init__', ClassMemberLookupFlags.SkipInstanceVariables);
 
         if (!initMethodMember) {
             return false;

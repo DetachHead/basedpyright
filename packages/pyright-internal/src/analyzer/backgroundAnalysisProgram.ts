@@ -59,6 +59,10 @@ export class BackgroundAnalysisProgram {
         return this._program;
     }
 
+    get host() {
+        return this._importResolver.host;
+    }
+
     get backgroundAnalysis() {
         return this._backgroundAnalysis;
     }
@@ -71,14 +75,10 @@ export class BackgroundAnalysisProgram {
 
     setImportResolver(importResolver: ImportResolver) {
         this._importResolver = importResolver;
+        this._backgroundAnalysis?.setImportResolver(importResolver);
+
         this._program.setImportResolver(importResolver);
-
         this._configOptions.getExecutionEnvironments().forEach((e) => this._ensurePartialStubPackages(e));
-
-        // Do nothing for background analysis.
-        // Background analysis updates importer when configOptions is changed rather than
-        // having two APIs to reduce the chance of the program and importer pointing to
-        // two different configOptions.
     }
 
     setTrackedFiles(filePaths: string[]) {
@@ -151,7 +151,7 @@ export class BackgroundAnalysisProgram {
 
     test_setIndexing(
         workspaceIndices: Map<string, IndexResults>,
-        libraryIndices: Map<string, Map<string, IndexResults>>
+        libraryIndices: Map<string | undefined, Map<string, IndexResults>>
     ) {
         const indices = this._getIndices();
         for (const [filePath, indexResults] of workspaceIndices) {
@@ -170,7 +170,7 @@ export class BackgroundAnalysisProgram {
             return;
         }
 
-        this._backgroundAnalysis?.startIndexing(this._configOptions, this._getIndices());
+        this._backgroundAnalysis?.startIndexing(this._configOptions, this.host.kind, this._getIndices());
     }
 
     refreshIndexing() {
@@ -178,7 +178,7 @@ export class BackgroundAnalysisProgram {
             return;
         }
 
-        this._backgroundAnalysis?.refreshIndexing(this._configOptions, this._indices);
+        this._backgroundAnalysis?.refreshIndexing(this._configOptions, this.host.kind, this._indices);
     }
 
     cancelIndexing() {
@@ -243,17 +243,17 @@ export class BackgroundAnalysisProgram {
             // The map will be refreshed together when library files are re-scanned.
             // It can't be cached by sourceFile since some of library files won't have
             // corresponding sourceFile created.
-            const map = new Map<string, Map<string, IndexResults>>();
+            const map = new Map<string | undefined, Map<string, IndexResults>>();
             this._indices = {
                 setWorkspaceIndex(path: string, indexResults: IndexResults): void {
                     // Index result of workspace file will be cached by each sourceFile
                     // and it will go away when the source file goes away.
                     program.getSourceFile(path)?.cacheIndexResults(indexResults);
                 },
-                getIndex(execEnv: string): Map<string, IndexResults> | undefined {
+                getIndex(execEnv: string | undefined): Map<string, IndexResults> | undefined {
                     return map.get(execEnv);
                 },
-                setIndex(execEnv: string, path: string, indexResults: IndexResults): void {
+                setIndex(execEnv: string | undefined, path: string, indexResults: IndexResults): void {
                     let indicesMap = map.get(execEnv);
                     if (!indicesMap) {
                         indicesMap = new Map<string, IndexResults>();

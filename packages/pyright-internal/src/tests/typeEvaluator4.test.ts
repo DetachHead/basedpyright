@@ -69,7 +69,7 @@ test('Metaclass7', () => {
 
 test('AssignmentExpr1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignmentExpr1.py']);
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('AssignmentExpr2', () => {
@@ -104,6 +104,11 @@ test('AssignmentExpr7', () => {
 
 test('AssignmentExpr8', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignmentExpr8.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('AssignmentExpr9', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignmentExpr9.py']);
     TestUtils.validateResults(analysisResults, 0);
 });
 
@@ -178,12 +183,12 @@ test('DunderAll1', () => {
 
     // By default, reportUnsupportedDunderAll is a warning.
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['dunderAll1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0, 9);
+    TestUtils.validateResults(analysisResults, 0, 7);
 
     // Turn on error.
     configOptions.diagnosticRuleSet.reportUnsupportedDunderAll = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['dunderAll1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 9, 0);
+    TestUtils.validateResults(analysisResults, 7, 0);
 
     // Turn off diagnostic.
     configOptions.diagnosticRuleSet.reportUnsupportedDunderAll = 'none';
@@ -248,7 +253,7 @@ test('Overload6', () => {
 
 test('Overload7', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['overload7.py']);
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('Overload8', () => {
@@ -268,7 +273,7 @@ test('Final1', () => {
 
 test('Final2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['final2.py']);
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('Final3', () => {
@@ -370,6 +375,26 @@ test('MemberAccess9', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('MemberAccess10', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess10.py']);
+    TestUtils.validateResults(analysisResults, 3);
+});
+
+test('MemberAccess11', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess11.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('MemberAccess12', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess12.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('MemberAccess13', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess13.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('DataClass1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclass1.py']);
 
@@ -444,6 +469,14 @@ test('DataClass13', () => {
 
 test('DataClass14', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclass14.py']);
+
+    TestUtils.validateResults(analysisResults, 3);
+});
+
+test('DataClass15', () => {
+    const configOptions = new ConfigOptions('.');
+    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclass15.py'], configOptions);
 
     TestUtils.validateResults(analysisResults, 3);
 });
@@ -612,7 +645,7 @@ test('ParamSpec12', () => {
 
     configOptions.defaultPythonVersion = PythonVersion.V3_10;
     const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec12.py'], configOptions);
-    TestUtils.validateResults(results, 11);
+    TestUtils.validateResults(results, 12);
 });
 
 test('ParamSpec13', () => {
@@ -644,6 +677,22 @@ test('ParamSpec16', () => {
 
     configOptions.defaultPythonVersion = PythonVersion.V3_10;
     const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec16.py'], configOptions);
+    TestUtils.validateResults(results, 0);
+});
+
+test('ParamSpec17', () => {
+    const configOptions = new ConfigOptions('.');
+
+    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec17.py'], configOptions);
+    TestUtils.validateResults(results, 0);
+});
+
+test('ParamSpec18', () => {
+    const configOptions = new ConfigOptions('.');
+
+    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec18.py'], configOptions);
     TestUtils.validateResults(results, 0);
 });
 
@@ -698,13 +747,13 @@ test('TypeVar5', () => {
 test('TypeVar6', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVar6.py']);
 
-    TestUtils.validateResults(analysisResults, 19);
+    TestUtils.validateResults(analysisResults, 20);
 });
 
 test('TypeVar7', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVar7.py']);
 
-    TestUtils.validateResults(analysisResults, 22);
+    TestUtils.validateResults(analysisResults, 26);
 });
 
 test('TypeVar8', () => {

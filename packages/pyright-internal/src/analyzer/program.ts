@@ -21,7 +21,6 @@ import {
 import { OperationCanceledException, throwIfCancellationRequested } from '../common/cancellationUtils';
 import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { ConsoleInterface, StandardConsole } from '../common/console';
-import { isDebugMode } from '../common/core';
 import { assert } from '../common/debug';
 import { Diagnostic } from '../common/diagnostic';
 import { FileDiagnostics } from '../common/diagnosticSink';
@@ -69,7 +68,7 @@ import { SourceMapper } from './sourceMapper';
 import { Symbol } from './symbol';
 import { isPrivateOrProtectedName } from './symbolNameUtils';
 import { createTracePrinter } from './tracePrinter';
-import { TypeEvaluator } from './typeEvaluator';
+import { TypeEvaluator } from './typeEvaluatorTypes';
 import { createTypeEvaluatorWithTracker } from './typeEvaluatorWithTracker';
 import { PrintTypeFlags } from './typePrinter';
 import { Type } from './types';
@@ -118,8 +117,8 @@ export interface MaxAnalysisTime {
 
 export interface Indices {
     setWorkspaceIndex(path: string, indexResults: IndexResults): void;
-    getIndex(execEnv: string): Map<string, IndexResults> | undefined;
-    setIndex(execEnv: string, path: string, indexResults: IndexResults): void;
+    getIndex(execEnv: string | undefined): Map<string, IndexResults> | undefined;
+    setIndex(execEnv: string | undefined, path: string, indexResults: IndexResults): void;
     reset(): void;
 }
 
@@ -1139,6 +1138,7 @@ export class Program {
                 if (diagnostics !== undefined) {
                     fileDiagnostics.push({
                         filePath: sourceFileInfo.sourceFile.getFilePath(),
+                        version: sourceFileInfo.sourceFile.getClientVersion(),
                         diagnostics,
                     });
 
@@ -1155,6 +1155,7 @@ export class Program {
                 // "open files only" mode. Clear all diagnostics for this file.
                 fileDiagnostics.push({
                     filePath: sourceFileInfo.sourceFile.getFilePath(),
+                    version: sourceFileInfo.sourceFile.getClientVersion(),
                     diagnostics: [],
                 });
                 sourceFileInfo.diagnosticsVersion = undefined;
@@ -1819,9 +1820,7 @@ export class Program {
     // any other unexpected exceptions.
     private _runEvaluatorWithCancellationToken<T>(token: CancellationToken | undefined, callback: () => T): T {
         try {
-            // Don't support cancellation in debug mode because cancellation
-            // checks and exceptions interfere with debugging.
-            if (token && !isDebugMode()) {
+            if (token) {
                 return this._evaluator!.runWithCancellationToken(token, callback);
             } else {
                 return callback();
@@ -1850,6 +1849,7 @@ export class Program {
             if (!this._isFileNeeded(fileInfo)) {
                 fileDiagnostics.push({
                     filePath: fileInfo.sourceFile.getFilePath(),
+                    version: fileInfo.sourceFile.getClientVersion(),
                     diagnostics: [],
                 });
 
@@ -1871,6 +1871,7 @@ export class Program {
                         if (indexToRemove >= 0 && indexToRemove < i) {
                             fileDiagnostics.push({
                                 filePath: importedFile.sourceFile.getFilePath(),
+                                version: importedFile.sourceFile.getClientVersion(),
                                 diagnostics: [],
                             });
 
@@ -1892,6 +1893,7 @@ export class Program {
                 if (!this._shouldCheckFile(fileInfo) && fileInfo.diagnosticsVersion !== undefined) {
                     fileDiagnostics.push({
                         filePath: fileInfo.sourceFile.getFilePath(),
+                        version: fileInfo.sourceFile.getClientVersion(),
                         diagnostics: [],
                     });
                     fileInfo.diagnosticsVersion = undefined;

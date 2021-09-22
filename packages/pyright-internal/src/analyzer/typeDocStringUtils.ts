@@ -16,6 +16,7 @@ import {
     FunctionDeclaration,
     isClassDeclaration,
     isFunctionDeclaration,
+    isVariableDeclaration,
     VariableDeclaration,
 } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
@@ -29,9 +30,10 @@ import {
     ModuleType,
     OverloadedFunctionType,
     Type,
+    TypeCategory,
 } from '../analyzer/types';
 import { ModuleNode, ParseNodeType } from '../parser/parseNodes';
-import { TypeEvaluator } from './typeEvaluator';
+import { TypeEvaluator } from './typeEvaluatorTypes';
 import {
     ClassIteratorFlags,
     ClassMemberLookupFlags,
@@ -41,9 +43,28 @@ import {
 } from './typeUtils';
 
 const DefaultClassIteratorFlagsForFunctions =
+    ClassMemberLookupFlags.SkipObjectBaseClass |
     ClassMemberLookupFlags.SkipInstanceVariables |
     ClassMemberLookupFlags.SkipOriginalClass |
     ClassMemberLookupFlags.DeclaredTypesOnly;
+
+function isInheritedFromBuiltin(type: FunctionType | OverloadedFunctionType, classType?: ClassType): boolean {
+    if (type.category === TypeCategory.OverloadedFunction) {
+        if (type.overloads.length === 0) {
+            return false;
+        }
+        type = type.overloads[0];
+    }
+
+    // Functions that are bound to a different type than where they
+    // were declared are inherited.
+    return (
+        type.details.moduleName === 'builtins' &&
+        !!classType &&
+        !!type.boundToType &&
+        !ClassType.isSameGenericClass(classType, type.boundToType)
+    );
+}
 
 export function getFunctionDocStringInherited(
     type: FunctionType,
@@ -53,7 +74,10 @@ export function getFunctionDocStringInherited(
 ) {
     let docString: string | undefined;
 
-    if (resolvedDecl && isFunctionDeclaration(resolvedDecl)) {
+    // Don't allow docs to be inherited from the builtins to other classes;
+    // they typically not helpful (and object's __init__ doc causes issues
+    // with our current docstring traversal).
+    if (!isInheritedFromBuiltin(type, classType) && resolvedDecl && isFunctionDeclaration(resolvedDecl)) {
         docString = _getFunctionDocString(type, resolvedDecl, sourceMapper);
     }
 
@@ -86,9 +110,16 @@ export function getOverloadedFunctionDocStringsInherited(
     evaluator: TypeEvaluator,
     classType?: ClassType
 ) {
-    let docStrings = _getOverloadedFunctionDocStrings(type, resolvedDecl, sourceMapper);
-    if (docStrings && docStrings.length > 0) {
-        return docStrings;
+    let docStrings: string[] | undefined;
+
+    // Don't allow docs to be inherited from the builtins to other classes;
+    // they typically not helpful (and object's __init__ doc causes issues
+    // with our current docstring traversal).
+    if (!isInheritedFromBuiltin(type, classType)) {
+        docStrings = _getOverloadedFunctionDocStrings(type, resolvedDecl, sourceMapper);
+        if (docStrings && docStrings.length > 0) {
+            return docStrings;
+        }
     }
 
     // Search mro
@@ -130,9 +161,12 @@ export function getVariableInStubFileDocStrings(decl: VariableDeclaration, sourc
         return docStrings;
     }
 
-    // See whether a variable symbol on the stub is actually a variable. If not, take the doc string.
     for (const implDecl of sourceMapper.findDeclarations(decl)) {
-        if (isClassDeclaration(implDecl) || isFunctionDeclaration(implDecl)) {
+        if (isVariableDeclaration(implDecl) && !!implDecl.docString) {
+            docStrings.push(implDecl.docString);
+        } else if (isClassDeclaration(implDecl) || isFunctionDeclaration(implDecl)) {
+            // It is possible that the variable on the stub is not actually a variable on the corresponding py file.
+            // in that case, get the doc string from original symbol if possible.
             const docString = getFunctionOrClassDeclDocString(implDecl);
             if (docString) {
                 docStrings.push(docString);
@@ -191,6 +225,21 @@ export function getClassDocString(
 
 export function getFunctionOrClassDeclDocString(decl: FunctionDeclaration | ClassDeclaration): string | undefined {
     return ParseTreeUtils.getDocString(decl.node?.suite?.statements ?? []);
+}
+
+export function getVariableDocString(
+    decl: VariableDeclaration | undefined,
+    sourceMapper: SourceMapper
+): string | undefined {
+    if (!decl) {
+        return undefined;
+    }
+
+    if (decl.docString !== undefined) {
+        return decl.docString;
+    } else {
+        return getVariableInStubFileDocStrings(decl, sourceMapper).find((doc) => doc);
+    }
 }
 
 function _getOverloadedFunctionDocStrings(

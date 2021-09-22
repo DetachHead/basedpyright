@@ -53,6 +53,8 @@ export class PyrightFileSystem implements FileSystem {
     // from files.
     private readonly _conflictMap = new Map<string, string>();
 
+    private readonly _customUriMap = new Map<string, { uri: string; closed: boolean; hasPendingRequest: boolean }>();
+
     constructor(private _realFS: FileSystem) {}
 
     existsSync(path: string): boolean {
@@ -164,12 +166,72 @@ export class PyrightFileSystem implements FileSystem {
         return this._realFS.realCasePath(path);
     }
 
-    getUri(path: string): string {
-        return this._realFS.getUri(path);
+    getUri(originalPath: string): string {
+        const entry = this._customUriMap.get(this.getMappedFilePath(originalPath));
+        if (entry) {
+            return entry.uri;
+        }
+
+        return this._realFS.getUri(originalPath);
+    }
+
+    hasUriMapEntry(uriString: string, mappedPath: string): boolean {
+        const entry = this._customUriMap.get(mappedPath);
+        if (!entry || entry.uri !== uriString) {
+            // We don't support having 2 uri pointing to same file.
+            return false;
+        }
+
+        return true;
+    }
+
+    addUriMap(uriString: string, mappedPath: string): boolean {
+        const entry = this._customUriMap.get(mappedPath);
+        if (!entry) {
+            this._customUriMap.set(mappedPath, { uri: uriString, closed: false, hasPendingRequest: false });
+            return true;
+        }
+
+        if (entry.uri !== uriString) {
+            // We don't support having 2 uri pointing to same file.
+            return false;
+        }
+
+        entry.closed = false;
+        return true;
+    }
+
+    removeUriMap(uriString: string, mappedPath: string): boolean {
+        const entry = this._customUriMap.get(mappedPath);
+        if (!entry || entry.uri !== uriString) {
+            return false;
+        }
+
+        if (entry.hasPendingRequest) {
+            entry.closed = true;
+            return true;
+        }
+
+        this._customUriMap.delete(mappedPath);
+        return true;
+    }
+
+    pendingRequest(mappedPath: string, hasPendingRequest: boolean): void {
+        const entry = this._customUriMap.get(mappedPath);
+        if (!entry) {
+            return;
+        }
+
+        if (!hasPendingRequest && entry.closed) {
+            this._customUriMap.delete(mappedPath);
+            return;
+        }
+
+        entry.hasPendingRequest = hasPendingRequest;
     }
 
     isPartialStubPackagesScanned(execEnv: ExecutionEnvironment): boolean {
-        return this.isPathScanned(execEnv.root);
+        return this.isPathScanned(execEnv.root ?? '');
     }
 
     isPathScanned(path: string): boolean {
@@ -297,6 +359,10 @@ export class PyrightFileSystem implements FileSystem {
     // return it.
     getConflictedFile(filepath: string) {
         return this._conflictMap.get(filepath);
+    }
+
+    isInZipOrEgg(path: string): boolean {
+        return this._realFS.isInZipOrEgg(path);
     }
 
     private _recordVirtualFile(mappedFile: string, originalFile: string, reversible = true) {

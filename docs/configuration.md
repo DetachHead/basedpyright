@@ -102,6 +102,8 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **reportPrivateUsage** [boolean or string, optional]: Generate or suppress diagnostics for incorrect usage of private or protected variables or functions. Protected class members begin with a single underscore (“_”) and can be accessed only by subclasses. Private class members begin with a double underscore but do not end in a double underscore and can be accessed only within the declaring class. Variables and functions declared outside of a class are considered private if their names start with either a single or double underscore, and they cannot be accessed outside of the declaring module. The default value for this setting is 'none'.
 
+**reportPrivateImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a "py.typed" module that is not meant to be exported from that module. The default value for this setting is 'error'.
+
 **reportConstantRedefinition** [boolean or string, optional]: Generate or suppress diagnostics for attempts to redefine variables whose names are all-caps with underscores and numerals. The default value for this setting is 'none'.
 
 **reportIncompatibleMethodOverride** [boolean or string, optional]: Generate or suppress diagnostics for methods that override a method of the same name in a base class in an incompatible manner (wrong number of parameters, incompatible parameter types, or incompatible return type). The default value for this setting is 'none'.
@@ -128,7 +130,7 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **reportInvalidTypeVarUse** [boolean or string, optional]: Generate or suppress diagnostics when a TypeVar is used inappropriately (e.g. if a TypeVar appears only once) within a generic function signature. The default value for this setting is 'none'.
 
-**reportCallInDefaultInitializer** [boolean or string, optional]: Generate or suppress diagnostics for function calls within a default value initialization expression. Such calls can mask expensive operations that are performed at module initialization time. The default value for this setting is 'none'.
+**reportCallInDefaultInitializer** [boolean or string, optional]: Generate or suppress diagnostics for function calls, list expressions, set expressions, or dictionary expressions within a default value initialization expression. Such calls can mask expensive operations that are performed at module initialization time. The default value for this setting is 'none'.
 
 **reportUnnecessaryIsInstance** [boolean or string, optional]: Generate or suppress diagnostics for 'isinstance' or 'issubclass' calls where the result is statically determined to be always true. Such calls are often indicative of a programming error. The default value for this setting is 'none'.
 
@@ -229,7 +231,7 @@ The following is an example of a pyright config file:
 }
 ```
 
-## Sample Pyproject.toml File
+## Sample pyproject.toml File
 ```toml
 [tool.pyright]
 include = ["src"]
@@ -266,6 +268,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | :---------------------------------------- | :--------- | :--------- | :--------- |
 | strictListInference                       | false      | false      | true       |
 | strictDictionaryInference                 | false      | false      | true       |
+| strictSetInference                        | false      | false      | true       |
 | strictParameterNoneValue                  | false      | false      | true       |
 | enableTypeIgnoreComments                  | true       | true       | true       |
 | reportGeneralTypeIssues                   | "none"     | "error"    | "error"    |
@@ -293,11 +296,12 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportUntypedBaseClass                    | "none"     | "none"     | "error"    |
 | reportUntypedNamedTuple                   | "none"     | "none"     | "error"    |
 | reportPrivateUsage                        | "none"     | "none"     | "error"    |
+| reportPrivateImportUsage                  | "none"     | "error"    | "error"    |
 | reportConstantRedefinition                | "none"     | "none"     | "error"    |
 | reportIncompatibleMethodOverride          | "none"     | "none"     | "error"    |
 | reportIncompatibleVariableOverride        | "none"     | "none"     | "error"    |
 | reportOverlappingOverload                 | "none"     | "none"     | "error"    |
-| reportUninitializedInstanceVariable       | "none"     | "none"     | "none"    |
+| reportUninitializedInstanceVariable       | "none"     | "none"     | "none"     |
 | reportInvalidStringEscapeSequence         | "none"     | "warning"  | "error"    |
 | reportUnknownParameterType                | "none"     | "none"     | "error"    |
 | reportUnknownArgumentType                 | "none"     | "none"     | "error"    |

@@ -7,29 +7,25 @@
  * Class that holds the configuration options for the analyzer.
  */
 
-import * as child_process from 'child_process';
 import { isAbsolute } from 'path';
 
+import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
 import { DiagnosticSeverityOverridesMap } from './commandLineOptions';
 import { ConsoleInterface } from './console';
 import { DiagnosticRule } from './diagnosticRules';
 import { FileSystem } from './fileSystem';
+import { Host } from './host';
 import {
     combinePaths,
     ensureTrailingDirectorySeparator,
     FileSpec,
     getFileSpec,
+    isDirectory,
     normalizePath,
     resolvePaths,
 } from './pathUtils';
-import {
-    latestStablePythonVersion,
-    PythonVersion,
-    versionFromMajorMinor,
-    versionFromString,
-    versionToString,
-} from './pythonVersion';
+import { latestStablePythonVersion, PythonVersion, versionFromString, versionToString } from './pythonVersion';
 
 export enum PythonPlatform {
     Darwin = 'Darwin',
@@ -45,7 +41,7 @@ export class ExecutionEnvironment {
         defaultPythonPlatform: string | undefined,
         defaultExtraPaths: string[] | undefined
     ) {
-        this.root = root;
+        this.root = root || undefined;
         this.pythonVersion = defaultPythonVersion || latestStablePythonVersion;
         this.pythonPlatform = defaultPythonPlatform;
         this.extraPaths = defaultExtraPaths || [];
@@ -53,7 +49,8 @@ export class ExecutionEnvironment {
 
     // Root directory for execution - absolute or relative to the
     // project root.
-    root: string;
+    // Undefined if this is a rootless environment (e.g., open file mode).
+    root?: string;
 
     // Always default to the latest stable version of the language.
     pythonVersion: PythonVersion;
@@ -175,6 +172,10 @@ export interface DiagnosticRuleSet {
     // Report usage of private variables and functions outside of
     // the owning class or module?
     reportPrivateUsage: DiagnosticLevel;
+
+    // Report usage of an import from a py.typed module that is
+    // not meant to be re-exported from that module.
+    reportPrivateImportUsage: DiagnosticLevel;
 
     // Report attempts to redefine variables that are in all-caps.
     reportConstantRedefinition: DiagnosticLevel;
@@ -315,6 +316,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUntypedBaseClass,
         DiagnosticRule.reportUntypedNamedTuple,
         DiagnosticRule.reportPrivateUsage,
+        DiagnosticRule.reportPrivateImportUsage,
         DiagnosticRule.reportConstantRedefinition,
         DiagnosticRule.reportIncompatibleMethodOverride,
         DiagnosticRule.reportIncompatibleVariableOverride,
@@ -388,6 +390,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'none',
         reportUntypedNamedTuple: 'none',
         reportPrivateUsage: 'none',
+        reportPrivateImportUsage: 'none',
         reportConstantRedefinition: 'none',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
@@ -457,6 +460,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'none',
         reportUntypedNamedTuple: 'none',
         reportPrivateUsage: 'none',
+        reportPrivateImportUsage: 'error',
         reportConstantRedefinition: 'none',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
@@ -526,6 +530,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'error',
         reportUntypedNamedTuple: 'error',
         reportPrivateUsage: 'error',
+        reportPrivateImportUsage: 'error',
         reportConstantRedefinition: 'error',
         reportIncompatibleMethodOverride: 'error',
         reportIncompatibleVariableOverride: 'error',
@@ -563,6 +568,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
 export class ConfigOptions {
     constructor(projectRoot: string, typeCheckingMode?: string) {
         this.projectRoot = projectRoot;
+        this.typeCheckingMode = typeCheckingMode;
         this.diagnosticRuleSet = ConfigOptions.getDiagnosticRuleSet(typeCheckingMode);
 
         // If type checking mode is off, allow inference for py.typed sources
@@ -637,6 +643,12 @@ export class ConfigOptions {
     // Avoid using type inference for files within packages that claim
     // to contain type annotations?
     disableInferenceForPyTypedSources = true;
+
+    // Current type checking mode.
+    typeCheckingMode?: string;
+
+    // Was this config initialized from JSON (pyrightconfig/pyproject)?
+    initializedFromJson = false;
 
     //---------------------------------------------------------------
     // Diagnostics Rule Set
@@ -726,10 +738,12 @@ export class ConfigOptions {
         configObj: any,
         typeCheckingMode: string | undefined,
         console: ConsoleInterface,
+        host: Host,
         diagnosticOverrides?: DiagnosticSeverityOverridesMap,
-        pythonPath?: string,
         skipIncludeSection = false
     ) {
+        this.initializedFromJson = true;
+
         // Read the "include" entry.
         if (!skipIncludeSection) {
             this.include = [];
@@ -830,9 +844,9 @@ export class ConfigOptions {
             }
         }
 
-        const effectiveTypeCheckingMode = configTypeCheckingMode || typeCheckingMode;
-        const defaultSettings = ConfigOptions.getDiagnosticRuleSet(effectiveTypeCheckingMode);
-        if (effectiveTypeCheckingMode === 'off') {
+        this.typeCheckingMode = configTypeCheckingMode || typeCheckingMode;
+        const defaultSettings = ConfigOptions.getDiagnosticRuleSet(this.typeCheckingMode);
+        if (this.typeCheckingMode === 'off') {
             this.disableInferenceForPyTypedSources = false;
         }
 
@@ -1055,6 +1069,13 @@ export class ConfigOptions {
                 configObj.reportPrivateUsage,
                 DiagnosticRule.reportPrivateUsage,
                 defaultSettings.reportPrivateUsage
+            ),
+
+            // Read the "reportPrivateImportUsage" entry.
+            reportPrivateImportUsage: this._convertDiagnosticLevel(
+                configObj.reportPrivateImportUsage,
+                DiagnosticRule.reportPrivateImportUsage,
+                defaultSettings.reportPrivateImportUsage
             ),
 
             // Read the "reportConstantRedefinition" entry.
@@ -1298,7 +1319,7 @@ export class ConfigOptions {
             }
         }
 
-        this.ensureDefaultPythonVersion(pythonPath, console);
+        this.ensureDefaultPythonVersion(host, console);
 
         // Read the default "pythonPlatform".
         if (configObj.pythonPlatform !== undefined) {
@@ -1309,7 +1330,7 @@ export class ConfigOptions {
             }
         }
 
-        this.ensureDefaultPythonPlatform(console);
+        this.ensureDefaultPythonPlatform(host, console);
 
         // Read the "typeshedPath" setting.
         this.typeshedPath = undefined;
@@ -1418,36 +1439,34 @@ export class ConfigOptions {
         }
     }
 
-    ensureDefaultPythonPlatform(console: ConsoleInterface) {
+    ensureDefaultPythonPlatform(host: Host, console: ConsoleInterface) {
         // If no default python platform was specified, assume that the
         // user wants to use the current platform.
         if (this.defaultPythonPlatform !== undefined) {
             return;
         }
 
-        if (process.platform === 'darwin') {
-            this.defaultPythonPlatform = PythonPlatform.Darwin;
-        } else if (process.platform === 'linux') {
-            this.defaultPythonPlatform = PythonPlatform.Linux;
-        } else if (process.platform === 'win32') {
-            this.defaultPythonPlatform = PythonPlatform.Windows;
-        }
-
+        this.defaultPythonPlatform = host.getPythonPlatform();
         if (this.defaultPythonPlatform !== undefined) {
             console.info(`Assuming Python platform ${this.defaultPythonPlatform}`);
         }
     }
 
-    ensureDefaultPythonVersion(pythonPath: string | undefined, console: ConsoleInterface) {
+    ensureDefaultPythonVersion(host: Host, console: ConsoleInterface) {
         // If no default python version was specified, retrieve the version
         // from the currently-selected python interpreter.
         if (this.defaultPythonVersion !== undefined) {
             return;
         }
 
-        this.defaultPythonVersion = this._getPythonVersionFromPythonInterpreter(pythonPath, console);
+        const importFailureInfo: string[] = [];
+        this.defaultPythonVersion = host.getPythonVersion(this.pythonPath, importFailureInfo);
         if (this.defaultPythonVersion !== undefined) {
             console.info(`Assuming Python version ${versionToString(this.defaultPythonVersion)}`);
+        }
+
+        for (const log of importFailureInfo) {
+            console.info(log);
         }
     }
 
@@ -1464,7 +1483,11 @@ export class ConfigOptions {
 
         if (extraPaths && extraPaths.length > 0) {
             for (const p of extraPaths) {
-                paths.push(resolvePaths(this.projectRoot, p));
+                const path = resolvePaths(this.projectRoot, p);
+                paths.push(path);
+                if (isDirectory(fs, path)) {
+                    paths.push(...getPathsFromPthFiles(fs, path));
+                }
             }
         }
 
@@ -1579,39 +1602,5 @@ export class ConfigOptions {
         }
 
         return undefined;
-    }
-
-    private _getPythonVersionFromPythonInterpreter(
-        interpreterPath: string | undefined,
-        console: ConsoleInterface
-    ): PythonVersion | undefined {
-        try {
-            const commandLineArgs: string[] = [
-                '-c',
-                'import sys, json; json.dump(dict(major=sys.version_info[0], minor=sys.version_info[1]), sys.stdout)',
-            ];
-            let execOutput: string;
-
-            if (interpreterPath) {
-                execOutput = child_process.execFileSync(interpreterPath, commandLineArgs, { encoding: 'utf8' });
-            } else {
-                execOutput = child_process.execFileSync('python', commandLineArgs, { encoding: 'utf8' });
-            }
-
-            const versionJson: { major: number; minor: number } = JSON.parse(execOutput);
-
-            const version = versionFromMajorMinor(versionJson.major, versionJson.minor);
-            if (version === undefined) {
-                console.warn(
-                    `Python version ${versionJson.major}.${versionJson.minor} from interpreter is unsupported`
-                );
-                return undefined;
-            }
-
-            return version;
-        } catch {
-            console.info('Unable to get Python version from interpreter');
-            return undefined;
-        }
     }
 }

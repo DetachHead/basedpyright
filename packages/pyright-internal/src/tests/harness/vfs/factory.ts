@@ -9,7 +9,7 @@
 import * as pathConsts from '../../../common/pathConsts';
 import { combinePaths, getDirectoryPath, normalizeSlashes, resolvePaths } from '../../../common/pathUtils';
 import { GlobalMetadataOptionNames } from '../fourslash/fourSlashTypes';
-import { TestHost } from '../host';
+import { TestHost } from '../testHost';
 import { bufferFrom } from '../utils';
 import {
     FileSet,
@@ -42,6 +42,10 @@ export interface FileSystemCreateOptions extends FileSystemOptions {
 export const libFolder = combinePaths(
     MODULE_PATH,
     normalizeSlashes(combinePaths(pathConsts.lib, pathConsts.sitePackages))
+);
+export const distlibFolder = combinePaths(
+    MODULE_PATH,
+    normalizeSlashes(combinePaths(pathConsts.lib, pathConsts.distPackages))
 );
 export const typeshedFolder = combinePaths(MODULE_PATH, normalizeSlashes(pathConsts.typeshedFallback));
 export const srcFolder = normalizeSlashes('/.src');

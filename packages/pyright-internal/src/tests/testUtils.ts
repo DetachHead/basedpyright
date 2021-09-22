@@ -16,11 +16,12 @@ import { Binder } from '../analyzer/binder';
 import { ImportResolver } from '../analyzer/importResolver';
 import { Program } from '../analyzer/program';
 import { NameTypeWalker, TestWalker } from '../analyzer/testWalker';
-import { TypeEvaluator } from '../analyzer/typeEvaluator';
+import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { cloneDiagnosticRuleSet, ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { fail } from '../common/debug';
 import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
 import { DiagnosticSink, TextRangeDiagnosticSink } from '../common/diagnosticSink';
+import { FullAccessHost } from '../common/fullAccessHost';
 import { createFromRealFileSystem } from '../common/realFileSystem';
 import { ParseOptions, Parser, ParseResults } from '../parser/parser';
 
@@ -151,7 +152,9 @@ export function typeAnalyzeSampleFiles(
 ): FileAnalysisResult[] {
     // Always enable "test mode".
     configOptions.internalTestMode = true;
-    const importResolver = new ImportResolver(createFromRealFileSystem(), configOptions);
+
+    const fs = createFromRealFileSystem();
+    const importResolver = new ImportResolver(fs, configOptions, new FullAccessHost(fs));
 
     const program = new Program(importResolver, configOptions);
     const filePaths = fileNames.map((name) => resolveSampleFilePath(name));

@@ -1180,10 +1180,16 @@ export class Parser {
         if (!this._consumeTokenIfType(TokenType.Colon)) {
             this._addError(Localizer.Diagnostic.expectedColon(), nextToken);
 
-            // Try to perform parse recovery by consuming tokens until
-            // we find the end of the line.
+            // Try to perform parse recovery by consuming tokens.
             if (this._consumeTokensUntilType([TokenType.NewLine, TokenType.Colon])) {
-                this._getNextToken();
+                if (this._peekTokenType() === TokenType.Colon) {
+                    this._getNextToken();
+                } else if (this._peekToken(1).type !== TokenType.Indent) {
+                    // Bail so we resume the at the next statement.
+                    // We can't parse as a simple statement as we've skipped all but the newline.
+                    this._getNextToken();
+                    return suite;
+                }
             }
         }
 
@@ -1295,8 +1301,12 @@ export class Parser {
     private _parseForStatement(asyncToken?: KeywordToken): ForNode {
         const forToken = this._getKeywordToken(KeywordType.For);
 
-        const exprListResult = this._parseExpressionList(/* allowStar */ true);
-        const targetExpr = this._makeExpressionOrTuple(exprListResult, /* enclosedInParens */ false);
+        const targetExpr = this._parseExpressionListAsPossibleTuple(
+            ErrorExpressionCategory.MissingExpression,
+            Localizer.Diagnostic.expectedExpr(),
+            forToken
+        );
+
         let seqExpr: ExpressionNode;
         let forSuite: SuiteNode;
         let elseSuite: SuiteNode | undefined;
@@ -1391,8 +1401,11 @@ export class Parser {
 
         const forToken = this._getKeywordToken(KeywordType.For);
 
-        const exprListResult = this._parseExpressionList(/* allowStar */ true);
-        const targetExpr = this._makeExpressionOrTuple(exprListResult, /* enclosedInParens */ false);
+        const targetExpr = this._parseExpressionListAsPossibleTuple(
+            ErrorExpressionCategory.MissingExpression,
+            Localizer.Diagnostic.expectedExpr(),
+            forToken
+        );
         let seqExpr: ExpressionNode | undefined;
 
         if (!this._consumeTokenIfKeyword(KeywordType.In)) {
@@ -1820,7 +1833,7 @@ export class Parser {
     // with_item list.
     private _parseWithStatement(asyncToken?: KeywordToken): WithNode {
         const withToken = this._getKeywordToken(KeywordType.With);
-        const withItemList: WithItemNode[] = [];
+        let withItemList: WithItemNode[] = [];
 
         const possibleParen = this._peekToken();
 
@@ -1835,7 +1848,7 @@ export class Parser {
             this._suppressErrors(() => {
                 this._getNextToken();
                 while (true) {
-                    this._parseWithItem();
+                    withItemList.push(this._parseWithItem());
                     if (!this._consumeTokenIfType(TokenType.Comma)) {
                         break;
                     }
@@ -1849,10 +1862,11 @@ export class Parser {
                     this._peekToken().type === TokenType.CloseParenthesis &&
                     this._peekToken(1).type === TokenType.Colon
                 ) {
-                    isParenthesizedWithItemList = true;
+                    isParenthesizedWithItemList = withItemList.length !== 1 || withItemList[0].target !== undefined;
                 }
 
                 this._tokenIndex = openParenTokenIndex;
+                withItemList = [];
             });
         }
 
@@ -2587,6 +2601,23 @@ export class Parser {
         return tupleNode;
     }
 
+    private _parseExpressionListAsPossibleTuple(
+        errorCategory: ErrorExpressionCategory,
+        errorString: string,
+        errorToken: Token
+    ): ExpressionNode {
+        if (this._isNextTokenNeverExpression()) {
+            this._addError(errorString, errorToken);
+            return ErrorNode.create(errorToken, errorCategory);
+        }
+
+        const exprListResult = this._parseExpressionList(/* allowStar */ true);
+        if (exprListResult.parseError) {
+            return exprListResult.parseError;
+        }
+        return this._makeExpressionOrTuple(exprListResult, /* enclosedInParens */ false);
+    }
+
     private _parseTestListAsExpression(errorCategory: ErrorExpressionCategory, errorString: string): ExpressionNode {
         if (this._isNextTokenNeverExpression()) {
             return this._handleExpressionParseError(errorCategory, errorString);
@@ -2683,7 +2714,7 @@ export class Parser {
             return ifExpr;
         }
 
-        const testExpr = this._parseAssignmentExpression();
+        const testExpr = this._parseOrTest();
         if (testExpr.nodeType === ParseNodeType.Error) {
             return testExpr;
         }
@@ -3545,8 +3576,11 @@ export class Parser {
 
         const exprListResult = this._parseTestListWithComprehension();
         const tupleOrExpression = this._makeExpressionOrTuple(exprListResult, /* enclosedInParens */ true);
+        const isExpression = exprListResult.list.length === 1 && !exprListResult.trailingComma;
 
-        extendRange(tupleOrExpression, startParen);
+        if (!isExpression) {
+            extendRange(tupleOrExpression, startParen);
+        }
 
         if (this._peekTokenType() !== TokenType.CloseParenthesis) {
             return this._handleExpressionParseError(
@@ -3554,7 +3588,10 @@ export class Parser {
                 Localizer.Diagnostic.expectedCloseParen()
             );
         } else {
-            extendRange(tupleOrExpression, this._getNextToken());
+            const nextToken = this._getNextToken();
+            if (!isExpression) {
+                extendRange(tupleOrExpression, nextToken);
+            }
         }
 
         return tupleOrExpression;
@@ -4295,8 +4332,6 @@ export class Parser {
             // parse errors that span strings.
             if (stringNode.strings.length > 1) {
                 this._addError(Localizer.Diagnostic.annotationSpansStrings(), stringNode);
-            } else if (stringNode.strings[0].token.flags & StringTokenFlags.Triplicate) {
-                this._addError(Localizer.Diagnostic.annotationTripleQuote(), stringNode);
             } else if (stringNode.strings[0].token.flags & StringTokenFlags.Format) {
                 this._addError(Localizer.Diagnostic.annotationFormatString(), stringNode);
             } else {
@@ -4317,7 +4352,8 @@ export class Parser {
                         tokenOffset + prefixLength,
                         unescapedString.length,
                         this._parseOptions,
-                        ParseTextMode.VariableAnnotation
+                        ParseTextMode.VariableAnnotation,
+                        (stringNode.strings[0].token.flags & StringTokenFlags.Triplicate) !== 0 ? 1 : 0
                     );
 
                     parseResults.diagnostics.forEach((diag) => {

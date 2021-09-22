@@ -24,7 +24,7 @@ import * as AnalyzerNodeInfo from '../analyzer/analyzerNodeInfo';
 import { AliasDeclaration, Declaration, DeclarationType } from '../analyzer/declaration';
 import { getNameFromDeclaration } from '../analyzer/declarationUtils';
 import { getLastTypedDeclaredForSymbol } from '../analyzer/symbolUtils';
-import { TypeEvaluator } from '../analyzer/typeEvaluator';
+import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { isProperty } from '../analyzer/typeUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { convertOffsetsToRange } from '../common/positionUtils';
@@ -70,16 +70,29 @@ export function getIndexAliasData(
         return undefined;
     }
 
-    const resolved = resolveAliasDeclaration(importLookup, declaration, /* resolveLocalNames */ true);
-    const nameValue = resolved ? getNameFromDeclaration(resolved) : undefined;
-    if (!nameValue || resolved!.path.length <= 0) {
+    const resolvedInfo = resolveAliasDeclaration(
+        importLookup,
+        declaration,
+        /* resolveLocalNames */ true,
+        /* allowExternallyHiddenAccess */ false
+    );
+    if (!resolvedInfo) {
         return undefined;
     }
 
-    const symbolKind = getSymbolKind(nameValue, resolved!) ?? SymbolKind.Module;
+    if (resolvedInfo.isPrivate) {
+        return undefined;
+    }
+
+    const nameValue = getNameFromDeclaration(resolvedInfo.declaration);
+    if (!nameValue || resolvedInfo.declaration.path.length <= 0) {
+        return undefined;
+    }
+
+    const symbolKind = getSymbolKind(nameValue, resolvedInfo.declaration) ?? SymbolKind.Module;
     return {
         originalName: nameValue,
-        modulePath: resolved!.path,
+        modulePath: resolvedInfo.declaration.path,
         kind: symbolKind,
         itemKind: convertSymbolKindToCompletionItemKind(symbolKind),
     };

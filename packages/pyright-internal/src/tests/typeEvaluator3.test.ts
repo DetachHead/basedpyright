@@ -111,7 +111,7 @@ test('Generators13', () => {
 test('Coroutines1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['coroutines1.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('Coroutines2', () => {
@@ -156,10 +156,34 @@ test('Loops6', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('Loops7', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loops7.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Loops8', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loops8.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Loops9', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loops9.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Loops10', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loops10.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('ForLoop1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['forLoop1.py']);
 
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('ForLoop2', () => {
@@ -171,7 +195,7 @@ test('ForLoop2', () => {
 test('ListComprehension1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['listComprehension1.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 2);
 });
 
 test('ListComprehension2', () => {
@@ -333,6 +357,12 @@ test('TypeAlias14', () => {
     TestUtils.validateResults(analysisResults, 6);
 });
 
+test('TypeAlias15', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeAlias15.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('Dictionary1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dictionary1.py']);
 
@@ -361,13 +391,13 @@ test('Classes2', () => {
     // Turn on errors.
     configOptions.diagnosticRuleSet.reportIncompatibleMethodOverride = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['classes2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 19);
+    TestUtils.validateResults(analysisResults, 21);
 });
 
 test('Classes3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['classes3.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('Classes4', () => {
@@ -381,12 +411,12 @@ test('Classes5', () => {
 
     // By default, optional diagnostics are ignored.
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['classes5.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 11);
 
     // Turn on errors.
     configOptions.diagnosticRuleSet.reportIncompatibleVariableOverride = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['classes5.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 11);
+    TestUtils.validateResults(analysisResults, 23);
 });
 
 test('Classes6', () => {
@@ -518,7 +548,7 @@ test('VariadicTypeVar6', () => {
 
     configOptions.defaultPythonVersion = PythonVersion.V3_10;
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['variadicTypeVar6.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 9);
+    TestUtils.validateResults(analysisResults, 8);
 });
 
 test('VariadicTypeVar7', () => {
@@ -734,7 +764,7 @@ test('Subscript1', () => {
     // Analyze with Python 3.8 settings.
     configOptions.defaultPythonVersion = PythonVersion.V3_8;
     const analysisResults38 = TestUtils.typeAnalyzeSampleFiles(['subscript1.py'], configOptions);
-    TestUtils.validateResults(analysisResults38, 8);
+    TestUtils.validateResults(analysisResults38, 18);
 
     // Analyze with Python 3.8 settings.
     configOptions.defaultPythonVersion = PythonVersion.V3_9;
@@ -810,6 +840,12 @@ test('DataclassTransform2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassTransform2.py']);
 
     TestUtils.validateResults(analysisResults, 4);
+});
+
+test('DataclassTransform3', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassTransform3.py']);
+
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('Async1', () => {

@@ -17,6 +17,7 @@ import {
     BackgroundThreadBase,
     createConfigOptionsFrom,
     getBackgroundWaiter,
+    InitializationData,
     LogData,
     run,
 } from './backgroundThreadBase';
@@ -33,6 +34,7 @@ import {
     getCancellationTokenId,
 } from './common/fileBasedCancellationUtils';
 import { FileSystem } from './common/fileSystem';
+import { Host, HostKind } from './common/host';
 import { LogTracker } from './common/logTracker';
 import { convertUriToPath } from './common/pathUtils';
 import { Range } from './common/textRange';
@@ -100,6 +102,10 @@ export class BackgroundAnalysisBase {
         this.enqueueRequest({ requestType: 'deleteFile', data: params });
     }
 
+    setImportResolver(importResolver: ImportResolver) {
+        this.enqueueRequest({ requestType: 'setImportResolver', data: importResolver.host.kind });
+    }
+
     setConfigOptions(configOptions: ConfigOptions) {
         this.enqueueRequest({ requestType: 'setConfigOptions', data: configOptions });
     }
@@ -112,7 +118,7 @@ export class BackgroundAnalysisBase {
         this.enqueueRequest({ requestType: 'setAllowedThirdPartyImports', data: importNames });
     }
 
-    ensurePartialStubPackages(executionRoot: string) {
+    ensurePartialStubPackages(executionRoot: string | undefined) {
         this.enqueueRequest({ requestType: 'ensurePartialStubPackages', data: { executionRoot } });
     }
 
@@ -190,11 +196,11 @@ export class BackgroundAnalysisBase {
         this.enqueueRequest({ requestType, data: cancellationId, port: port2 });
     }
 
-    startIndexing(configOptions: ConfigOptions, indices: Indices) {
+    startIndexing(configOptions: ConfigOptions, kind: HostKind, indices: Indices) {
         /* noop */
     }
 
-    refreshIndexing(configOptions: ConfigOptions, indices?: Indices) {
+    refreshIndexing(configOptions: ConfigOptions, kind: HostKind, indices?: Indices) {
         /* noop */
     }
 
@@ -272,6 +278,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
     private _configOptions: ConfigOptions;
     protected _importResolver: ImportResolver;
     private _program: Program;
+
+    protected _host: Host;
     protected _logTracker: LogTracker;
 
     get program(): Program {
@@ -290,7 +298,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.log(LogLevel.Info, `Background analysis(${threadId()}) root directory: ${data.rootDirectory}`);
 
         this._configOptions = new ConfigOptions(data.rootDirectory);
-        this._importResolver = this.createImportResolver(this.fs, this._configOptions);
+        this._host = this.createHost();
+        this._importResolver = this.createImportResolver(this.fs, this._configOptions, this._host);
 
         const console = this.getConsole();
         this._logTracker = new LogTracker(console, `BG(${threadId()})`);
@@ -400,9 +409,17 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 break;
             }
 
+            case 'setImportResolver': {
+                this._importResolver = this.createImportResolver(this.fs, this._configOptions, this.createHost());
+
+                this.program.setImportResolver(this._importResolver);
+                break;
+            }
+
             case 'setConfigOptions': {
                 this._configOptions = createConfigOptionsFrom(msg.data);
-                this._importResolver = this.createImportResolver(this.fs, this._configOptions);
+
+                this._importResolver = this.createImportResolver(this.fs, this._configOptions, this._host);
                 this.program.setConfigOptions(this._configOptions);
                 this.program.setImportResolver(this._importResolver);
                 break;
@@ -463,7 +480,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
 
             case 'restart': {
                 // recycle import resolver
-                this._importResolver = this.createImportResolver(this.fs, this._configOptions);
+                this._importResolver = this.createImportResolver(this.fs, this._configOptions, this._host);
                 this.program.setImportResolver(this._importResolver);
                 break;
             }
@@ -497,11 +514,11 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         }
     }
 
-    protected createImportResolver(fs: FileSystem, options: ConfigOptions): ImportResolver {
-        return new ImportResolver(fs, options);
-    }
+    protected abstract createHost(): Host;
 
-    protected processIndexing(port: MessagePort, token: CancellationToken) {
+    protected abstract createImportResolver(fs: FileSystem, options: ConfigOptions, host: Host): ImportResolver;
+
+    protected processIndexing(port: MessagePort, token: CancellationToken): void {
         /* noop */
     }
 
@@ -540,6 +557,7 @@ function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
     result.diagnostics = result.diagnostics.map((f: FileDiagnostics) => {
         return {
             filePath: f.filePath,
+            version: f.version,
             diagnostics: convertDiagnostics(f.diagnostics),
         };
     });
@@ -572,14 +590,12 @@ function convertDiagnostics(diagnostics: Diagnostic[]) {
     });
 }
 
-export interface InitializationData {
-    rootDirectory: string;
-    cancellationFolderName: string | undefined;
-    runner: string | undefined;
-}
-
 export interface AnalysisRequest {
-    requestType:
+    requestType: // Browser usecase
+    | 'initializeFileSystem'
+        | 'createFile'
+        | 'deleteFile'
+        // Others
         | 'analyze'
         | 'resumeAnalysis'
         | 'setConfigOptions'
@@ -596,10 +612,7 @@ export interface AnalysisRequest {
         | 'writeTypeStub'
         | 'getSemanticTokens'
         | 'setExperimentOptions'
-        // Browser usecase
-        | 'initializeFileSystem'
-        | 'createFile'
-        | 'deleteFile';
+        | 'setImportResolver';
 
     data: any;
     port?: MessagePort | undefined;
