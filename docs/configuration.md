@@ -14,7 +14,7 @@ Relative paths specified within the config file are relative to the config file�
 
 **ignore** [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character).
 
-**strict** [array of paths, optional]: Paths of directories or files that should use “strict” analysis if they are included. This is the same as manually adding a “# pyright: strict” comment. In strict mode, all type-checking rules are enabled. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character).
+**strict** [array of paths, optional]: Paths of directories or files that should use “strict” analysis if they are included. This is the same as manually adding a “# pyright: strict” comment. In strict mode, most type-checking rules are enabled. Refer to [this table](https://github.com/microsoft/pyright/blob/main/docs/configuration.md#diagnostic-rule-defaults) for details about which rules are enabled in strict mode. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character).
 
 **typeshedPath** [path, optional]: Path to a directory that contains typeshed type stub files. Pyright ships with a bundled copy of typeshed type stubs. If you want to use a different version of typeshed stubs, you can clone the [typeshed github repo](https://github.com/python/typeshed) to a local directory and reference the location with this path. This option is useful if you’re actively contributing updates to typeshed.
 
@@ -30,9 +30,9 @@ Relative paths specified within the config file are relative to the config file�
 
 **pythonVersion** [string, optional]: Specifies the version of Python that will be used to execute the source code. The version should be specified as a string in the format "M.m" where M is the major version and m is the minor (e.g. `"3.0"` or `"3.6"`). If a version is provided, pyright will generate errors if the source code makes use of language features that are not supported in that version. It will also tailor its use of type stub files, which conditionalizes type definitions based on the version. If no version is specified, pyright will use the version of the current python interpreter, if one is present.
 
-**pythonPlatform** [string, optional]: Specifies the target platform that will be used to execute the source code. Should be one of `"Windows"`, `"Darwin"` or `"Linux"`. If specified, pyright will tailor its use of type stub files, which conditionalize type definitions based on the platform. If no platform is specified, pyright will use the current platform.
+**pythonPlatform** [string, optional]: Specifies the target platform that will be used to execute the source code. Should be one of `"Windows"`, `"Darwin"`, `"Linux"`, or `"All"`. If specified, pyright will tailor its use of type stub files, which conditionalize type definitions based on the platform. If no platform is specified, pyright will use the current platform.
 
-**executionEnvironments** [array of objects, optional]: Specifies a list of execution environments (see below). Execution environments are searched from start to finish by comparing the path of a source file with the root path specified in the execution environment.
+**executionEnvironments** [array of objects, optional]: Specifies a list of execution environments (see [below](https://github.com/microsoft/pyright/blob/main/docs/configuration.md#execution-environment-options)). Execution environments are searched from start to finish by comparing the path of a source file with the root path specified in the execution environment.
 
 **typeCheckingMode** ["off", "basic", "strict"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "basic". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
 
@@ -48,17 +48,17 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **strictSetInference** [boolean]: When inferring the type of a set, use strict type assumptions. For example, the expression `{1, 'a', 3.4}` could be inferred to be of type `Set[Any]` or `Set[Union[int, str, float]]`. If this setting is true, it will use the latter (stricter) type. The default value for this setting is 'false'.
 
-**strictParameterNoneValue** [boolean]: PEP 484 indicates that when a function parameter is assigned a default value of None, its type should implicitly be Optional even if the explicit type is not. When enabled, this rule requires that parameter type annotations use Optional explicitly in this case. The default value for this setting is 'false'.
+**strictParameterNoneValue** [boolean]: PEP 484 indicates that when a function parameter is assigned a default value of None, its type should implicitly be Optional even if the explicit type is not. When enabled, this rule requires that parameter type annotations use Optional explicitly in this case. The default value for this setting is 'true'.
 
 **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for "# type: ignore" comments. This switch enables or disables support for these comments. The default value for this setting is 'true'.
 
 **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors. The default value for this setting is 'error'.
 
-**reportPropertyTypeMismatch** [boolean or string, optional]: Generate or suppress diagnostics for properties where the type of the value passed to the setter is not assignable to the value returned by the getter. Such mismatches violate the intended use of properties, which are meant to act like variables. The default value for this setting is 'error'.
+**reportPropertyTypeMismatch** [boolean or string, optional]: Generate or suppress diagnostics for properties where the type of the value passed to the setter is not assignable to the value returned by the getter. Such mismatches violate the intended use of properties, which are meant to act like variables. The default value for this setting is 'none'.
 
 **reportFunctionMemberAccess** [boolean or string, optional]: Generate or suppress diagnostics for non-standard member accesses for functions. The default value for this setting is 'none'.
 
-**reportMissingImports** [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding imported python file or type stub file. The default value for this setting is 'none', although pyright can do a much better job of static type checking if type stub files are provided for all imports.
+**reportMissingImports** [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding imported python file or type stub file. The default value for this setting is 'error'.
 
 **reportMissingModuleSource** [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding source file. This happens when a type stub is found, but the module source file was not found, indicating that the code may fail at runtime when using this execution environment. Type checking will be done using the type stub. The default value for this setting is 'warning'.
 
@@ -72,7 +72,7 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **reportUnusedFunction** [boolean or string, optional]: Generate or suppress diagnostics for a function or method with a private name (starting with an underscore) that is not accessed. The default value for this setting is 'none'.
 
-**reportUnusedVariable** [boolean or string, optional]: Generate or suppress diagnostics for a variable that is not accessed. The default value for this setting is 'none'.
+**reportUnusedVariable** [boolean or string, optional]: Generate or suppress diagnostics for a variable that is not accessed. The default value for this setting is 'none'. Variables whose names begin with an underscore are exempt from this check.
 
 **reportDuplicateImport** [boolean or string, optional]: Generate or suppress diagnostics for an imported symbol or module that is imported more than once. The default value for this setting is 'none'.
 
@@ -110,7 +110,11 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **reportIncompatibleVariableOverride** [boolean or string, optional]: Generate or suppress diagnostics for class variable declarations that override a symbol of the same name in a base class with a type that is incompatible with the base class symbol type. The default value for this setting is 'none'.
 
+**reportInconsistentConstructor** [boolean or string, optional]: Generate or suppress diagnostics when an `__init__` method signature is inconsistent with a `__new__` signature. The default value for this setting is 'none'.
+
 **reportOverlappingOverload** [boolean or string, optional]: Generate or suppress diagnostics for function overloads that overlap in signature and obscure each other or have incompatible return types. The default value for this setting is 'none'.
+
+**reportMissingSuperCall** [boolean or string, optional]: Generate or suppress diagnostics for `__init__`, `__init_subclass__`, `__enter__` and `__exit__` methods in a subclass that fail to call through to the same-named method on a base class. The default value for this setting is 'none'.
 
 **reportUninitializedInstanceVariable** [boolean or string, optional]: Generate or suppress diagnostics for instance variables within a class that are not initialized or declared within the class body or the `__init__` method. The default value for this setting is 'none'.
 
@@ -126,9 +130,11 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 **reportUnknownMemberType** [boolean or string, optional]: Generate or suppress diagnostics for class or instance variables that have an unknown type. The default value for this setting is 'none'.
 
+**reportMissingParameterType** [boolean or string, optional]: Generate or suppress diagnostics for input parameters for functions or methods that are missing a type annotation. The 'self' and 'cls' parameters used within methods are exempt from this check. The default value for this setting is 'none'.
+
 **reportMissingTypeArgument** [boolean or string, optional]: Generate or suppress diagnostics when a generic class is used without providing explicit or implicit type arguments. The default value for this setting is 'none'.
 
-**reportInvalidTypeVarUse** [boolean or string, optional]: Generate or suppress diagnostics when a TypeVar is used inappropriately (e.g. if a TypeVar appears only once) within a generic function signature. The default value for this setting is 'none'.
+**reportInvalidTypeVarUse** [boolean or string, optional]: Generate or suppress diagnostics when a TypeVar is used inappropriately (e.g. if a TypeVar appears only once) within a generic function signature. The default value for this setting is 'warning'.
 
 **reportCallInDefaultInitializer** [boolean or string, optional]: Generate or suppress diagnostics for function calls, list expressions, set expressions, or dictionary expressions within a default value initialization expression. Such calls can mask expensive operations that are performed at module initialization time. The default value for this setting is 'none'.
 
@@ -157,6 +163,10 @@ The following settings control pyright’s diagnostic output (warnings or errors
 **reportUnusedCallResult** [boolean or string, optional]: Generate or suppress diagnostics for call statements whose return value is not used in any way and is not None. The default value for this setting is 'none'.
 
 **reportUnusedCoroutine** [boolean or string, optional]: Generate or suppress diagnostics for call statements whose return value is not used in any way and is a Coroutine. This identifies a common error where an `await` keyword is mistakenly omitted. The default value for this setting is 'error'.
+
+**reportUnnecessaryTypeIgnoreComment** [boolean or string, optional]: Generate or suppress diagnostics for a '# type: ignore' comment that would have no effect if removed. The default value for this setting is 'none'.
+
+**reportMatchNotExhaustive** [boolean or string, optional]: Generate or suppress diagnostics for a 'match' statement that does not provide cases that exhaustively match against all potential types of the target expression. The default value for this setting is 'none'.
 
 
 ## Execution Environment Options
@@ -269,10 +279,10 @@ The following table lists the default severity levels for each diagnostic rule w
 | strictListInference                       | false      | false      | true       |
 | strictDictionaryInference                 | false      | false      | true       |
 | strictSetInference                        | false      | false      | true       |
-| strictParameterNoneValue                  | false      | false      | true       |
+| strictParameterNoneValue                  | true       | true       | true       |
 | enableTypeIgnoreComments                  | true       | true       | true       |
 | reportGeneralTypeIssues                   | "none"     | "error"    | "error"    |
-| reportPropertyTypeMismatch                | "none"     | "error"    | "error"    |
+| reportPropertyTypeMismatch                | "none"     | "none"     | "none"     |
 | reportFunctionMemberAccess                | "none"     | "none"     | "error"    |
 | reportMissingImports                      | "warning"  | "error"    | "error"    |
 | reportMissingModuleSource                 | "warning"  | "warning"  | "warning"  |
@@ -300,7 +310,9 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportConstantRedefinition                | "none"     | "none"     | "error"    |
 | reportIncompatibleMethodOverride          | "none"     | "none"     | "error"    |
 | reportIncompatibleVariableOverride        | "none"     | "none"     | "error"    |
+| reportInconsistentConstructor             | "none"     | "none"     | "error"    |
 | reportOverlappingOverload                 | "none"     | "none"     | "error"    |
+| reportMissingSuperCall                    | "none"     | "none"     | "none"     |
 | reportUninitializedInstanceVariable       | "none"     | "none"     | "none"     |
 | reportInvalidStringEscapeSequence         | "none"     | "warning"  | "error"    |
 | reportUnknownParameterType                | "none"     | "none"     | "error"    |
@@ -308,6 +320,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportUnknownLambdaType                   | "none"     | "none"     | "error"    |
 | reportUnknownVariableType                 | "none"     | "none"     | "error"    |
 | reportUnknownMemberType                   | "none"     | "none"     | "error"    |
+| reportMissingParameterType                | "none"     | "none"     | "error"    |
 | reportMissingTypeArgument                 | "none"     | "none"     | "error"    |
 | reportInvalidTypeVarUse                   | "none"     | "warning"  | "error"    |
 | reportCallInDefaultInitializer            | "none"     | "none"     | "none"     |
@@ -324,15 +337,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportUnsupportedDunderAll                | "none"     | "warning"  | "error"    |
 | reportUnusedCallResult                    | "none"     | "none"     | "none"     |
 | reportUnusedCoroutine                     | "none"     | "error"    | "error"    |
-
-
-
-
-
-
-
-
-
-
+| reportUnnecessaryTypeIgnoreComment        | "none"     | "none"     | "none"     |
+| reportMatchNotExhaustive                  | "none"     | "none"     | "error"    |
 
 

@@ -29,7 +29,7 @@ import { FileBasedCancellationProvider } from './common/fileBasedCancellationUti
 import { FileSystem } from './common/fileSystem';
 import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
-import { convertUriToPath, resolvePaths } from './common/pathUtils';
+import { resolvePaths } from './common/pathUtils';
 import { ProgressReporter } from './common/progressReporter';
 import { createFromRealFileSystem, WorkspaceFileWatcherProvider } from './common/realFileSystem';
 import { LanguageServerBase, ServerSettings, WorkspaceServiceInstance } from './languageServerBase';
@@ -61,7 +61,7 @@ export class PyrightServer extends LanguageServerBase {
                 rootDirectory,
                 version,
                 workspaceMap,
-                fileSystem,
+                fileSystem: fileSystem,
                 fileWatcherProvider,
                 cancellationProvider: new FileBasedCancellationProvider('bg'),
                 maxAnalysisTimeInForeground,
@@ -240,7 +240,7 @@ export class PyrightServer extends LanguageServerBase {
     ): Promise<(Command | CodeAction)[] | undefined | null> {
         this.recordUserInteractionTime();
 
-        const filePath = convertUriToPath(this.fs, params.textDocument.uri);
+        const filePath = this._uriParser.decodeTextDocumentUri(params.textDocument.uri);
         const workspace = await this.getWorkspaceForFile(filePath);
         return CodeActionProvider.getCodeActionsForPosition(workspace, filePath, params.range, token);
     }

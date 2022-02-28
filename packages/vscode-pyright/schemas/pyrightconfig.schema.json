@@ -123,7 +123,7 @@
       "$id": "#/properties/strictParameterNoneValue",
       "type": "boolean",
       "title": "Allow implicit Optional when default parameter value is None",
-      "default": false
+      "default": true
     },
     "enableTypeIgnoreComments": {
       "$id": "#/properties/enableTypeIgnoreComments",
@@ -141,7 +141,7 @@
       "$id": "#/properties/reportPropertyTypeMismatch",
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of property getter/setter type mismatches",
-      "default": "error"
+      "default": "none"
     },
     "reportFunctionMemberAccess": {
       "$id": "#/properties/reportFunctionMemberAccess",
@@ -305,10 +305,22 @@
       "title": "Controls reporting of overrides in subclasses that redefine a variable in an incompatible way",
       "default": "none"
     },
+    "reportInconsistentConstructor": {
+      "$id": "#/properties/reportInconsistentConstructor",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of __init__ and __new__ methods whose signatures are inconsistent",
+      "default": "none"
+    },
     "reportOverlappingOverload": {
       "$id": "#/properties/reportOverlappingOverload",
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of function overloads that overlap in signature and obscure each other or do not agree on return type",
+      "default": "none"
+    },
+    "reportMissingSuperCall": {
+      "$id": "#/properties/reportMissingSuperCall",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of missing call to parent class for inherited `__init__` methods",
       "default": "none"
     },
     "reportUninitializedInstanceVariable": {
@@ -351,6 +363,12 @@
       "$id": "#/properties/reportUnknownMemberType",
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting class and instance variables whose types are unknown",
+      "default": "none"
+    },
+    "reportMissingParameterType": {
+      "$id": "#/properties/reportMissingParameterType",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting input parameters that are missing a type annotation",
       "default": "none"
     },
     "reportMissingTypeArgument": {
@@ -449,12 +467,24 @@
       "title": "Controls reporting of call expressions that returns Coroutine whose results are not consumed",
       "default": "error"
     },
+    "reportUnnecessaryTypeIgnoreComment": {
+      "$id": "#/properties/reportUnnecessaryTypeIgnoreComment",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of '# type: ignore' comments that have no effect'",
+      "default": "none"
+    },
+    "reportMatchNotExhaustive": {
+      "$id": "#/properties/reportMatchNotExhaustive",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of 'match' statements that do not exhaustively match all possible values",
+      "default": "none"
+    },
     "extraPaths": {
-      "$id": "#/properties/executionEnvironments/items/properties/extraPaths",
+      "$id": "#/properties/extraPaths",
       "type": "array",
       "title": "Additional import search resolution paths",
       "items": {
-        "$id": "#/properties/executionEnvironments/items/properties/extraPaths/items",
+        "$id": "#/properties/extraPaths/items",
         "type": "string",
         "title": "Additional import search resolution path",
         "default": "",
@@ -536,7 +566,7 @@
             }
           },
           "pythonVersion": {
-            "$id": "#/properties/pythonVersion",
+            "$id": "#/properties/executionEnvironments/items/properties/pythonVersion",
             "type": "string",
             "title": "Python version to assume during type analysis",
             "default": "",
@@ -546,7 +576,7 @@
             "pattern": "^3\\.[0-9]+$"
           },
           "pythonPlatform": {
-            "$id": "#/properties/pythonPlatform",
+            "$id": "#/properties/executionEnvironments/items/properties/pythonPlatform",
             "type": "string",
             "title": "Python platform to assume during type analysis",
             "default": "",

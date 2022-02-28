@@ -90,6 +90,15 @@ test('InvalidWithNewLine', () => {
     assert.equal((results.tokens.getItemAt(3) as NewLineToken).newLineType, NewLineType.LineFeed);
 });
 
+test('InvalidIndent', () => {
+    const t = new Tokenizer();
+    const results = t.tokenize('\tpass\n');
+    assert.equal(results.tokens.count, 4 + _implicitTokenCountNoImplicitNewLine);
+
+    assert.equal(results.tokens.getItemAt(0).type, TokenType.Indent);
+    assert.equal(results.tokens.getItemAt(1).type, TokenType.Keyword);
+});
+
 test('ParenNewLines', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\n(\n(\n)\n)\n)\n');
@@ -315,7 +324,7 @@ test('PunctuationTokens', () => {
 test('IndentDedent', () => {
     const t = new Tokenizer();
     const results = t.tokenize('test\n' + '  i1\n' + '  i2  # \n' + '       # \n' + '  \ti3\n' + '\ti4\n' + ' i1');
-    assert.equal(results.tokens.count, 15 + _implicitTokenCount);
+    assert.equal(results.tokens.count, 16 + _implicitTokenCount);
 
     assert.equal(results.tokens.getItemAt(0).type, TokenType.Identifier);
     assert.equal(results.tokens.getItemAt(1).type, TokenType.NewLine);
@@ -329,17 +338,19 @@ test('IndentDedent', () => {
     assert.equal((results.tokens.getItemAt(7) as IndentToken).indentAmount, 8);
     assert.equal(results.tokens.getItemAt(8).type, TokenType.Identifier);
     assert.equal(results.tokens.getItemAt(9).type, TokenType.NewLine);
-    assert.equal(results.tokens.getItemAt(10).type, TokenType.Identifier);
-    assert.equal(results.tokens.getItemAt(11).type, TokenType.NewLine);
-    assert.equal(results.tokens.getItemAt(12).type, TokenType.Dedent);
-    assert.equal((results.tokens.getItemAt(12) as DedentToken).indentAmount, 2);
-    assert.equal((results.tokens.getItemAt(12) as DedentToken).matchesIndent, true);
+    assert.equal(results.tokens.getItemAt(10).type, TokenType.Indent);
+    assert.equal((results.tokens.getItemAt(10) as IndentToken).isIndentAmbiguous, true);
+    assert.equal(results.tokens.getItemAt(11).type, TokenType.Identifier);
+    assert.equal(results.tokens.getItemAt(12).type, TokenType.NewLine);
     assert.equal(results.tokens.getItemAt(13).type, TokenType.Dedent);
-    assert.equal((results.tokens.getItemAt(13) as DedentToken).indentAmount, 1);
-    assert.equal((results.tokens.getItemAt(13) as DedentToken).matchesIndent, false);
-    assert.equal(results.tokens.getItemAt(14).type, TokenType.Identifier);
-    assert.equal(results.tokens.getItemAt(15).type, TokenType.NewLine);
-    assert.equal(results.tokens.getItemAt(16).type, TokenType.EndOfStream);
+    assert.equal((results.tokens.getItemAt(13) as DedentToken).indentAmount, 2);
+    assert.equal((results.tokens.getItemAt(13) as DedentToken).matchesIndent, true);
+    assert.equal(results.tokens.getItemAt(14).type, TokenType.Dedent);
+    assert.equal((results.tokens.getItemAt(14) as DedentToken).indentAmount, 1);
+    assert.equal((results.tokens.getItemAt(14) as DedentToken).matchesIndent, false);
+    assert.equal(results.tokens.getItemAt(15).type, TokenType.Identifier);
+    assert.equal(results.tokens.getItemAt(16).type, TokenType.NewLine);
+    assert.equal(results.tokens.getItemAt(17).type, TokenType.EndOfStream);
 });
 
 test('IndentDedentParen', () => {
@@ -364,46 +375,52 @@ test('IndentDedentParen', () => {
 test('Strings: simple', () => {
     const t = new Tokenizer();
     const results = t.tokenize(' "a"');
-    assert.equal(results.tokens.count, 1 + _implicitTokenCount);
+    assert.equal(results.tokens.count, 3 + _implicitTokenCount);
 
-    const stringToken = results.tokens.getItemAt(0) as StringToken;
+    assert.equal(results.tokens.getItemAt(0).type, TokenType.Indent);
+    const stringToken = results.tokens.getItemAt(1) as StringToken;
     assert.equal(stringToken.type, TokenType.String);
     assert.equal(stringToken.length, 3);
     assert.equal(stringToken.escapedValue, 'a');
     assert.equal(stringToken.flags, StringTokenFlags.DoubleQuote);
+    assert.equal(results.tokens.getItemAt(2).type, TokenType.NewLine);
 });
 
 test('Strings: unclosed', () => {
     const t = new Tokenizer();
     const results = t.tokenize(' "string" """line1\n#line2"""\t\'un#closed');
-    assert.equal(results.tokens.count, 3 + _implicitTokenCount);
+    assert.equal(results.tokens.count, 5 + _implicitTokenCount);
 
     const ranges = [
         [1, 8],
         [10, 18],
         [29, 10],
     ];
-    for (let i = 0; i < ranges.length; i += 1) {
-        assert.equal(results.tokens.getItemAt(i).start, ranges[i][0]);
-        assert.equal(results.tokens.getItemAt(i).length, ranges[i][1]);
-        assert.equal(results.tokens.getItemAt(i).type, TokenType.String);
+    assert.equal(results.tokens.getItemAt(0).type, TokenType.Indent);
+    for (let i = 0; i < ranges.length; i++) {
+        assert.equal(results.tokens.getItemAt(i + 1).start, ranges[i][0]);
+        assert.equal(results.tokens.getItemAt(i + 1).length, ranges[i][1]);
+        assert.equal(results.tokens.getItemAt(i + 1).type, TokenType.String);
     }
+    assert.equal(results.tokens.getItemAt(5).type, TokenType.Dedent);
 });
 
 test('Strings: escaped across multiple lines', () => {
     const t = new Tokenizer();
     const results = t.tokenize(' "a\\\nb" \'c\\\r\nb\'');
-    assert.equal(results.tokens.count, 2 + _implicitTokenCount);
+    assert.equal(results.tokens.count, 4 + _implicitTokenCount);
 
     const ranges = [
         [1, 6],
         [8, 7],
     ];
-    for (let i = 0; i < ranges.length; i += 1) {
-        assert.equal(results.tokens.getItemAt(i).start, ranges[i][0]);
-        assert.equal(results.tokens.getItemAt(i).length, ranges[i][1]);
-        assert.equal(results.tokens.getItemAt(i).type, TokenType.String);
+    assert.equal(results.tokens.getItemAt(0).type, TokenType.Indent);
+    for (let i = 0; i < ranges.length; i++) {
+        assert.equal(results.tokens.getItemAt(i + 1).start, ranges[i][0]);
+        assert.equal(results.tokens.getItemAt(i + 1).length, ranges[i][1]);
+        assert.equal(results.tokens.getItemAt(i + 1).type, TokenType.String);
     }
+    assert.equal(results.tokens.getItemAt(5).type, TokenType.EndOfStream);
 });
 
 test('Strings: block next to regular, double-quoted', () => {
@@ -415,7 +432,7 @@ test('Strings: block next to regular, double-quoted', () => {
         [0, 8],
         [8, 8],
     ];
-    for (let i = 0; i < ranges.length; i += 1) {
+    for (let i = 0; i < ranges.length; i++) {
         assert.equal(results.tokens.getItemAt(i).start, ranges[i][0]);
         assert.equal(results.tokens.getItemAt(i).length, ranges[i][1]);
         assert.equal(results.tokens.getItemAt(i).type, TokenType.String);
@@ -431,7 +448,7 @@ test('Strings: block next to block, double-quoted', () => {
         [0, 6],
         [6, 2],
     ];
-    for (let i = 0; i < ranges.length; i += 1) {
+    for (let i = 0; i < ranges.length; i++) {
         assert.equal(results.tokens.getItemAt(i).start, ranges[i][0]);
         assert.equal(results.tokens.getItemAt(i).length, ranges[i][1]);
         assert.equal(results.tokens.getItemAt(i).type, TokenType.String);
@@ -444,7 +461,7 @@ test('Strings: unclosed sequence of quotes', () => {
     assert.equal(results.tokens.count, 1 + _implicitTokenCount);
 
     const ranges = [[0, 5]];
-    for (let i = 0; i < ranges.length; i += 1) {
+    for (let i = 0; i < ranges.length; i++) {
         assert.equal(results.tokens.getItemAt(i).start, ranges[i][0]);
         assert.equal(results.tokens.getItemAt(i).length, ranges[i][1]);
         assert.equal(results.tokens.getItemAt(i).type, TokenType.String);
@@ -1241,7 +1258,7 @@ test('Underscore numbers', () => {
     const isIntegers = [true, true, false, true, false, true];
     assert.equal(results.tokens.count, 6 + _implicitTokenCount);
 
-    for (let i = 0; i < lengths.length; i += 1) {
+    for (let i = 0; i < lengths.length; i++) {
         assert.equal(results.tokens.getItemAt(i).type, TokenType.Number);
         assert.equal(results.tokens.getItemAt(i).length, lengths[i]);
         assert.equal((results.tokens.getItemAt(i) as NumberToken).isInteger, isIntegers[i]);
@@ -1314,7 +1331,7 @@ test('Operators', () => {
     ];
     assert.equal(results.tokens.count - _implicitTokenCount, lengths.length);
     assert.equal(results.tokens.count - _implicitTokenCount, operatorTypes.length);
-    for (let i = 0; i < lengths.length; i += 1) {
+    for (let i = 0; i < lengths.length; i++) {
         const t = results.tokens.getItemAt(i);
         assert.equal(t.type, TokenType.Operator, `${t.type} at ${i} is not an operator`);
         assert.equal((t as OperatorToken).operatorType, operatorTypes[i]);
@@ -1438,40 +1455,40 @@ test('Identifiers1', () => {
 test('TypeIgnoreAll1', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\n#type:ignore\n"test"');
-    assert.equal(results.typeIgnoreAll, true);
+    assert(results.typeIgnoreAll);
 });
 
 test('TypeIgnoreAll2', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\n#    type:     ignore ssss\n');
-    assert.equal(results.typeIgnoreAll, true);
+    assert(results.typeIgnoreAll);
 });
 
 test('TypeIgnoreAll3', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\n#    type:     ignoressss\n');
-    assert.equal(results.typeIgnoreAll, false);
+    assert(!results.typeIgnoreAll);
 });
 
 test('TypeIgnoreAll3', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\n"hello"\n# type: ignore\n');
-    assert.equal(results.typeIgnoreAll, false);
+    assert(!results.typeIgnoreAll);
 });
 
 test('TypeIgnoreLine1', () => {
     const t = new Tokenizer();
     const results = t.tokenize('\na = 3 # type: ignore\n"test" # type:ignore');
-    assert.equal(Object.keys(results.typeIgnoreLines).length, 2);
-    assert.equal(results.typeIgnoreLines[1], true);
-    assert.equal(results.typeIgnoreLines[2], true);
+    assert.equal(results.typeIgnoreLines.size, 2);
+    assert(results.typeIgnoreLines.has(1));
+    assert(results.typeIgnoreLines.has(2));
 });
 
 test('TypeIgnoreLine2', () => {
     const t = new Tokenizer();
     const results = t.tokenize('a = 3 # type: ignores\n"test" # type:ignore');
-    assert.equal(Object.keys(results.typeIgnoreLines).length, 1);
-    assert.equal(results.typeIgnoreLines[1], true);
+    assert.equal(results.typeIgnoreLines.size, 1);
+    assert(results.typeIgnoreLines.has(1));
 
     assert.equal(results.tokens.getItemAtPosition(0), 0);
     assert.equal(results.tokens.getItemAtPosition(1), 0);
@@ -1498,4 +1515,20 @@ test('Constructor', () => {
 
     assert.equal(results.tokens.getItemAt(1).type, TokenType.Identifier);
     assert.equal(results.tokens.getItemAt(1).length, 11);
+});
+
+test('Normalization', () => {
+    const t = new Tokenizer();
+    const results = t.tokenize('ℝ 𝕽');
+    assert.equal(results.tokens.count, 2 + _implicitTokenCount);
+
+    let idToken = results.tokens.getItemAt(0) as IdentifierToken;
+    assert.equal(idToken.type, TokenType.Identifier);
+    assert.equal(idToken.length, 1);
+    assert.equal(idToken.value, 'R');
+
+    idToken = results.tokens.getItemAt(1) as IdentifierToken;
+    assert.equal(idToken.type, TokenType.Identifier);
+    assert.equal(idToken.length, 2);
+    assert.equal(idToken.value, 'R');
 });

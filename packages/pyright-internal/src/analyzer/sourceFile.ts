@@ -28,6 +28,7 @@ import { TextEditAction } from '../common/editAction';
 import { FileSystem } from '../common/fileSystem';
 import { LogTracker } from '../common/logTracker';
 import { getFileName, normalizeSlashes, stripFileExtension } from '../common/pathUtils';
+import { convertOffsetsToRange } from '../common/positionUtils';
 import * as StringUtils from '../common/stringUtils';
 import { DocumentRange, getEmptyRange, Position, TextRange } from '../common/textRange';
 import { TextRangeCollection } from '../common/textRangeCollection';
@@ -43,7 +44,7 @@ import { performQuickAction } from '../languageService/quickActions';
 import { ReferenceCallback, ReferencesProvider, ReferencesResult } from '../languageService/referencesProvider';
 import { SignatureHelpProvider, SignatureHelpResults } from '../languageService/signatureHelpProvider';
 import { Localizer } from '../localization/localize';
-import { ModuleNode } from '../parser/parseNodes';
+import { ModuleNode, NameNode } from '../parser/parseNodes';
 import { ModuleImport, ParseOptions, Parser, ParseResults } from '../parser/parser';
 import { Token } from '../parser/tokenizerTypes';
 import { AnalyzerFileInfo, ImportLookup } from './analyzerFileInfo';
@@ -64,15 +65,14 @@ import { TypeEvaluator } from './typeEvaluatorTypes';
 // Limit the number of import cycles tracked per source file.
 const _maxImportCyclesPerFile = 4;
 
-// Allow files up to 32MB in length.
-const _maxSourceFileSize = 32 * 1024 * 1024;
+// Allow files up to 50MB in length, same as VS Code.
+// https://github.com/microsoft/vscode/blob/1e750a7514f365585d8dab1a7a82e0938481ea2f/src/vs/editor/common/model/textModel.ts#L194
+const _maxSourceFileSize = 50 * 1024 * 1024;
 
 interface ResolveImportResult {
     imports: ImportResult[];
     builtinsImportResult?: ImportResult | undefined;
-    typingModulePath?: string | undefined;
-    typeshedModulePath?: string | undefined;
-    collectionsModulePath?: string | undefined;
+    ipythonDisplayImportResult?: ImportResult | undefined;
 }
 
 export class SourceFile {
@@ -146,8 +146,8 @@ export class SourceFile {
     private _parseDiagnostics: Diagnostic[] = [];
     private _bindDiagnostics: Diagnostic[] = [];
     private _checkerDiagnostics: Diagnostic[] = [];
-    private _typeIgnoreLines: { [line: number]: boolean } = {};
-    private _typeIgnoreAll = false;
+    private _typeIgnoreLines = new Map<number, TextRange>();
+    private _typeIgnoreAll: TextRange | undefined;
 
     // Settings that control which diagnostics should be output.
     private _diagnosticRuleSet = getBasicDiagnosticRuleSet();
@@ -167,12 +167,13 @@ export class SourceFile {
     // Do we need to perform an indexing step?
     private _indexingNeeded = true;
 
+    // Indicate whether this file is for ipython or not.
+    private _ipythonMode = false;
+
     // Information about implicit and explicit imports from this file.
     private _imports: ImportResult[] | undefined;
     private _builtinsImport: ImportResult | undefined;
-    private _typingModulePath: string | undefined;
-    private _typeshedModulePath: string | undefined;
-    private _collectionsModulePath: string | undefined;
+    private _ipythonDisplayImport: ImportResult | undefined;
 
     private _logTracker: LogTracker;
     readonly fileSystem: FileSystem;
@@ -184,7 +185,8 @@ export class SourceFile {
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
         console?: ConsoleInterface,
-        logTracker?: LogTracker
+        logTracker?: LogTracker,
+        ipythonMode = false
     ) {
         this.fileSystem = fs;
         this._console = console || new StandardConsole();
@@ -219,6 +221,7 @@ export class SourceFile {
 
         // 'FG' or 'BG' based on current thread.
         this._logTracker = logTracker ?? new LogTracker(console, isMainThread() ? 'FG' : 'BG');
+        this._ipythonMode = ipythonMode;
     }
 
     getFilePath(): string {
@@ -253,16 +256,18 @@ export class SourceFile {
             includeWarningsAndErrors = false;
         }
 
-        let diagList: Diagnostic[] = [];
-        diagList = diagList.concat(this._parseDiagnostics, this._bindDiagnostics, this._checkerDiagnostics);
+        let diagList = [...this._parseDiagnostics, ...this._bindDiagnostics, ...this._checkerDiagnostics];
+        const prefilteredDiagList = diagList;
+        const typeIgnoreLinesClone = new Map(this._typeIgnoreLines);
 
         // Filter the diagnostics based on "type: ignore" lines.
-        if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
-            if (Object.keys(this._typeIgnoreLines).length > 0) {
+        if (this._diagnosticRuleSet.enableTypeIgnoreComments) {
+            if (this._typeIgnoreLines.size > 0) {
                 diagList = diagList.filter((d) => {
-                    if (d.category !== DiagnosticCategory.UnusedCode) {
+                    if (d.category !== DiagnosticCategory.UnusedCode && d.category !== DiagnosticCategory.Deprecated) {
                         for (let line = d.range.start.line; line <= d.range.end.line; line++) {
-                            if (this._typeIgnoreLines[line]) {
+                            if (this._typeIgnoreLines.has(line)) {
+                                typeIgnoreLinesClone.delete(line);
                                 return false;
                             }
                         }
@@ -273,8 +278,51 @@ export class SourceFile {
             }
         }
 
-        if (options.diagnosticRuleSet.reportImportCycles !== 'none' && this._circularDependencies.length > 0) {
-            const category = convertLevelToCategory(options.diagnosticRuleSet.reportImportCycles);
+        const unnecessaryTypeIgnoreDiags: Diagnostic[] = [];
+
+        if (this._diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment !== 'none') {
+            const diagCategory = convertLevelToCategory(this._diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment);
+
+            const prefilteredErrorList = prefilteredDiagList.filter(
+                (diag) =>
+                    diag.category === DiagnosticCategory.Error ||
+                    diag.category === DiagnosticCategory.Warning ||
+                    diag.category === DiagnosticCategory.Information
+            );
+
+            if (prefilteredErrorList.length === 0 && this._typeIgnoreAll !== undefined) {
+                unnecessaryTypeIgnoreDiags.push(
+                    new Diagnostic(
+                        diagCategory,
+                        Localizer.Diagnostic.unnecessaryTypeIgnore(),
+                        convertOffsetsToRange(
+                            this._typeIgnoreAll.start,
+                            this._typeIgnoreAll.start + this._typeIgnoreAll.length,
+                            this._parseResults!.tokenizerOutput.lines!
+                        )
+                    )
+                );
+            }
+
+            typeIgnoreLinesClone.forEach((textRange) => {
+                if (this._parseResults?.tokenizerOutput.lines) {
+                    unnecessaryTypeIgnoreDiags.push(
+                        new Diagnostic(
+                            diagCategory,
+                            Localizer.Diagnostic.unnecessaryTypeIgnore(),
+                            convertOffsetsToRange(
+                                textRange.start,
+                                textRange.start + textRange.length,
+                                this._parseResults!.tokenizerOutput.lines!
+                            )
+                        )
+                    );
+                }
+            });
+        }
+
+        if (this._diagnosticRuleSet.reportImportCycles !== 'none' && this._circularDependencies.length > 0) {
+            const category = convertLevelToCategory(this._diagnosticRuleSet.reportImportCycles);
 
             this._circularDependencies.forEach((cirDep) => {
                 diagList.push(
@@ -308,18 +356,29 @@ export class SourceFile {
         }
 
         // If there is a "type: ignore" comment at the top of the file, clear
-        // the diagnostic list.
-        if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
-            if (this._typeIgnoreAll) {
-                diagList = [];
+        // the diagnostic list of all error, warning, and information diagnostics.
+        if (this._diagnosticRuleSet.enableTypeIgnoreComments) {
+            if (this._typeIgnoreAll !== undefined) {
+                diagList = diagList.filter(
+                    (diag) =>
+                        diag.category !== DiagnosticCategory.Error &&
+                        diag.category !== DiagnosticCategory.Warning &&
+                        diag.category !== DiagnosticCategory.Information
+                );
             }
         }
 
+        // Now add in the "unnecessary type ignore" diagnostics.
+        diagList.push(...unnecessaryTypeIgnoreDiags);
+
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
-        // diagnostics.
+        // and deprecated diagnostics.
         if (!includeWarningsAndErrors) {
-            diagList = diagList.filter((diag) => diag.category === DiagnosticCategory.UnusedCode);
+            diagList = diagList.filter(
+                (diag) =>
+                    diag.category === DiagnosticCategory.UnusedCode || diag.category === DiagnosticCategory.Deprecated
+            );
         }
 
         return diagList;
@@ -331,6 +390,10 @@ export class SourceFile {
 
     getBuiltinsImport(): ImportResult | undefined {
         return this._builtinsImport;
+    }
+
+    getIPythonDisplayImport(): ImportResult | undefined {
+        return this._ipythonDisplayImport;
     }
 
     getModuleSymbolTable(): SymbolTable | undefined {
@@ -381,16 +444,16 @@ export class SourceFile {
         this._isBindingNeeded = true;
     }
 
-    markDirty(): void {
+    markDirty(indexingNeeded = true): void {
         this._fileContentsVersion++;
         this._isCheckingNeeded = true;
         this._isBindingNeeded = true;
-        this._indexingNeeded = true;
+        this._indexingNeeded = indexingNeeded;
         this._moduleSymbolTable = undefined;
         this._cachedIndexResults = undefined;
     }
 
-    markReanalysisRequired(): void {
+    markReanalysisRequired(forceRebinding: boolean): void {
         // Keep the parse info, but reset the analysis to the beginning.
         this._isCheckingNeeded = true;
 
@@ -399,13 +462,15 @@ export class SourceFile {
         if (this._parseResults) {
             if (
                 this._parseResults.containsWildcardImport ||
-                AnalyzerNodeInfo.getDunderAllInfo(this._parseResults.parseTree) !== undefined
+                AnalyzerNodeInfo.getDunderAllInfo(this._parseResults.parseTree) !== undefined ||
+                forceRebinding
             ) {
+                // We don't need to rebuild index data since wildcard
+                // won't affect user file indices. User file indices
+                // don't contain import alias info.
                 this._parseTreeNeedsCleaning = true;
                 this._isBindingNeeded = true;
-                this._indexingNeeded = true;
                 this._moduleSymbolTable = undefined;
-                this._cachedIndexResults = undefined;
             }
         }
     }
@@ -414,8 +479,33 @@ export class SourceFile {
         return this._clientDocument?.version;
     }
 
-    getFileContents() {
+    getOpenFileContents() {
         return this._clientDocument?.getText();
+    }
+
+    getFileContent(): string | undefined {
+        // Get current buffer content if the file is opened.
+        const openFileContent = this.getOpenFileContents();
+        if (openFileContent) {
+            return openFileContent;
+        }
+
+        // Otherwise, get content from file system.
+        try {
+            // Check the file's length before attempting to read its full contents.
+            const fileStat = this.fileSystem.statSync(this._filePath);
+            if (fileStat.size > _maxSourceFileSize) {
+                this._console.error(
+                    `File length of "${this._filePath}" is ${fileStat.size} ` +
+                        `which exceeds the maximum supported file size of ${_maxSourceFileSize}`
+                );
+                throw new Error('File larger than max');
+            }
+
+            return this.fileSystem.readFileSync(this._filePath, 'utf8');
+        } catch (error) {
+            return undefined;
+        }
     }
 
     setClientVersion(version: number | null, contents: TextDocumentContentChangeEvent[]): void {
@@ -437,6 +527,7 @@ export class SourceFile {
 
             this._lastFileContentLength = fileContents.length;
             this._lastFileContentHash = contentsHash;
+            this._isFileDeleted = false;
         }
     }
 
@@ -522,23 +613,16 @@ export class SourceFile {
             }
 
             const diagSink = new DiagnosticSink();
-            let fileContents = this.getFileContents();
+            let fileContents = this.getOpenFileContents();
             if (fileContents === undefined) {
                 try {
                     const startTime = timingStats.readFileTime.totalTime;
                     timingStats.readFileTime.timeOperation(() => {
-                        // Check the file's length before attempting to read its full contents.
-                        const fileStat = this.fileSystem.statSync(this._filePath);
-                        if (fileStat.size > _maxSourceFileSize) {
-                            this._console.error(
-                                `File length of "${this._filePath}" is ${fileStat.size} ` +
-                                    `which exceeds the maximum supported file size of ${_maxSourceFileSize}`
-                            );
-                            throw new Error('File larger than max');
-                        }
-
                         // Read the file's contents.
-                        fileContents = content ?? this.fileSystem.readFileSync(this._filePath, 'utf8');
+                        fileContents = content ?? this.getFileContent();
+                        if (fileContents === undefined) {
+                            throw new Error("Can't get file content");
+                        }
 
                         // Remember the length and hash for comparison purposes.
                         this._lastFileContentLength = fileContents.length;
@@ -560,6 +644,7 @@ export class SourceFile {
             const execEnvironment = configOptions.findExecEnvironment(this._filePath);
 
             const parseOptions = new ParseOptions();
+            parseOptions.ipythonMode = this._ipythonMode;
             if (this._filePath.endsWith('pyi')) {
                 parseOptions.isStubFile = true;
             }
@@ -585,9 +670,7 @@ export class SourceFile {
 
                     this._imports = importResult.imports;
                     this._builtinsImport = importResult.builtinsImportResult;
-                    this._typingModulePath = importResult.typingModulePath;
-                    this._typeshedModulePath = importResult.typeshedModulePath;
-                    this._collectionsModulePath = importResult.collectionsModulePath;
+                    this._ipythonDisplayImport = importResult.ipythonDisplayImportResult;
 
                     this._parseDiagnostics = diagSink.fetchAndClear();
                 });
@@ -620,16 +703,18 @@ export class SourceFile {
                     tokenizerOutput: {
                         tokens: new TextRangeCollection<Token>([]),
                         lines: new TextRangeCollection<TextRange>([]),
-                        typeIgnoreAll: false,
-                        typeIgnoreLines: {},
+                        typeIgnoreAll: undefined,
+                        typeIgnoreLines: new Map<number, TextRange>(),
                         predominantEndOfLineSequence: '\n',
                         predominantTabSequence: '    ',
                         predominantSingleQuoteCharacter: "'",
                     },
                     containsWildcardImport: false,
+                    typingSymbolAliases: new Map<string, string>(),
                 };
                 this._imports = undefined;
                 this._builtinsImport = undefined;
+                this._ipythonDisplayImport = undefined;
 
                 const diagSink = new DiagnosticSink();
                 diagSink.addError(
@@ -698,6 +783,43 @@ export class SourceFile {
             evaluator,
             token
         );
+    }
+
+    getTypeDefinitionsForPosition(
+        sourceMapper: SourceMapper,
+        position: Position,
+        evaluator: TypeEvaluator,
+        filePath: string,
+        token: CancellationToken
+    ): DocumentRange[] | undefined {
+        // If we have no completed analysis job, there's nothing to do.
+        if (!this._parseResults) {
+            return undefined;
+        }
+
+        return DefinitionProvider.getTypeDefinitionsForPosition(
+            sourceMapper,
+            this._parseResults,
+            position,
+            evaluator,
+            filePath,
+            token
+        );
+    }
+
+    getDeclarationForNode(
+        sourceMapper: SourceMapper,
+        node: NameNode,
+        evaluator: TypeEvaluator,
+        reporter: ReferenceCallback | undefined,
+        token: CancellationToken
+    ): ReferencesResult | undefined {
+        // If we have no completed analysis job, there's nothing to do.
+        if (!this._parseResults) {
+            return undefined;
+        }
+
+        return ReferencesProvider.getDeclarationForNode(sourceMapper, this._filePath, node, evaluator, reporter, token);
     }
 
     getDeclarationForPosition(
@@ -847,7 +969,7 @@ export class SourceFile {
 
         // This command should be called only for open files, in which
         // case we should have the file contents already loaded.
-        const fileContents = this.getFileContents();
+        const fileContents = this.getOpenFileContents();
         if (fileContents === undefined) {
             return undefined;
         }
@@ -888,7 +1010,7 @@ export class SourceFile {
         completionItem: CompletionItem,
         token: CancellationToken
     ) {
-        const fileContents = this.getFileContents();
+        const fileContents = this.getOpenFileContents();
         if (!this._parseResults || fileContents === undefined) {
             return;
         }
@@ -933,10 +1055,10 @@ export class SourceFile {
     }
 
     bind(configOptions: ConfigOptions, importLookup: ImportLookup, builtinsScope: Scope | undefined) {
-        assert(!this.isParseRequired());
-        assert(this.isBindingRequired());
-        assert(!this._isBindingInProgress);
-        assert(this._parseResults !== undefined);
+        assert(!this.isParseRequired(), 'Bind called before parsing');
+        assert(this.isBindingRequired(), 'Bind called unnecessarily');
+        assert(!this._isBindingInProgress, 'Bind called while binding in progress');
+        assert(this._parseResults !== undefined, 'Parse results not available');
 
         return this._logTracker.log(`binding: ${this._getPathForLogging(this._filePath)}`, () => {
             try {
@@ -965,7 +1087,7 @@ export class SourceFile {
 
                     this._bindDiagnostics = fileInfo.diagnosticSink.fetchAndClear();
                     const moduleScope = AnalyzerNodeInfo.getScope(this._parseResults!.parseTree);
-                    assert(moduleScope !== undefined);
+                    assert(moduleScope !== undefined, 'Module scope not returned by binder');
                     this._moduleSymbolTable = moduleScope!.symbolTable;
                 });
             } catch (e: any) {
@@ -999,11 +1121,11 @@ export class SourceFile {
     }
 
     check(evaluator: TypeEvaluator) {
-        assert(!this.isParseRequired());
-        assert(!this.isBindingRequired());
-        assert(!this._isBindingInProgress);
-        assert(this.isCheckingRequired());
-        assert(this._parseResults !== undefined);
+        assert(!this.isParseRequired(), 'Check called before parsing');
+        assert(!this.isBindingRequired(), 'Check called before binding');
+        assert(!this._isBindingInProgress, 'Check called while binding in progress');
+        assert(this.isCheckingRequired(), 'Check called unnecessarily');
+        assert(this._parseResults !== undefined, 'Parse results not available');
 
         return this._logTracker.log(`checking: ${this._getPathForLogging(this._filePath)}`, () => {
             try {
@@ -1048,27 +1170,29 @@ export class SourceFile {
         });
     }
 
+    test_enableIPythonMode(enable: boolean) {
+        this._ipythonMode = enable;
+    }
+
     private _buildFileInfo(
         configOptions: ConfigOptions,
         fileContents: string,
         importLookup: ImportLookup,
         builtinsScope?: Scope
     ) {
-        assert(this._parseResults !== undefined);
+        assert(this._parseResults !== undefined, 'Parse results not available');
         const analysisDiagnostics = new TextRangeDiagnosticSink(this._parseResults!.tokenizerOutput.lines);
 
         const fileInfo: AnalyzerFileInfo = {
             importLookup,
             futureImports: this._parseResults!.futureImports,
             builtinsScope,
-            typingModulePath: this._typingModulePath,
-            typeshedModulePath: this._typeshedModulePath,
-            collectionsModulePath: this._collectionsModulePath,
             diagnosticSink: analysisDiagnostics,
             executionEnvironment: configOptions.findExecEnvironment(this._filePath),
             diagnosticRuleSet: this._diagnosticRuleSet,
             fileContents,
             lines: this._parseResults!.tokenizerOutput.lines,
+            typingSymbolAliases: this._parseResults!.typingSymbolAliases,
             filePath: this._filePath,
             moduleName: this._moduleName,
             isStubFile: this._isStubFile,
@@ -1076,6 +1200,7 @@ export class SourceFile {
             isTypingExtensionsStubFile: this._isTypingExtensionsStubFile,
             isBuiltInStubFile: this._isBuiltInStubFile,
             isInPyTypedPackage: this._isThirdPartyPyTypedPresent,
+            isIPythonMode: this._ipythonMode,
             accessedSymbolMap: new Map<number, true>(),
         };
         return fileInfo;
@@ -1098,57 +1223,42 @@ export class SourceFile {
     ): ResolveImportResult {
         const imports: ImportResult[] = [];
 
+        const resolveAndAddIfNotSelf = (nameParts: string[], skipMissingImport = false) => {
+            const importResult = importResolver.resolveImport(this._filePath, execEnv, {
+                leadingDots: 0,
+                nameParts,
+                importedSymbols: undefined,
+            });
+
+            if (skipMissingImport && !importResult.isImportFound) {
+                return undefined;
+            }
+
+            // Avoid importing module from the module file itself.
+            if (importResult.resolvedPaths.length === 0 || importResult.resolvedPaths[0] !== this._filePath) {
+                imports.push(importResult);
+                return importResult;
+            }
+
+            return undefined;
+        };
+
         // Always include an implicit import of the builtins module.
-        let builtinsImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
-            leadingDots: 0,
-            nameParts: ['builtins'],
-            importedSymbols: undefined,
-        });
+        let builtinsImportResult: ImportResult | undefined;
 
-        // Avoid importing builtins from the builtins.pyi file itself.
-        if (
-            builtinsImportResult.resolvedPaths.length === 0 ||
-            builtinsImportResult.resolvedPaths[0] !== this.getFilePath()
-        ) {
-            imports.push(builtinsImportResult);
-        } else {
-            builtinsImportResult = undefined;
+        // If this is a project source file (not a stub), try to resolve
+        // the __builtins__ stub first.
+        if (!this._isThirdPartyImport && !this._isStubFile) {
+            builtinsImportResult = resolveAndAddIfNotSelf(['__builtins__'], /*skipMissingImport*/ true);
         }
 
-        // Always include an implicit import of the typing module.
-        const typingImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
-            leadingDots: 0,
-            nameParts: ['typing'],
-            importedSymbols: undefined,
-        });
-
-        // Avoid importing typing from the typing.pyi file itself.
-        let typingModulePath: string | undefined;
-        if (
-            typingImportResult.resolvedPaths.length === 0 ||
-            typingImportResult.resolvedPaths[0] !== this.getFilePath()
-        ) {
-            imports.push(typingImportResult);
-            typingModulePath = typingImportResult.resolvedPaths[0];
+        if (!builtinsImportResult) {
+            builtinsImportResult = resolveAndAddIfNotSelf(['builtins']);
         }
 
-        // Always include an implicit import of the _typeshed module.
-        const typeshedImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
-            leadingDots: 0,
-            nameParts: ['_typeshed'],
-            importedSymbols: undefined,
-        });
-
-        let typeshedModulePath: string | undefined;
-        if (
-            typeshedImportResult.resolvedPaths.length === 0 ||
-            typeshedImportResult.resolvedPaths[0] !== this.getFilePath()
-        ) {
-            imports.push(typeshedImportResult);
-            typeshedModulePath = typeshedImportResult.resolvedPaths[0];
-        }
-
-        let collectionsModulePath: string | undefined;
+        const ipythonDisplayImportResult = this._ipythonMode
+            ? resolveAndAddIfNotSelf(['IPython', 'display'])
+            : undefined;
 
         for (const moduleImport of moduleImports) {
             const importResult = importResolver.resolveImport(this._filePath, execEnv, {
@@ -1156,15 +1266,6 @@ export class SourceFile {
                 nameParts: moduleImport.nameParts,
                 importedSymbols: moduleImport.importedSymbols,
             });
-
-            // If the file imports the stdlib 'collections' module, stash
-            // away its file path. The type analyzer may need this to
-            // access types defined in the collections module.
-            if (importResult.isImportFound && importResult.isTypeshedFile) {
-                if (moduleImport.nameParts.length >= 1 && moduleImport.nameParts[0] === 'collections') {
-                    collectionsModulePath = importResult.resolvedPaths[importResult.resolvedPaths.length - 1];
-                }
-            }
 
             imports.push(importResult);
 
@@ -1177,9 +1278,7 @@ export class SourceFile {
         return {
             imports,
             builtinsImportResult,
-            typingModulePath,
-            typeshedModulePath,
-            collectionsModulePath,
+            ipythonDisplayImportResult,
         };
     }
 

@@ -27,20 +27,22 @@ import {
     AnyType,
     ClassType,
     ClassTypeFlags,
+    combineTypes,
     FunctionParameter,
     FunctionType,
     FunctionTypeFlags,
     isClassInstance,
     isInstantiableClass,
     NoneType,
+    TupleTypeArgument,
     Type,
     UnknownType,
 } from './types';
 import {
     computeMroLinearization,
     convertToInstance,
-    isOpenEndedTupleClass,
     isTupleClass,
+    isUnboundedTupleClass,
     specializeTupleClass,
     synthesizeTypeVarForSelfCls,
 } from './typeUtils';
@@ -77,7 +79,7 @@ export function createNamedTupleType(
         if (
             isClassInstance(defaultsArgType) &&
             isTupleClass(defaultsArgType) &&
-            !isOpenEndedTupleClass(defaultsArgType) &&
+            !isUnboundedTupleClass(defaultsArgType) &&
             defaultsArgType.tupleTypeArguments
         ) {
             defaultArgCount = defaultsArgType.tupleTypeArguments.length;
@@ -93,7 +95,7 @@ export function createNamedTupleType(
         ParseTreeUtils.getClassFullName(errorNode, fileInfo.moduleName, className),
         fileInfo.moduleName,
         fileInfo.filePath,
-        ClassTypeFlags.None,
+        ClassTypeFlags.ReadOnlyInstanceVariables,
         ParseTreeUtils.getTypeSourceId(errorNode),
         /* declaredMetaclass */ undefined,
         isInstantiableClass(namedTupleType) ? namedTupleType.details.effectiveMetaclass : UnknownType.create()
@@ -180,6 +182,7 @@ export function createNamedTupleType(
                         const declaration: VariableDeclaration = {
                             type: DeclarationType.Variable,
                             node: stringNode as StringListNode,
+                            isRuntimeTypeExpression: true,
                             path: fileInfo.filePath,
                             range: convertOffsetsToRange(
                                 stringNode.start,
@@ -187,19 +190,28 @@ export function createNamedTupleType(
                                 fileInfo.lines
                             ),
                             moduleName: fileInfo.moduleName,
+                            isInExceptSuite: false,
                         };
                         newSymbol.addDeclaration(declaration);
                         classFields.set(entryName, newSymbol);
                         entryTypes.push(entryType);
                     }
                 });
-            } else if (entriesArg.valueExpression && entriesArg.valueExpression.nodeType === ParseNodeType.List) {
+            } else if (
+                entriesArg.valueExpression?.nodeType === ParseNodeType.List ||
+                entriesArg.valueExpression?.nodeType === ParseNodeType.Tuple
+            ) {
                 const entryList = entriesArg.valueExpression;
                 const entryMap = new Map<string, string>();
-                const firstParamWithDefaultIndex =
-                    defaultArgCount === undefined ? 0 : Math.max(0, entryList.entries.length - defaultArgCount);
+                const entryExpressions =
+                    entriesArg.valueExpression?.nodeType === ParseNodeType.List
+                        ? entriesArg.valueExpression.entries
+                        : entriesArg.valueExpression.expressions;
 
-                entryList.entries.forEach((entry, index) => {
+                const firstParamWithDefaultIndex =
+                    defaultArgCount === undefined ? 0 : Math.max(0, entryExpressions.length - defaultArgCount);
+
+                entryExpressions.forEach((entry, index) => {
                     let entryTypeNode: ExpressionNode | undefined;
                     let entryType: Type | undefined;
                     let entryNameNode: ExpressionNode | undefined;
@@ -211,7 +223,7 @@ export function createNamedTupleType(
                             entryNameNode = entry.expressions[0];
                             entryTypeNode = entry.expressions[1];
                             entryType = convertToInstance(
-                                evaluator.getTypeForExpressionExpectingType(entryTypeNode, /* allowFinal */ false)
+                                evaluator.getTypeForExpressionExpectingType(entryTypeNode, /* allowFinal */ false).type
                             );
                         } else {
                             evaluator.addError(Localizer.Diagnostic.namedTupleNameType(), entry);
@@ -270,11 +282,16 @@ export function createNamedTupleType(
                                 fileInfo.lines
                             ),
                             moduleName: fileInfo.moduleName,
+                            isInExceptSuite: false,
                         };
                         newSymbol.addDeclaration(declaration);
                     }
                     classFields.set(entryName, newSymbol);
                 });
+
+                // Set the type in the type cache for the dict node so it
+                // doesn't get evaluated again.
+                evaluator.setTypeForNode(entryList);
             } else {
                 // A dynamic expression was used, so we can't evaluate
                 // the named tuple statically.
@@ -349,8 +366,8 @@ export function createNamedTupleType(
         tupleClassType &&
         isInstantiableClass(tupleClassType)
     ) {
-        const literalTypes = matchArgsNames.map((name) => {
-            return ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strType, name));
+        const literalTypes: TupleTypeArgument[] = matchArgsNames.map((name) => {
+            return { type: ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strType, name)), isUnbounded: false };
         });
         const matchArgsType = ClassType.cloneAsInstance(specializeTupleClass(tupleClassType, literalTypes));
         classFields.set('__match_args__', Symbol.createWithType(SymbolFlags.ClassMember, matchArgsType));
@@ -379,7 +396,20 @@ export function updateNamedTupleBaseClass(classType: ClassType, typeArgs: Type[]
         return;
     }
 
-    const updatedTupleClass = specializeTupleClass(typedTupleClass, typeArgs, isTypeArgumentExplicit);
+    const tupleTypeArgs: TupleTypeArgument[] = [];
+
+    if (!isTypeArgumentExplicit) {
+        tupleTypeArgs.push({
+            type: typeArgs.length > 0 ? combineTypes(typeArgs) : UnknownType.create(),
+            isUnbounded: true,
+        });
+    } else {
+        typeArgs.forEach((t) => {
+            tupleTypeArgs.push({ type: t, isUnbounded: false });
+        });
+    }
+
+    const updatedTupleClass = specializeTupleClass(typedTupleClass, tupleTypeArgs, isTypeArgumentExplicit);
 
     // Create a copy of the NamedTuple class that overrides the normal MRO
     // entries with a version of Tuple that is specialized appropriately.

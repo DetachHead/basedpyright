@@ -1,13 +1,16 @@
 # This sample tests the reporting of errors for ClassVar in contexts
 # where it is not allowed.
 
-from typing import ClassVar, Final, List
+from typing import Annotated, Any, ClassVar, Final, Generic, List, TypeVar
+from typing_extensions import Self
 
 # This should generate an error.
 x: ClassVar[int] = 3
 
+T = TypeVar("T")
 
-class Foo:
+
+class Foo(Generic[T]):
     x: ClassVar[int] = 3
 
     # This should generate an error.
@@ -15,6 +18,18 @@ class Foo:
 
     # This should generate an error.
     z: List[ClassVar[int]] = []
+
+    # This should generate an error because TypeVars cannot
+    # be used in a ClassVar.
+    illegal1: ClassVar[List[T]]
+
+    # This should generate an error because TypeVars cannot
+    # be used in a ClassVar.
+    illegal2: ClassVar[T]
+
+    ok1: ClassVar[list]
+    ok2: ClassVar[List[Any]]
+    ok3: Annotated[ClassVar[List[Self]], ""]
 
     # This should generate an error.
     def func1(self, a: ClassVar[int]):

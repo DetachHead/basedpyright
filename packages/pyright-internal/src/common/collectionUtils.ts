@@ -313,3 +313,51 @@ export function getOrAdd<K, V>(map: Map<K, V>, key: K, newValueFactory: () => V)
 
     return newValue;
 }
+
+/**
+ * Remove matching item from the array in place.
+ * Returns the given array itself.
+ * @param array The array to operate on.
+ * @param predicate Return true for an item to delete.
+ */
+export function removeArrayElements<T>(array: T[], predicate: (item: T) => boolean): T[] {
+    for (let i = 0; i < array.length; i++) {
+        if (predicate(array[i])) {
+            array.splice(i, 1);
+
+            // Array is modified in place, we need to look at the same index again.
+            i--;
+        }
+    }
+
+    return array;
+}
+
+export function createMapFromItems<T>(items: T[], keyGetter: (t: T) => string) {
+    return items
+        .map((t) => keyGetter(t))
+        .reduce((map, key, i) => {
+            map.set(key, (map.get(key) || []).concat(items[i]));
+            return map;
+        }, new Map<string, T[]>());
+}
+
+export function addIfUnique<T>(arr: T[], t: T, equalityComparer: EqualityComparer<T> = equateValues): T[] {
+    if (contains(arr, t, equalityComparer)) {
+        return arr;
+    }
+
+    arr.push(t);
+    return arr;
+}
+
+export function getMapValues<K, V>(m: Map<K, V>, predicate: (k: K, v: V) => boolean): V[] {
+    const values: V[] = [];
+    m.forEach((v, k) => {
+        if (predicate(k, v)) {
+            values.push(v);
+        }
+    });
+
+    return values;
+}

@@ -1,10 +1,10 @@
 import textwrap
-from typing import IO, Any, Callable, Generic, List, Text, Tuple, Type, TypeVar, overload
+from typing import IO, Any, Callable, Generic, Text, TypeVar, overload
 from typing_extensions import SupportsIndex
 
-_TB = TypeVar("_TB", bound="_BaseEntry")
-_TP = TypeVar("_TP", bound="POFile")
-_TM = TypeVar("_TM", bound="MOFile")
+_TB = TypeVar("_TB", bound=_BaseEntry)
+_TP = TypeVar("_TP", bound=POFile)
+_TM = TypeVar("_TM", bound=MOFile)
 
 default_encoding: str
 
@@ -12,18 +12,18 @@ default_encoding: str
 # encoding: str
 # check_for_duplicates: bool
 @overload
-def pofile(pofile: Text, *, klass: Type[_TP], **kwargs: Any) -> _TP: ...
+def pofile(pofile: Text, *, klass: type[_TP], **kwargs: Any) -> _TP: ...
 @overload
 def pofile(pofile: Text, **kwargs: Any) -> POFile: ...
 @overload
-def mofile(mofile: Text, *, klass: Type[_TM], **kwargs: Any) -> _TM: ...
+def mofile(mofile: Text, *, klass: type[_TM], **kwargs: Any) -> _TM: ...
 @overload
 def mofile(mofile: Text, **kwargs: Any) -> MOFile: ...
 def detect_encoding(file: bytes | Text, binary_mode: bool = ...) -> str: ...
 def escape(st: Text) -> Text: ...
 def unescape(st: Text) -> Text: ...
 
-class _BaseFile(List[_TB]):
+class _BaseFile(list[_TB]):
     fpath: Text
     wrapwidth: int
     encoding: Text
@@ -82,7 +82,7 @@ class _BaseEntry(object):
 class POEntry(_BaseEntry):
     comment: Text
     tcomment: Text
-    occurrences: list[Tuple[str, int]]
+    occurrences: list[tuple[str, int]]
     flags: list[Text]
     previous_msgctxt: Text | None
     previous_msgid: Text | None
@@ -95,8 +95,8 @@ class POEntry(_BaseEntry):
     def __lt__(self, other: POEntry) -> bool: ...
     def __ge__(self, other: POEntry) -> bool: ...
     def __le__(self, other: POEntry) -> bool: ...
-    def __eq__(self, other: Any) -> bool: ...
-    def __ne__(self, other: Any) -> bool: ...
+    def __eq__(self, other: POEntry) -> bool: ...  # type: ignore[override]
+    def __ne__(self, other: POEntry) -> bool: ...  # type: ignore[override]
     def translated(self) -> bool: ...
     def merge(self, other: POEntry) -> None: ...
     @property
@@ -108,7 +108,7 @@ class POEntry(_BaseEntry):
 class MOEntry(_BaseEntry):
     comment: Text
     tcomment: Text
-    occurrences: list[Tuple[str, int]]
+    occurrences: list[tuple[str, int]]
     flags: list[Text]
     previous_msgctxt: Text | None
     previous_msgid: Text | None
@@ -119,7 +119,7 @@ class MOEntry(_BaseEntry):
 class _POFileParser(Generic[_TP]):
     fhandle: IO[Text]
     instance: _TP
-    transitions: dict[Tuple[str, str], Tuple[Callable[[], bool], str]]
+    transitions: dict[tuple[str, str], tuple[Callable[[], bool], str]]
     current_line: int
     current_entry: POEntry
     current_state: str

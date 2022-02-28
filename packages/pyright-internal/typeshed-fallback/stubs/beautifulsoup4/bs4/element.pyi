@@ -1,5 +1,6 @@
 from _typeshed import Self
-from typing import Any, Callable, Generic, Iterable, List, Mapping, Pattern, Set, Tuple, Type, TypeVar, Union, overload
+from collections.abc import Iterator
+from typing import Any, Callable, Generic, Iterable, Pattern, TypeVar, Union, overload
 
 from . import BeautifulSoup
 from .builder import TreeBuilder
@@ -9,10 +10,10 @@ DEFAULT_OUTPUT_ENCODING: str
 PY3K: bool
 nonwhitespace_re: Pattern[str]
 whitespace_re: Pattern[str]
-PYTHON_SPECIFIC_ENCODINGS: Set[str]
+PYTHON_SPECIFIC_ENCODINGS: set[str]
 
 class NamespacedAttribute(str):
-    def __new__(cls: Type[Self], prefix: str, name: str | None = ..., namespace: str | None = ...) -> Self: ...
+    def __new__(cls: type[Self], prefix: str, name: str | None = ..., namespace: str | None = ...) -> Self: ...
 
 class AttributeValueWithCharsetSubstitution(str): ...
 
@@ -50,7 +51,13 @@ class PageElement:
     def formatter_for_name(self, formatter: Formatter | str | _EntitySubstitution): ...
     nextSibling: PageElement | None
     previousSibling: PageElement | None
-    def replace_with(self: Self, replace_with: PageElement | str) -> Self: ...
+    @property
+    def stripped_strings(self) -> Iterator[str]: ...
+    def get_text(self, separator: str = ..., strip: bool = ..., types: tuple[type[NavigableString], ...] = ...) -> str: ...
+    getText = get_text
+    @property
+    def text(self) -> str: ...
+    def replace_with(self: Self, *args: PageElement | str) -> Self: ...
     replaceWith = replace_with
     def unwrap(self: Self) -> Self: ...
     replace_with_children = unwrap
@@ -175,14 +182,14 @@ class NavigableString(str, PageElement):
     PREFIX: str
     SUFFIX: str
     known_xml: bool | None
-    def __new__(cls: Type[Self], value: str | bytes) -> Self: ...
+    def __new__(cls: type[Self], value: str | bytes) -> Self: ...
     def __copy__(self: Self) -> Self: ...
     def __getnewargs__(self) -> tuple[str]: ...
-    @property
-    def string(self) -> str: ...
     def output_ready(self, formatter: Formatter | str | None = ...) -> str: ...
     @property
     def name(self) -> None: ...
+    @property
+    def strings(self) -> Iterable[str]: ...
 
 class PreformattedString(NavigableString):
     PREFIX: str
@@ -220,15 +227,15 @@ class Script(NavigableString): ...
 class TemplateString(NavigableString): ...
 
 class Tag(PageElement):
-    parser_class: Type[BeautifulSoup] | None
+    parser_class: type[BeautifulSoup] | None
     name: str
     namespace: str | None
     prefix: str | None
     sourceline: int | None
     sourcepos: int | None
     known_xml: bool | None
-    attrs: Mapping[str, str]
-    contents: List[PageElement]
+    attrs: dict[str, str]
+    contents: list[PageElement]
     hidden: bool
     can_be_empty_element: bool | None
     cdata_list_attributes: list[str] | None
@@ -240,7 +247,7 @@ class Tag(PageElement):
         name: str | None = ...,
         namespace: str | None = ...,
         prefix: str | None = ...,
-        attrs: Mapping[str, str] | None = ...,
+        attrs: dict[str, str] | None = ...,
         parent: Tag | None = ...,
         previous: PageElement | None = ...,
         is_xml: bool | None = ...,
@@ -249,8 +256,9 @@ class Tag(PageElement):
         can_be_empty_element: bool | None = ...,
         cdata_list_attributes: list[str] | None = ...,
         preserve_whitespace_tags: list[str] | None = ...,
+        interesting_string_types: type[NavigableString] | tuple[type[NavigableString], ...] | None = ...,
     ) -> None: ...
-    parserClass: Type[BeautifulSoup] | None
+    parserClass: type[BeautifulSoup] | None
     def __copy__(self: Self) -> Self: ...
     @property
     def is_empty_element(self) -> bool: ...
@@ -259,14 +267,9 @@ class Tag(PageElement):
     def string(self) -> str | None: ...
     @string.setter
     def string(self, string: str) -> None: ...
+    DEFAULT_INTERESTING_STRING_TYPES: tuple[type[NavigableString], ...]
     @property
     def strings(self) -> Iterable[str]: ...
-    @property
-    def stripped_strings(self) -> Iterable[str]: ...
-    def get_text(self, separator: str = ..., strip: bool = ..., types: Tuple[Type[NavigableString], ...] = ...) -> str: ...
-    getText = get_text
-    @property
-    def text(self) -> str: ...
     def decompose(self) -> None: ...
     def clear(self, decompose: bool = ...) -> None: ...
     def smooth(self) -> None: ...
@@ -316,7 +319,7 @@ class Tag(PageElement):
         text: _Strainable | None = ...,
         limit: int | None = ...,
         **kwargs: _Strainable,
-    ) -> ResultSet[PageElement]: ...
+    ) -> ResultSet[Any]: ...
     __call__ = find_all
     findAll = find_all
     findChildren = find_all
@@ -345,6 +348,6 @@ class SoupStrainer:
     searchTag = search_tag
     def search(self, markup: PageElement | Iterable[PageElement]): ...
 
-class ResultSet(Generic[_PageElementT], List[_PageElementT]):
+class ResultSet(list[_PageElementT], Generic[_PageElementT]):
     source: SoupStrainer
     def __init__(self, source: SoupStrainer, result: Iterable[_PageElementT] = ...) -> None: ...

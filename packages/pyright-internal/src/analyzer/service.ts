@@ -25,7 +25,7 @@ import {
     MarkupKind,
 } from 'vscode-languageserver-types';
 
-import { BackgroundAnalysisBase } from '../backgroundAnalysisBase';
+import { BackgroundAnalysisBase, IndexOptions } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import { CommandLineOptions } from '../common/commandLineOptions';
 import { ConfigOptions } from '../common/configOptions';
@@ -44,6 +44,8 @@ import {
     getFileSpec,
     getFileSystemEntries,
     isDirectory,
+    isFile,
+    makeDirectories,
     normalizePath,
     normalizeSlashes,
     stripFileExtension,
@@ -52,7 +54,7 @@ import {
 } from '../common/pathUtils';
 import { DocumentRange, Position, Range } from '../common/textRange';
 import { timingStats } from '../common/timing';
-import { AbbreviationMap, CompletionOptions, CompletionResults } from '../languageService/completionProvider';
+import { AbbreviationMap, CompletionOptions, CompletionResultsList } from '../languageService/completionProvider';
 import { DefinitionFilter } from '../languageService/definitionProvider';
 import { IndexResults, WorkspaceSymbolCallback } from '../languageService/documentSymbolProvider';
 import { HoverResults } from '../languageService/hoverProvider';
@@ -60,7 +62,7 @@ import { ReferenceCallback } from '../languageService/referencesProvider';
 import { SignatureHelpResults } from '../languageService/signatureHelpProvider';
 import { AnalysisCompleteCallback } from './analysis';
 import { BackgroundAnalysisProgram, BackgroundAnalysisProgramFactory } from './backgroundAnalysisProgram';
-import { ImportedModuleDescriptor, ImportResolver, ImportResolverFactory } from './importResolver';
+import { createImportedModuleDescriptor, ImportResolver, ImportResolverFactory } from './importResolver';
 import { MaxAnalysisTime } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
 import { TypeEvaluator } from './typeEvaluatorTypes';
@@ -74,6 +76,10 @@ const _userActivityBackoffTimeInMs = 250;
 
 const _gitDirectory = normalizeSlashes('/.git/');
 const _includeFileRegex = /\.pyi?$/;
+
+// How long since the last library activity should we wait until
+// re-analyzing the libraries? (10min)
+const _libraryActivityBackoffTimeInMs = 60 * 1000 * 10;
 
 export class AnalyzerService {
     private _hostFactory: HostFactory;
@@ -148,10 +154,10 @@ export class AnalyzerService {
                   );
     }
 
-    clone(instanceName: string, backgroundAnalysis?: BackgroundAnalysisBase): AnalyzerService {
-        return new AnalyzerService(
+    clone(instanceName: string, backgroundAnalysis?: BackgroundAnalysisBase, fs?: FileSystem): AnalyzerService {
+        const service = new AnalyzerService(
             instanceName,
-            this._fs,
+            fs ?? this._fs,
             this._console,
             this._hostFactory,
             this._importResolverFactory,
@@ -162,6 +168,20 @@ export class AnalyzerService {
             this._backgroundAnalysisProgramFactory,
             this._cancellationProvider
         );
+
+        // Make sure we keep editor content (open file) which could be different than one in the file system.
+        for (const fileInfo of this.backgroundAnalysisProgram.program.getOpened()) {
+            const version = fileInfo.sourceFile.getClientVersion();
+            if (version !== undefined) {
+                service.setFileOpened(
+                    fileInfo.sourceFile.getFilePath(),
+                    version,
+                    fileInfo.sourceFile.getOpenFileContents()!
+                );
+            }
+        }
+
+        return service;
     }
 
     dispose() {
@@ -187,7 +207,7 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.setCompletionCallback(callback);
     }
 
-    setOptions(commandLineOptions: CommandLineOptions, reanalyze = true): void {
+    setOptions(commandLineOptions: CommandLineOptions): void {
         this._commandLineOptions = commandLineOptions;
 
         const host = this._hostFactory();
@@ -205,17 +225,47 @@ export class AnalyzerService {
         this._executionRootPath = normalizePath(
             combinePaths(commandLineOptions.executionRoot, configOptions.projectRoot)
         );
-        this._applyConfigOptions(host, reanalyze);
+        this._applyConfigOptions(host);
     }
 
-    setFileOpened(path: string, version: number | null, contents: string) {
-        this._backgroundAnalysisProgram.setFileOpened(path, version, contents, this._isTracked(path));
-        this._scheduleReanalysis(false);
+    isTracked(filePath: string): boolean {
+        for (const includeSpec of this._configOptions.include) {
+            if (this._matchIncludeFileSpec(includeSpec.regExp, this._configOptions.exclude, filePath)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    updateOpenFileContents(path: string, version: number | null, contents: TextDocumentContentChangeEvent[]) {
-        this._backgroundAnalysisProgram.updateOpenFileContents(path, version, contents, this._isTracked(path));
-        this._scheduleReanalysis(false);
+    setFileOpened(
+        path: string,
+        version: number | null,
+        contents: string,
+        ipythonMode = false,
+        chainedFilePath?: string
+    ) {
+        this._backgroundAnalysisProgram.setFileOpened(path, version, contents, {
+            isTracked: this.isTracked(path),
+            ipythonMode,
+            chainedFilePath,
+        });
+        this._scheduleReanalysis(/*requireTrackedFileUpdate*/ false);
+    }
+
+    updateOpenFileContents(
+        path: string,
+        version: number | null,
+        contents: TextDocumentContentChangeEvent[],
+        ipythonMode = false,
+        chainedFilePath?: string
+    ) {
+        this._backgroundAnalysisProgram.updateOpenFileContents(path, version, contents, {
+            isTracked: this.isTracked(path),
+            ipythonMode,
+            chainedFilePath,
+        });
+        this._scheduleReanalysis(/*requireTrackedFileUpdate*/ false);
     }
 
     test_setIndexing(
@@ -225,8 +275,8 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.test_setIndexing(workspaceIndices, libraryIndices);
     }
 
-    startIndexing() {
-        this._backgroundAnalysisProgram.startIndexing();
+    startIndexing(indexOptions: IndexOptions) {
+        this._backgroundAnalysisProgram.startIndexing(indexOptions);
     }
 
     setFileClosed(path: string) {
@@ -270,6 +320,14 @@ export class AnalyzerService {
         token: CancellationToken
     ): DocumentRange[] | undefined {
         return this._program.getDefinitionsForPosition(filePath, position, filter, token);
+    }
+
+    getTypeDefinitionForPosition(
+        filePath: string,
+        position: Position,
+        token: CancellationToken
+    ): DocumentRange[] | undefined {
+        return this._program.getTypeDefinitionsForPosition(filePath, position, token);
     }
 
     reportReferencesForPosition(
@@ -323,7 +381,7 @@ export class AnalyzerService {
         options: CompletionOptions,
         nameMap: AbbreviationMap | undefined,
         token: CancellationToken
-    ): Promise<CompletionResults | undefined> {
+    ): Promise<CompletionResultsList | undefined> {
         return this._program.getCompletionsForPosition(
             filePath,
             position,
@@ -363,6 +421,10 @@ export class AnalyzerService {
         token: CancellationToken
     ): TextEditAction[] | undefined {
         return this._program.performQuickAction(filePath, command, args, token);
+    }
+
+    renameModule(filePath: string, newFilePath: string, token: CancellationToken): FileEditAction[] | undefined {
+        return this._program.renameModule(filePath, newFilePath, token);
     }
 
     renameSymbolAtPosition(
@@ -508,7 +570,7 @@ export class AnalyzerService {
         }
 
         const configOptions = new ConfigOptions(projectRoot, this._typeCheckingMode);
-        const defaultExcludes = ['**/node_modules', '**/__pycache__', '.git'];
+        const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
 
         if (commandLineOptions.pythonPath) {
             this._console.info(
@@ -591,6 +653,8 @@ export class AnalyzerService {
             configOptions.autoExcludeVenv = true;
             configOptions.applyDiagnosticOverrides(commandLineOptions.diagnosticSeverityOverrides);
         }
+
+        configOptions.analyzeUnannotatedFunctions = commandLineOptions.analyzeUnannotatedFunctions ?? true;
 
         const reportDuplicateSetting = (settingName: string, configValue: number | string | boolean) => {
             const settingSource = commandLineOptions.fromVsCodeExtension
@@ -715,7 +779,7 @@ export class AnalyzerService {
         const typingsSubdirPath = this._getTypeStubFolder();
 
         this._program.writeTypeStub(
-            this._typeStubTargetPath!,
+            this._typeStubTargetPath ?? '',
             this._typeStubTargetIsSingleFile,
             typingsSubdirPath,
             token
@@ -726,7 +790,7 @@ export class AnalyzerService {
         const typingsSubdirPath = this._getTypeStubFolder();
 
         return this._backgroundAnalysisProgram.writeTypeStub(
-            this._typeStubTargetPath!,
+            this._typeStubTargetPath ?? '',
             this._typeStubTargetIsSingleFile,
             typingsSubdirPath,
             token
@@ -736,9 +800,17 @@ export class AnalyzerService {
     // This is called after a new type stub has been created. It allows
     // us to invalidate caches and force reanalysis of files that potentially
     // are affected by the appearance of a new type stub.
-    invalidateAndForceReanalysis(rebuildLibraryIndexing = true) {
+    invalidateAndForceReanalysis(
+        rebuildUserFileIndexing = true,
+        rebuildLibraryIndexing = true,
+        updateTrackedFileList = false
+    ) {
+        if (updateTrackedFileList) {
+            this._updateTrackedFileList(/* markFilesDirtyUnconditionally */ false);
+        }
+
         // Mark all files with one or more errors dirty.
-        this._backgroundAnalysisProgram.invalidateAndForceReanalysis(rebuildLibraryIndexing);
+        this._backgroundAnalysisProgram.invalidateAndForceReanalysis(rebuildUserFileIndexing, rebuildLibraryIndexing);
     }
 
     // Forces the service to stop all analysis, discard all its caches,
@@ -792,6 +864,7 @@ export class AnalyzerService {
             this._console.error(errMsg);
             throw new Error(errMsg);
         }
+
         if (!stubPath) {
             // We should never get here because we always generate a
             // default typings path if none was specified.
@@ -799,6 +872,7 @@ export class AnalyzerService {
             this._console.info(errMsg);
             throw new Error(errMsg);
         }
+
         const typeStubInputTargetParts = this._typeStubTargetImportName.split('.');
         if (typeStubInputTargetParts[0].length === 0) {
             // We should never get here because the import resolution
@@ -807,6 +881,7 @@ export class AnalyzerService {
             this._console.error(errMsg);
             throw new Error(errMsg);
         }
+
         try {
             // Generate a new typings directory if necessary.
             if (!this._fs.existsSync(stubPath)) {
@@ -817,18 +892,22 @@ export class AnalyzerService {
             this._console.error(errMsg);
             throw new Error(errMsg);
         }
-        // Generate a typings subdirectory.
+
+        // Generate a typings subdirectory hierarchy.
         const typingsSubdirPath = combinePaths(stubPath, typeStubInputTargetParts[0]);
+        const typingsSubdirHierarchy = combinePaths(stubPath, ...typeStubInputTargetParts);
+
         try {
             // Generate a new typings subdirectory if necessary.
-            if (!this._fs.existsSync(typingsSubdirPath)) {
-                this._fs.mkdirSync(typingsSubdirPath);
+            if (!this._fs.existsSync(typingsSubdirHierarchy)) {
+                makeDirectories(this._fs, typingsSubdirHierarchy, stubPath);
             }
         } catch (e: any) {
-            const errMsg = `Could not create typings subdirectory '${typingsSubdirPath}'`;
+            const errMsg = `Could not create typings subdirectory '${typingsSubdirHierarchy}'`;
             this._console.error(errMsg);
             throw new Error(errMsg);
         }
+
         return typingsSubdirPath;
     }
 
@@ -876,7 +955,7 @@ export class AnalyzerService {
                 throw e;
             }
 
-            this._console.error(`Pyproject file "${pyprojectPath}" is missing "[tool.pyright] section.`);
+            this._console.error(`Pyproject file "${pyprojectPath}" is missing "[tool.pyright]" section.`);
             return undefined;
         });
     }
@@ -948,12 +1027,7 @@ export class AnalyzerService {
         // for a different set of files.
         if (this._typeStubTargetImportName) {
             const execEnv = this._configOptions.findExecEnvironment(this._executionRootPath);
-            const moduleDescriptor: ImportedModuleDescriptor = {
-                leadingDots: 0,
-                nameParts: this._typeStubTargetImportName.split('.'),
-                importedSymbols: [],
-            };
-
+            const moduleDescriptor = createImportedModuleDescriptor(this._typeStubTargetImportName);
             const importResult = this._backgroundAnalysisProgram.importResolver.resolveImport(
                 '',
                 execEnv,
@@ -963,38 +1037,43 @@ export class AnalyzerService {
             if (importResult.isImportFound) {
                 const filesToImport: string[] = [];
 
-                // Namespace packages resolve to a directory name, so
-                // don't include those.
-                const resolvedPath = importResult.resolvedPaths[importResult.resolvedPaths.length - 1];
+                // Determine the directory that contains the root package.
+                const finalResolvedPath = importResult.resolvedPaths[importResult.resolvedPaths.length - 1];
+                const isFinalPathFile = isFile(this._fs, finalResolvedPath);
+                const isFinalPathInitFile =
+                    isFinalPathFile && stripFileExtension(getFileName(finalResolvedPath)) === '__init__';
 
-                // Get the directory that contains the root package.
-                let targetPath = getDirectoryPath(resolvedPath);
-                let prevResolvedPath = resolvedPath;
+                let rootPackagePath = finalResolvedPath;
+
+                if (isFinalPathFile) {
+                    // If the module is a __init__.pyi? file, use its parent directory instead.
+                    rootPackagePath = getDirectoryPath(rootPackagePath);
+                }
+
                 for (let i = importResult.resolvedPaths.length - 2; i >= 0; i--) {
-                    const resolvedPath = importResult.resolvedPaths[i];
-                    if (resolvedPath) {
-                        targetPath = getDirectoryPath(resolvedPath);
-                        prevResolvedPath = resolvedPath;
+                    if (importResult.resolvedPaths[i]) {
+                        rootPackagePath = importResult.resolvedPaths[i];
                     } else {
                         // If there was no file corresponding to this portion
                         // of the name path, assume that it's contained
                         // within its parent directory.
-                        targetPath = getDirectoryPath(prevResolvedPath);
-                        prevResolvedPath = targetPath;
+                        rootPackagePath = getDirectoryPath(rootPackagePath);
                     }
                 }
 
-                if (isDirectory(this._fs, targetPath)) {
-                    this._typeStubTargetPath = targetPath;
+                if (isDirectory(this._fs, rootPackagePath)) {
+                    this._typeStubTargetPath = rootPackagePath;
+                } else if (isFile(this._fs, rootPackagePath)) {
+                    // This can occur if there is a "dir/__init__.py" at the same level as a
+                    // module "dir/module.py" that is specifically targeted for stub generation.
+                    this._typeStubTargetPath = getDirectoryPath(rootPackagePath);
                 }
 
-                if (!resolvedPath) {
+                if (!finalResolvedPath) {
                     this._typeStubTargetIsSingleFile = false;
                 } else {
-                    filesToImport.push(resolvedPath);
-                    this._typeStubTargetIsSingleFile =
-                        importResult.resolvedPaths.length === 1 &&
-                        stripFileExtension(getFileName(importResult.resolvedPaths[0])) !== '__init__';
+                    filesToImport.push(finalResolvedPath);
+                    this._typeStubTargetIsSingleFile = importResult.resolvedPaths.length === 1 && !isFinalPathInitFile;
                 }
 
                 // Add the implicit import paths.
@@ -1198,7 +1277,16 @@ export class AnalyzerService {
                         if (!isTemporaryFile) {
                             // Added/deleted/renamed files impact imports,
                             // clear the import resolver cache and reanalyze everything.
-                            this.invalidateAndForceReanalysis(/* rebuildLibraryIndexing */ false);
+                            //
+                            // Here we don't need to rebuild any indexing since this kind of change can't affect
+                            // indices. For library, since the changes are on workspace files, it won't affect library
+                            // indices. For user file, since user file indices don't contains import alias symbols,
+                            // it won't affect those indices. we only need to rebuild user file indices when symbols
+                            // defined in the file are changed. ex) user modified the file.
+                            this.invalidateAndForceReanalysis(
+                                /* rebuildUserFileIndexing */ false,
+                                /* rebuildLibraryIndexing */ false
+                            );
                             this._scheduleReanalysis(/* requireTrackedFileUpdate */ true);
                         }
                     }
@@ -1246,7 +1334,7 @@ export class AnalyzerService {
                     }
 
                     if (this._verboseOutput) {
-                        this._console.info(`LibraryFile: Received fs event '${event}' for path '${path}'}'`);
+                        this._console.info(`LibraryFile: Received fs event '${event}' for path '${path}'`);
                     }
 
                     if (isIgnored(path)) {
@@ -1285,9 +1373,9 @@ export class AnalyzerService {
 
             // Invalidate import resolver, mark all files dirty unconditionally,
             // and reanalyze.
-            this.invalidateAndForceReanalysis();
+            this.invalidateAndForceReanalysis(/* rebuildUserFileIndexing */ false);
             this._scheduleReanalysis(false);
-        }, 1000);
+        }, _libraryActivityBackoffTimeInMs);
     }
 
     private _removeConfigFileWatcher() {
@@ -1369,7 +1457,7 @@ export class AnalyzerService {
         }
     }
 
-    private _applyConfigOptions(host: Host, reanalyze = true) {
+    private _applyConfigOptions(host: Host) {
         // Allocate a new import resolver because the old one has information
         // cached based on the previous config options.
         const importResolver = this._importResolverFactory(
@@ -1396,9 +1484,7 @@ export class AnalyzerService {
         this._updateSourceFileWatchers();
         this._updateTrackedFileList(true);
 
-        if (reanalyze) {
-            this._scheduleReanalysis(false);
-        }
+        this._scheduleReanalysis(false);
     }
 
     private _clearReanalysisTimer() {
@@ -1409,7 +1495,7 @@ export class AnalyzerService {
     }
 
     private _scheduleReanalysis(requireTrackedFileUpdate: boolean) {
-        if (this._disposed) {
+        if (this._disposed || !this._commandLineOptions?.enableAmbientAnalysis) {
             // already disposed
             return;
         }
@@ -1483,16 +1569,6 @@ export class AnalyzerService {
     private _matchIncludeFileSpec(includeRegExp: RegExp, exclude: FileSpec[], filePath: string) {
         if (includeRegExp.test(filePath)) {
             if (!this._isInExcludePath(filePath, exclude) && this._shouldIncludeFile(filePath)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private _isTracked(filePath: string): boolean {
-        for (const includeSpec of this._configOptions.include) {
-            if (this._matchIncludeFileSpec(includeSpec.regExp, this._configOptions.exclude, filePath)) {
                 return true;
             }
         }

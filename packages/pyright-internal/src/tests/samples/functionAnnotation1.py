@@ -1,8 +1,8 @@
 # This sample tests support for comment-style function annotations.
 
-# pyright: strict
+# pyright: strict, reportMissingParameterType=false
 
-from typing import Optional
+from typing import Optional, Literal as _Literal, Union
 
 
 def func1a(a, b):
@@ -47,6 +47,15 @@ def func1f(a):
 class Foo:
     pass
 
+
 def func1g(*args, **kwargs):
     # type: (*int, **float) -> int
     return sum(args) + sum(round(kwarg) for kwarg in kwargs.values())
+
+
+def func1h(
+    a,  # type: _Literal["{", "}"]
+    b,  # type: Union[_Literal["%"], _Literal["{"], _Literal["$"]]
+):
+    # type: (...) -> str
+    return ""

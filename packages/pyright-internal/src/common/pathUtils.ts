@@ -679,6 +679,10 @@ export function getWildcardRoot(rootPath: string, fileSpec: string): string {
         pathComponents[0] = stripTrailingDirectorySeparator(pathComponents[0]);
     }
 
+    if (pathComponents.length === 1 && !pathComponents[0]) {
+        return path.sep;
+    }
+
     let wildcardRoot = '';
     let firstComponent = true;
 
@@ -948,4 +952,23 @@ export function getLibraryPathWithoutExtension(libraryFilePath: string) {
     }
 
     return filePathWithoutExtension;
+}
+
+export function getDirectoryChangeKind(
+    fs: FileSystem,
+    oldDirectory: string,
+    newDirectory: string
+): 'Same' | 'Renamed' | 'Moved' {
+    if (fs.realCasePath(oldDirectory) === fs.realCasePath(newDirectory)) {
+        return 'Same';
+    }
+
+    const relativePaths = getRelativePathComponentsFromDirectory(oldDirectory, newDirectory, (f) => fs.realCasePath(f));
+
+    // 3 means only last folder name has changed.
+    if (relativePaths.length === 3 && relativePaths[1] === '..' && relativePaths[2] !== '..') {
+        return 'Renamed';
+    }
+
+    return 'Moved';
 }

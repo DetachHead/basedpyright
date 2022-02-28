@@ -11,7 +11,9 @@
 import * as assert from 'assert';
 
 import { DiagnosticSink } from '../common/diagnosticSink';
+import { TextRange } from '../common/textRange';
 import { ParseNodeType, StatementListNode } from '../parser/parseNodes';
+import { getNodeAtMarker, parseAndGetTestState } from './harness/fourslash/testState';
 import * as TestUtils from './testUtils';
 
 test('Empty', () => {
@@ -69,4 +71,29 @@ test('ExpressionWrappedInParens', () => {
     // length of node should exclude parens
     assert.equal(statementList.statements[0].nodeType, ParseNodeType.Name);
     assert.equal(statementList.statements[0].length, 3);
+});
+
+test('MaxParseDepth1', () => {
+    const diagSink = new DiagnosticSink();
+    TestUtils.parseSampleFile('maxParseDepth1.py', diagSink);
+    assert.strictEqual(diagSink.getErrors().length, 1);
+});
+
+test('MaxParseDepth2', () => {
+    const diagSink = new DiagnosticSink();
+    TestUtils.parseSampleFile('maxParseDepth2.py', diagSink);
+    assert.strictEqual(diagSink.getErrors().length, 4);
+});
+
+test('ModuleName range', () => {
+    const code = `
+//// from [|/*marker*/...|] import A
+        `;
+
+    const state = parseAndGetTestState(code).state;
+    const expectedRange = state.getRangeByMarkerName('marker');
+    const node = getNodeAtMarker(state);
+
+    assert.strictEqual(node.start, expectedRange?.pos);
+    assert.strictEqual(TextRange.getEnd(node), expectedRange?.end);
 });

@@ -20,6 +20,10 @@ export function evaluateStaticBoolExpression(
     typingImportAliases?: string[],
     sysImportAliases?: string[]
 ): boolean | undefined {
+    if (node.nodeType === ParseNodeType.AssignmentExpression) {
+        return evaluateStaticBoolExpression(node.rightExpression, execEnv, typingImportAliases, sysImportAliases);
+    }
+
     if (node.nodeType === ParseNodeType.UnaryOperation) {
         if (node.operator === OperatorType.Or || node.operator === OperatorType.And) {
             const value = evaluateStaticBoolLikeExpression(
@@ -156,11 +160,15 @@ function _convertTupleToVersion(node: TupleNode): number | undefined {
         ) {
             const majorVersion = node.expressions[0];
             const minorVersion = node.expressions[1];
-            comparisonVersion = majorVersion.value * 256 + minorVersion.value;
+            if (typeof majorVersion.value === 'number' && typeof minorVersion.value === 'number') {
+                comparisonVersion = majorVersion.value * 256 + minorVersion.value;
+            }
         }
     } else if (node.expressions.length === 1) {
         const majorVersion = node.expressions[0] as NumberNode;
-        comparisonVersion = majorVersion.value * 256;
+        if (typeof majorVersion.value === 'number') {
+            comparisonVersion = majorVersion.value * 256;
+        }
     }
 
     return comparisonVersion;
@@ -168,10 +176,13 @@ function _convertTupleToVersion(node: TupleNode): number | undefined {
 
 function _evaluateNumericBinaryOperation(
     operatorType: OperatorType,
-    leftValue: number | undefined,
-    rightValue: number | undefined
+    leftValue: number | bigint | undefined,
+    rightValue: number | bigint | undefined
 ): any | undefined {
     if (leftValue !== undefined && rightValue !== undefined) {
+        leftValue = BigInt(leftValue);
+        rightValue = BigInt(rightValue);
+
         if (operatorType === OperatorType.LessThan) {
             return leftValue < rightValue;
         } else if (operatorType === OperatorType.LessThanOrEqual) {

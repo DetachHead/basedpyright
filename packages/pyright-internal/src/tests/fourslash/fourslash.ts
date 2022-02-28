@@ -138,6 +138,73 @@ declare namespace _ {
         importName: string;
     }
 
+    interface TextDocumentIdentifier {
+        uri: string;
+    }
+
+    interface OptionalVersionedTextDocumentIdentifier extends TextDocumentIdentifier {
+        version: number | null;
+    }
+
+    interface AnnotatedTextEdit extends TextEdit {
+        annotationId: string;
+    }
+
+    interface TextDocumentEdit {
+        textDocument: OptionalVersionedTextDocumentIdentifier;
+        edits: (TextEdit | AnnotatedTextEdit)[];
+    }
+
+    interface FileOptions {
+        overwrite?: boolean;
+        ignoreIfExists?: boolean;
+    }
+
+    interface ResourceOperation {
+        kind: string;
+        annotationId?: string;
+    }
+
+    interface CreateFile extends ResourceOperation {
+        kind: 'create';
+        uri: string;
+        options?: FileOptions;
+    }
+
+    interface RenameFile extends ResourceOperation {
+        kind: 'rename';
+        oldUri: string;
+        newUri: string;
+        options?: FileOptions;
+    }
+
+    interface DeleteFileOptions {
+        recursive?: boolean;
+        ignoreIfNotExists?: boolean;
+    }
+
+    interface DeleteFile extends ResourceOperation {
+        kind: 'delete';
+        uri: string;
+        options?: DeleteFileOptions;
+    }
+
+    interface ChangeAnnotation {
+        label: string;
+        needsConfirmation?: boolean;
+        description?: string;
+    }
+
+    interface WorkspaceEdit {
+        changes?: {
+            [uri: string]: TextEdit[];
+        };
+        documentChanges?: (TextDocumentEdit | CreateFile | RenameFile | DeleteFile)[];
+        changeAnnotations?: {
+            [id: string]: ChangeAnnotation;
+        };
+    }
+
     type MarkupKind = 'markdown' | 'plaintext';
 
     type DefinitionFilter = 'all' | 'preferSource' | 'preferStubs';
@@ -154,9 +221,14 @@ declare namespace _ {
         getRanges(): Range[];
         getRangesInFile(fileName: string): Range[];
         getRangesByText(): Map<string, Range[]>;
-
+        getFilteredRanges<T extends {}>(
+            predicate: (m: Marker | undefined, d: T | undefined, text: string) => boolean
+        ): Range[];
         getPositionRange(markerString: string): PositionRange;
+        expandPositionRange(range: PositionRange, start: number, end: number): PositionRange;
         convertPositionRange(range: Range): PositionRange;
+        convertPathToUri(path: string): string;
+        getDirectoryPath(path: string): string;
 
         goToBOF(): void;
         goToEOF(): void;
@@ -239,6 +311,11 @@ declare namespace _ {
             },
             filter?: DefinitionFilter
         ): void;
+        verifyFindTypeDefinitions(map: {
+            [marker: string]: {
+                definitions: DocumentRange[];
+            };
+        }): void;
         verifyRename(map: {
             [marker: string]: {
                 newName: string;

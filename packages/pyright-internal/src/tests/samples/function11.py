@@ -1,17 +1,18 @@
-# This sample tests the ability of the type checker to
-# deal with circular references in return types.
+# This sample tests the case where a function type is assigned to another
+# and the source contains parameters that are annotated as literals and
+# the destination has corresponding TypeVars.
+
+from typing import Callable, TypeVar, Literal
+
+_A = TypeVar("_A")
 
 
-class Foo1:
-    # This should generate an error because 'dict' is
-    # a forward reference, so it refers to the function
-    # itself.
-    def dict(self) -> "dict":
-        # This should generate an error because the return
-        # type doesn't match.
-        return {}
+def wrapper(fn: Callable[[_A], int]) -> _A:
+    ...
 
 
-class Foo2:
-    def dict(self) -> dict:
-        return {}
+def f3(a: Literal[0]) -> int:
+    ...
+
+
+wrapper(f3)

@@ -165,15 +165,23 @@ export const enum StringTokenFlags {
     ExceedsMaxSize = 1 << 17,
 }
 
+export const enum CommentType {
+    Regular,
+    IPythonMagic,
+    IPythonShellEscape,
+}
+
 export interface Comment extends TextRange {
+    readonly type: CommentType;
     readonly value: string;
     readonly start: number;
     readonly length: number;
 }
 
 export namespace Comment {
-    export function create(start: number, length: number, value: string) {
+    export function create(start: number, length: number, value: string, type = CommentType.Regular) {
         const comment: Comment = {
+            type,
             start,
             length,
             value,
@@ -236,6 +244,7 @@ export interface DedentToken extends Token {
     readonly type: TokenType.Dedent;
     readonly indentAmount: number;
     readonly matchesIndent: boolean;
+    readonly isDedentAmbiguous: boolean;
 }
 
 export namespace DedentToken {
@@ -244,6 +253,7 @@ export namespace DedentToken {
         length: number,
         indentAmount: number,
         matchesIndent: boolean,
+        isDedentAmbiguous: boolean,
         comments: Comment[] | undefined
     ) {
         const token: DedentToken = {
@@ -253,6 +263,7 @@ export namespace DedentToken {
             comments,
             indentAmount,
             matchesIndent,
+            isDedentAmbiguous,
         };
 
         return token;
@@ -339,7 +350,7 @@ export namespace StringToken {
 
 export interface NumberToken extends Token {
     readonly type: TokenType.Number;
-    readonly value: number;
+    readonly value: number | bigint;
     readonly isInteger: boolean;
     readonly isImaginary: boolean;
 }
@@ -348,7 +359,7 @@ export namespace NumberToken {
     export function create(
         start: number,
         length: number,
-        value: number,
+        value: number | bigint,
         isInteger: boolean,
         isImaginary: boolean,
         comments: Comment[] | undefined
@@ -393,11 +404,14 @@ export interface IdentifierToken extends Token {
 
 export namespace IdentifierToken {
     export function create(start: number, length: number, value: string, comments: Comment[] | undefined) {
+        // Perform "NFKC normalization", as per the Python lexical spec.
+        const normalizedValue = value.normalize('NFKC');
+
         const token: IdentifierToken = {
             start,
             length,
             type: TokenType.Identifier,
-            value,
+            value: normalizedValue,
             comments,
         };
 

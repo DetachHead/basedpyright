@@ -16,13 +16,27 @@ import { HostKind, NoAccessHost } from './host';
 import { isDirectory, normalizePath } from './pathUtils';
 import { PythonVersion, versionFromMajorMinor } from './pythonVersion';
 
-const extractSys = [
+// preventLocalImports removes the working directory from sys.path.
+// The -c flag adds it automatically, which can allow some stdlib
+// modules (like json) to be overridden by other files (like json.py).
+const removeCwdFromSysPath = [
     'import os, os.path, sys',
     'normalize = lambda p: os.path.normcase(os.path.normpath(p))',
     'cwd = normalize(os.getcwd())',
+    'orig_sys_path = [p for p in sys.path if p != ""]',
     'sys.path[:] = [p for p in sys.path if p != "" and normalize(p) != cwd]',
-    'import json',
-    'json.dump(dict(path=sys.path, prefix=sys.prefix), sys.stdout)',
+];
+
+const extractSys = [
+    ...removeCwdFromSysPath,
+    'import sys, json',
+    'json.dump(dict(path=orig_sys_path, prefix=sys.prefix), sys.stdout)',
+].join('; ');
+
+const extractVersion = [
+    ...removeCwdFromSysPath,
+    'import sys, json',
+    'json.dump(dict(major=sys.version_info[0], minor=sys.version_info[1]), sys.stdout)',
 ].join('; ');
 
 export class LimitedAccessHost extends NoAccessHost {
@@ -67,23 +81,9 @@ export class FullAccessHost extends LimitedAccessHost {
 
     override getPythonSearchPaths(pythonPath?: string, logInfo?: string[]): PythonPathResult {
         const importFailureInfo = logInfo ?? [];
-        let result: PythonPathResult | undefined;
-
-        if (pythonPath) {
-            result = this._getSearchPathResultFromInterpreter(this._fs, pythonPath, importFailureInfo);
-        } else {
-            // On non-Windows platforms, always default to python3 first. We want to
-            // avoid this on Windows because it might invoke a script that displays
-            // a dialog box indicating that python can be downloaded from the app store.
-            if (process.platform !== 'win32') {
-                result = this._getSearchPathResultFromInterpreter(this._fs, 'python3', importFailureInfo);
-            }
-
-            // On some platforms, 'python3' might not exist. Try 'python' instead.
-            if (!result) {
-                result = this._getSearchPathResultFromInterpreter(this._fs, 'python', importFailureInfo);
-            }
-        }
+        let result = this._executePythonInterpreter(pythonPath, (p) =>
+            this._getSearchPathResultFromInterpreter(this._fs, p, importFailureInfo)
+        );
 
         if (!result) {
             result = {
@@ -104,20 +104,12 @@ export class FullAccessHost extends LimitedAccessHost {
         const importFailureInfo = logInfo ?? [];
 
         try {
-            const commandLineArgs: string[] = [
-                '-c',
-                'import sys, json; json.dump(dict(major=sys.version_info[0], minor=sys.version_info[1]), sys.stdout)',
-            ];
-            let execOutput: string;
+            const commandLineArgs: string[] = ['-c', extractVersion];
+            const execOutput = this._executePythonInterpreter(pythonPath, (p) =>
+                child_process.execFileSync(p, commandLineArgs, { encoding: 'utf8' })
+            );
 
-            if (pythonPath) {
-                execOutput = child_process.execFileSync(pythonPath, commandLineArgs, { encoding: 'utf8' });
-            } else {
-                execOutput = child_process.execFileSync('python', commandLineArgs, { encoding: 'utf8' });
-            }
-
-            const versionJson: { major: number; minor: number } = JSON.parse(execOutput);
-
+            const versionJson: { major: number; minor: number } = JSON.parse(execOutput!);
             const version = versionFromMajorMinor(versionJson.major, versionJson.minor);
             if (version === undefined) {
                 importFailureInfo.push(
@@ -130,6 +122,34 @@ export class FullAccessHost extends LimitedAccessHost {
         } catch {
             importFailureInfo.push('Unable to get Python version from interpreter');
             return undefined;
+        }
+    }
+
+    private _executePythonInterpreter<T>(
+        pythonPath: string | undefined,
+        execute: (path: string) => T | undefined
+    ): T | undefined {
+        if (pythonPath) {
+            return execute(pythonPath);
+        } else {
+            let result: T | undefined;
+            try {
+                // On non-Windows platforms, always default to python3 first. We want to
+                // avoid this on Windows because it might invoke a script that displays
+                // a dialog box indicating that python can be downloaded from the app store.
+                if (process.platform !== 'win32') {
+                    result = execute('python3');
+                }
+            } catch {
+                // Ignore failure on python3
+            }
+
+            if (result !== undefined) {
+                return result;
+            }
+
+            // On some platforms, 'python3' might not exist. Try 'python' instead.
+            return execute('python');
         }
     }
 

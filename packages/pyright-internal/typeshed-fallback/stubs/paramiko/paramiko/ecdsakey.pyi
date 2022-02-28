@@ -1,4 +1,4 @@
-from typing import IO, Any, Callable, Sequence, Tuple, Type
+from typing import IO, Any, Callable, Sequence
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve, EllipticCurvePrivateKey, EllipticCurvePublicKey
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
@@ -9,15 +9,15 @@ class _ECDSACurve:
     nist_name: str
     key_length: int
     key_format_identifier: str
-    hash_object: Type[HashAlgorithm]
-    curve_class: Type[EllipticCurve]
-    def __init__(self, curve_class: Type[EllipticCurve], nist_name: str) -> None: ...
+    hash_object: type[HashAlgorithm]
+    curve_class: type[EllipticCurve]
+    def __init__(self, curve_class: type[EllipticCurve], nist_name: str) -> None: ...
 
 class _ECDSACurveSet:
     ecdsa_curves: Sequence[_ECDSACurve]
     def __init__(self, ecdsa_curves: Sequence[_ECDSACurve]) -> None: ...
     def get_key_format_identifier_list(self) -> list[str]: ...
-    def get_by_curve_class(self, curve_class: Type[Any]) -> _ECDSACurve | None: ...
+    def get_by_curve_class(self, curve_class: type[Any]) -> _ECDSACurve | None: ...
     def get_by_key_format_identifier(self, key_format_identifier: str) -> _ECDSACurve | None: ...
     def get_by_key_length(self, key_length: int) -> _ECDSACurve | None: ...
 
@@ -32,7 +32,7 @@ class ECDSAKey(PKey):
         data: bytes | None = ...,
         filename: str | None = ...,
         password: str | None = ...,
-        vals: Tuple[EllipticCurvePrivateKey, EllipticCurvePublicKey] | None = ...,
+        vals: tuple[EllipticCurvePrivateKey, EllipticCurvePublicKey] | None = ...,
         file_obj: IO[str] | None = ...,
         validate_point: bool = ...,
     ) -> None: ...

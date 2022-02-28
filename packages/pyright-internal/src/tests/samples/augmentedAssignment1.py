@@ -2,16 +2,32 @@
 # augmented assignments (combining a binary operator
 # with an assignment).
 
+
 a = 1
 b = 3.4
 
 a += b
+reveal_type(a, expected_text="float")
+
 a -= b
+reveal_type(a, expected_text="float")
+
 a *= b
+reveal_type(a, expected_text="float")
+
 a /= b
+reveal_type(a, expected_text="float")
+
 a //= b
+reveal_type(a, expected_text="float")
+
 a %= b
+reveal_type(a, expected_text="float")
+
 a **= b
+reveal_type(a, expected_text="Any")
+
+a = 1
 
 # This should generate an error because
 # matrix multiply isn't supported by int.

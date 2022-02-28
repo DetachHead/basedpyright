@@ -20,6 +20,7 @@ import {
     IfNode,
     ImportFromNode,
     ImportNode,
+    MemberAccessNode,
     ModuleNameNode,
     NameNode,
     ParameterCategory,
@@ -33,6 +34,7 @@ import {
     WhileNode,
     WithNode,
 } from '../parser/parseNodes';
+import { OperatorType } from '../parser/tokenizerTypes';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import * as ParseTreeUtils from './parseTreeUtils';
 import { ParseTreeWalker } from './parseTreeWalker';
@@ -41,7 +43,7 @@ import { SourceFile } from './sourceFile';
 import { Symbol } from './symbol';
 import * as SymbolNameUtils from './symbolNameUtils';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { isFunction, isNever, isUnknown, removeUnknownFromUnion } from './types';
+import { ClassType, isFunction, isInstantiableClass, isNever, isUnknown, removeUnknownFromUnion } from './types';
 
 class TrackedImport {
     constructor(public importName: string) {}
@@ -101,12 +103,39 @@ class ImportSymbolWalker extends ParseTreeWalker {
         return true;
     }
 
+    override visitMemberAccess(node: MemberAccessNode): boolean {
+        const baseExpression = this._getRecursiveModuleAccessExpression(node.leftExpression);
+
+        if (baseExpression) {
+            this._accessedImportedSymbols.set(`${baseExpression}.${node.memberName.value}`, true);
+        }
+
+        return true;
+    }
+
     override visitString(node: StringNode) {
         if (this._treatStringsAsSymbols) {
             this._accessedImportedSymbols.set(node.value, true);
         }
 
         return true;
+    }
+
+    private _getRecursiveModuleAccessExpression(node: ExpressionNode): string | undefined {
+        if (node.nodeType === ParseNodeType.Name) {
+            return node.value;
+        }
+
+        if (node.nodeType === ParseNodeType.MemberAccess) {
+            const baseExpression = this._getRecursiveModuleAccessExpression(node.leftExpression);
+            if (!baseExpression) {
+                return undefined;
+            }
+
+            return `${baseExpression}.${node.memberName.value}`;
+        }
+
+        return undefined;
     }
 }
 
@@ -327,8 +356,17 @@ export class TypeStubWriter extends ParseTreeWalker {
         let line = '';
 
         if (node.leftExpression.nodeType === ParseNodeType.Name) {
-            // Strip out "__all__" assignments.
+            // Handle "__all__" as a special case.
             if (node.leftExpression.value === '__all__') {
+                if (this._functionNestCount === 0 && this._ifNestCount === 0) {
+                    this._emittedSuite = true;
+
+                    line = this._printExpression(node.leftExpression);
+                    line += ' = ';
+                    line += this._printExpression(node.rightExpression);
+                    this._emitLine(line);
+                }
+
                 return false;
             }
 
@@ -337,11 +375,22 @@ export class TypeStubWriter extends ParseTreeWalker {
                 if (node.typeAnnotationComment) {
                     line += ': ' + this._printExpression(node.typeAnnotationComment, /* treatStringsAsSymbols */ true);
                 }
-            }
 
-            const valueType = this._evaluator.getType(node.leftExpression);
-            if (valueType?.typeAliasInfo) {
-                isTypeAlias = true;
+                const valueType = this._evaluator.getType(node.leftExpression);
+                if (valueType?.typeAliasInfo) {
+                    isTypeAlias = true;
+                } else if (node.rightExpression.nodeType === ParseNodeType.Call) {
+                    // Special-case TypeVar, TypeVarTuple, ParamSpec and NewType calls. Treat
+                    // them like type aliases.
+                    const callBaseType = this._evaluator.getType(node.rightExpression.leftExpression);
+                    if (
+                        callBaseType &&
+                        isInstantiableClass(callBaseType) &&
+                        ClassType.isBuiltIn(callBaseType, ['TypeVar', 'TypeVarTuple', 'ParamSpec', 'NewType'])
+                    ) {
+                        isTypeAlias = true;
+                    }
+                }
             }
         } else if (node.leftExpression.nodeType === ParseNodeType.TypeAnnotation) {
             const valueExpr = node.leftExpression.valueExpression;
@@ -373,6 +422,18 @@ export class TypeStubWriter extends ParseTreeWalker {
     }
 
     override visitAugmentedAssignment(node: AugmentedAssignmentNode) {
+        if (node.leftExpression.nodeType === ParseNodeType.Name) {
+            // Handle "__all__ +=" as a special case.
+            if (node.leftExpression.value === '__all__' && node.operator === OperatorType.AddEqual) {
+                if (this._functionNestCount === 0 && this._ifNestCount === 0) {
+                    let line = this._printExpression(node.leftExpression);
+                    line += ' += ';
+                    line += this._printExpression(node.rightExpression);
+                    this._emitLine(line);
+                }
+            }
+        }
+
         return false;
     }
 

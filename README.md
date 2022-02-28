@@ -25,10 +25,12 @@ Pyright supports [configuration files](/docs/configuration.md) that provide gran
 * [PEP 612](https://www.python.org/dev/peps/pep-0612/) parameter specification variables
 * [PEP 613](https://www.python.org/dev/peps/pep-0613/) explicit type aliases
 * [PEP 635](https://www.python.org/dev/peps/pep-0635/) structural pattern matching
-* [PEP 637](https://www.python.org/dev/peps/pep-0637/) indexing with keyword arguments
 * [PEP 646](https://www.python.org/dev/peps/pep-0646/) variadic generics
 * [PEP 647](https://www.python.org/dev/peps/pep-0647/) user-defined type guards
 * [PEP 655](https://www.python.org/dev/peps/pep-0655/) required typed dictionary items
+* [PEP 673](https://www.python.org/dev/peps/pep-0673/) Self type
+* [PEP 675](https://www.python.org/dev/peps/pep-0675/) arbitrary literal strings
+* [PEP 681](https://www.python.org/dev/peps/pep-0681/) dataclass transform
 * Type inference for function return values, instance variables, class variables, and globals
 * Type guards that understand conditional code flow constructs like if/else statements
 
@@ -61,22 +63,34 @@ For rich Python editing and debugging capabilities with Visual Studio Code, be s
 
 ## Installation
 ### VS Code Extension
-For most VS Code users, we recommend using the Pylance extension rather than Pyright. Pylance incorporates the pyright type checker but features additional capabilities such as IntelliCode and semantic token highlighting. You can install the latest-published version of the Pylance VS Code extension directly from VS Code. Simply open the extensions panel and search for `pylance`.
+For most VS Code users, we recommend using the Pylance extension rather than Pyright. Pylance incorporates the Pyright type checker but features additional capabilities such as IntelliCode and semantic token highlighting. You can install the latest-published version of the Pylance VS Code extension directly from VS Code. Simply open the extensions panel and search for “Pylance”.
 
 ### Vim
-For vim/neovim users, you can install [coc-pyright](https://github.com/fannheyward/coc-pyright), the Pyright extension for coc.nvim.
+Vim/neovim users can install [coc-pyright](https://github.com/fannheyward/coc-pyright), the Pyright extension for coc.nvim.
 
 Alternatively, [ALE](https://github.com/dense-analysis/ale) will automatically check your code with Pyright, without requiring any additional configuration.
 
 ### Sublime Text
-For sublime text users, you can install the [LSP-pyright](https://github.com/sublimelsp/LSP-pyright) plugin from [package control](https://packagecontrol.io/packages/LSP-pyright).
+Sublime text users can install the [LSP-pyright](https://github.com/sublimelsp/LSP-pyright) plugin from [package control](https://packagecontrol.io/packages/LSP-pyright).
 
 ### Emacs
-For emacs users, you can install [lsp-mode](https://github.com/emacs-lsp/lsp-mode) that includes [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright).
+Emacs users can install [lsp-mode](https://github.com/emacs-lsp/lsp-mode) that includes [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright).
 To activate the pyright extension follow the instructions in the [docs](https://emacs-lsp.github.io/lsp-pyright/).
 
 ### Command-line
-The latest version of the command-line tool can be installed with npm, which is part of node. If you don't have a recent version of node on your system, install that first from [nodejs.org](https://nodejs.org). 
+A [community-maintained](https://github.com/RobertCraigie/pyright-python) Python package by the name of “pyright” is available on pypi and conda-forge. This package will automatically install node (which Pyright requires) and keep Pyright up to date.
+
+`pip install pyright`
+
+or
+
+`conda install pyright`
+
+Once installed, you can run the tool from the command line as follows:
+`pyright <options>`
+
+
+Alternatively, you can install the command-line version of Pyright directly from npm, which is part of node. If you don't have a recent version of node on your system, install that first from [nodejs.org](https://nodejs.org). 
 
 To install pyright globally:
 `npm install -g pyright`
@@ -84,15 +98,8 @@ To install pyright globally:
 On MacOS or Linux, sudo is required to install globally:
 `sudo npm install -g pyright`
 
-Once installed, you can run the tool from the command line as follows:
-`pyright <options>`
-
 To update to the latest version:
 `sudo npm update -g pyright`
-
-
-## Using Pyright with VS Code Python Extension
-Pyright’s type-checking functionality and language features are now incorporated into a VS Code extension called [Pylance](https://github.com/microsoft/pylance-release), the officially supported Python Language Server from Microsoft. Pylance is designed to work with the Python extension for VS Code. In addition to Pyright’s functionality, Pylance adds compatibility with several advanced features including IntelliCode for AI-assisted completions. If you are a VS Code user, we recommend that you uninstall Pyright and instead install Pylance. You will get all the benefits of Pyright and more! 
 
 
 ## Documentation
@@ -105,6 +112,7 @@ Pyright’s type-checking functionality and language features are now incorporat
 * [Comments](/docs/comments.md)
 * [Type Inference](/docs/type-inference.md)
 * [Import Resolution](/docs/import-resolution.md)
+* [Extending Builtins](/docs/builtins.md)
 * [Type Stubs](/docs/type-stubs.md)
 * [Types in Libraries](/docs/typed-libraries.md)
 * [Commands](/docs/commands.md)
@@ -114,11 +122,13 @@ Pyright’s type-checking functionality and language features are now incorporat
 For additional information about Python static typing, refer to this community-maintained [Python Type School](https://github.com/python/typing/discussions).
 
 ## Limitations
-Pyright provides support for Python 3.0 and newer. There is currently no plan to support older versions.
+Pyright provides support for Python 3.0 and newer. There are no plans to support older versions.
 
 
 ## Community
 Do you have questions about Pyright or Python type annotations in general? Post your questions in [the discussion section](https://github.com/microsoft/pyright/discussions).
+
+If you would like to report a bug or request an enhancement, file a new issue in either the [pyright](https://github.com/microsoft/pyright/issues) or [pylance-release](https://github.com/microsoft/pylance-release/issues) issue tracker. In general, core type checking functionality is associated with Pyright while language service functionality is associated with Pylance, but the same contributors monitor both repos. For best results, provide the information requested in the issue template.
 
 
 ## FAQ
@@ -128,12 +138,12 @@ Do you have questions about Pyright or Python type annotations in general? Post 
 
 **Q:** What is the long-term plan for Pyright?
 
-**A:** Pyright is now an officially-supported Microsoft type checker for Python. It will continue to be developed and maintained as an open-source project under its original MIT license terms. The Pyright extension for VSCode is a reference implementation and is not guaranteed to be fully functional or maintained long-term.
+**A:** Pyright is an officially-supported Microsoft type checker for Python. It will continue to be developed and maintained as an open-source project under its original MIT license terms. The Pyright extension for VS Code is a reference implementation and is not guaranteed to be fully functional or maintained long-term.
 
 
 ## Contributing
 
-This project welcomes contributions and suggestions. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
+This project welcomes contributions and suggestions. For feature and complex bug fix contributions, it is recommended that you first discuss the proposed change with Pyright’s maintainers before submitting the pull request. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
 

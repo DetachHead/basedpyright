@@ -76,7 +76,7 @@ export function getIndexAliasData(
         /* resolveLocalNames */ true,
         /* allowExternallyHiddenAccess */ false
     );
-    if (!resolvedInfo) {
+    if (!resolvedInfo || !resolvedInfo.declaration) {
         return undefined;
     }
 
@@ -352,7 +352,7 @@ function collectSymbolIndexData(
                 return;
             }
 
-            if (declaration.path.length <= 0) {
+            if (!declaration.loadSymbolsFromPath || declaration.path.length <= 0) {
                 // If alias doesn't have a path to the original file, we can't do dedup
                 // so ignore those aliases.
                 // ex) asyncio.futures, asyncio.base_futures.futures and many will dedup
@@ -411,15 +411,21 @@ function collectSymbolIndexDataForName(
         );
     }
 
+    let aliasData: IndexAliasData | undefined = undefined;
+    if (DeclarationType.Alias === declaration.type) {
+        aliasData = getIndexAliasData(AnalyzerNodeInfo.getFileInfo(parseResults.parseTree)!.importLookup, declaration);
+        // If we can't create alias data for import alias, then don't include it in index.
+        if (!aliasData) {
+            return;
+        }
+    }
+
     const data: IndexSymbolData = {
         name,
         externallyVisible,
         kind: symbolKind,
         itemKind: convertSymbolKindToCompletionItemKind(symbolKind),
-        alias:
-            DeclarationType.Alias === declaration.type
-                ? getIndexAliasData(AnalyzerNodeInfo.getFileInfo(parseResults.parseTree)!.importLookup, declaration)
-                : undefined,
+        alias: aliasData,
         range: options.indexingForAutoImportMode ? undefined : range,
         selectionRange: options.indexingForAutoImportMode ? undefined : selectionRange,
         children: options.indexingForAutoImportMode ? undefined : children,

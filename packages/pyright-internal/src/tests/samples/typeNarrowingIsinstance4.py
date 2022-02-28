@@ -1,7 +1,7 @@
 # This sample checks the handling of callable types that are narrowed
 # to a particular type using an isinstance type narrowing test.
 
-from typing import Callable, Literal, Union
+from typing import Callable, Protocol, Union, runtime_checkable
 
 
 class Foo:
@@ -9,34 +9,42 @@ class Foo:
         raise NotImplementedError
 
 
-class Bar:
+@runtime_checkable
+class Bar(Protocol):
     def __call__(self, arg: int) -> None:
         raise NotImplementedError
 
 
-class Baz:
+@runtime_checkable
+class Baz(Protocol):
     def __call__(self, arg: str) -> None:
         raise NotImplementedError
 
 
 def check_callable1(val: Union[Callable[[int, str], None], Callable[[int], None]]):
     if isinstance(val, Foo):
-        t1: Literal["Foo"] = reveal_type(val)
+        reveal_type(val, expected_text="Foo")
     else:
-        t2: Literal["(_p0: int) -> None"] = reveal_type(val)
+        # This doesn't get narrowed because `Foo` is not a runtime checkable protocol.
+        reveal_type(val, expected_text="((int, str) -> None) | ((int) -> None)")
 
 
 def check_callable2(val: Union[Callable[[int, str], None], Callable[[int], None]]):
     if isinstance(val, Bar):
-        t1: Literal["Bar"] = reveal_type(val)
+        reveal_type(val, expected_text="Bar")
     else:
-        t2: Literal["(_p0: int, _p1: str) -> None"] = reveal_type(val)
+        reveal_type(val, expected_text="(int, str) -> None")
 
 
 def check_callable3(val: Union[Callable[[int, str], None], Callable[[int], None]]):
     if isinstance(val, Baz):
-        t1: Literal["Never"] = reveal_type(val)
+        reveal_type(val, expected_text="Never")
     else:
-        t2: Literal["(_p0: int, _p1: str) -> None | (_p0: int) -> None"] = reveal_type(
-            val
-        )
+        reveal_type(val, expected_text="((int, str) -> None) | ((int) -> None)")
+
+
+def check_callable4(val: Union[type, Callable[[int], None]]):
+    if isinstance(val, type):
+        reveal_type(val, expected_text="type")
+    else:
+        reveal_type(val, expected_text="(int) -> None")

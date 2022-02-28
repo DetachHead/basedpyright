@@ -1,16 +1,26 @@
 import socket
 import ssl
-from typing import Any, BinaryIO, List, Pattern, Tuple, overload
+import sys
+from typing import Any, BinaryIO, NoReturn, Pattern, overload
+from typing_extensions import Literal
 
-_LongResp = Tuple[bytes, List[bytes], int]
+if sys.version_info >= (3, 10):
+    __all__ = ["POP3", "error_proto", "POP3_SSL"]
+else:
+    __all__ = ["POP3", "error_proto"]
+
+_LongResp = tuple[bytes, list[bytes], int]
 
 class error_proto(Exception): ...
 
-POP3_PORT: int
-POP3_SSL_PORT: int
-CR: bytes
-LF: bytes
-CRLF: bytes
+POP3_PORT: Literal[110]
+POP3_SSL_PORT: Literal[995]
+CR: Literal[b"\r"]
+LF: Literal[b"\n"]
+CRLF: Literal[b"\r\n"]
+HAVE_SSL: bool
+
+_list = list  # conflicts with a method named "list"
 
 class POP3:
     encoding: str
@@ -24,7 +34,7 @@ class POP3:
     def set_debuglevel(self, level: int) -> None: ...
     def user(self, user: str) -> bytes: ...
     def pass_(self, pswd: str) -> bytes: ...
-    def stat(self) -> Tuple[int, int]: ...
+    def stat(self) -> tuple[int, int]: ...
     def list(self, which: Any | None = ...) -> _LongResp: ...
     def retr(self, which: Any) -> _LongResp: ...
     def dele(self, which: Any) -> bytes: ...
@@ -41,7 +51,7 @@ class POP3:
     @overload
     def uidl(self, which: Any) -> bytes: ...
     def utf8(self) -> bytes: ...
-    def capa(self) -> dict[str, List[str]]: ...
+    def capa(self) -> dict[str, _list[str]]: ...
     def stls(self, context: ssl.SSLContext | None = ...) -> bytes: ...
 
 class POP3_SSL(POP3):
@@ -55,4 +65,4 @@ class POP3_SSL(POP3):
         context: ssl.SSLContext | None = ...,
     ) -> None: ...
     # "context" is actually the last argument, but that breaks LSP and it doesn't really matter because all the arguments are ignored
-    def stls(self, context: Any = ..., keyfile: Any = ..., certfile: Any = ...) -> bytes: ...
+    def stls(self, context: Any = ..., keyfile: Any = ..., certfile: Any = ...) -> NoReturn: ...

@@ -11,7 +11,7 @@ import { Declaration, DeclarationType } from './declaration';
 import { Symbol } from './symbol';
 
 export interface ResolvedAliasInfo {
-    declaration: Declaration;
+    declaration: Declaration | undefined;
     isPrivate: boolean;
     privatePyTypedImported?: string;
     privatePyTypedImporter?: string;
@@ -57,7 +57,7 @@ export function resolveAliasDeclaration(
         }
 
         let lookupResult: ImportLookupResult | undefined;
-        if (curDeclaration.path) {
+        if (curDeclaration.path && curDeclaration.loadSymbolsFromPath) {
             lookupResult = importLookup(curDeclaration.path);
         }
 
@@ -73,6 +73,16 @@ export function resolveAliasDeclaration(
                     allowExternallyHiddenAccess
                 );
             }
+
+            // If the symbol comes from a native library, we won't
+            // be able to resolve its type directly.
+            if (curDeclaration.isNativeLib) {
+                return {
+                    declaration: undefined,
+                    isPrivate,
+                };
+            }
+
             return undefined;
         }
 
@@ -95,9 +105,14 @@ export function resolveAliasDeclaration(
             }
         }
 
-        // Prefer the last declaration in the list. This ensures that
+        // Prefer the last unvisited declaration in the list. This ensures that
         // we use all of the overloads if it's an overloaded function.
-        curDeclaration = declarations[declarations.length - 1];
+        const unvisitedDecls = declarations.filter((decl) => !alreadyVisited.includes(decl));
+        if (unvisitedDecls.length > 0) {
+            curDeclaration = unvisitedDecls[unvisitedDecls.length - 1];
+        } else {
+            curDeclaration = declarations[declarations.length - 1];
+        }
 
         if (isPrivatePyTypedImport) {
             privatePyTypedImported = privatePyTypedImported ?? curDeclaration?.moduleName;

@@ -1,5 +1,7 @@
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
+from typing_extensions import final
 
+@final
 class make_encoder:
     sort_keys: Any
     skipkeys: Any
@@ -23,6 +25,7 @@ class make_encoder:
     ) -> None: ...
     def __call__(self, obj: object, _current_indent_level: int) -> Any: ...
 
+@final
 class make_scanner:
     object_hook: Any
     object_pairs_hook: Any
@@ -32,7 +35,7 @@ class make_scanner:
     strict: bool
     # TODO: 'context' needs the attrs above (ducktype), but not __call__.
     def __init__(self, context: make_scanner) -> None: ...
-    def __call__(self, string: str, index: int) -> Tuple[Any, int]: ...
+    def __call__(self, string: str, index: int) -> tuple[Any, int]: ...
 
 def encode_basestring_ascii(s: str) -> str: ...
-def scanstring(string: str, end: int, strict: bool = ...) -> Tuple[str, int]: ...
+def scanstring(string: str, end: int, strict: bool = ...) -> tuple[str, int]: ...

@@ -11,10 +11,19 @@
 import { CancellationToken } from 'vscode-languageserver';
 
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
+import { addIfUnique, createMapFromItems } from '../common/collectionUtils';
 import { TextEditAction } from '../common/editAction';
+import { FileSystem } from '../common/fileSystem';
+import {
+    getDirectoryPath,
+    getFileName,
+    getRelativePathComponentsFromDirectory,
+    isFile,
+    stripFileExtension,
+} from '../common/pathUtils';
 import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
-import { Position } from '../common/textRange';
-import { TextRange } from '../common/textRange';
+import { compareStringsCaseSensitive } from '../common/stringUtils';
+import { Position, Range, TextRange } from '../common/textRange';
 import {
     ImportAsNode,
     ImportFromAsNode,
@@ -27,6 +36,7 @@ import {
 } from '../parser/parseNodes';
 import { ParseResults } from '../parser/parser';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
+import { ModuleNameAndType } from './importResolver';
 import { ImportResult, ImportType } from './importResult';
 import * as SymbolNameUtils from './symbolNameUtils';
 
@@ -52,6 +62,15 @@ export const enum ImportGroup {
     ThirdParty = 1,
     Local = 2,
     LocalRelative = 3,
+}
+
+export interface ImportNameInfo {
+    name?: string;
+    alias?: string;
+}
+
+export interface ImportNameWithModuleInfo extends ImportNameInfo {
+    module: ModuleNameAndType;
 }
 
 // Determines which import grouping should be used when sorting imports.
@@ -142,108 +161,51 @@ function _getImportSymbolNameType(symbolName: string): number {
 }
 
 export function getTextEditsForAutoImportSymbolAddition(
-    symbolName: string,
+    importNameInfo: ImportNameInfo | ImportNameInfo[],
     importStatement: ImportStatement,
-    parseResults: ParseResults,
-    aliasName?: string
-) {
+    parseResults: ParseResults
+): TextEditAction[] {
+    const additionEdits: AdditionEdit[] = [];
+    if (
+        !importStatement.node ||
+        importStatement.node.nodeType !== ParseNodeType.ImportFrom ||
+        importStatement.node.isWildcardImport
+    ) {
+        return additionEdits;
+    }
+
+    // Make sure we're not attempting to auto-import a symbol that
+    // already exists in the import list.
+    const importFrom = importStatement.node;
+    importNameInfo = (Array.isArray(importNameInfo) ? importNameInfo : [importNameInfo]).filter(
+        (info) =>
+            !!info.name &&
+            !importFrom.imports.some((importAs) => importAs.name.value === info.name && importAs.alias === info.alias)
+    );
+
+    if (importNameInfo.length === 0) {
+        return additionEdits;
+    }
+
+    for (const nameInfo of importNameInfo) {
+        additionEdits.push(
+            _getTextEditsForAutoImportSymbolAddition(nameInfo.name!, nameInfo.alias, importStatement.node, parseResults)
+        );
+    }
+
+    // Merge edits with the same insertion point.
+    const editsMap = createMapFromItems(additionEdits, (e) => Range.print(e.range));
     const textEditList: TextEditAction[] = [];
-
-    // Scan through the import symbols to find the right insertion point,
-    // assuming we want to keep the imports alphabetized.
-    let priorImport: ImportFromAsNode | undefined;
-
-    if (importStatement.node && importStatement.node.nodeType === ParseNodeType.ImportFrom) {
-        // Make sure we're not attempting to auto-import a symbol that
-        // already exists in the import list.
-        if (!importStatement.node.imports.some((importAs) => importAs.name.value === symbolName)) {
-            // Insert new symbol by import symbol type and then alphabetical order.
-            // Match isort default behavior.
-            const symbolNameType = _getImportSymbolNameType(symbolName);
-            // isort will prefer '_' over alphanumerical chars
-            // This can't be reproduced by a normal string compare in TypeScript, since '_' > 'A'.
-            // Replace all '_' with '=' which guarantees '=' < 'A'.
-            // Safe to do as '=' is an invalid char in Python names.
-            const symbolNameCompare = symbolName.replace(/_/g, '=');
-            for (const curImport of importStatement.node.imports) {
-                const curImportNameType = _getImportSymbolNameType(curImport.name.value);
-                if (
-                    (curImportNameType === symbolNameType &&
-                        curImport.name.value.replace(/_/g, '=') > symbolNameCompare) ||
-                    curImportNameType > symbolNameType
-                ) {
-                    break;
-                }
-
-                priorImport = curImport;
-            }
-
-            // Are import symbols formatted one per line or multiple per line? We
-            // will honor the existing formatting. We'll use a heuristic to determine
-            // whether symbols are one per line or multiple per line.
-            //   from x import a, b, c
-            // or
-            //   from x import (
-            //      a
-            //   )
-            let useOnePerLineFormatting = false;
-            let indentText = '';
-            if (importStatement.node.imports.length > 0) {
-                const importStatementPos = convertOffsetToPosition(
-                    importStatement.node.start,
-                    parseResults.tokenizerOutput.lines
-                );
-                const firstSymbolPos = convertOffsetToPosition(
-                    importStatement.node.imports[0].start,
-                    parseResults.tokenizerOutput.lines
-                );
-                const secondSymbolPos =
-                    importStatement.node.imports.length > 1
-                        ? convertOffsetToPosition(
-                              importStatement.node.imports[1].start,
-                              parseResults.tokenizerOutput.lines
-                          )
-                        : undefined;
-
-                if (
-                    firstSymbolPos.line > importStatementPos.line &&
-                    (secondSymbolPos === undefined || secondSymbolPos.line > firstSymbolPos.line)
-                ) {
-                    const firstSymbolLineRange = parseResults.tokenizerOutput.lines.getItemAt(firstSymbolPos.line);
-
-                    // Use the same combination of spaces or tabs to match
-                    // existing formatting.
-                    indentText = parseResults.text.substr(firstSymbolLineRange.start, firstSymbolPos.character);
-
-                    // Is the indent text composed of whitespace only?
-                    if (/^\s*$/.test(indentText)) {
-                        useOnePerLineFormatting = true;
-                    }
-                }
-            }
-
-            const insertionOffset = priorImport
-                ? TextRange.getEnd(priorImport)
-                : importStatement.node.imports.length > 0
-                ? importStatement.node.imports[0].start
-                : importStatement.node.start + importStatement.node.length;
-            const insertionPosition = convertOffsetToPosition(insertionOffset, parseResults.tokenizerOutput.lines);
-
-            const insertText = aliasName ? `${symbolName} as ${aliasName}` : `${symbolName}`;
-            let replacementText: string;
-
-            if (useOnePerLineFormatting) {
-                const eol = parseResults.tokenizerOutput.predominantEndOfLineSequence;
-                replacementText = priorImport
-                    ? `,${eol}${indentText}${insertText}`
-                    : `${insertText},${eol}${indentText}`;
-            } else {
-                replacementText = priorImport ? `, ${insertText}` : `${insertText}, `;
-            }
-
+    for (const editGroup of editsMap.values()) {
+        if (editGroup.length === 1) {
+            textEditList.push(editGroup[0]);
+        } else {
             textEditList.push({
-                range: { start: insertionPosition, end: insertionPosition },
-                replacementText,
+                range: editGroup[0].range,
+                replacementText: editGroup
+                    .sort((a, b) => _compareImportNames(a.importName, b.importName))
+                    .map((e) => e.replacementText)
+                    .join(''),
             });
         }
     }
@@ -251,27 +213,283 @@ export function getTextEditsForAutoImportSymbolAddition(
     return textEditList;
 }
 
+function _compareImportNames(name1: string, name2: string) {
+    // Compare import name by import symbol type and then alphabetical order.
+    // Match isort default behavior.
+    const name1Type = _getImportSymbolNameType(name1);
+    const name2Type = _getImportSymbolNameType(name2);
+    const compare = name1Type - name2Type;
+    if (compare !== 0) {
+        return compare;
+    }
+
+    // isort will prefer '_' over alphanumerical chars
+    // This can't be reproduced by a normal string compare in TypeScript, since '_' > 'A'.
+    // Replace all '_' with '=' which guarantees '=' < 'A'.
+    // Safe to do as '=' is an invalid char in Python names.
+    const name1toCompare = name1.replace(/_/g, '=');
+    const name2toCompare = name2.replace(/_/g, '=');
+    return compareStringsCaseSensitive(name1toCompare, name2toCompare);
+}
+
+interface AdditionEdit extends TextEditAction {
+    importName: string;
+}
+
+function _getTextEditsForAutoImportSymbolAddition(
+    importName: string,
+    alias: string | undefined,
+    node: ImportFromNode,
+    parseResults: ParseResults
+): AdditionEdit {
+    // Scan through the import symbols to find the right insertion point,
+    // assuming we want to keep the imports alphabetized.
+    let priorImport: ImportFromAsNode | undefined;
+    for (const curImport of node.imports) {
+        if (_compareImportNames(curImport.name.value, importName) > 0) {
+            break;
+        }
+
+        priorImport = curImport;
+    }
+
+    // Are import symbols formatted one per line or multiple per line? We
+    // will honor the existing formatting. We'll use a heuristic to determine
+    // whether symbols are one per line or multiple per line.
+    //   from x import a, b, c
+    // or
+    //   from x import (
+    //      a
+    //   )
+    let useOnePerLineFormatting = false;
+    let indentText = '';
+    if (node.imports.length > 0) {
+        const importStatementPos = convertOffsetToPosition(node.start, parseResults.tokenizerOutput.lines);
+        const firstSymbolPos = convertOffsetToPosition(node.imports[0].start, parseResults.tokenizerOutput.lines);
+        const secondSymbolPos =
+            node.imports.length > 1
+                ? convertOffsetToPosition(node.imports[1].start, parseResults.tokenizerOutput.lines)
+                : undefined;
+
+        if (
+            firstSymbolPos.line > importStatementPos.line &&
+            (secondSymbolPos === undefined || secondSymbolPos.line > firstSymbolPos.line)
+        ) {
+            const firstSymbolLineRange = parseResults.tokenizerOutput.lines.getItemAt(firstSymbolPos.line);
+
+            // Use the same combination of spaces or tabs to match
+            // existing formatting.
+            indentText = parseResults.text.substr(firstSymbolLineRange.start, firstSymbolPos.character);
+
+            // Is the indent text composed of whitespace only?
+            if (/^\s*$/.test(indentText)) {
+                useOnePerLineFormatting = true;
+            }
+        }
+    }
+
+    const insertionOffset = priorImport
+        ? TextRange.getEnd(priorImport)
+        : node.imports.length > 0
+        ? node.imports[0].start
+        : node.start + node.length;
+    const insertionPosition = convertOffsetToPosition(insertionOffset, parseResults.tokenizerOutput.lines);
+
+    const insertText = alias ? `${importName} as ${alias}` : `${importName}`;
+    let replacementText: string;
+
+    if (useOnePerLineFormatting) {
+        const eol = parseResults.tokenizerOutput.predominantEndOfLineSequence;
+        replacementText = priorImport ? `,${eol}${indentText}${insertText}` : `${insertText},${eol}${indentText}`;
+    } else {
+        replacementText = priorImport ? `, ${insertText}` : `${insertText}, `;
+    }
+
+    return {
+        range: { start: insertionPosition, end: insertionPosition },
+        importName,
+        replacementText,
+    };
+}
+
+interface InsertionEdit {
+    range: Range;
+    preChange: string;
+    importStatement: string;
+    postChange: string;
+    importGroup: ImportGroup;
+}
+
+export function getTextEditsForAutoImportInsertions(
+    importNameInfo: ImportNameWithModuleInfo[] | ImportNameWithModuleInfo,
+    importStatements: ImportStatements,
+    parseResults: ParseResults,
+    invocationPosition: Position
+): TextEditAction[] {
+    const insertionEdits: InsertionEdit[] = [];
+
+    importNameInfo = Array.isArray(importNameInfo) ? importNameInfo : [importNameInfo];
+    if (importNameInfo.length === 0) {
+        return [];
+    }
+
+    const map = createMapFromItems(importNameInfo, (i) => i.module.moduleName);
+    for (const importInfo of map.values()) {
+        insertionEdits.push(
+            ..._getInsertionEditsForAutoImportInsertion(
+                importInfo,
+                importStatements,
+                importInfo[0].module.moduleName,
+                getImportGroupFromModuleNameAndType(importInfo[0].module),
+                parseResults,
+                invocationPosition
+            )
+        );
+    }
+
+    return _convertInsertionEditsToTextEdits(parseResults, insertionEdits);
+}
+
 export function getTextEditsForAutoImportInsertion(
-    symbolName: string | undefined,
+    importNameInfo: ImportNameInfo[] | ImportNameInfo,
     importStatements: ImportStatements,
     moduleName: string,
     importGroup: ImportGroup,
     parseResults: ParseResults,
-    invocationPosition: Position,
-    aliasName?: string
+    invocationPosition: Position
 ): TextEditAction[] {
+    const insertionEdits = _getInsertionEditsForAutoImportInsertion(
+        importNameInfo,
+        importStatements,
+        moduleName,
+        importGroup,
+        parseResults,
+        invocationPosition
+    );
+
+    return _convertInsertionEditsToTextEdits(parseResults, insertionEdits);
+}
+
+function _convertInsertionEditsToTextEdits(parseResults: ParseResults, insertionEdits: InsertionEdit[]) {
+    if (insertionEdits.length < 2) {
+        return insertionEdits.map((e) => getTextEdit(e));
+    }
+
+    // Merge edits with the same insertion point.
+    const editsMap = [...createMapFromItems(insertionEdits, (e) => `${e.importGroup} ${Range.print(e.range)}`)]
+        .sort((a, b) => compareStringsCaseSensitive(a[0], b[0]))
+        .map((v) => v[1]);
+
     const textEditList: TextEditAction[] = [];
+    for (const editGroup of editsMap) {
+        if (editGroup.length === 1) {
+            textEditList.push(getTextEdit(editGroup[0]));
+        } else {
+            textEditList.push({
+                range: editGroup[0].range,
+                replacementText:
+                    editGroup[0].preChange +
+                    editGroup
+                        .map((e) => e.importStatement)
+                        .sort((a, b) => compareImports(a, b))
+                        .join(parseResults.tokenizerOutput.predominantEndOfLineSequence) +
+                    editGroup[0].postChange,
+            });
+        }
+    }
+
+    return textEditList;
+
+    function getTextEdit(edit: InsertionEdit): TextEditAction {
+        return { range: edit.range, replacementText: edit.preChange + edit.importStatement + edit.postChange };
+    }
+
+    function compareImports(a: string, b: string) {
+        const isImport1 = a.startsWith('import');
+        const isImport2 = b.startsWith('import');
+
+        if (isImport1 === isImport2) {
+            return a < b ? -1 : 1;
+        }
+
+        return isImport1 ? -1 : 1;
+    }
+}
+
+function _getInsertionEditsForAutoImportInsertion(
+    importNameInfo: ImportNameInfo[] | ImportNameInfo,
+    importStatements: ImportStatements,
+    moduleName: string,
+    importGroup: ImportGroup,
+    parseResults: ParseResults,
+    invocationPosition: Position
+): InsertionEdit[] {
+    const insertionEdits: InsertionEdit[] = [];
+
+    importNameInfo = Array.isArray(importNameInfo) ? importNameInfo : [importNameInfo];
+    if (importNameInfo.length === 0) {
+        // This will let "import [moduleName]" to be generated.
+        importNameInfo.push({});
+    }
 
     // We need to emit a new 'from import' statement if symbolName is given. otherwise, use 'import' statement.
-    const importText = symbolName ? symbolName : moduleName;
-    const importTextWithAlias = aliasName ? `${importText} as ${aliasName}` : importText;
-    let newImportStatement = symbolName
-        ? `from ${moduleName} import ${importTextWithAlias}`
-        : `import ${importTextWithAlias}`;
+    const map = createMapFromItems(importNameInfo, (i) => (i.name ? 'from' : 'import'));
+
+    // Add import statements first.
+    const imports = map.get('import');
+    if (imports) {
+        appendToEdits(imports, (names) => `import ${names.join(', ')}`);
+    }
+
+    // Add from import statements next.
+    const fromImports = map.get('from');
+    if (fromImports) {
+        appendToEdits(fromImports, (names) => `from ${moduleName} import ${names.join(', ')}`);
+    }
+
+    return insertionEdits;
+
+    function getImportAsText(nameInfo: ImportNameInfo, moduleName: string) {
+        const importText = nameInfo.name ? nameInfo.name : moduleName;
+        return {
+            sortText: importText,
+            text: nameInfo.alias ? `${importText} as ${nameInfo.alias}` : importText,
+        };
+    }
+
+    function appendToEdits(importNameInfo: ImportNameInfo[], importStatementGetter: (n: string[]) => string) {
+        const importNames = importNameInfo
+            .map((i) => getImportAsText(i, moduleName))
+            .sort((a, b) => _compareImportNames(a.sortText, b.sortText))
+            .reduce((set, v) => addIfUnique(set, v.text), [] as string[]);
+
+        insertionEdits.push(
+            _getInsertionEditForAutoImportInsertion(
+                importStatementGetter(importNames),
+                importStatements,
+                moduleName,
+                importGroup,
+                parseResults,
+                invocationPosition
+            )
+        );
+    }
+}
+
+function _getInsertionEditForAutoImportInsertion(
+    importStatement: string,
+    importStatements: ImportStatements,
+    moduleName: string,
+    importGroup: ImportGroup,
+    parseResults: ParseResults,
+    invocationPosition: Position
+): InsertionEdit {
+    let preChange = '';
+    let postChange = '';
 
     let insertionPosition: Position;
     const invocation = convertPositionToOffset(invocationPosition, parseResults.tokenizerOutput.lines)!;
-    if (importStatements.orderedImports.length > 0 && invocation >= importStatements.orderedImports[0].node.start) {
+    if (importStatements.orderedImports.length > 0 && invocation > importStatements.orderedImports[0].node.start) {
         let insertBefore = true;
         let insertionImport = importStatements.orderedImports[0];
 
@@ -288,7 +506,7 @@ export function getTextEditsForAutoImportInsertion(
             if (importGroup < curImportGroup) {
                 if (!insertBefore && prevImportGroup < importGroup) {
                     // Add an extra line to create a new group.
-                    newImportStatement = parseResults.tokenizerOutput.predominantEndOfLineSequence + newImportStatement;
+                    preChange = parseResults.tokenizerOutput.predominantEndOfLineSequence + preChange;
                 }
                 break;
             }
@@ -302,7 +520,7 @@ export function getTextEditsForAutoImportInsertion(
             if (curImport.followsNonImportStatement) {
                 if (importGroup > prevImportGroup) {
                     // Add an extra line to create a new group.
-                    newImportStatement = parseResults.tokenizerOutput.predominantEndOfLineSequence + newImportStatement;
+                    preChange = parseResults.tokenizerOutput.predominantEndOfLineSequence + preChange;
                 }
                 break;
             }
@@ -311,7 +529,7 @@ export function getTextEditsForAutoImportInsertion(
             if (curImport === importStatements.orderedImports[importStatements.orderedImports.length - 1]) {
                 if (importGroup > curImportGroup) {
                     // Add an extra line to create a new group.
-                    newImportStatement = parseResults.tokenizerOutput.predominantEndOfLineSequence + newImportStatement;
+                    preChange = parseResults.tokenizerOutput.predominantEndOfLineSequence + preChange;
                 }
             }
 
@@ -328,9 +546,9 @@ export function getTextEditsForAutoImportInsertion(
 
         if (insertionImport) {
             if (insertBefore) {
-                newImportStatement = newImportStatement + parseResults.tokenizerOutput.predominantEndOfLineSequence;
+                postChange = postChange + parseResults.tokenizerOutput.predominantEndOfLineSequence;
             } else {
-                newImportStatement = parseResults.tokenizerOutput.predominantEndOfLineSequence + newImportStatement;
+                preChange = parseResults.tokenizerOutput.predominantEndOfLineSequence + preChange;
             }
 
             insertionPosition = convertOffsetToPosition(
@@ -377,23 +595,19 @@ export function getTextEditsForAutoImportInsertion(
             }
         }
 
-        newImportStatement +=
+        postChange =
+            postChange +
             parseResults.tokenizerOutput.predominantEndOfLineSequence +
             parseResults.tokenizerOutput.predominantEndOfLineSequence;
-
         if (addNewLineBefore) {
-            newImportStatement = parseResults.tokenizerOutput.predominantEndOfLineSequence + newImportStatement;
+            preChange = parseResults.tokenizerOutput.predominantEndOfLineSequence + preChange;
         } else {
-            newImportStatement += parseResults.tokenizerOutput.predominantEndOfLineSequence;
+            postChange = postChange + parseResults.tokenizerOutput.predominantEndOfLineSequence;
         }
     }
 
-    textEditList.push({
-        range: { start: insertionPosition, end: insertionPosition },
-        replacementText: newImportStatement,
-    });
-
-    return textEditList;
+    const range = { start: insertionPosition, end: insertionPosition };
+    return { range, preChange, importStatement, postChange, importGroup };
 }
 
 function _processImportNode(node: ImportNode, localImports: ImportStatements, followsNonImportStatement: boolean) {
@@ -511,4 +725,110 @@ export function getAllImportNames(node: ImportNode | ImportFromNode) {
 
     const importFromNode = node as ImportFromNode;
     return importFromNode.imports;
+}
+
+export function getImportGroupFromModuleNameAndType(moduleNameAndType: ModuleNameAndType): ImportGroup {
+    let importGroup = ImportGroup.Local;
+    if (moduleNameAndType.isLocalTypingsFile || moduleNameAndType.importType === ImportType.ThirdParty) {
+        importGroup = ImportGroup.ThirdParty;
+    } else if (moduleNameAndType.importType === ImportType.BuiltIn) {
+        importGroup = ImportGroup.BuiltIn;
+    }
+
+    return importGroup;
+}
+
+export function getTextRangeForImportNameDeletion(
+    nameNodes: ImportAsNode[] | ImportFromAsNode[],
+    nameNodeIndex: number
+): TextRange {
+    let editSpan: TextRange;
+    if (nameNodes.length === 1 && nameNodeIndex === 0) {
+        // get span of "import [|A|]"
+        editSpan = nameNodes[0];
+    } else if (nameNodeIndex === nameNodes.length - 1) {
+        // get span of "import A[|, B|]"
+        const start = TextRange.getEnd(nameNodes[nameNodeIndex - 1]);
+        const length = TextRange.getEnd(nameNodes[nameNodeIndex]) - start;
+        editSpan = { start, length };
+    } else {
+        // get span of "import [|A, |]B"
+        const start = nameNodes[nameNodeIndex].start;
+        const length = nameNodes[nameNodeIndex + 1].start - start;
+        editSpan = { start, length };
+    }
+
+    return editSpan;
+}
+
+export function getRelativeModuleName(
+    fs: FileSystem,
+    sourcePath: string,
+    targetPath: string,
+    ignoreFolderStructure = false,
+    sourceIsFile?: boolean
+) {
+    let srcPath = sourcePath;
+    sourceIsFile = sourceIsFile !== undefined ? sourceIsFile : isFile(fs, sourcePath);
+    if (sourceIsFile) {
+        srcPath = getDirectoryPath(sourcePath);
+    }
+
+    let symbolName: string | undefined;
+    let destPath = targetPath;
+    if (sourceIsFile) {
+        destPath = getDirectoryPath(targetPath);
+
+        const fileName = stripFileExtension(getFileName(targetPath));
+        if (fileName !== '__init__') {
+            // ex) src: a.py, dest: b.py -> ".b" will be returned.
+            symbolName = fileName;
+        } else if (ignoreFolderStructure) {
+            // ex) src: nested1/nested2/__init__.py, dest: nested1/__init__.py -> "...nested1" will be returned
+            //     like how it would return for sibling folder.
+            //
+            // if folder structure is not ignored, ".." will be returned
+            symbolName = getFileName(destPath);
+            destPath = getDirectoryPath(destPath);
+        }
+    }
+
+    const relativePaths = getRelativePathComponentsFromDirectory(srcPath, destPath, (f) => fs.realCasePath(f));
+
+    // This assumes both file paths are under the same importing root.
+    // So this doesn't handle paths pointing to 2 different import roots.
+    // ex) user file A to library file B
+    let currentPaths = '.';
+    for (let i = 1; i < relativePaths.length; i++) {
+        const relativePath = relativePaths[i];
+        if (relativePath === '..') {
+            currentPaths += '.';
+        } else {
+            currentPaths += relativePath;
+        }
+
+        if (relativePath !== '..' && i !== relativePaths.length - 1) {
+            currentPaths += '.';
+        }
+    }
+
+    if (symbolName) {
+        currentPaths =
+            currentPaths[currentPaths.length - 1] === '.' ? currentPaths + symbolName : currentPaths + '.' + symbolName;
+    }
+
+    return currentPaths;
+}
+
+export function getDirectoryLeadingDotsPointsTo(fromDirectory: string, leadingDots: number) {
+    let currentDirectory = fromDirectory;
+    for (let i = 1; i < leadingDots; i++) {
+        if (currentDirectory === '') {
+            return undefined;
+        }
+
+        currentDirectory = getDirectoryPath(currentDirectory);
+    }
+
+    return currentDirectory;
 }

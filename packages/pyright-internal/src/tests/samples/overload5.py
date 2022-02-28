@@ -4,6 +4,7 @@
 from typing import (
     Any,
     Generic,
+    List,
     Literal,
     Optional,
     Tuple,
@@ -46,13 +47,13 @@ def func1(*args: Any, **kwargs: Any) -> Any:
 
 @overload
 def func2(a: int, b: Any) -> int:
-    """ Overload """
+    """Overload"""
 
 
 # This should generate an error because the overload is obscured.
 @overload
 def func2(a: int, b: int) -> int:
-    """ Overload """
+    """Overload"""
 
 
 def func2(*args: Any, **kwargs: Any) -> Any:
@@ -233,3 +234,59 @@ def func15(**kwargs: Any) -> str:
 
 def func15(*args: Any, **kwargs: Any) -> Any:
     pass
+
+
+@overload
+def func16(var: None) -> List[Any]:
+    ...
+
+
+@overload
+def func16(var: _T1) -> List[_T1]:
+    ...
+
+
+def func16(var: Union[_T1, None]) -> List[_T1] | List[Any]:
+    ...
+
+
+@overload
+def func17(a: int, b: List[int]) -> int:
+    ...
+
+
+@overload
+def func17(a: int, b: List[_T1]) -> _T1:
+    ...
+
+
+def func17(*args: Any, **kwargs: Any) -> Any:
+    pass
+
+
+class ClassA(Generic[_T1]):
+    @overload
+    def __call__(self, f: _T1) -> _T1:
+        ...
+
+    @overload
+    def __call__(self, f: _T1 | None) -> _T1:
+        ...
+
+    def __call__(self, f: _T1 | None) -> _T1:
+        ...
+
+
+class ClassB:
+    # This should generate an error because the overload is overlapping.
+    @overload
+    def __call__(self, f: _T1) -> _T1:
+        ...
+
+    # This should generate an error because the overload is overlapped.
+    @overload
+    def __call__(self, f: _T1 | None) -> _T1:
+        ...
+
+    def __call__(self, f: _T1 | None) -> _T1:
+        ...
