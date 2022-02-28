@@ -8,9 +8,14 @@
  * with a specified set of options.
  */
 import { isPythonBinary } from '../analyzer/pythonPathUtils';
+import { AnalyzerService } from '../analyzer/service';
+import type { BackgroundAnalysis } from '../backgroundAnalysis';
 import { CommandLineOptions } from '../common/commandLineOptions';
+import { LogLevel } from '../common/console';
+import { createDeferred } from '../common/deferred';
+import { FileSystem } from '../common/fileSystem';
 import { combinePaths } from '../common/pathUtils';
-import { ServerSettings, WorkspaceServiceInstance } from '../languageServerBase';
+import { LanguageServerInterface, ServerSettings, WorkspaceServiceInstance } from '../languageServerBase';
 
 export class AnalyzerServiceExecutor {
     static runWithOptions(
@@ -29,7 +34,37 @@ export class AnalyzerServiceExecutor {
         );
 
         // Setting options causes the analyzer service to re-analyze everything.
-        workspace.serviceInstance.setOptions(commandLineOptions, trackFiles);
+        workspace.serviceInstance.setOptions(commandLineOptions);
+    }
+
+    static async cloneService(
+        ls: LanguageServerInterface,
+        workspace: WorkspaceServiceInstance,
+        typeStubTargetImportName?: string,
+        backgroundAnalysis?: BackgroundAnalysis,
+        fileSystem?: FileSystem
+    ): Promise<AnalyzerService> {
+        // Allocate a temporary pseudo-workspace to perform this job.
+        const tempWorkspace: WorkspaceServiceInstance = {
+            workspaceName: `temp workspace for cloned service`,
+            rootPath: workspace.rootPath,
+            rootUri: workspace.rootUri,
+            serviceInstance: workspace.serviceInstance.clone('cloned service', backgroundAnalysis, fileSystem),
+            disableLanguageServices: true,
+            disableOrganizeImports: true,
+            isInitialized: createDeferred<boolean>(),
+        };
+
+        const serverSettings = await ls.getSettings(workspace);
+        AnalyzerServiceExecutor.runWithOptions(
+            ls.rootPath,
+            tempWorkspace,
+            serverSettings,
+            typeStubTargetImportName,
+            /* trackFiles */ false
+        );
+
+        return tempWorkspace.serviceInstance;
     }
 }
 
@@ -48,6 +83,7 @@ function getEffectiveCommandLineOptions(
     commandLineOptions.indexing = serverSettings.indexing;
     commandLineOptions.logTypeEvaluationTime = serverSettings.logTypeEvaluationTime ?? false;
     commandLineOptions.typeEvaluationTimeThreshold = serverSettings.typeEvaluationTimeThreshold ?? 50;
+    commandLineOptions.enableAmbientAnalysis = trackFiles;
 
     if (!trackFiles) {
         commandLineOptions.watchForSourceChanges = false;
@@ -87,6 +123,12 @@ function getEffectiveCommandLineOptions(
 
     if (serverSettings.stubPath) {
         commandLineOptions.stubPath = serverSettings.stubPath;
+    }
+
+    if (serverSettings.logLevel === LogLevel.Log) {
+        // When logLevel is "Trace", turn on verboseOutput as well
+        // so we can get detailed log from analysis service.
+        commandLineOptions.verboseOutput = true;
     }
 
     if (typeStubTargetImportName) {

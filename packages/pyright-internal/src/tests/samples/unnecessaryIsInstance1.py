@@ -1,6 +1,13 @@
 # This sample tests unnecessary isinstance error reporting.
 
-from typing import ClassVar, Literal, Protocol, TypedDict, Union, runtime_checkable
+from typing import (
+    ClassVar,
+    Protocol,
+    Type,
+    TypedDict,
+    Union,
+    runtime_checkable,
+)
 
 from unknown_import import CustomClass1
 
@@ -63,7 +70,22 @@ class ClassC:
 
 def func3(obj: BaseClass):
     if isinstance(obj, (ClassA, ClassB)):
-        t_1: Literal["ClassA | ClassB"] = reveal_type(obj)
+        reveal_type(obj, expected_text="ClassA | ClassB")
 
     if isinstance(obj, (ClassA, ClassB, ClassC)):
-        t_2: Literal["ClassA | ClassB"] = reveal_type(obj)
+        reveal_type(obj, expected_text="ClassA | ClassB")
+
+
+class A:
+    pass
+
+
+class B(A):
+    pass
+
+
+def func4(a: A, cls: Type[A]) -> None:
+    isinstance(a, cls)
+
+    # This should generate an error because it's always true.
+    isinstance(a, A)

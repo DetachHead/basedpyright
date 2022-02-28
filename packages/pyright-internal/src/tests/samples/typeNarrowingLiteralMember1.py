@@ -8,61 +8,113 @@ class A:
     kind: Literal["A"]
     kind_class: ClassVar[Literal["A"]]
     d: Literal[1, 2, 3]
+    is_a: Literal[True]
 
 
 class B:
     kind: Literal["B"]
     kind_class: ClassVar[Literal["B"]]
     d: Literal[3, 4, 5]
+    is_a: Literal[False]
 
 
 class C:
     kind: str
     kind_class: str
     c: int
+    is_a: bool
 
 
 class D:
     kind: Literal[1, 2, 3]
 
 
-def foo_obj1(c: Union[A, B]):
+def eq_obj1(c: Union[A, B]):
     if c.kind == "A":
-        tc1: Literal["A"] = reveal_type(c)
+        reveal_type(c, expected_text="A")
     else:
-        tc2: Literal["B"] = reveal_type(c)
+        reveal_type(c, expected_text="B")
 
 
-def foo_obj2(c: Union[A, B]):
+def is_obj1_1(c: Union[A, B]):
+    if c.kind is "A":
+        reveal_type(c, expected_text="A | B")
+    else:
+        reveal_type(c, expected_text="A | B")
+
+
+def is_obj1_2(c: Union[A, B]):
+    if c.is_a is False:
+        reveal_type(c, expected_text="B")
+    else:
+        reveal_type(c, expected_text="A")
+
+
+def eq_obj2(c: Union[A, B]):
     if c.kind != "A":
-        tc1: Literal["B"] = reveal_type(c)
+        reveal_type(c, expected_text="B")
     else:
-        tc2: Literal["A"] = reveal_type(c)
+        reveal_type(c, expected_text="A")
 
 
-def foo_obj3(c: Union[A, B, C]):
+def is_obj2(c: Union[A, B]):
+    if c.kind is not "A":
+        reveal_type(c, expected_text="A | B")
+    else:
+        reveal_type(c, expected_text="A | B")
+
+
+def eq_obj3(c: Union[A, B, C]):
     if c.kind == "A":
-        tc1: Literal["A | B | C"] = reveal_type(c)
+        reveal_type(c, expected_text="A | C")
     else:
-        tc2: Literal["A | B | C"] = reveal_type(c)
+        reveal_type(c, expected_text="B | C")
 
 
-def foo_obj4(c: Union[A, B]):
+def is_obj3(c: Union[A, B, C]):
+    if c.kind is "A":
+        reveal_type(c, expected_text="A | B | C")
+    else:
+        reveal_type(c, expected_text="A | B | C")
+
+
+def eq_obj4(c: Union[A, B]):
     if c.d == 1:
-        tc1: Literal["A"] = reveal_type(c)
+        reveal_type(c, expected_text="A")
     elif c.d == 3:
-        tc2: Literal["A | B"] = reveal_type(c)
+        reveal_type(c, expected_text="A | B")
 
 
-def foo_obj5(d: D):
+def is_obj4(c: Union[A, B]):
+    if c.d is 1:
+        reveal_type(c, expected_text="A | B")
+    elif c.d is 3:
+        reveal_type(c, expected_text="A | B")
+
+
+def eq_obj5(d: D):
     if d.kind == 1:
-        td1: Literal["D"] = reveal_type(d)
+        reveal_type(d, expected_text="D")
     elif d.kind == 2:
-        td2: Literal["D"] = reveal_type(d)
+        reveal_type(d, expected_text="D")
 
 
-def foo_class2(c: Union[Type[A], Type[B]]):
+def is_obj5(d: D):
+    if d.kind is 1:
+        reveal_type(d, expected_text="D")
+    elif d.kind is 2:
+        reveal_type(d, expected_text="D")
+
+
+def eq_class2(c: Union[Type[A], Type[B]]):
     if c.kind_class == "A":
-        tc1: Literal["Type[A]"] = reveal_type(c)
+        reveal_type(c, expected_text="Type[A]")
     else:
-        tc2: Literal["Type[B]"] = reveal_type(c)
+        reveal_type(c, expected_text="Type[B]")
+
+
+def is_class2(c: Union[Type[A], Type[B]]):
+    if c.kind_class is "A":
+        reveal_type(c, expected_text="Type[A] | Type[B]")
+    else:
+        reveal_type(c, expected_text="Type[A] | Type[B]")

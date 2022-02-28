@@ -2,7 +2,7 @@
 # dataclasses use generic types.
 
 from dataclasses import dataclass
-from typing import Generic, Literal, TypeVar
+from typing import Generic, TypeVar
 
 Key0 = TypeVar("Key0")
 Key1 = TypeVar("Key1")
@@ -25,8 +25,8 @@ class Foo(Generic[Key2, Value]):
     def add(self, key: Key2, value: Value):
         return MapTreeNode(key=key, value=value)
 
-    def test1(self, a: int, b: str):
+    def test1(self, a: Key2, b: Value):
         v1 = self.add(a, b)
-        t1: Literal["MapTreeNode[int, str]"] = reveal_type(v1)
-        t1_key: Literal["int"] = reveal_type(v1.key)
-        t1_value: Literal["str"] = reveal_type(v1.value)
+        reveal_type(v1, expected_text="MapTreeNode[Key2@Foo, Value@Foo]")
+        reveal_type(v1.key, expected_text="Key2@Foo")
+        reveal_type(v1.value, expected_text="Value@Foo")

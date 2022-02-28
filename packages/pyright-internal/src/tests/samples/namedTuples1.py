@@ -79,3 +79,25 @@ NamedTuple5()
 
 NamedTuple6 = namedtuple("NamedTuple6", "field1 field2 field3", defaults=[1, 2])
 NamedTuple6()
+
+
+def func1(dyn_str: str):
+    NamedTuple7 = namedtuple("NamedTuple7", dyn_str)
+
+    n = NamedTuple7()
+    a, b = n
+    reveal_type(a, expected_text="Any")
+    reveal_type(b, expected_text="Any")
+
+
+def func2():
+    NamedTuple8 = namedtuple("NamedTuple8", ("a", "b", "c"))
+    n1 = NamedTuple8(a=1, b=2, c=3)
+
+    a, b, c = n1
+    reveal_type(a, expected_text="Unknown")
+    reveal_type(b, expected_text="Unknown")
+    reveal_type(c, expected_text="Unknown")
+
+    # This should generate an error.
+    n2 = NamedTuple8(a=1, b=2)

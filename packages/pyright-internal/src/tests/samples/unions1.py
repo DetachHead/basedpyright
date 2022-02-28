@@ -1,12 +1,7 @@
 # This sample tests the alternative syntax for unions as
 # documented in PEP 604.
 
-from typing import Callable, Generic, Literal, TypeVar, Union
-
-
-def foo1(a: int):
-    if isinstance(a, int | str | bytes):
-        return 3
+from typing import Callable, Generic, TypeVar, Union
 
 
 def foo2(a: int | str):
@@ -41,8 +36,8 @@ def foo5(a: str):
     class Baz(Generic[T]):
         qux: T | None
 
-    t1: Literal["str | None"] = reveal_type(helper(a))
-    t2: Literal["str | None"] = reveal_type(Baz[str].qux)
+    reveal_type(helper(a), expected_text="str | None")
+    reveal_type(Baz[str].qux, expected_text="str | None")
 
 
 T = TypeVar("T")

@@ -2,7 +2,7 @@
 # when used with the __getitem__ and __setitem__ method.
 
 
-from typing import Generic, Literal, Type, TypeVar, Any
+from typing import Generic, Type, TypeVar, Any
 
 
 class MyInt:
@@ -47,7 +47,7 @@ class ClassA(metaclass=MyMetaclass):
 
 
 a1 = ClassA[1]
-t_a1: Literal["ClassA"] = reveal_type(a1)
+reveal_type(a1, expected_text="ClassA")
 
 # This should generate an error
 ClassA["1"]
@@ -81,3 +81,17 @@ class ClassD(Generic[TD]):
 
 def func2(container: ClassD[TD], value: TD):
     container[1] = value
+
+
+class ClassE:
+    def __getattr__(self, s: str) -> Any:
+        raise NotImplementedError()
+
+
+e = ClassE()
+
+# This should generate an error
+v_e = e["test"]
+
+# This should generate an error
+e["test"] = 3

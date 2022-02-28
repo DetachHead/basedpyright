@@ -20,7 +20,7 @@ import { CommandLineOptions, OptionDefinition } from 'command-line-args';
 import { PackageTypeVerifier } from './analyzer/packageTypeVerifier';
 import { AnalyzerService } from './analyzer/service';
 import { CommandLineOptions as PyrightCommandLineOptions } from './common/commandLineOptions';
-import { StderrConsole } from './common/console';
+import { LogLevel, StandardConsoleWithLevel, StderrConsoleWithLevel } from './common/console';
 import { Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { combinePaths, normalizePath } from './common/pathUtils';
@@ -31,6 +31,7 @@ import { PyrightFileSystem } from './pyrightFileSystem';
 import { PackageTypeReport, TypeKnownStatus } from './analyzer/packageTypeReport';
 import { createDeferred } from './common/deferred';
 import { FullAccessHost } from './common/fullAccessHost';
+import { ChokidarFileWatcherProvider } from './common/chokidarFileWatcherProvider';
 
 const toolName = 'pyright';
 
@@ -52,6 +53,7 @@ interface PyrightJsonResults {
 
 interface PyrightSymbolCount {
     withKnownType: number;
+    withAmbiguousType: number;
     withUnknownType: number;
 }
 
@@ -79,6 +81,7 @@ interface PyrightPublicSymbolReport {
     name: string;
     referenceCount: number;
     isTypeKnown: boolean;
+    isTypeAmbiguous: boolean;
     isExported: boolean;
     diagnostics: PyrightJsonDiagnostic[];
     alternateNames?: string[] | undefined;
@@ -130,12 +133,14 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'project', alias: 'p', type: String },
         { name: 'pythonplatform', type: String },
         { name: 'pythonversion', type: String },
-        { name: 'stats' },
+        { name: 'skipunannotated', type: Boolean },
+        { name: 'stats', type: Boolean },
         { name: 'typeshed-path', alias: 't', type: String },
         { name: 'venv-path', alias: 'v', type: String },
         { name: 'verifytypes', type: String },
         { name: 'verbose', type: Boolean },
         { name: 'version', type: Boolean },
+        { name: 'warnings', type: Boolean },
         { name: 'watch', alias: 'w', type: Boolean },
     ];
 
@@ -164,8 +169,15 @@ async function processArgs(): Promise<ExitStatus> {
         return ExitStatus.NoErrors;
     }
 
+    for (const [arg, value] of Object.entries(args)) {
+        if (value === null) {
+            console.error(`'${arg}' option requires a value`);
+            return ExitStatus.ParameterError;
+        }
+    }
+
     if (args.outputjson) {
-        const incompatibleArgs = ['watch', 'stats', 'verbose', 'createstub', 'dependencies'];
+        const incompatibleArgs = ['stats', 'verbose', 'createstub', 'dependencies'];
         for (const arg of incompatibleArgs) {
             if (args[arg] !== undefined) {
                 console.error(`'outputjson' option cannot be used with '${arg}' option`);
@@ -175,7 +187,7 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     if (args['verifytypes'] !== undefined) {
-        const incompatibleArgs = ['watch', 'stats', 'createstub', 'dependencies'];
+        const incompatibleArgs = ['watch', 'stats', 'createstub', 'dependencies', 'skipunannotated'];
         for (const arg of incompatibleArgs) {
             if (args[arg] !== undefined) {
                 console.error(`'verifytypes' option cannot be used with '${arg}' option`);
@@ -185,7 +197,7 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     if (args.createstub) {
-        const incompatibleArgs = ['watch', 'stats', 'verifytypes', 'dependencies'];
+        const incompatibleArgs = ['watch', 'stats', 'verifytypes', 'dependencies', 'skipunannotated'];
         for (const arg of incompatibleArgs) {
             if (args[arg] !== undefined) {
                 console.error(`'createstub' option cannot be used with '${arg}' option`);
@@ -241,16 +253,29 @@ async function processArgs(): Promise<ExitStatus> {
         options.typeStubTargetImportName = args.createstub;
     }
 
+    options.analyzeUnannotatedFunctions = !args.skipunannotated;
+
     if (args.verbose) {
         options.verboseOutput = true;
     }
+
     if (args.lib) {
         options.useLibraryCodeForTypes = true;
     }
+
     options.checkOnlyOpenFiles = false;
 
-    const output = args.outputjson ? new StderrConsole() : undefined;
-    const fileSystem = new PyrightFileSystem(createFromRealFileSystem(output));
+    if (!!args.stats && !!args.verbose) {
+        options.logTypeEvaluationTime = true;
+    }
+
+    const treatWarningsAsErrors = !!args.warnings;
+    const logLevel = options.logTypeEvaluationTime ? LogLevel.Log : LogLevel.Error;
+
+    // If using outputjson, redirect all console output to stderr so it doesn't mess
+    // up the JSON output, which goes to stdout.
+    const output = args.outputjson ? new StderrConsoleWithLevel(logLevel) : new StandardConsoleWithLevel(logLevel);
+    const fileSystem = new PyrightFileSystem(createFromRealFileSystem(output, new ChokidarFileWatcherProvider(output)));
 
     // The package type verification uses a different path.
     if (args['verifytypes'] !== undefined) {
@@ -293,9 +318,15 @@ async function processArgs(): Promise<ExitStatus> {
                     results.elapsedTime
                 );
                 errorCount += report.errorCount;
+                if (treatWarningsAsErrors) {
+                    errorCount += report.warningCount;
+                }
             } else {
                 const report = reportDiagnosticsAsText(results.diagnostics);
                 errorCount += report.errorCount;
+                if (treatWarningsAsErrors) {
+                    errorCount += report.warningCount;
+                }
             }
         }
 
@@ -324,7 +355,7 @@ async function processArgs(): Promise<ExitStatus> {
                 timingStats.printSummary(console);
             }
 
-            if (args.stats !== undefined) {
+            if (args.stats) {
                 // Print the stats details.
                 service.printStats();
                 timingStats.printDetails(console);
@@ -357,9 +388,8 @@ function verifyPackageTypes(
     ignoreUnknownTypesFromImports: boolean
 ): ExitStatus {
     try {
-        const verifier = new PackageTypeVerifier(fileSystem);
-
-        const report = verifier.verify(packageName, ignoreUnknownTypesFromImports);
+        const verifier = new PackageTypeVerifier(fileSystem, packageName, ignoreUnknownTypesFromImports);
+        const report = verifier.verify();
         const jsonReport = buildTypeCompletenessReport(packageName, report);
 
         if (outputJson) {
@@ -418,10 +448,12 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
         pyTypedPath: completenessReport.pyTypedPath,
         exportedSymbolCounts: {
             withKnownType: 0,
+            withAmbiguousType: 0,
             withUnknownType: 0,
         },
         otherSymbolCounts: {
             withKnownType: 0,
+            withAmbiguousType: 0,
             withUnknownType: 0,
         },
         missingFunctionDocStringCount: completenessReport.missingFunctionDocStringCount,
@@ -449,6 +481,7 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
             referenceCount: symbol.referenceCount,
             isExported: symbol.isExported,
             isTypeKnown: symbol.typeKnownStatus === TypeKnownStatus.Known,
+            isTypeAmbiguous: symbol.typeKnownStatus === TypeKnownStatus.Ambiguous,
             diagnostics: symbol.diagnostics.map((diag) => convertDiagnosticToJson(diag.filePath, diag.diagnostic)),
         };
 
@@ -466,6 +499,12 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
             } else {
                 report.typeCompleteness!.otherSymbolCounts.withKnownType++;
             }
+        } else if (symbol.typeKnownStatus === TypeKnownStatus.Ambiguous) {
+            if (symbol.isExported) {
+                report.typeCompleteness!.exportedSymbolCounts.withAmbiguousType++;
+            } else {
+                report.typeCompleteness!.otherSymbolCounts.withAmbiguousType++;
+            }
         } else {
             if (symbol.isExported) {
                 report.typeCompleteness!.exportedSymbolCounts.withUnknownType++;
@@ -476,8 +515,10 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
     });
 
     const unknownSymbolCount = report.typeCompleteness.exportedSymbolCounts.withUnknownType;
+    const ambiguousSymbolCount = report.typeCompleteness.exportedSymbolCounts.withAmbiguousType;
     const knownSymbolCount = report.typeCompleteness.exportedSymbolCounts.withKnownType;
-    const totalSymbolCount = unknownSymbolCount + knownSymbolCount;
+    const totalSymbolCount = unknownSymbolCount + ambiguousSymbolCount + knownSymbolCount;
+
     if (totalSymbolCount > 0) {
         report.typeCompleteness!.completenessScore = knownSymbolCount / totalSymbolCount;
     }
@@ -509,7 +550,7 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     // Print list of all symbols.
     if (completenessReport.symbols.length > 0 && verboseOutput) {
         console.log('');
-        console.log(`Exported symbols: ${completenessReport.symbols.length}`);
+        console.log(`Exported symbols: ${completenessReport.symbols.filter((sym) => sym.isExported).length}`);
         completenessReport.symbols.forEach((symbol) => {
             if (symbol.isExported) {
                 const refCount = symbol.referenceCount > 1 ? ` (${symbol.referenceCount} references)` : '';
@@ -518,7 +559,7 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
         });
 
         console.log('');
-        console.log(`Other referenced symbols: ${completenessReport.symbols.length}`);
+        console.log(`Other referenced symbols: ${completenessReport.symbols.filter((sym) => !sym.isExported).length}`);
         completenessReport.symbols.forEach((symbol) => {
             if (!symbol.isExported) {
                 const refCount = symbol.referenceCount > 1 ? ` (${symbol.referenceCount} references)` : '';
@@ -553,11 +594,13 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     console.log(
         `Symbols exported by "${completenessReport.packageName}": ${
             completenessReport.exportedSymbolCounts.withKnownType +
+            completenessReport.exportedSymbolCounts.withAmbiguousType +
             completenessReport.exportedSymbolCounts.withUnknownType
         }`
     );
     console.log(`  With known type: ${completenessReport.exportedSymbolCounts.withKnownType}`);
-    console.log(`  With partially unknown type: ${completenessReport.exportedSymbolCounts.withUnknownType}`);
+    console.log(`  With ambiguous type: ${completenessReport.exportedSymbolCounts.withAmbiguousType}`);
+    console.log(`  With unknown type: ${completenessReport.exportedSymbolCounts.withUnknownType}`);
     if (completenessReport.ignoreUnknownTypesFromImports) {
         console.log(`    (Ignoring unknown types imported from other packages)`);
     }
@@ -567,11 +610,14 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     console.log('');
     console.log(
         `Other symbols referenced but not exported by "${completenessReport.packageName}": ${
-            completenessReport.otherSymbolCounts.withKnownType + completenessReport.otherSymbolCounts.withUnknownType
+            completenessReport.otherSymbolCounts.withKnownType +
+            completenessReport.otherSymbolCounts.withAmbiguousType +
+            completenessReport.otherSymbolCounts.withUnknownType
         }`
     );
     console.log(`  With known type: ${completenessReport.otherSymbolCounts.withKnownType}`);
-    console.log(`  With partially unknown type: ${completenessReport.otherSymbolCounts.withUnknownType}`);
+    console.log(`  With ambiguous type: ${completenessReport.otherSymbolCounts.withAmbiguousType}`);
+    console.log(`  With unknown type: ${completenessReport.otherSymbolCounts.withUnknownType}`);
     console.log('');
     console.log(`Type completeness score: ${Math.round(completenessReport.completenessScore * 1000) / 10}%`);
     console.log('');
@@ -594,12 +640,14 @@ function printUsage() {
             '  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location\n' +
             '  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)\n' +
             '  --pythonversion <VERSION>          Analyze for a specific version (3.3, 3.4, etc.)\n' +
+            '  --skipunannotated                  Do not analyze functions and methods with no type annotations\n' +
             '  --stats                            Print detailed performance stats\n' +
             '  -t,--typeshed-path <DIRECTORY>     Use typeshed type stubs at this location\n' +
             '  -v,--venv-path <DIRECTORY>         Directory that contains virtual environments\n' +
             '  --verbose                          Emit verbose diagnostics\n' +
             '  --verifytypes <PACKAGE>            Verify type completeness of a py.typed package\n' +
             '  --version                          Print Pyright version\n' +
+            '  --warnings                         Use exit code of 1 if warnings are reported\n' +
             '  -w,--watch                         Continue to run and watch for changes\n'
     );
 }
@@ -677,9 +725,9 @@ function reportDiagnosticsAsText(fileDiagnostics: FileDiagnostics[]): Diagnostic
     let informationCount = 0;
 
     fileDiagnostics.forEach((fileDiagnostics) => {
-        // Don't report unused code diagnostics.
+        // Don't report unused code or deprecated diagnostics.
         const fileErrorsAndWarnings = fileDiagnostics.diagnostics.filter(
-            (diag) => diag.category !== DiagnosticCategory.UnusedCode
+            (diag) => diag.category !== DiagnosticCategory.UnusedCode && diag.category !== DiagnosticCategory.Deprecated
         );
 
         if (fileErrorsAndWarnings.length > 0) {
@@ -701,7 +749,7 @@ function reportDiagnosticsAsText(fileDiagnostics: FileDiagnostics[]): Diagnostic
     console.log(
         `${errorCount.toString()} ${errorCount === 1 ? 'error' : 'errors'}, ` +
             `${warningCount.toString()} ${warningCount === 1 ? 'warning' : 'warnings'}, ` +
-            `${informationCount.toString()} ${informationCount === 1 ? 'info' : 'infos'} `
+            `${informationCount.toString()} ${informationCount === 1 ? 'information' : 'informations'} `
     );
 
     return {
@@ -732,7 +780,7 @@ function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
             ? chalk.red('error')
             : diag.severity === 'warning'
             ? chalk.cyan('warning')
-            : chalk.blue('info');
+            : chalk.blue('information');
     message += `: ${firstLine}`;
     if (remainingLines.length > 0) {
         message += '\n' + prefix + remainingLines.join('\n' + prefix);

@@ -41,3 +41,38 @@ def func5(x: bool) -> NoReturn:
 
 
 x1: Callable[[bool], bool] = func2
+
+
+async def func6() -> NoReturn:
+    ...
+
+
+async def func7() -> NoReturn:
+    await func6()
+
+
+class A:
+    def __init__(self) -> NoReturn:
+        ...
+
+
+def func8() -> NoReturn:
+    A()
+
+
+class B:
+    def __new__(cls) -> NoReturn:
+        ...
+
+
+def func9() -> NoReturn:
+    B()
+
+
+class C:
+    def __call__(self) -> NoReturn:
+        ...
+
+
+def func10() -> NoReturn:
+    C()()

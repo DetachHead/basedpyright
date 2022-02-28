@@ -18,7 +18,7 @@ import { ConsoleInterface, ConsoleWithLogLevel, LogLevel } from 'pyright-interna
 import { isString } from 'pyright-internal/common/core';
 import { FileSystem, nullFileWatcherProvider } from 'pyright-internal/common/fileSystem';
 import { Host, NoAccessHost } from 'pyright-internal/common/host';
-import { convertUriToPath, normalizeSlashes, resolvePaths } from 'pyright-internal/common/pathUtils';
+import { normalizeSlashes, resolvePaths } from 'pyright-internal/common/pathUtils';
 import { ProgressReporter } from 'pyright-internal/common/progressReporter';
 import { createWorker, parentPort } from 'pyright-internal/common/workersHost';
 import { LanguageServerBase, ServerSettings, WorkspaceServiceInstance } from 'pyright-internal/languageServerBase';
@@ -87,7 +87,7 @@ export class PyrightServer extends LanguageServerBase {
         super.setupConnection(supportedCommands, supportedCodeActions);
         // A non-standard way to mutate the file system.
         this._connection.onNotification('pyright/createFile', (params: CreateFile) => {
-            const filePath = convertUriToPath(this._serverOptions.fileSystem, params.uri);
+            const filePath = this._uriParser.decodeTextDocumentUri(params.uri);
             (this._serverOptions.fileSystem as TestFileSystem).apply({ [filePath]: '' });
             this._workspaceMap.forEach((workspace) => {
                 const backgroundAnalysis = workspace.serviceInstance.backgroundAnalysisProgram.backgroundAnalysis;
@@ -96,7 +96,7 @@ export class PyrightServer extends LanguageServerBase {
             });
         });
         this._connection.onNotification('pyright/deleteFile', (params: DeleteFile) => {
-            const filePath = convertUriToPath(this._serverOptions.fileSystem, params.uri);
+            const filePath = this._uriParser.decodeTextDocumentUri(params.uri);
             this._serverOptions.fileSystem.unlinkSync(filePath);
             this._workspaceMap.forEach((workspace) => {
                 const backgroundAnalysis = workspace.serviceInstance.backgroundAnalysisProgram.backgroundAnalysis;
@@ -284,7 +284,7 @@ export class PyrightServer extends LanguageServerBase {
     ): Promise<(Command | CodeAction)[] | undefined | null> {
         this.recordUserInteractionTime();
 
-        const filePath = convertUriToPath(this.fs, params.textDocument.uri);
+        const filePath = this._uriParser.decodeTextDocumentUri(params.textDocument.uri);
         const workspace = await this.getWorkspaceForFile(filePath);
         return CodeActionProvider.getCodeActionsForPosition(workspace, filePath, params.range, token);
     }

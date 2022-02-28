@@ -8,6 +8,26 @@ When you add a type annotation to a variable or a parameter in Python, you are _
 If a variable or parameter has no type annotation, the type checker must assume that any value can be assigned to it. This eliminates the ability for a type checker to identify type incompatibilities.
 
 
+### Debugging Inferred Types
+
+When you want to know the type that the type checker has inferred for an expression, you can use the special `reveal_type()` function:
+
+```
+x = 1
+reveal_type(x)  # Type of "x" is "Literal[1]"
+```
+
+This function is always available and does not need to be imported. When you use Pyright within an IDE, you can also simply hover over an expression to see the inferred type.
+
+You can also see the inferred types of all local variables at once with the `reveal_locals()` function:
+
+```
+def f(x: int, y: str) -> None:
+    z = 1.0
+    reveal_locals()  # Type of "x" is "int". Type of "y" is "str". Type of "z" is "float".
+```
+
+
 ### Type Assignability
 When your code assigns a value to a symbol (in an assignment expression) or a parameter (in a call expression), the type checker first determines the type of the value being assigned. It then determines whether the target has a declared type. If so, it verifies that the type of the value is _assignable_ to the declared type.
 
@@ -84,10 +104,9 @@ Switching from a mutable container type to a corresponding immutable container t
 ```
 my_list_1: List[int] = [1, 2, 3]
 my_list_2: Sequence[Optional[int]] = my_list_1  # No longer an error
-my_list_2.append(None)  # Error
 ```
 
-The type error on the second line has now gone away, but a new error is reported on the third line because the `append` operation is not allowed on an immutable Sequence.
+The type error on the second line has now gone away.
 
 For more details about generic types, type parameters, and invariance, refer to [PEP 483 — The Theory of Type Hints](https://www.python.org/dev/peps/pep-0483/).
 
@@ -150,17 +169,21 @@ In addition to assignment-based type narrowing, Pyright supports the following t
 * `x is None` and `x is not None`
 * `x == None` and `x != None`
 * `type(x) is T` and `type(x) is not T`
-* `x is E` and `x is not E` (where E is an enum value or True or False)
+* `x is E` and `x is not E` (where E is a literal enum or bool)
 * `x == L` and `x != L` (where L is a literal expression)
+* `x.y is E` and `x.y is not E` (where E is a literal enum or bool and x is a type that is distinguished by a field with a literal type)
 * `x.y == L` and `x.y != L` (where L is a literal expression and x is a type that is distinguished by a field with a literal type)
 * `x[K] == V` and `x[K] != V` (where K and V are literal expressions and x is a type that is distinguished by a TypedDict field with a literal type)
 * `x[I] == V` and `x[I] != V` (where I and V are literal expressions and x is a known-length tuple that is distinguished by the index indicated by I)
-* `x in y` (where y is instance of list, set, frozenset, or deque)
+* `x[I] is None` and `x[I] is not None` (where I is a literal expression and x is a known-length tuple that is distinguished by the index indicated by I)
+* `len(x) == L` and `len(x) != L` (where x is tuple and L is a literal integer)
+* `x in y` (where y is instance of list, set, frozenset, deque, or tuple)
 * `S in D` and `S not in D` (where S is a string literal and D is a TypedDict)
 * `isinstance(x, T)` (where T is a type or a tuple of types)
 * `issubclass(x, T)` (where T is a type or a tuple of types)
 * `callable(x)`
 * `f(x)` (where f is a user-defined type guard as defined in [PEP 647](https://www.python.org/dev/peps/pep-0647/))
+* `bool(x)` (where x is any expression that is statically verifiable to be truthy or falsy in all cases).
 * `x` (where x is any expression that is statically verifiable to be truthy or falsy in all cases)
 
 Expressions supported for type guards include simple names, member access chains (e.g. `a.b.c.d`), the unary `not` operator, the binary `and` and `or` operators, subscripts that are constant numbers (e.g. `a[2]`), and call expressions. Other operators (such as arithmetic operators or other subscripts) are not supported.
@@ -185,6 +208,57 @@ def func2(val: Optional[int]):
 ```
 
 In the example of `func1`, the type was narrowed in both the positive and negative cases. In the example of `func2`, the type was narrowed only the positive case because the type of `val` might be either `int` (specifically, a value of 0) or `None` in the negative case.
+
+### Aliased Conditional Expression
+
+Pyright also supports a type guard expression `c`, where `c` is an identifier that refers to a local variable that is assigned one of the above supported type guard expression forms. These are called “aliased conditional expressions”. Examples include `c = a is not None` and `c = isinstance(a, str)`. When “c” is used within a conditional check, it can be used to narrow the type of expression `a`.
+
+This pattern is supported only in cases where `c` is a local variable within a module or function scope and is assigned a value only once. It is also limited to cases where expression `a` is a simple identifier (as opposed to a member access expression or subscript expression), is local to the function or module scope, and is assigned only once within the scope. Unary `not` operators are allowed for expression `a`, but binary `and` and `or` are not.
+
+```python
+def func1(x: str | None):
+    is_str = x is not None
+
+    if is_str:
+        reveal_type(x) # str
+    else:
+        reveal_type(x) # None
+```
+
+```python
+def func2(val: str | bytes):
+    is_str = not isinstance(val, bytes)
+
+    if not is_str:
+        reveal_type(val) # bytes
+    else:
+        reveal_type(val) # str
+```
+
+```python
+def func3(x: List[str | None]) -> str:
+    is_str = x[0] is not None
+
+    if is_str:
+        # This technique doesn't work for subscript expressions,
+        # so x[0] is not narrowed in this case.
+        reveal_type(x[0]) # str | None
+```
+
+```python
+def func4(x: str | None):
+    is_str = x is not None
+
+    if is_str:
+        # This technique doesn't work in cases where the target
+        # expression is assigned elsewhere. Here `x` is assigned
+        # elsewhere in the function, so its type is not narrowed
+        # in this case.
+        reveal_type(x) # str | None
+    
+    x = ""
+```
+
 
 ### Narrowing for Implied Else
 When an “if” or “elif” clause is used without a corresponding “else”, Pyright will generally assume that the code can “fall through” without executing the “if” or “elif” block. However, there are cases where the analyzer can determine that a fall-through is not possible because the “if” or “elif” is guaranteed to be executed based on type analysis.
@@ -232,7 +306,7 @@ This “narrowing for implied else” technique works for all narrowing expressi
 
 ### Narrowing Any
 
-In general, the type `Any` is not narrowed. The only exceptions to this rule are the built-in `isinstance` and `issubclass` type guards plus user-defined type guards. In all other cases, `Any` is left as is, even for assignments.
+In general, the type `Any` is not narrowed. The only exceptions to this rule are the built-in `isinstance` and `issubclass` type guards, class pattern matching in “match” statements, and user-defined type guards. In all other cases, `Any` is left as is, even for assignments.
 
 ```python
 a: Any = 3
@@ -297,3 +371,47 @@ def add_one(value: _StrOrFloat) -> _StrOrFloat:
 ```
 
 Notice that the type of variable `sum` is reported with asterisks (`*`). This indicates that internally the type checker is tracking the type as conditional. In this particular example, it indicates that `sum` is a `str` type if the parameter `value` is a `str` but is a `float` if `value` is a `float`. By tracking these conditional types, the type checker can verify that the return type is consistent with the return type `_StrOrFloat`.
+
+
+### Inferred type of self and cls parameters
+
+When a type annotation for a method’s `self` or `cls` parameter is omitted, pyright will infer its type based on the class that contains the method. The inferred type is internally represented as a type variable that is bound to the class.
+
+The type of `self` is represented as `Self@ClassName` where `ClassName` is the class that contains the method. Likewise, the `cls` parameter in a class method will have the type `Type[Self@ClassName]`.
+
+```python
+class Parent:
+    def method1(self):
+        reveal_type(self)  # Self@Parent
+        return self
+    
+    @classmethod
+    def method2(cls):
+        reveal_type(cls)  # Type[Self@Parent]
+        return cls
+
+class Child(Parent):
+     ...
+    
+reveal_type(Child().method1())  # Child
+reveal_type(Child.method2())  # Type[Child]
+```
+
+### Overloads
+
+Some functions or methods can return one of several different types. In cases where the return type depends on the types of the input parameters, it is useful to specify this using a series of `@overload` signatures. When Pyright evaluates a call expression, it determines which overload signature best matches the supplied arguments.
+
+[PEP 484](https://www.python.org/dev/peps/pep-0484/#function-method-overloading) introduced the `@overload` decorator and described how it can be used, but the PEP did not specify precisely how a type checker should choose the “best” overload. Pyright uses the following rules.
+
+1. Pyright first filters the list of overloads based on simple “arity” (number of arguments) and keyword argument matching. For example, if one overload requires two position arguments but only one positional argument is supplied by the caller, that overload is eliminated from consideration. Likewise, if the call includes a keyword argument but no corresponding parameter is included in the overload, it is eliminated from consideration.
+
+2. Pyright next considers the types of the arguments and compares them to the declared types of the corresponding parameters. If the types do not match for a given overload, that overload is eliminated from consideration. Bidirectional type inference is used to determine the types of the argument expressions.
+
+3. If only one overload remains, it is the “winner”.
+
+4. If more than one overload remains, the “winner” is chosen based on the order in which the overloads are declared. In general, the first remaining overload is the “winner”. One exception to this rule is when a `*args` (unpacked) argument matches a `*args` parameter in one of the overload signatures. This situation overrides the normal order-based rule.
+
+5. If no overloads remain, Pyright considers whether any of the arguments are union types. If so, these union types are expanded into their constituent subtypes, and the entire process of overload matching is repeated with the expanded argument types. If two or more overloads match, the union of their respective return types form the final return type for the call expression.
+
+6. If no overloads remain and all unions have been expanded, a diagnostic is generated indicating that the supplied arguments are incompatible with all overload signatures.
+

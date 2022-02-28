@@ -1,35 +1,20 @@
-# This sample tests the handling of unpack operators
-# used in argument expressions when used in conjunction with
-# Tuples and *args parameters.
+# This sample tests bidirectional type inference for a function when
+# a union includes a "bare" TypeVar and another (non-generic) type.
+
+from dataclasses import dataclass
+from typing import Generic, Sequence, TypeVar, Union
+
+T = TypeVar("T")
 
 
-from typing import Tuple
+@dataclass
+class Container(Generic[T]):
+    values: Sequence[Union[float, T]]
 
 
-def foo1(a: int, b: int):
-    pass
+def create_container(values: Sequence[Union[float, T]]) -> Container[T]:
+    return Container(values)
 
 
-def foo2(*args: int):
-    pass
-
-
-fixed_tuple_0 = ()
-foo1(*fixed_tuple_0, 2)
-foo2(*fixed_tuple_0, 2)
-
-fixed_tuple_1 = (1,)
-foo1(*fixed_tuple_1, 2)
-foo2(*fixed_tuple_1, 2)
-
-fixed_tuple_3 = (1, 3, 5)
-
-# This should generate an error because there
-# are too many parameters.
-foo1(*fixed_tuple_3, 2)
-foo2(*fixed_tuple_3, 2)
-
-homogen_tuple: Tuple[int, ...] = (1, 5, 3)
-
-foo2(*homogen_tuple)
-foo2(*homogen_tuple, 2)
+arg: Sequence[Union[float, int]] = (1, 2.0)
+x: Container[int] = create_container(arg)

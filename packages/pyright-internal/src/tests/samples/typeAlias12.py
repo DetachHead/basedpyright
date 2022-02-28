@@ -1,24 +1,20 @@
-# This sample verifies that a generic type alias with a Callable
-# works correctly.
+# This sample tests the handling of a generic type alias that uses
+# a union that collapses to a single type when specialized.
 
-# pyright: reportInvalidTypeVarUse=false
+from typing import List, TypeVar, Union
 
-from typing import Callable, Literal, TypeVar
+V = TypeVar("V")
+U = TypeVar("U")
 
-T = TypeVar("T")
-F = Callable[[T], T]
-
-
-def f() -> F[T]:
-    def g(x: T) -> T:
-        ...
-
-    return g
+Alias = Union[V, U]
 
 
-g = f()
-v1 = g("foo")
-t_v1: Literal["str"] = reveal_type(v1)
+def fn(x: Alias[V, V]) -> V:
+    return x
 
-v2 = g(1)
-t_v2: Literal["int"] = reveal_type(v2)
+
+def fn2(x: List[Alias[V, V]]) -> List[V]:
+    return x
+
+
+reveal_type(Alias[int, int], expected_text="Type[int]")

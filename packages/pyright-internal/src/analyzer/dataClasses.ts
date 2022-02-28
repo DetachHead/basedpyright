@@ -27,7 +27,7 @@ import { DeclarationType } from './declaration';
 import { updateNamedTupleBaseClass } from './namedTuples';
 import { evaluateStaticBoolExpression } from './staticExpressions';
 import { Symbol, SymbolFlags } from './symbol';
-import { FunctionArgument, TypeEvaluator } from './typeEvaluatorTypes';
+import { EvaluatorFlags, FunctionArgument, TypeEvaluator } from './typeEvaluatorTypes';
 import {
     AnyType,
     ClassType,
@@ -43,6 +43,7 @@ import {
     isInstantiableClass,
     isOverloadedFunction,
     NoneType,
+    TupleTypeArgument,
     Type,
     UnknownType,
 } from './types';
@@ -50,10 +51,15 @@ import {
     applySolvedTypeVars,
     buildTypeVarMapFromSpecializedClass,
     convertToInstance,
+    getTypeVarScopeId,
     isLiteralType,
+    lookUpObjectMember,
+    populateTypeVarMapForSelfType,
+    requiresSpecialization,
     specializeTupleClass,
     synthesizeTypeVarForSelfCls,
 } from './typeUtils';
+import { TypeVarMap } from './typeVarMap';
 
 // Validates fields for compatibility with a dataclass and synthesizes
 // an appropriate __new__ and __init__ methods plus __dataclass_fields__
@@ -62,7 +68,9 @@ export function synthesizeDataClassMethods(
     evaluator: TypeEvaluator,
     node: ClassNode,
     classType: ClassType,
-    skipSynthesizeInit: boolean
+    skipSynthesizeInit: boolean,
+    hasExistingInitMethod: boolean,
+    skipSynthesizeHash: boolean
 ) {
     assert(ClassType.isDataClass(classType));
 
@@ -146,7 +154,11 @@ export function synthesizeDataClassMethods(
                     // If the RHS of the assignment is assigning a field instance where the
                     // "init" parameter is set to false, do not include it in the init method.
                     if (statement.rightExpression.nodeType === ParseNodeType.Call) {
-                        const callType = evaluator.getTypeOfExpression(statement.rightExpression.leftExpression).type;
+                        const callType = evaluator.getTypeOfExpression(
+                            statement.rightExpression.leftExpression,
+                            /* expectedType */ undefined,
+                            EvaluatorFlags.DoNotSpecialize
+                        ).type;
                         if (
                             isDataclassFieldConstructor(
                                 callType,
@@ -222,12 +234,17 @@ export function synthesizeDataClassMethods(
                                 }
                             }
 
-                            hasDefaultValue = statement.rightExpression.arguments.some(
+                            const defaultArg = statement.rightExpression.arguments.find(
                                 (arg) =>
                                     arg.name?.value === 'default' ||
                                     arg.name?.value === 'default_factory' ||
                                     arg.name?.value === 'factory'
                             );
+
+                            hasDefaultValue = !!defaultArg;
+                            if (defaultArg?.valueExpression) {
+                                defaultValueExpression = defaultArg.valueExpression;
+                            }
 
                             const aliasArg = statement.rightExpression.arguments.find(
                                 (arg) => arg.name?.value === 'alias'
@@ -288,6 +305,7 @@ export function synthesizeDataClassMethods(
                         }
                         const dataClassEntry: DataClassEntry = {
                             name: variableName,
+                            classType,
                             alias: aliasName,
                             isKeywordOnly: false,
                             hasDefault: hasDefaultValue,
@@ -303,6 +321,7 @@ export function synthesizeDataClassMethods(
                         // allows us to handle circular references in types.
                         const dataClassEntry: DataClassEntry = {
                             name: variableName,
+                            classType,
                             alias: aliasName,
                             isKeywordOnly,
                             hasDefault: hasDefaultValue,
@@ -324,6 +343,16 @@ export function synthesizeDataClassMethods(
                         // Add the new entry to the full entry list.
                         insertIndex = fullDataClassEntries.findIndex((p) => p.name === variableName);
                         if (insertIndex >= 0) {
+                            const oldEntry = fullDataClassEntries[insertIndex];
+
+                            // While this isn't documented behavior, it appears that the dataclass implementation
+                            // causes overridden variables to "inherit" default values from parent classes.
+                            if (!dataClassEntry.hasDefault && oldEntry.hasDefault) {
+                                dataClassEntry.hasDefault = true;
+                                dataClassEntry.defaultValueExpression = oldEntry.defaultValueExpression;
+                                hasDefaultValue = true;
+                            }
+
                             fullDataClassEntries[insertIndex] = dataClassEntry;
                         } else {
                             fullDataClassEntries.push(dataClassEntry);
@@ -360,15 +389,28 @@ export function synthesizeDataClassMethods(
     const symbolTable = classType.details.fields;
     const keywordOnlyParams: FunctionParameter[] = [];
 
-    if (!skipSynthesizeInit && allAncestorsKnown) {
+    if (!skipSynthesizeInit && !hasExistingInitMethod && allAncestorsKnown) {
         fullDataClassEntries.forEach((entry) => {
             if (entry.includeInInit) {
+                // If the type refers to Self of the parent class, we need to
+                // transform it to refer to the Self of this subclass.
+                let effectiveType = entry.type;
+                if (entry.classType !== classType && requiresSpecialization(effectiveType)) {
+                    const typeVarMap = new TypeVarMap(getTypeVarScopeId(entry.classType));
+                    populateTypeVarMapForSelfType(typeVarMap, entry.classType, classType);
+                    effectiveType = applySolvedTypeVars(effectiveType, typeVarMap);
+                }
+
+                if (classType.details.dataClassBehaviors?.transformDescriptorTypes) {
+                    effectiveType = transformDescriptorType(evaluator, effectiveType);
+                }
+
                 const functionParam: FunctionParameter = {
                     category: ParameterCategory.Simple,
                     name: entry.alias || entry.name,
                     hasDefault: entry.hasDefault,
                     defaultValueExpression: entry.defaultValueExpression,
-                    type: entry.type,
+                    type: effectiveType,
                     hasDeclaredType: true,
                 };
 
@@ -406,13 +448,13 @@ export function synthesizeDataClassMethods(
     ) {
         const matchArgsNames: string[] = [];
         fullDataClassEntries.forEach((entry) => {
-            if (entry.includeInInit) {
+            if (entry.includeInInit && !entry.isKeywordOnly) {
                 // Use the field name, not its alias (if it has one).
                 matchArgsNames.push(entry.name);
             }
         });
-        const literalTypes = matchArgsNames.map((name) => {
-            return ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strType, name));
+        const literalTypes: TupleTypeArgument[] = matchArgsNames.map((name) => {
+            return { type: ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strType, name)), isUnbounded: false };
         });
         const matchArgsType = ClassType.cloneAsInstance(specializeTupleClass(tupleClassType, literalTypes));
         symbolTable.set('__match_args__', Symbol.createWithType(SymbolFlags.ClassMember, matchArgsType));
@@ -423,7 +465,7 @@ export function synthesizeDataClassMethods(
         FunctionType.addParameter(operatorMethod, selfParam);
         FunctionType.addParameter(operatorMethod, {
             category: ParameterCategory.Simple,
-            name: 'x',
+            name: 'other',
             type: paramType,
             hasDeclaredType: true,
         });
@@ -443,6 +485,30 @@ export function synthesizeDataClassMethods(
         });
     }
 
+    let synthesizeHashFunction =
+        !ClassType.isSkipSynthesizedDataClassEq(classType) && ClassType.isFrozenDataClass(classType);
+    const synthesizeHashNone =
+        !ClassType.isSkipSynthesizedDataClassEq(classType) && !ClassType.isFrozenDataClass(classType);
+
+    if (skipSynthesizeHash) {
+        synthesizeHashFunction = false;
+    }
+
+    // If the user has indicated that a hash function should be generated even if it's unsafe
+    // to do so or there is already a hash function present, override the default logic.
+    if (ClassType.isSynthesizeDataClassUnsafeHash(classType)) {
+        synthesizeHashFunction = true;
+    }
+
+    if (synthesizeHashFunction) {
+        const hashMethod = FunctionType.createInstance('__hash__', '', '', FunctionTypeFlags.SynthesizedMethod);
+        FunctionType.addParameter(hashMethod, selfParam);
+        hashMethod.details.declaredReturnType = evaluator.getBuiltInObject(node, 'int');
+        symbolTable.set('__hash__', Symbol.createWithType(SymbolFlags.ClassMember, hashMethod));
+    } else if (synthesizeHashNone && !skipSynthesizeHash) {
+        symbolTable.set('__hash__', Symbol.createWithType(SymbolFlags.ClassMember, NoneType.createInstance()));
+    }
+
     let dictType = evaluator.getBuiltInType(node, 'dict');
     if (isInstantiableClass(dictType)) {
         dictType = ClassType.cloneAsInstance(
@@ -455,6 +521,10 @@ export function synthesizeDataClassMethods(
     }
     symbolTable.set('__dataclass_fields__', Symbol.createWithType(SymbolFlags.ClassMember, dictType));
 
+    if (ClassType.isGeneratedDataClassSlots(classType) && classType.details.localSlotsNames === undefined) {
+        classType.details.localSlotsNames = localDataClassEntries.map((entry) => entry.name);
+    }
+
     // If this dataclass derived from a NamedTuple, update the NamedTuple with
     // the specialized entry types.
     updateNamedTupleBaseClass(
@@ -462,6 +532,33 @@ export function synthesizeDataClassMethods(
         fullDataClassEntries.map((entry) => entry.type),
         /* isTypeArgumentExplicit */ true
     );
+}
+
+// If the specified type is a descriptor — in particular, if it implements a
+// __set__ method, this method transforms the type into the input parameter
+// for the set method.
+function transformDescriptorType(evaluator: TypeEvaluator, type: Type): Type {
+    if (!isClassInstance(type)) {
+        return type;
+    }
+
+    const setMethodInfo = lookUpObjectMember(type, '__set__');
+    if (!setMethodInfo) {
+        return type;
+    }
+
+    const setMethodType = evaluator.getTypeOfMember(setMethodInfo);
+    if (!isFunction(setMethodType)) {
+        return type;
+    }
+
+    const boundSetMethod = evaluator.bindFunctionToClassOrObject(type, setMethodType);
+    if (!boundSetMethod || !isFunction(boundSetMethod) || boundSetMethod.details.parameters.length < 2) {
+        return type;
+    }
+
+    // The value parameter for a bound __set__ method is parameter index 1.
+    return FunctionType.getEffectiveParameterType(boundSetMethod, 1);
 }
 
 // Builds a sorted list of dataclass entries that are inherited by
@@ -528,17 +625,13 @@ function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: string[])
 
 export function validateDataClassTransformDecorator(
     evaluator: TypeEvaluator,
-    node: ExpressionNode
+    node: CallNode
 ): DataClassBehaviors | undefined {
-    if (node.nodeType !== ParseNodeType.Call) {
-        // TODO - emit diagnostic
-        return undefined;
-    }
-
     const behaviors: DataClassBehaviors = {
         keywordOnlyParams: false,
         generateEq: true,
         generateOrder: false,
+        transformDescriptorTypes: false,
         fieldDescriptorNames: [],
     };
 
@@ -546,13 +639,8 @@ export function validateDataClassTransformDecorator(
 
     // Parse the arguments to the call.
     node.arguments.forEach((arg) => {
-        if (!arg.name) {
-            // TODO - emit diagnostic
-            return;
-        }
-
-        if (arg.argumentCategory !== ArgumentCategory.Simple) {
-            // TODO - emit diagnostic
+        if (!arg.name || arg.argumentCategory !== ArgumentCategory.Simple) {
+            evaluator.addError(Localizer.Diagnostic.dataClassTransformPositionalParam(), arg);
             return;
         }
 
@@ -560,7 +648,10 @@ export function validateDataClassTransformDecorator(
             case 'kw_only_default': {
                 const value = evaluateStaticBoolExpression(arg.valueExpression, fileInfo.executionEnvironment);
                 if (value === undefined) {
-                    // TODO - emit diagnostic
+                    evaluator.addError(
+                        Localizer.Diagnostic.dataClassTransformExpectedBoolLiteral(),
+                        arg.valueExpression
+                    );
                     return;
                 }
 
@@ -571,7 +662,10 @@ export function validateDataClassTransformDecorator(
             case 'eq_default': {
                 const value = evaluateStaticBoolExpression(arg.valueExpression, fileInfo.executionEnvironment);
                 if (value === undefined) {
-                    // TODO - emit diagnostic
+                    evaluator.addError(
+                        Localizer.Diagnostic.dataClassTransformExpectedBoolLiteral(),
+                        arg.valueExpression
+                    );
                     return;
                 }
 
@@ -582,11 +676,28 @@ export function validateDataClassTransformDecorator(
             case 'order_default': {
                 const value = evaluateStaticBoolExpression(arg.valueExpression, fileInfo.executionEnvironment);
                 if (value === undefined) {
-                    // TODO - emit diagnostic
+                    evaluator.addError(
+                        Localizer.Diagnostic.dataClassTransformExpectedBoolLiteral(),
+                        arg.valueExpression
+                    );
                     return;
                 }
 
                 behaviors.generateOrder = value;
+                break;
+            }
+
+            case 'transform_descriptor_types': {
+                const value = evaluateStaticBoolExpression(arg.valueExpression, fileInfo.executionEnvironment);
+                if (value === undefined) {
+                    evaluator.addError(
+                        Localizer.Diagnostic.dataClassTransformExpectedBoolLiteral(),
+                        arg.valueExpression
+                    );
+                    return;
+                }
+
+                behaviors.transformDescriptorTypes = value;
                 break;
             }
 
@@ -597,10 +708,18 @@ export function validateDataClassTransformDecorator(
                     !ClassType.isBuiltIn(valueType, 'tuple') ||
                     !valueType.tupleTypeArguments ||
                     valueType.tupleTypeArguments.some(
-                        (entry) => !isInstantiableClass(entry) && !isFunction(entry) && !isOverloadedFunction(entry)
+                        (entry) =>
+                            !isInstantiableClass(entry.type) &&
+                            !isFunction(entry.type) &&
+                            !isOverloadedFunction(entry.type)
                     )
                 ) {
-                    // TODO - emit diagnostic
+                    evaluator.addError(
+                        Localizer.Diagnostic.dataClassTransformFieldDescriptor().format({
+                            type: evaluator.printType(valueType),
+                        }),
+                        arg.valueExpression
+                    );
                     return;
                 }
 
@@ -608,17 +727,20 @@ export function validateDataClassTransformDecorator(
                     behaviors.fieldDescriptorNames = [];
                 }
                 valueType.tupleTypeArguments.forEach((arg) => {
-                    if (isInstantiableClass(arg) || isFunction(arg)) {
-                        behaviors.fieldDescriptorNames.push(arg.details.fullName);
-                    } else if (isOverloadedFunction(arg)) {
-                        behaviors.fieldDescriptorNames.push(arg.overloads[0].details.fullName);
+                    if (isInstantiableClass(arg.type) || isFunction(arg.type)) {
+                        behaviors.fieldDescriptorNames.push(arg.type.details.fullName);
+                    } else if (isOverloadedFunction(arg.type)) {
+                        behaviors.fieldDescriptorNames.push(arg.type.overloads[0].details.fullName);
                     }
                 });
                 break;
             }
 
             default:
-                // TODO - emit diagnostic
+                evaluator.addError(
+                    Localizer.Diagnostic.dataClassTransformUnknownArgument().format({ name: arg.name.value }),
+                    arg.valueExpression
+                );
                 break;
         }
     });
@@ -648,6 +770,7 @@ export function getDataclassDecoratorBehaviors(type: Type): DataClassBehaviors |
             keywordOnlyParams: false,
             generateEq: true,
             generateOrder: false,
+            transformDescriptorTypes: false,
             fieldDescriptorNames: ['dataclasses.field', 'dataclasses.Field'],
         };
     }
@@ -691,9 +814,12 @@ function applyDataClassBehaviorOverride(
                     if (ClassType.isFrozenDataClass(baseClass)) {
                         hasFrozenBaseClass = true;
                     } else if (
-                        !baseClass.details.declaredMetaclass ||
-                        !isInstantiableClass(baseClass.details.declaredMetaclass) ||
-                        !baseClass.details.declaredMetaclass.details.metaclassDataClassTransform
+                        !baseClass.details.classDataClassTransform &&
+                        !(
+                            baseClass.details.declaredMetaclass &&
+                            isInstantiableClass(baseClass.details.declaredMetaclass) &&
+                            !!baseClass.details.declaredMetaclass.details.classDataClassTransform
+                        )
                     ) {
                         // If this base class is unfrozen and isn't the class that directly
                         // references the metaclass that provides dataclass-like behaviors,
@@ -734,10 +860,34 @@ function applyDataClassBehaviorOverride(
                 classType.details.flags &= ~ClassTypeFlags.SkipSynthesizedDataClassEq;
             }
             break;
+
+        case 'slots':
+            if (value === true) {
+                classType.details.flags |= ClassTypeFlags.GenerateDataClassSlots;
+
+                if (classType.details.localSlotsNames) {
+                    evaluator.addDiagnostic(
+                        fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        Localizer.Diagnostic.dataClassSlotsOverwrite(),
+                        errorNode
+                    );
+                }
+            } else if (value === false) {
+                classType.details.flags &= ~ClassTypeFlags.GenerateDataClassSlots;
+            }
+            break;
+
+        case 'hash':
+        case 'unsafe_hash':
+            if (value === true) {
+                classType.details.flags |= ClassTypeFlags.SynthesizeDataClassUnsafeHash;
+            }
+            break;
     }
 }
 
-export function applyDataClassMetaclassBehaviorOverrides(
+export function applyDataClassClassBehaviorOverrides(
     evaluator: TypeEvaluator,
     classType: ClassType,
     args: FunctionArgument[]
@@ -775,10 +925,6 @@ export function applyDataClassDecorator(
     applyDataClassDefaultBehaviors(classType, defaultBehaviors);
 
     if (callNode?.arguments) {
-        callNode.arguments.forEach((arg) => {
-            if (arg.name && arg.valueExpression) {
-                applyDataClassBehaviorOverride(evaluator, arg, classType, arg.name.value, arg.valueExpression);
-            }
-        });
+        applyDataClassClassBehaviorOverrides(evaluator, classType, callNode.arguments);
     }
 }

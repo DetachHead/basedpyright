@@ -2,7 +2,7 @@
 # introduced in Python 3.8.
 
 import typing
-from typing import Final, List, Literal
+from typing import Any, Final, List
 
 foo1: typing.Final = 3
 
@@ -27,7 +27,7 @@ foo3: Final[str, int] = "hello"
 
 
 foo4: Final = 5
-t_4: Literal["Literal[5]"] = reveal_type(foo4)
+reveal_type(foo4, expected_text="Literal[5]")
 
 
 class Foo:
@@ -78,6 +78,10 @@ class Foo:
         self.member7: Final = 6
 
 
+reveal_type(Foo.member1, expected_text="Literal[4]")
+reveal_type(Foo(True).member1, expected_text="Literal[4]")
+
+
 class Bar(Foo):
     # This should generate an error because we are overriding
     # a member that is marked Final in the parent class.
@@ -98,10 +102,78 @@ class Bar(Foo):
 
 # This should generate an error because Final isn't allowed for
 # function parameters.
-def bar(a: Final[int]):
+def func1(a: Final[int]):
     pass
 
 
 # This should generate an error because Final must the outermost
 # type in assignments.
 b: List[Final[int]] = []
+
+
+class ClassA:
+    member1: Final = 3
+    member2: Final
+
+    def __init__(self):
+        # This should generate an error.
+        self.member1 = 5
+
+        self.member2 = "hi"
+
+        self.member3: Final = "hi"
+
+    def other(self):
+        # This should generate an error.
+        self.member1 = 5
+
+        # This should generate an error.
+        self.member2 = "hi"
+
+        # This should generate an error.
+        self.member3 = "hi"
+
+
+a = ClassA()
+
+# This should generate an error.
+a.member1 = 4
+
+# This should generate an error.
+a.member3 = "x"
+
+
+def func2():
+    x: Final[Any] = 3
+
+    # This should generate an error because x is Final.
+    x += 1
+
+    # This should generate an error because x is Final.
+    a = (x := 4)
+
+    # This should generate an error because x is Final.
+    for x in [1, 2, 3]:
+        pass
+
+    # This should generate an error because x is Final.
+    with open("Hi") as x:
+        pass
+
+    try:
+        pass
+    # This should generate an error because x is Final.
+    except ModuleNotFoundError as x:
+        pass
+
+    # This should generate an error because x is Final.
+    (a, x) = (1, 2)
+
+
+class ClassB:
+    def __init__(self):
+        self.x: Final = 1
+
+    def method1(self):
+        # This should generate an error because x is Final.
+        self.x += 1

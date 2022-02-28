@@ -12,6 +12,7 @@ import { ImportResolver, ModuleNameAndType } from '../analyzer/importResolver';
 import { ImportType } from '../analyzer/importResult';
 import {
     getImportGroup,
+    getImportGroupFromModuleNameAndType,
     getTextEditsForAutoImportInsertion,
     getTextEditsForAutoImportSymbolAddition,
     getTopLevelImports,
@@ -30,6 +31,7 @@ import { Position } from '../common/textRange';
 import { Duration } from '../common/timing';
 import { ParseNodeType } from '../parser/parseNodes';
 import { ParseResults } from '../parser/parser';
+import { CompletionMap } from './completionProvider';
 import { IndexAliasData, IndexResults } from './documentSymbolProvider';
 
 export interface AutoImportSymbol {
@@ -185,7 +187,7 @@ export class AutoImporter {
         private _importResolver: ImportResolver,
         private _parseResults: ParseResults,
         private _invocationPosition: Position,
-        private _excludes: Set<string>,
+        private readonly _excludes: CompletionMap,
         private _moduleSymbolMap: ModuleSymbolMap,
         private _options: AutoImportOptions
     ) {
@@ -599,7 +601,7 @@ export class AutoImporter {
             const moduleNameAndType = this._getModuleNameAndTypeFromFilePath(filePath);
             return [
                 moduleNameAndType.moduleName,
-                this._getImportGroupFromModuleNameAndType(moduleNameAndType),
+                getImportGroupFromModuleNameAndType(moduleNameAndType),
                 moduleNameAndType,
             ];
         }
@@ -656,8 +658,11 @@ export class AutoImporter {
         return this._options.patternMatcher(word, name);
     }
 
+    private _shouldExclude(name: string) {
+        return this._excludes.has(name, CompletionMap.labelOnlyIgnoringAutoImports);
+    }
     private _containsName(name: string, source: string | undefined, results: AutoImportResultMap) {
-        if (this._excludes.has(name)) {
+        if (this._shouldExclude(name)) {
             return true;
         }
 
@@ -674,17 +679,6 @@ export class AutoImporter {
     // 'import from' statement.
     private _getModuleNameAndTypeFromFilePath(filePath: string): ModuleNameAndType {
         return this._importResolver.getModuleNameForImport(filePath, this._execEnvironment);
-    }
-
-    private _getImportGroupFromModuleNameAndType(moduleNameAndType: ModuleNameAndType): ImportGroup {
-        let importGroup = ImportGroup.Local;
-        if (moduleNameAndType.isLocalTypingsFile || moduleNameAndType.importType === ImportType.ThirdParty) {
-            importGroup = ImportGroup.ThirdParty;
-        } else if (moduleNameAndType.importType === ImportType.BuiltIn) {
-            importGroup = ImportGroup.BuiltIn;
-        }
-
-        return importGroup;
     }
 
     private _getTextEditsForAutoImportByFilePath(
@@ -721,7 +715,11 @@ export class AutoImporter {
             }
 
             // Does an 'import from' statement already exist?
-            if (importName && importStatement.node.nodeType === ParseNodeType.ImportFrom) {
+            if (
+                importName &&
+                importStatement.node.nodeType === ParseNodeType.ImportFrom &&
+                !importStatement.node.isWildcardImport
+            ) {
                 // If so, see whether what we want already exist.
                 const importNode = importStatement.node.imports.find((i) => i.name.value === importName);
                 if (importNode) {
@@ -743,10 +741,9 @@ export class AutoImporter {
                         edits: this._options.lazyEdit
                             ? undefined
                             : getTextEditsForAutoImportSymbolAddition(
-                                  importName,
+                                  { name: importName, alias: abbrFromUsers },
                                   importStatement,
-                                  this._parseResults,
-                                  abbrFromUsers
+                                  this._parseResults
                               ),
                     };
                 }
@@ -755,7 +752,7 @@ export class AutoImporter {
             // If it is the module itself that got imported, make sure we don't import it again.
             // ex) from module import submodule
             const imported = this._importStatements.orderedImports.find((i) => i.moduleName === moduleName);
-            if (imported && imported.node.nodeType === ParseNodeType.ImportFrom) {
+            if (imported && imported.node.nodeType === ParseNodeType.ImportFrom && !imported.node.isWildcardImport) {
                 const importFrom = imported.node.imports.find((i) => i.name.value === importName);
                 if (importFrom) {
                     // For now, we don't check whether alias or moduleName got overwritten at
@@ -774,10 +771,9 @@ export class AutoImporter {
                         edits: this._options.lazyEdit
                             ? undefined
                             : getTextEditsForAutoImportSymbolAddition(
-                                  importName,
+                                  { name: importName, alias: abbrFromUsers },
                                   imported,
-                                  this._parseResults,
-                                  abbrFromUsers
+                                  this._parseResults
                               ),
                     };
                 }
@@ -801,13 +797,12 @@ export class AutoImporter {
             edits: this._options.lazyEdit
                 ? undefined
                 : getTextEditsForAutoImportInsertion(
-                      importName,
+                      { name: importName, alias: abbrFromUsers },
                       this._importStatements,
                       moduleName,
                       importGroup,
                       this._parseResults,
-                      this._invocationPosition,
-                      abbrFromUsers
+                      this._invocationPosition
                   ),
         };
     }

@@ -120,6 +120,8 @@ export const enum ErrorExpressionCategory {
     MissingFunctionParameterList,
     MissingPattern,
     MissingPatternSubject,
+    MissingDictValue,
+    MaxDepthExceeded,
 }
 
 export interface ParseNodeBase extends TextRange {
@@ -129,6 +131,12 @@ export interface ParseNodeBase extends TextRange {
     id: number;
 
     parent?: ParseNode | undefined;
+
+    // For some parse nodes, each child's depth is calculated,
+    // and the max child depth is recorded here. This is used
+    // to detect long chains of operations that can result in
+    // stack overflows during evaluation.
+    maxChildDepth?: number;
 }
 
 let _nextNodeId = 1;
@@ -289,7 +297,7 @@ export namespace ForNode {
     }
 }
 
-export type ListComprehensionIterNode = ListComprehensionForNode | ListComprehensionIfNode;
+export type ListComprehensionForIfNode = ListComprehensionForNode | ListComprehensionIfNode;
 
 export interface ListComprehensionForNode extends ParseNodeBase {
     readonly nodeType: ParseNodeType.ListComprehensionFor;
@@ -375,16 +383,18 @@ export interface ExceptNode extends ParseNodeBase {
     typeExpression?: ExpressionNode | undefined;
     name?: NameNode | undefined;
     exceptSuite: SuiteNode;
+    isExceptGroup: boolean;
 }
 
 export namespace ExceptNode {
-    export function create(exceptToken: Token, exceptSuite: SuiteNode) {
+    export function create(exceptToken: Token, exceptSuite: SuiteNode, isExceptGroup: boolean) {
         const node: ExceptNode = {
             start: exceptToken.start,
             length: exceptToken.length,
             nodeType: ParseNodeType.Except,
             id: _nextNodeId++,
             exceptSuite,
+            isExceptGroup,
         };
 
         exceptSuite.parent = node;
@@ -491,13 +501,13 @@ export namespace ClassNode {
     // function or class declaration.
     export function createDummyForDecorators(decorators: DecoratorNode[]) {
         const node: ClassNode = {
-            start: 0,
+            start: decorators[0].start,
             length: 0,
             nodeType: ParseNodeType.Class,
             id: _nextNodeId++,
             decorators,
             name: {
-                start: 0,
+                start: decorators[0].start,
                 length: 0,
                 id: 0,
                 nodeType: ParseNodeType.Name,
@@ -512,7 +522,7 @@ export namespace ClassNode {
             },
             arguments: [],
             suite: {
-                start: 0,
+                start: decorators[0].start,
                 length: 0,
                 id: 0,
                 nodeType: ParseNodeType.Suite,
@@ -778,6 +788,7 @@ export namespace UnaryOperationNode {
         };
 
         expression.parent = node;
+        node.maxChildDepth = 1 + (expression.maxChildDepth ?? 0);
 
         extendRange(node, expression);
 
@@ -814,6 +825,8 @@ export namespace BinaryOperationNode {
 
         leftExpression.parent = node;
         rightExpression.parent = node;
+
+        node.maxChildDepth = 1 + Math.max(leftExpression.maxChildDepth ?? 0, rightExpression.maxChildDepth ?? 0);
 
         extendRange(node, rightExpression);
 
@@ -1079,20 +1092,31 @@ export interface CallNode extends ParseNodeBase {
     readonly nodeType: ParseNodeType.Call;
     leftExpression: ExpressionNode;
     arguments: ArgumentNode[];
+    trailingComma: boolean;
 }
 
 export namespace CallNode {
-    export function create(leftExpression: ExpressionNode) {
+    export function create(leftExpression: ExpressionNode, argList: ArgumentNode[], trailingComma: boolean) {
         const node: CallNode = {
             start: leftExpression.start,
             length: leftExpression.length,
             nodeType: ParseNodeType.Call,
             id: _nextNodeId++,
             leftExpression,
-            arguments: [],
+            arguments: argList,
+            trailingComma,
         };
 
         leftExpression.parent = node;
+
+        node.maxChildDepth = 1 + (leftExpression.maxChildDepth ?? 0);
+
+        if (argList.length > 0) {
+            argList.forEach((arg) => {
+                arg.parent = node;
+            });
+            extendRange(node, argList[argList.length - 1]);
+        }
 
         return node;
     }
@@ -1101,7 +1125,8 @@ export namespace CallNode {
 export interface ListComprehensionNode extends ParseNodeBase {
     readonly nodeType: ParseNodeType.ListComprehension;
     expression: ParseNode;
-    comprehensions: ListComprehensionIterNode[];
+    forIfNodes: ListComprehensionForIfNode[];
+    isParenthesized?: boolean;
 }
 
 export namespace ListComprehensionNode {
@@ -1112,7 +1137,7 @@ export namespace ListComprehensionNode {
             nodeType: ParseNodeType.ListComprehension,
             id: _nextNodeId++,
             expression,
-            comprehensions: [],
+            forIfNodes: [],
         };
 
         expression.parent = node;
@@ -1151,6 +1176,8 @@ export namespace IndexNode {
         });
 
         extendRange(node, closeBracketToken);
+
+        node.maxChildDepth = 1 + (baseExpression.maxChildDepth ?? 0);
 
         return node;
     }
@@ -1245,6 +1272,8 @@ export namespace MemberAccessNode {
 
         extendRange(node, memberName);
 
+        node.maxChildDepth = 1 + (leftExpression.maxChildDepth ?? 0);
+
         return node;
     }
 }
@@ -1333,7 +1362,7 @@ export namespace EllipsisNode {
 
 export interface NumberNode extends ParseNodeBase {
     readonly nodeType: ParseNodeType.Number;
-    value: number;
+    value: number | bigint;
     isInteger: boolean;
     isImaginary: boolean;
 }
@@ -1419,6 +1448,9 @@ export interface StringListNode extends ParseNodeBase {
     // a type annotation, they are further parsed
     // into an expression.
     typeAnnotation?: ExpressionNode;
+
+    // Indicates that the string list is enclosed in parens.
+    isParenthesized?: boolean;
 }
 
 export namespace StringListNode {
@@ -1445,6 +1477,7 @@ export namespace StringListNode {
 export interface DictionaryNode extends ParseNodeBase {
     readonly nodeType: ParseNodeType.Dictionary;
     entries: DictionaryEntryNode[];
+    trailingCommaToken?: Token;
 }
 
 export namespace DictionaryNode {

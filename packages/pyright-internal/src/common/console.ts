@@ -68,6 +68,16 @@ export class StandardConsole implements ConsoleInterface {
     }
 }
 
+export class StandardConsoleWithLevel extends StandardConsole {
+    constructor(private _maxLevel: LogLevel = LogLevel.Log) {
+        super();
+    }
+
+    get level(): LogLevel {
+        return this._maxLevel;
+    }
+}
+
 export class StderrConsole implements ConsoleInterface {
     log(message: string) {
         console.error(message);
@@ -86,6 +96,16 @@ export class StderrConsole implements ConsoleInterface {
     }
 }
 
+export class StderrConsoleWithLevel extends StderrConsole {
+    constructor(private _maxLevel: LogLevel = LogLevel.Log) {
+        super();
+    }
+
+    get level(): LogLevel {
+        return this._maxLevel;
+    }
+}
+
 export class ConsoleWithLogLevel implements ConsoleInterface {
     private _levelMap: Map<string, number> = new Map([
         [LogLevel.Error, 0],
@@ -96,7 +116,7 @@ export class ConsoleWithLogLevel implements ConsoleInterface {
 
     private _maxLevel = 2;
 
-    constructor(private _console: ConsoleInterface) {}
+    constructor(private _console: ConsoleInterface, private _name = '') {}
 
     get level(): LogLevel {
         switch (this._maxLevel) {
@@ -123,19 +143,23 @@ export class ConsoleWithLogLevel implements ConsoleInterface {
     }
 
     error(message: string) {
-        this._log(LogLevel.Error, message);
+        this._log(LogLevel.Error, `${this._prefix}${message}`);
     }
 
     warn(message: string) {
-        this._log(LogLevel.Warn, message);
+        this._log(LogLevel.Warn, `${this._prefix}${message}`);
     }
 
     info(message: string) {
-        this._log(LogLevel.Info, message);
+        this._log(LogLevel.Info, `${this._prefix}${message}`);
     }
 
     log(message: string) {
-        this._log(LogLevel.Log, message);
+        this._log(LogLevel.Log, `${this._prefix}${message}`);
+    }
+
+    private get _prefix() {
+        return this._name ? `(${this._name}) ` : '';
     }
 
     private _log(level: LogLevel, message: string): void {

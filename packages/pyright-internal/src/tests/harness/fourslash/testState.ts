@@ -7,25 +7,33 @@
  * the test states.
  */
 
-import * as assert from 'assert';
+import assert from 'assert';
 import * as JSONC from 'jsonc-parser';
 import Char from 'typescript-char';
 import {
+    AnnotatedTextEdit,
     CancellationToken,
+    ChangeAnnotation,
     CodeAction,
     Command,
     CompletionItem,
+    CreateFile,
+    DeleteFile,
     Diagnostic,
     DocumentHighlight,
     DocumentHighlightKind,
     ExecuteCommandParams,
     MarkupContent,
     MarkupKind,
+    OptionalVersionedTextDocumentIdentifier,
+    RenameFile,
+    TextDocumentEdit,
     TextEdit,
     WorkspaceEdit,
 } from 'vscode-languageserver';
 
 import { ImportResolver, ImportResolverFactory } from '../../../analyzer/importResolver';
+import { findNodeByOffset } from '../../../analyzer/parseTreeUtils';
 import { Program } from '../../../analyzer/program';
 import { AnalyzerService, configFileNames } from '../../../analyzer/service';
 import { ConfigOptions } from '../../../common/configOptions';
@@ -40,7 +48,9 @@ import {
     comparePaths,
     convertPathToUri,
     getBaseFileName,
+    getDirectoryPath,
     getFileExtension,
+    getFileSpec,
     normalizePath,
     normalizeSlashes,
 } from '../../../common/pathUtils';
@@ -52,14 +62,16 @@ import { LanguageServerInterface, WorkspaceServiceInstance } from '../../../lang
 import { AbbreviationInfo } from '../../../languageService/autoImporter';
 import { DefinitionFilter } from '../../../languageService/definitionProvider';
 import { convertHoverResults } from '../../../languageService/hoverProvider';
+import { ParseNode } from '../../../parser/parseNodes';
 import { ParseResults } from '../../../parser/parser';
 import { Tokenizer } from '../../../parser/tokenizer';
 import { PyrightFileSystem } from '../../../pyrightFileSystem';
 import { TestAccessHost } from '../testAccessHost';
 import * as host from '../testHost';
 import { stringify } from '../utils';
-import { createFromFileSystem, distlibFolder, libFolder } from '../vfs/factory';
+import { createFromFileSystem, distlibFolder, libFolder, typeshedFolder } from '../vfs/factory';
 import * as vfs from '../vfs/filesystem';
+import { parseTestData } from './fourSlashParser';
 import {
     CompilerSettings,
     FourSlashData,
@@ -98,8 +110,8 @@ export class TestState {
     private readonly _cancellationToken: TestCancellationToken;
     private readonly _files: string[] = [];
     private readonly _hostSpecificFeatures: HostSpecificFeatures;
-    private readonly _testFS: vfs.TestFileSystem;
 
+    readonly testFS: vfs.TestFileSystem;
     readonly fs: PyrightFileSystem;
     readonly workspace: WorkspaceServiceInstance;
     readonly console: ConsoleInterface;
@@ -127,7 +139,7 @@ export class TestState {
         const ignoreCase = toBoolean(testData.globalOptions[GlobalMetadataOptionNames.ignoreCase]);
 
         this._cancellationToken = new TestCancellationToken();
-        const configOptions = this._convertGlobalOptionsToConfigOptions(this.testData.globalOptions);
+        const configOptions = this._convertGlobalOptionsToConfigOptions(this.testData.globalOptions, mountPaths);
 
         const sourceFiles = [];
         const files: vfs.FileSet = {};
@@ -152,14 +164,14 @@ export class TestState {
         }
 
         this.console = nullConsole;
-        this._testFS = createFromFileSystem(
+        this.testFS = createFromFileSystem(
             host.HOST,
             ignoreCase,
             { cwd: basePath, files, meta: testData.globalOptions },
             mountPaths
         );
 
-        this.fs = new PyrightFileSystem(this._testFS);
+        this.fs = new PyrightFileSystem(this.testFS);
         this._files = sourceFiles;
 
         const service = this._createAnalysisService(
@@ -189,6 +201,13 @@ export class TestState {
             // Open the first file by default
             this.openFile(this._files[0]);
         }
+
+        for (const filePath of this._files) {
+            const file = files[filePath] as vfs.File;
+            if (file.meta?.[MetadataOptionNames.ipythonMode]) {
+                this.program.getSourceFile(filePath)?.test_enableIPythonMode(true);
+            }
+        }
     }
 
     get importResolver(): ImportResolver {
@@ -204,7 +223,7 @@ export class TestState {
     }
 
     cwd() {
-        return this._testFS.cwd();
+        return this.testFS.cwd();
     }
 
     // Entry points from fourslash.ts
@@ -282,14 +301,29 @@ export class TestState {
         return this.convertPositionRange(range);
     }
 
+    expandPositionRange(range: PositionRange, start: number, end: number) {
+        return {
+            start: { line: range.start.line, character: range.start.character - start },
+            end: { line: range.end.line, character: range.end.character + end },
+        };
+    }
+
     convertPositionRange(range: Range) {
         return this.convertOffsetsToRange(range.fileName, range.pos, range.end);
+    }
+
+    convertPathToUri(path: string) {
+        return convertPathToUri(this.fs, path);
+    }
+
+    getDirectoryPath(path: string) {
+        return getDirectoryPath(path);
     }
 
     goToPosition(positionOrLineAndColumn: number | Position) {
         const pos = isNumber(positionOrLineAndColumn)
             ? positionOrLineAndColumn
-            : this._convertPositionToOffset(this.activeFile.fileName, positionOrLineAndColumn);
+            : this.convertPositionToOffset(this.activeFile.fileName, positionOrLineAndColumn);
         this.currentCaretPosition = pos;
         this.selectionEnd = -1;
     }
@@ -318,7 +352,7 @@ export class TestState {
     }
 
     selectLine(index: number) {
-        const lineStart = this._convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
+        const lineStart = this.convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
         const lineEnd = lineStart + this._getLineContent(index).length;
         this.selectRange({ fileName: this.activeFile.fileName, pos: lineStart, end: lineEnd });
     }
@@ -353,6 +387,17 @@ export class TestState {
         this.testData.rangesByText = result;
 
         return result;
+    }
+
+    getFilteredRanges<T extends {}>(
+        predicate: (m: Marker | undefined, d: T | undefined, text: string) => boolean
+    ): Range[] {
+        return this.getRanges().filter((r) => predicate(r.marker, r.marker?.data as T | undefined, this._rangeText(r)));
+    }
+
+    getRangeByMarkerName(markerName: string): Range | undefined {
+        const marker = this.getMarkerByName(markerName);
+        return this.getRanges().find((r) => r.marker === marker);
     }
 
     goToBOF() {
@@ -429,8 +474,8 @@ export class TestState {
     }
 
     deleteLineRange(startIndex: number, endIndexInclusive: number) {
-        const startPos = this._convertPositionToOffset(this.activeFile.fileName, { line: startIndex, character: 0 });
-        const endPos = this._convertPositionToOffset(this.activeFile.fileName, {
+        const startPos = this.convertPositionToOffset(this.activeFile.fileName, { line: startIndex, character: 0 });
+        const endPos = this.convertPositionToOffset(this.activeFile.fileName, {
             line: endIndexInclusive + 1,
             character: 0,
         });
@@ -691,6 +736,158 @@ export class TestState {
         return commandResult;
     }
 
+    protected verifyWorkspaceEdit(expected: WorkspaceEdit, actual: WorkspaceEdit) {
+        if (actual.changes) {
+            this._verifyTextEditMap(expected.changes!, actual.changes);
+        } else {
+            assert(!expected.changes);
+        }
+
+        if (actual.documentChanges) {
+            this._verifyDocumentEdits(expected.documentChanges!, actual.documentChanges);
+        } else {
+            assert(!expected.documentChanges);
+        }
+
+        if (actual.changeAnnotations) {
+            this._verifyChangeAnnotations(expected.changeAnnotations!, actual.changeAnnotations);
+        } else {
+            assert(!expected.changeAnnotations);
+        }
+    }
+
+    private _verifyChangeAnnotations(
+        expected: { [id: string]: ChangeAnnotation },
+        actual: { [id: string]: ChangeAnnotation }
+    ) {
+        assert.strictEqual(Object.entries(expected).length, Object.entries(actual).length);
+
+        for (const key of Object.keys(expected)) {
+            const expectedAnnotation = expected[key];
+            const actualAnnotation = actual[key];
+
+            // We need to improve it to test localized strings.
+            assert.strictEqual(expectedAnnotation.label, actualAnnotation.label);
+            assert.strictEqual(expectedAnnotation.description, actualAnnotation.description);
+
+            assert.strictEqual(expectedAnnotation.needsConfirmation, actualAnnotation.needsConfirmation);
+        }
+    }
+
+    private _textDocumentAreSame(
+        expected: OptionalVersionedTextDocumentIdentifier,
+        actual: OptionalVersionedTextDocumentIdentifier
+    ) {
+        return expected.version === actual.version && expected.uri === actual.uri;
+    }
+
+    private _verifyDocumentEdits(
+        expected: (TextDocumentEdit | CreateFile | RenameFile | DeleteFile)[],
+        actual: (TextDocumentEdit | CreateFile | RenameFile | DeleteFile)[]
+    ) {
+        assert.strictEqual(expected.length, actual.length);
+
+        for (const op of expected) {
+            assert(
+                actual.some((a) => {
+                    const expectedKind = TextDocumentEdit.is(op) ? 'edit' : op.kind;
+                    const actualKind = TextDocumentEdit.is(a) ? 'edit' : a.kind;
+                    if (expectedKind !== actualKind) {
+                        return false;
+                    }
+
+                    switch (expectedKind) {
+                        case 'edit': {
+                            const expectedEdit = op as TextDocumentEdit;
+                            const actualEdit = a as TextDocumentEdit;
+
+                            if (!this._textDocumentAreSame(expectedEdit.textDocument, actualEdit.textDocument)) {
+                                return false;
+                            }
+
+                            return this._textEditsAreSame(expectedEdit.edits, actualEdit.edits);
+                        }
+                        case 'create': {
+                            const expectedOp = op as CreateFile;
+                            const actualOp = a as CreateFile;
+                            return (
+                                expectedOp.kind === actualOp.kind &&
+                                expectedOp.annotationId === actualOp.annotationId &&
+                                expectedOp.uri === actualOp.uri &&
+                                expectedOp.options?.ignoreIfExists === actualOp.options?.ignoreIfExists &&
+                                expectedOp.options?.overwrite === actualOp.options?.overwrite
+                            );
+                        }
+                        case 'rename': {
+                            const expectedOp = op as RenameFile;
+                            const actualOp = a as RenameFile;
+                            return (
+                                expectedOp.kind === actualOp.kind &&
+                                expectedOp.annotationId === actualOp.annotationId &&
+                                expectedOp.oldUri === actualOp.oldUri &&
+                                expectedOp.newUri === actualOp.newUri &&
+                                expectedOp.options?.ignoreIfExists === actualOp.options?.ignoreIfExists &&
+                                expectedOp.options?.overwrite === actualOp.options?.overwrite
+                            );
+                        }
+                        case 'delete': {
+                            const expectedOp = op as DeleteFile;
+                            const actualOp = a as DeleteFile;
+                            return (
+                                expectedOp.annotationId === actualOp.annotationId &&
+                                expectedOp.kind === actualOp.kind &&
+                                expectedOp.uri === actualOp.uri &&
+                                expectedOp.options?.ignoreIfNotExists === actualOp.options?.ignoreIfNotExists &&
+                                expectedOp.options?.recursive === actualOp.options?.recursive
+                            );
+                        }
+                        default:
+                            debug.assertNever(expectedKind);
+                    }
+                })
+            );
+        }
+    }
+
+    private _verifyTextEditMap(expected: { [uri: string]: TextEdit[] }, actual: { [uri: string]: TextEdit[] }) {
+        assert.strictEqual(Object.entries(expected).length, Object.entries(actual).length);
+
+        for (const key of Object.keys(expected)) {
+            assert(this._textEditsAreSame(expected[key], actual[key]));
+        }
+    }
+
+    private _textEditsAreSame(
+        expectedEdits: (TextEdit | AnnotatedTextEdit)[],
+        actualEdits: (TextEdit | AnnotatedTextEdit)[]
+    ) {
+        if (expectedEdits.length !== actualEdits.length) {
+            return false;
+        }
+
+        for (const edit of expectedEdits) {
+            if (actualEdits.some((a) => this._textEditAreSame(edit, a))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private _textEditAreSame(expected: TextEdit, actual: TextEdit) {
+        if (!rangesAreEqual(expected.range, actual.range)) {
+            return false;
+        }
+
+        if (expected.newText !== actual.newText) {
+            return false;
+        }
+
+        const expectedAnnotation = AnnotatedTextEdit.is(expected) ? expected.annotationId : '';
+        const actualAnnotation = AnnotatedTextEdit.is(actual) ? actual.annotationId : '';
+        return expectedAnnotation === actualAnnotation;
+    }
+
     async verifyInvokeCodeAction(
         map: {
             [marker: string]: { title: string; files?: { [filePath: string]: string }; edits?: TextEdit[] };
@@ -855,7 +1052,7 @@ export class TestState {
             const expectedCompletions = map[markerName].completions;
             const completionPosition = this.convertOffsetToPosition(filePath, marker.position);
 
-            const options = { format: docFormat, snippet: true, lazyEdit: true };
+            const options = { format: docFormat, snippet: true, lazyEdit: true, autoImport: true };
             const nameMap = abbrMap ? new Map<string, AbbreviationInfo>(Object.entries(abbrMap)) : undefined;
             const result = await this.workspace.serviceInstance.getCompletionsForPosition(
                 filePath,
@@ -1090,7 +1287,7 @@ export class TestState {
                 CancellationToken.None
             );
 
-            assert.equal(actual?.length ?? 0, expected.length);
+            assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
 
             for (const r of expected) {
                 assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
@@ -1172,6 +1369,34 @@ export class TestState {
         }
     }
 
+    verifyFindTypeDefinitions(map: {
+        [marker: string]: {
+            definitions: DocumentRange[];
+        };
+    }) {
+        this._analyze();
+
+        for (const marker of this.getMarkers()) {
+            const fileName = marker.fileName;
+            const name = this.getMarkerName(marker);
+
+            if (!(name in map)) {
+                continue;
+            }
+
+            const expected = map[name].definitions;
+
+            const position = this.convertOffsetToPosition(fileName, marker.position);
+            const actual = this.program.getTypeDefinitionsForPosition(fileName, position, CancellationToken.None);
+
+            assert.strictEqual(actual?.length ?? 0, expected.length, name);
+
+            for (const r of expected) {
+                assert.strictEqual(actual?.filter((d) => this._deepEqual(d, r)).length, 1, name);
+            }
+        }
+    }
+
     verifyRename(map: {
         [marker: string]: {
             newName: string;
@@ -1220,17 +1445,19 @@ export class TestState {
         return configFileNames.some((f) => comparer(getBaseFileName(file.fileName), f) === Comparison.EqualTo);
     }
 
-    private _convertGlobalOptionsToConfigOptions(globalOptions: CompilerSettings): ConfigOptions {
+    private _convertGlobalOptionsToConfigOptions(
+        globalOptions: CompilerSettings,
+        mountPaths?: Map<string, string>
+    ): ConfigOptions {
         const srtRoot: string = GlobalMetadataOptionNames.projectRoot;
         const projectRoot = normalizeSlashes(globalOptions[srtRoot] ?? vfs.MODULE_PATH);
         const configOptions = new ConfigOptions(projectRoot);
 
         // add more global options as we need them
-
-        return this._applyTestConfigOptions(configOptions);
+        return this._applyTestConfigOptions(configOptions, mountPaths);
     }
 
-    private _applyTestConfigOptions(configOptions: ConfigOptions) {
+    private _applyTestConfigOptions(configOptions: ConfigOptions, mountPaths?: Map<string, string>) {
         // Always enable "test mode".
         configOptions.internalTestMode = true;
 
@@ -1242,17 +1469,28 @@ export class TestState {
             configOptions.stubPath = normalizePath(combinePaths(vfs.MODULE_PATH, 'typings'));
         }
 
+        configOptions.include.push(getFileSpec(configOptions.projectRoot, '.'));
+        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, typeshedFolder));
+        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, distlibFolder));
+        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, libFolder));
+
+        if (mountPaths) {
+            for (const mountPath of mountPaths.keys()) {
+                configOptions.exclude.push(getFileSpec(configOptions.projectRoot, mountPath));
+            }
+        }
+
         return configOptions;
     }
 
     private _getFileContent(fileName: string): string {
         const files = this.testData.files.filter(
-            (f) => comparePaths(f.fileName, fileName, this._testFS.ignoreCase) === Comparison.EqualTo
+            (f) => comparePaths(f.fileName, fileName, this.testFS.ignoreCase) === Comparison.EqualTo
         );
         return files[0].content;
     }
 
-    private _convertPositionToOffset(fileName: string, position: Position): number {
+    protected convertPositionToOffset(fileName: string, position: Position): number {
         const lines = this._getTextRangeCollection(fileName);
         return convertPositionToOffset(position, lines)!;
     }
@@ -1362,7 +1600,7 @@ export class TestState {
         }
     }
 
-    private _rangeText({ fileName, pos, end }: Range): string {
+    protected _rangeText({ fileName, pos, end }: Range): string {
         return this._getFileContent(fileName).slice(pos, end);
     }
 
@@ -1400,7 +1638,7 @@ export class TestState {
 
     private _getLineContent(index: number) {
         const text = this._getFileContent(this.activeFile.fileName);
-        const pos = this._convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
+        const pos = this.convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
         let startPos = pos;
         let endPos = pos;
 
@@ -1674,4 +1912,47 @@ export class TestState {
         this._verifyEdit(actual.textEdit as TextEdit, expected.textEdit);
         this._verifyEdits(actual.additionalTextEdits, expected.additionalTextEdits);
     }
+}
+
+export function parseAndGetTestState(code: string, projectRoot = '/', anonymousFileName = 'unnamedFile.py') {
+    const data = parseTestData(normalizeSlashes(projectRoot), code, anonymousFileName);
+    const state = new TestState(normalizeSlashes('/'), data);
+
+    return { data, state };
+}
+
+export function getNodeForRange(codeOrState: string | TestState, markerName = 'marker'): ParseNode {
+    const state = isString(codeOrState) ? parseAndGetTestState(codeOrState).state : codeOrState;
+    const range = state.getRangeByMarkerName(markerName);
+    assert(range);
+
+    const textRange = TextRange.fromBounds(range.pos, range.end);
+
+    const node = getNodeAtMarker(state, markerName);
+    let current: ParseNode | undefined = node;
+    while (current) {
+        if (TextRange.containsRange(current, textRange)) {
+            return current;
+        }
+
+        current = current.parent;
+    }
+
+    return node;
+}
+
+export function getNodeAtMarker(codeOrState: string | TestState, markerName = 'marker'): ParseNode {
+    const state = isString(codeOrState) ? parseAndGetTestState(codeOrState).state : codeOrState;
+    const marker = state.getMarkerByName(markerName);
+
+    const sourceFile = state.program.getBoundSourceFile(marker.fileName);
+    assert(sourceFile);
+
+    const parserResults = sourceFile.getParseResults();
+    assert(parserResults);
+
+    const node = findNodeByOffset(parserResults.parseTree, marker.position);
+    assert(node);
+
+    return node;
 }

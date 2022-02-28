@@ -3,15 +3,15 @@
 # See the README.md file in this directory for more information.
 
 from sys import _OptExcInfo
-from typing import Any, Callable, Dict, Iterable, Protocol, Tuple
+from typing import Any, Callable, Iterable, Protocol
 
 # stable
 class StartResponse(Protocol):
     def __call__(
-        self, status: str, headers: list[Tuple[str, str]], exc_info: _OptExcInfo | None = ...
+        self, status: str, headers: list[tuple[str, str]], exc_info: _OptExcInfo | None = ...
     ) -> Callable[[bytes], Any]: ...
 
-WSGIEnvironment = Dict[str, Any]  # stable
+WSGIEnvironment = dict[str, Any]  # stable
 WSGIApplication = Callable[[WSGIEnvironment, StartResponse], Iterable[bytes]]  # stable
 
 # WSGI input streams per PEP 3333, stable

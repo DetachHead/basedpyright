@@ -1,44 +1,51 @@
-# This sample tests Pyright's handling of recursive type aliases.
+# This sample tests that certain type aliases cannot be used within
+# call expressions.
 
-from typing import Dict, List, TypeVar, Union
+from typing import Callable, Optional, Tuple, Type, TypeVar, Union
 
-MyTree = List[Union["MyTree", int]]
 
-t1: MyTree = [1, 2, 3, [3, 4], [[3], 5]]
-
-# This should generate an error because a str is not allowed.
-t2: MyTree = [3, ""]
-
-# This should generate an error because a str is not allowed.
-t3: MyTree = [1, 2, 3, [3, 4], [3, 4, 5, [3, "4"]]]
-
-_T = TypeVar("_T")
-GenericUnion = Union[int, _T]
-
-i1: GenericUnion[str] = "hi"
-i1 = 3
-
-i2: GenericUnion[float] = 3
-# This should generate an error because str isn't compatible.
-i2 = "hi"
-
-Foo = Union[bool, List["Foo"], Dict["Foo", "Foo"]]
-
-bar1: Foo = [True, [True, False]]
-bar2: Foo = [True, [True], {True: False}]
-bar3: Foo = {[True]: False}
-bar4: Foo = {True: [False]}
-
-# These should generate errors.
-baz1: Foo = [True, ["True", False]]
-baz2: Foo = [True, [True], {True: "False"}]
-baz3: Foo = {["True"]: False}
-baz4: Foo = {True: ["False"]}
-
-Json = Union[None, int, str, float, List["Json"], Dict[str, "Json"]]
+T_Union = Union[int, float]
 
 # This should generate an error
-a1: Json = {"a": 1, "b": 3j}
+T_Union(3)
+
+T_Callable = Callable[[int], None]
 
 # This should generate an error
-a2: Json = [2, 3j]
+T_Callable(1)
+
+
+T_Type1 = Type[int]
+
+# This should generate an error
+T_Type1(object)
+
+T_Type2 = type
+T_Type2(object)
+
+T_Optional = Optional[str]
+
+# This should generate an error
+T_Optional(3)
+
+
+T_TypeVar = TypeVar("T_TypeVar")
+
+# This should generate an error
+T_TypeVar()
+
+
+T_Tuple1 = Tuple[int, ...]
+
+# This should generate an error
+T_Tuple1([3, 4])
+
+
+I = int
+
+I(3)
+
+
+T_Tuple2 = tuple[int, ...]
+
+T_Tuple2([3, 4, 5])

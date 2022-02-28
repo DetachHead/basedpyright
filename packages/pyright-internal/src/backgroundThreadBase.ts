@@ -136,6 +136,7 @@ export interface InitializationData {
     rootDirectory: string;
     cancellationFolderName: string | undefined;
     runner: string | undefined;
+    title?: string;
 }
 
 export interface RequestResponse {

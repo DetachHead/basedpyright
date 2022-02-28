@@ -1,6 +1,6 @@
 # This sample file tests various aspects of type analysis for tuples.
 
-from typing import List, Literal, Tuple
+from typing import List, Tuple, Union
 import os
 
 
@@ -15,7 +15,12 @@ def func1() -> Tuple[int, int, int]:
 
     # This should generate an error because
     # of a tuple size mismatch.
-    b, c, d, e, = a
+    (
+        b,
+        c,
+        d,
+        e,
+    ) = a
 
     return a
 
@@ -114,23 +119,29 @@ def func11() -> float:
 
     return 3
 
+
 # Tests for assignment of tuple list that includes star
 # operator both with and without type annotations.
 def func12():
     data = ["a", "b"]
-    data1 = *map(str.split, data),
-    data2: Tuple[List[str], ...] = *map(str.split, data),
+    data1 = (*map(str.split, data),)
+    data2: Tuple[List[str], ...] = (*map(str.split, data),)
     data3 = (*map(str.split, data),)
     data4: Tuple[List[str], ...] = (*map(str.split, data),)
 
 
 # Tests for index-out-of-range error.
-def func13(a: Tuple[int, str], b: Tuple[()], c: Tuple[int, ...]):
+def func13(
+    a: Tuple[int, str],
+    b: Tuple[()],
+    c: Tuple[int, ...],
+    d: Union[Tuple[int], Tuple[str, str], Tuple[int, ...]],
+):
     v1 = a[0]
-    t_v1: Literal["int"] = reveal_type(v1)
+    reveal_type(v1, expected_text="int")
 
     v2 = a[1]
-    t_v2: Literal["str"] = reveal_type(v2)
+    reveal_type(v2, expected_text="str")
 
     # This should generate an error.
     v3 = a[2]
@@ -139,25 +150,32 @@ def func13(a: Tuple[int, str], b: Tuple[()], c: Tuple[int, ...]):
     v4 = b[0]
 
     v5 = c[100]
-    t_v5: Literal["int"] = reveal_type(v5)
+    reveal_type(v5, expected_text="int")
 
     v6 = a[-2]
-    t_v6: Literal["int"] = reveal_type(v6)
+    reveal_type(v6, expected_text="int")
 
     v7 = a[-1]
-    t_v7: Literal["str"] = reveal_type(v7)
+    reveal_type(v7, expected_text="str")
 
     # This should generate an error.
     v8 = a[-3]
-    t_v8: Literal["int | str"] = reveal_type(v8)
+    reveal_type(v8, expected_text="int | str")
 
     v9 = c[-100]
-    t_v9: Literal["int"] = reveal_type(v9)
+    reveal_type(v9, expected_text="int")
+
+    v10 = d[0]
+
+    # This should generate one error.
+    v11 = d[1]
+
+    # This should generate two errors.
+    v12 = d[2]
 
 
 # Test for construction using the tuple constructor
 def func14():
     list1 = [1, 2, 3]
     v1 = tuple(list1)
-    t_v1: Literal["tuple[int, ...]"] = reveal_type(v1)
-
+    reveal_type(v1, expected_text="tuple[int, ...]")

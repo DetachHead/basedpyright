@@ -1,51 +1,35 @@
-# This sample tests the handling of complex recursive types.
+# This sample tests that generic type aliases are properly flagged as
+# partially-unknown types if their type arguments are omitted.
 
-# pyright: strict, reportUnusedVariable=false
+# pyright: reportUnknownParameterType=true, reportMissingTypeArgument=false
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, TypeVar
 
-
-JSONArray = List["JSONType"]
-JSONObject = Dict[str, "JSONType"]
-
-JSONPrimitive = Union[str, float, int, bool, None]
-JSONStructured = Union[JSONArray, JSONObject]
-
-JSONType = Union[JSONPrimitive, JSONStructured]
+T = TypeVar("T")
+Foo = List[T]
 
 
-# Using type alias checking for list:
-def f2(args: JSONStructured):
-    if isinstance(args, List):
-        t1: Literal[
-            "List[str | float | int | bool | Type[List[JSONType]] | Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[JSONType]] | Type[Dict[str, ...]] | None] | None]"
-        ] = reveal_type(args)
-    else:
-        t2: Literal[
-            "Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[str | float | int | bool | JSONArray | Dict[str, ...] | None]] | Type[Dict[str, ...]] | None]"
-        ] = reveal_type(args)
-        dargs: JSONObject = args
+# This should generate an error because Foo is missing a type argument,
+# so the type of `f` is partially unknown.
+def foo1(f: Foo) -> None:
+    pass
 
 
-# Using type alias checking for dict:
-def f3(args: JSONStructured):
-    if isinstance(args, Dict):
-        t1: Literal[
-            "Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[str | float | int | bool | JSONArray | Dict[str, ...] | None]] | Type[Dict[str, ...]] | None]"
-        ] = reveal_type(args)
-    else:
-        t2: Literal[
-            "List[str | float | int | bool | Type[List[JSONType]] | Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[JSONType]] | Type[Dict[str, ...]] | None] | None]"
-        ] = reveal_type(args)
-        largs: JSONArray = args
+Bar = Foo
 
 
-# Using type alias for "is None" narrowing:
-LinkedList = Optional[tuple[int, "LinkedList"]]
+# This should generate an error because Bar doesn't specialize
+# Foo appropriately.
+def foo2(f: Bar) -> None:
+    pass
 
 
-def g(xs: LinkedList):
-    while xs is not None:
-        x, rest = xs
-        yield x
-        xs = rest
+K = TypeVar("K")
+V = TypeVar("V")
+
+Baz = Dict[K, V]
+
+
+# This should generate an error because Baz is only partially specialized.
+def foo3(f: Baz[int]) -> None:
+    pass

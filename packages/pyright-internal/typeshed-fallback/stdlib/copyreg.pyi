@@ -1,9 +1,9 @@
-from typing import Any, Callable, Hashable, Optional, SupportsInt, Tuple, TypeVar, Union
+from typing import Any, Callable, Hashable, Optional, SupportsInt, TypeVar, Union
 
 _TypeT = TypeVar("_TypeT", bound=type)
-_Reduce = Union[Tuple[Callable[..., _TypeT], Tuple[Any, ...]], Tuple[Callable[..., _TypeT], Tuple[Any, ...], Optional[Any]]]
+_Reduce = Union[tuple[Callable[..., _TypeT], tuple[Any, ...]], tuple[Callable[..., _TypeT], tuple[Any, ...], Optional[Any]]]
 
-__all__: list[str]
+__all__ = ["pickle", "constructor", "add_extension", "remove_extension", "clear_extension_cache"]
 
 def pickle(
     ob_type: _TypeT,
@@ -15,4 +15,5 @@ def add_extension(module: Hashable, name: Hashable, code: SupportsInt) -> None: 
 def remove_extension(module: Hashable, name: Hashable, code: int) -> None: ...
 def clear_extension_cache() -> None: ...
 
-dispatch_table: dict[type, Callable[[type], str | _Reduce[type]]]  # undocumented
+_DispatchTableType = dict[type, Callable[[type], str | _Reduce[type]]]  # imported by multiprocessing.reduction
+dispatch_table: _DispatchTableType  # undocumented

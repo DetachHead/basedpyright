@@ -116,11 +116,24 @@ test('Constants1', () => {
 test('NoReturn1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn1.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('NoReturn2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn2.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+// This test is commented out for now because we needed to revert the fix.
+// test('NoReturn3', () => {
+//     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn3.py']);
+
+//     TestUtils.validateResults(analysisResults, 0);
+// });
+
+test('NoReturn4', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn4.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });
@@ -140,7 +153,7 @@ test('With2', () => {
 test('With3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with3.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('With4', () => {
@@ -153,6 +166,12 @@ test('With4', () => {
     configOptions.defaultPythonVersion = PythonVersion.V3_9;
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['with4.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 0);
+});
+
+test('With5', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with5.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('Mro1', () => {
@@ -171,6 +190,12 @@ test('Mro3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro3.py']);
 
     TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Mro4', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro4.py']);
+
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('DefaultInitializer1', () => {
@@ -195,7 +220,7 @@ test('UnnecessaryIsInstance1', () => {
     // Turn on errors.
     configOptions.diagnosticRuleSet.reportUnnecessaryIsInstance = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['unnecessaryIsInstance1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('UnnecessaryIsSubclass1', () => {
@@ -210,7 +235,7 @@ test('UnnecessaryIsSubclass1', () => {
     TestUtils.validateResults(analysisResults, 2);
 });
 
-test('UnnecessaryCast', () => {
+test('UnnecessaryCast1', () => {
     const configOptions = new ConfigOptions('.');
 
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['unnecessaryCast1.py'], configOptions);
@@ -258,6 +283,28 @@ test('TypeIgnore3', () => {
     TestUtils.validateResults(analysisResults, 4);
 });
 
+test('TypeIgnore4', () => {
+    const configOptions = new ConfigOptions('.');
+
+    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore4.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 0);
+
+    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'error';
+    analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore4.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 2);
+});
+
+test('TypeIgnore5', () => {
+    const configOptions = new ConfigOptions('.');
+
+    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore5.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 0);
+
+    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'warning';
+    analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore5.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 0, 1);
+});
+
 test('DuplicateImports1', () => {
     const configOptions = new ConfigOptions('.');
 
@@ -297,16 +344,22 @@ test('Python2', () => {
     TestUtils.validateResults(analysisResults, 6);
 });
 
-test('InconsistentSpaceTab', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab.py']);
+test('InconsistentSpaceTab1', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab1.py']);
 
     TestUtils.validateResults(analysisResults, 4);
+});
+
+test('InconsistentSpaceTab2', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab2.py']);
+
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('DuplicateDeclaration1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['duplicateDeclaration1.py']);
 
-    TestUtils.validateResults(analysisResults, 6);
+    TestUtils.validateResults(analysisResults, 10);
 });
 
 test('DuplicateDeclaration2', () => {
@@ -314,3 +367,31 @@ test('DuplicateDeclaration2', () => {
 
     TestUtils.validateResults(analysisResults, 4);
 });
+
+test('Strings1', () => {
+    const configOptions = new ConfigOptions('.');
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['strings1.py'], configOptions);
+    TestUtils.validateResults(analysisResults1, 0);
+
+    configOptions.diagnosticRuleSet.reportImplicitStringConcatenation = 'error';
+    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['strings1.py'], configOptions);
+    TestUtils.validateResults(analysisResults2, 2);
+});
+
+// For now, this functionality is disabled.
+
+// test('Deprecated1', () => {
+//     const configOptions = new ConfigOptions('.');
+
+//     configOptions.defaultPythonVersion = PythonVersion.V3_8;
+//     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+//     TestUtils.validateResults(analysisResults1, 0, 0, 0, 0, 0);
+
+//     configOptions.defaultPythonVersion = PythonVersion.V3_9;
+//     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+//     TestUtils.validateResults(analysisResults2, 0, 0, 0, 0, 11);
+
+//     configOptions.defaultPythonVersion = PythonVersion.V3_10;
+//     const analysisResults3 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+//     TestUtils.validateResults(analysisResults3, 0, 0, 0, 0, 13);
+// });

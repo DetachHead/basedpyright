@@ -15,12 +15,14 @@ Pyright can be run as either a VS Code extension or as a node-based command-line
 | -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location          |
 | --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)        |
 | --pythonversion `<VERSION>`             | Analyze for version (3.3, 3.4, etc.)                 |
+| --skipunannotated                       | Skip type analysis of unannotated functions?         |
 | --stats                                 | Print detailed performance stats                     |
 | -t, --typeshed-path `<DIRECTORY>`       | Use typeshed type stubs at this location (2)         |
 | -v, --venv-path `<DIRECTORY>`           | Directory that contains virtual environments (3)     |
 | --verbose                               | Emit verbose diagnostics                             |
 | --verifytypes `<IMPORT>`                | Verify completeness of types in py.typed package     |
 | --version                               | Print pyright version                                |
+| --warnings                              | Use exit code of 1 if warnings are reported          |
 | -w, --watch                             | Continue to run and watch for changes (4)            |
 
 (1) If specific files are specified on the command line, the pyrightconfig.json file is ignored.
@@ -61,7 +63,7 @@ If the “--outputjson” option is specified on the command line, diagnostics a
 }
 ```
 
-Each Diagnostic is formatted output in the following format:
+Each Diagnostic is output in the following format:
 
 ```javascript
 {
@@ -83,3 +85,5 @@ Each Diagnostic is formatted output in the following format:
 ```
 
 Diagnostic line and character numbers are zero-based.
+
+Not all diagnostics have an associated diagnostic rule. Diagnostic rules are used only for diagnostics that can be disabled or enabled. If a rule is associated with the diagnostic, it is included in the output. If it’s not, the rule field is omitted from the JSON output.

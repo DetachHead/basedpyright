@@ -1,8 +1,32 @@
 import sys
-from typing import Any, AnyStr, Callable, Generic, Mapping, NamedTuple, Sequence, Tuple, Union, overload
+from typing import Any, AnyStr, Callable, Generic, Mapping, NamedTuple, Sequence, Union, overload
 
 if sys.version_info >= (3, 9):
     from types import GenericAlias
+
+__all__ = [
+    "urlparse",
+    "urlunparse",
+    "urljoin",
+    "urldefrag",
+    "urlsplit",
+    "urlunsplit",
+    "urlencode",
+    "parse_qs",
+    "parse_qsl",
+    "quote",
+    "quote_plus",
+    "quote_from_bytes",
+    "unquote",
+    "unquote_plus",
+    "unquote_to_bytes",
+    "DefragResult",
+    "ParseResult",
+    "SplitResult",
+    "DefragResultBytes",
+    "ParseResultBytes",
+    "SplitResultBytes",
+]
 
 _Str = Union[bytes, str]
 
@@ -21,7 +45,7 @@ class _ResultMixinBase(Generic[AnyStr]):
 class _ResultMixinStr(_ResultMixinBase[str]):
     def encode(self, encoding: str = ..., errors: str = ...) -> _ResultMixinBytes: ...
 
-class _ResultMixinBytes(_ResultMixinBase[str]):
+class _ResultMixinBytes(_ResultMixinBase[bytes]):
     def decode(self, encoding: str = ..., errors: str = ...) -> _ResultMixinStr: ...
 
 class _NetlocResultMixinBase(Generic[AnyStr]):
@@ -35,7 +59,7 @@ class _NetlocResultMixinBase(Generic[AnyStr]):
 class _NetlocResultMixinStr(_NetlocResultMixinBase[str], _ResultMixinStr): ...
 class _NetlocResultMixinBytes(_NetlocResultMixinBase[bytes], _ResultMixinBytes): ...
 
-class _DefragResultBase(Tuple[Any, ...], Generic[AnyStr]):
+class _DefragResultBase(tuple[Any, ...], Generic[AnyStr]):
     url: AnyStr
     fragment: AnyStr
 
@@ -96,7 +120,7 @@ def parse_qsl(
     errors: str = ...,
     max_num_fields: int | None = ...,
     separator: str = ...,
-) -> list[Tuple[AnyStr, AnyStr]]: ...
+) -> list[tuple[AnyStr, AnyStr]]: ...
 @overload
 def quote(string: str, safe: _Str = ..., encoding: str | None = ..., errors: str | None = ...) -> str: ...
 @overload
@@ -114,12 +138,12 @@ def urldefrag(url: str) -> DefragResult: ...
 @overload
 def urldefrag(url: bytes | None) -> DefragResultBytes: ...
 def urlencode(
-    query: Mapping[Any, Any] | Mapping[Any, Sequence[Any]] | Sequence[Tuple[Any, Any]] | Sequence[Tuple[Any, Sequence[Any]]],
+    query: Mapping[Any, Any] | Mapping[Any, Sequence[Any]] | Sequence[tuple[Any, Any]] | Sequence[tuple[Any, Sequence[Any]]],
     doseq: bool = ...,
-    safe: AnyStr = ...,
+    safe: _Str = ...,
     encoding: str = ...,
     errors: str = ...,
-    quote_via: Callable[[str, AnyStr, str, str], str] = ...,
+    quote_via: Callable[[AnyStr, _Str, str, str], str] = ...,
 ) -> str: ...
 def urljoin(base: AnyStr, url: AnyStr | None, allow_fragments: bool = ...) -> AnyStr: ...
 @overload
@@ -132,11 +156,11 @@ def urlsplit(url: str, scheme: str | None = ..., allow_fragments: bool = ...) ->
 def urlsplit(url: bytes | None, scheme: bytes | None = ..., allow_fragments: bool = ...) -> SplitResultBytes: ...
 @overload
 def urlunparse(
-    components: Tuple[AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None]
+    components: tuple[AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None]
 ) -> AnyStr: ...
 @overload
 def urlunparse(components: Sequence[AnyStr | None]) -> AnyStr: ...
 @overload
-def urlunsplit(components: Tuple[AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None]) -> AnyStr: ...
+def urlunsplit(components: tuple[AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None, AnyStr | None]) -> AnyStr: ...
 @overload
 def urlunsplit(components: Sequence[AnyStr | None]) -> AnyStr: ...

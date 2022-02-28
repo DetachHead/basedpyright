@@ -20,7 +20,7 @@ import {
     isClassDeclaration,
     isFunctionDeclaration,
     isParameterDeclaration,
-    isSpecialBuiltInClassDeclarations,
+    isSpecialBuiltInClassDeclaration,
     isVariableDeclaration,
     ParameterDeclaration,
     SpecialBuiltInClassDeclaration,
@@ -45,7 +45,8 @@ export class SourceMapper {
         private _evaluator: TypeEvaluator,
         private _fileBinder: ShadowFileBinder,
         private _boundSourceGetter: BoundSourceGetter,
-        private _mapCompiled: boolean
+        private _mapCompiled: boolean,
+        private _preferStubs: boolean
     ) {}
 
     findModules(stubFilePath: string): ModuleNode[] {
@@ -62,7 +63,7 @@ export class SourceMapper {
             return this._findVariableDeclarations(stubDecl);
         } else if (isParameterDeclaration(stubDecl)) {
             return this._findParameterDeclarations(stubDecl);
-        } else if (isSpecialBuiltInClassDeclarations(stubDecl)) {
+        } else if (isSpecialBuiltInClassDeclaration(stubDecl)) {
             return this._findSpecialBuiltInClassDeclarations(stubDecl);
         }
 
@@ -243,7 +244,7 @@ export class SourceMapper {
             variableName,
             (decl, cache, result) => {
                 if (isVariableDeclaration(decl)) {
-                    if (this._isStubFile(decl.path)) {
+                    if (this._isStubThatShouldBeMappedToImplementation(decl.path)) {
                         for (const implDecl of this._findVariableDeclarations(decl, cache)) {
                             if (isVariableDeclaration(implDecl)) {
                                 result.push(implDecl);
@@ -282,7 +283,7 @@ export class SourceMapper {
             functionName,
             (decl, cache, result) => {
                 if (isFunctionDeclaration(decl)) {
-                    if (this._isStubFile(decl.path)) {
+                    if (this._isStubThatShouldBeMappedToImplementation(decl.path)) {
                         result.push(...this._findFunctionOrTypeAliasDeclarations(decl, cache));
                     } else {
                         result.push(decl);
@@ -424,7 +425,7 @@ export class SourceMapper {
         recursiveDeclCache: Set<string>
     ) {
         if (isVariableDeclaration(decl)) {
-            if (this._isStubFile(decl.path)) {
+            if (this._isStubThatShouldBeMappedToImplementation(decl.path)) {
                 result.push(...this._findVariableDeclarations(decl, recursiveDeclCache));
             } else {
                 result.push(decl);
@@ -447,13 +448,13 @@ export class SourceMapper {
         recursiveDeclCache: Set<string>
     ) {
         if (isClassDeclaration(decl)) {
-            if (this._isStubFile(decl.path)) {
+            if (this._isStubThatShouldBeMappedToImplementation(decl.path)) {
                 result.push(...this._findClassOrTypeAliasDeclarations(decl, recursiveDeclCache));
             } else {
                 result.push(decl);
             }
         } else if (isFunctionDeclaration(decl)) {
-            if (this._isStubFile(decl.path)) {
+            if (this._isStubThatShouldBeMappedToImplementation(decl.path)) {
                 result.push(...this._findFunctionOrTypeAliasDeclarations(decl, recursiveDeclCache));
             } else {
                 result.push(decl);
@@ -493,30 +494,22 @@ export class SourceMapper {
         result: ClassOrFunctionOrVariableDeclaration[],
         recursiveDeclCache: Set<string>
     ) {
-        const importResult = this._importResolver.resolveImport(originated, this._execEnv, {
-            leadingDots: 0,
-            nameParts: type.details.moduleName.split('.'),
-            importedSymbols: [],
-        });
+        const filePath = type.details.filePath;
+        const sourceFiles = this._getSourceFiles(filePath);
 
-        if (importResult.isImportFound && importResult.resolvedPaths.length > 0) {
-            const filePath = importResult.resolvedPaths[importResult.resolvedPaths.length - 1];
-            const sourceFiles = this._getSourceFiles(filePath);
+        const fullClassName = type.details.fullName.substring(
+            type.details.moduleName.length + 1 /* +1 for trailing dot */
+        );
 
-            const fullClassName = type.details.fullName.substring(
-                type.details.moduleName.length + 1 /* +1 for trailing dot */
-            );
-
-            for (const sourceFile of sourceFiles) {
-                result.push(...this._findClassDeclarationsByName(sourceFile, fullClassName, recursiveDeclCache));
-            }
+        for (const sourceFile of sourceFiles) {
+            result.push(...this._findClassDeclarationsByName(sourceFile, fullClassName, recursiveDeclCache));
         }
     }
 
     private _getSourceFiles(filePath: string) {
         const sourceFiles: SourceFile[] = [];
 
-        if (this._isStubFile(filePath)) {
+        if (this._isStubThatShouldBeMappedToImplementation(filePath)) {
             sourceFiles.push(...this._getBoundSourceFilesFromStubFile(filePath));
         } else {
             const sourceFile = this._boundSourceGetter(filePath);
@@ -634,7 +627,11 @@ export class SourceMapper {
         return paths.map((fp) => this._fileBinder(stubFilePath, fp)).filter(isDefined);
     }
 
-    private _isStubFile(filePath: string): boolean {
+    private _isStubThatShouldBeMappedToImplementation(filePath: string): boolean {
+        if (this._preferStubs) {
+            return false;
+        }
+
         const stub = isStubFile(filePath);
         if (!stub) {
             return false;

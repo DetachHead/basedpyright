@@ -1,50 +1,37 @@
-# This sample tests the handling of generic type aliases that are
-# defined in terms of other generic type aliases in a nested manner.
+# This sample tests the simple aliasing of a generic class with no
+# type arguments.
 
-from typing import Awaitable, Callable, Generic, TypeVar
-
-
-TSource = TypeVar("TSource")
-TError = TypeVar("TError")
-TResult = TypeVar("TResult")
-TNext = TypeVar("TNext")
+from typing import Generic, TypeVar, Union
+import collections
+from collections import OrderedDict
 
 
-class Context(Generic[TResult]):
-    Response: TResult
+_T = TypeVar("_T")
 
 
-class Result(Generic[TResult, TError]):
-    def map(
-        self, mapper: Callable[[Context[TResult]], TResult]
-    ) -> "Result[TResult, TError]":
-        return Result()
+class ClassA(Generic[_T]):
+    def __init__(self, x: _T):
+        pass
 
 
-HttpFuncResult = Result[Context[TResult], TError]
-HttpFuncResultAsync = Awaitable[Result[Context[TResult], TError]]
-
-HttpFunc = Callable[
-    [Context[TNext]],
-    HttpFuncResultAsync[TResult, TError],
-]
-
-HttpHandler = Callable[
-    [
-        HttpFunc[TNext, TResult, TError],
-        Context[TSource],
-    ],
-    HttpFuncResultAsync[TResult, TError],
-]
+A = ClassA
+reveal_type(A(3), expected_text="ClassA[int]")
 
 
-async def run_async(
-    ctx: Context[TSource],
-    handler: HttpHandler[str, TResult, TError, TSource],
-) -> Result[TResult, TError]:
-    result = Result[TResult, TError]()
+TA1 = collections.OrderedDict
+TA2 = OrderedDict
 
-    def mapper(x: Context[TResult]) -> TResult:
-        return x.Response
 
-    return result.map(mapper)
+TA1[int, int]
+TA2[int, int]
+
+TA3 = TA1
+
+TA3[int, int]
+
+
+TA4 = Union[dict, OrderedDict]
+
+# This should generate two errors because the two types in TA4
+# are already specialized.
+TA4[int, int]

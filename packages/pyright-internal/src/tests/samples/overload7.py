@@ -3,10 +3,14 @@
 
 from typing import (
     Any,
+    Awaitable,
+    Callable,
     Dict,
     Generic,
+    Iterable,
     List,
     Literal,
+    NoReturn,
     Optional,
     Tuple,
     Type,
@@ -237,4 +241,67 @@ def func11(var: int) -> int:
 
 
 def func11(var: Union[_T6, int]) -> Union[_T6, int]:
+    ...
+
+
+_T7 = TypeVar("_T7")
+_T8 = TypeVar("_T8")
+_T9 = TypeVar("_T9")
+
+
+@overload
+def func12(func: Callable[[_T7], _T8], iterable: Iterable[_T7], /) -> Iterable[_T8]:
+    ...
+
+
+@overload
+def func12(
+    func: Callable[[_T7], _T8], iterable: Iterable[_T7], /, default_value: _T9
+) -> Iterable[_T8 | _T9]:
+    ...
+
+
+def func12(
+    func: Callable[[_T7], _T8],
+    iterable: Iterable[_T7],
+    /,
+    default_value: _T9 = None,
+) -> Iterable[_T8 | _T9]:
+    ...
+
+
+@overload
+def func13(x: int) -> NoReturn:
+    ...
+
+
+@overload
+def func13(x: str) -> str | NoReturn:
+    ...
+
+
+def func13(x: int | str) -> str:
+    ...
+
+
+_T14 = TypeVar("_T14")
+
+
+class Wrapper1(Generic[_T14]):
+    ...
+
+
+@overload
+def func14(target: Callable[..., Awaitable[_T14]]) -> Wrapper1[_T14]:
+    ...
+
+
+@overload
+def func14(target: Callable[..., _T14]) -> Wrapper1[_T14]:
+    ...
+
+
+def func14(
+    target: Callable[..., Awaitable[_T14]] | Callable[..., _T14]
+) -> Wrapper1[_T14]:
     ...

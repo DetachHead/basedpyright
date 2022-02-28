@@ -9,8 +9,8 @@
 
 import * as AnalyzerNodeInfo from '../analyzer/analyzerNodeInfo';
 import { assertNever, fail } from '../common/debug';
-import { convertPositionToOffset } from '../common/positionUtils';
-import { Position } from '../common/textRange';
+import { convertPositionToOffset, convertTextRangeToRange } from '../common/positionUtils';
+import { Position, Range } from '../common/textRange';
 import { TextRange } from '../common/textRange';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import {
@@ -26,17 +26,22 @@ import {
     IndexNode,
     isExpressionNode,
     LambdaNode,
+    MemberAccessNode,
     ModuleNode,
     NameNode,
     ParameterCategory,
     ParameterNode,
     ParseNode,
     ParseNodeType,
+    StatementListNode,
     StatementNode,
+    StringListNode,
+    StringNode,
     SuiteNode,
     TypeAnnotationNode,
 } from '../parser/parseNodes';
-import { KeywordType, OperatorType, StringTokenFlags, Token, TokenType } from '../parser/tokenizerTypes';
+import { TokenizerOutput } from '../parser/tokenizer';
+import { KeywordType, OperatorType, StringToken, StringTokenFlags, Token, TokenType } from '../parser/tokenizerTypes';
 import { getScope } from './analyzerNodeInfo';
 import { ParseTreeWalker } from './parseTreeWalker';
 
@@ -47,6 +52,8 @@ export const enum PrintExpressionFlags {
     ForwardDeclarations = 1 << 0,
 }
 
+// Returns the depth of the node as measured from the root
+// of the parse tree.
 export function getNodeDepth(node: ParseNode): number {
     let depth = 0;
     let curNode: ParseNode | undefined = node;
@@ -182,6 +189,12 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
 
         case ParseNodeType.Number: {
             let value = node.value.toString();
+
+            // If it's stored as a bigint, strip off the "n".
+            if (value.endsWith('n')) {
+                value = value.substring(0, value.length - 1);
+            }
+
             if (node.isImaginary) {
                 value += 'j';
             }
@@ -319,10 +332,10 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                 listStr = `${keyStr}: ${valueStr}`;
             }
 
-            return (
+            listStr =
                 listStr +
                 ' ' +
-                node.comprehensions
+                node.forIfNodes
                     .map((expr) => {
                         if (expr.nodeType === ParseNodeType.ListComprehensionFor) {
                             return (
@@ -334,8 +347,9 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                             return `if ${printExpression(expr.testExpression, flags)}`;
                         }
                     })
-                    .join(' ')
-            );
+                    .join(' ');
+
+            return node.isParenthesized ? `(${listStr}})` : listStr;
         }
 
         case ParseNodeType.Slice: {
@@ -477,6 +491,19 @@ export function printOperator(operator: OperatorType): string {
     return 'unknown';
 }
 
+export function getEnclosingSuite(node: ParseNode): SuiteNode | undefined {
+    let curNode = node.parent;
+
+    while (curNode) {
+        if (curNode.nodeType === ParseNodeType.Suite) {
+            return curNode;
+        }
+        curNode = curNode.parent;
+    }
+
+    return undefined;
+}
+
 export function getEnclosingClass(node: ParseNode, stopAtFunction = false): ClassNode | undefined {
     let curNode = node.parent;
     while (curNode) {
@@ -539,15 +566,21 @@ export function getEnclosingClassOrModule(node: ParseNode, stopAtFunction = fals
 
 export function getEnclosingFunction(node: ParseNode): FunctionNode | undefined {
     let curNode = node.parent;
+    let prevNode: ParseNode | undefined;
+
     while (curNode) {
         if (curNode.nodeType === ParseNodeType.Function) {
-            return curNode;
+            // Don't treat a decorator as being "enclosed" in the function.
+            if (!curNode.decorators.some((decorator) => decorator === prevNode)) {
+                return curNode;
+            }
         }
 
         if (curNode.nodeType === ParseNodeType.Class) {
             return undefined;
         }
 
+        prevNode = curNode;
         curNode = curNode.parent;
     }
 
@@ -657,6 +690,7 @@ export function getEvaluationNodeForAssignmentExpression(
 // a symbol referenced in the specified node.
 export function getEvaluationScopeNode(node: ParseNode): EvaluationScopeNode {
     let prevNode: ParseNode | undefined;
+    let prevPrevNode: ParseNode | undefined;
     let curNode: ParseNode | undefined = node;
     let isParamNameNode = false;
 
@@ -709,14 +743,31 @@ export function getEvaluationScopeNode(node: ParseNode): EvaluationScopeNode {
                 break;
             }
 
-            case ParseNodeType.ListComprehension:
+            case ParseNodeType.ListComprehension: {
+                if (getScope(curNode) !== undefined) {
+                    // The iterable expression of the first subnode of a list comprehension
+                    // is evaluated within the scope of its parent.
+                    const isFirstIterableExpr =
+                        prevNode === curNode.forIfNodes[0] &&
+                        curNode.forIfNodes[0].nodeType === ParseNodeType.ListComprehensionFor &&
+                        curNode.forIfNodes[0].iterableExpression === prevPrevNode;
+
+                    if (!isFirstIterableExpr) {
+                        return curNode;
+                    }
+                }
+                break;
+            }
+
             case ParseNodeType.Module: {
                 if (getScope(curNode) !== undefined) {
                     return curNode;
                 }
+                break;
             }
         }
 
+        prevPrevNode = prevNode;
         prevNode = curNode;
         curNode = curNode.parent;
     }
@@ -857,12 +908,32 @@ export function isNodeContainedWithin(node: ParseNode, potentialContainer: Parse
     return false;
 }
 
+export function getParentNodeOfType(node: ParseNode, containerType: ParseNodeType): ParseNode | undefined {
+    let curNode: ParseNode | undefined = node;
+    while (curNode) {
+        if (curNode.nodeType === containerType) {
+            return curNode;
+        }
+
+        curNode = curNode.parent;
+    }
+
+    return undefined;
+}
+
+export function isNodeContainedWithinNodeType(node: ParseNode, containerType: ParseNodeType): boolean {
+    return getParentNodeOfType(node, containerType) !== undefined;
+}
+
 export function isSuiteEmpty(node: SuiteNode): boolean {
+    let sawEllipsis = false;
+
     for (const statement of node.statements) {
         if (statement.nodeType === ParseNodeType.StatementList) {
             for (const substatement of statement.statements) {
                 if (substatement.nodeType === ParseNodeType.Ellipsis) {
                     // Allow an ellipsis
+                    sawEllipsis = true;
                 } else if (substatement.nodeType === ParseNodeType.StringList) {
                     // Allow doc strings
                 } else {
@@ -874,7 +945,7 @@ export function isSuiteEmpty(node: SuiteNode): boolean {
         }
     }
 
-    return true;
+    return sawEllipsis;
 }
 
 export function isMatchingExpression(reference: ExpressionNode, expression: ExpressionNode): boolean {
@@ -1091,7 +1162,7 @@ export function isWithinLoop(node: ParseNode): boolean {
     return false;
 }
 
-export function isWithinTryBlock(node: ParseNode): boolean {
+export function isWithinTryBlock(node: ParseNode, treatWithAsTryBlock = false): boolean {
     let curNode: ParseNode | undefined = node;
     let prevNode: ParseNode | undefined;
 
@@ -1101,10 +1172,17 @@ export function isWithinTryBlock(node: ParseNode): boolean {
                 return curNode.trySuite === prevNode;
             }
 
+            case ParseNodeType.With: {
+                if (treatWithAsTryBlock && curNode.suite === prevNode) {
+                    return true;
+                }
+                break;
+            }
+
             case ParseNodeType.Function:
             case ParseNodeType.Module:
             case ParseNodeType.Class: {
-                break;
+                return false;
             }
         }
 
@@ -1143,32 +1221,40 @@ export function getDocString(statements: StatementNode[]): string | undefined {
         return undefined;
     }
 
-    // If the first statement in the suite isn't a StringNode,
-    // assume there is no docString.
-    const statementList = statements[0];
-    if (statementList.statements.length === 0 || statementList.statements[0].nodeType !== ParseNodeType.StringList) {
-        return undefined;
-    }
-
-    // A docstring can consist of multiple joined strings in a single expression.
-    const strings = statementList.statements[0].strings;
-    if (strings.length === 0) {
-        return undefined;
-    }
-
-    // Any f-strings invalidate the entire docstring.
-    if (strings.some((n) => (n.token.flags & StringTokenFlags.Format) !== 0)) {
+    if (!isDocString(statements[0])) {
         return undefined;
     }
 
     // It's up to the user to convert normalize/convert this as needed.
-
+    const strings = (statements[0].statements[0] as StringListNode).strings;
     if (strings.length === 1) {
         // Common case.
         return strings[0].value;
     }
 
     return strings.map((s) => s.value).join('');
+}
+
+export function isDocString(statementList: StatementListNode): boolean {
+    // If the first statement in the suite isn't a StringNode,
+    // assume there is no docString.
+    if (statementList.statements.length === 0 || statementList.statements[0].nodeType !== ParseNodeType.StringList) {
+        return false;
+    }
+
+    // A docstring can consist of multiple joined strings in a single expression.
+    const strings = statementList.statements[0].strings;
+    if (strings.length === 0) {
+        return false;
+    }
+
+    // Any f-strings invalidate the entire docstring.
+    if (strings.some((n) => (n.token.flags & StringTokenFlags.Format) !== 0)) {
+        return false;
+    }
+
+    // It's up to the user to convert normalize/convert this as needed.
+    return true;
 }
 
 // Sometimes a NamedTuple assignment statement is followed by a statement
@@ -1285,6 +1371,17 @@ export class NameNodeWalker extends ParseTreeWalker {
     }
 }
 
+export class CallNodeWalker extends ParseTreeWalker {
+    constructor(private _callback: (node: CallNode) => void) {
+        super();
+    }
+
+    override visitCall(node: CallNode) {
+        this._callback(node);
+        return true;
+    }
+}
+
 export function getEnclosingParameter(node: ParseNode): ParameterNode | undefined {
     let curNode: ParseNode | undefined = node;
 
@@ -1306,25 +1403,20 @@ export function getCallNodeAndActiveParameterIndex(
     // Find the call node that contains the specified node.
     let curNode: ParseNode | undefined = node;
     let callNode: CallNode | undefined;
+
     while (curNode !== undefined) {
+        // make sure we only look at callNodes when we are inside their arguments
         if (curNode.nodeType === ParseNodeType.Call) {
-            callNode = curNode;
-            break;
+            if (isOffsetInsideCallArgs(curNode, insertionOffset)) {
+                callNode = curNode;
+                break;
+            }
         }
         curNode = curNode.parent;
     }
 
     if (!callNode || !callNode.arguments) {
         return undefined;
-    }
-
-    const index = tokens.getItemAtPosition(callNode.leftExpression.start);
-    if (index >= 0 && index + 1 < tokens.count) {
-        const token = tokens.getItemAt(index + 1);
-        if (token.type === TokenType.OpenParenthesis && insertionOffset < TextRange.getEnd(token)) {
-            // position must be after '('
-            return undefined;
-        }
     }
 
     const endPosition = TextRange.getEnd(callNode);
@@ -1390,14 +1482,39 @@ export function getCallNodeAndActiveParameterIndex(
         activeOrFake,
     };
 
-    function getTokenAt(tokens: TextRangeCollection<Token>, position: number) {
-        const index = tokens.getItemAtPosition(position);
-        if (index < 0) {
-            return undefined;
+    function isOffsetInsideCallArgs(node: CallNode, offset: number) {
+        let found = true;
+        const argumentStart =
+            node.leftExpression.length > 0 ? TextRange.getEnd(node.leftExpression) - 1 : node.leftExpression.start;
+        const index = tokens.getItemAtPosition(argumentStart);
+        if (index >= 0 && index + 1 < tokens.count) {
+            const token = tokens.getItemAt(index + 1);
+            if (token.type === TokenType.OpenParenthesis && insertionOffset < TextRange.getEnd(token)) {
+                // position must be after '('
+                found = false;
+            }
         }
-
-        return tokens.getItemAt(index);
+        return found;
     }
+}
+
+export function getTokenAt(tokens: TextRangeCollection<Token>, position: number) {
+    const index = tokens.getItemAtPosition(position);
+    if (index < 0) {
+        return undefined;
+    }
+
+    return tokens.getItemAt(index);
+}
+
+export function getTokenOverlapping(tokens: TextRangeCollection<Token>, position: number) {
+    const index = tokens.getItemAtPosition(position);
+    if (index < 0) {
+        return undefined;
+    }
+
+    const token = tokens.getItemAt(index);
+    return TextRange.overlaps(token, position) ? token : undefined;
 }
 
 export function printParseNodeType(type: ParseNodeType) {
@@ -1745,4 +1862,241 @@ export function isFunctionSuiteEmpty(node: FunctionNode) {
     });
 
     return isEmpty;
+}
+
+export function isImportModuleName(node: ParseNode): boolean {
+    return getFirstAncestorOrSelfOfKind(node, ParseNodeType.ModuleName)?.parent?.nodeType === ParseNodeType.ImportAs;
+}
+
+export function isImportAlias(node: ParseNode): boolean {
+    return node.parent?.nodeType === ParseNodeType.ImportAs && node.parent.alias === node;
+}
+
+export function isFromImportModuleName(node: ParseNode): boolean {
+    return getFirstAncestorOrSelfOfKind(node, ParseNodeType.ModuleName)?.parent?.nodeType === ParseNodeType.ImportFrom;
+}
+
+export function isFromImportName(node: ParseNode): boolean {
+    return node.parent?.nodeType === ParseNodeType.ImportFromAs && node.parent.name === node;
+}
+
+export function isFromImportAlias(node: ParseNode): boolean {
+    return node.parent?.nodeType === ParseNodeType.ImportFromAs && node.parent.alias === node;
+}
+
+export function isLastNameOfModuleName(node: NameNode): boolean {
+    if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
+        return false;
+    }
+
+    const module = node.parent;
+    if (module.nameParts.length === 0) {
+        return false;
+    }
+
+    return module.nameParts[module.nameParts.length - 1] === node;
+}
+
+function* _getAncestorsIncludingSelf(node: ParseNode | undefined) {
+    while (node !== undefined) {
+        yield node;
+        node = node.parent;
+    }
+}
+
+type NodeForType<NT extends ParseNodeType, T extends ParseNode> = T extends ParseNode & { nodeType: NT } ? T : never;
+
+export function getFirstAncestorOrSelfOfKind<NT extends ParseNodeType, T extends ParseNode>(
+    node: ParseNode | undefined,
+    type: NT
+): NodeForType<NT, T> | undefined {
+    return getFirstAncestorOrSelf(node, (n) => n.nodeType === type) as NodeForType<NT, T> | undefined;
+}
+
+export function getFirstAncestorOrSelf(
+    node: ParseNode | undefined,
+    predicate: (node: ParseNode) => boolean
+): ParseNode | undefined {
+    for (const current of _getAncestorsIncludingSelf(node)) {
+        if (predicate(current)) {
+            return current;
+        }
+    }
+
+    return undefined;
+}
+
+export function getDottedNameWithGivenNodeAsLastName(node: NameNode): MemberAccessNode | NameNode {
+    // Shape of dotted name is
+    //    MemberAccess (ex, a.b)
+    //  Name        Name
+    // or
+    //           MemberAccess (ex, a.b.c)
+    //    MemberAccess     Name
+    //  Name       Name
+    if (node.parent?.nodeType !== ParseNodeType.MemberAccess) {
+        return node;
+    }
+
+    if (node.parent.leftExpression === node) {
+        return node;
+    }
+
+    return node.parent;
+}
+
+export function getDottedName(node: MemberAccessNode | NameNode): NameNode[] | undefined {
+    // ex) [a] or [a].b
+    // simple case, [a]
+    if (node.nodeType === ParseNodeType.Name) {
+        return [node];
+    }
+
+    // dotted name case.
+    const names: NameNode[] = [];
+    if (_getDottedName(node, names)) {
+        return names.reverse();
+    }
+
+    return undefined;
+
+    function _getDottedName(node: MemberAccessNode | NameNode, names: NameNode[]): boolean {
+        if (node.nodeType === ParseNodeType.Name) {
+            names.push(node);
+            return true;
+        }
+
+        names.push(node.memberName);
+
+        if (
+            node.leftExpression.nodeType === ParseNodeType.Name ||
+            node.leftExpression.nodeType === ParseNodeType.MemberAccess
+        ) {
+            return _getDottedName(node.leftExpression, names);
+        }
+
+        return false;
+    }
+}
+
+export function getFirstNameOfDottedName(node: MemberAccessNode | NameNode): NameNode | undefined {
+    // ex) [a] or [a].b
+    if (node.nodeType === ParseNodeType.Name) {
+        return node;
+    }
+
+    if (
+        node.leftExpression.nodeType === ParseNodeType.Name ||
+        node.leftExpression.nodeType === ParseNodeType.MemberAccess
+    ) {
+        return getFirstNameOfDottedName(node.leftExpression);
+    }
+
+    return undefined;
+}
+
+export function isFirstNameOfDottedName(node: NameNode): boolean {
+    // ex) [A] or [A].B.C.D
+    if (node.parent?.nodeType !== ParseNodeType.MemberAccess) {
+        return true;
+    }
+
+    if (node.parent.leftExpression === node) {
+        return true;
+    }
+
+    return false;
+}
+
+export function isLastNameOfDottedName(node: NameNode): boolean {
+    // ex) A or D.C.B.[A]
+    if (node.parent?.nodeType !== ParseNodeType.MemberAccess) {
+        return true;
+    }
+
+    if (
+        node.parent.leftExpression.nodeType !== ParseNodeType.Name &&
+        node.parent.leftExpression.nodeType !== ParseNodeType.MemberAccess
+    ) {
+        return false;
+    }
+
+    if (node.parent.leftExpression === node) {
+        return false;
+    }
+
+    return node.parent.parent?.nodeType !== ParseNodeType.MemberAccess;
+}
+
+export function getStringNodeValueRange(node: StringNode) {
+    return getStringValueRange(node.token);
+}
+
+export function getStringValueRange(token: StringToken) {
+    const length = token.quoteMarkLength;
+    const hasEnding = !(token.flags & StringTokenFlags.Unterminated);
+    return TextRange.create(token.start + length, token.length - length - (hasEnding ? length : 0));
+}
+
+export function getFullStatementRange(statementNode: ParseNode, tokenizerOutput: TokenizerOutput): Range {
+    const range = convertTextRangeToRange(statementNode, tokenizerOutput.lines);
+
+    // First, see whether there are other tokens except semicolon or new line on the same line.
+    const endPosition = _getEndPositionIfMultipleStatementsAreOnSameLine(
+        range,
+        TextRange.getEnd(statementNode),
+        tokenizerOutput
+    );
+
+    if (endPosition) {
+        return { start: range.start, end: endPosition };
+    }
+
+    // If not, delete the whole line.
+    if (range.end.line === tokenizerOutput.lines.count - 1) {
+        return range;
+    }
+
+    return { start: range.start, end: { line: range.end.line + 1, character: 0 } };
+}
+
+export function isUnannotatedFunction(node: FunctionNode) {
+    return (
+        node.returnTypeAnnotation === undefined &&
+        node.parameters.every(
+            (param) => param.typeAnnotation === undefined && param.typeAnnotationComment === undefined
+        )
+    );
+}
+
+function _getEndPositionIfMultipleStatementsAreOnSameLine(
+    range: Range,
+    tokenPosition: number,
+    tokenizerOutput: TokenizerOutput
+): Position | undefined {
+    const tokenIndex = tokenizerOutput.tokens.getItemAtPosition(tokenPosition);
+    if (tokenIndex < 0) {
+        return undefined;
+    }
+
+    let currentIndex = tokenIndex;
+    for (; currentIndex < tokenizerOutput.tokens.count; currentIndex++) {
+        const token = tokenizerOutput.tokens.getItemAt(currentIndex);
+        const tokenRange = convertTextRangeToRange(token, tokenizerOutput.lines);
+        if (range.end.line !== tokenRange.start.line) {
+            break;
+        }
+    }
+
+    for (let index = tokenIndex; index < currentIndex; index++) {
+        const token = tokenizerOutput.tokens.getItemAt(index);
+        if (token.type === TokenType.Semicolon || token.type === TokenType.NewLine) {
+            continue;
+        }
+
+        const tokenRange = convertTextRangeToRange(token, tokenizerOutput.lines);
+        return tokenRange.start;
+    }
+
+    return undefined;
 }
