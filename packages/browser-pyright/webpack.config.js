@@ -67,7 +67,8 @@ module.exports = (_, { mode }) => {
         },
         plugins: [
             new DefinePlugin({
-                process: "{ env: {}, execArgv: [], cwd: () => '/' }",
+                // Just enough to avoid the memory check that pyright performs in pyright-internal/src/analyzer/program.ts
+                process: "{ env: {}, execArgv: [], cwd: () => '/', memoryUsage: () => ({heapUsed: 0, rss: 1}) }",
             }),
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
