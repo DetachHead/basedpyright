@@ -1,6 +1,6 @@
-![Pyright](https://github.com/microsoft/pyright/blob/main/docs/img/PyrightLarge.png)
+# Support for inlay hints
 
-# Static Type Checker for Python
+This fork extends Pyright with inlay hints support. Inlay hint provider implementation was adapted from ![coc-pyright](https://github.com/fannheyward/coc-pyright).
 
 Pyright is a full-featured, standards-based static type checker for Python. It is designed for high performance and can be used with large Python source bases.
 
@@ -30,3 +30,5 @@ This project welcomes contributions and suggestions. For feature and complex bug
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+Forked from ![pyright](https://github.com/microsoft/pyright).
