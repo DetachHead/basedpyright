@@ -70,7 +70,7 @@ import {
     WorkspaceSymbol,
     WorkspaceSymbolParams,
 } from 'vscode-languageserver';
-import { InlayHint, InlayHintParams } from 'vscode-languageserver-protocol';
+import { InlayHint, InlayHintParams, SemanticTokens, SemanticTokensParams } from 'vscode-languageserver-protocol';
 import { ResultProgressReporter, attachWorkDone } from 'vscode-languageserver/lib/common/progress';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -130,6 +130,7 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseResults } from './parser/parser';
 import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
+import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 
 export interface ServerSettings {
     venvPath?: Uri | undefined;
@@ -660,6 +661,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const inlayHints = this.connection.languages.inlayHint;
         inlayHints.on(async (params, token) => this.onInlayHints(params, token));
 
+        const semanticTokens = this.connection.languages.semanticTokens;
+        semanticTokens.on(async (params, token) => this.onSemanticTokens(params, token));
+
         this.connection.onDidOpenTextDocument(async (params) => this.onDidOpenTextDocument(params));
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
         this.connection.onDidCloseTextDocument(async (params) => this.onDidCloseTextDocument(params));
@@ -766,6 +770,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 },
                 callHierarchyProvider: true,
                 inlayHintProvider: true,
+                semanticTokensProvider: {
+                    legend: SemanticTokensProviderLegend,
+                    full: true,
+                },
                 workspace: {
                     workspaceFolders: {
                         supported: true,
@@ -1132,6 +1140,20 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const range = params.range;
         return workspace.service.run((program) => {
             return new InlayHintsProvider(program, uri, range, token).onInlayHints();
+        }, token);
+    }
+
+    protected async onSemanticTokens(params: SemanticTokensParams, token: CancellationToken): Promise<SemanticTokens> {
+        const uri = Uri.parse(params.textDocument.uri, this.fs.isCaseSensitive);
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices) {
+            return {
+                resultId: undefined,
+                data: [],
+            };
+        }
+        return workspace.service.run((program) => {
+            return new SemanticTokensProvider(program, uri, token).onSemanticTokens();
         }, token);
     }
 
