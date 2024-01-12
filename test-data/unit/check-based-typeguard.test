@@ -1,0 +1,478 @@
+[case testRetainGenericTypeGuard]
+from typing_extensions import TypeGuard
+from helper import T
+def f(it: object) -> TypeGuard[int]: ...
+def r(t: T) -> T: ...
+
+a: object
+f2 = r(f)
+assert f2(a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+
+b: object
+assert (lambda x: (lambda y: r(f)(y))(x))(b)
+reveal_type(b)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testIIFETypeGuard]
+from typing_extensions import TypeGuard
+def f(it: object) -> TypeGuard[int]: ...
+
+a: object
+assert (lambda: f(a))()
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testSubtype]
+from typing_extensions import TypeGuard
+from typing import Callable
+def takes_typeguard(x: Callable[[object], TypeGuard[int]]): ...
+def typeguard1(x: object) -> "x is int": ...
+def typeguard2(x: object, y: object) -> "y is int": ...
+
+takes_typeguard(typeguard1)
+takes_typeguard(typeguard2)  # E: Argument 1 to "takes_typeguard" has incompatible type "def (x: object, y: object) -> y is int"; expected "(object) -> first argument is int"  [arg-type]
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeguardLambdaTargetMapping]
+def guard(x: object) -> "x is int": ...
+
+o: object
+o2: object
+if (lambda y: guard(y))(o):
+    reveal_type(o)  # N: Revealed type is "int" (narrowed from "object")
+
+if (lambda _, y: guard(y))(1, o):
+    reveal_type(o)  # N: Revealed type is "int" (narrowed from "object")
+
+if (lambda _, y: guard(x=y))(1, o):
+    reveal_type(o)  # N: Revealed type is "int" (narrowed from "object")
+
+if (lambda _, y: guard(y))(o, o2):
+    reveal_type(o)  # N: Revealed type is "object"
+
+class A:
+    def guard(self) -> "self is B": ...
+class B(A): ...
+a: A
+assert (lambda x: x.guard())(a)
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeguardSubtype]
+def guard(x: int) -> "x is str":  # E: A type-guard's type must be assignable to its parameter's type. (guard has type "str", parameter has type "int")  [typeguard-subtype] \
+                                  # N: If this is correct, try making it an intersection with the parameter type
+    ...
+
+
+[case testOtherArg]
+def guard(x: object, y: object) -> "y is int": ...
+
+a: object
+b: object
+
+if guard(a, b):
+    reveal_type((a, b))  # N: Revealed type is "(object, int)"
+
+if guard(x=a, y=b):
+    reveal_type((a, b))  # N: Revealed type is "(object, int)"
+
+if guard(y=a, x=b):
+    reveal_type((a, b))  # N: Revealed type is "(int, object)"
+
+if guard(y=b, x=a):
+    reveal_type((a, b))  # N: Revealed type is "(object, int)"
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnsupportedDoubleGuardIIFE]
+# unsupported scenario
+def guard(x: object) -> "x is int": return True
+
+a: object
+b: object
+
+if (lambda x, y: guard(x) and guard(y))(a, b):
+    # both of these should be "int"
+    reveal_type((a, b))  # N: Revealed type is "(object, object)"
+[builtins fixtures/tuple.pyi]
+
+
+[case testTargetDoesntExist]
+def guard(x: object) -> "y is int": ...  # E: Cannot find parameter "y"  [name-defined]
+
+
+[case testInvalidType]
+def guard(x: object) -> "x is Sus": ...  # E: Name "Sus" is not defined  [name-defined]
+
+
+[case testExplicitSelf]
+from typing_extensions import TypeGuard
+
+class A:
+    def guard(self, x: object) -> TypeGuard[int]: ...
+
+a: object
+assert A.guard(A(), a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testGuardSelf]
+class A:
+    def guard(self) -> "self is B": ...
+
+class B(A): ...
+
+a: A
+assert a.guard()
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+
+
+[case testGuardCls]
+from typing import Type
+class A:
+    @classmethod
+    def guard(cls) -> "cls is Type[B]": ...
+
+class B(A): ...
+
+a: Type[A]
+assert a.guard()
+reveal_type(a)  # N: Revealed type is "type[__main__.B]" (narrowed from "type[__main__.A]")
+[builtins fixtures/classmethod.pyi]
+
+
+[case testPositionalGuard]
+def guard(x: object, /) -> "x is int": ...
+
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+reveal_type(guard)  # N: Revealed type is "def (object) -> argument 1 is int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnquotedFuture]
+from __future__ import annotations
+def guard(x: object) -> x is int: ...
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnquotedPast]
+def guard(x: object) -> x is int:  # E: You need to put quotes around the entire type-guard, or enable `__future__.annotations`  [misc]
+    ...
+[builtins fixtures/tuple.pyi]
+
+
+[case testCallableType]
+from typing import Callable
+from typing_extensions import TypeGuard
+
+def make_guard() -> Callable[[object], TypeGuard[int]]: ...
+
+a: object
+assert make_guard()()  # E: Too few arguments  [call-arg]
+assert make_guard()(a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testAssignmentExprSelf]
+class A:
+    def g(self) -> "self is B": ...
+class B(A): ...
+
+assert (a := A()).g()
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnsupportedAssignmentExprSelfCall]
+# unsupported scenario
+class A:
+    def __call__(self) -> "self is B": ...
+class B(A): ...
+
+assert (a := A())()
+# Actually expect "__main__.B"
+reveal_type(a)  # N: Revealed type is "__main__.A"
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnsupportedAssignmentExprCall]
+# unsupported scenario
+class A:
+    def __call__(self, a: object) -> "a is int": ...
+
+b: object
+assert (a := A())(b)
+# Actually expect "int"
+reveal_type(b)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testCallGuard]
+class A:
+    def __call__(self) -> "self is B": ...
+class B(A): ...
+
+a: A
+assert a()
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testGuardSelfLambda]
+
+class A:
+    def guard(self) -> "self is B": ...
+    def __call__(self) -> "self is B": ...
+class B(A): ...
+
+a: A
+if (lambda x: x.guard())(a):
+    reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+if (lambda x: x())(a):
+    reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testGuardMemberSelf]
+class A:
+    def guard(self) -> "self is B": ...
+class B(A): ...
+class AA:
+    a: A
+a: AA
+assert a.a.guard()
+reveal_type(a.a)  # N: Revealed type is "__main__.B"
+[builtins fixtures/tuple.pyi]
+
+
+[case testPositionalSelf]
+class A:
+    def guard(self, b: object=1, /) -> "self is B": ...
+class B(A): ...
+a: A
+o: object
+assert a.guard(o)
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+reveal_type(o)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testGuardPositionalAssignment]
+# mypy: disallow-redefinition
+class A:
+    def guard(self, b: object, /) -> "self is B": ...
+class B(A): ...
+
+def guard(a: object, /) -> "a is B": ...
+
+f1 = guard
+f1 = A().guard  # E: Incompatible types in assignment (expression has type "_NamedCallable & (object) -> instance argument is B", variable has type "def (object) -> argument 1 is B")  [assignment]
+
+f2 = A().guard
+f2 = guard
+[builtins fixtures/tuple.pyi]
+
+
+[case testLambdaMemberExprUnsupported]
+# TODO: This case is unsupported
+class A:
+    def guard(self) -> "self is B": ...
+class B(A): ...
+class AA:
+    a: A
+a: AA
+assert (lambda x: x.a.guard())(a)
+reveal_type(a)  # N: Revealed type is "__main__.AA"
+# Actual expected type is "__main__.B"
+reveal_type(a.a)  # N: Revealed type is "__main__.A"
+[builtins fixtures/tuple.pyi]
+
+
+[case testClassmethodOnInstance]
+from typing import Type
+class A:
+    @classmethod
+    def guard(cls) -> 'cls is Type[B]': ...
+class B(A): ...
+a: A
+assert a.guard()
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testClassmethodPositional]
+from typing import Type
+class A:
+    @classmethod
+    def guard(cls, /) -> 'cls is Type[B]': ...
+class B(A): ...
+a: A
+assert a.guard()
+reveal_type(a)  # N: Revealed type is "__main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testGuardIsStringLiteral]
+def guard(a: object) -> 'a is int': ...
+
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+[builtins fixtures/tuple.pyi]
+
+
+[case testEmptyTarget]
+def guard(a: object) -> '"" is int':  # E: Invalid type comment or annotation  [valid-type]
+    ...
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testNumericTarget]
+def guard(a: object) -> '0 is int':  # E: Invalid type comment or annotation  [valid-type]
+    ...
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testQuotedTarget]
+def guard(a: object) -> '"a" is int':  # E: Invalid type comment or annotation  [valid-type]
+    ...
+a: object
+assert guard(a)
+reveal_type(a)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testPositionalInstance]
+# TODO: This case is unsupported
+class A:
+    def guard(self, b: object, /) -> 'b is int': ...
+
+a: A
+o: object
+if A.guard(a, o):  # E: type-guard on positional class function is unsupported  [typeguard-limitation]
+    reveal_type(a)  # N: Revealed type is "__main__.A"
+    # Actually expect "int"
+    reveal_type(o)  # N: Revealed type is "object"
+if a.guard(o):  # E: type-guard on positional class function is unsupported  [typeguard-limitation]
+    reveal_type(a)  # N: Revealed type is "__main__.A"
+    # Actually expect "int"
+    reveal_type(o)  # N: Revealed type is "object"
+[builtins fixtures/tuple.pyi]
+
+
+[case testPositionalInstanceType]
+# TODO: This case is unsupported
+class A:
+    def guard(self, b: object, /) -> 'b is int': ...
+
+# Actually expect "_NamedCallable & (object) -> argument 1 is int"
+reveal_type(A().guard)  # N: Revealed type is "_NamedCallable & (object) -> argument 2 is int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testNegativeGuard]
+from __future__ import annotations
+
+def guard(x: object) -> x is int: ...
+a: int | str
+if guard(a):
+    reveal_type(a)  # N: Revealed type is "int" (narrowed from "int | str")
+else:
+    reveal_type(a)  # N: Revealed type is "str" (narrowed from "int | str")
+[builtins fixtures/tuple.pyi]
+
+
+[case testNegativeGuardGeneric]
+from __future__ import annotations
+
+def guard(x: object) -> x is list[int]: ...
+a: list[int] | list[str]
+if guard(a):
+    reveal_type(a)  # N: Revealed type is "list[int]" (narrowed from "list[int] | list[str]")
+else:
+    reveal_type(a)  # N: Revealed type is "list[str]" (narrowed from "list[int] | list[str]")
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeGuardOnlyTrue]
+from __future__ import annotations
+
+def guard(x: object) -> x is int:
+    return isinstance(x, int)
+
+def guard_true(x: object) -> x is int if True else False:
+    return isinstance(x, int) and bool()
+
+x: int | str
+if guard(x):
+    reveal_type(x)  # N: Revealed type is "int" (narrowed from "int | str")
+else:
+    reveal_type(x)  # N: Revealed type is "str" (narrowed from "int | str")
+
+if guard_true(x):
+    reveal_type(x)  # N: Revealed type is "int" (narrowed from "int | str")
+else:
+    reveal_type(x)  # N: Revealed type is "int | str"
+
+y: int
+if guard(y):  # E: Condition is always true  [redundant-expr]
+    reveal_type(y)  # N: Revealed type is "int"
+else:
+    reveal_type(y)  # E: Statement is unreachable  [unreachable]
+
+if guard_true(x):
+    reveal_type(y)  # N: Revealed type is "int"
+else:
+    reveal_type(y)  # N: Revealed type is "int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testAsymetricTypeGuardSubtype]
+# flags: --disallow-redefinition
+from __future__ import annotations
+def f1(x: object) -> x is int: ...
+def f2(x: object) -> x is int if True else False: ...
+
+x = f2
+x = f1
+
+y = f1
+y = f2  # E: Incompatible types in assignment (expression has type "def (x: object) -> x is int if True else False", variable has type "def (x: object) -> x is int")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeGuardUnreachable]
+from __future__ import annotations
+
+def guard(x: object) -> x is list[int]: ...
+
+a: list[object]
+if guard(a):  # E: Condition is always false  [redundant-expr] \
+              # E: Intersection of "list[object] & list[int]" cannot exist: would have inconsistent method resolution order  [unreachable]
+    ...
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeGuardUnsupported]
+from __future__ import annotations
+def guard1(a: object, b: object) -> a is int | b is int: ...  # E: Invalid type comment or annotation  [valid-type]
+def guard2(a: object, b: object) -> a is int & b is int: ...  # E: Invalid type comment or annotation  [valid-type]
+[builtins fixtures/tuple.pyi]

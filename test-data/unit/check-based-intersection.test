@@ -1,0 +1,337 @@
+[case testIntersection]
+from basedtyping import Intersection
+i: Intersection[int, str]
+reveal_type(i)  # N: Revealed type is "int & str"
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionSyntax]
+from __future__ import annotations
+i: int & str
+reveal_type(i)  # N: Revealed type is "int & str"
+[builtins fixtures/tuple.pyi]
+
+
+[case testNoIntersectionSyntax]
+i: int & str  # E: "X & Y" syntax for intersections requires __future__.annotations or quoted types  [valid-type]
+
+
+[case testIntersectionAttribute]
+from __future__ import annotations
+class A:
+    a: int
+
+class B:
+    b: str
+
+i: A & B
+reveal_type(i.a)  # N: Revealed type is "int"
+reveal_type(i.b)  # N: Revealed type is "str"
+reveal_type(i.c)  # E: "A & B" has no attribute "c"  [attr-defined] \
+                  # N: Revealed type is "Any (from error)"
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionAssignability]
+# flags: --disallow-redefinition
+from __future__ import annotations
+class A: pass
+class B: pass
+class AB(A, B): pass
+class D: pass
+
+ab: AB
+cd: AB & D
+ab_or_d: AB | D
+d: D
+i: A & B
+i = A()  # E: Incompatible types in assignment (expression has type "A", variable has type "A & B")  [assignment]
+ba: B & A = i
+i = ab
+i = d  # E: Incompatible types in assignment (expression has type "D", variable has type "A & B")  [assignment]
+i = ab_or_d  # E: Incompatible types in assignment (expression has type "AB | D", variable has type "A & B")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionFromNarrowing]
+from __future__ import annotations
+class A: pass
+class B: pass
+
+i: A
+assert isinstance(i, B)
+reveal_type(i)  # N: Revealed type is "__main__.A & __main__.B" (narrowed from "__main__.A")
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionWithBothCallable]
+from __future__ import annotations
+from typing import Callable
+class A:
+    def __call__(self, a: int): ...
+foo: A & Callable[[], int]
+reveal_type(foo())  # N: Revealed type is "int"
+foo("")  # E: No overload variant of "A & () -> int" matches argument type "str"  [call-overload] \
+         # N: Possible overload variants: \
+         # N:     def __call__(self, a: int) -> None \
+         # N:     () -> int
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionOneCallable]
+from __future__ import annotations
+from typing import Callable
+class A:
+    pass
+foo: A & Callable[[], int]
+reveal_type(foo())  # N: Revealed type is "int"
+foo("")  # E: No overload variant of "A & () -> int" matches argument type "str"  [call-overload] \
+         # N: Possible overload variant: \
+         # N:     () -> int
+[builtins fixtures/tuple.pyi]
+
+
+[case testIndexable]
+from __future__ import annotations
+
+class A:
+    def __getitem__(self, item: str): ...
+a: list[str] & A
+a[0]
+a["i"]
+a[None]  # E: No overload variant of "_NamedCallable & (int) -> str & _NamedCallable & (str) -> None" matches argument type "None"  [call-overload] \
+         # N: Possible overload variants: \
+         # N:     def __getitem__(self, int, /) -> str \
+         # N:     def __getitem__(self, str, /) -> None
+[builtins fixtures/list.pyi]
+
+
+[case testMultipleNarrowedIntersection-xfail]
+from __future__ import annotations
+class A: pass
+class B: pass
+class C: pass
+
+x: A
+reveal_type(x)  # N: Revealed type is "__main__.A"
+assert isinstance(x, B)
+reveal_type(x)  # N: Revealed type is "__main__.A & __main__.B"
+assert isinstance(x, C)
+reveal_type(x)  # N: Revealed type is "__main__.A & __main__.B & __main__.C"
+
+y: (A & B) | (A & C)
+assert isinstance(y, C)
+reveal_type(y)  # N: Revealed type is "__main__.A & __main__.B & __main__.C | __main__.A & __main__.C"
+[builtins fixtures/tuple.pyi]
+
+
+-- This is not implemented yet, maybe next sprint
+[case testInvalidIntersection-xfail]
+from __future__ import annotations
+
+a: int & str  # E: Intersection of "int & str" cannot exist: would have incompatible method signatures  [unreachable]
+a: 1 & 2  # E: Intersection of "1 & 2" cannot exist: would have incompatible method signatures  [unreachable]
+
+
+[case testIntersectionWithAny]
+# flags: --allow-any-expr --allow-any-explicit --disallow-redefinition
+from __future__ import annotations
+
+from typing import Any
+
+a: Any & str
+reveal_type(a)  # N: Revealed type is "Any & str"
+a = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "Any & str")  [assignment]
+a = ""
+
+b: Any
+assert isinstance(b, str)
+reveal_type(b)  # N: Revealed type is "str" (narrowed from "Any")
+[builtins fixtures/tuple.pyi]
+
+
+[case testOverrideInIntersection]
+from __future__ import annotations
+
+class A:
+    def foo(self) -> int:
+        return True
+class B(A):
+    def foo(self) -> bool:
+        return True
+
+b: A & B
+reveal_type(b.foo())  # N: Revealed type is "bool"
+[builtins fixtures/tuple.pyi]
+
+
+[case testOverloaded]
+from __future__ import annotations
+from typing import overload
+class A:
+    @overload
+    def foo(self): ...
+    @overload
+    def foo(self, x: int): ...
+    def foo(self, x=1): ...
+class B:
+    def foo(self, x: str): ...
+
+x: A & B
+x.foo(None)  # E: No overload variant of "foo" of "__main__.A & __main__.B" matches argument type "None"  [call-overload] \
+             # N: Possible overload variants: \
+             # N:     def foo(self) -> None \
+             # N:     def foo(self, x: int) -> None \
+             # N:     def foo(self, x: str) -> None
+[builtins fixtures/tuple.pyi]
+
+
+[case testGenericFunction]
+from __future__ import annotations
+
+from typing import TypeVar
+
+T = TypeVar('T')
+U = TypeVar('U')
+
+def foo(x: T, y: U) -> T & U: pass
+a: int
+b: object
+reveal_type(foo(a, b))  # N: Revealed type is "int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionInferenceWithTypeVarValues]
+from __future__ import annotations
+from typing import TypeVar
+AnyStr = TypeVar('AnyStr', bytes, str)
+class A: pass
+strA: str & A
+def f(x: AnyStr & A, *a: AnyStr): pass
+f(strA)
+f(strA, 'bar')
+f(strA, b'bar') # E: Value of type variable "AnyStr" of "f" cannot be "str | bytes"  [type-var]
+[builtins fixtures/tuple.pyi]
+
+-- what's going on here?
+[case testIntersectionTwoPassInference-xfail]
+from __future__ import annotations
+from typing import TypeVar
+T = TypeVar('T')
+U = TypeVar('U')
+def j(x: list[T] & list[U], y: list[T]) -> list[U]: pass
+
+a = [1]
+b = ['b']
+# We could infer: Since list[str] <: list[T], we must have T = str.
+# Then since list[int] <: Union[list[str], list[U]], and list[int] is
+# not a subtype of list[str], we must have U = int.
+# This is not currently implemented.
+j(a, b)
+[builtins fixtures/tuple.pyi]
+
+
+[case testIntersectionContext]
+from __future__ import annotations
+
+from typing import TypeVar
+
+class A: pass
+class B: pass
+
+T = TypeVar('T')
+def f() -> list[T]: pass
+d1: list[int] & A = f()  # E: Incompatible types in assignment (expression has type "list[int]", variable has type "list[int] & A")  [assignment]
+d2: A & B = f() # E: Incompatible types in assignment (expression has type "list[Never]", variable has type "A & B")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testGenericFunctionSubtypingWithIntersections]
+# flags: --disallow-redefinition
+from __future__ import annotations
+from typing import TypeVar
+T = TypeVar('T')
+S = TypeVar('S')
+def k1(x: int, y: list[T]) -> list[T & int]: pass
+def k2(x: S, y: list[T]) -> list[T & int]: pass
+a = k2
+a = k1 # E: Incompatible types in assignment (expression has type "def [T] (x: int, y: list[T]) -> list[T & int]", variable has type "def [S, T] (x: S, y: list[T]) -> list[T & int]")  [assignment]
+b = k1
+b = k2
+[builtins fixtures/list.pyi]
+
+
+[case testEqual-xfail]
+# flags: --disallow-redefinition
+from __future__ import annotations
+from typing import Generic
+
+T = TypeVar("T")
+class A: pass
+class B: pass
+class G(Generic[T]): pass
+
+l1: G[A] & G[B]
+l2: G[A & B]
+
+l1 = l2
+l2 = l1
+[builtins fixtures/tuple.pyi]
+
+
+[case testOverloadIsIntersection-xfail]
+# flags: --disallow-redefinition
+from __future__ import annotations
+from typing import overload
+
+@overload
+def _foo(x: int) -> str: ...
+@overload
+def _foo(x: str) -> int: ...
+def _foo(x): return x
+
+foo = _foo
+bar: Callable[[int], str] & Callable[[int], int]
+
+bar = foo
+foo = bar
+[builtins fixtures/tuple.pyi]
+
+
+[case testNarrowDoesntAddAny]
+from __future__ import annotations
+x: list[int]
+assert isinstance(x, list)
+reveal_type(x)  # N: Revealed type is "list[int]"
+[builtins fixtures/tuple.pyi]
+
+
+
+[case testTypeAttributeAccess]
+from __future__ import annotations
+
+class A:
+    a: int
+class B:
+    pass
+
+x: A & B
+reveal_type(x.a)  # N: Revealed type is "int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testComplexNarrow-xfail]
+from __future__ import annotations
+from typing import Union
+
+class A: pass
+class B: pass
+class C: pass
+
+x: A
+reveal_type(x)  # N: Revealed type is "__main__.A"
+assert isinstance(x, Union[B, C])
+reveal_type(x)  # N: Revealed type is "__main__.A & __main__.B"
+assert isinstance(x, C)
+reveal_type(x)  # N: Revealed type is "__main__.A & __main__.B & __main__.C | __main__.A & __main__.C"
+[builtins fixtures/tuple.pyi]

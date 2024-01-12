@@ -1,0 +1,131 @@
+[case testFormatObject]
+x: object
+f"{x:1}"  # E: The string for "object" isn't helpful in a user-facing or semantic string  [helpful-string] \
+          # E: The type "object" doesn't support format-specifiers  [str-format] \
+          # N: Maybe you want to add '!s' to the conversion
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatNone]
+x: None
+f"{x:1}"  # E: The string for "None" isn't helpful in a user-facing or semantic string  [helpful-string] \
+          # E: The type "None" doesn't support format-specifiers  [str-format] \
+          # N: Maybe you want to add '!s' to the conversion
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatInt]
+x: int
+f"{x:1}"
+f"{x:.1f}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatStr]
+x: str
+f"{x:1}"
+f"{x:.1f}"  # E: Incompatible types in string interpolation (expression has type "str", placeholder has type "int | float | complex")  [str-format]
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatFloat]
+x: float
+f"{x:1}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatConplex]
+x: complex
+f"{x:1}"
+f"{x:.1f}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatWithStringCoversion]
+x: object
+f"{x!s:1}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testTypeWithFormat]
+class X:
+    def __format__(self, format_spec: str) -> str: ...
+
+x: X
+f"{x:1}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testDatetimeFormat]
+from datetime import date
+import sys
+
+f"{date(1,1,1):%%%m%%:}"
+
+f"{date(1,1,1):%t%i%:Y}"  # E: Invalid format sequence '%t', escape with '%%'  [str-format] \
+                         # E: Invalid format sequence '%i', escape with '%%'  [str-format] \
+                         # E: Invalid format sequence '%:Y', escape with '%%'  [str-format]
+f"{date(1,1,1):%}"  # E: Invalid trailing '%', escape with '%%'  [str-format]
+f"{date(1,1,1):%:}"  # E: Invalid trailing '%:', escape with '%%'  [str-format]
+if sys.version_info[1] < 12:  # type: ignore[operator]
+    f"{date(1,1,1):%:z}"  # E: Format sequence '%:z' is new in version 3.12  [str-format]
+else:
+    f"{date(1,1,1):%t}"
+
+class D(date):
+    def __format__(self, s: str) -> str: ...
+f"{D(1,1,1):% %:z}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testHelpfulExplicitStr]
+def s(o: object) -> str: ...
+n: None
+f"{s(n)}"
+o: object
+f"{s(o)}"
+class A: ...
+a: A
+f"{s(a)}"
+[builtins fixtures/f_string.pyi]
+
+
+[case testFormatHelpful]
+from typing_extensions import override
+from datetime import datetime
+from dataclasses import dataclass
+
+o: object
+f"{o}"  # E: The string for "object" isn't helpful in a user-facing or semantic string  [helpful-string]
+n: None
+f"{n}"  # E: The string for "None" isn't helpful in a user-facing or semantic string  [helpful-string]
+
+def f(o: object): ...
+f"{f}"  # E: The type "def (o: object) -> None" doesn't define a __format__, __str__ or __repr__ method  [helpful-string]
+class A: ...
+f"{A}"  # E: The type "() -> __main__.A" doesn't define a __format__, __str__ or __repr__ method  [helpful-string]
+f"{A()}"  # E: The type "__main__.A" doesn't define a __format__, __str__ or __repr__ method  [helpful-string]
+class F:
+    def __format__(self, format_spec: str) -> str: ...
+f"{F}"  # E: The type "() -> __main__.F" doesn't define a __format__, __str__ or __repr__ method  [helpful-string]
+f"{F()}"
+class S:
+    @override
+    def __str__(self) -> str: ...
+
+class R:
+    def __repr__(self) -> str: ...
+f"{R}"  # E: The type "() -> __main__.R" doesn't define a __format__, __str__ or __repr__ method  [helpful-string]
+f"{R()}"
+f"{1}"
+i: int
+f"{i}"
+d: datetime
+f"{d}"
+
+@dataclass
+class D:
+    a: int
+data: D
+f"{data}"
+[builtins fixtures/primitives.pyi]

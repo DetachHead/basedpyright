@@ -1,0 +1,83 @@
+[case testSimpleUnionAtJoin]
+a = [1, ""]
+reveal_type(a)  # N: Revealed type is "list[int | str]"
+
+
+[case testSubtype]
+class A: pass
+class B(A): pass
+
+reveal_type([A(), B()])  # N: Revealed type is "list[__main__.A]"
+
+
+[case testConditionalExpression]
+class A: pass
+class B: pass
+
+res = A() if bool() else B()
+
+reveal_type(res)  # N: Revealed type is "__main__.A | __main__.B"
+
+
+[case testChainedConditionalExpression]
+class A: pass
+class B: pass
+class C: pass
+class D: pass
+
+res = A() if bool() else B() if bool() else C() if bool() else D()
+
+reveal_type(res)  # N: Revealed type is "__main__.A | __main__.B | __main__.C | __main__.D"
+
+
+[case testTupleUnion]
+reveal_type([(1, ""), (None, False)])  # N: Revealed type is "list[(int, str) | (None, bool)]"
+[builtins fixtures/tuple.pyi]
+
+
+[case testUnionType]
+reveal_type(type([1, ""][0]))  # N: Revealed type is "type[int] | type[str]"
+
+
+[case testAbstractTypeCollection]
+from typing import Protocol
+class Base(Protocol):
+    a: int
+class A(Base):
+    pass
+class B(Base):
+    pass
+class C(Base):
+    pass
+
+reveal_type([A, B, C])  # N: Revealed type is "list[() -> __main__.A | () -> __main__.B | () -> __main__.C]"
+
+
+[case testTypeInIf]
+from typing import Type
+
+class Ba: pass
+class A(Ba): pass
+class B(Ba): pass
+class C(Ba): pass
+class D(Ba): pass
+
+def f() :
+    if 1 + 1:
+        cls: Type[Ba] = A
+    elif 1 + 1:
+        cls = B
+    elif 1 + 1:
+        cls = C
+    else:
+        cls = D
+
+
+[case testLiteralUnion]
+reveal_type(1 if bool() else 2)  # N: Revealed type is "1 | 2"
+reveal_type([1] if bool() else [])  # N: Revealed type is "list[int]"
+
+
+[case testLiteralUnionMessage-xfail]
+# Here basedmypy shows the type of the expression as "1 | int"
+a: 2 = 1 if bool() else 2  # E: Incompatible types in assignment (expression has type "1 | 2", variable has type "2")  [assignment]

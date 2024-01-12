@@ -202,6 +202,23 @@ Generic: _SpecialForm
 # Protocol is only present in 3.8 and later, but mypy needs it unconditionally
 Protocol: _SpecialForm
 Callable: _SpecialForm
+
+# Internal mypy fallback type for callables (does not exist at runtime)
+@type_check_only
+class _Callable:
+    """Fake representation of _collections_abc.Callable"""
+
+    @abstractmethod
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+# Internal mypy fallback type for named callables (does not exist at runtime)
+@type_check_only
+class _NamedCallable(_Callable, metaclass=ABCMeta):
+    """Fake protocol for the different representations of functions that have names"""
+
+    __name__: str
+    __qualname__: str
+
 Type: _SpecialForm
 NoReturn: _SpecialForm
 ClassVar: _SpecialForm
@@ -851,7 +868,7 @@ ByteString: typing_extensions.TypeAlias = bytes | bytearray | memoryview
 _get_type_hints_obj_allowed_types: typing_extensions.TypeAlias = (  # noqa: Y042
     object
     | Callable[..., Any]
-    | FunctionType
+    | FunctionType[..., Any]
     | BuiltinFunctionType
     | MethodType
     | ModuleType

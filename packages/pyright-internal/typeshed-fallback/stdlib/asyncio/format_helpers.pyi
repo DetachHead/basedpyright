@@ -6,9 +6,9 @@ from typing import Any, overload
 from typing_extensions import TypeAlias
 
 class _HasWrapper:
-    __wrapper__: _HasWrapper | FunctionType
+    __wrapper__: _HasWrapper | FunctionType[..., Any]
 
-_FuncType: TypeAlias = FunctionType | _HasWrapper | functools.partial[Any] | functools.partialmethod[Any]
+_FuncType: TypeAlias = FunctionType[..., Any] | _HasWrapper | functools.partial[Any] | functools.partialmethod[Any]
 
 @overload
 def _get_function_source(func: _FuncType) -> tuple[str, int]: ...

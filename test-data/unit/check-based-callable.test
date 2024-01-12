@@ -1,0 +1,273 @@
+[case testCallableSyntax]
+c: "(str) -> int"
+reveal_type(c)  # N: Revealed type is "(str) -> int"
+f: "def (str) -> int"
+reveal_type(f)  # N: Revealed type is "def (str) -> int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testCallableSyntaxBreak]
+# ensure things that look a lot like Callable syntax are handled as not that
+from typing import Literal
+t: "(Literal['->'])"
+reveal_type(t)  # N: Revealed type is "'->'"
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-medium.pyi]
+
+
+[case testCallableIsntFunction]
+c: "(str) -> int"
+c.__name__  # E: "(str) -> int" has no attribute "__name__"  [attr-defined]
+f: "def (str) -> int"
+reveal_type(f.__name__)  # N: Revealed type is "str"
+[builtins fixtures/tuple.pyi]
+[typing fixtures/typing-medium.pyi]
+
+
+[case testFunctionTypeSubtypesCallable]
+c: "(str) -> int"
+f: "def (str) -> int" = c  # E: Incompatible types in assignment (expression has type "(str) -> int", variable has type "def (str) -> int")  [assignment]
+c2: "(str) -> int" = f
+[builtins fixtures/tuple.pyi]
+
+
+[case testFunctiontypeInferred]
+def f(): ...
+reveal_type(f)  # N: Revealed type is "def () -> None"
+[builtins fixtures/tuple.pyi]
+
+
+[case testRuntimeFunctionType]
+from types import FunctionType
+import future
+
+a: FunctionType[[int], str]  # E: Type parameters for "FunctionType" requires __future__.annotations or quoted types  [valid-type]
+FunctionType[[int], str]  # E: The type "type[FunctionType]" is not generic and not indexable  [misc]
+[file future.py]
+from __future__ import annotations
+from types import FunctionType
+a: FunctionType[[int], str]
+FunctionType[[int], str]  # E: The type "type[FunctionType]" is not generic and not indexable  [misc]
+[builtins fixtures/tuple.pyi]
+
+
+[case testFunctionTypeOnInstance]
+from typing import ClassVar
+class A:
+    a: ClassVar["def (A) -> int"]
+a = A()
+A.a(a)
+a.a()
+[builtins fixtures/tuple.pyi]
+
+
+[case testMethodType]
+import types
+class A:
+    def f(self): ...
+reveal_type(A().f)  # N: Revealed type is "_NamedCallable & () -> None"
+b: int = A().f  # E: Incompatible types in assignment (expression has type "_NamedCallable & () -> None", variable has type "int")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testTypeType]
+class A: ...
+reveal_type(A)  # N: Revealed type is "() -> __main__.A"
+b: int = A  # E: Incompatible types in assignment (expression has type "type[A]", variable has type "int")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testClassAssignments]
+from __future__ import annotations
+from typing import Callable, ClassVar
+from types import FunctionType
+
+some_callable: Callable[['C'], int]
+some_function: FunctionType[['C'], int]
+
+class C:
+    c1: Callable[['C'], int]  # callable attribute
+    c2: FunctionType[['C'], int]  # callable attribute
+    c3: Callable[['C'], int] = some_function  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                              # N: Consider setting it on the instance, or using "ClassVar"
+    c4: FunctionType[['C'], int] = some_function  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                                  # N: Consider setting it on the instance, or using "ClassVar"
+
+    m1 = some_function  # method, because of assignment
+    def m2(self) -> int: return 1
+    m3 = some_callable  # method, because of assignment
+
+    a1: ClassVar[Callable[['C'], int]]
+    a2: ClassVar[FunctionType[['C'], int]]
+
+    def __init__(self):
+        self.c5: Callable[[], int]  # callable attribute
+        self.c6 = some_function  # callable attribute
+        self.m1 = some_function  # E: Cannot assign to a method  [method-assign] \
+                                 # E: Incompatible types in assignment (expression has type "def (C) -> int", variable has type "_NamedCallable & () -> int")  [assignment]
+
+C.c1 = lambda x: 1  # error, too sus  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+C.c2 = lambda x: 1  # error, too sus  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+C.c3 = lambda x: 1  # error, too sus  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+C.c4 = lambda x: 1  # error, too sus  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+C.c5 = lambda x: 1  # error, too sus  # E: Cannot infer type of lambda  [misc] \
+                                      # E: Incompatible types in assignment (expression has type "def (x: Untyped) -> int", variable has type "() -> int")  [assignment] \
+                                      # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+C.c6 = lambda x: 1  # error, too sus  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                      # N: Consider setting it on the instance, or using "ClassVar"
+
+C.m1 = lambda x: 1  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                    # N: Consider setting it on the instance, or using "ClassVar"
+C.m2 = lambda x: 1  # error, can't assign to a method  # E: Cannot assign to a method  [method-assign] \
+                                                       # E: Incompatible types in assignment (expression has type "def (x: C) -> int", variable has type "def (self: C) -> int")  [assignment] \
+                                                       # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype] \
+                                                       # N: Consider setting it on the instance, or using "ClassVar"
+
+C.a1 = lambda x: 1  # E: Assigning a "FunctionType" on the class will become a "MethodType"  [callable-functiontype]
+C.a1 = some_callable  # E: This "CallableType" could be a "FunctionType", which when assigned via the class, would produce a "MethodType"  [possible-function] \
+                      # N: Consider changing the type to "FunctionType"
+C.a2 = lambda x: 1
+
+c: C
+reveal_type(c.c1)  # N: Revealed type is "(__main__.C) -> int"
+reveal_type(c.c2)  # N: Revealed type is "def (__main__.C) -> int"
+reveal_type(c.c3)  # N: Revealed type is "(__main__.C) -> int"
+reveal_type(c.c4)  # N: Revealed type is "def (__main__.C) -> int"
+reveal_type(c.c5)  # N: Revealed type is "() -> int"
+reveal_type(c.c6)  # N: Revealed type is "def (__main__.C) -> int"
+
+reveal_type(c.m1)  # N: Revealed type is "_NamedCallable & () -> int"
+reveal_type(c.m2)  # N: Revealed type is "_NamedCallable & () -> int"
+
+reveal_type(c.a1)  # N: Revealed type is "(__main__.C) -> int"
+reveal_type(c.a2)  # N: Revealed type is "_NamedCallable & () -> int"
+[builtins fixtures/tuple.pyi]
+
+
+[case testCallableDecorator]
+from typing import Callable, TypeVar
+from types import FunctionType
+
+T = TypeVar("T")
+def as_functiontype(fn: Callable[[T], None]) -> "FunctionType[[T], None]": ...
+
+def dec(fn: Callable[[T], None]) -> Callable[[T], None]: ...
+
+class A:
+    def m1(self): ...
+    @dec  # E: This decorator returns a "Callable", not a "FunctionType". Decorate this decorator with "basedtyping.as_functiontype", or add a 'type: ignore' it if it's intentional  [callable-functiontype]
+    def m2(self): ...
+    @as_functiontype
+    @dec
+    def m3(self): ...
+    @dec
+    @classmethod
+    def m4(cls): ...
+    @dec
+    @staticmethod
+    def m5(arg: int): ...
+@dec
+def f(a: A): ...
+a: A
+a.m1()
+a.m2(a)
+a.m3()
+a.m4()
+a.m5(1)
+[builtins fixtures/classmethod.pyi]
+
+
+[case testClassVarCallable]
+from typing import ClassVar
+class A:
+    a: ClassVar["(A) -> None"]
+    m: ClassVar["def (A) -> None"]
+
+a: A
+a.a(a)
+a.m()
+
+
+[case testCallableNew]
+# mypy: no-infer-function-types, allow-untyped-defs, allow-incomplete-defs, allow-any-expr, no-default-return
+
+class A:
+    def __new__(cls, a: int): ...
+class B:
+    def __new__(cls, a): ...
+
+reveal_type(A.__new__)  # N: Revealed type is "def (cls: type[__main__.A], a: int) -> Untyped"
+reveal_type(B.__new__)  # N: Revealed type is "def (cls: type[__main__.B], a: Untyped) -> Untyped"
+a: A
+b: B
+reveal_type(a.__new__)  # N: Revealed type is "def (cls: type[__main__.A], a: int) -> Untyped"
+reveal_type(b.__new__)  # N: Revealed type is "def (cls: type[__main__.B], a: Untyped) -> Untyped"
+
+import strict
+
+[file strict.py]
+class A:
+    def __new__(cls, a: int): ...
+
+reveal_type(A.__new__)  # N: Revealed type is "def (cls: type[strict.A], a: int) -> strict.A"
+reveal_type(A(1).__new__)  # N: Revealed type is "def (cls: type[strict.A], a: int) -> strict.A"
+
+
+[case testOverloadNotFunctionType]
+from typing import Callable, overload
+
+class A:
+    def __init__(self, _: object): ...
+    def __call__(self, a: int=1): ...
+
+@overload
+def f(): ...
+
+@overload
+def f(a: int): ...
+
+@A
+def f(): ...
+
+
+[case testNamedCallable]
+# flags: --disallow-redefinition
+class A:
+    def f(self): ...
+
+class C1:
+    __name__: str
+    __qualname__: str
+    def __call__(self): ...
+class C2:
+    def __call__(self): ...
+
+f = A().f
+reveal_type(f)  # N: Revealed type is "_NamedCallable & () -> None"
+f = C1()
+f = C2()  # E: Incompatible types in assignment (expression has type "C2", variable has type "_NamedCallable & () -> None")  [assignment] \
+          # N: "C2.__call__" has type "() -> None"
+
+
+[case testVariousMethods]
+class A:
+    def f(self): ...
+
+    @classmethod
+    def c(cls): ...
+
+    @staticmethod
+    def s(): ...
+
+reveal_type(A.f)  # N: Revealed type is "def (self: __main__.A) -> None"
+reveal_type(A.c)  # N: Revealed type is "_NamedCallable & () -> None"
+reveal_type(A.s)  # N: Revealed type is "_NamedCallable & () -> None"
+reveal_type(A().f)  # N: Revealed type is "_NamedCallable & () -> None"
+reveal_type(A().c)  # N: Revealed type is "_NamedCallable & () -> None"
+reveal_type(A().s)  # N: Revealed type is "_NamedCallable & () -> None"
+[builtins fixtures/callable.pyi]

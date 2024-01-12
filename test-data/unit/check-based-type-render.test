@@ -1,0 +1,121 @@
+[case testGenericMethod]
+from typing import TypeVar, Generic, Union
+
+T = TypeVar('T', bound=str)
+T2 = TypeVar('T2', bound=int)
+
+class A(Generic[T2]):
+    def f(self, t: T, t2: T2) -> Union[T, T2]:
+        reveal_type(t)  # N: Revealed type is "T@f"
+        reveal_type(t2)  # N: Revealed type is "T2@A"
+        if bool():
+            t = t2  # E: Incompatible types in assignment (expression has type "T2@A", variable has type "T@f")  [assignment]
+        return t
+
+reveal_type(A.f)  # N: Revealed type is "def [T2 (from A): int, T: str] (self: __main__.A[T2], t: T, t2: T2) -> T | T2"
+reveal_type(A[int]().f)  # N: Revealed type is "_NamedCallable & [T: str] (t: T, t2: int) -> T | int"
+A.f = 1  # E: Cannot assign to a method  [method-assign] \
+         # E: Incompatible types in assignment (expression has type "int", variable has type "def [T2 (from A): int, T: str] (self: A[T2], t: T, t2: T2) -> T | T2")  [assignment]
+
+
+[case testGenericFunction]
+from typing import TypeVar
+T = TypeVar("T", bound=int)
+
+def foo(t: T) -> T: ...
+reveal_type(foo)  # N: Revealed type is "def [T: int] (t: T) -> T"
+foo = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "def [T: int] (t: T) -> T")  [assignment]
+
+
+[case testRenderAny]
+# flags: --allow-any-generics --allow-any-expr --allow-any-explicit
+from typing import Any, List
+a: list
+reveal_type(a)  # N: Revealed type is "list[Untyped]"
+b: List[Any]
+reveal_type(b)  # N: Revealed type is "list[Any]"
+
+
+[case testRenderBareLiterals]
+# flags: --python-version 3.10
+from typing import Literal
+
+a: Literal['1'] = 2  # E: Incompatible types in assignment (expression has type "2", variable has type "'1'")  [assignment]
+reveal_type(a)  # N: Revealed type is "'1'"
+b: Literal[1, 2, 3] = 4  # E: Incompatible types in assignment (expression has type "4", variable has type "1 | 2 | 3")  [assignment]
+reveal_type(b)  # N: Revealed type is "1 | 2 | 3"
+c: Literal[1, 2, 3] | str = 4  # E: Incompatible types in assignment (expression has type "4", variable has type "1 | 2 | 3 | str")  [assignment]
+reveal_type(c)  # N: Revealed type is "1 | 2 | 3 | str"
+[typing fixtures/typing-medium.pyi]
+
+
+[case testRenderInferredLiteral]
+reveal_type(1)  # N: Revealed type is "1"
+
+
+[case testRenderGenericUpperBound]
+from typing import TypeVar
+T = TypeVar("T", bound=int)
+
+def foo(t: T): ...
+reveal_type(foo)  # N: Revealed type is "def [T: int] (t: T) -> None"
+
+
+[case testInferredNever]
+a: int = []  # E: Incompatible types in assignment (expression has type "list[Never]", variable has type "int")  [assignment]
+reveal_type([])  # N: Revealed type is "list[Never]"
+
+
+[case testNoReturnAsNever]
+from typing import NoReturn
+a: NoReturn = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "Never")  [assignment]
+def b() -> NoReturn: ...
+reveal_type(a)  # N: Revealed type is "Never"
+reveal_type(b)  # N: Revealed type is "def () -> Never"
+b = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "def () -> Never")  [assignment]
+
+
+[case testRenderNoneReturn]
+def foo(): ...
+reveal_type(foo)  # N: Revealed type is "def () -> None"
+foo = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "def () -> None")  [assignment]
+
+
+[case testRenderErrorStar]
+from typing import Callable, ParamSpec
+
+P = ParamSpec("P")
+
+def f(fn: Callable[P, None]): ...
+f(1)  # E: Argument 1 to "f" has incompatible type "int"; expected "(*Never, **Never) -> None"  [arg-type]
+def f2(*args: int, **kwargs: str): ...
+a = f2
+a = 1  # E: Incompatible types in assignment (expression has type "int", variable has type "def (*args: int, **kwargs: str) -> None")  [assignment]
+[builtins fixtures/tuple.pyi]
+
+
+[case testNarrowedFrom]
+a: object
+a = 1
+reveal_type(a)  # N: Revealed type is "int" (narrowed from "object")
+
+
+[case testNarrowedFromClass]
+# XFAIL
+class A:
+    a: object
+class B(A):
+    a: int
+a: A
+a = B()
+reveal_type(a.a)  # N: Revealed type is "int"
+# Actually expected N: Revealed type is "int" (narrowed from "object")
+
+
+[case testNarrowedFromPartial]
+a = []  # E: Need type annotation for "a" (hint: "a: list[<type>] = ...")  [var-annotated]
+reveal_type(a)  # E: Expression type contains "Any" (has type "list[Any (unannotated)]")  [no-any-expr] \
+                # E: Expression type contains "Any" (has type "list[Any (unannotated)]")  [no-any-expr] \
+                # N: Revealed type is "partially defined: list[?]"
+b = None  # E: Need type annotation for "b" (hint: "b: Optional[<type>] = ...")  [var-annotated]
+reveal_type(b)  # N: Revealed type is "None" (narrowed from "partially defined: ? | None")
