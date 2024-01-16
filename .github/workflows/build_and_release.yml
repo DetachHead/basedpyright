@@ -60,8 +60,8 @@ jobs:
           name: ${{ env.ARTIFACT_NAME_VSIX }}
           path: ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }}
 
-      - name: publish pypi package
-        run: ./pw pdm publish
+      # - name: publish pypi package
+      #   run: ./pw pdm publish
 
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: Publish VSIX
