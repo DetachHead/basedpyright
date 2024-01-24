@@ -116,7 +116,7 @@ export class CommandLineOptions {
     extraPaths?: string[] | undefined;
 
     // Default type-checking rule set. Should be one of 'off',
-    // 'basic', 'standard', or 'strict'.
+    // 'basic', 'standard', 'strict' or 'all'.
     typeCheckingMode?: string | undefined;
 
     // Indicates that the settings came from VS Code rather than

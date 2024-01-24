@@ -1,32 +1,126 @@
-![Pyright](https://github.com/microsoft/pyright/blob/main/docs/img/PyrightLarge.png)
+# basedpyright
 
-# Static Type Checker for Python
+Basedpyright is a static type checker for Python that is built on top of the work done by the [pyright project](https://github.com/Microsoft/pyright).
 
-Pyright is a full-featured, standards-based static type checker for Python. It is designed for high performance and can be used with large Python source bases.
+## why?
 
-Pyright includes both a [command-line tool](https://microsoft.github.io/pyright/#/command-line) and an [extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-pyright.pyright).
+pyright has several serious limitations which were the main motivation behind this fork.
 
+### pyright has no way to pin the version used by vscode
 
-## Pyright Playground
+this means if the extension gets updated, you may see errors in your project that don't appear in the CI, or vice-versa. see [this issue](https://github.com/microsoft/pylance-release/issues/5207)
 
-Try Pyright in your browser using the [Pyright Playground](https://pyright-play.net/?code=MQAgKgFglgziMEMC2AHANgUxAEw0g9gHYwAuATgiRnBPgO4gDG%2BSBhIGZZ%2BZcjC7AEZZcVRlWzwSlKPzRoAniEFKUCslADmEEgDoAUPtwAzEAmzYAFAA8AXCGNp8lADQgF9x85IBKW-pBAkDIMEgBXMnZrEABqd0NQAAUEGBgoQk0zKTIQdNIBRiwUkBIILBgMZkJJBDJNMKQMQhJg6jC0Ejh0rLIw5qhGjmtClBIoIgNzKwBGNwAiOZ99IA).
+### no way to run the pyright CLI without nodejs
 
+python developers should not be expected to have to install nodejs in order to typecheck their python code. it should just be a regular pypi package, just mypy, ruff, and pretty much every other python command line tool
 
-## Documentation
+### issues with unreachable code
 
-Refer to [the documentation](https://microsoft.github.io/pyright) for installation, configuration, and usage details.
+pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code. in fact, unreachable code is not even type-checked at all:
 
+```py
+if sys.platform == "win32": 
+  1 + "" # no error
+```
 
-## Community
-Do you have questions about Pyright or Python type annotations in general? Post your questions in [the discussion section](https://github.com/microsoft/pyright/discussions).
+by default, pyright will treat the body in the code above as unreachable if pyright itself was run on an operating system other than windows. this is bad of course, because chances are if you write such a check, you intend for your code to be executed on multiple platforms.
 
-If you would like to report a bug or request an enhancement, file a new issue in either the [pyright](https://github.com/microsoft/pyright/issues) or [pylance-release](https://github.com/microsoft/pylance-release/issues) issue tracker. In general, core type checking functionality is associated with Pyright while language service functionality is associated with Pylance, but the same contributors monitor both repos. For best results, provide the information requested in the issue template.
+to make things worse, unreachable code is not even type-checked, so the obviously invalid `1 + ""` above will go completely unnoticed by the type checker.
 
+basedpyright solves this issue with a `reportUnreachable` option, which will report an error on any code that it thinks cannot be reached. from there, you can either [update your pyright config to specify more platforms using the `pythonPlatform` option](https://github.com/detachhead/basedpyright/blob/main/docs/configuration.md#main-configuration-options) if you intend for the code to be reachable.
 
-## Contributing
+### basedmypy feature parity
 
-This project welcomes contributions and suggestions. For feature and complex bug fix contributions, it is recommended that you first discuss the proposed change with Pyright’s maintainers before submitting the pull request. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
+[basedmypy](https://github.com/kotlinisland/basedmypy) is a fork of mypy with a similar goal in mind: to fix some of the serious problems in mypy that do not seem to be a priority for the maintainers. it also adds many new features which may not be standardized but greatly improve the developer experience when working with python's far-from-perfect type system.
 
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
+we aim to [port most of basedmypy's features to basedpyright](https://github.com/DetachHead/basedpyright/issues?q=is%3Aissue+is%3Aopen+label%3A%22basedmypy+feature+parity%22), however as mentioned above our priority is to first fix the critical problems with pyright.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+# pypi package
+
+[![](https://img.shields.io/pypi/v/basedpyright?color=blue)](https://pypi.org/project/basedpyright/)
+
+basedpyright differs from pyright by publishing the command line tool as a pypi package instead of an npm package. this makes it far more convenient for python developers to use.
+
+```shell
+> basedpyright --help
+Usage: basedpyright [options] files...
+  Options:
+  --createstub <IMPORT>              Create type stub file(s) for import
+  --dependencies                     Emit import dependency information
+  -h,--help                          Show this help message
+  --ignoreexternal                   Ignore external imports for --verifytypes
+  --level <LEVEL>                    Minimum diagnostic level (error or warning)
+  --outputjson                       Output results in JSON format
+  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location
+  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)
+  --pythonpath <FILE>                Path to the Python interpreter
+  --pythonversion <VERSION>          Analyze for a specific version (3.3, 3.4, etc.)
+  --skipunannotated                  Skip analysis of functions with no type annotations
+  --stats                            Print detailed performance stats
+  -t,--typeshedpath <DIRECTORY>      Use typeshed type stubs at this location
+  -v,--venvpath <DIRECTORY>          Directory that contains virtual environments
+  --verbose                          Emit verbose diagnostics
+  --verifytypes <PACKAGE>            Verify type completeness of a py.typed package
+  --version                          Print Pyright version and exit
+  --warnings                         Use exit code of 1 if warnings are reported
+  -w,--watch                         Continue to run and watch for changes
+  -                                  Read files from stdin
+```
+
+# vscode extension
+
+## install
+
+install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+
+## usage
+
+the basedpyright vscode extension will automatically look for the pypi package in your python environment. see the recommended setup section below for more information
+
+# recommended setup
+
+it's recommended to use both the basedpyright cli and the vscode extension in your project. the vscode extension for local development and the cli tool for your CI.
+
+below are the changes i recommend making to your project when adding basedpyright
+
+## `.vscode/extensions.json`
+
+```jsonc
+{
+  "recommendations": [
+    "detachhead.basedpyright" // this will prompt developers working on your project to install the extension
+  ],
+  "unwantedRecommendations": [
+    "ms-python.vscode-pylance" // the pylance extension must be disabled when using pyright on its own
+  ]
+}
+```
+
+## `.vscode/settings.json`
+
+- remove any settings starting with `python.analysis`, as they can interfere with the vscode extension and cause it to behave differently to the CLI. these settings can be specified using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` instead (see below)
+
+- disable the built in language server support from the python extension, as it seems to conflict with basedpyright's language server:
+  ```json
+  {
+      "python.languageServer": "None"
+  }
+  ```
+
+## `pyproject.toml`
+
+we recommend using [pdm](https://pdm-project.org/) or [poetry](https://python-poetry.org/) to manage your dependencies.
+
+```toml
+[tool.pdm.dev-dependencies]  # or the poetry equivalent
+dev = [
+    "basedpyright", # you can pin the version here if you want, or just rely on the lockfile
+]
+
+[tool.basedpyright]
+# many settings are not enabled even in strict mode, which is why basedpyright includes an "all" option
+# you can then decide which rules you want to disable
+typeCheckingMode = "all"
+```
+
+pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version

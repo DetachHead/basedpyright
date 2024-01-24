@@ -167,6 +167,13 @@ export function truncate(text: string, maxLength: number) {
     return text;
 }
 
+/** turns an array into a list of options to be presented to the user
+ * @example
+ * userFacingOptionsList(['a', 'b', 'c']) // `"a", "b" or "c"`
+ */
+export const userFacingOptionsList = (values: string[]) =>
+    values.map((mode, index) => (index < values.length - 1 ? `"${mode}", ` : `or "${mode}"`)).join('');
+
 export function escapeRegExp(text: string) {
     return text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 }
