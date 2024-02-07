@@ -1155,8 +1155,8 @@ export class ConfigOptions {
     }
 
     static getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
-        if (typeCheckingMode === 'all') {
-            return getAllDiagnosticRuleSet();
+        if (typeCheckingMode === 'standard') {
+            return getStandardDiagnosticRuleSet();
         }
 
         if (typeCheckingMode === 'strict') {
@@ -1171,7 +1171,7 @@ export class ConfigOptions {
             return getOffDiagnosticRuleSet();
         }
 
-        return getStandardDiagnosticRuleSet();
+        return getAllDiagnosticRuleSet();
     }
 
     getDefaultExecEnvironment(): ExecutionEnvironment {
