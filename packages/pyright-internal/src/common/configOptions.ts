@@ -1155,8 +1155,8 @@ export class ConfigOptions {
     }
 
     static getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
-        if (typeCheckingMode === 'standard') {
-            return getStandardDiagnosticRuleSet();
+        if (typeCheckingMode === 'all') {
+            return getAllDiagnosticRuleSet();
         }
 
         if (typeCheckingMode === 'strict') {
@@ -1171,7 +1171,7 @@ export class ConfigOptions {
             return getOffDiagnosticRuleSet();
         }
 
-        return getAllDiagnosticRuleSet();
+        return getStandardDiagnosticRuleSet();
     }
 
     getDefaultExecEnvironment(): ExecutionEnvironment {
@@ -1784,6 +1784,19 @@ export class ConfigOptions {
         }
 
         return undefined;
+    }
+}
+
+/**
+ * {@link ConfigOptions} except it defaults to typeCheckingMode=all. this is a separate subclass to
+ * preserve the behavior of the original in tests and anything else that i'm too scared to touch
+ */
+export class BasedConfigOptions extends ConfigOptions {
+    static override getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
+        if (typeCheckingMode === undefined) {
+            return getAllDiagnosticRuleSet();
+        }
+        return super.getDiagnosticRuleSet(typeCheckingMode);
     }
 }
 

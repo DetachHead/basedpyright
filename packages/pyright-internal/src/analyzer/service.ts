@@ -15,7 +15,7 @@ import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-langu
 import { BackgroundAnalysisBase, RefreshOptions } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import { CommandLineOptions } from '../common/commandLineOptions';
-import { ConfigOptions, matchFileSpecs } from '../common/configOptions';
+import { BasedConfigOptions, ConfigOptions, matchFileSpecs } from '../common/configOptions';
 import { ConsoleInterface, LogLevel, StandardConsole, log } from '../common/console';
 import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
@@ -148,7 +148,7 @@ export class AnalyzerService {
         this._options.hostFactory = options.hostFactory ?? (() => new NoAccessHost());
 
         this._options.configOptions =
-            options.configOptions ?? new ConfigOptions(Uri.file(process.cwd(), this._serviceProvider));
+            options.configOptions ?? new BasedConfigOptions(Uri.file(process.cwd(), this._serviceProvider));
         const importResolver = this._options.importResolverFactory(
             this._serviceProvider,
             this._options.configOptions,
@@ -591,7 +591,7 @@ export class AnalyzerService {
             }
         }
 
-        const configOptions = new ConfigOptions(projectRoot);
+        const configOptions = new BasedConfigOptions(projectRoot);
         configOptions.initializeTypeCheckingMode(
             this._typeCheckingMode,
             commandLineOptions.diagnosticSeverityOverrides
