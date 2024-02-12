@@ -43,6 +43,7 @@ import {
     AnyType,
     ClassType,
     combineTypes,
+    isAny,
     isAnyOrUnknown,
     isClass,
     isClassInstance,
@@ -71,6 +72,7 @@ import {
     isLiteralTypeOrUnion,
     isMetaclassInstance,
     isNoneInstance,
+    isPartlyAny,
     isPartlyUnknown,
     isTupleClass,
     isUnboundedTupleClass,
@@ -1591,19 +1593,37 @@ export function assignTypeToPatternTargets(
                             LocMessage.wildcardPatternTypeUnknown(),
                             pattern.target
                         );
-                    } else if (isPartlyUnknown(narrowedType)) {
-                        const diagAddendum = new DiagnosticAddendum();
-                        diagAddendum.addMessage(
-                            LocAddendum.typeOfSymbol().format({
-                                name: '_',
-                                type: evaluator.printType(narrowedType, { expandTypeAlias: true }),
-                            })
-                        );
+                    } else if (isAny(narrowedType)) {
                         evaluator.addDiagnostic(
-                            DiagnosticRule.reportUnknownVariableType,
-                            LocMessage.wildcardPatternTypePartiallyUnknown() + diagAddendum.getString(),
+                            DiagnosticRule.reportAny,
+                            LocMessage.wildcardPatternTypeAny(),
                             pattern.target
                         );
+                    } else {
+                        const partlyUnknown = isPartlyUnknown(narrowedType);
+                        if (partlyUnknown || isPartlyAny(narrowedType)) {
+                            const diagAddendum = new DiagnosticAddendum();
+                            diagAddendum.addMessage(
+                                LocAddendum.typeOfSymbol().format({
+                                    name: '_',
+                                    type: evaluator.printType(narrowedType, { expandTypeAlias: true }),
+                                })
+                            );
+                            const addendum = diagAddendum.getString();
+                            if (partlyUnknown) {
+                                evaluator.addDiagnostic(
+                                    DiagnosticRule.reportUnknownVariableType,
+                                    LocMessage.wildcardPatternTypePartiallyUnknown() + addendum,
+                                    pattern.target
+                                );
+                            } else {
+                                evaluator.addDiagnostic(
+                                    DiagnosticRule.reportAny,
+                                    LocMessage.wildcardPatternTypePartiallyAny() + addendum,
+                                    pattern.target
+                                );
+                            }
+                        }
                     }
                 }
             } else {

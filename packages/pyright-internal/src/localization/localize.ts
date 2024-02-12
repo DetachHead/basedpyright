@@ -231,7 +231,9 @@ export namespace Localizer {
             new ParameterizedString<{ expected: number }>(getRawString('Diagnostic.argPositionalExpectedCount'));
         export const argPositionalExpectedOne = () => getRawString('Diagnostic.argPositionalExpectedOne');
         export const argTypePartiallyUnknown = () => getRawString('Diagnostic.argTypePartiallyUnknown');
+        export const argTypePartiallyAny = () => getRawString('Diagnostic.argTypePartiallyAny');
         export const argTypeUnknown = () => getRawString('Diagnostic.argTypeUnknown');
+        export const argTypeAny = () => getRawString('Diagnostic.argTypeAny');
         export const assertAlwaysTrue = () => getRawString('Diagnostic.assertAlwaysTrue');
         export const assertTypeArgs = () => getRawString('Diagnostic.assertTypeArgs');
         export const assertTypeTypeMismatch = () =>
@@ -264,6 +266,7 @@ export namespace Localizer {
                 getRawString('Diagnostic.baseClassVariableTypeIncompatible')
             );
         export const baseClassUnknown = () => getRawString('Diagnostic.baseClassUnknown');
+        export const baseClassAny = () => getRawString('Diagnostic.baseClassAny');
         export const binaryOperationNotAllowed = () => getRawString('Diagnostic.binaryOperationNotAllowed');
         export const bindTypeMismatch = () =>
             new ParameterizedString<{ type: string; methodName: string; paramName: string }>(
@@ -279,6 +282,7 @@ export namespace Localizer {
         export const classAlreadySpecialized = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classAlreadySpecialized'));
         export const classDecoratorTypeUnknown = () => getRawString('Diagnostic.classDecoratorTypeUnknown');
+        export const classDecoratorTypeAny = () => getRawString('Diagnostic.classDecoratorTypeAny');
         export const classDefinitionCycle = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.classDefinitionCycle'));
         export const classGetItemClsParam = () => getRawString('Diagnostic.classGetItemClsParam');
@@ -521,6 +525,7 @@ export namespace Localizer {
         export const formatStringUnicode = () => getRawString('Diagnostic.formatStringUnicode');
         export const formatStringUnterminated = () => getRawString('Diagnostic.formatStringUnterminated');
         export const functionDecoratorTypeUnknown = () => getRawString('Diagnostic.functionDecoratorTypeUnknown');
+        export const functionDecoratorTypeAny = () => getRawString('Diagnostic.functionDecoratorTypeAny');
         export const functionInConditionalExpression = () => getRawString('Diagnostic.functionInConditionalExpression');
         export const functionTypeParametersIllegal = () => getRawString('Diagnostic.functionTypeParametersIllegal');
         export const futureImportLocationNotAllowed = () => getRawString('Diagnostic.futureImportLocationNotAllowed');
@@ -597,10 +602,13 @@ export namespace Localizer {
         export const keywordParameterMissing = () => getRawString('Diagnostic.keywordParameterMissing');
         export const keywordSubscriptIllegal = () => getRawString('Diagnostic.keywordSubscriptIllegal');
         export const lambdaReturnTypeUnknown = () => getRawString('Diagnostic.lambdaReturnTypeUnknown');
+        export const lambdaReturnTypeAny = () => getRawString('Diagnostic.lambdaReturnTypeAny');
         export const lambdaReturnTypePartiallyUnknown = () =>
             new ParameterizedString<{ returnType: string }>(
                 getRawString('Diagnostic.lambdaReturnTypePartiallyUnknown')
             );
+        export const lambdaReturnTypePartiallyAny = () =>
+            new ParameterizedString<{ returnType: string }>(getRawString('Diagnostic.lambdaReturnTypePartiallyAny'));
         export const listAssignmentMismatch = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.listAssignmentMismatch'));
         export const listInAnnotation = () => getRawString('Diagnostic.listInAnnotation');
@@ -766,6 +774,10 @@ export namespace Localizer {
         export const paramTypeCovariant = () => getRawString('Diagnostic.paramTypeCovariant');
         export const paramTypeUnknown = () =>
             new ParameterizedString<{ paramName: string }>(getRawString('Diagnostic.paramTypeUnknown'));
+        export const paramTypeAny = () =>
+            new ParameterizedString<{ paramName: string }>(getRawString('Diagnostic.paramTypeAny'));
+        export const paramTypePartiallyAny = () =>
+            new ParameterizedString<{ paramName: string }>(getRawString('Diagnostic.paramTypePartiallyAny'));
         export const paramAssignmentMismatch = () =>
             new ParameterizedString<{ sourceType: string; paramType: string }>(
                 getRawString('Diagnostic.paramAssignmentMismatch')
@@ -842,8 +854,11 @@ export namespace Localizer {
                 getRawString('Diagnostic.returnTypeMismatch')
             );
         export const returnTypeUnknown = () => getRawString('Diagnostic.returnTypeUnknown');
+        export const returnTypeAny = () => getRawString('Diagnostic.returnTypeAny');
         export const returnTypePartiallyUnknown = () =>
             new ParameterizedString<{ returnType: string }>(getRawString('Diagnostic.returnTypePartiallyUnknown'));
+        export const returnTypePartiallyAny = () =>
+            new ParameterizedString<{ returnType: string }>(getRawString('Diagnostic.returnTypePartiallyAny'));
         export const revealLocalsArgs = () => getRawString('Diagnostic.revealLocalsArgs');
         export const revealLocalsNone = () => getRawString('Diagnostic.revealLocalsNone');
         export const revealTypeArgs = () => getRawString('Diagnostic.revealTypeArgs');
@@ -1019,8 +1034,11 @@ export namespace Localizer {
             );
         export const typePartiallyUnknown = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typePartiallyUnknown'));
+        export const typePartiallyAny = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typePartiallyAny'));
         export const typeUnknown = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeUnknown'));
+        export const typeAny = () => new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeAny'));
         export const typeVarAssignedName = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeVarAssignedName'));
         export const typeVarAssignmentMismatch = () =>
@@ -1151,8 +1169,10 @@ export namespace Localizer {
         export const walrusNotAllowed = () => getRawString('Diagnostic.walrusNotAllowed');
         export const wildcardInFunction = () => getRawString('Diagnostic.wildcardInFunction');
         export const wildcardPatternTypeUnknown = () => getRawString('Diagnostic.wildcardPatternTypeUnknown');
+        export const wildcardPatternTypeAny = () => getRawString('Diagnostic.wildcardPatternTypeAny');
         export const wildcardPatternTypePartiallyUnknown = () =>
             getRawString('Diagnostic.wildcardPatternTypePartiallyUnknown');
+        export const wildcardPatternTypePartiallyAny = () => getRawString('Diagnostic.wildcardPatternTypePartiallyAny');
         export const wildcardLibraryImport = () => getRawString('Diagnostic.wildcardLibraryImport');
         export const yieldFromIllegal = () => getRawString('Diagnostic.yieldFromIllegal');
         export const yieldFromOutsideAsync = () => getRawString('Diagnostic.yieldFromOutsideAsync');

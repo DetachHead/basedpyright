@@ -2638,31 +2638,32 @@ export function containsAnyOrUnknown(type: Type, recurse: boolean): AnyType | Un
     return walker.anyOrUnknownType;
 }
 
-// Determines if any part of the type contains "Unknown", including any type arguments.
 // This function does not use the TypeWalker because it is called very frequently,
 // and allocating a memory walker object for every call significantly increases
 // peak memory usage.
-export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
+function recursivelyCheckType(type: Type, predicate: (type: Type) => boolean, recursionCount = 0): boolean {
     if (recursionCount > maxTypeRecursionCount) {
         return false;
     }
     recursionCount++;
 
-    if (isUnknown(type)) {
+    if (predicate(type)) {
         return true;
     }
 
     // If this is a generic type alias, see if any of its type arguments
     // are either unspecified or are partially known.
     if (type.typeAliasInfo?.typeArguments) {
-        if (type.typeAliasInfo.typeArguments.some((typeArg) => isPartlyUnknown(typeArg, recursionCount))) {
+        if (
+            type.typeAliasInfo.typeArguments.some((typeArg) => recursivelyCheckType(typeArg, predicate, recursionCount))
+        ) {
             return true;
         }
     }
 
     // See if a union contains an unknown type.
     if (isUnion(type)) {
-        return findSubtype(type, (subtype) => isPartlyUnknown(subtype, recursionCount)) !== undefined;
+        return findSubtype(type, (subtype) => recursivelyCheckType(subtype, predicate, recursionCount)) !== undefined;
     }
 
     // See if an object or class has an unknown type argument.
@@ -2678,7 +2679,7 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
             const typeArgs = type.tupleTypeArguments?.map((t) => t.type) || type.typeArguments;
             if (typeArgs) {
                 for (const argType of typeArgs) {
-                    if (isPartlyUnknown(argType, recursionCount)) {
+                    if (recursivelyCheckType(argType, predicate, recursionCount)) {
                         return true;
                     }
                 }
@@ -2691,7 +2692,7 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
     // See if a function has an unknown type.
     if (isOverloadedFunction(type)) {
         return OverloadedFunctionType.getOverloads(type).some((overload) => {
-            return isPartlyUnknown(overload, recursionCount);
+            return recursivelyCheckType(overload, predicate, recursionCount);
         });
     }
 
@@ -2700,7 +2701,7 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
             // Ignore parameters such as "*" that have no name.
             if (type.details.parameters[i].name) {
                 const paramType = FunctionType.getEffectiveParameterType(type, i);
-                if (isPartlyUnknown(paramType, recursionCount)) {
+                if (recursivelyCheckType(paramType, predicate, recursionCount)) {
                     return true;
                 }
             }
@@ -2709,7 +2710,7 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
         if (
             type.details.declaredReturnType &&
             !FunctionType.isParamSpecValue(type) &&
-            isPartlyUnknown(type.details.declaredReturnType, recursionCount)
+            recursivelyCheckType(type.details.declaredReturnType, predicate, recursionCount)
         ) {
             return true;
         }
@@ -2719,6 +2720,17 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
 
     return false;
 }
+
+/**
+ * Determines if any part of the type contains `Unknown`, including any type arguments.
+ */
+export const isPartlyUnknown = (type: Type, recursionCount?: number) =>
+    recursivelyCheckType(type, isUnknown, recursionCount);
+
+/**
+ * Determines if any part of the type contains `Any`, including any type arguments.
+ */
+export const isPartlyAny = (type: Type, recursionCount?: number) => recursivelyCheckType(type, isAny, recursionCount);
 
 // If the specified type is a generic class with a single type argument
 // that is a union, it "explodes" the class into a union of classes with

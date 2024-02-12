@@ -18,7 +18,7 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { OperationCanceledException, throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
-import { DiagnosticLevel } from '../common/configOptions';
+import { DiagnosticLevel, DiagnosticRuleSet } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { assert, assertNever, fail } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
@@ -240,6 +240,7 @@ import {
     isNoneInstance,
     isNoneTypeClass,
     isOptionalType,
+    isPartlyAny,
     isPartlyUnknown,
     isProperty,
     isTupleClass,
@@ -3342,7 +3343,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
         if (!isTypeIncomplete) {
             reportPossibleUnknownAssignment(
-                fileInfo.diagnosticRuleSet.reportUnknownVariableType,
+                fileInfo.diagnosticRuleSet,
                 DiagnosticRule.reportUnknownVariableType,
                 nameNode,
                 destType,
@@ -3552,7 +3553,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
             if (!memberInfo && srcExprNode && !isTypeIncomplete) {
                 reportPossibleUnknownAssignment(
-                    fileInfo.diagnosticRuleSet.reportUnknownMemberType,
+                    fileInfo.diagnosticRuleSet,
                     DiagnosticRule.reportUnknownMemberType,
                     node.memberName,
                     srcType,
@@ -5143,7 +5144,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
         if (!skipPartialUnknownCheck) {
             reportPossibleUnknownAssignment(
-                AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.reportUnknownMemberType,
+                AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet,
                 DiagnosticRule.reportUnknownMemberType,
                 node.memberName,
                 typeResult.type,
@@ -12061,7 +12062,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             // Do not check for unknown types if the expected type is "Any".
             // Don't print types if reportUnknownArgumentType is disabled for performance.
             if (
-                fileInfo.diagnosticRuleSet.reportUnknownArgumentType !== 'none' &&
+                (fileInfo.diagnosticRuleSet.reportUnknownArgumentType !== 'none' ||
+                    fileInfo.diagnosticRuleSet.reportAny !== 'none') &&
                 !isAny(argParam.paramType) &&
                 !isTypeIncomplete
             ) {
@@ -12072,22 +12074,41 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                         LocMessage.argTypeUnknown() + diagAddendum.getString(),
                         argParam.errorNode
                     );
-                } else if (isPartlyUnknown(simplifiedType)) {
-                    // If the parameter type is also partially unknown, don't report
-                    // the error because it's likely that the partially-unknown type
-                    // arose due to bidirectional type matching.
-                    if (!isPartlyUnknown(argParam.paramType)) {
-                        const diagAddendum = getDiagAddendum();
-                        diagAddendum.addMessage(
-                            LocAddendum.argumentType().format({
-                                type: printType(simplifiedType, { expandTypeAlias: true }),
-                            })
-                        );
-                        addDiagnostic(
-                            DiagnosticRule.reportUnknownArgumentType,
-                            LocMessage.argTypePartiallyUnknown() + diagAddendum.getString(),
-                            argParam.errorNode
-                        );
+                } else if (isAny(simplifiedType)) {
+                    const diagAddendum = getDiagAddendum();
+                    addDiagnostic(
+                        DiagnosticRule.reportAny,
+                        LocMessage.argTypeAny() + diagAddendum.getString(),
+                        argParam.errorNode
+                    );
+                } else {
+                    const partlyUnknown = isPartlyUnknown(simplifiedType);
+                    if (partlyUnknown || isPartlyAny(simplifiedType)) {
+                        // If the parameter type is also partially unknown, don't report
+                        // the error because it's likely that the partially-unknown type
+                        // arose due to bidirectional type matching.
+                        if (!isPartlyUnknown(argParam.paramType)) {
+                            const diagAddendum = getDiagAddendum();
+                            diagAddendum.addMessage(
+                                LocAddendum.argumentType().format({
+                                    type: printType(simplifiedType, { expandTypeAlias: true }),
+                                })
+                            );
+                            const addendum = diagAddendum.getString();
+                            if (partlyUnknown) {
+                                addDiagnostic(
+                                    DiagnosticRule.reportUnknownArgumentType,
+                                    LocMessage.argTypePartiallyUnknown() + addendum,
+                                    argParam.errorNode
+                                );
+                            } else {
+                                addDiagnostic(
+                                    DiagnosticRule.reportAny,
+                                    LocMessage.argTypePartiallyAny() + addendum,
+                                    argParam.errorNode
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -14093,18 +14114,17 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
     }
 
     function reportPossibleUnknownAssignment(
-        diagLevel: DiagnosticLevel,
+        ruleset: DiagnosticRuleSet,
         rule: DiagnosticRule,
         target: NameNode,
         type: Type,
         errorNode: ExpressionNode,
         ignoreEmptyContainers: boolean
     ) {
-        // Don't bother if the feature is disabled.
-        if (diagLevel === 'none') {
+        // Don't bother if the features are disabled.
+        if (ruleset[rule] === 'none' && ruleset.reportAny === 'none') {
             return;
         }
-
         const nameValue = target.value;
 
         // Sometimes variables contain an "unbound" type if they're
@@ -14114,23 +14134,34 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
         if (isUnknown(simplifiedType)) {
             addDiagnostic(rule, LocMessage.typeUnknown().format({ name: nameValue }), errorNode);
-        } else if (isPartlyUnknown(simplifiedType)) {
-            // If ignoreEmptyContainers is true, don't report the problem for
-            // empty containers (lists or dictionaries). We'll report the problem
-            // only if the assigned value is used later.
-            if (!ignoreEmptyContainers || !isClassInstance(type) || !type.isEmptyContainer) {
-                const diagAddendum = new DiagnosticAddendum();
-                diagAddendum.addMessage(
-                    LocAddendum.typeOfSymbol().format({
-                        name: nameValue,
-                        type: printType(simplifiedType, { expandTypeAlias: true }),
-                    })
-                );
-                addDiagnostic(
-                    rule,
-                    LocMessage.typePartiallyUnknown().format({ name: nameValue }) + diagAddendum.getString(),
-                    errorNode
-                );
+        } else if (isAny(simplifiedType)) {
+            addDiagnostic(DiagnosticRule.reportAny, LocMessage.typeAny().format({ name: nameValue }), errorNode);
+        } else {
+            const partlyUnknown = isPartlyUnknown(simplifiedType);
+            if (partlyUnknown || isPartlyAny(simplifiedType)) {
+                // If ignoreEmptyContainers is true, don't report the problem for
+                // empty containers (lists or dictionaries). We'll report the problem
+                // only if the assigned value is used later.
+                if (!ignoreEmptyContainers || !isClassInstance(type) || !type.isEmptyContainer) {
+                    const diagAddendum = new DiagnosticAddendum();
+                    diagAddendum.addMessage(
+                        LocAddendum.typeOfSymbol().format({
+                            name: nameValue,
+                            type: printType(simplifiedType, { expandTypeAlias: true }),
+                        })
+                    );
+                    const formatter = { name: nameValue };
+                    const addendum = diagAddendum.getString();
+                    if (partlyUnknown) {
+                        addDiagnostic(rule, LocMessage.typePartiallyUnknown().format(formatter) + addendum, errorNode);
+                    } else {
+                        addDiagnostic(
+                            DiagnosticRule.reportAny,
+                            LocMessage.typePartiallyAny().format(formatter) + addendum,
+                            errorNode
+                        );
+                    }
+                }
             }
         }
     }
@@ -16081,6 +16112,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
                     if (isUnknown(argType)) {
                         addDiagnostic(DiagnosticRule.reportUntypedBaseClass, LocMessage.baseClassUnknown(), arg);
+                    } else if (isAny(argType)) {
+                        addDiagnostic(DiagnosticRule.reportAny, LocMessage.baseClassAny(), arg);
                     }
 
                     // Check for a duplicate class.
@@ -16438,20 +16471,26 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
                 const newDecoratedType = applyClassDecorator(evaluatorInterface, decoratedType, classType, decorator);
                 const unknownOrAny = containsAnyOrUnknown(newDecoratedType, /* recurse */ false);
+                const unknown = unknownOrAny && isUnknown(unknownOrAny);
 
-                if (unknownOrAny && isUnknown(unknownOrAny)) {
-                    // Report this error only on the first unknown type.
-                    if (!foundUnknown) {
+                if (unknownOrAny && !foundUnknown) {
+                    if (unknown) {
                         addDiagnostic(
                             DiagnosticRule.reportUntypedClassDecorator,
                             LocMessage.classDecoratorTypeUnknown(),
                             node.decorators[i].expression
                         );
-
                         foundUnknown = true;
+                    } else {
+                        addDiagnostic(
+                            DiagnosticRule.reportAny,
+                            LocMessage.classDecoratorTypeAny(),
+                            node.decorators[i].expression
+                        );
                     }
-                } else {
-                    // Apply the decorator only if the type is known.
+                }
+                if (!unknown) {
+                    // Apply the decorator only if the type is known (or Any).
                     decoratedType = newDecoratedType;
                 }
             }
@@ -17133,20 +17172,26 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             );
 
             const unknownOrAny = containsAnyOrUnknown(newDecoratedType, /* recurse */ false);
+            const unknown = unknownOrAny && isUnknown(unknownOrAny);
 
-            if (unknownOrAny && isUnknown(unknownOrAny)) {
-                // Report this error only on the first unknown type.
-                if (!foundUnknown) {
+            if (unknownOrAny && !foundUnknown) {
+                if (unknown) {
                     addDiagnostic(
                         DiagnosticRule.reportUntypedFunctionDecorator,
                         LocMessage.functionDecoratorTypeUnknown(),
                         node.decorators[i].expression
                     );
-
                     foundUnknown = true;
+                } else {
+                    addDiagnostic(
+                        DiagnosticRule.reportAny,
+                        LocMessage.functionDecoratorTypeAny(),
+                        node.decorators[i].expression
+                    );
                 }
-            } else {
-                // Apply the decorator only if the type is known.
+            }
+            if (!unknown) {
+                // Apply the decorator only if the type is known (or Any).
                 decoratedType = newDecoratedType;
             }
         }
