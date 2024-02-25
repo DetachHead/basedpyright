@@ -6872,8 +6872,15 @@ export class Checker extends ParseTreeWalker {
             effectiveFlags |= MemberAccessFlags.SkipObjectBaseClass;
         }
 
-        const methodMember = lookUpClassMember(classType, methodType.details.name, effectiveFlags);
-        if (!methodMember) {
+        const baseClass = lookUpClassMember(classType, methodType.details.name, effectiveFlags)?.classType;
+        if (!baseClass) {
+            return;
+        }
+        if (!baseClass || isAnyOrUnknown(baseClass)) {
+            return;
+        }
+        const abstractSymbolInfo = this._evaluator.getAbstractSymbolInfo(baseClass, methodType.details.name);
+        if (abstractSymbolInfo) {
             return;
         }
 

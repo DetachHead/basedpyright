@@ -26638,6 +26638,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         checkForCancellation,
         printControlFlowGraph,
         printTypeVarContext,
+        getAbstractSymbolInfo,
     };
 
     const codeFlowEngine = getCodeFlowEngine(evaluatorInterface, speculativeTypeTracker);

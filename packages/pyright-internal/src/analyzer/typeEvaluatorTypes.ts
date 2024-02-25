@@ -671,4 +671,5 @@ export interface TypeEvaluator {
         logger: ConsoleInterface
     ) => void;
     printTypeVarContext: (typeVarContext: TypeVarContext) => void;
+    getAbstractSymbolInfo: (classType: ClassType, symbolName: string) => AbstractSymbol | undefined;
 }
