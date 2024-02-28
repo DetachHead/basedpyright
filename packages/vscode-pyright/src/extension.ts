@@ -30,18 +30,27 @@ import {
     workspace,
     WorkspaceConfiguration,
     env,
+    SemanticTokensLegend,
+    languages,
+    SemanticTokensBuilder,
 } from 'vscode';
 import {
     CancellationToken,
     ConfigurationParams,
     ConfigurationRequest,
+    DeclarationRequest,
     DidChangeConfigurationNotification,
+    DocumentSymbolRequest,
     LanguageClient,
     LanguageClientOptions,
     ResponseError,
     ServerOptions,
+    SymbolKind,
     TextEdit,
     TransportKind,
+    Position as LanguageClientPosition,
+    DocumentUri,
+    SymbolInformation,
 } from 'vscode-languageclient/node';
 import { FileBasedCancellationStrategy } from './cancellationUtils';
 import { githubRepo, toolName } from 'pyright-internal/constants';
@@ -348,6 +357,108 @@ export async function activate(context: ExtensionContext) {
             })
         );
     }
+
+    const tokenTypes = ['class', 'interface', 'enum', 'function', 'variable'];
+    const tokenModifiers = ['declaration', 'documentation'];
+    const legend = new SemanticTokensLegend(tokenTypes, tokenModifiers);
+    languages.registerDocumentSemanticTokensProvider(
+        { language: 'python', scheme: 'file' },
+        {
+            provideDocumentSemanticTokens: async (document) => {
+                const tokensBuilder = new SemanticTokensBuilder(legend);
+                const client = languageClient;
+                if (!client) {
+                    return;
+                }
+
+                const symbolLocations: { location: DocumentUri; position: LanguageClientPosition }[] = [];
+                for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+                    const line = document.lineAt(lineNumber);
+                    for (
+                        let positionNumber = line.firstNonWhitespaceCharacterIndex;
+                        positionNumber < line.range.end.character;
+                        positionNumber++
+                    ) {
+                        const result = await client.sendRequest(DeclarationRequest.type, {
+                            textDocument: { uri: document.uri.toString() },
+                            position: new Position(lineNumber, positionNumber),
+                        });
+                        const locations = Array.isArray(result) ? result : [result];
+                        for (const location of locations) {
+                            if (location === null) {
+                                continue;
+                            }
+                            if ('originSelectionRange' in location) {
+                                symbolLocations.push({
+                                    location: location.targetUri,
+                                    position: location.originSelectionRange!.start,
+                                });
+                            } else if ('range' in location) {
+                                symbolLocations.push({
+                                    location: location.uri,
+                                    position: new Position(lineNumber, positionNumber),
+                                });
+                            } else {
+                                throw new Error('yikes');
+                            }
+                        }
+                    }
+                }
+                const allSymbols = await Promise.all(
+                    symbolLocations.map((symbol) =>
+                        client.sendRequest(DocumentSymbolRequest.type, {
+                            textDocument: { uri: symbol.location },
+                        })
+                    )
+                );
+                // console.log({ allSymbols });
+                const asdf = await Promise.all(
+                    symbolLocations.map(async (symbol) =>
+                        (
+                            await client.sendRequest(DocumentSymbolRequest.type, {
+                                textDocument: { uri: symbol.location },
+                            })
+                        )?.find(
+                            (resolvedSymbol): resolvedSymbol is SymbolInformation =>
+                                'range' in resolvedSymbol &&
+                                resolvedSymbol.range.start.character === symbol.position.character &&
+                                resolvedSymbol.range.start.line === symbol.position.line
+                        )
+                    )
+                );
+                const symbols = asdf.filter((symbol): symbol is SymbolInformation => symbol !== undefined);
+                for (const symbol of symbols) {
+                    let tokenType: string | undefined;
+                    if (
+                        Array<SymbolKind>(
+                            SymbolKind.Class,
+                            SymbolKind.Module,
+                            SymbolKind.Namespace,
+                            SymbolKind.Interface
+                        ).includes(symbol.kind)
+                    ) {
+                        tokenType = 'class';
+                    } else if (Array<SymbolKind>(SymbolKind.Function, SymbolKind.Method).includes(symbol.kind)) {
+                        tokenType = 'function';
+                    }
+                    console.log('symbol', symbol);
+                    if (tokenType) {
+                        tokensBuilder.push(
+                            new Range(
+                                new Position(symbol.location.range.start.line, symbol.location.range.start.character),
+                                new Position(symbol.location.range.end.line, symbol.location.range.end.character)
+                            ),
+                            tokenType,
+                            ['declaration']
+                        );
+                    }
+                }
+                console.log(tokensBuilder);
+                return tokensBuilder.build();
+            },
+        },
+        legend
+    );
 
     await client.start();
 }
