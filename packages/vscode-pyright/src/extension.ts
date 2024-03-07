@@ -38,9 +38,9 @@ import {
     CancellationToken,
     ConfigurationParams,
     ConfigurationRequest,
-    DeclarationRequest,
     DidChangeConfigurationNotification,
     DocumentSymbolRequest,
+    ReferenceParams,
     LanguageClient,
     LanguageClientOptions,
     ResponseError,
@@ -48,9 +48,7 @@ import {
     SymbolKind,
     TextEdit,
     TransportKind,
-    Position as LanguageClientPosition,
-    DocumentUri,
-    SymbolInformation,
+    ReferencesRequest,
 } from 'vscode-languageclient/node';
 import { FileBasedCancellationStrategy } from './cancellationUtils';
 import { githubRepo, toolName } from 'pyright-internal/constants';
@@ -371,86 +369,42 @@ export async function activate(context: ExtensionContext) {
                     return;
                 }
 
-                const symbolLocations: { location: DocumentUri; position: LanguageClientPosition }[] = [];
-                for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
-                    const line = document.lineAt(lineNumber);
-                    for (
-                        let positionNumber = line.firstNonWhitespaceCharacterIndex;
-                        positionNumber < line.range.end.character;
-                        positionNumber++
-                    ) {
-                        const result = await client.sendRequest(DeclarationRequest.type, {
-                            textDocument: { uri: document.uri.toString() },
-                            position: new Position(lineNumber, positionNumber),
-                        });
-                        const locations = Array.isArray(result) ? result : [result];
-                        for (const location of locations) {
-                            if (location === null) {
-                                continue;
-                            }
-                            if ('originSelectionRange' in location) {
-                                symbolLocations.push({
-                                    location: location.targetUri,
-                                    position: location.originSelectionRange!.start,
-                                });
-                            } else if ('range' in location) {
-                                symbolLocations.push({
-                                    location: location.uri,
-                                    position: new Position(lineNumber, positionNumber),
-                                });
-                            } else {
-                                throw new Error('yikes');
-                            }
+                const allSymbols = await client.sendRequest(DocumentSymbolRequest.type, {
+                    textDocument: { uri: document.uri.toString() },
+                });
+
+                for (const symbol of allSymbols ?? []) {
+                    const referenceParams: ReferenceParams = {
+                        textDocument: { uri: document.uri.toString() },
+                        position: 'location' in symbol ? symbol.location.range.start : symbol.selectionRange.start,
+                        context: { includeDeclaration: true },
+                    };
+                    const references = await client.sendRequest(ReferencesRequest.type, referenceParams);
+                    for (const reference of references ?? []) {
+                        let tokenType: string | undefined;
+                        if (
+                            Array<SymbolKind>(
+                                SymbolKind.Class,
+                                SymbolKind.Module,
+                                SymbolKind.Namespace,
+                                SymbolKind.Interface
+                            ).includes(symbol.kind)
+                        ) {
+                            tokenType = 'class';
+                        } else if (Array<SymbolKind>(SymbolKind.Function, SymbolKind.Method).includes(symbol.kind)) {
+                            tokenType = 'function';
                         }
-                    }
-                }
-                const allSymbols = await Promise.all(
-                    symbolLocations.map((symbol) =>
-                        client.sendRequest(DocumentSymbolRequest.type, {
-                            textDocument: { uri: symbol.location },
-                        })
-                    )
-                );
-                // console.log({ allSymbols });
-                const asdf = await Promise.all(
-                    symbolLocations.map(async (symbol) =>
-                        (
-                            await client.sendRequest(DocumentSymbolRequest.type, {
-                                textDocument: { uri: symbol.location },
-                            })
-                        )?.find(
-                            (resolvedSymbol): resolvedSymbol is SymbolInformation =>
-                                'range' in resolvedSymbol &&
-                                resolvedSymbol.range.start.character === symbol.position.character &&
-                                resolvedSymbol.range.start.line === symbol.position.line
-                        )
-                    )
-                );
-                const symbols = asdf.filter((symbol): symbol is SymbolInformation => symbol !== undefined);
-                for (const symbol of symbols) {
-                    let tokenType: string | undefined;
-                    if (
-                        Array<SymbolKind>(
-                            SymbolKind.Class,
-                            SymbolKind.Module,
-                            SymbolKind.Namespace,
-                            SymbolKind.Interface
-                        ).includes(symbol.kind)
-                    ) {
-                        tokenType = 'class';
-                    } else if (Array<SymbolKind>(SymbolKind.Function, SymbolKind.Method).includes(symbol.kind)) {
-                        tokenType = 'function';
-                    }
-                    console.log('symbol', symbol);
-                    if (tokenType) {
-                        tokensBuilder.push(
-                            new Range(
-                                new Position(symbol.location.range.start.line, symbol.location.range.start.character),
-                                new Position(symbol.location.range.end.line, symbol.location.range.end.character)
-                            ),
-                            tokenType,
-                            ['declaration']
-                        );
+                        console.log('symbol', symbol);
+                        if (tokenType) {
+                            tokensBuilder.push(
+                                new Range(
+                                    new Position(reference.range.start.line, reference.range.start.character),
+                                    new Position(reference.range.end.line, reference.range.end.character)
+                                ),
+                                tokenType,
+                                ['declaration']
+                            );
+                        }
                     }
                 }
                 console.log(tokensBuilder);
