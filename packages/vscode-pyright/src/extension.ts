@@ -369,41 +369,63 @@ export async function activate(context: ExtensionContext) {
                     return;
                 }
 
-                const allSymbols = await client.sendRequest(DocumentSymbolRequest.type, {
-                    textDocument: { uri: document.uri.toString() },
-                });
-
-                for (const symbol of allSymbols ?? []) {
-                    const referenceParams: ReferenceParams = {
-                        textDocument: { uri: document.uri.toString() },
-                        position: 'location' in symbol ? symbol.location.range.start : symbol.selectionRange.start,
-                        context: { includeDeclaration: true },
-                    };
-                    const references = await client.sendRequest(ReferencesRequest.type, referenceParams);
-                    for (const reference of references ?? []) {
-                        let tokenType: string | undefined;
-                        if (
-                            Array<SymbolKind>(
-                                SymbolKind.Class,
-                                SymbolKind.Module,
-                                SymbolKind.Namespace,
-                                SymbolKind.Interface
-                            ).includes(symbol.kind)
-                        ) {
-                            tokenType = 'class';
-                        } else if (Array<SymbolKind>(SymbolKind.Function, SymbolKind.Method).includes(symbol.kind)) {
-                            tokenType = 'function';
+                const filesToLookUp = new Set<string>(document.uri.toString());
+                for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+                    const line = document.lineAt(lineNumber);
+                    for (
+                        let character = line.firstNonWhitespaceCharacterIndex;
+                        character < line.range.end.character;
+                        character++
+                    ) {
+                        const locations = await client.sendRequest(ReferencesRequest.type, {
+                            textDocument: { uri: document.uri.toString() },
+                            position: { line: lineNumber, character },
+                            context: { includeDeclaration: true },
+                        });
+                        for (const location of locations ?? []) {
+                            filesToLookUp.add(location.uri);
                         }
-                        console.log('symbol', symbol);
-                        if (tokenType) {
-                            tokensBuilder.push(
-                                new Range(
-                                    new Position(reference.range.start.line, reference.range.start.character),
-                                    new Position(reference.range.end.line, reference.range.end.character)
-                                ),
-                                tokenType,
-                                ['declaration']
-                            );
+                    }
+                }
+                console.log(filesToLookUp);
+                for (const fileToLookUp of filesToLookUp) {
+                    const allSymbols = await client.sendRequest(DocumentSymbolRequest.type, {
+                        textDocument: { uri: fileToLookUp },
+                    });
+                    for (const symbol of allSymbols ?? []) {
+                        const referenceParams: ReferenceParams = {
+                            textDocument: { uri: document.uri.toString() },
+                            position: 'location' in symbol ? symbol.location.range.start : symbol.selectionRange.start,
+                            context: { includeDeclaration: true },
+                        };
+                        const references = await client.sendRequest(ReferencesRequest.type, referenceParams);
+                        for (const reference of references ?? []) {
+                            let tokenType: string | undefined;
+                            if (
+                                Array<SymbolKind>(
+                                    SymbolKind.Class,
+                                    SymbolKind.Module,
+                                    SymbolKind.Namespace,
+                                    SymbolKind.Interface
+                                ).includes(symbol.kind)
+                            ) {
+                                tokenType = 'class';
+                            } else if (
+                                Array<SymbolKind>(SymbolKind.Function, SymbolKind.Method).includes(symbol.kind)
+                            ) {
+                                tokenType = 'function';
+                            }
+                            console.log('symbol', symbol);
+                            if (tokenType) {
+                                tokensBuilder.push(
+                                    new Range(
+                                        new Position(reference.range.start.line, reference.range.start.character),
+                                        new Position(reference.range.end.line, reference.range.end.character)
+                                    ),
+                                    tokenType,
+                                    ['declaration']
+                                );
+                            }
                         }
                     }
                 }
