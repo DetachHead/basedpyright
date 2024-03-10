@@ -24,6 +24,8 @@ import {
     window,
     workspace,
     WorkspaceConfiguration,
+    languages,
+    SemanticTokens,
 } from 'vscode';
 import {
     CancellationToken,
@@ -33,6 +35,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ResponseError,
+    SemanticTokensRequest,
     ServerOptions,
     TextEdit,
     TransportKind,
@@ -40,8 +43,8 @@ import {
 
 import { Commands } from 'pyright-internal/commands/commands';
 import { isThenable } from 'pyright-internal/common/core';
-
 import { FileBasedCancellationStrategy } from './cancellationUtils';
+import { SemanticTokensProviderLegend } from 'pyright-internal/languageService/semanticTokensProvider';
 
 let cancellationStrategy: FileBasedCancellationStrategy | undefined;
 
@@ -293,6 +296,22 @@ export async function activate(context: ExtensionContext) {
             })
         );
     }
+
+    languages.registerDocumentSemanticTokensProvider(
+        { language: 'python', scheme: 'file' },
+        {
+            provideDocumentSemanticTokens: async (document) => {
+                const result = await client.sendRequest(SemanticTokensRequest.type, {
+                    textDocument: { uri: document.uri.toString() },
+                });
+                if (result === null) {
+                    return result;
+                }
+                return new SemanticTokens(Uint32Array.from(result.data), result?.resultId);
+            },
+        },
+        SemanticTokensProviderLegend
+    );
 
     await client.start();
 }
