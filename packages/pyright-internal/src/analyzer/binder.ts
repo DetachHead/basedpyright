@@ -1931,7 +1931,14 @@ export class Binder extends ParseTreeWalker {
                 const nameNode = importSymbolNode.alias || importSymbolNode.name;
 
                 AnalyzerNodeInfo.setFlowNode(importSymbolNode, this._currentFlowNode!);
-
+                if (this._currentScope.lookUpSymbolRecursive(nameNode.value)) {
+                    this._addDiagnostic(
+                        this._fileInfo.diagnosticRuleSet.reportDuplicateImport,
+                        DiagnosticRule.reportDuplicateImport,
+                        LocMessage.duplicateImport().format({ importName: nameNode.value }),
+                        node
+                    );
+                }
                 const symbol = this._bindNameToScope(this._currentScope, nameNode);
 
                 if (symbol) {
