@@ -47,7 +47,6 @@ test('reportPrivateLocalImportUsage', () => {
     //TODO: typeAnalyzeSampleFiles should probably do this by default
     configOptions.projectRoot = Uri.file(resolveSampleFilePath('based_implicit_re_export'));
     const analysisResults = typeAnalyzeSampleFiles(['based_implicit_re_export/baz.py'], configOptions);
-    console.log(analysisResults);
     validateResultsButBased(analysisResults, {
         errors: [
             {
