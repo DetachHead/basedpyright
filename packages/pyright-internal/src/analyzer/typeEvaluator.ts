@@ -17691,6 +17691,14 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     annotatedType = getTypeOfParameterAnnotation(paramTypeNode, param.category);
                 }
 
+                if (annotatedType) {
+                    addTypeVarsToListIfUnique(
+                        typeParametersSeen,
+                        getTypeVarArgumentsRecursive(annotatedType),
+                        functionType.details.typeVarScopeId
+                    );
+                }
+
                 if (isVariadicTypeVar(annotatedType) && !annotatedType.isVariadicUnpacked) {
                     addError(
                         LocMessage.unpackedTypeVarTupleExpected().format({
@@ -17834,7 +17842,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             FunctionType.addParameter(functionType, functionParam);
 
             if (functionParam.hasDeclaredType) {
-                addTypeVarsToListIfUnique(typeParametersSeen, getTypeVarArgumentsRecursive(functionParam.type));
+                addTypeVarsToListIfUnique(
+                    typeParametersSeen,
+                    getTypeVarArgumentsRecursive(functionParam.type),
+                    functionType.details.typeVarScopeId
+                );
             }
 
             if (param.name) {
