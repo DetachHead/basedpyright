@@ -47,7 +47,7 @@ export const enum SymbolFlags {
     // Indicates that the symbol is in __all__.
     InDunderAll = 1 << 8,
 
-    // Indicates that the symbol is a private import in a py.typed module.
+    // Indicates that the symbol is a private import in a third party py.typed module.
     PrivatePyTypedImport = 1 << 9,
 
     // Indicates that the symbol is an InitVar as specified in PEP 557.
@@ -61,7 +61,7 @@ export const enum SymbolFlags {
     // Indicates that the symbol should be exempt from override type checks.
     IgnoredForOverrideChecks = 1 << 12,
 
-    // Indicates that the symbol is a private import in a non-py.typed module.
+    // Indicates that the symbol is a private import in a local module.
     PrivateLocalImport = 1 << 13,
 }
 
