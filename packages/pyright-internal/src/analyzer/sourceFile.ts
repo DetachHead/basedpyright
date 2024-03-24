@@ -1277,6 +1277,7 @@ export class SourceFile {
             isTypeshedStubFile: this._isTypeshedStubFile,
             isBuiltInStubFile: this._isBuiltInStubFile,
             isInPyTypedPackage: this._isThirdPartyPyTypedPresent,
+            isThirdParty: this._isThirdPartyImport,
             ipythonMode: this._ipythonMode,
             accessedSymbolSet: new Set<number>(),
         };

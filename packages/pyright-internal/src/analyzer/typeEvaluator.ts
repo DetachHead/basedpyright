@@ -5499,9 +5499,9 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                             }),
                             node.memberName
                         );
-                    } else if (symbol.isPrivateNonPyTypedImport()) {
+                    } else if (symbol.isPrivateLocalImport()) {
                         addDiagnostic(
-                            DiagnosticRule.reportUnexportedImportUsage,
+                            DiagnosticRule.reportPrivateLocalImportUsage,
                             LocMessage.privateImportFromPyTypedModule().format({
                                 name: memberName,
                                 module: baseType.moduleName,
@@ -19073,7 +19073,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 addDiagnostic(
                     resolvedAliasInfo.privatePyTypedImporter
                         ? DiagnosticRule.reportPrivateImportUsage
-                        : DiagnosticRule.reportUnexportedImportUsage,
+                        : DiagnosticRule.reportPrivateLocalImportUsage,
                     LocMessage.privateImportFromPyTypedModule().format({
                         name: node.name.value,
                         module: privateImporter,

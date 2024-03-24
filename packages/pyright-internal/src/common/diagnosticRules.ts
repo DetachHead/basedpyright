@@ -107,5 +107,5 @@ export enum DiagnosticRule {
     reportUnreachable = 'reportUnreachable',
     reportAny = 'reportAny',
     reportIgnoreCommentWithoutRule = 'reportIgnoreCommentWithoutRule',
-    reportUnexportedImportUsage = 'reportUnexportedImportUsage',
+    reportPrivateLocalImportUsage = 'reportPrivateLocalImportUsage',
 }

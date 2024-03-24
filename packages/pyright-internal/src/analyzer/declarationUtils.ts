@@ -391,18 +391,15 @@ export function resolveAliasDeclaration(
                 }
             }
         } else if (!sawPyTypedTransition) {
-            if (symbol.isPrivateNonPyTypedImport()) {
+            if (symbol.isPrivateLocalImport()) {
                 privateNonPyTypedImporter = prevDeclaration?.moduleName;
             }
 
-            // Note that we've seen a transition from a non-py.typed to a py.typed
-            // import. No further check is needed.
+            // TODO: i dont really get what this code is doing, i just copied it from the py.typed check above.
+            // for local imports, the py.typed is not relevant because it's implicitly treated as typed
             sawPyTypedTransition = true;
         } else {
-            // If we've already seen a transition, look for the first non-private
-            // symbol that is resolved so we can tell the user to import from this
-            // location instead.
-            if (!symbol.isPrivateNonPyTypedImport()) {
+            if (!symbol.isPrivateLocalImport()) {
                 privateImported = privateImported ?? curDeclaration?.moduleName;
             }
         }

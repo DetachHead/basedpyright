@@ -326,8 +326,8 @@ export class Binder extends ParseTreeWalker {
                     symbol.setIsExternallyHidden();
                 } else if (this._fileInfo.isInPyTypedPackage) {
                     symbol.setPrivatePyTypedImport();
-                } else {
-                    symbol.setPrivateNonPyTypedImport();
+                } else if (!this._fileInfo.isThirdParty) {
+                    symbol.setPrivateLocalImport();
                 }
             }
         });

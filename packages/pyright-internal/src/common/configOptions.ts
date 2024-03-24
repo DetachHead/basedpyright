@@ -392,7 +392,7 @@ export interface DiagnosticRuleSet {
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
 
     // the "works properly" version of reportPrivateImportUsage
-    reportUnexportedImportUsage: DiagnosticLevel;
+    reportPrivateLocalImportUsage: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -621,7 +621,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnreachable: 'none',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
-        reportUnexportedImportUsage: 'none',
+        reportPrivateLocalImportUsage: 'none',
     };
 
     return diagSettings;
@@ -727,7 +727,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnreachable: 'none',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
-        reportUnexportedImportUsage: 'none',
+        reportPrivateLocalImportUsage: 'none',
     };
 
     return diagSettings;
@@ -833,7 +833,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnreachable: 'none',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
-        reportUnexportedImportUsage: 'none',
+        reportPrivateLocalImportUsage: 'none',
     };
 
     return diagSettings;
@@ -938,7 +938,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnreachable: 'error',
     reportAny: 'error',
     reportIgnoreCommentWithoutRule: 'error',
-    reportUnexportedImportUsage: 'error',
+    reportPrivateLocalImportUsage: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1041,7 +1041,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnreachable: 'none',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
-        reportUnexportedImportUsage: 'none',
+        reportPrivateLocalImportUsage: 'none',
     };
 
     return diagSettings;
