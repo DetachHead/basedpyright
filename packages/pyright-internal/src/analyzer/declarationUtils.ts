@@ -390,22 +390,20 @@ export function resolveAliasDeclaration(
                     privateImported = privateImported ?? curDeclaration?.moduleName;
                 }
             }
-        } else {
-            if (!sawPyTypedTransition) {
-                if (symbol.isPrivateNonPyTypedImport()) {
-                    privateNonPyTypedImporter = prevDeclaration?.moduleName;
-                }
+        } else if (!sawPyTypedTransition) {
+            if (symbol.isPrivateNonPyTypedImport()) {
+                privateNonPyTypedImporter = prevDeclaration?.moduleName;
+            }
 
-                // Note that we've seen a transition from a non-py.typed to a py.typed
-                // import. No further check is needed.
-                sawPyTypedTransition = true;
-            } else {
-                // If we've already seen a transition, look for the first non-private
-                // symbol that is resolved so we can tell the user to import from this
-                // location instead.
-                if (!symbol.isPrivateNonPyTypedImport()) {
-                    privateImported = privateImported ?? curDeclaration?.moduleName;
-                }
+            // Note that we've seen a transition from a non-py.typed to a py.typed
+            // import. No further check is needed.
+            sawPyTypedTransition = true;
+        } else {
+            // If we've already seen a transition, look for the first non-private
+            // symbol that is resolved so we can tell the user to import from this
+            // location instead.
+            if (!symbol.isPrivateNonPyTypedImport()) {
+                privateImported = privateImported ?? curDeclaration?.moduleName;
             }
         }
 
