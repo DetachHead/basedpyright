@@ -69,5 +69,7 @@
     "terminal.integrated.env.linux": {
       "PATH": "${env:PATH};./.pyprojectx/main"
     },
-    "task.problemMatchers.neverPrompt": true
+    "task.problemMatchers.neverPrompt": true,
+    "editor.unicodeHighlight.nonBasicASCII": true,
+    
 }
