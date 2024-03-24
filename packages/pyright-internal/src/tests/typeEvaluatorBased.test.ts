@@ -41,9 +41,9 @@ test('default typeCheckingMode=all', () => {
     });
 });
 
-test('reportUnexportedImportUsage', () => {
+test('reportPrivateLocalImportUsage', () => {
     const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.reportUnexportedImportUsage = 'error';
+    configOptions.diagnosticRuleSet.reportPrivateLocalImportUsage = 'error';
     //TODO: typeAnalyzeSampleFiles should probably do this by default
     configOptions.projectRoot = Uri.file(resolveSampleFilePath('based_implicit_re_export'));
     const analysisResults = typeAnalyzeSampleFiles(['based_implicit_re_export/baz.py'], configOptions);
@@ -52,12 +52,12 @@ test('reportUnexportedImportUsage', () => {
         errors: [
             {
                 line: 0,
-                code: DiagnosticRule.reportUnexportedImportUsage,
+                code: DiagnosticRule.reportPrivateLocalImportUsage,
                 message: '"a" is not exported from module "asdf.bar"\n  Import from "asdf.foo" instead',
             },
             {
                 line: 0,
-                code: DiagnosticRule.reportUnexportedImportUsage,
+                code: DiagnosticRule.reportPrivateLocalImportUsage,
                 message: '"b" is not exported from module "asdf.bar"\n  Import from "asdf.foo" instead',
             },
         ],

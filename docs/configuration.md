@@ -236,7 +236,7 @@ the following additional options are not available in regular pyright:
 
 <a name="reportIgnoreCommentWithoutRule"></a> **reportIgnoreCommentWithoutRule** [boolean or string, optional]: Enforce that all `# type:ignore`/`# pyright:ignore` comments specify a rule in brackets (eg. `# pyright:ignore[reportAny]`)
 
-<a name="reportUnexportedImportUsage"></a> **reportAllPrivateImportUsage** [boolean or string, optional]: Like `reportPrivateImportUsage` but for all other modules. Generate or suppress diagnostics for use of a symbol from a non-"py.typed" module that is not meant to be exported from that module.
+<a name="reportPrivateLocalImportUsage"></a> **reportAllPrivateImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like `reportPrivateImportUsage` but also checks imports from your own code.
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
@@ -441,7 +441,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportUnreachable                         | "none"     | "none"     | "none"     | "none"     | "error"    |
 | reportAny                                 | "none"     | "none"     | "none"     | "none"     | "error"    |
 | reportIgnoreCommentWithoutRule            | "none"     | "none"     | "none"     | "none"     | "error"    |
-| reportUnexportedImportUsage               | "none"     | "none"     | "none"     | "none"     | "error"    |
+| reportPrivateLocalImportUsage               | "none"     | "none"     | "none"     | "none"     | "error"    |
 
 
 ## Locale Configuration

@@ -62,7 +62,7 @@ export const enum SymbolFlags {
     IgnoredForOverrideChecks = 1 << 12,
 
     // Indicates that the symbol is a private import in a non-py.typed module.
-    PrivateNonPyTypedImport = 1 << 13,
+    PrivateLocalImport = 1 << 13,
 }
 
 let nextSymbolId = 1;
@@ -178,12 +178,12 @@ export class Symbol {
         return !!(this._flags & SymbolFlags.PrivatePyTypedImport);
     }
 
-    setPrivateNonPyTypedImport() {
-        this._flags |= SymbolFlags.PrivateNonPyTypedImport;
+    setPrivateLocalImport() {
+        this._flags |= SymbolFlags.PrivateLocalImport;
     }
 
-    isPrivateNonPyTypedImport() {
-        return !!(this._flags & SymbolFlags.PrivateNonPyTypedImport);
+    isPrivateLocalImport() {
+        return !!(this._flags & SymbolFlags.PrivateLocalImport);
     }
 
     isNamedTupleMemberMember() {
