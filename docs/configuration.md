@@ -144,7 +144,7 @@ in basedpyright, all of these options are enabled by default, using the new `"al
 
 <a name="reportTypeCommentUsage"></a> **reportTypeCommentUsage** [boolean or string, optional]: Prior to Python 3.5, the grammar did not support type annotations, so types needed to be specified using “type comments”. Python 3.5 eliminated the need for function type comments, and Python 3.6 eliminated the need for variable type comments. Future versions of Python will likely deprecate all support for type comments. If enabled, this check will flag any type comment usage unless it is required for compatibility with the specified language version.
 
-<a name="reportPrivateImportUsage"></a> **reportPrivateImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a "py.typed" module that is not meant to be exported from that module.
+<a name="reportPrivateImportUsage"></a> **reportPrivateImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a third party "py.typed" module that is not meant to be exported from that module.
 
 <a name="reportConstantRedefinition"></a> **reportConstantRedefinition** [boolean or string, optional]: Generate or suppress diagnostics for attempts to redefine variables whose names are all-caps with underscores and numerals.
 
