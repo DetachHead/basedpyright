@@ -1953,6 +1953,9 @@ export class Binder extends ParseTreeWalker {
                                 // considered "reexported" from a type stub file unless
                                 // they are imported using the "as" form using a redundant form.
                                 // Py.typed packages follow the same rule as PEP 484.
+
+                                // in basedpyright, we don't care whether it's a stub file or not. this should
+                                // apply to regular modules too. this is also consistent with mypy'ss behavior.
                                 this._potentialHiddenSymbols.set(nameNode.value, symbol);
                             }
                         }
