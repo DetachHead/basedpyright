@@ -6,6 +6,6 @@ basedpyright is a pyright fork with various type checking improvements, improved
 
 ## ⚠ warning
 
-this npm package is only really intended for internal use. the recommended way to install basedpyright is [from pypi](https://pypi.org/project/pyright/). see [the docs for more information](https://detachhead.github.io/basedpyright/#/?id=published-as-a-pypi-package-no-nodejs-required).
+this npm package is only really intended for internal use. the recommended way to install basedpyright is [from pypi](https://pypi.org/project/basedpyright/). see [the docs for more information](https://detachhead.github.io/basedpyright/#/?id=published-as-a-pypi-package-no-nodejs-required).
 
 if you have a use case for the npm package, feel free to [raise an issue](https://github.com/DetachHead/basedpyright/issues).
