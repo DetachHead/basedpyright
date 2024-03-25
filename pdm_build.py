@@ -25,7 +25,7 @@ else:
     _ = run("curl -fsSL https://bun.sh/install | bash -s", shell=True, check=True)
 
 if not Path("node_modules").exists():
-    _ = run([bun_exe, "install", "--frozen-lockfile"], check=True)
+    _ = run([bun_exe, "install:all"], check=True)
 _ = run([bun_exe, "build:cli:dev"], check=True)
 
 npm_package_dir = Path("packages/pyright")

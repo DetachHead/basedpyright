@@ -1,7 +1,8 @@
 name: 'Validation'
 
 env:
-  NODE_VERSION: '18' # Shipped with VS Code.
+  BUN_VERSION: '1.0.35'
+  NODE_VERSION: '18' # only used for publish since bun doesn't have a publish command yet
   PYTHON_VERSION: 3.11
 
 on: push
@@ -12,28 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
+      - uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Get npm cache directory
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - run: npm run install:all
+      - run: bun run install:all
 
       - name: typescript typecheck
         run: npx lerna exec --stream --no-bail -- tsc --noEmit
 
-      - run: npm run check
+      - run: bun run check
 
       - run: ./pw pdm lock --check
 
@@ -59,30 +48,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
+      - uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
 
-      # Don't cache on Windows; the cache ends up being very large and
-      # the Windows implementation of the cache task uses a much slower archiver.
-      - name: Get npm cache directory
-        if: runner.os != 'Windows'
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        if: runner.os != 'Windows'
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+      - run: bun run install:all
 
-      - run: npm run install:all
-
-      - name: npm test (pyright-internal)
-        run: npm test
+      - name: bun test (pyright-internal)
+        run: bun test
         working-directory: packages/pyright-internal
 
       # Install python so we can create a VENV for tests
@@ -118,13 +91,13 @@ jobs:
         env:
           CI_IMPORT_TEST_VENVPATH: '../../'
           CI_IMPORT_TEST_VENV: '.venv'
-        run: npm run test:imports
+        run: bun run test:imports
         working-directory: packages/pyright-internal
 
       - name: Run import tests with pythonpath
         env:
           CI_IMPORT_TEST_PYTHONPATH: ${{env.python_venv_path}}
-        run: npm run test:imports
+        run: bun run test:imports
         working-directory: packages/pyright-internal
 
   build:
@@ -139,24 +112,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Get npm cache directory
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - run: npm run install:all
+      - run: bun run install:all
 
       - run: npm publish --dry-run
         working-directory: packages/pyright
 
-      - run: npm run package
+      - run: bun run package
         working-directory: packages/vscode-pyright
 
   required:

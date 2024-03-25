@@ -1,7 +1,7 @@
 name: 'build and release'
 
 env:
-  NODE_VERSION: '18' # Shipped with VS Code.
+  BUN_VERSION: '1.0.35'
   ARTIFACT_NAME_VSIX: vsix
   VSIX_NAME: vscode-pyright.vsix
   VSIX_DIR: packages/vscode-pyright
@@ -23,9 +23,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v3
+      - uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Get npm cache directory
         id: npm-cache
@@ -33,20 +33,13 @@ jobs:
         run: |
           echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v3
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - run: npm run install:all
+      - run: bun run install:all
 
       - id: current-version
-        run: echo ::set-output name=CURRENT_VERSION::$(node -p "require(\"./lerna.json\").version")
+        run: echo ::set-output name=CURRENT_VERSION::$(bun --print "require(\"./lerna.json\").version")
 
       - if: github.ref == 'refs/heads/main'
-        run: echo ::set-output name=VERSION_INFO::$(npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
+        run: echo ::set-output name=VERSION_INFO::$(npm view $(bun --print "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 

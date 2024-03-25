@@ -133,4 +133,5 @@ Thumbs.db
 # js files copied into the basedpyright pypi package:
 basedpyright/*.js
 # bun installed into the basedpyright pypi package:
-basedpyright/bin 
+basedpyright/bin
+basedpyright/install
