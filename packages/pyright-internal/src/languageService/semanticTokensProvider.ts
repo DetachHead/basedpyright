@@ -30,6 +30,7 @@ export const tokenModifiers: string[] = [
     SemanticTokenModifiers.declaration,
     SemanticTokenModifiers.async,
     SemanticTokenModifiers.readonly,
+    SemanticTokenModifiers.defaultLibrary,
 ];
 
 export const SemanticTokensProviderLegend = {
