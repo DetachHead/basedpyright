@@ -1,31 +1,32 @@
 from __future__ import annotations
 
+import os
+import sys
 from json import loads
 from pathlib import Path
 from shutil import copyfile, copytree
-from typing import TYPE_CHECKING, TypedDict, cast
-
-# https://github.com/samwillis/nodejs-pypi/pull/23
-if TYPE_CHECKING:
-    # https://github.com/astral-sh/ruff/issues/9528
-    from subprocess import run  # noqa: S404
-else:
-    from nodejs.npm import run
-import os
-
-from nodejs import node
+from subprocess import run
+from typing import TypedDict, cast
 
 
 class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-# ah yes, the classic "wrong path" moment!
-os.environ["PATH"] = os.pathsep.join([str(Path(node.__file__).parent), os.environ["PATH"]])
+bun_install_dir = Path("./basedpyright")
+
+os.environ["BUN_INSTALL"] = str(bun_install_dir)
+
+bun_exe = bun_install_dir / ("bin/bun" + (".exe" if sys.platform == "win32" else ""))
+
+if sys.platform == "win32":
+    _ = run(["powershell.exe", "-c", "irm bun.sh/install.ps1|iex"], check=True)
+else:
+    _ = run("curl -fsSL https://bun.sh/install | bash -s", shell=True, check=True)
 
 if not Path("node_modules").exists():
-    _ = run(["ci"], check=True)
-_ = run(["run", "build:cli:dev"], check=True)
+    _ = run([bun_exe, "install", "--frozen-lockfile"], check=True)
+_ = run([bun_exe, "build:cli:dev"], check=True)
 
 npm_package_dir = Path("packages/pyright")
 pypi_package_dir = Path("basedpyright")

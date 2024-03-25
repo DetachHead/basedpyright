@@ -130,5 +130,7 @@ Thumbs.db
 **/__pycache__
 /.venv/
 
-# js files copied into the basedpyright pypi package
+# js files copied into the basedpyright pypi package:
 basedpyright/*.js
+# bun installed into the basedpyright pypi package:
+basedpyright/bin 

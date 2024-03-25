@@ -26,7 +26,6 @@ dynamic = ["version"]
 authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
-dependencies = ["nodejs-bin>=18.4.0a4"]
 requires-python = ">=3.8"
 readme = "README.md"
 license = { text = "MIT" }
@@ -157,6 +156,7 @@ max-line-length = 200
 [tool.basedpyright]
 ignore = ["pw", "basedpyright/dist", "packages"]
 pythonVersion = "3.8"
+pythonPlatform = "All"
 include = ["basedpyright", "get_version.py", "pdm_build.py"]
 exclude = ["pw", "basedpyright/dist", "packages"]
 typeCheckingMode = "all"
@@ -211,6 +211,7 @@ ignore = [
     "C901",    # max-complexity
     "ISC001",  # single-line-implicit-string-concatenation (conflicts with formatter)
     "COM812",  # missing-trailing-comma (conflicts with formatter)
+    "S"        # flake8-bandit (we aren't working with any untrusted input)
 ]
 
 [tool.ruff.lint.pycodestyle]
