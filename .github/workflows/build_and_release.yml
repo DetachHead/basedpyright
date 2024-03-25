@@ -10,7 +10,7 @@ env:
 on: push
 
 jobs:
-  build-and-release:
+  build-and-publish-node:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -84,10 +84,6 @@ jobs:
           access: public
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
 
-      - name: publish package - pypi
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: ./pw pdm publish
-
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
@@ -99,8 +95,48 @@ jobs:
         run: ./node_modules/.bin/ovsx publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
         working-directory: ${{ env.VSIX_DIR }}
 
+  build-wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v3
+
+      - name: Install cibuildwheel
+        run: ./pw pdm install --group=cibuild
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir dist
+        # to supply options, put them in 'env', like:
+        # env:
+        #   CIBW_SOME_OPTION: value
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./dist/*.whl
+
+  publish-pypi-and-github-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-wheels
+      - build-and-publish-node
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./dist/*.whl
+
+      - name: publish package - pypi
+        if: github.ref == 'refs/heads/main'
+        run: ./pw pdm publish
+
       - uses: marvinpinto/action-automatic-releases@v1.2.1
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main'
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
