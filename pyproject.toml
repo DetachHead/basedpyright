@@ -8,8 +8,8 @@ distribution = true
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
+    "cibuildwheel>=2.17.0"
 ]
-cibuild = ["cibuildwheel>=2.17.0"]
 
 [tool.pdm.version]
 source = "call"
