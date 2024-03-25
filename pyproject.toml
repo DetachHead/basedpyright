@@ -26,7 +26,7 @@ dynamic = ["version"]
 authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
-dependencies = ["nodejs-bin>=18.4.0a4"]
+dependencies = ["nodejs-bin>=14.19.3a4"]
 requires-python = ">=3.8"
 readme = "README.md"
 license = { text = "MIT" }
