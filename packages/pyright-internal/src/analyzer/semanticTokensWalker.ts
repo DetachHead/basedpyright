@@ -1,6 +1,6 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
+import { ClassType, FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
 import {
     ClassNode,
     FunctionNode,
@@ -12,6 +12,8 @@ import {
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
+import { getScopeForNode } from './scopeUtils';
+import { ScopeType } from './scope';
 
 export type SemanticTokenItem = {
     type: string;
@@ -85,23 +87,33 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _visitNameWithType(node: NameNode, type: Type | undefined) {
         switch (type?.category) {
             case TypeCategory.Function:
-                if (type.flags & TypeFlags.Instance)
+                if (type.flags & TypeFlags.Instance) {
                     if ((type as FunctionType).details.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
-                        this._addItem(node.start, node.length, SemanticTokenTypes.function, []);
+                        const declarationNode = type.details.declaration?.node;
+                        const modifiers =
+                            declarationNode && isBuiltInFunction(declarationNode)
+                                ? [SemanticTokenModifiers.defaultLibrary]
+                                : [];
+                        this._addItem(node.start, node.length, SemanticTokenTypes.function, modifiers);
                     }
-                else {
+                } else {
                     // type alias to Callable
                     this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
                 }
                 return;
             case TypeCategory.OverloadedFunction:
                 if (type.flags & TypeFlags.Instance) {
-                    if (OverloadedFunctionType.getOverloads(type)[0].details.declaration?.isMethod) {
+                    const declaration = OverloadedFunctionType.getOverloads(type)[0].details.declaration;
+                    if (declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
-                        this._addItem(node.start, node.length, SemanticTokenTypes.function, []);
+                        const modifiers =
+                            declaration && isBuiltInFunction(declaration.node)
+                                ? [SemanticTokenModifiers.defaultLibrary]
+                                : [];
+                        this._addItem(node.start, node.length, SemanticTokenTypes.function, modifiers);
                     }
                 } else {
                     // dunno if this is possible but better safe than sorry!!!
@@ -131,7 +143,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
                 if (!(type.flags & TypeFlags.Instance)) {
-                    this._addItem(node.start, node.length, SemanticTokenTypes.class, []);
+                    const modifiers =
+                        ClassType.isBuiltIn(type) && type.details.moduleName !== 'typing'
+                            ? [SemanticTokenModifiers.defaultLibrary]
+                            : [];
+                    this._addItem(node.start, node.length, SemanticTokenTypes.class, modifiers);
                     return;
                 }
         }
@@ -150,4 +166,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _addItem(start: number, length: number, type: string, modifiers: string[]) {
         this.items.push({ type, modifiers, start, length });
     }
+}
+
+function isBuiltInFunction(node: FunctionNode) {
+    return getScopeForNode(node)?.type === ScopeType.Builtin;
 }
