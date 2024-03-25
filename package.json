@@ -4,7 +4,7 @@
     "scripts": {
         "postinstall": "node ./build/skipBootstrap.js || bun run install:others",
         "clean": "lerna run --no-bail --stream clean",
-        "install:all": "bun install",
+        "install:all": "bun install --frozen-lockfile",
         "install:others": "cross-env SKIP_LERNA_BOOTSTRAP=yes lerna exec --no-bail bun install",
         "update:all": "node ./build/updateDeps.js",
         "build:extension:dev": "cd packages/vscode-pyright && bun run webpack",
