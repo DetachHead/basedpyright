@@ -1073,7 +1073,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             return null;
         }
         return workspace.service.run((program) => {
-            return new InlayHintsProvider(program, uri).onInlayHints();
+            return new InlayHintsProvider(program, uri, params.range).onInlayHints();
         }, token);
     }
 

@@ -150,7 +150,7 @@ export const inlayHintSampleFile = (fileName: string): TypeInlayHintsItemType[] 
     const program = createProgram();
     const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
     program.setTrackedFiles([fileUri]);
-    const walker = new TypeInlayHintsWalker(program);
+    const walker = new TypeInlayHintsWalker(program, fileUri);
     walker.walk(program.getParseResults(fileUri)!.parseTree);
     program.dispose();
     return walker.featureItems;

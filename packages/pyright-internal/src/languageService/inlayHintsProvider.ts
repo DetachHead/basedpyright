@@ -1,29 +1,27 @@
 import { InlayHint, InlayHintLabelPart, InlayHintKind } from 'vscode-languageserver-protocol';
 import { ProgramView } from '../common/extensibility';
 import { convertOffsetToPosition } from '../common/positionUtils';
-import { ParseResults } from '../parser/parser';
 
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Uri } from '../common/uri/uri';
+import { Range } from 'vscode-languageserver-types';
 
 export class InlayHintsProvider {
-    private readonly _parseResults: ParseResults | undefined;
     private readonly _walker: TypeInlayHintsWalker;
 
-    constructor(private _program: ProgramView, private _fileUri: Uri) {
-        this._parseResults = this._program.getParseResults(this._fileUri);
-        this._walker = new TypeInlayHintsWalker(this._program);
+    constructor(private _program: ProgramView, fileUri: Uri, range: Range) {
+        this._walker = new TypeInlayHintsWalker(this._program, fileUri, range);
     }
 
     async onInlayHints(): Promise<InlayHint[] | null> {
-        if (!this._parseResults) {
+        if (!this._walker.parseResults) {
             return null;
         }
-        this._walker.walk(this._parseResults.parseTree);
+        this._walker.walk(this._walker.parseResults.parseTree);
 
         return this._walker.featureItems.map((item) => ({
             label: [InlayHintLabelPart.create(item.value)],
-            position: convertOffsetToPosition(item.position, this._parseResults!.tokenizerOutput.lines),
+            position: convertOffsetToPosition(item.position, this._walker.lines),
             paddingLeft: item.inlayHintType === 'functionReturn',
             kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
         }));
