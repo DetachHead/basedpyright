@@ -1,6 +1,6 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
+import { FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
 import {
     ClassNode,
     FunctionNode,
@@ -12,8 +12,7 @@ import {
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
-import { getScopeForNode } from './scopeUtils';
-import { ScopeType } from './scope';
+import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
 
 export type SemanticTokenItem = {
     type: string;
@@ -23,6 +22,7 @@ export type SemanticTokenItem = {
 };
 
 export class SemanticTokensWalker extends ParseTreeWalker {
+    builtinModules = new Set<string>(['builtins', '__builtins__']);
     items: SemanticTokenItem[] = [];
 
     constructor(private readonly _evaluator?: TypeEvaluator) {
@@ -91,11 +91,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     if ((type as FunctionType).details.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
-                        const declarationNode = type.details.declaration?.node;
-                        const modifiers =
-                            declarationNode && isBuiltInFunction(declarationNode)
-                                ? [SemanticTokenModifiers.defaultLibrary]
-                                : [];
+                        const modifiers = this.builtinModules.has(type.details.moduleName)
+                            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+                            : [];
                         this._addItem(node.start, node.length, SemanticTokenTypes.function, modifiers);
                     }
                 } else {
@@ -105,14 +103,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             case TypeCategory.OverloadedFunction:
                 if (type.flags & TypeFlags.Instance) {
-                    const declaration = OverloadedFunctionType.getOverloads(type)[0].details.declaration;
-                    if (declaration?.isMethod) {
+                    const details = OverloadedFunctionType.getOverloads(type)[0].details;
+                    if (details.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
-                        const modifiers =
-                            declaration && isBuiltInFunction(declaration.node)
-                                ? [SemanticTokenModifiers.defaultLibrary]
-                                : [];
+                        const modifiers = this.builtinModules.has(details.moduleName)
+                            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+                            : [];
                         this._addItem(node.start, node.length, SemanticTokenTypes.function, modifiers);
                     }
                 } else {
@@ -143,10 +140,26 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
                 if (!(type.flags & TypeFlags.Instance)) {
-                    const modifiers =
-                        ClassType.isBuiltIn(type) && type.details.moduleName !== 'typing'
-                            ? [SemanticTokenModifiers.defaultLibrary]
-                            : [];
+                    // Exclude type aliases:
+                    // PEP 613 > Name: TypeAlias = Types
+                    // PEP 695 > type Name = Types
+                    const declarations = this._evaluator?.getDeclarationsForNameNode(node);
+                    const isPEP613TypeAlias =
+                        declarations &&
+                        declarations.some((declaration) =>
+                            this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
+                        );
+                    const isTypeAlias = isPEP613TypeAlias || type.typeAliasInfo?.isPep695Syntax;
+
+                    const isBuiltIn =
+                        (!isTypeAlias &&
+                            this.builtinModules.has(type.details.moduleName) &&
+                            type.aliasName === undefined) ||
+                        (type.typeAliasInfo?.moduleName && this.builtinModules.has(type.typeAliasInfo.moduleName));
+
+                    const modifiers = isBuiltIn
+                        ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+                        : [];
                     this._addItem(node.start, node.length, SemanticTokenTypes.class, modifiers);
                     return;
                 }
@@ -166,8 +179,4 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _addItem(start: number, length: number, type: string, modifiers: string[]) {
         this.items.push({ type, modifiers, start, length });
     }
-}
-
-function isBuiltInFunction(node: FunctionNode) {
-    return getScopeForNode(node)?.type === ScopeType.Builtin;
 }
