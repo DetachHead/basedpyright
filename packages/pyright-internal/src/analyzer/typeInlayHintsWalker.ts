@@ -1,10 +1,24 @@
+import { Range } from 'vscode-languageserver-types';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 import { isDunderName, isUnderscoreOnlyName } from '../analyzer/symbolNameUtils';
 import { FunctionType, Type, getTypeAliasInfo, isAny, isClass, isParamSpec, isTypeVar } from '../analyzer/types';
 import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
-import { CallNode, FunctionNode, NameNode, ParameterCategory, ParseNode, ParseNodeType } from '../parser/parseNodes';
+import {
+    CallNode,
+    FunctionNode,
+    NameNode,
+    ParameterCategory,
+    ParseNode,
+    ParseNodeBase,
+    ParseNodeType,
+} from '../parser/parseNodes';
 import { isLiteralType } from './typeUtils';
+import { TextRange } from '../common/textRange';
+import { convertRangeToTextRange } from '../common/positionUtils';
+import { TextRangeCollection } from '../common/textRangeCollection';
+import { Uri } from '../common/uri/uri';
+import { ParseResults } from '../parser/parser';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter';
@@ -68,13 +82,26 @@ function isLeftSideOfAssignment(node: ParseNode): boolean {
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
+    parseResults: ParseResults | undefined;
+    lines: TextRangeCollection<TextRange>;
+    private _range: TextRange | undefined;
 
-    constructor(private readonly _program: ProgramView) {
+    constructor(private readonly _program: ProgramView, fileUri: Uri, range?: Range) {
         super();
+        this.parseResults = this._program.getParseResults(fileUri);
+        this.lines = this.parseResults!.tokenizerOutput.lines;
+        if (range) {
+            this._range = convertRangeToTextRange(range, this.lines);
+        }
     }
 
     override visitName(node: NameNode): boolean {
-        if (isLeftSideOfAssignment(node) && !isDunderName(node.value) && !isUnderscoreOnlyName(node.value)) {
+        if (
+            this._checkInRange(node) &&
+            isLeftSideOfAssignment(node) &&
+            !isDunderName(node.value) &&
+            !isUnderscoreOnlyName(node.value)
+        ) {
             const type = this._program.evaluator?.getType(node);
             if (
                 type &&
@@ -94,25 +121,33 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     }
 
     override visitCall(node: CallNode): boolean {
-        this._generateHintsForCallNode(node);
+        if (this._checkInRange(node)) {
+            this._generateHintsForCallNode(node);
+        }
         return super.visitCall(node);
     }
 
     override visitFunction(node: FunctionNode): boolean {
-        const evaluator = this._program.evaluator;
-        const functionType = evaluator?.getTypeOfFunction(node)?.functionType;
-        if (functionType !== undefined && !functionType.details.declaredReturnType) {
-            const inferredReturnType = evaluator?.getFunctionInferredReturnType(functionType);
-            if (inferredReturnType) {
-                this.featureItems.push({
-                    inlayHintType: 'functionReturn',
-                    position: node.suite.start,
-                    value: `-> ${this._printType(inferredReturnType)}`,
-                });
+        if (this._checkInRange(node)) {
+            const evaluator = this._program.evaluator;
+            const functionType = evaluator?.getTypeOfFunction(node)?.functionType;
+            if (functionType !== undefined && !functionType.details.declaredReturnType) {
+                const inferredReturnType = evaluator?.getFunctionInferredReturnType(functionType);
+                if (inferredReturnType) {
+                    this.featureItems.push({
+                        inlayHintType: 'functionReturn',
+                        position: node.suite.start,
+                        value: `-> ${this._printType(inferredReturnType)}`,
+                    });
+                }
             }
         }
+
         return super.visitFunction(node);
     }
+
+    private _checkInRange = (node: ParseNodeBase) =>
+        !this._range || TextRange.overlapsRange(this._range, TextRange.create(node.start, node.length));
 
     private _generateHintsForCallNode(node: CallNode) {
         const evaluator = this._program.evaluator;
