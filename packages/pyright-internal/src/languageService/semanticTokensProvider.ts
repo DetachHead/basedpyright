@@ -12,6 +12,10 @@ import { Uri } from '../common/uri/uri';
 import { ParseResults } from '../parser/parser';
 import { SemanticTokensWalker } from '../analyzer/semanticTokensWalker';
 
+export enum CustomSemanticTokenModifiers {
+    builtin = 'builtin', // parity with pylance
+}
+
 export const tokenTypes: string[] = [
     SemanticTokenTypes.class,
     SemanticTokenTypes.parameter,
@@ -31,6 +35,7 @@ export const tokenModifiers: string[] = [
     SemanticTokenModifiers.async,
     SemanticTokenModifiers.readonly,
     SemanticTokenModifiers.defaultLibrary,
+    CustomSemanticTokenModifiers.builtin,
 ];
 
 export const SemanticTokensProviderLegend = {
