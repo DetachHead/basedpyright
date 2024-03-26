@@ -1,6 +1,7 @@
 import { BasedConfigOptions, ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { Uri } from '../common/uri/uri';
+import { UriEx } from '../common/uri/uriUtils';
 import { resolveSampleFilePath, typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
 
 test('reportUnreachable', () => {
@@ -45,7 +46,7 @@ test('reportPrivateLocalImportUsage', () => {
     const configOptions = new ConfigOptions(Uri.empty());
     configOptions.diagnosticRuleSet.reportPrivateLocalImportUsage = 'error';
     //TODO: typeAnalyzeSampleFiles should probably do this by default
-    configOptions.projectRoot = Uri.file(resolveSampleFilePath('based_implicit_re_export'));
+    configOptions.projectRoot = UriEx.file(resolveSampleFilePath('based_implicit_re_export'));
     const analysisResults = typeAnalyzeSampleFiles(['based_implicit_re_export/baz.py'], configOptions);
     validateResultsButBased(analysisResults, {
         errors: [

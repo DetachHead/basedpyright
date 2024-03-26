@@ -1066,7 +1066,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     }
 
     protected async onInlayHints(params: InlayHintParams, token: CancellationToken): Promise<InlayHint[] | null> {
-        const uri = Uri.parse(params.textDocument.uri, this.fs.isCaseSensitive);
+        const uri = Uri.parse(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
 
         if (workspace.disableLanguageServices) {
@@ -1078,7 +1078,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     }
 
     protected async onSemanticTokens(params: SemanticTokensParams, token: CancellationToken): Promise<SemanticTokens> {
-        const uri = Uri.parse(params.textDocument.uri, this.fs.isCaseSensitive);
+        const uri = Uri.parse(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
         if (workspace.disableLanguageServices) {
             return {

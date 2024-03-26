@@ -35,9 +35,9 @@ import { ServiceProvider } from './common/serviceProvider';
 import { createServiceProvider } from './common/serviceProviderExtensions';
 import { Range, isEmptyRange } from './common/textRange';
 import { getFileSpec, tryStat } from './common/uri/uriUtils';
-import { PyrightFileSystem } from './pyrightFileSystem';;
+import { PyrightFileSystem } from './pyrightFileSystem';
 import { Uri } from './common/uri/uri';
-import { toolName } from './constants'
+import { toolName } from './constants';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
