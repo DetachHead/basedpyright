@@ -33,3 +33,29 @@ class ClassA(Generic[T3]):
     def func1(self, value: T3) -> Self:
         self.value = value
         return self
+
+
+T4 = TypeVar("T4", default=int)
+T5 = TypeVar("T5", default=T4)
+
+
+class ClassB(Generic[T4, T5]):
+    @property
+    def x(self) -> T4: ...
+    @property
+    def y(self) -> T5: ...
+
+
+b1 = ClassB()
+reveal_type(b1.x, expected_text="int")
+reveal_type(b1.y, expected_text="int")
+
+
+T6 = TypeVar("T6", default=int)
+T7 = TypeVar("T7", default=T6)
+T8 = TypeVar("T8", default=int | None)
+
+
+class ClassC(Generic[T6, T7, T8]):
+    def __new__(cls, x: T7, /) -> Self: ...
+    def method1(self) -> T7: ...

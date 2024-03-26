@@ -1,7 +1,7 @@
 import { BasedConfigOptions, ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { Uri } from '../common/uri/uri';
-import { typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
+import { resolveSampleFilePath, typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
 
 test('reportUnreachable', () => {
     const configOptions = new ConfigOptions(Uri.empty());
@@ -38,5 +38,27 @@ test('default typeCheckingMode=all', () => {
         ],
         infos: [{ line: 95 }, { line: 98 }],
         unusedCodes: [{ line: 102 }],
+    });
+});
+
+test('reportPrivateLocalImportUsage', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportPrivateLocalImportUsage = 'error';
+    //TODO: typeAnalyzeSampleFiles should probably do this by default
+    configOptions.projectRoot = Uri.file(resolveSampleFilePath('based_implicit_re_export'));
+    const analysisResults = typeAnalyzeSampleFiles(['based_implicit_re_export/baz.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                line: 0,
+                code: DiagnosticRule.reportPrivateLocalImportUsage,
+                message: '"a" is not exported from module "asdf.bar"\n  Import from "asdf.foo" instead',
+            },
+            {
+                line: 0,
+                code: DiagnosticRule.reportPrivateLocalImportUsage,
+                message: '"b" is not exported from module "asdf.bar"\n  Import from "asdf.foo" instead',
+            },
+        ],
     });
 });

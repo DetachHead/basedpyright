@@ -18,8 +18,9 @@ import { Symbol } from './symbol';
 export interface ResolvedAliasInfo {
     declaration: Declaration | undefined;
     isPrivate: boolean;
-    privatePyTypedImported?: string;
+    privateImported?: string;
     privatePyTypedImporter?: string;
+    privateNonPyTypedImporter?: string;
 }
 
 export function hasTypeForDeclaration(declaration: Declaration): boolean {
@@ -243,16 +244,18 @@ export function resolveAliasDeclaration(
     // the name of the importer and imported modules so the caller can
     // report an error.
     let sawPyTypedTransition = false;
-    let privatePyTypedImported: string | undefined;
+    let privateImported: string | undefined;
     let privatePyTypedImporter: string | undefined;
+    let privateNonPyTypedImporter: string | undefined;
 
     while (true) {
         if (curDeclaration.type !== DeclarationType.Alias || !curDeclaration.symbolName) {
             return {
                 declaration: curDeclaration,
                 isPrivate,
-                privatePyTypedImported,
+                privateImported,
                 privatePyTypedImporter,
+                privateNonPyTypedImporter,
             };
         }
 
@@ -262,8 +265,9 @@ export function resolveAliasDeclaration(
             return {
                 declaration: curDeclaration,
                 isPrivate,
-                privatePyTypedImported,
+                privateImported,
                 privatePyTypedImporter,
+                privateNonPyTypedImporter,
             };
         }
 
@@ -383,8 +387,20 @@ export function resolveAliasDeclaration(
                 // symbol that is resolved so we can tell the user to import from this
                 // location instead.
                 if (!symbol.isPrivatePyTypedImport()) {
-                    privatePyTypedImported = privatePyTypedImported ?? curDeclaration?.moduleName;
+                    privateImported = privateImported ?? curDeclaration?.moduleName;
                 }
+            }
+        } else if (!sawPyTypedTransition) {
+            if (symbol.isPrivateLocalImport()) {
+                privateNonPyTypedImporter = prevDeclaration?.moduleName;
+            }
+
+            // TODO: i dont really get what this code is doing, i just copied it from the py.typed check above.
+            // for local imports, the py.typed is not relevant because it's implicitly treated as typed
+            sawPyTypedTransition = true;
+        } else {
+            if (!symbol.isPrivateLocalImport()) {
+                privateImported = privateImported ?? curDeclaration?.moduleName;
             }
         }
 
@@ -405,8 +421,9 @@ export function resolveAliasDeclaration(
             return {
                 declaration,
                 isPrivate,
-                privatePyTypedImported,
+                privateImported,
                 privatePyTypedImporter,
+                privateNonPyTypedImporter,
             };
         }
         alreadyVisited.push(curDeclaration);

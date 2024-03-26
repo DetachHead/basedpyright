@@ -24,7 +24,13 @@ import { assert, assertNever, fail } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { convertOffsetToPosition, convertOffsetsToRange } from '../common/positionUtils';
-import { PythonVersion } from '../common/pythonVersion';
+import {
+    PythonVersion,
+    pythonVersion3_13,
+    pythonVersion3_6,
+    pythonVersion3_7,
+    pythonVersion3_9,
+} from '../common/pythonVersion';
 import { TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { LocAddendum, LocMessage, ParameterizedString } from '../localization/localize';
@@ -405,21 +411,21 @@ interface ValidateArgTypeOptions {
 // It lists the first version of Python where subscripting is
 // allowed.
 const nonSubscriptableBuiltinTypes: Map<string, PythonVersion> = new Map([
-    ['asyncio.futures.Future', PythonVersion.V3_9],
-    ['asyncio.tasks.Task', PythonVersion.V3_9],
-    ['builtins.dict', PythonVersion.V3_9],
-    ['builtins.frozenset', PythonVersion.V3_9],
-    ['builtins.list', PythonVersion.V3_9],
-    ['builtins._PathLike', PythonVersion.V3_9],
-    ['builtins.set', PythonVersion.V3_9],
-    ['builtins.tuple', PythonVersion.V3_9],
-    ['collections.ChainMap', PythonVersion.V3_9],
-    ['collections.Counter', PythonVersion.V3_9],
-    ['collections.defaultdict', PythonVersion.V3_9],
-    ['collections.DefaultDict', PythonVersion.V3_9],
-    ['collections.deque', PythonVersion.V3_9],
-    ['collections.OrderedDict', PythonVersion.V3_9],
-    ['queue.Queue', PythonVersion.V3_9],
+    ['asyncio.futures.Future', pythonVersion3_9],
+    ['asyncio.tasks.Task', pythonVersion3_9],
+    ['builtins.dict', pythonVersion3_9],
+    ['builtins.frozenset', pythonVersion3_9],
+    ['builtins.list', pythonVersion3_9],
+    ['builtins._PathLike', pythonVersion3_9],
+    ['builtins.set', pythonVersion3_9],
+    ['builtins.tuple', pythonVersion3_9],
+    ['collections.ChainMap', pythonVersion3_9],
+    ['collections.Counter', pythonVersion3_9],
+    ['collections.defaultdict', pythonVersion3_9],
+    ['collections.DefaultDict', pythonVersion3_9],
+    ['collections.deque', pythonVersion3_9],
+    ['collections.OrderedDict', pythonVersion3_9],
+    ['queue.Queue', pythonVersion3_9],
 ]);
 
 // Some types that do not inherit from others are still considered
@@ -3222,8 +3228,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         return addDiagnosticWithSuppressionCheck('information', message, node, range);
     }
 
+    /** @deprecated use {@link addDiagnostic} with a specific diagnostic rule instead */
     function addError(message: string, node: ParseNode, range?: TextRange) {
-        return addDiagnosticWithSuppressionCheck('error', message, node, range);
+        //TODO: the errors about ignore comments do not call this function and therefore do not
+        // have a code. but suppressing an unused ignore comment is an edge case sooooo
+        return addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, message, node, range);
     }
 
     function addUnusedCode(node: ParseNode, textRange: TextRange) {
@@ -5490,6 +5499,15 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                             }),
                             node.memberName
                         );
+                    } else if (symbol.isPrivateLocalImport()) {
+                        addDiagnostic(
+                            DiagnosticRule.reportPrivateLocalImportUsage,
+                            LocMessage.privateImportFromPyTypedModule().format({
+                                name: memberName,
+                                module: baseType.moduleName,
+                            }),
+                            node.memberName
+                        );
                     }
                 } else {
                     // Does the module export a top-level __getattr__ function?
@@ -5497,7 +5515,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                         const getAttrSymbol = ModuleType.getField(baseType, '__getattr__');
                         if (getAttrSymbol) {
                             const isModuleGetAttrSupported =
-                                fileInfo.executionEnvironment.pythonVersion >= PythonVersion.V3_7 ||
+                                fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_7) ||
                                 getAttrSymbol.getDeclarations().some((decl) => decl.uri.hasExtension('.pyi'));
 
                             if (isModuleGetAttrSupported) {
@@ -6477,7 +6495,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     const minPythonVersion = nonSubscriptableBuiltinTypes.get(baseTypeResult.type.details.fullName);
                     if (
                         minPythonVersion !== undefined &&
-                        fileInfo.executionEnvironment.pythonVersion < minPythonVersion &&
+                        fileInfo.executionEnvironment.pythonVersion.isLessThan(minPythonVersion) &&
                         !fileInfo.isStubFile
                     ) {
                         addError(
@@ -12380,7 +12398,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion < PythonVersion.V3_13 &&
+                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
                         classType.details.moduleName !== 'typing_extensions'
                     ) {
                         addError(LocMessage.typeVarDefaultIllegal(), defaultValueNode!);
@@ -12522,7 +12540,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion < PythonVersion.V3_13 &&
+                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
                         classType.details.moduleName !== 'typing_extensions'
                     ) {
                         addError(LocMessage.typeVarDefaultIllegal(), expr!);
@@ -12601,7 +12619,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion < PythonVersion.V3_13 &&
+                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
                         classType.details.moduleName !== 'typing_extensions'
                     ) {
                         addError(LocMessage.typeVarDefaultIllegal(), expr!);
@@ -13952,7 +13970,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         isNarrowable: boolean
     ): Type | undefined {
         // If the expected type is Any, the resulting type becomes Any.
-        if (isAnyOrUnknown(inferenceContext.expectedType)) {
+        if (isAny(inferenceContext.expectedType)) {
             return inferenceContext.expectedType;
         }
 
@@ -16321,7 +16339,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                                 if (
                                     !fileInfo.isStubFile &&
                                     !ClassType.isTypingExtensionClass(argType) &&
-                                    fileInfo.executionEnvironment.pythonVersion < PythonVersion.V3_7
+                                    fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_7)
                                 ) {
                                     addError(LocMessage.protocolIllegal(), arg.valueExpression);
                                 }
@@ -16334,7 +16352,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
                             // If the class directly derives from NamedTuple (in Python 3.6 or
                             // newer), it's considered a (read-only) dataclass.
-                            if (fileInfo.executionEnvironment.pythonVersion >= PythonVersion.V3_6) {
+                            if (fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_6)) {
                                 if (ClassType.isBuiltIn(argType, 'NamedTuple')) {
                                     classType.details.flags |=
                                         ClassTypeFlags.DataClass |
@@ -17295,7 +17313,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                                 const paramInfo = paramListDetails.params[paramIndex];
                                 const argParam: ValidateArgTypeParams = {
                                     paramCategory: paramInfo.param.category,
-                                    paramType: FunctionType.getEffectiveParameterType(newMethodType, paramInfo.index),
+                                    paramType: paramInfo.type,
                                     requiresTypeVarMatching: false,
                                     argument: arg,
                                     errorNode: arg.valueExpression ?? errorNode,
@@ -17673,6 +17691,14 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     annotatedType = getTypeOfParameterAnnotation(paramTypeNode, param.category);
                 }
 
+                if (annotatedType) {
+                    addTypeVarsToListIfUnique(
+                        typeParametersSeen,
+                        getTypeVarArgumentsRecursive(annotatedType),
+                        functionType.details.typeVarScopeId
+                    );
+                }
+
                 if (isVariadicTypeVar(annotatedType) && !annotatedType.isVariadicUnpacked) {
                     addError(
                         LocMessage.unpackedTypeVarTupleExpected().format({
@@ -17816,7 +17842,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             FunctionType.addParameter(functionType, functionParam);
 
             if (functionParam.hasDeclaredType) {
-                addTypeVarsToListIfUnique(typeParametersSeen, getTypeVarArgumentsRecursive(functionParam.type));
+                addTypeVarsToListIfUnique(
+                    typeParametersSeen,
+                    getTypeVarArgumentsRecursive(functionParam.type),
+                    functionType.details.typeVarScopeId
+                );
             }
 
             if (param.name) {
@@ -17955,18 +17985,14 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         functionType: FunctionType,
         typeParametersSeen: TypeVarType[]
     ) {
-        const typeVarsInReturnType = getTypeVarArgumentsRecursive(returnType);
+        const typeVarsInReturnType = getTypeVarArgumentsRecursive(returnType).filter(
+            (t) => t.scopeId === functionType.details.typeVarScopeId
+        );
         const rescopedTypeVars: TypeVarType[] = [];
 
         typeVarsInReturnType.forEach((typeVar) => {
             if (TypeBase.isInstantiable(typeVar)) {
                 typeVar = TypeVarType.cloneAsInstance(typeVar);
-            }
-
-            // If this type variable isn't scoped to this function, it is probably
-            // associated with an outer scope.
-            if (typeVar.scopeId !== functionType.details.typeVarScopeId) {
-                return;
             }
 
             // If this type variable was already seen in one or more input parameters,
@@ -18783,7 +18809,10 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
                     // Handle PEP 562 support for module-level __getattr__ function,
                     // introduced in Python 3.7.
-                    if (fileInfo.executionEnvironment.pythonVersion >= PythonVersion.V3_7 || fileInfo.isStubFile) {
+                    if (
+                        fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_7) ||
+                        fileInfo.isStubFile
+                    ) {
                         const getAttrSymbol = importLookupInfo.symbolTable.get('__getattr__');
                         if (getAttrSymbol) {
                             const getAttrType = getEffectiveTypeOfSymbol(getAttrSymbol);
@@ -19042,21 +19071,24 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     node.name
                 );
             }
-
-            if (resolvedAliasInfo.privatePyTypedImporter) {
+            const privateImporter =
+                resolvedAliasInfo.privatePyTypedImporter || resolvedAliasInfo.privateNonPyTypedImporter;
+            if (privateImporter) {
                 const diag = new DiagnosticAddendum();
-                if (resolvedAliasInfo.privatePyTypedImported) {
+                if (resolvedAliasInfo.privateImported) {
                     diag.addMessage(
                         LocAddendum.privateImportFromPyTypedSource().format({
-                            module: resolvedAliasInfo.privatePyTypedImported,
+                            module: resolvedAliasInfo.privateImported,
                         })
                     );
                 }
                 addDiagnostic(
-                    DiagnosticRule.reportPrivateImportUsage,
+                    resolvedAliasInfo.privatePyTypedImporter
+                        ? DiagnosticRule.reportPrivateImportUsage
+                        : DiagnosticRule.reportPrivateLocalImportUsage,
                     LocMessage.privateImportFromPyTypedModule().format({
                         name: node.name.value,
-                        module: resolvedAliasInfo.privatePyTypedImporter,
+                        module: privateImporter,
                     }) + diag.getString(),
                     node.name
                 );
@@ -19835,7 +19867,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
         if (
             fileInfo.isStubFile ||
-            fileInfo.executionEnvironment.pythonVersion >= PythonVersion.V3_9 ||
+            fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_9) ||
             isAnnotationEvaluationPostponed(AnalyzerNodeInfo.getFileInfo(errorNode)) ||
             (flags & EvaluatorFlags.AllowForwardReferences) !== 0
         ) {

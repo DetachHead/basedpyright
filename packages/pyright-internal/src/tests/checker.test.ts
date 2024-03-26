@@ -11,8 +11,9 @@
 
 import { ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { PythonVersion } from '../common/pythonVersion';
+import { pythonVersion3_10, pythonVersion3_8, pythonVersion3_9 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
+import { LocMessage } from '../localization/localize';
 import * as TestUtils from './testUtils';
 
 test('BadToken1', () => {
@@ -172,11 +173,11 @@ test('With3', () => {
 test('With4', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_8;
+    configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['with4.py'], configOptions);
     TestUtils.validateResults(analysisResults1, 4);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_9;
+    configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['with4.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 0);
 });
@@ -347,11 +348,55 @@ test('PyrightIgnore2', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnore2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 1);
 
     configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'warning';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnore2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2, 3);
+    TestUtils.validateResults(analysisResults, 1, 3);
+});
+
+test('pyrightIgnoreCommentsBased', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.reportIgnoreCommentWithoutRule = 'error';
+    configOptions.diagnosticRuleSet.enableTypeIgnoreComments = false;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnoreBased.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                line: 0,
+                message: LocMessage.pyrightIgnoreCommentWithoutRule(),
+                code: DiagnosticRule.reportIgnoreCommentWithoutRule,
+            },
+            {
+                line: 1,
+                message: LocMessage.pyrightIgnoreCommentWithoutRule(),
+                code: DiagnosticRule.reportIgnoreCommentWithoutRule,
+            },
+        ],
+    });
+});
+
+test('typeIgnoreCommentsBased', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.reportIgnoreCommentWithoutRule = 'error';
+    configOptions.diagnosticRuleSet.enableTypeIgnoreComments = true;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnoreBased.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                line: 0,
+                message: LocMessage.typeIgnoreCommentWithoutRule(),
+                code: DiagnosticRule.reportIgnoreCommentWithoutRule,
+            },
+            {
+                line: 1,
+                message: LocMessage.typeIgnoreCommentWithoutRule(),
+                code: DiagnosticRule.reportIgnoreCommentWithoutRule,
+            },
+        ],
+    });
 });
 
 test('PyrightComment1', () => {
@@ -512,45 +557,45 @@ test('UninitializedVariable2', () => {
 test('Deprecated1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_8;
+    configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 0);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_9;
+    configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 0, 0, 0, undefined, undefined, 0);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults3 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults3, 0, 0, 0, undefined, undefined, 0);
 
     // Now enable the deprecateTypingAliases setting.
     configOptions.diagnosticRuleSet.deprecateTypingAliases = true;
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_8;
+    configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults4 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults4, 0, 0, 0, undefined, undefined, 0);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_9;
+    configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults5 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults5, 0, 0, 0, undefined, undefined, 44);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults6 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults6, 0, 0, 0, undefined, undefined, 48);
 
     // Now change reportDeprecated to emit an error.
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_8;
+    configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults7 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults7, 0, 0, 0, undefined, undefined, 0);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_9;
+    configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults8 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults8, 44, 0, 0, undefined, undefined, 0);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_10;
+    configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults9 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
     TestUtils.validateResults(analysisResults9, 48, 0, 0, undefined, undefined, 0);
 });

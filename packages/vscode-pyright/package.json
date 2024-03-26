@@ -2,7 +2,7 @@
     "name": "vscode-pyright",
     "displayName": "BasedPyright",
     "description": "VS Code static type checking for Python (but based)",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "private": true,
     "license": "MIT",
     "author": {
@@ -1518,6 +1518,38 @@
                                 true,
                                 false
                             ]
+                        },
+                        "reportIgnoreCommentWithoutRule": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for `# type: ignore` and `# pyright: ignore` comments without specifying a rule",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
+                        },
+                        "reportPrivateLocalImportUsage": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for incorrect usage of symbol imported from a non-\"py.typed\" module that is not re-exported from that module. Should be used along with `reportNonPrivateImportUsage`",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
                         }
                     }
                 },
@@ -1632,6 +1664,7 @@
         "copy-webpack-plugin": "^11.0.0",
         "detect-indent": "^6.1.0",
         "esbuild-loader": "^3.2.0",
+        "ovsx": "^0.8.3",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
         "typescript": "~5.2",

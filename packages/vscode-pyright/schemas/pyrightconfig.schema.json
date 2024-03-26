@@ -666,6 +666,18 @@
       "title": "Controls reporting of values typed as `Any`",
       "default": "none"
     },
+    "reportIgnoreCommentWithoutRule": {
+      "$id": "#/properties/reportIgnoreCommentWithoutRule",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting `# type: ignore` and `# pyright: ignore` comments without specifying a rule",
+      "default": "none"
+    },
+    "reportPrivateLocalImportUsage": {
+      "$id": "#/properties/reportPrivateLocalImportUsage",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of improper usage of symbols imported from a non-\"py.typed\" module that are not re-exported from that module. Should be used along with `reportPrivateImportUsage`",
+      "default": "none"
+    },
     "extraPaths": {
       "$id": "#/properties/extraPaths",
       "type": "array",

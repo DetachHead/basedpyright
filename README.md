@@ -18,7 +18,9 @@ pyright is only published as an npm package, which requires you to install nodej
 
 python developers should not be expected to have to install nodejs in order to typecheck their python code. it should just be a regular pypi package like mypy, ruff, and pretty much all other python tooling. this is why basedpyright is [officially published on pypi](https://pypi.org/project/basedpyright/), which comes bundled with the npm package.
 
-### reporting errors on unreachable code
+### new diagnostic rules
+
+#### `reportUnreachable` - report errors on code that would otherwise be completely unchecked
 
 pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code. in fact, unreachable code is not even type-checked at all:
 
@@ -33,20 +35,7 @@ to make things worse, unreachable code is not even type-checked, so the obviousl
 
 basedpyright solves this issue with a `reportUnreachable` option, which will report an error on such unchecked code. in this example, you can [update your pyright config to specify more platforms using the `pythonPlatform` option](https://github.com/detachhead/basedpyright/blob/main/docs/configuration.md#main-configuration-options) if you intend for the code to be reachable.
 
-### errors on invalid configuration
-
-in pyright, if you have any invalid config, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
-
-```toml
-[tool.pyright]
-mode = "strict"  # wrong! the setting you're looking for is called `typeCheckingMode`
-```
-
-in this example, it's very easy for errors to go undetected because you thought you were on strict mode, but in reality pyright just ignored the setting and silently continued type-checking on "basic" mode.
-
-to solve this problem, basedpyright will exit with code 3 on any invalid config.
-
-### option to fully ban the `Any` type
+#### `reportAny` - fully ban the `Any` type
 
 pyright has a few options to ban "Unknown" types such as `reportUnknownVariableType`, `reportUnknownParameterType`, etc. but "Unknown" is not a real type, rather a distinction pyright uses used to represent `Any`s that come from untyped code or unfollowed imports. if you want to ban all kinds of `Any`, pyright has no way to do that:
 
@@ -58,11 +47,44 @@ def foo(bar, baz: Any) -> Any:
 
 basedpyright introduces the `reportAny` option, which will report an error on usages of anything typed as `Any`.
 
+#### `reportIgnoreCommentWithoutRule` - enforce that all ignore comments specify an error code
+
+it's good practice to specify an error code in your `pyright:ignore`/`type:ignore` comments:
+
+```py
+# type:ignore[reportUnreachable]
+```
+
+this way, if the error changes or a new error appears on the same line in the future, you'll get a new error because the comment doesn't account for the other error. unfortunately there are many rules in pyright that do not have error codes, so you can't always do this.
+
+basedpyright resolves this by reporting those errors under the `reportGeneralTypeIssues` diagnostic rule. this isn't a perfect solution, but there were over 100 errors that didn't have diagnostic rules. i intend to split them into their own rules in the future, but this will do for now.
+
+#### `reportPrivateLocalImportUsage` - prevent implicit re-exports in local code
+
+pyright's `reportPrivateImportUsage` rule only checks for private imports of third party modules inside `py.typed` packages. but there's no reason your own code shouldn't be subject to the same restrictions. to explicitly re-export something, give it a redundant alias [as described in the "Stub Files" section of PEP484](https://peps.python.org/pep-0484/#stub-files) (although it only mentions stub files, other type checkers like mypy have also extended this behavior to source files as well):
+
+```py
+# foo.py
+
+from .some_module import a  # private import
+from .some_module import b as b  # explicit re-export
+```
+
+```py
+# bar.py
+
+# reportPrivateLocalImportUsage error, because `a` is not explicitly re-exported by the `foo` module:
+from foo import a
+
+# no error, because `b` is explicitly re-exported:
+from foo import b
+```
+
 ### re-implementing pylance-exclusive features
 
-basedpyright re-implements some of the features that microsoft made exclusive to their closed-source pylance extension. for more information about the differences between pyright and pylance, see [here](#pylance-vs-basedpyright).
+basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)).
 
-these features are implemented in the language server, meaning they are no longer exclusive to vscode. you can use any editor that supports the [language server protocol](https://microsoft.github.io/language-server-protocol/). for more information on installing pyright in your editor of choice, see [the installation instructions](https://detachhead.github.io/basedpyright/#/installation)
+the following features have been re-implemented in basedpyright's language server, meaning they are no longer exclusive to vscode. you can use any editor that supports the [language server protocol](https://microsoft.github.io/language-server-protocol/). for more information on installing pyright in your editor of choice, see [the installation instructions](https://detachhead.github.io/basedpyright/#/installation).
 
 #### import suggestion code actions
 pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see [this issue](https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645)).
@@ -90,6 +112,19 @@ initial implementation of the semantic highlighting provider was adapted from th
 ![image](https://github.com/DetachHead/basedpyright/assets/57028336/41ed93e8-04e2-4163-a1be-c9ec8f3d90df)
 
 basedpyright contains several improvements and bug fixes to the original implementation adapted from [pyright-inlay-hints](https://github.com/jbradaric/pyright-inlay-hints).
+
+### errors on invalid configuration
+
+in pyright, if you have any invalid config, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
+
+```toml
+[tool.pyright]
+mode = "strict"  # wrong! the setting you're looking for is called `typeCheckingMode`
+```
+
+in this example, it's very easy for errors to go undetected because you thought you were on strict mode, but in reality pyright just ignored the setting and silently continued type-checking on "basic" mode.
+
+to solve this problem, basedpyright will exit with code 3 on any invalid config.
 
 ### reporting errors on invalid "relative" imports
 
@@ -181,19 +216,31 @@ Usage: basedpyright [options] files...
 
 ## install
 
-install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) or [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
 ## usage
 
 the basedpyright vscode extension will automatically look for the pypi package in your python environment. see the recommended setup section below for more information
 
-## pylance vs basedpyright
+## using basedpyright with pylance (not recommended)
 
-pylance is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)). normally when the pylance extension is enabled, the pyright extension will disable itself to avoid conflicting with it. unfortunately since it's closed-source, there's no way for us to update it to use basedpyright instead. so we intend to re-implement its exclusive features in basedpyright.
+unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
 
-if you don't depend on any pylance-exclusive features, the recommended solution is to disable/uninstall the pylance extension.
+if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension, and the restriction that prevents both extensions from being enabled at the same time has been removed. for an optimal experience you should change the following settings in your `.vscode/settings.json` file:
 
-if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension, and the restriction that prevents both extensions from being enabled at the same time has been removed. for an optimal experience you should disable pylance's type checking and disable basedpyright's language server features. see [the recommended setup section below](#if-using-pylance) for details.
+- disable pylance's type-checking by setting `"python.analysis.typeCheckingMode"` to `"off"`. this will prevent pylance from displaying duplicated errors from its bundled pyright version alongside the errors already displayed by the basedpyright extension.
+- disable basedpyright's LSP features by setting `"basedpyright.disableLanguageServices"` to `true`. this will prevent duplicated hover text and other potential issues with pylance's LSP. keep in mind that this may result in some inconsistent behavior since pylance uses its own version of the pyright LSP.
+
+```json
+{
+    "python.analysis.typeCheckingMode": "off",
+    "basedpyright.disableLanguageServices": true
+}
+```
+
+# playground
+
+you can try basedpyright in your browser using the [basedpyright playground](http://basedpyright.com)
 
 # recommended setup
 
@@ -209,14 +256,13 @@ below are the changes i recommend making to your project when adopting basedpyri
     "detachhead.basedpyright" // this will prompt developers working on your project to install the extension
   ],
   "unwantedRecommendations": [
-    "ms-python.vscode-pylance" // if not using pylance (see below)
+    "ms-python.vscode-pylance"
   ]
 }
 ```
 
 ## `.vscode/settings.json`
 
-### if not using pylance
 - remove any settings starting with `python.analysis`, as they are not used by basedpyright. you should instead set these settings using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` ([see below](#pyprojecttoml))
 - disable the built in language server support from the python extension, as it seems to conflict with basedpyright's language server:
   ```json
@@ -224,17 +270,6 @@ below are the changes i recommend making to your project when adopting basedpyri
       "python.languageServer": "None"
   }
   ```
-
-### if using pylance
-- disable pylance's type-checking by setting `"python.analysis.typeCheckingMode"` to `"off"`. this will prevent pylance from displaying duplicated errors from its bundled pyright version alongside the errors already displayed by the basedpyright extension.
-- disable basedpyright's LSP features by setting `"basedpyright.disableLanguageServices"` to `true`. this will prevent duplicated hover text and other potential issues with pylance's LSP. keep in mind that this may result in some inconsistent behavior since pylance uses its own version of the pyright LSP.
-
-```json
-{
-    "python.analysis.typeCheckingMode": "off",
-    "basedpyright.disableLanguageServices": true
-}
-```
 
 ## `.github/workflows/check.yaml`
 
@@ -248,9 +283,12 @@ jobs:
 
 ## `pyproject.toml`
 
-we recommend using [pdm](https://pdm-project.org/) or [poetry](https://python-poetry.org/) to manage your dependencies.
+we recommend using [pdm with pyprojectx](https://pdm-project.org/latest/#other-installation-methods) (click the "inside project" tab) to manage your dependencies.
 
 ```toml
+[tool.pyprojectx]
+main = ["pdm==2.12.4"]  # installs pdm to your project instead of globally
+
 [tool.pdm.dev-dependencies]  # or the poetry equivalent
 dev = [
     "basedpyright", # you can pin the version here if you want, or just rely on the lockfile
@@ -262,4 +300,4 @@ dev = [
 typeCheckingMode = "all"
 ```
 
-pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version
+pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version.
