@@ -32,7 +32,6 @@ import {
     pythonVersion3_9,
 } from '../common/pythonVersion';
 import { TextRange } from '../common/textRange';
-import { Uri } from '../common/uri/uri';
 import { LocAddendum, LocMessage, ParameterizedString } from '../localization/localize';
 import {
     ArgumentCategory,
@@ -349,6 +348,7 @@ import {
     removeFromUnion,
     removeUnbound,
 } from './types';
+import { Uri } from '../common/uri/uri';
 import { Commands } from '../commands/commands';
 
 interface GetTypeArgsOptions {

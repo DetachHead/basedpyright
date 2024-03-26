@@ -25,8 +25,8 @@ import { CommandController } from './commands/commandController';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConfigOptions, SignatureDisplayType } from './common/configOptions';
 import { ConsoleWithLogLevel, LogLevel, convertLogLevel } from './common/console';
-import { isDebugMode, isString } from './common/core';
-import { expandPathVariables } from './common/envVarUtils';
+import { isDebugMode, isDefined, isString } from './common/core';
+import { resolvePathWithEnvVariables } from './common/envVarUtils';
 import { FileBasedCancellationProvider } from './common/fileBasedCancellationUtils';
 import { FileSystem } from './common/fileSystem';
 import { FullAccessHost } from './common/fullAccessHost';
@@ -37,11 +37,12 @@ import { ServiceProvider } from './common/serviceProvider';
 import { createServiceProvider } from './common/serviceProviderExtensions';
 import { Uri } from './common/uri/uri';
 import { getRootUri } from './common/uri/uriUtils';
-import { LanguageServerBase, ServerSettings } from './languageServerBase';
+import { ServerSettings } from './common/languageServerInterface';
 import { CodeActionProvider } from './languageService/codeActionProvider';
 import { PyrightFileSystem } from './pyrightFileSystem';
 import { WellKnownWorkspaceKinds, Workspace } from './workspaceFactory';
 import { toolName } from './constants';
+import { LanguageServerBase } from './languageServerBase';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
@@ -52,11 +53,11 @@ export class PyrightServer extends LanguageServerBase {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const version = require('../package.json').version || '';
 
+        const tempFile = new RealTempFile();
         const console = new ConsoleWithLogLevel(connection.console);
         const fileWatcherProvider = new WorkspaceFileWatcherProvider();
-        const fileSystem = realFileSystem ?? createFromRealFileSystem(console, fileWatcherProvider);
+        const fileSystem = realFileSystem ?? createFromRealFileSystem(tempFile, console, fileWatcherProvider);
         const pyrightFs = new PyrightFileSystem(fileSystem);
-        const tempFile = new RealTempFile(pyrightFs.isCaseSensitive);
         const cacheManager = new CacheManager();
 
         const serviceProvider = createServiceProvider(pyrightFs, tempFile, console, cacheManager);
@@ -64,8 +65,7 @@ export class PyrightServer extends LanguageServerBase {
         // When executed from CLI command (pyright-langserver), __rootDirectory is
         // already defined. When executed from VSCode extension, rootDirectory should
         // be __dirname.
-        const rootDirectory: Uri =
-            getRootUri(pyrightFs.isCaseSensitive) || Uri.file(__dirname, pyrightFs.isCaseSensitive);
+        const rootDirectory: Uri = getRootUri(serviceProvider) || Uri.file(__dirname, serviceProvider);
         const realPathRoot = pyrightFs.realCasePath(rootDirectory);
 
         super(
@@ -109,17 +109,12 @@ export class PyrightServer extends LanguageServerBase {
             if (pythonSection) {
                 const pythonPath = pythonSection.pythonPath;
                 if (pythonPath && isString(pythonPath) && !isPythonBinary(pythonPath)) {
-                    serverSettings.pythonPath = workspace.rootUri.resolvePaths(
-                        expandPathVariables(pythonPath, workspace.rootUri, workspaces)
-                    );
+                    serverSettings.pythonPath = resolvePathWithEnvVariables(workspace, pythonPath, workspaces);
                 }
 
                 const venvPath = pythonSection.venvPath;
-
                 if (venvPath && isString(venvPath)) {
-                    serverSettings.venvPath = workspace.rootUri.resolvePaths(
-                        expandPathVariables(venvPath, workspace.rootUri, workspaces)
-                    );
+                    serverSettings.venvPath = resolvePathWithEnvVariables(workspace, venvPath, workspaces);
                 }
             }
 
@@ -129,17 +124,13 @@ export class PyrightServer extends LanguageServerBase {
                 if (typeshedPaths && Array.isArray(typeshedPaths) && typeshedPaths.length > 0) {
                     const typeshedPath = typeshedPaths[0];
                     if (typeshedPath && isString(typeshedPath)) {
-                        serverSettings.typeshedPath = workspace.rootUri.resolvePaths(
-                            expandPathVariables(typeshedPath, workspace.rootUri, workspaces)
-                        );
+                        serverSettings.typeshedPath = resolvePathWithEnvVariables(workspace, typeshedPath, workspaces);
                     }
                 }
 
                 const stubPath = pythonAnalysisSection.stubPath;
                 if (stubPath && isString(stubPath)) {
-                    serverSettings.stubPath = workspace.rootUri.resolvePaths(
-                        expandPathVariables(stubPath, workspace.rootUri, workspaces)
-                    );
+                    serverSettings.stubPath = resolvePathWithEnvVariables(workspace, stubPath, workspaces);
                 }
 
                 const diagnosticSeverityOverrides = pythonAnalysisSection.diagnosticSeverityOverrides;
@@ -170,9 +161,8 @@ export class PyrightServer extends LanguageServerBase {
                 if (extraPaths && Array.isArray(extraPaths) && extraPaths.length > 0) {
                     serverSettings.extraPaths = extraPaths
                         .filter((p) => p && isString(p))
-                        .map((p) =>
-                            workspace.rootUri.resolvePaths(expandPathVariables(p, workspace.rootUri, workspaces))
-                        );
+                        .map((p) => resolvePathWithEnvVariables(workspace, p, workspaces))
+                        .filter(isDefined);
                 }
 
                 serverSettings.includeFileSpecs = this._getStringValues(pythonAnalysisSection.include);
@@ -262,13 +252,17 @@ export class PyrightServer extends LanguageServerBase {
         return this._controller.isLongRunningCommand(command);
     }
 
+    protected isRefactoringCommand(command: string): boolean {
+        return this._controller.isRefactoringCommand(command);
+    }
+
     protected async executeCodeAction(
         params: CodeActionParams,
         token: CancellationToken
     ): Promise<(Command | CodeAction)[] | undefined | null> {
         this.recordUserInteractionTime();
 
-        const uri = Uri.parse(params.textDocument.uri, this.serverOptions.serviceProvider.fs().isCaseSensitive);
+        const uri = Uri.parse(params.textDocument.uri, this.serverOptions.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
         return CodeActionProvider.getCodeActionsForPosition(workspace, uri, params.range, params.context.only, token);
     }

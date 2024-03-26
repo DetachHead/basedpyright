@@ -14,7 +14,7 @@
         "url": "https://github.com/detachhead/basedpyright"
     },
     "engines": {
-        "vscode": "^1.82.0"
+        "vscode": "^1.86.0"
     },
     "keywords": [
         "python"
@@ -1653,10 +1653,10 @@
     },
     "dependencies": {
         "@vscode/python-extension": "^1.0.5",
-        "vscode-jsonrpc": "^8.2.0",
-        "vscode-languageclient": "^9.0.1",
-        "vscode-languageserver": "^9.0.1",
-        "vscode-languageserver-protocol": "^3.17.5"
+        "vscode-jsonrpc": "^9.0.0-next.2",
+        "vscode-languageclient": "^10.0.0-next.2",
+        "vscode-languageserver": "^10.0.0-next.2",
+        "vscode-languageserver-protocol": "^3.17.6-next.3"
     },
     "devDependencies": {
         "@types/node": "^17.0.45",

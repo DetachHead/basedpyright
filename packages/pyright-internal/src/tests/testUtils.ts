@@ -21,10 +21,11 @@ import { fail } from '../common/debug';
 import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
 import { DiagnosticSink } from '../common/diagnosticSink';
 import { FullAccessHost } from '../common/fullAccessHost';
-import { createFromRealFileSystem } from '../common/realFileSystem';
+import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem';
 import { createServiceProvider } from '../common/serviceProviderExtensions';
 import { Uri } from '../common/uri/uri';
 import { ParseOptions, ParseResults, Parser } from '../parser/parser';
+import { UriEx } from '../common/uri/uriUtils';
 import { entries } from '@detachhead/ts-helpers/dist/functions/misc';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTokensWalker';
@@ -81,7 +82,7 @@ export function parseSampleFile(
     diagSink: DiagnosticSink,
     execEnvironment = new ExecutionEnvironment(
         'python',
-        Uri.file('.'),
+        UriEx.file('.'),
         /* defaultPythonVersion */ undefined,
         /* defaultPythonPlatform */ undefined,
         /* defaultExtraPaths */ undefined
@@ -104,8 +105,9 @@ const createProgram = (configOptions = new ConfigOptions(Uri.empty()), console?:
     // Always enable "test mode".
     configOptions.internalTestMode = true;
 
-    const fs = createFromRealFileSystem();
-    const serviceProvider = createServiceProvider(fs, console || new NullConsole());
+    const tempFile = new RealTempFile();
+    const fs = createFromRealFileSystem(tempFile);
+    const serviceProvider = createServiceProvider(fs, console || new NullConsole(), tempFile);
     const importResolver = new ImportResolver(serviceProvider, configOptions, new FullAccessHost(serviceProvider));
 
     return new Program(importResolver, configOptions, serviceProvider);
@@ -117,7 +119,7 @@ export function typeAnalyzeSampleFiles(
     console?: ConsoleWithLogLevel
 ): FileAnalysisResult[] {
     const program = createProgram(configOptions, console);
-    const fileUris = fileNames.map((name) => Uri.file(resolveSampleFilePath(name)));
+    const fileUris = fileNames.map((name) => UriEx.file(resolveSampleFilePath(name)));
     program.setTrackedFiles(fileUris);
 
     // Set a "pre-check callback" so we can evaluate the types of each NameNode
@@ -136,7 +138,7 @@ export function typeAnalyzeSampleFiles(
 
 export const semanticTokenizeSampleFile = (fileName: string): SemanticTokenItem[] => {
     const program = createProgram();
-    const fileUri = Uri.file(resolveSampleFilePath(path.join('semantic_highlighting', fileName)));
+    const fileUri = UriEx.file(resolveSampleFilePath(path.join('semantic_highlighting', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new SemanticTokensWalker(program.evaluator!);
     walker.walk(program.getParseResults(fileUri)!.parseTree);
@@ -146,7 +148,7 @@ export const semanticTokenizeSampleFile = (fileName: string): SemanticTokenItem[
 
 export const inlayHintSampleFile = (fileName: string): TypeInlayHintsItemType[] => {
     const program = createProgram();
-    const fileUri = Uri.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
+    const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(program);
     walker.walk(program.getParseResults(fileUri)!.parseTree);

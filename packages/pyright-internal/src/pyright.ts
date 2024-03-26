@@ -34,10 +34,10 @@ import { RealTempFile, createFromRealFileSystem } from './common/realFileSystem'
 import { ServiceProvider } from './common/serviceProvider';
 import { createServiceProvider } from './common/serviceProviderExtensions';
 import { Range, isEmptyRange } from './common/textRange';
-import { Uri } from './common/uri/uri';
 import { getFileSpec, tryStat } from './common/uri/uriUtils';
-import { PyrightFileSystem } from './pyrightFileSystem';
-import { toolName } from './constants';
+import { PyrightFileSystem } from './pyrightFileSystem';;
+import { Uri } from './common/uri/uri';
+import { toolName } from './constants'
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -228,6 +228,7 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     const options = new PyrightCommandLineOptions(process.cwd(), false);
+    const tempFile = new RealTempFile();
 
     // Assume any relative paths are relative to the working directory.
     if (args.files && Array.isArray(args.files)) {
@@ -253,10 +254,10 @@ async function processArgs(): Promise<ExitStatus> {
         options.includeFileSpecsOverride = options.includeFileSpecsOverride.map((f) => combinePaths(process.cwd(), f));
 
         // Verify the specified file specs to make sure their wildcard roots exist.
-        const tempFileSystem = new PyrightFileSystem(createFromRealFileSystem());
+        const tempFileSystem = new PyrightFileSystem(createFromRealFileSystem(tempFile));
 
         for (const fileDesc of options.includeFileSpecsOverride) {
-            const includeSpec = getFileSpec(Uri.file(process.cwd(), tempFileSystem.isCaseSensitive), fileDesc);
+            const includeSpec = getFileSpec(Uri.file(process.cwd(), tempFile), fileDesc);
             try {
                 const stat = tryStat(tempFileSystem, includeSpec.wildcardRoot);
                 if (!stat) {
@@ -369,8 +370,10 @@ async function processArgs(): Promise<ExitStatus> {
     // If using outputjson, redirect all console output to stderr so it doesn't mess
     // up the JSON output, which goes to stdout.
     const output = args.outputjson ? new StderrConsole(logLevel) : new StandardConsole(logLevel);
-    const fileSystem = new PyrightFileSystem(createFromRealFileSystem(output, new ChokidarFileWatcherProvider(output)));
-    const tempFile = new RealTempFile(fileSystem.isCaseSensitive);
+    const fileSystem = new PyrightFileSystem(
+        createFromRealFileSystem(tempFile, output, new ChokidarFileWatcherProvider(output))
+    );
+
     const serviceProvider = createServiceProvider(fileSystem, output, tempFile);
 
     // The package type verification uses a different path.
@@ -556,7 +559,7 @@ function buildTypeCompletenessReport(
 
     // Add the general diagnostics.
     completenessReport.generalDiagnostics.forEach((diag) => {
-        const jsonDiag = convertDiagnosticToJson(Uri.empty().getFilePath(), diag);
+        const jsonDiag = convertDiagnosticToJson('', diag);
         if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
             report.generalDiagnostics.push(jsonDiag);
         }
