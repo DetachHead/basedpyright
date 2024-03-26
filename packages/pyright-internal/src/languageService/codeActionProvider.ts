@@ -102,39 +102,39 @@ export class CodeActionProvider {
                 const renameAction = CodeAction.create(title, workspaceEdit, CodeActionKind.QuickFix);
                 codeActions.push(renameAction);
             }
-            if (diags.find((d) => d.getActions()?.some((action) => action.action === Commands.import))?.getActions()) {
-                const completer = new CompletionProvider(
-                    workspace.service.backgroundAnalysisProgram.program,
-                    fileUri,
-                    range.start,
-                    {
-                        format: 'plaintext',
-                        lazyEdit: false,
-                        snippet: false,
-                    },
-                    token
-                );
-                for (const suggestedImport of completer.getCompletions()?.items ?? []) {
-                    if (!suggestedImport.data) {
-                        continue;
-                    }
-                    completer.resolveCompletionItem(suggestedImport);
-                    const textEdit = completer.itemToResolve?.additionalTextEdits;
-                    if (textEdit === undefined) {
-                        continue;
-                    }
-                    const workspaceEdit = convertToWorkspaceEdit(
-                        completer.importResolver.fileSystem,
-                        convertToFileTextEdits(fileUri, convertToTextEditActions(textEdit))
-                    );
-                    codeActions.push(
-                        CodeAction.create(
-                            suggestedImport.data.autoImportText.trim(),
-                            workspaceEdit,
-                            CodeActionKind.QuickFix
-                        )
-                    );
+        }
+        if (diags.find((d) => d.getActions()?.some((action) => action.action === Commands.import))?.getActions()) {
+            const completer = new CompletionProvider(
+                workspace.service.backgroundAnalysisProgram.program,
+                fileUri,
+                range.start,
+                {
+                    format: 'plaintext',
+                    lazyEdit: false,
+                    snippet: false,
+                },
+                token
+            );
+            for (const suggestedImport of completer.getCompletions()?.items ?? []) {
+                if (!suggestedImport.data) {
+                    continue;
                 }
+                completer.resolveCompletionItem(suggestedImport);
+                const textEdit = completer.itemToResolve?.additionalTextEdits;
+                if (textEdit === undefined) {
+                    continue;
+                }
+                const workspaceEdit = convertToWorkspaceEdit(
+                    completer.importResolver.fileSystem,
+                    convertToFileTextEdits(fileUri, convertToTextEditActions(textEdit))
+                );
+                codeActions.push(
+                    CodeAction.create(
+                        suggestedImport.data.autoImportText.trim(),
+                        workspaceEdit,
+                        CodeActionKind.QuickFix
+                    )
+                );
             }
         }
 
