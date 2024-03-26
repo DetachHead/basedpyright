@@ -37,6 +37,20 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { inlayHintType: 'parameter', position: 446, value: 'b=' },
         ]);
     });
+
+    test('range', () => {
+        const result = inlayHintSampleFile('variables.py', {
+            start: { line: 0, character: 0 },
+            end: { line: 5, character: 0 },
+        });
+        expect(result).toStrictEqual([
+            {
+                inlayHintType: 'variable',
+                position: 53,
+                value: ': str',
+            },
+        ]);
+    });
 } else {
     // prevent jest from failing because no tests were found
     test('windows placeholder', () => {});
