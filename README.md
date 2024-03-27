@@ -143,10 +143,10 @@ this may look correct at first glance, and will work when running `bar.py` direc
 import module_name.bar  # ModuleNotFoundError: No module named 'foo' 
 ```
 
-basedpyright bans imports like this. if you want to do a relative import, the correct way to do it is by prefixing the module name with a `.`:
+basedpyright bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from `.` (the current package):
 ```py
 # ./module_name/bar.py:
-import .foo
+from . import foo
 ```
 
 ### fixes for the `reportRedeclaration` and `reportDuplicateImport` rules
