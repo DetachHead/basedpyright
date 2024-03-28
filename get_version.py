@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from json import loads
 from pathlib import Path
-from typing import TypedDict, cast
-
-
-class LernaJson(TypedDict):
-    version: str
+from typing import cast
 
 
 def get_version() -> str:
-    return cast(LernaJson, loads((Path(__file__).parent / "lerna.json").read_text()))["version"]
+    return cast(
+        str,
+        loads((Path(__file__).parent / "packages/pyright-internal/src/version.json").read_text()),
+    )

@@ -40,15 +40,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: npm run install:all
+      - run: ./pw pdm install
 
       - id: current-version
-        run: echo ::set-output name=CURRENT_VERSION::$(node -p "require(\"./lerna.json\").version")
+        run: echo ::set-output name=CURRENT_VERSION::$(./pw pdm show --version)
 
       - if: github.ref == 'refs/heads/main'
         run: echo ::set-output name=VERSION_INFO::$(npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
+
+      - name: set version for publishing
+        if: github.ref == 'refs/heads/main'
+        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --git-tag-version false
 
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}

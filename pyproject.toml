@@ -5,7 +5,11 @@ main = ["pdm==2.12.4"]
 distribution = true
 
 [tool.pdm.dev-dependencies]
-dev = ["pylint>=3.0.0a7", "ruff>=0.2.2"]
+dev = [
+    "pylint>=3.0.0a7",
+    "ruff>=0.2.2",
+    "pdm-backend>=2.1.8", # only used here for types in pdm_build.py
+]
 
 [tool.pdm.version]
 source = "call"
