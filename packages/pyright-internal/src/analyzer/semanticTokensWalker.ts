@@ -3,11 +3,13 @@ import { TypeEvaluator } from './typeEvaluatorTypes';
 import { FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
 import {
     ClassNode,
+    DecoratorNode,
     FunctionNode,
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
     NameNode,
+    ParseNodeType,
     TypeAliasNode,
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
@@ -46,6 +48,30 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
         // parameters & return type are covered by visitName
         return super.visitFunction(node);
+    }
+
+    override visitDecorator(node: DecoratorNode) {
+        let nameNode: NameNode | undefined;
+        this._addItem(node.start, 1 /* '@' symbol */, SemanticTokenTypes.decorator, []);
+        switch (node.expression.nodeType) {
+            case ParseNodeType.Call:
+                if (node.expression.leftExpression.nodeType === ParseNodeType.MemberAccess) {
+                    nameNode = node.expression.leftExpression.memberName;
+                } else if (node.expression.leftExpression.nodeType === ParseNodeType.Name) {
+                    nameNode = node.expression.leftExpression;
+                }
+                break;
+            case ParseNodeType.MemberAccess:
+                nameNode = node.expression.memberName;
+                break;
+            case ParseNodeType.Name:
+                nameNode = node.expression;
+                break;
+        }
+        if (nameNode) {
+            this._addItem(nameNode.start, nameNode.length, SemanticTokenTypes.decorator, []);
+        }
+        return super.visitDecorator(node);
     }
 
     override visitImportAs(node: ImportAsNode): boolean {
