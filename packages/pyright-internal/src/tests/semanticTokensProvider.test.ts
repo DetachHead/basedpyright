@@ -142,6 +142,52 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 154, length: 16 }, // EnvironmentError
         ]);
     });
+
+    test('decorators', () => {
+        const result = semanticTokenizeSampleFile('decorators.py');
+        expect(result).toStrictEqual([
+            // TODO: Fix duplicates
+            { type: 'namespace', modifiers: [], start: 7, length: 11 }, // dataclasses
+            { type: 'namespace', modifiers: [], start: 24, length: 11 }, // dataclasses
+            { type: 'function', modifiers: [], start: 43, length: 9 }, // dataclass
+            { type: 'function', modifiers: [], start: 43, length: 9 }, // dataclass
+            { type: 'namespace', modifiers: [], start: 60, length: 9 }, // functools
+            { type: 'namespace', modifiers: [], start: 75, length: 6 }, // typing
+            { type: 'function', modifiers: [], start: 89, length: 5 }, // final
+            { type: 'function', modifiers: [], start: 89, length: 5 }, // final
+
+            { type: 'class', modifiers: ['definition'], start: 115, length: 1 }, // A
+            { type: 'decorator', modifiers: [], start: 96, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 97, length: 9 }, // dataclass
+            { type: 'function', modifiers: [], start: 97, length: 9 },
+            { type: 'class', modifiers: [], start: 115, length: 1 },
+
+            { type: 'class', modifiers: ['definition'], start: 154, length: 1 }, // B
+            { type: 'decorator', modifiers: [], start: 123, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 136, length: 9 }, // dataclass
+            { type: 'namespace', modifiers: [], start: 124, length: 11 }, // dataclasses
+            { type: 'function', modifiers: [], start: 136, length: 9 },
+            { type: 'class', modifiers: [], start: 154, length: 1 },
+            { type: 'method', modifiers: ['definition'], start: 176, length: 6 }, // method
+            { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
+            { type: 'function', modifiers: [], start: 162, length: 5 },
+            { type: 'method', modifiers: [], start: 176, length: 6 },
+            { type: 'variable', modifiers: [], start: 183, length: 4 }, // self
+            { type: 'method', modifiers: ['definition'], start: 220, length: 6 }, // static
+            { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 199, length: 12 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 199, length: 12 }, // staticmethod
+            { type: 'method', modifiers: [], start: 220, length: 6 },
+
+            { type: 'function', modifiers: ['definition'], start: 256, length: 6 }, // cached
+            { type: 'decorator', modifiers: [], start: 235, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 246, length: 5 }, // cache
+            { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
+            { type: 'function', modifiers: [], start: 246, length: 5 },
+            { type: 'function', modifiers: [], start: 256, length: 6 },
+        ]);
+    });
 } else {
     // prevent jest from failing because no tests were found
     test('windows placeholder', () => {});
