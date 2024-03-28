@@ -53,7 +53,7 @@ jobs:
 
       - name: set version for publishing
         if: github.ref == 'refs/heads/main'
-        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --git-tag-version false
+        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --yes --no-git-tag-version
 
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
