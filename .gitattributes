@@ -1,1 +1,2 @@
-*.json                       linguist-language=JSON-with-Comments
+*.json                                         linguist-language=JSON-with-Comments
+packages/pyright-internal/typeshed-fallback/*  linguist-vendored
