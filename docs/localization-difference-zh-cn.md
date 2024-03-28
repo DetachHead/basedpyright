@@ -10,13 +10,15 @@ Due to some issues with the translation of Pyright, some adjustments have been m
 
 Below is a quick reference table of the adjustments. The reasons for the adjustments and the scope of their impact will be described in the following text.
 
-| 原词 (Original Word) | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) |
-| -------------------- | ------------------------------- | ------------------------------- |
-| Any                  | 任意                            | Any                             |
-| follow               | 遵循                            | 在..之后                        |
-| import               | 导入/Import                     | 导入                            |
-| obscure              | 遮盖/隐蔽                       | 遮盖                            |
-| True                 | true/True                       | True                            |
+| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) |
+| ---------------------------- | ------------------------------- | ------------------------------- |
+| Any                          | 任意                            | Any                             |
+| follow                       | 遵循                            | 在..之后                        |
+| import                       | 导入/Import                     | 导入                            |
+| obscure                      | 遮盖/隐蔽                       | 遮盖                            |
+| True                         | true/True                       | True                            |
+| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                |
+| comprehension                | 理解                            | 推导式                          |
 
 其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在pyright注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 python 中的布尔值。
 
@@ -28,8 +30,6 @@ Among them, **import**, **obscure** and **True** have multiple translations in t
 
 与 **Any** 类似的，还有 **Unknown**，但 **Unknown** 并不是 python 的内建类型，而是用于描述类型推断失败的情况，且 **未知类型** 并不会引起歧义，因此 **Unknown** 保留翻译为 **未知**。
 
-
-
 ---
 
 **Any** is used to represent a type called **Any**, which allows any type. In the original translation, **Any** was translated as **任意**, which can cause ambiguity. **任意类型** can be understood as the type is arbitrary. Therefore, **Any** retains its proper noun as a type and is not translated.
@@ -38,24 +38,65 @@ Similar to **Any**, there is **Unknown**, but **Unknown** is not a built-in type
 
 ### follow
 
-**follow** 通常出现在某个语法不能出现在另一个语法之后的规则中，例如`nonDefaultAfterDefault`，以下是一个例子：
-
-```python
-def foo(a = 1, b) -> int:... # 非默认参数遵循默认参数
-```
+**follow** 通常出现在某个语法不能出现在另一个语法之后的规则中，例如 `nonDefaultAfterDefault`。
 
 在原始翻译中，**follow** 被翻译为 **遵循**，但在中文语境中，**遵循** 通常用于描述人的行为，而不是描述某个物体的位置关系。因此，**follow** 被调整为用于描述物体位置关系的 **在..之后**。
 
 ---
 
-**follow** usually appears in rules where a syntax cannot appear after another syntax, such as `nonDefaultAfterDefault`. Here is an example:
-
-```python
-def foo(a = 1, b) -> int:... # Non-default parameter follows default parameter
-```
+**follow** usually appears in rules where a syntax cannot appear after another syntax, for example `nonDefaultAfterDefault`.
 
 In the original translation, **follow** was translated as **遵循**, but in the Chinese context, **遵循** is usually used to describe human behavior, not the positional relationship of an object. Therefore, **follow** has been adjusted to **在..之后** to describe the positional relationship of an object.
 
+例子/Examples：
+
+```python
+def foo(a=1, b) -> int: ...  # 非默认参数遵循默认参数（官方中文/Official Chinese）
+                             # Non-default parameter follows default parameter（官方英文/Official English）
+                             # 非默认参数不应位于默认参数后方（修改版本/Modified version）
+```
+
+### implementation/unimplemented
+
+**implement** 在程序领域中通常翻译作 **实现**，原始翻译大多也采用了这个译文，偶有部分条目（`abstractMethodInvocation` 和 `overloadFinalInconsistencyImpl`）被错误翻译为 **实施**、**实行**等，因此统一修改为 **实现**/**未实现（的）**。
+
+---
+
+**implement** is commonly translated as **实现** in the programming world and was used in most of the original translations, with occasional entries (`abstractMethodInvocation` and `overloadFinalInconsistencyImpl`) are mistranslated as **实施**, **实行**, etc., so they are unified as **实现**/**未实现（的）**.
+
+例子/Examples：
+
+```python
+from abc import abstractmethod
+
+class A:
+    @abstractmethod
+    def a(self):
+        raise NotImplementedError
+
+
+class B(A):
+    def a(self):
+        super().a()  # 无法调用方法“a”，因为它是抽象的且未实施（官方中文/Official Chinese）
+                     # Method "a" cannot be called because it is abstract and unimplemented（官方英文/Official English）
+                     # 不能调用未实现的抽象方法“a”（修改版本/Modified version）
+```
+
+### comprehension
+
+**comprehension** 属于 Python 中的一个专有名词，Python 官方中文文档中称其为 **推导式**。Pyright 翻译则全部错译为 **理解**。
+
+---
+
+**comprehension** is a Python term, and the official Python Chinese documentation refers to it as **推导式**. The Pyright translations all mistranslate it as **理解** (understanding).
+
+例子/Examples：
+
+```python
+[a := a for a in "lorem ipsum"]  # 赋值表达式目标“a”不能使用与目标理解相同的名称（官方中文/Official Chinese）
+                                 # Assignment expression target "a" cannot use same name as comprehension for target（官方英文/Official English）
+                                 # 海象运算符赋值的变量名“a”不能与推导变量重名（修改版本/Modified version）
+```
 
 ## 风格调整 (Style Adjustments)
 
@@ -73,8 +114,8 @@ Usually, when mixing Chinese and English, spaces need to be added between Chines
 
 ### 统一标点符号 (Unified punctuation)
 
-在原始翻译中，中文的全角标点符号和英文的半角标点符号混用，于是对其进行了调整，全部统一为全角标点符号。
+在原始翻译中，中文的全角标点符号和英文的半角标点符号混用，于是对其进行了调整，除英文之间的标点以外，全部统一为全角标点符号。
 
 ---
 
-In the original translation, full-width punctuation marks in Chinese and half-width punctuation marks in English were mixed, so they were adjusted to all full-width punctuation marks.
+In the original translation, full-width punctuation marks in Chinese and half-width punctuation marks in English were mixed, so they were adjusted to all full-width punctuation marks except for punctuations between English sentences.

@@ -336,7 +336,7 @@
         "noReturnContainsReturn": "声明的 return 类型为 \"NoReturn\" 的函数不能包含 return 语句",
         "noReturnContainsYield": "声明的返回类型为 “NoReturn” 的函数不能包含 yield 语句",
         "noReturnReturnsNone": "所声明的返回类型为 “NoReturn“ 的函数无法返回 “None“",
-        "nonDefaultAfterDefault": "非默认参数遵循默认参数",
+        "nonDefaultAfterDefault": "非默认参数不应位于默认参数后方",
         "nonLocalInModule": "模块级别不允许使用非本地声明",
         "nonLocalNoBinding": "找不到非本地“{name}”的绑定",
         "nonLocalReassignment": "在非本地声明之前分配了“{name}”",
