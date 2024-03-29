@@ -186,9 +186,8 @@ we aim to [port most of basedmypy's features to basedpyright](https://github.com
 
 # pypi package
 
-basedpyright differs from pyright by publishing the command line tool as a pypi package instead of an npm package: https://pypi.org/project/basedpyright/
+basedpyright differs from pyright by publishing the command line tool as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package. this makes it far more convenient for python developers to use, since there's no need to install any additional tools.
 
-this makes it far more convenient for python developers to use, since you don't have to install any additional tools.
 for more information, see the [installation instructions](https://detachhead.github.io/basedpyright/#/installation?id=command-line).
 
 # vscode extension
