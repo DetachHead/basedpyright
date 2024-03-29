@@ -1,5 +1,16 @@
 <h1><img src="https://github.com/DetachHead/basedpyright/assets/57028336/c7342c31-bf23-413c-af6d-bc430898b3dd"> basedpyright</h1>
 
+## ⛓ Links:
+- 📚 Documentation: https://detachhead.github.io/basedpyright
+- 🛝 Playground: http://basedpyright.com
+- 🐍 Stable Version: [![Stable Version](https://img.shields.io/pypi/v/basedmypy?color=blue)](https://pypi.org/project/basedpyright/)
+- ⌨️ Editor Extensions:
+  - [VS marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+  - [open VSX](https://open-vsx.org/extension/detachhead/basedpyrigh) 
+  - neovim: [installation](https://detachhead.github.io/basedpyright/#/installation?id=neovim) | [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
+- 🎮 Discord: [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord)](https://discord.gg/7y9upqPrk2)
+
+
 Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, improved vscode support and pylance features built into the language server.
 
 ## why?
