@@ -38,6 +38,7 @@ import { getFileSpec, tryStat } from './common/uri/uriUtils';
 import { PyrightFileSystem } from './pyrightFileSystem';
 import { Uri } from './common/uri/uri';
 import { toolName } from './constants';
+import version from './version.json';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -545,7 +546,7 @@ function buildTypeCompletenessReport(
     minSeverityLevel: SeverityLevel
 ): PyrightJsonResults {
     const report: PyrightJsonResults = {
-        version: getVersionString(),
+        version,
         time: Date.now().toString(),
         generalDiagnostics: [],
         summary: {
@@ -796,14 +797,10 @@ function printUsage() {
     );
 }
 
-function getVersionString() {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const version = require('../package.json').version;
-    return version.toString();
-}
-
 function printVersion(console: ConsoleInterface) {
-    console.info(`${toolName} ${getVersionString()}`);
+    console.info(`${toolName} ${version}`);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    console.info(`based on pyright ${require('../package.json').version}`);
 }
 
 function reportDiagnosticsAsJson(
@@ -813,7 +810,7 @@ function reportDiagnosticsAsJson(
     timeInSec: number
 ): DiagnosticResult {
     const report: PyrightJsonResults = {
-        version: getVersionString(),
+        version,
         time: Date.now().toString(),
         generalDiagnostics: [],
         summary: {
