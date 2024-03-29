@@ -108,4 +108,5 @@ export enum DiagnosticRule {
     reportAny = 'reportAny',
     reportIgnoreCommentWithoutRule = 'reportIgnoreCommentWithoutRule',
     reportPrivateLocalImportUsage = 'reportPrivateLocalImportUsage',
+    reportImplicitRelativeImport = 'reportImplicitRelativeImport',
 }

@@ -84,6 +84,30 @@ from foo import a
 from foo import b
 ```
 
+
+#### `reportImplicitRelativeImport` - reporting errors on invalid "relative" imports
+
+pyright allows invalid imports such as this:
+```py
+# ./module_name/foo.py:
+```
+```py
+# ./module_name/bar.py:
+import foo # wrong! should be `import module_name.foo` or `from module_name import foo`
+```
+
+this may look correct at first glance, and will work when running `bar.py` directly as a script, but when it's imported as a module, it will crash:
+```py
+# ./main.py:
+import module_name.bar  # ModuleNotFoundError: No module named 'foo' 
+```
+
+the new `reportImplicitRelativeImport` rule bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from `.` (the current package):
+```py
+# ./module_name/bar.py:
+from . import foo
+```
+
 ### re-implementing pylance-exclusive features
 
 basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)).
@@ -129,29 +153,6 @@ mode = "strict"  # wrong! the setting you're looking for is called `typeChecking
 in this example, it's very easy for errors to go undetected because you thought you were on strict mode, but in reality pyright just ignored the setting and silently continued type-checking on "basic" mode.
 
 to solve this problem, basedpyright will exit with code 3 on any invalid config.
-
-### reporting errors on invalid "relative" imports
-
-pyright allows invalid imports such as this:
-```py
-# ./module_name/foo.py:
-```
-```py
-# ./module_name/bar.py:
-import foo # wrong! should be `import module_name.foo` or `from module_name import foo`
-```
-
-this may look correct at first glance, and will work when running `bar.py` directly as a script, but when it's imported as a module, it will crash:
-```py
-# ./main.py:
-import module_name.bar  # ModuleNotFoundError: No module named 'foo' 
-```
-
-basedpyright bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from `.` (the current package):
-```py
-# ./module_name/bar.py:
-from . import foo
-```
 
 ### fixes for the `reportRedeclaration` and `reportDuplicateImport` rules
 

@@ -32,6 +32,12 @@ export interface ImportResult {
     // with one or more dots).
     isRelative: boolean;
 
+    /**
+     * indicates whether the import was implicitly relative (ie. not the full path to
+     * the module, but it could be resolved if a leading `.` was added to the import)
+     */
+    isImplicitlyRelative: boolean;
+
     // True if import was resolved to a module or file.
     isImportFound: boolean;
 
