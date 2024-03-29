@@ -32,4 +32,34 @@ Emacs users can install [eglot](https://github.com/joaotavora/eglot) or [lsp-mod
 
 ### Command-line
 
-unlike pyright, basedpyright is available as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package. for more information, [see here](https://detachhead.github.io/basedpyright/#/?id=published-as-a-pypi-package-no-nodejs-required)
+unlike pyright, basedpyright is available as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package.
+
+this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:
+
+<!-- tabs:start -->
+
+#### **pdm**
+
+```
+pdm add basedpyright
+```
+
+#### **rye**
+
+```
+rye add basedpyright
+```
+
+#### **uv**
+
+```
+uv pip install basedpyright
+```
+
+#### **pip**
+
+```
+pip install basedpyright
+```
+
+<!-- tabs:end -->
