@@ -21,9 +21,8 @@ Vim/Neovim users can install [coc-pyright](https://github.com/fannheyward/coc-py
 Alternatively, [ALE](https://github.com/dense-analysis/ale) will automatically check your code with Pyright if added to the linters list.
 
 #### Sublime Text
-*⚠ basedpyright has not been tested on this editor. if you run into issues with these instructions, please raise an issue.*
 
-Sublime text users can install the [LSP-pyright](https://github.com/sublimelsp/LSP-pyright) plugin from [package control](https://packagecontrol.io/packages/LSP-pyright).
+Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP) and [LSP-basedpyright](https://packagecontrol.io/packages/LSP-basedpyright) via [Package Control](https://packagecontrol.io).
 
 #### Emacs
 *⚠ basedpyright has not been tested on this editor. if you run into issues with these instructions, please raise an issue.*
