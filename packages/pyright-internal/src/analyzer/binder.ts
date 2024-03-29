@@ -20,13 +20,13 @@ import { Commands } from '../commands/commands';
 import { appendArray } from '../common/collectionUtils';
 import { DiagnosticLevel } from '../common/configOptions';
 import { assert, assertNever, fail } from '../common/debug';
-import { CreateTypeStubFileAction, Diagnostic } from '../common/diagnostic';
+import { CreateTypeStubFileAction, Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { stripFileExtension } from '../common/pathUtils';
 import { convertTextRangeToRange } from '../common/positionUtils';
 import { TextRange, getEmptyRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { LocMessage } from '../localization/localize';
+import { LocAddendum, LocMessage } from '../localization/localize';
 import {
     ArgumentCategory,
     AssertNode,
@@ -388,6 +388,28 @@ export class Binder extends ParseTreeWalker {
                 node
             );
             return true;
+        } else if (importResult.isImplicitlyRelative) {
+            const diagAddendum = new DiagnosticAddendum();
+            diagAddendum.addMessage(
+                LocAddendum.explicitRelativeImportSuggestion().format({ importName: importResult.importName })
+            );
+            // TODO: is there a better way to get the package name here? i think this would always match but idk for sure
+            const currentModuleRegex = /\.[^.]*$/;
+            if (this._fileInfo.moduleName.match(currentModuleRegex)) {
+                const fullModuleName = `${this._fileInfo.moduleName.replace(currentModuleRegex, '')}.${
+                    importResult.importName
+                }`;
+                diagAddendum.addMessage(LocAddendum.fullPathImportSuggestion().format({ importName: fullModuleName }));
+            }
+
+            this._addDiagnostic(
+                this._fileInfo.diagnosticRuleSet.reportImplicitRelativeImport,
+                DiagnosticRule.reportImplicitRelativeImport,
+                LocMessage.implicitRelativeImport().format({
+                    importName: importResult.importName,
+                }) + diagAddendum.getString(),
+                node
+            );
         }
 
         // A source file was found, but the type stub was missing.

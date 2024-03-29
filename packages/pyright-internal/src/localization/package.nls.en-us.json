@@ -618,7 +618,8 @@
         "zeroCaseStatementsFound": "Match statement must include at least one case statement",
         "zeroLengthTupleNotAllowed": "Zero-length tuple is not allowed in this context",
         "pyrightIgnoreCommentWithoutRule": "`pyright: ignore` comment must specify a rule (eg. `# pyright: ignore[ruleName]`)",
-        "typeIgnoreCommentWithoutRule": "`type: ignore` comment must specify a rule (eg. `# type: ignore[ruleName]`)"
+        "typeIgnoreCommentWithoutRule": "`type: ignore` comment must specify a rule (eg. `# type: ignore[ruleName]`)",
+        "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "\"Annotated\" special form cannot be used with instance and class checks",
@@ -790,7 +791,9 @@
         "useTupleInstead": "Use tuple[T1, ..., Tn] to indicate a tuple type or Union[T1, T2] to indicate a union type",
         "useTypeInstead": "Use Type[T] instead",
         "varianceMismatchForClass": "Variance of type argument \"{typeVarName}\" is incompatible with base class \"{className}\"",
-        "varianceMismatchForTypeAlias": "Variance of type argument \"{typeVarName}\" is incompatible with \"{typeAliasParam}\""
+        "varianceMismatchForTypeAlias": "Variance of type argument \"{typeVarName}\" is incompatible with \"{typeAliasParam}\"",
+        "explicitRelativeImportSuggestion": "Use a relative import from `.{importName}` instead",
+        "fullPathImportSuggestion": "or specify the full module path: `{importName}`"
     },
     "CodeAction": {
         "createTypeStub": "Create Type Stub",

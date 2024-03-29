@@ -678,6 +678,12 @@
       "title": "Controls reporting of improper usage of symbols imported from a non-\"py.typed\" module that are not re-exported from that module. Should be used along with `reportPrivateImportUsage`",
       "default": "none"
     },
+    "reportImplicitRelativeImport": {
+      "$id": "#/properties/reportImplicitRelativeImport",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of non-relative imports that do not specify the full path to the module.",
+      "default": "none"
+    },
     "extraPaths": {
       "$id": "#/properties/extraPaths",
       "type": "array",

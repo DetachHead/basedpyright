@@ -1550,6 +1550,22 @@
                                 true,
                                 false
                             ]
+                        },
+                        "reportImplicitRelativeImport": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for non-relative imports that do not specify the full path to the module",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
                         }
                     }
                 },

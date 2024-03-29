@@ -1176,6 +1176,8 @@ export namespace Localizer {
         export const zeroLengthTupleNotAllowed = () => getRawString('Diagnostic.zeroLengthTupleNotAllowed');
         export const pyrightIgnoreCommentWithoutRule = () => getRawString('Diagnostic.pyrightIgnoreCommentWithoutRule');
         export const typeIgnoreCommentWithoutRule = () => getRawString('Diagnostic.typeIgnoreCommentWithoutRule');
+        export const implicitRelativeImport = () =>
+            new ParameterizedString<{ importName: string }>(getRawString('Diagnostic.implicitRelativeImport'));
     }
 
     export namespace DiagnosticAddendum {
@@ -1580,6 +1582,14 @@ export namespace Localizer {
         export const varianceMismatchForTypeAlias = () =>
             new ParameterizedString<{ typeVarName: string; typeAliasParam: string }>(
                 getRawString('DiagnosticAddendum.varianceMismatchForTypeAlias')
+            );
+        export const explicitRelativeImportSuggestion = () =>
+            new ParameterizedString<{ importName: string }>(
+                getRawString('DiagnosticAddendum.explicitRelativeImportSuggestion')
+            );
+        export const fullPathImportSuggestion = () =>
+            new ParameterizedString<{ importName: string }>(
+                getRawString('DiagnosticAddendum.fullPathImportSuggestion')
             );
     }
 

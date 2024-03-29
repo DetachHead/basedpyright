@@ -381,18 +381,11 @@ export interface DiagnosticRuleSet {
     reportImplicitOverride: DiagnosticLevel;
 
     // basedpyright options:
-
-    // Report unreachable code
     reportUnreachable: DiagnosticLevel;
-
-    // Report usages of Any-typed values
     reportAny: DiagnosticLevel;
-
-    // Report ignore comments without a specified rule
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
-
-    // the "works properly" version of reportPrivateImportUsage
     reportPrivateLocalImportUsage: DiagnosticLevel;
+    reportImplicitRelativeImport: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -622,6 +615,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
+        reportImplicitRelativeImport: 'none',
     };
 
     return diagSettings;
@@ -728,6 +722,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
+        reportImplicitRelativeImport: 'none',
     };
 
     return diagSettings;
@@ -834,6 +829,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
+        reportImplicitRelativeImport: 'none',
     };
 
     return diagSettings;
@@ -939,6 +935,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportAny: 'error',
     reportIgnoreCommentWithoutRule: 'error',
     reportPrivateLocalImportUsage: 'error',
+    reportImplicitRelativeImport: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1042,6 +1039,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
+        reportImplicitRelativeImport: 'none',
     };
 
     return diagSettings;

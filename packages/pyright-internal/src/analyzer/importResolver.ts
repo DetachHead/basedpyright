@@ -584,12 +584,16 @@ export class ImportResolver {
 
             this.cachedParentImportResults.checked(current!, importName, importPath);
 
-            // TODO: figure out how namespace packages work. we disable this stupid fake relative import functionality because it's wrong
-            //  (https://github.com/DetachHead/basedpyright/issues/76) but it seems like stub imports and some mysterious namespace package
-            //  functionality rely on this behavior. so for now i'm just disabling it for everything except namespace packages & stub files
-            if (result.isImportFound && (result.isNamespacePackage || result.isStubFile)) {
+            if (result.isImportFound) {
                 // This will make cache to point to actual path that contains the module we found
                 importPath.importPath = current;
+
+                if (!result.isNamespacePackage && !result.isStubFile) {
+                    // TODO: figure out how namespace packages work. we identify this fake relative import functionality as such so it can be banned
+                    // with a diagnostic rule, but it seems like stub imports and some mysterious namespace package functionality rely on this behavior.
+                    // so for now i'm just not reporting it for namespace packages & stub files
+                    result.isImplicitlyRelative = true;
+                }
 
                 this.cachedParentImportResults.add({
                     importResult: result,
@@ -899,6 +903,7 @@ export class ImportResolver {
         const notFoundResult: ImportResult = {
             importName,
             isRelative: false,
+            isImplicitlyRelative: false,
             isImportFound: false,
             isPartlyResolved: false,
             isNamespacePackage: false,
@@ -1471,6 +1476,7 @@ export class ImportResolver {
         return {
             importName,
             isRelative: false,
+            isImplicitlyRelative: false,
             isNamespacePackage,
             isInitFilePresent,
             isStubPackage,

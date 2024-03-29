@@ -10,7 +10,7 @@
 //// #empty
 
 // @ts-ignore
-await helper.verifyCompletion('excluded', 'markdown', {
+await helper.verifyCompletion('included', 'markdown', {
     marker: {
         completions: [{ label: 'data_processing', kind: Consts.CompletionItemKind.Module }],
     },
