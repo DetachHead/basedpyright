@@ -1,17 +1,10 @@
 <h1><img src="https://github.com/DetachHead/basedpyright/assets/57028336/c7342c31-bf23-413c-af6d-bc430898b3dd"> basedpyright</h1>
 
-## ⛓ Links:
-- 📚 Documentation: https://detachhead.github.io/basedpyright
-- 🛝 Playground: http://basedpyright.com
-- 🐍 Stable Version: [![Stable Version](https://img.shields.io/pypi/v/basedmypy?color=blue)](https://pypi.org/project/basedpyright/)
-- ⌨️ Editor Extensions:
-  - [VS marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
-  - [open VSX](https://open-vsx.org/extension/detachhead/basedpyrigh) 
-  - neovim: [installation](https://detachhead.github.io/basedpyright/#/installation?id=neovim) | [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
-- 🎮 Discord: [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord)](https://discord.gg/7y9upqPrk2)
-
+[![Stable Version](https://img.shields.io/pypi/v/basedpyright?logo=pypi)](https://pypi.org/project/basedpyright/) [![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium)](https://open-vsx.org/extension/detachhead/basedpyright) [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright) [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord)](https://discord.gg/7y9upqPrk2)
 
 Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, improved vscode support and pylance features built into the language server.
+
+📚 [Documentation](https://detachhead.github.io/basedpyright) | 🛝 [Playground](http://basedpyright.com)
 
 ## why?
 
@@ -193,35 +186,10 @@ we aim to [port most of basedmypy's features to basedpyright](https://github.com
 
 # pypi package
 
-[![](https://img.shields.io/pypi/v/basedpyright?color=blue)](https://pypi.org/project/basedpyright/)
+basedpyright differs from pyright by publishing the command line tool as a pypi package instead of an npm package: https://pypi.org/project/basedpyright/
 
-basedpyright differs from pyright by publishing the command line tool as a pypi package instead of an npm package. this makes it far more convenient for python developers to use.
-
-```shell
-> basedpyright --help
-Usage: basedpyright [options] files...
-  Options:
-  --createstub <IMPORT>              Create type stub file(s) for import
-  --dependencies                     Emit import dependency information
-  -h,--help                          Show this help message
-  --ignoreexternal                   Ignore external imports for --verifytypes
-  --level <LEVEL>                    Minimum diagnostic level (error or warning)
-  --outputjson                       Output results in JSON format
-  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location
-  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)
-  --pythonpath <FILE>                Path to the Python interpreter
-  --pythonversion <VERSION>          Analyze for a specific version (3.3, 3.4, etc.)
-  --skipunannotated                  Skip analysis of functions with no type annotations
-  --stats                            Print detailed performance stats
-  -t,--typeshedpath <DIRECTORY>      Use typeshed type stubs at this location
-  -v,--venvpath <DIRECTORY>          Directory that contains virtual environments
-  --verbose                          Emit verbose diagnostics
-  --verifytypes <PACKAGE>            Verify type completeness of a py.typed package
-  --version                          Print Pyright version and exit
-  --warnings                         Use exit code of 1 if warnings are reported
-  -w,--watch                         Continue to run and watch for changes
-  -                                  Read files from stdin
-```
+this makes it far more convenient for python developers to use, since you don't have to install any additional tools.
+for more information, see the [installation instructions](https://detachhead.github.io/basedpyright/#/installation?id=command-line).
 
 # vscode extension
 
