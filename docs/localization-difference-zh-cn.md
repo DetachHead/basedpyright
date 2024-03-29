@@ -15,10 +15,14 @@ Below is a quick reference table of the adjustments. The reasons for the adjustm
 | Any                          | 任意                            | Any                             |
 | follow                       | 遵循                            | 在..之后                        |
 | import                       | 导入/Import                     | 导入                            |
-| obscure                      | 遮盖/隐蔽                       | 遮盖                            |
+| obscure                      | 遮盖/隐蔽                       | 遮盖/掩盖                       |
 | True                         | true/True                       | True                            |
 | implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                |
 | comprehension                | 理解                            | 推导式                          |
+| parameter                    | 参数                            | 参数/形参                       |
+| argument                     | 参数                            | 参数/实参                       |
+| annotation                   | （类型）批注                    | （类型）标注                    |
+| assign                       | 分配                            | 指派给/到（参数）               |
 
 其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在pyright注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 python 中的布尔值。
 
@@ -46,9 +50,9 @@ Similar to **Any**, there is **Unknown**, but **Unknown** is not a built-in type
 
 **follow** usually appears in rules where a syntax cannot appear after another syntax, for example `nonDefaultAfterDefault`.
 
-In the original translation, **follow** was translated as **遵循**, but in the Chinese context, **遵循** is usually used to describe human behavior, not the positional relationship of an object. Therefore, **follow** has been adjusted to **在..之后** to describe the positional relationship of an object.
+In the original translation, **follow** was translated as **遵循** (obeying), but in the Chinese context, **遵循** is usually used to describe human behavior, not the positional relationship of an object. Therefore, **follow** has been adjusted to **在..之后** to describe the positional relationship of an object.
 
-例子/Examples：
+例子/Example(s)：
 
 ```python
 def foo(a=1, b) -> int: ...  # 非默认参数遵循默认参数（官方中文/Official Chinese）
@@ -64,7 +68,7 @@ def foo(a=1, b) -> int: ...  # 非默认参数遵循默认参数（官方中文/
 
 **implement** is commonly translated as **实现** in the programming world and was used in most of the original translations, with occasional entries (`abstractMethodInvocation` and `overloadFinalInconsistencyImpl`) are mistranslated as **实施**, **实行**, etc., so they are unified as **实现**/**未实现（的）**.
 
-例子/Examples：
+例子/Example(s)：
 
 ```python
 from abc import abstractmethod
@@ -73,7 +77,6 @@ class A:
     @abstractmethod
     def a(self):
         raise NotImplementedError
-
 
 class B(A):
     def a(self):
@@ -84,19 +87,62 @@ class B(A):
 
 ### comprehension
 
-**comprehension** 属于 Python 中的一个专有名词，Python 官方中文文档中称其为 **推导式**。Pyright 翻译则全部错译为 **理解**。
+**comprehension** 是 Python 中的一个术语，Python 官方中文文档中称其为 **推导式**。Pyright 翻译则全部错译为 **理解**。
 
 ---
 
-**comprehension** is a Python term, and the official Python Chinese documentation refers to it as **推导式**. The Pyright translations all mistranslate it as **理解** (understanding).
+**comprehension** is a Python term, and the official Python Chinese documentation refers to it as **推导式**. Pyright translations all mistranslate it as **理解** (understanding).
 
-例子/Examples：
+例子/Example(s)：
 
 ```python
 [a := a for a in "lorem ipsum"]  # 赋值表达式目标“a”不能使用与目标理解相同的名称（官方中文/Official Chinese）
                                  # Assignment expression target "a" cannot use same name as comprehension for target（官方英文/Official English）
                                  # 海象运算符赋值的变量名“a”不能与推导变量重名（修改版本/Modified version）
 ```
+
+### parameter & argument
+
+在实际语境中，**parameter** 指定义函数时标注的 **参数**，也称作 **形参**；而 **argument** 指调用函数时实际传入的 **参数**，也称作 **实参**。Pyright 翻译则未做区分，全部译为 **参数**。
+
+考虑到 **实参**、**形参** 在表述中可能较为生硬，一般仅当需要区分二者时使用，否则可根据实际情况优先译为 **参数**。
+
+---
+
+In the actual context, **parameter** refers to the parameter labeled when defining a function, which is also called **形参**, while **argument** refers to the actual parameter passed when calling a function, which is also called **实参**, and Pyright translates all of them as **参数** without any distinction.
+
+Considering the fact that **实参** and **形参** may be less fluent to express, they are generally used only when there is a need to distinguish between them, otherwise they can be translated as **参数** according to the actual situation in preference.
+
+例子/Example(s)：
+
+```python
+def func(a: int, b: str):
+    ...
+
+func(12, 42)  # 无法将“Literal[42]”类型的参数分配给函数“func”中类型为“str”的参数“b”（官方中文/Official Chinese）
+              # Argument of type "Literal[42]" cannot be assigned to parameter "b" of type "str" in function "func"（官方英文/Official English）
+              # “Literal[42]”类型的实参无法确定为函数“func”中“str”类型的形参“b”（修改版本/Modified version）
+```
+
+### annotation
+
+Type/typing **annotation** 是 Python 中的一个术语，Python 官方中文文档中称其为 类型**标注**。Pyright 则译为 类型**批注**。
+
+---
+
+Type/typing **annotation** is a Python term, and the official Python Chinese documentation refers to it as 类型**标注**, while Pyright translated it into 类型**批注**.
+
+例子/Example(s)：
+
+```python
+lambda x: int: x ** 2  # 此语句不支持类型批注（官方中文/Official Chinese）
+                       # Type annotation not supported for this statement（官方英文/Official English）
+                       # 此语句不支持类型标注（修改版本/Modified version）
+```
+
+### assign
+
+**assign** 在实际语境中一般用来指明 A 类型的参数能否与 B 类型的参数匹配，Pyright 则译为 **分配**。译者认为其应翻译为**指派**给/到某参数。
 
 ## 风格调整 (Style Adjustments)
 
