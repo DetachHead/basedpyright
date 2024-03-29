@@ -10,19 +10,19 @@ Due to some issues with the translation of Pyright, some adjustments have been m
 
 Below is a quick reference table of the adjustments. The reasons for the adjustments and the scope of their impact will be described in the following text.
 
-| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) |
-| ---------------------------- | ------------------------------- | ------------------------------- |
-| Any                          | 任意                            | Any                             |
-| follow                       | 遵循                            | 在..之后                        |
-| import                       | 导入/Import                     | 导入                            |
-| obscure                      | 遮盖/隐蔽                       | 遮盖/掩盖                       |
-| True                         | true/True                       | True                            |
-| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                |
-| comprehension                | 理解                            | 推导式                          |
-| parameter                    | 参数                            | 参数/形参                       |
-| argument                     | 参数                            | 参数/实参                       |
-| annotation                   | （类型）批注                    | （类型）标注                    |
-| assign                       | 分配                            | 指派给/到（参数）               |
+| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) | 错译类型 (Type of Mistranslation)             |
+| ---------------------------- | ------------------------------- | ------------------------------- | --------------------------------------------- |
+| annotation                   | （类型）批注                    | （类型）标注                    | 与文档不一致/Not consistent with Python docs |
+| Any                          | 任意                            | Any                             | 语义错误/Wrong meaning in context             |
+| argument                     | 参数                            | 参数/实参                       | 语义错误/Wrong meaning in context            |
+| import                       | 导入/Import                     | 导入                            | 语义错误/Wrong meaning in context             |
+| parameter                    | 参数                            | 参数/形参                       | 语义错误/Wrong meaning in context            |
+| True                         | true/True                       | True                            | 语义错误/Wrong meaning in context            |
+| assign                       | 分配                            | 指派给/到（参数）               | 词义错误/Wrong word meaning                   |
+| comprehension                | 理解                            | 推导式                          | 词义错误/Wrong word meaning                   |
+| follow                       | 遵循                            | 在..之后                        | 词义错误/Wrong word meaning                   |
+| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                | 词义错误/Wrong word meaning                   |
+| obscure                      | 遮盖/隐蔽                       | 遮盖/掩盖                       | 词义错误/Wrong word meaning                   |
 
 其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在pyright注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 python 中的布尔值。
 
