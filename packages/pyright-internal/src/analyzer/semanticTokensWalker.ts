@@ -8,13 +8,16 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
+    LambdaNode,
     NameNode,
+    ParameterNode,
     ParseNodeType,
     TypeAliasNode,
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
+import { isParameterDeclaration } from './declaration';
 
 export type SemanticTokenItem = {
     type: string;
@@ -48,6 +51,15 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
         // parameters & return type are covered by visitName
         return super.visitFunction(node);
+    }
+
+    override visitParameter(node: ParameterNode): boolean {
+        if (node.name) {
+            this._addItem(node.name.start, node.name.length, SemanticTokenTypes.parameter, [
+                SemanticTokenModifiers.definition,
+            ]);
+        }
+        return super.visitParameter(node);
     }
 
     override visitDecorator(node: DecoratorNode) {
@@ -147,16 +159,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case TypeCategory.Module:
                 this._addItem(node.start, node.length, SemanticTokenTypes.namespace, []);
                 return;
-            case TypeCategory.Unbound:
+            // handled bellow
             case TypeCategory.Unknown:
+            case TypeCategory.TypeVar:
+                break;
+            case TypeCategory.Unbound:
             case undefined:
                 return;
-            case TypeCategory.TypeVar:
-                if (!(type.flags & TypeFlags.Instance)) {
-                    this._addItem(node.start, node.length, SemanticTokenTypes.typeParameter, []);
-                    return;
-                }
-                break;
             case TypeCategory.Union:
                 if (!(type.flags & TypeFlags.Instance)) {
                     this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
@@ -195,6 +204,22 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             // for some reason Never is considered both instantiable and an instance, so we need to look up the type this way
             // to differentiate between "instances" of `Never` and type aliases/annotations of Never:
             this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
+            return;
+        }
+        const declarations = this._evaluator?.getDeclarationsForNameNode(node);
+        if (declarations?.some(isParameterDeclaration)) {
+            const parent = declarations[0].node.parent as FunctionNode | LambdaNode;
+            // Avoid duplicates for parameters visited by `visitParameter`
+            if (!parent.parameters.some((param) => param.name?.id === node.id)) {
+                this._addItem(node.start, node.length, SemanticTokenTypes.parameter, []);
+            }
+        } else if (type?.category === TypeCategory.TypeVar && !(type.flags & TypeFlags.Instance)) {
+            // `cls` method parameter is treated as a TypeVar in some special methods (methods
+            // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
+            // check first if it's a parameter before checking that it's a TypeVar
+            this._addItem(node.start, node.length, SemanticTokenTypes.typeParameter, []);
+        } else if (type?.category === TypeCategory.Unknown) {
+            return;
         } else if (isConstantName(node.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
             this._addItem(node.start, node.length, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
         } else {

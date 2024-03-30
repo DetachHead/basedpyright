@@ -72,10 +72,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: [], start: 19, length: 8 },
             { type: 'function', modifiers: ['definition'], start: 34, length: 3 },
             { type: 'function', modifiers: [], start: 34, length: 3 },
-            { type: 'variable', modifiers: [], start: 38, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 38, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 },
-            { type: 'variable', modifiers: [], start: 47, length: 1 },
-            { type: 'variable', modifiers: [], start: 52, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 47, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 52, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 58, length: 3 },
             { type: 'function', modifiers: [], start: 72, length: 3 },
             { type: 'type', modifiers: [], start: 79, length: 3 },
@@ -173,7 +173,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
             { type: 'function', modifiers: [], start: 162, length: 5 },
             { type: 'method', modifiers: [], start: 176, length: 6 },
-            { type: 'variable', modifiers: [], start: 183, length: 4 }, // self
+            { type: 'parameter', modifiers: ['definition'], start: 183, length: 4 }, // self
             { type: 'method', modifiers: ['definition'], start: 220, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 199, length: 12 },
@@ -186,6 +186,47 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
             { type: 'function', modifiers: [], start: 246, length: 5 },
             { type: 'function', modifiers: [], start: 256, length: 6 },
+        ]);
+    });
+
+    test('parameters', () => {
+        const result = semanticTokenizeSampleFile('parameters.py');
+        expect(result).toStrictEqual([
+            // method
+            { type: 'class', modifiers: ['definition'], start: 6, length: 1 }, // C
+            { type: 'class', modifiers: [], start: 6, length: 1 },
+            { type: 'method', modifiers: ['definition'], start: 17, length: 8 }, // __init__
+            { type: 'method', modifiers: [], start: 17, length: 8 },
+            { type: 'parameter', modifiers: ['definition'], start: 26, length: 4 }, // self
+            { type: 'parameter', modifiers: ['definition'], start: 32, length: 1 }, // x
+            { type: 'parameter', modifiers: [], start: 44, length: 4 }, // self
+            { type: 'variable', modifiers: [], start: 49, length: 1 }, // x
+            { type: 'parameter', modifiers: [], start: 53, length: 1 }, // x
+            { type: 'method', modifiers: ['definition'], start: 81, length: 1 }, // m
+            { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 61, length: 11 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 61, length: 11 }, // classmethod
+            { type: 'method', modifiers: [], start: 81, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 83, length: 3 }, // cls
+            { type: 'parameter', modifiers: [], start: 104, length: 3 }, // cls
+            // function
+            { type: 'function', modifiers: ['definition'], start: 116, length: 1 }, // f
+            { type: 'function', modifiers: [], start: 116, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 118, length: 1 }, // x
+            { type: 'parameter', modifiers: ['definition'], start: 121, length: 1 }, // y
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 124, length: 3 }, // int
+            { type: 'function', modifiers: ['definition'], start: 138, length: 1 }, // g
+            { type: 'function', modifiers: [], start: 138, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 140, length: 1 }, // x
+            { type: 'parameter', modifiers: [], start: 159, length: 1 }, // x
+            { type: 'parameter', modifiers: [], start: 163, length: 1 }, // y
+            { type: 'parameter', modifiers: [], start: 177, length: 1 }, // x
+            { type: 'function', modifiers: [], start: 190, length: 1 }, // g
+            // lambda
+            { type: 'parameter', modifiers: ['definition'], start: 203, length: 1 }, // a
+            { type: 'parameter', modifiers: ['definition'], start: 206, length: 1 }, // b
+            { type: 'parameter', modifiers: [], start: 209, length: 1 }, // a
+            { type: 'parameter', modifiers: [], start: 213, length: 1 }, // b
         ]);
     });
 } else {
