@@ -1,8 +1,8 @@
-# Localization Difference between basedpyright and pyright
+# Localization Difference between BasedPyright and Pylance
 
-由于 pyright 的翻译存在一些问题，因此在 basedpyright 中对其部分翻译进行了调整，以更加符合中文语境。该文档主要供后续本地化工作参考，因此主要以中文进行描述并提供英文版本，以便其他语言的开发者了解本次工作的内容。
+由于 Pylance 的翻译存在一些问题，因此在 BasedPyright 中对其部分翻译进行了调整，以更加符合中文语境。该文档主要供后续本地化工作参考，因此主要以中文进行描述并提供英文版本，以便其他语言的开发者了解本次工作的内容。
 
-Due to some issues with the translation of Pyright, some adjustments have been made in BasedPyright to better fit the Chinese context. This document is mainly for reference in subsequent localization work, so it is primarily described in Chinese and provides an English version, so that developers of other languages can understand the content of this work.
+Due to some issues with the translation of Pylance, some adjustments have been made in BasedPyright to better fit the Chinese context. This document is mainly for reference in subsequent localization work, so it is primarily described in Chinese and provides an English version, so that developers of other languages can understand the content of this work.
 
 ## 用词调整 (Word Adjustments)
 
@@ -10,23 +10,23 @@ Due to some issues with the translation of Pyright, some adjustments have been m
 
 Below is a quick reference table of the adjustments. The reasons for the adjustments and the scope of their impact will be described in the following text.
 
-| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) | 错译类型 (Type of Mistranslation)             |
-| ---------------------------- | ------------------------------- | ------------------------------- | --------------------------------------------- |
-| annotation                   | （类型）批注                    | （类型）标注                    | 与文档不一致/Not consistent with Python docs |
-| Any                          | 任意                            | Any                             | 语义错误/Wrong meaning in context             |
-| argument                     | 参数                            | 参数/实参                       | 语义错误/Wrong meaning in context            |
-| import                       | 导入/Import                     | 导入                            | 语义错误/Wrong meaning in context             |
-| parameter                    | 参数                            | 参数/形参                       | 语义错误/Wrong meaning in context            |
-| True                         | true/True                       | True                            | 语义错误/Wrong meaning in context            |
-| assign                       | 分配                            | 指派给/到（参数）               | 词义错误/Wrong word meaning                   |
-| comprehension                | 理解                            | 推导式                          | 词义错误/Wrong word meaning                   |
-| follow                       | 遵循                            | 在..之后                        | 词义错误/Wrong word meaning                   |
-| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                | 词义错误/Wrong word meaning                   |
-| obscure                      | 遮盖/隐蔽                       | 遮盖/掩盖                       | 词义错误/Wrong word meaning                   |
+| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) | 错译类型 (Type of Mistranslation)           |
+| ---------------------------- | ------------------------------- | ------------------------------- | ------------------------------------------- |
+| annotation                   | （类型）批注                    | （类型）标注                    | 与文档不一致/Inconsistent with Python docs |
+| Any                          | 任意                            | Any                             | 语义错误/Wrong meaning in context           |
+| argument                     | 参数                            | 参数/实参                       | 语义错误/Wrong meaning in context          |
+| import                       | 导入/Import                     | 导入                            | 语义错误/Wrong meaning in context           |
+| parameter                    | 参数                            | 参数/形参                       | 语义错误/Wrong meaning in context          |
+| True                         | true/True                       | True                            | 语义错误/Wrong meaning in context          |
+| assign                       | 分配                            | 赋值                            | 词义错误/Wrong word meaning                 |
+| comprehension                | 理解                            | 推导式                          | 词义错误/Wrong word meaning                 |
+| follow                       | 遵循                            | 在..之后                        | 词义错误/Wrong word meaning                 |
+| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                | 词义错误/Wrong word meaning                 |
+| obscure                      | 遮盖/隐蔽                       | 覆盖                            | 词义错误/Wrong word meaning                 |
 
-其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在pyright注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 python 中的布尔值。
+其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在 Pylance 注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 Python 中的布尔值。
 
-Among them, **import**, **obscure** and **True** have multiple translations in the original translation, so the translations have been unified in this adjustment. In the rules related to Pyright annotations, **True** is unified as **true**, because it does not represent a boolean value in Python.
+Among them, **import**, **obscure** and **True** have multiple translations in the original translation, so the translations have been unified in this adjustment. In the rules related to Pylance annotations, **True** is unified as **true**, because it does not represent a boolean value in Python.
 
 ### Any
 
@@ -87,11 +87,11 @@ class B(A):
 
 ### comprehension
 
-**comprehension** 是 Python 中的一个术语，Python 官方中文文档中称其为 **推导式**。Pyright 翻译则全部错译为 **理解**。
+**comprehension** 是 Python 中的一个术语，Python 官方中文文档中称其为 **推导式**。Pylance 翻译则全部错译为 **理解**。
 
 ---
 
-**comprehension** is a Python term, and the official Python Chinese documentation refers to it as **推导式**. Pyright translations all mistranslate it as **理解** (understanding).
+**comprehension** is a Python term, and the official Python Chinese documentation refers to it as **推导式**. Pylance translations all mistranslate it as **理解** (understanding).
 
 例子/Example(s)：
 
@@ -103,13 +103,13 @@ class B(A):
 
 ### parameter & argument
 
-在实际语境中，**parameter** 指定义函数时标注的 **参数**，也称作 **形参**；而 **argument** 指调用函数时实际传入的 **参数**，也称作 **实参**。Pyright 翻译则未做区分，全部译为 **参数**。
+在实际语境中，**parameter** 指定义函数时标注的 **参数**，也称作 **形参**；而 **argument** 指调用函数时实际传入的 **参数**，也称作 **实参**。Pylance 翻译则未做区分，全部译为 **参数**。
 
 考虑到 **实参**、**形参** 在表述中可能较为生硬，一般仅当需要区分二者时使用，否则可根据实际情况优先译为 **参数**。
 
 ---
 
-In the actual context, **parameter** refers to the parameter labeled when defining a function, which is also called **形参**, while **argument** refers to the actual parameter passed when calling a function, which is also called **实参**, and Pyright translates all of them as **参数** without any distinction.
+In the actual context, **parameter** refers to the parameter labeled when defining a function, which is also called **形参**, while **argument** refers to the actual parameter passed when calling a function, which is also called **实参**, and Pylance translates all of them as **参数** without any distinction.
 
 Considering the fact that **实参** and **形参** may be less fluent to express, they are generally used only when there is a need to distinguish between them, otherwise they can be translated as **参数** according to the actual situation in preference.
 
@@ -126,11 +126,11 @@ func(12, 42)  # 无法将“Literal[42]”类型的参数分配给函数“func�
 
 ### annotation
 
-Type/typing **annotation** 是 Python 中的一个术语，Python 官方中文文档中称其为 类型**标注**。Pyright 则译为 类型**批注**。
+Type/typing **annotation** 是 Python 中的一个术语，Python 官方中文文档中称其为 类型**标注**。Pylance 则译为 类型**批注**。
 
 ---
 
-Type/typing **annotation** is a Python term, and the official Python Chinese documentation refers to it as 类型**标注**, while Pyright translated it into 类型**批注**.
+Type/typing **annotation** is a Python term, and the official Python Chinese documentation refers to it as 类型**标注**, while Pylance translated it into 类型**批注**.
 
 例子/Example(s)：
 
@@ -142,7 +142,11 @@ lambda x: int: x ** 2  # 此语句不支持类型批注（官方中文/Official 
 
 ### assign
 
-**assign** 在实际语境中一般用来指明 A 类型的参数能否与 B 类型的参数匹配，Pyright 则译为 **分配**。译者认为其应翻译为**指派**给/到某参数。
+**assign** 在程序语境中一般译作 **赋值**，Pylance 则全部错译为 **分配**。
+
+---
+
+In programming context, **assign** is often translated into **赋值**, while Pylance all mistranslate it as **分配**.
 
 ## 风格调整 (Style Adjustments)
 
