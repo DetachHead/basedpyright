@@ -29,7 +29,7 @@ python developers should not be expected to have to install nodejs in order to t
 pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code. in fact, unreachable code is not even type-checked at all:
 
 ```py
-if sys.platform == "win32": 
+if sys.platform == "win32":
   1 + "" # no error
 ```
 
@@ -99,7 +99,7 @@ import foo # wrong! should be `import module_name.foo` or `from module_name impo
 this may look correct at first glance, and will work when running `bar.py` directly as a script, but when it's imported as a module, it will crash:
 ```py
 # ./main.py:
-import module_name.bar  # ModuleNotFoundError: No module named 'foo' 
+import module_name.bar  # ModuleNotFoundError: No module named 'foo'
 ```
 
 the new `reportImplicitRelativeImport` rule bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from `.` (the current package):
@@ -280,3 +280,28 @@ typeCheckingMode = "all"
 ```
 
 pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version.
+
+# pre-commit hook
+
+integration with [pre-commit](https://pre-commit.com) is also recommended.
+
+`.pre-commit-config.yaml`
+
+```yaml
+repos:
+  - repo: https://github.com/DetachHead/basedpyright
+    rev: v1.8.0
+    hooks:
+    - id: basedpyright
+```
+
+`pyproject.toml`
+
+to ensure that basedpyright is able to find all of the dependencies in your
+virtual env, add the following to your `pyproject.toml`
+
+```toml
+[tool.basedpyright]
+# ...
+venvPath = "."
+```

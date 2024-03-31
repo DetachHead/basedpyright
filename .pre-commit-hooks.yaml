@@ -1,0 +1,9 @@
+-   id: basedpyright
+    name: basedpyright
+    description: 'pyright fork with various type checking improvements, improved vscode support and pylance features built into the language server'
+    entry: basedpyright
+    language: python
+    'types_or': [python, pyi]
+    require_serial: true
+    additional_dependencies: []
+    minimum_pre_commit_version: '2.9.2'
