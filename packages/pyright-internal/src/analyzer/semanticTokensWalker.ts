@@ -160,6 +160,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 this._addItem(node.start, node.length, SemanticTokenTypes.namespace, []);
                 return;
             // handled bellow
+            case TypeCategory.Any:
             case TypeCategory.Unknown:
             case TypeCategory.TypeVar:
                 break;
@@ -218,7 +219,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
             // check first if it's a parameter before checking that it's a TypeVar
             this._addItem(node.start, node.length, SemanticTokenTypes.typeParameter, []);
-        } else if (type?.category === TypeCategory.Unknown) {
+            return;
+        } else if (
+            (type?.category === TypeCategory.Unknown || type?.category === TypeCategory.Any) &&
+            (declarations === undefined || declarations.length === 0)
+        ) {
             return;
         } else if (isConstantName(node.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
             this._addItem(node.start, node.length, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
