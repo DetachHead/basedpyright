@@ -87,6 +87,8 @@ from foo import b
 
 #### `reportImplicitRelativeImport` - reporting errors on invalid "relative" imports
 
+See the [docs entry on the topic](https://detachhead.github.io/basedpyright/#/import-resolution)
+
 pyright allows invalid imports such as this:
 ```py
 # ./module_name/foo.py:
