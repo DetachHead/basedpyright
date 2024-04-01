@@ -220,13 +220,35 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'parameter', modifiers: ['definition'], start: 140, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 159, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 163, length: 1 }, // y
+            { type: 'variable', modifiers: [], start: 169, length: 1 }, // z
             { type: 'parameter', modifiers: [], start: 177, length: 1 }, // x
             { type: 'function', modifiers: [], start: 190, length: 1 }, // g
+            { type: 'variable', modifiers: [], start: 192, length: 1 }, // z
             // lambda
             { type: 'parameter', modifiers: ['definition'], start: 203, length: 1 }, // a
             { type: 'parameter', modifiers: ['definition'], start: 206, length: 1 }, // b
             { type: 'parameter', modifiers: [], start: 209, length: 1 }, // a
             { type: 'parameter', modifiers: [], start: 213, length: 1 }, // b
+        ]);
+    });
+
+    test('Unknown and Any', () => {
+        const result = semanticTokenizeSampleFile('unknown.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'variable', modifiers: [], start: 19, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 19, length: 3 },
+            { type: 'function', modifiers: ['definition'], start: 28, length: 1 }, // f
+            { type: 'function', modifiers: [], start: 28, length: 1 },
+            { type: 'parameter', modifiers: ['definition'], start: 30, length: 1 }, // l
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
+            { type: 'variable', modifiers: [], start: 42, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 51, length: 1 }, // v
+            { type: 'parameter', modifiers: [], start: 55, length: 1 }, // l
+            { type: 'variable', modifiers: [], start: 71, length: 1 }, // v
+            // `g` and `foo` should be ignored
+            { type: 'variable', modifiers: [], start: 81, length: 3 }, // bar
+            { type: 'function', modifiers: [], start: 87, length: 1 }, // f
         ]);
     });
 } else {
