@@ -2,13 +2,18 @@
 
 [![Stable Version](https://img.shields.io/pypi/v/basedpyright?logo=pypi)](https://pypi.org/project/basedpyright/) [![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium)](https://open-vsx.org/extension/detachhead/basedpyright) [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright) [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext)](https://packagecontrol.io/packages/LSP-basedpyright) [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord)](https://discord.gg/7y9upqPrk2)
 
-Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, improved vscode support and pylance features built into the language server.
+
+Basedpyright is a Python development tool that provides static analysis including type-checking and linting,
+along with IDE functionality of syntax highlighting and code-actions like import suggestions.
+
+This project was originally based on the [pyright](https://github.com/microsoft/pyright) project, but has implemented various enhancements to type checking, configuration, packaging, and the command-line interface.
+Additionally, providing improved IDE support and features built into the language server that were previously exclusive to the closed source pylance.
 
 📚 [Documentation](https://detachhead.github.io/basedpyright) | 🛝 [Playground](http://basedpyright.com)
 
 ## why?
 
-the main motivation behind this fork was the fact that pyright has several serious issues that the maintainers didn't want to address, and many bugs that they consider to be intentional behavior. here is a list of some of its major problems that basedpyright resolves:
+the main motivation behind this project is the fact that pyright has several serious issues that the maintainers don't want to address, and many bugs that they consider to be intentional behavior. here is a list of some of its major problems that basedpyright resolves:
 
 ### ability to pin the version used by vscode
 
