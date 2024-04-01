@@ -221,6 +221,29 @@ if you do want to continue using pylance, all of the options and commands in bas
 
 you can try basedpyright in your browser using the [basedpyright playground](http://basedpyright.com)
 
+# pre-commit hook
+
+integration with [pre-commit](https://pre-commit.com) is also supported.
+
+```yaml
+# .pre-commit-config.yaml
+
+repos:
+  - repo: https://github.com/DetachHead/basedpyright
+    rev: v1.8.0
+    hooks:
+    - id: basedpyright
+```
+
+to ensure that basedpyright is able to find all of the dependencies in your
+virtual env, add the following to your `pyproject.toml`:
+
+```toml
+[tool.basedpyright]
+# ...
+venvPath = "."
+```
+
 # recommended setup
 
 it's recommended to use both the basedpyright cli and vscode extension in your project. the vscode extension is for local development and the cli is for your CI.
@@ -280,28 +303,3 @@ typeCheckingMode = "all"
 ```
 
 pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version.
-
-# pre-commit hook
-
-integration with [pre-commit](https://pre-commit.com) is also recommended.
-
-`.pre-commit-config.yaml`
-
-```yaml
-repos:
-  - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.8.0
-    hooks:
-    - id: basedpyright
-```
-
-`pyproject.toml`
-
-to ensure that basedpyright is able to find all of the dependencies in your
-virtual env, add the following to your `pyproject.toml`
-
-```toml
-[tool.basedpyright]
-# ...
-venvPath = "."
-```
