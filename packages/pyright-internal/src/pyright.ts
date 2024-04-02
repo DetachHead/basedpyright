@@ -427,7 +427,7 @@ async function processArgs(): Promise<ExitStatus> {
                     results.filesInProgram,
                     results.elapsedTime
                 );
-            } else if (process.env['GITHUB_ACTIONS']) {
+            } else if (process.env['GITHUB_ACTIONS'] && !process.env['PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT']) {
                 report = reportDiagnosticsAsGithubActionsCommands(
                     results.diagnostics,
                     minSeverityLevel,
