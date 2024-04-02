@@ -217,7 +217,32 @@ install the extension from [the vscode extension marketplace](https://marketplac
 
 ## usage
 
-the basedpyright vscode extension will automatically look for the pypi package in your python environment. see the recommended setup section below for more information
+the basedpyright vscode extension will automatically look for the pypi package in your python environment.
+
+you should change the following config files to prevent pylance from conflicting with basedpyright:
+
+```jsonc
+// .vscode/extensions.json
+
+{
+  "recommendations": [
+    "detachhead.basedpyright" // this will prompt developers working on your project to install the extension
+  ],
+  "unwantedRecommendations": [
+    "ms-python.vscode-pylance"
+  ]
+}
+```
+
+in `.vscode/settings.json`, remove any settings starting with `python.analysis`, as they are not used by basedpyright. you should instead set these settings using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` ([see below](#pyprojecttoml))
+
+you should also disable the built in language server support from the python extension, as it conflicts with basedpyright's language server:
+```json
+// .vscode/settings.json
+{
+    "python.languageServer": "None"
+}
+```
 
 ## using basedpyright with pylance (not recommended)
 
@@ -267,29 +292,6 @@ venvPath = "."
 it's recommended to use both the basedpyright cli and vscode extension in your project. the vscode extension is for local development and the cli is for your CI.
 
 below are the changes i recommend making to your project when adopting basedpyright
-
-## `.vscode/extensions.json`
-
-```jsonc
-{
-  "recommendations": [
-    "detachhead.basedpyright" // this will prompt developers working on your project to install the extension
-  ],
-  "unwantedRecommendations": [
-    "ms-python.vscode-pylance"
-  ]
-}
-```
-
-## `.vscode/settings.json`
-
-- remove any settings starting with `python.analysis`, as they are not used by basedpyright. you should instead set these settings using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` ([see below](#pyprojecttoml))
-- disable the built in language server support from the python extension, as it seems to conflict with basedpyright's language server:
-  ```json
-  {
-      "python.languageServer": "None"
-  }
-  ```
 
 ## `pyproject.toml`
 
