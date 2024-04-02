@@ -179,6 +179,24 @@ used to be `basic`, but now defaults to `all`. in the future we intend to add [b
 #### `pythonPlatform`
 used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
 
+### improved integration with github actions
+
+basedpyright automatically detects when it's running in a github action, and modifies its output to use [github workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions). this means errors will be displayed on the affected lines of code in your pull requests automatically:
+
+![image](https://github.com/DetachHead/basedpyright/assets/57028336/cc820085-73c2-41f8-ab0b-0333b97e2fea)
+
+this is an improvement to regular pyright, which requires you to use a [third party action](https://github.com/jakebailey/pyright-action) that [requires boilerplate to get working](https://github.com/jakebailey/pyright-action?tab=readme-ov-file#use-with-a-virtualenv). basedpyright just does it automatically without you having to do anything special:
+
+```yaml
+# .github/workflows/your_workflow.yaml
+
+jobs:
+  check:
+    steps:
+      - run: ...  # checkout repo, install dependencies, etc
+      - run: basedpyright
+```
+
 ## basedmypy feature parity
 
 [basedmypy](https://github.com/kotlinisland/basedmypy) is a fork of mypy with a similar goal in mind: to fix some of the serious problems in mypy that do not seem to be a priority for the maintainers. it also adds many new features which may not be standardized but greatly improve the developer experience when working with python's far-from-perfect type system.
@@ -272,16 +290,6 @@ below are the changes i recommend making to your project when adopting basedpyri
       "python.languageServer": "None"
   }
   ```
-
-## `.github/workflows/check.yaml`
-
-```yaml
-jobs:
-  check:
-    steps:
-      - run: ...  # checkout repo, install dependencies, etc
-      - run: basedpyright  # add this line
-```
 
 ## `pyproject.toml`
 
