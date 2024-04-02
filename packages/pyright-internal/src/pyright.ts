@@ -39,6 +39,8 @@ import { PyrightFileSystem } from './pyrightFileSystem';
 import { Uri } from './common/uri/uri';
 import { toolName } from './constants';
 import version from './version.json';
+import * as core from '@actions/core';
+import * as command from '@actions/core/lib/command';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -417,24 +419,28 @@ async function processArgs(): Promise<ExitStatus> {
 
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
+            let report;
             if (args.outputjson) {
-                const report = reportDiagnosticsAsJson(
+                report = reportDiagnosticsAsJson(
                     results.diagnostics,
                     minSeverityLevel,
                     results.filesInProgram,
                     results.elapsedTime
                 );
-                errorCount += report.errorCount;
-                if (treatWarningsAsErrors) {
-                    errorCount += report.warningCount;
-                }
+            } else if (process.env['GITHUB_ACTIONS']) {
+                report = reportDiagnosticsAsGithubActionsCommands(
+                    results.diagnostics,
+                    minSeverityLevel,
+                    results.filesInProgram,
+                    results.elapsedTime
+                );
             } else {
                 printVersion(output);
-                const report = reportDiagnosticsAsText(results.diagnostics, minSeverityLevel);
-                errorCount += report.errorCount;
-                if (treatWarningsAsErrors) {
-                    errorCount += report.warningCount;
-                }
+                report = reportDiagnosticsAsText(results.diagnostics, minSeverityLevel);
+            }
+            errorCount += report.errorCount;
+            if (treatWarningsAsErrors) {
+                errorCount += report.warningCount;
             }
         }
 
@@ -803,12 +809,12 @@ function printVersion(console: ConsoleInterface) {
     console.info(`based on pyright ${require('../package.json').version}`);
 }
 
-function reportDiagnosticsAsJson(
+function reportDiagnosticsAsJsonWithoutLogging(
     fileDiagnostics: FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
     filesInProgram: number,
     timeInSec: number
-): DiagnosticResult {
+): PyrightJsonResults {
     const report: PyrightJsonResults = {
         version,
         time: Date.now().toString(),
@@ -839,15 +845,26 @@ function reportDiagnosticsAsJson(
         });
     });
 
-    console.info(JSON.stringify(report, /* replacer */ undefined, 4));
-
-    return {
-        errorCount: report.summary.errorCount,
-        warningCount: report.summary.warningCount,
-        informationCount: report.summary.informationCount,
-        diagnosticCount: report.summary.errorCount + report.summary.warningCount + report.summary.informationCount,
-    };
+    return report;
 }
+
+const pyrightJsonResultsToDiagnosticResult = (report: PyrightJsonResults): DiagnosticResult => ({
+    errorCount: report.summary.errorCount,
+    warningCount: report.summary.warningCount,
+    informationCount: report.summary.informationCount,
+    diagnosticCount: report.summary.errorCount + report.summary.warningCount + report.summary.informationCount,
+});
+
+const reportDiagnosticsAsJson = (
+    fileDiagnostics: FileDiagnostics[],
+    minSeverityLevel: SeverityLevel,
+    filesInProgram: number,
+    timeInSec: number
+): DiagnosticResult => {
+    const result = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
+    console.info(JSON.stringify(result, /* replacer */ undefined, 4));
+    return pyrightJsonResultsToDiagnosticResult(result);
+};
 
 function isDiagnosticIncluded(diagSeverity: SeverityLevel, minSeverityLevel: SeverityLevel) {
     // Errors are always included.
@@ -889,6 +906,18 @@ function convertDiagnosticToJson(filePath: string, diag: Diagnostic): PyrightJso
         rule: diag.getRule(),
     };
 }
+const pluralize = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
+
+const printDiagnosticSummary = (result: DiagnosticResult) => {
+    console.info(
+        [
+            pluralize(result.errorCount, 'error', 'errors'),
+            pluralize(result.warningCount, 'warning', 'warnings'),
+            // we use the word "notes" instead because "informations" sounds dumb
+            pluralize(result.informationCount, 'note', 'notes'),
+        ].join(', ')
+    );
+};
 
 function reportDiagnosticsAsText(
     fileDiagnostics: FileDiagnostics[],
@@ -927,19 +956,83 @@ function reportDiagnosticsAsText(
         }
     });
 
-    console.info(
-        `${errorCount.toString()} ${errorCount === 1 ? 'error' : 'errors'}, ` +
-            `${warningCount.toString()} ${warningCount === 1 ? 'warning' : 'warnings'}, ` +
-            `${informationCount.toString()} ${informationCount === 1 ? 'note' : 'notes'} `
-    );
-
-    return {
+    const result = {
         errorCount,
         warningCount,
         informationCount,
         diagnosticCount: errorCount + warningCount + informationCount,
     };
+    printDiagnosticSummary(result);
+    return result;
 }
+
+/**
+ * copied from {@link https://github.com/jakebailey/pyright-action}, where it says it was copied from here,
+ * but it seems to have been heavily modified so i'm copying it back
+ */
+const diagnosticToString = (diagnostic: PyrightJsonDiagnostic, forCommand: boolean): string => {
+    let message = '';
+    if (!forCommand) {
+        if (diagnostic.file) {
+            message += `${diagnostic.file}:`;
+        }
+        if (diagnostic.range && !isEmptyRange(diagnostic.range)) {
+            message += `${diagnostic.range.start.line + 1}:${diagnostic.range.start.character + 1} -`;
+        }
+        message += ` ${diagnostic.severity}: `;
+    }
+
+    message += diagnostic.message;
+
+    if (diagnostic.rule) {
+        message += ` (${diagnostic.rule})`;
+    }
+
+    return message;
+};
+
+const reportDiagnosticsAsGithubActionsCommands = (
+    fileDiagnostics: FileDiagnostics[],
+    minSeverityLevel: SeverityLevel,
+    filesInProgram: number,
+    timeInSec: number
+): DiagnosticResult => {
+    const report = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
+    for (const diagnostic of report.generalDiagnostics) {
+        core.info(diagnosticToString(diagnostic, /* forCommand */ false));
+
+        if (!isDiagnosticIncluded(diagnostic.severity, minSeverityLevel)) {
+            continue;
+        }
+
+        if (diagnostic.severity === 'information') {
+            continue;
+        }
+
+        const line = diagnostic.range?.start.line ?? 0;
+        const col = diagnostic.range?.start.character ?? 0;
+        const message = diagnosticToString(diagnostic, /* forCommand */ true);
+
+        // This is technically a log line and duplicates the core.info above,
+        // but we want to have the below look nice in commit comments.
+        command.issueCommand(
+            diagnostic.severity,
+            {
+                file: diagnostic.file,
+                line: line + 1,
+                col: col + 1,
+            },
+            message
+        );
+    }
+
+    const result = pyrightJsonResultsToDiagnosticResult(report);
+    if (result.errorCount !== 0) {
+        core.setFailed(pluralize(result.errorCount, 'error', 'errors'));
+    }
+    printDiagnosticSummary(result);
+    return result;
+};
 
 function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
     let message = prefix;
