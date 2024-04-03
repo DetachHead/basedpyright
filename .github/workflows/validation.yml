@@ -9,7 +9,6 @@ on:
   pull_request:
     branches: [main]
 
-
 jobs:
   static_checks:
     runs-on: ubuntu-latest
