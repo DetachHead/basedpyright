@@ -12,6 +12,7 @@ Pyright can be run as either a VS Code extension or as a command-line tool. The 
 | --ignoreexternal                        | Ignore external imports for --verifytypes            |
 | --level <LEVEL>                         | Minimum diagnostic level (error or warning)          |
 | --outputjson                            | Output results in JSON format                        |
+| --gitlabcodequality                     | Output results to a gitlab code quality report       |
 | -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location          |
 | --pythonpath `<FILE>`                   | Path to the Python interpreter (2)                   |
 | --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)        |
@@ -91,3 +92,17 @@ Each Diagnostic is output in the following format:
 Diagnostic line and character numbers are zero-based.
 
 Not all diagnostics have an associated diagnostic rule. Diagnostic rules are used only for diagnostics that can be disabled or enabled. If a rule is associated with the diagnostic, it is included in the output. If it’s not, the rule field is omitted from the JSON output.
+
+# Gitlab code quality report
+
+the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html).
+
+to enable this in your gitlab CI, you need to specify a path to the code quality report file to this argument, and in the `artifacts` section in your gitlab CI file:
+
+```yaml
+basedpyright:
+  script: basedpyright --gitlabcodequality report.json
+  artifacts:
+    reports:
+      codequality: report.json
+```

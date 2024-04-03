@@ -41,6 +41,8 @@ import { toolName } from './constants';
 import version from './version.json';
 import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
+import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
+import path from 'path';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -151,6 +153,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'lib', type: Boolean },
         { name: 'level', type: String },
         { name: 'outputjson', type: Boolean },
+        { name: 'gitlabcodequality', type: String },
         { name: 'project', alias: 'p', type: String },
         { name: 'pythonpath', type: String },
         { name: 'pythonplatform', type: String },
@@ -419,7 +422,7 @@ async function processArgs(): Promise<ExitStatus> {
 
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
-            let report;
+            let report: DiagnosticResult;
             if (args.outputjson) {
                 report = reportDiagnosticsAsJson(
                     results.diagnostics,
@@ -437,6 +440,19 @@ async function processArgs(): Promise<ExitStatus> {
             } else {
                 printVersion(output);
                 report = reportDiagnosticsAsText(results.diagnostics, minSeverityLevel);
+            }
+            if (args.gitlabcodequality) {
+                fs.writeFileSync(
+                    args.gitlabcodequality,
+                    JSON.stringify(
+                        createGitlabCodeQualityReport(
+                            results.diagnostics,
+                            minSeverityLevel,
+                            results.filesInProgram,
+                            results.elapsedTime
+                        )
+                    )
+                );
             }
             errorCount += report.errorCount;
             if (treatWarningsAsErrors) {
@@ -786,6 +802,7 @@ function printUsage() {
             '  --ignoreexternal                   Ignore external imports for --verifytypes\n' +
             '  --level <LEVEL>                    Minimum diagnostic level (error or warning)\n' +
             '  --outputjson                       Output results in JSON format\n' +
+            '  --gitlabcodequality <FILE>         Output results to a gitlab code quality report\n' +
             '  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location\n' +
             '  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)\n' +
             '  --pythonpath <FILE>                Path to the Python interpreter\n' +
@@ -1032,6 +1049,16 @@ const reportDiagnosticsAsGithubActionsCommands = (
     }
     printDiagnosticSummary(result);
     return result;
+};
+
+const createGitlabCodeQualityReport = (
+    fileDiagnostics: FileDiagnostics[],
+    minSeverityLevel: SeverityLevel,
+    filesInProgram: number,
+    timeInSec: number
+) => {
+    const report = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
+    return convertDiagnostics(report.generalDiagnostics, path.resolve('.'));
 };
 
 function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
