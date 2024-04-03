@@ -17,6 +17,7 @@ import { CancellationProvider, DefaultCancellationProvider } from '../common/can
 import { CommandLineOptions } from '../common/commandLineOptions';
 import { BasedConfigOptions, ConfigOptions, matchFileSpecs } from '../common/configOptions';
 import { ConsoleInterface, LogLevel, StandardConsole, log } from '../common/console';
+import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
 import { FileEditAction } from '../common/editAction';
 import { EditableProgram, ProgramView } from '../common/extensibility';
@@ -25,10 +26,11 @@ import { FileWatcher, FileWatcherEventType, ignoredWatchEventFunction } from '..
 import { Host, HostFactory, NoAccessHost } from '../common/host';
 import { defaultStubsDirectory } from '../common/pathConsts';
 import { getFileName, isRootedDiskPath, normalizeSlashes } from '../common/pathUtils';
-import { ServiceProvider } from '../common/serviceProvider';
 import { ServiceKeys } from '../common/serviceKeys';
+import { ServiceProvider } from '../common/serviceProvider';
 import { Range } from '../common/textRange';
 import { timingStats } from '../common/timing';
+import { Uri } from '../common/uri/uri';
 import {
     FileSpec,
     forEachAncestorDirectory,
@@ -52,8 +54,6 @@ import { MaxAnalysisTime, Program } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
 import { IPythonMode } from './sourceFile';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { Uri } from '../common/uri/uri';
-import { isString } from '../common/core';
 import { githubRepo } from '../constants';
 
 export const configFileNames = ['pyrightconfig.json'];
@@ -353,7 +353,11 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.addInterimFile(uri);
     }
 
-    getParseResult(uri: Uri) {
+    getParserOutput(uri: Uri) {
+        return this._program.getParserOutput(uri);
+    }
+
+    getParseResults(uri: Uri) {
         return this._program.getParseResults(uri);
     }
 

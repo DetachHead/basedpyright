@@ -279,6 +279,7 @@ export function synthesizeTypedDictClassMethods(
     });
     FunctionType.addDefaultParameters(newType);
     newType.details.declaredReturnType = ClassType.cloneAsInstance(classType);
+    newType.details.constructorTypeVarScopeId = classType.details.typeVarScopeId;
 
     // Synthesize an __init__ method with two overrides.
     const initOverride1 = FunctionType.createSynthesizedInstance('__init__', FunctionTypeFlags.Overloaded);
@@ -289,6 +290,7 @@ export function synthesizeTypedDictClassMethods(
         hasDeclaredType: true,
     });
     initOverride1.details.declaredReturnType = evaluator.getNoneType();
+    initOverride1.details.constructorTypeVarScopeId = classType.details.typeVarScopeId;
 
     // The first parameter must be positional-only.
     FunctionType.addParameter(initOverride1, {
@@ -310,6 +312,7 @@ export function synthesizeTypedDictClassMethods(
         hasDeclaredType: true,
     });
     initOverride2.details.declaredReturnType = evaluator.getNoneType();
+    initOverride2.details.constructorTypeVarScopeId = classType.details.typeVarScopeId;
 
     // All parameters must be named, so insert an empty "*".
     FunctionType.addKeywordOnlyParameterSeparator(initOverride2);
@@ -630,31 +633,27 @@ export function synthesizeTypedDictClassMethods(
             }
         });
 
-        // If the class is closed, we can assume that any other literal
-        // key values will return the default parameter value.
-        if (ClassType.isTypedDictEffectivelyClosed(classType) && isNever(extraEntriesInfo.valueType)) {
-            const literalStringType = evaluator.getTypingType(node, 'LiteralString');
-            if (literalStringType && isInstantiableClass(literalStringType)) {
-                const literalStringInstance = ClassType.cloneAsInstance(literalStringType);
-                getOverloads.push(
-                    createGetMethod(
-                        literalStringInstance,
-                        evaluator.getNoneType(),
-                        /* includeDefault */ false,
-                        /* isEntryRequired */ true
-                    )
-                );
-                getOverloads.push(
-                    createGetMethod(literalStringInstance, /* valueType */ AnyType.create(), /* includeDefault */ true)
-                );
-            }
-        }
-
-        // Provide a final `get` overload that handles the general case where
-        // the key is a str but the literal value isn't known.
         const strType = ClassType.cloneAsInstance(strClass);
-        getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ false));
-        getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ true));
+
+        // If the class is closed, we can assume that any other keys that
+        // are present will return the default parameter value or the extra
+        // entries value type.
+        if (ClassType.isTypedDictEffectivelyClosed(classType)) {
+            getOverloads.push(
+                createGetMethod(
+                    strType,
+                    combineTypes([extraEntriesInfo.valueType, evaluator.getNoneType()]),
+                    /* includeDefault */ false,
+                    /* isEntryRequired */ true
+                )
+            );
+            getOverloads.push(createGetMethod(strType, extraEntriesInfo.valueType, /* includeDefault */ true));
+        } else {
+            // Provide a final `get` overload that handles the general case where
+            // the key is a str but the literal value isn't known.
+            getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ false));
+            getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ true));
+        }
 
         symbolTable.set(
             'get',

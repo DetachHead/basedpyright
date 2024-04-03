@@ -85,7 +85,9 @@ export function synthesizeDataClassMethods(
 
     const classTypeVar = synthesizeTypeVarForSelfCls(classType, /* isClsParam */ true);
     const newType = FunctionType.createSynthesizedInstance('__new__', FunctionTypeFlags.ConstructorMethod);
+    newType.details.constructorTypeVarScopeId = classType.details.typeVarScopeId;
     const initType = FunctionType.createSynthesizedInstance('__init__');
+    initType.details.constructorTypeVarScopeId = classType.details.typeVarScopeId;
 
     // Override `__new__` because some dataclasses (such as those that are
     // created by subclassing from NamedTuple) may have their own custom
@@ -321,11 +323,8 @@ export function synthesizeDataClassMethods(
                 // Don't include class vars. PEP 557 indicates that they shouldn't
                 // be considered data class entries.
                 const variableSymbol = classType.details.fields.get(variableName);
-                const isFinal = variableSymbol
-                    ?.getDeclarations()
-                    .some((decl) => decl.type === DeclarationType.Variable && decl.isFinal);
 
-                if (variableSymbol?.isClassVar() && !isFinal) {
+                if (variableSymbol?.isClassVar() && !variableSymbol?.isFinalVarInClassBody()) {
                     // If an ancestor class declared an instance variable but this dataclass
                     // declares a ClassVar, delete the older one from the full data class entries.
                     // We exclude final variables here because a Final type annotation is implicitly

@@ -61,8 +61,13 @@ export const enum SymbolFlags {
     // Indicates that the symbol should be exempt from override type checks.
     IgnoredForOverrideChecks = 1 << 12,
 
+    // Indicates that the symbol is marked Final and is assigned a value
+    // in the class body. The typing spec indicates that these should be
+    // considered ClassVars unless they are found in a dataclass.
+    FinalVarInClassBody = 1 << 13,
+
     // Indicates that the symbol is a private import in a local module.
-    PrivateLocalImport = 1 << 13,
+    PrivateLocalImport = 1 << 14,
 }
 
 let nextSymbolId = 1;
@@ -144,6 +149,14 @@ export class Symbol {
 
     isClassVar() {
         return !!(this._flags & SymbolFlags.ClassVar);
+    }
+
+    setIsFinalVarInClassBody() {
+        this._flags |= SymbolFlags.FinalVarInClassBody;
+    }
+
+    isFinalVarInClassBody() {
+        return !!(this._flags & SymbolFlags.FinalVarInClassBody);
     }
 
     setIsInitVar() {
