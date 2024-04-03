@@ -179,7 +179,11 @@ used to be `basic`, but now defaults to `all`. in the future we intend to add [b
 #### `pythonPlatform`
 used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
 
-### improved integration with github actions
+### improved integration with CI platforms
+
+regular pyright has third party integrations for github actions and gitlab, but they are difficult to use for several reasons. basedpyright just has these feastures built in instead.
+
+### github actions
 
 basedpyright automatically detects when it's running in a github action, and modifies its output to use [github workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions). this means errors will be displayed on the affected lines of code in your pull requests automatically:
 
@@ -196,6 +200,22 @@ jobs:
       - run: ...  # checkout repo, install dependencies, etc
       - run: basedpyright
 ```
+
+### gitlab code quality reports
+
+the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html).
+
+to enable this in your gitlab CI, you need to specify a path to the code quality report file to this argument, and in the `artifacts` section in your gitlab CI file:
+
+```yaml
+basedpyright:
+  script: basedpyright --gitlabcodequality report.json
+  artifacts:
+    reports:
+      codequality: report.json
+```
+
+TODO: screenshot!!!
 
 ## basedmypy feature parity
 
