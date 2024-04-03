@@ -181,7 +181,7 @@ used to assume that the operating system pyright is being run on is the only ope
 
 ### improved integration with CI platforms
 
-regular pyright has third party integrations for github actions and gitlab, but they are difficult to use for several reasons. basedpyright just has these feastures built in instead.
+regular pyright has third party integrations for github actions and gitlab, but they are difficult to install/set up. basedpyright just has these feastures built in instead.
 
 ### github actions
 
@@ -214,6 +214,8 @@ basedpyright:
     reports:
       codequality: report.json
 ```
+
+in regular pyright, this requires installing [a third party npm package](https://www.npmjs.com/package/pyright-to-gitlab-ci). basedpyright comes with this package built in.
 
 TODO: screenshot!!!
 
