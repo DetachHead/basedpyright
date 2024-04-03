@@ -1,7 +1,7 @@
 name: 'build and release'
 
 env:
-  NODE_VERSION: '18' # Shipped with VS Code.
+  PYTHON_VERSION: '3.12'
   ARTIFACT_NAME_VSIX: vsix
   VSIX_NAME: vscode-pyright.vsix
   VSIX_DIR: packages/vscode-pyright
@@ -23,22 +23,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-python@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Get npm cache directory
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v3
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - run: ./pw pdm install
 
@@ -47,7 +34,7 @@ jobs:
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
-        run: echo ::set-output name=VERSION_INFO::$(npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
+        run: echo ::set-output name=VERSION_INFO::$(./pw pdm run npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
@@ -58,7 +45,7 @@ jobs:
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
         run: |
-          npm run package
+          ./pw pdm run npm run package
           mv basedpyright-*.vsix ${{ env.VSIX_NAME }}
 
       - uses: actions/upload-artifact@v3
@@ -69,7 +56,7 @@ jobs:
       # publish npm canary version on every push to every branch except main
       - name: set version for npm canary
         if: github.ref != 'refs/heads/main'
-        run: npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --git-tag-version false
+        run: ./pw pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --git-tag-version false
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
       - name: publish package - npm canary
         if: github.ref != 'refs/heads/main'
