@@ -20,26 +20,30 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
       - run: ./pw pdm lock --check
 
-      - run: ./pw pdm install
+      - name: activate pyprojectx context
+        run: realpath ./.pyprojectx/main >> $GITHUB_PATH
+
+      - run: pdm install
 
       - name: typescript typecheck
-        run: ./pw pdm run npx lerna exec --stream --no-bail -- tsc --noEmit
+        run: pdm run npx lerna exec --stream --no-bail -- tsc --noEmit
 
-      - run: ./pw pdm run npm run check
+      - run: pdm run npm run check
 
       - name: python typecheck
-        run: ./pw pdm run typecheck
+        run: pdm run typecheck
 
       - name: ruff check
-        run: ./pw pdm run ruff check --output-format github
+        run: pdm run ruff check --output-format github
 
       - name: ruff format
-        run: ./pw pdm run ruff format --check --diff
+        run: pdm run ruff format --check --diff
 
       - name: pylint
-        run: ./pw pdm run pylint
+        run: pdm run pylint
 
   test:
     strategy:
