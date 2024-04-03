@@ -181,7 +181,7 @@ used to assume that the operating system pyright is being run on is the only ope
 
 ### improved integration with CI platforms
 
-regular pyright has third party integrations for github actions and gitlab, but they are difficult to install/set up. basedpyright just has these feastures built in instead.
+regular pyright has third party integrations for github actions and gitlab, but they are difficult to install/set up. these integrations are built into basedpyright, which makes them much easier to use.
 
 ### github actions
 
@@ -198,14 +198,16 @@ jobs:
   check:
     steps:
       - run: ...  # checkout repo, install dependencies, etc
-      - run: basedpyright
+      - run: basedpyright  # no additional arguments required. it automatically detects if it's running in a github action 
 ```
 
 ### gitlab code quality reports
 
-the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html).
+the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html) which shows up on merge requests:
 
-to enable this in your gitlab CI, you need to specify a path to the code quality report file to this argument, and in the `artifacts` section in your gitlab CI file:
+![image](https://github.com/DetachHead/basedpyright/assets/57028336/407f0e61-15f2-4d04-b235-1946d49fd180)
+
+to enable this in your gitlab CI, just specify a file path to output the report to, and in the `artifacts.reports.codequality` section of your `.gitlab-ci.yml` file:
 
 ```yaml
 basedpyright:
@@ -214,10 +216,6 @@ basedpyright:
     reports:
       codequality: report.json
 ```
-
-in regular pyright, this requires installing [a third party npm package](https://www.npmjs.com/package/pyright-to-gitlab-ci). basedpyright comes with this package built in.
-
-TODO: screenshot!!!
 
 ## basedmypy feature parity
 
