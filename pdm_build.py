@@ -17,8 +17,7 @@ class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-if not Path("node_modules").exists():
-    _ = run(["ci"], check=True)
+_ = run(["ci"], check=True)
 _ = run(["run", "build:cli:dev"], check=True)
 
 npm_package_dir = Path("packages/pyright")
