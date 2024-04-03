@@ -1,7 +1,7 @@
 name: 'Validation'
 
 env:
-  # ideally this would be controlled by the nodejs-bin package, but idk how the venv tests work so i left them as-is
+  # TODO: ideally this would be controlled by the nodejs-bin package, but idk how the venv tests work so i left them as-is
   NODE_VERSION: '18' # Shipped with VS Code.
   PYTHON_VERSION: 3.11
 
@@ -27,7 +27,7 @@ jobs:
       - name: typescript typecheck
         run: ./pw pdm run npx lerna exec --stream --no-bail -- tsc --noEmit
 
-      - run: npm run check
+      - run: ./pw pdm run npm run check
 
       - name: python typecheck
         run: ./pw pdm run typecheck
