@@ -1,6 +1,7 @@
 name: 'Validation'
 
 env:
+  # ideally this would be controlled by the nodejs-bin package, but idk how the venv tests work so i left them as-is
   NODE_VERSION: '18' # Shipped with VS Code.
   PYTHON_VERSION: 3.11
 
@@ -15,32 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-python@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Get npm cache directory
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - run: npm run install:all
-
-      - name: typescript typecheck
-        run: npx lerna exec --stream --no-bail -- tsc --noEmit
-
-      - run: npm run check
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - run: ./pw pdm lock --check
 
       - run: ./pw pdm install
+
+      - name: typescript typecheck
+        run: ./pw pdm run npx lerna exec --stream --no-bail -- tsc --noEmit
+
+      - run: npm run check
 
       - name: python typecheck
         run: ./pw pdm run typecheck
