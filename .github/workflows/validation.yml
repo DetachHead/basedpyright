@@ -42,8 +42,11 @@ jobs:
       - name: python typecheck
         run: ./pw pdm run typecheck
 
-      - name: ruff
-        run: ./pw pdm run ruff_check
+      - name: ruff check
+        run: ./pw pdm run ruff check --output-format github
+
+      - name: ruff format
+        run: ./pw pdm run ruff format --check --diff
 
       - name: pylint
         run: ./pw pdm run pylint
