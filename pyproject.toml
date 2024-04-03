@@ -42,7 +42,7 @@ basedpyright = 'basedpyright.pyright:main'
 basedpyright-langserver = 'basedpyright.langserver:main'
 
 [build-system]
-requires = ["pdm-backend", "nodejs-bin>=18.4.0a4"]
+requires = ["pdm-backend", "nodejs-bin[cmd]>=18.4.0a4"]
 build-backend = "pdm.backend"
 
 [tool.pylint.MASTER]
