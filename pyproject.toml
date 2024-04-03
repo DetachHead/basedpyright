@@ -8,6 +8,8 @@ distribution = true
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
+    # required for running node/npm commands for local development if node is not installed globally:
+    "nodejs-bin[cmd]>=18.4.0a4",
 ]
 
 [tool.pdm.version]
@@ -29,7 +31,10 @@ dynamic = ["version"]
 authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
-dependencies = ["nodejs-bin>=18.4.0a4"]
+dependencies = [
+    # required by the basedpyright cli & langserver wrapper scripts, the cmd extra is not needed downstream tho
+    "nodejs-bin>=18.4.0a4",
+]
 requires-python = ">=3.8"
 readme = "README.md"
 license = { text = "MIT" }
@@ -42,7 +47,11 @@ basedpyright = 'basedpyright.pyright:main'
 basedpyright-langserver = 'basedpyright.langserver:main'
 
 [build-system]
-requires = ["pdm-backend", "nodejs-bin[cmd]>=18.4.0a4"]
+requires = [
+    "pdm-backend",
+    # required when building because some transient dependencies call node/npm scripts relying on it being in the PATH
+    "nodejs-bin[cmd]>=18.4.0a4",
+]
 build-backend = "pdm.backend"
 
 [tool.pylint.MASTER]
@@ -171,7 +180,12 @@ respect-gitignore = true
 line-length = 100
 preview = true
 unsafe-fixes = true
-extend-exclude = ["pw", "packages/pyright-internal/typeshed-fallback", "packages/pyright-internal/src/tests/samples", "build/generateUnicodeTables.py"]
+extend-exclude = [
+    "pw",
+    "packages/pyright-internal/typeshed-fallback",
+    "packages/pyright-internal/src/tests/samples",
+    "build/generateUnicodeTables.py",
+]
 
 [tool.ruff.lint]
 extend-select = ["ALL"]
