@@ -4,7 +4,11 @@ env:
   NODE_VERSION: '18' # Shipped with VS Code.
   PYTHON_VERSION: 3.11
 
-on: push
+on:
+  push:
+  pull_request:
+    branches: [main]
+
 
 jobs:
   static_checks:
