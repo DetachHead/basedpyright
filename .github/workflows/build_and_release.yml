@@ -35,7 +35,7 @@ jobs:
       - id: current-version
         run: |
           echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
-          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./lerna.json\").name")
+          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./lerna.json\").version")
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
