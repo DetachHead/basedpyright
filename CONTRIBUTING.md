@@ -1,9 +1,21 @@
 # Contributing
 
-This project welcomes contributions and suggestions. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
-If you are considering adding a new feature, it is recommended that you start by submitting an enhancement request so project maintainers can discuss, determine whether such an enhancement would be accepted, and provide input on the best way to implement the enhancement.
+## issues
 
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repositories using our CLA.
+unlike the upstream pyright repo, we are very open to ideas for improvements and bug reports. if you've raised an issue on the upstream pyright repo that was closed without a solution, feel free to raise it again here.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+## local development
+
+although pyright is written in typescript, we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a [pypi package](https://pypi.org/project/nodejs-bin/) and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)
+
+we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).
+
+1. hit `F1` > `Tasks: Run task` > `install dependencies`, or run the following command:
+   ```
+   ./pw pdm install
+   ```
+   this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules` 
+2. press "Yes" when prompted by vscode to use the newly created virtualenv
+
+you can now run any node/npm commands from inside the venv.
