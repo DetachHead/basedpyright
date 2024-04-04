@@ -99,7 +99,7 @@ jobs:
       - uses: marvinpinto/action-automatic-releases@v1.2.1
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         with:
-          title: ${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
+          title: v${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
           draft: true # so i can write the release notes manually before publishing it
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
