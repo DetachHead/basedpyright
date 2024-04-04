@@ -43,7 +43,7 @@ jobs:
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
-      - name: set version for publishing
+      - name: set version for npm packages
         if: github.ref == 'refs/heads/main'
         run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --yes --no-git-tag-version
 
@@ -80,6 +80,13 @@ jobs:
           token: ${{ secrets.NPM_TOKEN }}
           access: public
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+
+      # this isn't ideal. the pypi publish shouldn't be re-building the npm packages because they were already built easlier
+      # but i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily,
+      # but i can't get that to work soooo
+      - name: set npm package versions back to upstream so pypi package can use it in --version output
+        if: github.ref == 'refs/heads/main'
+        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --yes --no-git-tag-version
 
       - name: publish package - pypi
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
