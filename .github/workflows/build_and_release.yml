@@ -29,8 +29,12 @@ jobs:
 
       - run: ./pw pdm install
 
-      - name: activate pyprojectx context
-        run: realpath ./.pyprojectx/main >> $GITHUB_PATH
+      # using relative path for npm scripts because it needs to work in the package directories too
+      - name: add pyprojectx and npm scripts to PATH
+
+        run: |
+          realpath ./.pyprojectx/main >> $GITHUB_PATH
+          echo ./node_modules/.bin >> $GITHUB_PATH
 
       - id: current-version
         run: |
@@ -45,7 +49,7 @@ jobs:
 
       - name: set version for npm packages
         if: github.ref == 'refs/heads/main'
-        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --yes --no-git-tag-version
+        run: lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --yes --no-git-tag-version
 
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
@@ -81,12 +85,11 @@ jobs:
           access: public
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
 
-      # this isn't ideal. the pypi publish shouldn't be re-building the npm packages because they were already built easlier
-      # but i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily,
-      # but i can't get that to work soooo
+      # this isn't ideal, but it's required becayse pdm publish re-builds the npm packages even tho they were already built earlier.
+      # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
       - name: set npm package versions back to upstream so pypi package can use it in --version output
         if: github.ref == 'refs/heads/main'
-        run: ./node_modules/.bin/lerna version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --yes --no-git-tag-version
+        run: lerna version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --yes --no-git-tag-version
 
       - name: publish package - pypi
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
@@ -95,12 +98,12 @@ jobs:
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: ./node_modules/.bin/vsce publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
+        run: vsce publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
         working-directory: ${{ env.VSIX_DIR }}
 
       - name: publish VSIX - open VSX
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: ./node_modules/.bin/ovsx publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
+        run: ovsx publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
         working-directory: ${{ env.VSIX_DIR }}
 
       - uses: marvinpinto/action-automatic-releases@v1.2.1
