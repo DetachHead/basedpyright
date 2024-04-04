@@ -6,7 +6,6 @@ env:
   PYTHON_VERSION: 3.11
 
 on:
-  push:
   pull_request:
     branches: [main]
 
