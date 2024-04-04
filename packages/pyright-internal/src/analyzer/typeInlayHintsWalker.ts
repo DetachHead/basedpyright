@@ -18,7 +18,7 @@ import { TextRange } from '../common/textRange';
 import { convertRangeToTextRange } from '../common/positionUtils';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { Uri } from '../common/uri/uri';
-import { ParseResults } from '../parser/parser';
+import { ParseFileResults } from '../parser/parser';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter';
@@ -82,7 +82,7 @@ function isLeftSideOfAssignment(node: ParseNode): boolean {
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
-    parseResults: ParseResults | undefined;
+    parseResults: ParseFileResults | undefined;
     lines: TextRangeCollection<TextRange>;
     private _range: TextRange | undefined;
 

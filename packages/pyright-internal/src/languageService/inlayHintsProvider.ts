@@ -17,7 +17,7 @@ export class InlayHintsProvider {
         if (!this._walker.parseResults) {
             return null;
         }
-        this._walker.walk(this._walker.parseResults.parseTree);
+        this._walker.walk(this._walker.parseResults.parserOutput.parseTree);
 
         return this._walker.featureItems.map((item) => ({
             label: [InlayHintLabelPart.create(item.value)],

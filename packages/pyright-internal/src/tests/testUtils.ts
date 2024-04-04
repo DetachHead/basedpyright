@@ -133,7 +133,7 @@ export const semanticTokenizeSampleFile = (fileName: string): SemanticTokenItem[
     const fileUri = UriEx.file(resolveSampleFilePath(path.join('semantic_highlighting', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new SemanticTokensWalker(program.evaluator!);
-    walker.walk(program.getParseResults(fileUri)!.parseTree);
+    walker.walk(program.getParseResults(fileUri)!.parserOutput.parseTree);
     program.dispose();
     return walker.items;
 };
@@ -143,7 +143,7 @@ export const inlayHintSampleFile = (fileName: string, range?: Range): TypeInlayH
     const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(program, fileUri, range);
-    walker.walk(program.getParseResults(fileUri)!.parseTree);
+    walker.walk(program.getParseResults(fileUri)!.parserOutput.parseTree);
     program.dispose();
     return walker.featureItems;
 };

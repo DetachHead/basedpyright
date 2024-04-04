@@ -9,7 +9,7 @@ import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { ProgramView } from '../common/extensibility';
 import { convertOffsetsToRange } from '../common/positionUtils';
 import { Uri } from '../common/uri/uri';
-import { ParseResults } from '../parser/parser';
+import { ParseFileResults } from '../parser/parser';
 import { SemanticTokensWalker } from '../analyzer/semanticTokensWalker';
 
 export enum CustomSemanticTokenModifiers {
@@ -64,7 +64,7 @@ function encodeTokenModifiers(modifiers: string[]): number {
 }
 
 export class SemanticTokensProvider {
-    private readonly _parseResults: ParseResults | undefined;
+    private readonly _parseResults: ParseFileResults | undefined;
 
     constructor(private _program: ProgramView, private _fileUri: Uri, private _token: CancellationToken) {
         this._parseResults = this._program.getParseResults(this._fileUri);
@@ -77,7 +77,7 @@ export class SemanticTokensProvider {
         }
 
         const walker = new SemanticTokensWalker(this._program.evaluator!);
-        walker.walk(this._parseResults.parseTree);
+        walker.walk(this._parseResults.parserOutput.parseTree);
 
         throwIfCancellationRequested(this._token);
 
