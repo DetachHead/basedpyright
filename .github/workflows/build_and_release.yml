@@ -33,7 +33,9 @@ jobs:
         run: realpath ./.pyprojectx/main >> $GITHUB_PATH
 
       - id: current-version
-        run: echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
+        run: |
+          echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
+          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./lerna.json\").name")
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
@@ -97,6 +99,8 @@ jobs:
       - uses: marvinpinto/action-automatic-releases@v1.2.1
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         with:
+          title: ${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
+          draft: true # so i can write the release notes manually before publishing it
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           files: |
