@@ -619,7 +619,8 @@
         "zeroLengthTupleNotAllowed": "Zero-length tuple is not allowed in this context",
         "pyrightIgnoreCommentWithoutRule": "`pyright: ignore` comment must specify a rule (eg. `# pyright: ignore[ruleName]`)",
         "typeIgnoreCommentWithoutRule": "`type: ignore` comment must specify a rule (eg. `# type: ignore[ruleName]`)",
-        "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module"
+        "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module",
+        "invalidCast": "Conversion of type `{fromType}` to type `{toType}` may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to `object` first."
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "\"Annotated\" special form cannot be used with instance and class checks",

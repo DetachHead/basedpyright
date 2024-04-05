@@ -10080,10 +10080,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         if (castFromType.specialForm) {
             castFromType = castFromType.specialForm;
         }
-
+        const castToInstance = convertToInstance(castToType);
+        const castFromInstance = convertToInstance(castFromType);
         if (TypeBase.isInstantiable(castToType) && !isUnknown(castToType)) {
             if (
-                isTypeSame(convertToInstance(castToType), castFromType, {
+                isTypeSame(castToInstance, castFromType, {
                     ignorePseudoGeneric: true,
                 })
             ) {
@@ -10096,8 +10097,18 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 );
             }
         }
+        if (!assignType(castToInstance, castFromInstance) && !assignType(castFromInstance, castToInstance)) {
+            addDiagnostic(
+                DiagnosticRule.reportInvalidCast,
+                LocMessage.invalidCast().format({
+                    fromType: printType(castFromType),
+                    toType: printType(castToInstance),
+                }),
+                errorNode
+            );
+        }
 
-        return convertToInstance(castToType);
+        return castToInstance;
     }
 
     // Expands any unpacked tuples within an argument list.

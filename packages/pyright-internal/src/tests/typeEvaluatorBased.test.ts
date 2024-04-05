@@ -63,3 +63,12 @@ test('reportPrivateLocalImportUsage', () => {
         ],
     });
 });
+
+test('reportInvalidCast', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportInvalidCast = 'error';
+    const analysisResults = typeAnalyzeSampleFiles(['cast.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [{ code: DiagnosticRule.reportInvalidCast, line: 3 }],
+    });
+});
