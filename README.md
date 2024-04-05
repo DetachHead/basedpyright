@@ -257,7 +257,7 @@ you should change the following config files to prevent pylance from conflicting
 in `.vscode/settings.json`, remove any settings starting with `python.analysis`, as they are not used by basedpyright. you should instead set these settings using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` ([see below](#pyprojecttoml))
 
 you should also disable the built in language server support from the python extension, as it conflicts with basedpyright's language server:
-```json
+```jsonc
 // .vscode/settings.json
 {
     "python.languageServer": "None"
