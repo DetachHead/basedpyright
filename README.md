@@ -84,7 +84,6 @@ from foo import a
 from foo import b
 ```
 
-
 #### `reportImplicitRelativeImport` - reporting errors on invalid "relative" imports
 
 pyright allows invalid imports such as this:
@@ -107,6 +106,25 @@ the new `reportImplicitRelativeImport` rule bans imports like this. if you want 
 # ./module_name/bar.py:
 from . import foo
 ```
+
+#### `reportInvalidCast` - prevent non-overlapping `cast`s
+
+most of the time when casting, you want to either cast to a narrower or wider type:
+
+```py
+foo: int | None
+cast(int, foo) #  narrower type
+cast(object, foo) #  wider type
+```
+
+but pyright doesn't prevent casts to a type that doesn't overlap with the original:
+
+```py
+foo: int
+cast(str, foo)
+```
+
+in this example, it's impossible to be `foo` to be a `str` if it's also an `int`, because the `int` and `str` types do not overlap. the `reportInvalidCast` rule will report invalid casts like these.
 
 ### re-implementing pylance-exclusive features
 

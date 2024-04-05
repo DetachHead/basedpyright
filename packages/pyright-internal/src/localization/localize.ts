@@ -1178,6 +1178,8 @@ export namespace Localizer {
         export const typeIgnoreCommentWithoutRule = () => getRawString('Diagnostic.typeIgnoreCommentWithoutRule');
         export const implicitRelativeImport = () =>
             new ParameterizedString<{ importName: string }>(getRawString('Diagnostic.implicitRelativeImport'));
+        export const invalidCast = () =>
+            new ParameterizedString<{ fromType: string; toType: string }>(getRawString('Diagnostic.invalidCast'));
     }
 
     export namespace DiagnosticAddendum {

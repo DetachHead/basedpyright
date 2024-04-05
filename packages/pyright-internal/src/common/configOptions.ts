@@ -386,6 +386,7 @@ export interface DiagnosticRuleSet {
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
     reportPrivateLocalImportUsage: DiagnosticLevel;
     reportImplicitRelativeImport: DiagnosticLevel;
+    reportInvalidCast: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -505,6 +506,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnreachable,
         DiagnosticRule.reportAny,
         DiagnosticRule.reportIgnoreCommentWithoutRule,
+        DiagnosticRule.reportInvalidCast,
     ];
 }
 
@@ -616,6 +618,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
+        reportInvalidCast: 'none',
     };
 
     return diagSettings;
@@ -723,6 +726,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
+        reportInvalidCast: 'none',
     };
 
     return diagSettings;
@@ -830,6 +834,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
+        reportInvalidCast: 'none',
     };
 
     return diagSettings;
@@ -936,6 +941,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIgnoreCommentWithoutRule: 'error',
     reportPrivateLocalImportUsage: 'error',
     reportImplicitRelativeImport: 'error',
+    reportInvalidCast: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1040,6 +1046,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
+        reportInvalidCast: 'none',
     };
 
     return diagSettings;
