@@ -2107,10 +2107,6 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        if (isNever(leftType) || isNever(rightType)) {
-            return;
-        }
-
         const getMessage = () => {
             return node.operator === OperatorType.Equals
                 ? LocMessage.comparisonAlwaysFalse()
@@ -2146,28 +2142,7 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         } else {
-            let isComparable = false;
-
-            doForEachSubtype(leftType, (leftSubtype) => {
-                if (isComparable) {
-                    return;
-                }
-
-                leftSubtype = this._evaluator.makeTopLevelTypeVarsConcrete(leftSubtype);
-                doForEachSubtype(rightType, (rightSubtype) => {
-                    if (isComparable) {
-                        return;
-                    }
-
-                    rightSubtype = this._evaluator.makeTopLevelTypeVarsConcrete(rightSubtype);
-
-                    if (this._isTypeComparable(leftSubtype, rightSubtype)) {
-                        isComparable = true;
-                    }
-                });
-            });
-
-            if (!isComparable) {
+            if (!this._evaluator.typesOverlap(leftType, rightType, /* checkEq */ true)) {
                 const leftTypeText = this._evaluator.printType(leftType, { expandTypeAlias: true });
                 const rightTypeText = this._evaluator.printType(rightType, { expandTypeAlias: true });
 
@@ -2181,117 +2156,6 @@ export class Checker extends ParseTreeWalker {
                 );
             }
         }
-    }
-
-    // Determines whether the two types are potentially comparable -- i.e.
-    // their types overlap in such a way that it makes sense for them to
-    // be compared with an == or != operator.
-    private _isTypeComparable(leftType: Type, rightType: Type) {
-        if (isAnyOrUnknown(leftType) || isAnyOrUnknown(rightType)) {
-            return true;
-        }
-
-        if (isNever(leftType) || isNever(rightType)) {
-            return false;
-        }
-
-        if (isModule(leftType) || isModule(rightType)) {
-            return isTypeSame(leftType, rightType);
-        }
-
-        if (isNoneInstance(leftType) || isNoneInstance(rightType)) {
-            return isTypeSame(leftType, rightType);
-        }
-
-        const isLeftCallable = isFunction(leftType) || isOverloadedFunction(leftType);
-        const isRightCallable = isFunction(rightType) || isOverloadedFunction(rightType);
-        if (isLeftCallable !== isRightCallable) {
-            return false;
-        }
-
-        if (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type'))) {
-            if (
-                isInstantiableClass(rightType) ||
-                (isClassInstance(rightType) && ClassType.isBuiltIn(rightType, 'type'))
-            ) {
-                const genericLeftType = ClassType.cloneForSpecialization(
-                    leftType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
-                const genericRightType = ClassType.cloneForSpecialization(
-                    rightType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
-
-                if (
-                    this._evaluator.assignType(genericLeftType, genericRightType) ||
-                    this._evaluator.assignType(genericRightType, genericLeftType)
-                ) {
-                    return true;
-                }
-            }
-
-            // Does the class have an operator overload for eq?
-            const metaclass = leftType.details.effectiveMetaclass;
-            if (metaclass && isClass(metaclass)) {
-                if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if (isClassInstance(leftType)) {
-            if (isClassInstance(rightType)) {
-                const genericLeftType = ClassType.cloneForSpecialization(
-                    leftType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
-                const genericRightType = ClassType.cloneForSpecialization(
-                    rightType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
-
-                if (
-                    this._evaluator.assignType(genericLeftType, genericRightType) ||
-                    this._evaluator.assignType(genericRightType, genericLeftType)
-                ) {
-                    return true;
-                }
-
-                // Assume that if the types are disjoint and built-in classes that they
-                // will never be comparable.
-                if (ClassType.isBuiltIn(leftType) && ClassType.isBuiltIn(rightType)) {
-                    return false;
-                }
-            }
-
-            // Does the class have an operator overload for eq?
-            const eqMethod = lookUpClassMember(
-                ClassType.cloneAsInstantiable(leftType),
-                '__eq__',
-                MemberAccessFlags.SkipObjectBaseClass
-            );
-
-            if (eqMethod) {
-                // If this is a synthesized method for a dataclass, we can assume
-                // that other dataclass types will not be comparable.
-                if (ClassType.isDataClass(leftType) && eqMethod.symbol.getSynthesizedType()) {
-                    return false;
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        return true;
     }
 
     // If the function is a generator, validates that its annotated return type

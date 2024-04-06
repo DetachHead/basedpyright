@@ -10097,7 +10097,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 );
             }
         }
-        if (!assignType(castToInstance, castFromInstance) && !assignType(castFromInstance, castToInstance)) {
+        if (!typesOverlap(castToInstance, castFromInstance, /* checkEq */ false)) {
             addDiagnostic(
                 DiagnosticRule.reportInvalidCast,
                 LocMessage.invalidCast().format({
@@ -10110,6 +10110,142 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
         return castToInstance;
     }
+
+    /**
+     * determines whether two types are overlapping (ie. they can be compared or casted)
+     */
+    const typesOverlap = (leftType: Type, rightType: Type, checkEq: boolean) => {
+        if (isNever(leftType) || isNever(rightType)) {
+            return true;
+        }
+        let isComparable = false;
+        doForEachSubtype(leftType, (leftSubtype) => {
+            if (isComparable) {
+                return;
+            }
+
+            leftSubtype = makeTopLevelTypeVarsConcrete(leftSubtype);
+            doForEachSubtype(rightType, (rightSubtype) => {
+                if (isComparable) {
+                    return;
+                }
+
+                rightSubtype = makeTopLevelTypeVarsConcrete(rightSubtype);
+
+                if (_isTypeComparable(leftSubtype, rightSubtype, checkEq)) {
+                    isComparable = true;
+                }
+            });
+        });
+        return isComparable;
+    };
+
+    // Determines whether the two types are potentially comparable -- i.e.
+    // their types overlap in such a way that it makes sense for them to
+    // be compared with an == or != operator.
+    const _isTypeComparable = (leftType: Type, rightType: Type, checkEq: boolean) => {
+        if (isAnyOrUnknown(leftType) || isAnyOrUnknown(rightType)) {
+            return true;
+        }
+
+        if (isNever(leftType) || isNever(rightType)) {
+            return false;
+        }
+
+        if (isModule(leftType) || isModule(rightType)) {
+            return isTypeSame(leftType, rightType);
+        }
+
+        if (isNoneInstance(leftType) || isNoneInstance(rightType)) {
+            return isTypeSame(leftType, rightType);
+        }
+
+        const isLeftCallable = isFunction(leftType) || isOverloadedFunction(leftType);
+        const isRightCallable = isFunction(rightType) || isOverloadedFunction(rightType);
+        if (isLeftCallable !== isRightCallable) {
+            return false;
+        }
+
+        if (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type'))) {
+            if (
+                isInstantiableClass(rightType) ||
+                (isClassInstance(rightType) && ClassType.isBuiltIn(rightType, 'type'))
+            ) {
+                const genericLeftType = ClassType.cloneForSpecialization(
+                    leftType,
+                    /* typeArguments */ undefined,
+                    /* isTypeArgumentExplicit */ false
+                );
+                const genericRightType = ClassType.cloneForSpecialization(
+                    rightType,
+                    /* typeArguments */ undefined,
+                    /* isTypeArgumentExplicit */ false
+                );
+
+                if (assignType(genericLeftType, genericRightType) || assignType(genericRightType, genericLeftType)) {
+                    return true;
+                }
+            }
+            if (checkEq) {
+                // Does the class have an operator overload for eq?
+                const metaclass = leftType.details.effectiveMetaclass;
+                if (metaclass && isClass(metaclass)) {
+                    if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        if (isClassInstance(leftType)) {
+            if (isClassInstance(rightType)) {
+                const genericLeftType = ClassType.cloneForSpecialization(
+                    leftType,
+                    /* typeArguments */ undefined,
+                    /* isTypeArgumentExplicit */ false
+                );
+                const genericRightType = ClassType.cloneForSpecialization(
+                    rightType,
+                    /* typeArguments */ undefined,
+                    /* isTypeArgumentExplicit */ false
+                );
+
+                if (assignType(genericLeftType, genericRightType) || assignType(genericRightType, genericLeftType)) {
+                    return true;
+                }
+
+                // Assume that if the types are disjoint and built-in classes that they
+                // will never be comparable.
+                if (ClassType.isBuiltIn(leftType) && ClassType.isBuiltIn(rightType)) {
+                    return false;
+                }
+            }
+            if (checkEq) {
+                // Does the class have an operator overload for eq?
+                const eqMethod = lookUpClassMember(
+                    ClassType.cloneAsInstantiable(leftType),
+                    '__eq__',
+                    MemberAccessFlags.SkipObjectBaseClass
+                );
+
+                if (eqMethod) {
+                    // If this is a synthesized method for a dataclass, we can assume
+                    // that other dataclass types will not be comparable.
+                    if (ClassType.isDataClass(leftType) && eqMethod.symbol.getSynthesizedType()) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return true;
+    };
 
     // Expands any unpacked tuples within an argument list.
     function expandArgList(argList: FunctionArgument[]): FunctionArgument[] {
@@ -27025,6 +27161,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         checkForCancellation,
         printControlFlowGraph,
         printTypeVarContext,
+        typesOverlap,
     };
 
     const codeFlowEngine = getCodeFlowEngine(evaluatorInterface, speculativeTypeTracker);
