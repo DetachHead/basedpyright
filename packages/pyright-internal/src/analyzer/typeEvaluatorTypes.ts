@@ -705,4 +705,5 @@ export interface TypeEvaluator {
         logger: ConsoleInterface
     ) => void;
     printTypeVarContext: (typeVarContext: TypeVarContext) => void;
+    typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
 }

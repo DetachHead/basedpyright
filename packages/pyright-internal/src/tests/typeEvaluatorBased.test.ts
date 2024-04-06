@@ -69,6 +69,9 @@ test('reportInvalidCast', () => {
     configOptions.diagnosticRuleSet.reportInvalidCast = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['cast.py'], configOptions);
     validateResultsButBased(analysisResults, {
-        errors: [{ code: DiagnosticRule.reportInvalidCast, line: 3 }],
+        errors: [
+            { code: DiagnosticRule.reportInvalidCast, line: 4 },
+            { code: DiagnosticRule.reportInvalidCast, line: 5 },
+        ],
     });
 });
