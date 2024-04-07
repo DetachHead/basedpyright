@@ -126,6 +126,19 @@ cast(str, foo)
 
 in this example, it's impossible to be `foo` to be a `str` if it's also an `int`, because the `int` and `str` types do not overlap. the `reportInvalidCast` rule will report invalid casts like these.
 
+##### note about casting with `TypedDict`s
+
+a common use case of `cast` is to convert a regular `dict` into a `TypedDict`:
+
+```py
+foo: dict[str, int | str]
+bar = cast(dict[{"foo": int, "bar": str}], foo)
+```
+
+unfortunately, this will cause a `reportInvalidCast` error when this rule is enabled, because although at runtime `TypedDict` is a `dict`, type checkers treat it as an unrelated subtype of `Mapping` that doesn't have a `clear` method, which would break its type-safety if it were to be called on a `TypedDict`.
+
+this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
+
 ### re-implementing pylance-exclusive features
 
 basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)).
