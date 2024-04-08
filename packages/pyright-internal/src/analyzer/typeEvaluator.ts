@@ -425,6 +425,7 @@ const nonSubscriptableBuiltinTypes: Map<string, PythonVersion> = new Map([
     ['collections.DefaultDict', pythonVersion3_9],
     ['collections.deque', pythonVersion3_9],
     ['collections.OrderedDict', pythonVersion3_9],
+    ['contextlib.AbstractContextManager', pythonVersion3_9],
     ['queue.Queue', pythonVersion3_9],
 ]);
 
