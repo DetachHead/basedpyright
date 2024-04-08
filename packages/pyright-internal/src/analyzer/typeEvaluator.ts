@@ -375,7 +375,7 @@ interface ScopedTypeVarResult {
 
 interface AliasMapEntry {
     alias: string;
-    module: 'builtins' | 'collections' | 'self';
+    module: 'builtins' | 'collections' | 'contextlib' | 'self';
     isSpecialForm?: boolean;
 }
 
@@ -406,11 +406,11 @@ interface ValidateArgTypeOptions {
     conditionFilter?: TypeCondition[];
 }
 
-// This table contains the names of several built-in types that
+// This table contains the names of several types that
 // are not subscriptable at runtime on older versions of Python.
 // It lists the first version of Python where subscripting is
 // allowed.
-const nonSubscriptableBuiltinTypes: Map<string, PythonVersion> = new Map([
+const nonSubscriptableTypes: Map<string, PythonVersion> = new Map([
     ['asyncio.futures.Future', pythonVersion3_9],
     ['asyncio.tasks.Task', pythonVersion3_9],
     ['builtins.dict', pythonVersion3_9],
@@ -426,6 +426,7 @@ const nonSubscriptableBuiltinTypes: Map<string, PythonVersion> = new Map([
     ['collections.deque', pythonVersion3_9],
     ['collections.OrderedDict', pythonVersion3_9],
     ['contextlib.AbstractContextManager', pythonVersion3_9],
+    ['contextlib.AbstractAsyncContextManager', pythonVersion3_9],
     ['queue.Queue', pythonVersion3_9],
 ]);
 
@@ -6502,16 +6503,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
             if (!skipSubscriptCheck) {
                 const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-                if (
-                    isInstantiableClass(baseTypeResult.type) &&
-                    // TODO: figure out what's going on here. this returns false for AbstractContextManager, idk why.
-                    //  i think it's because its base class is Protocol in the stubs but it's actually an abc at runtime.
-                    //  that also raises the question of why the isInstantiableClass call above returns true, when
-                    //  protocols are not instantiable.
-                    // ClassType.isBuiltIn(baseTypeResult.type) &&
-                    !baseTypeResult.type.aliasName
-                ) {
-                    const minPythonVersion = nonSubscriptableBuiltinTypes.get(baseTypeResult.type.details.fullName);
+                if (isInstantiableClass(baseTypeResult.type) && !baseTypeResult.type.aliasName) {
+                    const minPythonVersion = nonSubscriptableTypes.get(baseTypeResult.type.details.fullName);
                     if (
                         minPythonVersion !== undefined &&
                         fileInfo.executionEnvironment.pythonVersion.isLessThan(minPythonVersion) &&
@@ -15851,9 +15844,9 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         let baseClass: Type | undefined;
         if (aliasMapEntry.module === 'builtins') {
             baseClass = getBuiltInType(node, baseClassName);
-        } else if (aliasMapEntry.module === 'collections') {
+        } else if (aliasMapEntry.module === 'collections' || aliasMapEntry.module === 'contextlib') {
             // The typing.pyi file imports collections.
-            baseClass = getTypeOfModule(node, baseClassName, ['collections']);
+            baseClass = getTypeOfModule(node, baseClassName, [aliasMapEntry.module]);
         } else if (aliasMapEntry.module === 'self') {
             const symbolWithScope = lookUpSymbolRecursive(node, baseClassName, /* honorCodeFlow */ false);
             if (symbolWithScope) {
@@ -15869,6 +15862,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     );
                 }
             }
+        } else {
+            aliasMapEntry.module satisfies never;
         }
 
         if (baseClass && isInstantiableClass(baseClass)) {
@@ -15984,6 +15979,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             ['Deque', { alias: 'deque', module: 'collections' }],
             ['ChainMap', { alias: 'ChainMap', module: 'collections' }],
             ['OrderedDict', { alias: 'OrderedDict', module: 'collections' }],
+            ['ContextManager', { alias: 'AbstractContextManager', module: 'contextlib' }],
+            ['AsyncContextManager', { alias: 'AbstractAsyncContextManager', module: 'contextlib' }],
         ]);
 
         const aliasMapEntry = specialTypes.get(assignedName);
