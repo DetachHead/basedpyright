@@ -6504,7 +6504,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
                 if (
                     isInstantiableClass(baseTypeResult.type) &&
-                    ClassType.isBuiltIn(baseTypeResult.type) &&
+                    // TODO: figure out what's going on here. this returns false for AbstractContextManager, idk why.
+                    //  i think it's because its base class is Protocol in the stubs but it's actually an abc at runtime.
+                    //  that also raises the question of why the isInstantiableClass call above returns true, when
+                    //  protocols are not instantiable.
+                    // ClassType.isBuiltIn(baseTypeResult.type) &&
                     !baseTypeResult.type.aliasName
                 ) {
                     const minPythonVersion = nonSubscriptableBuiltinTypes.get(baseTypeResult.type.details.fullName);
