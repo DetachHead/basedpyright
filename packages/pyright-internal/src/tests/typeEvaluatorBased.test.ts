@@ -1,5 +1,6 @@
 import { BasedConfigOptions, ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { pythonVersion3_8 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
 import { UriEx } from '../common/uri/uriUtils';
 import { resolveSampleFilePath, typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
@@ -72,6 +73,20 @@ test('reportInvalidCast', () => {
         errors: [
             { code: DiagnosticRule.reportInvalidCast, line: 4 },
             { code: DiagnosticRule.reportInvalidCast, line: 5 },
+        ],
+    });
+});
+
+test('subscript context manager types on 3.8', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.defaultPythonVersion = pythonVersion3_8;
+    const analysisResults = typeAnalyzeSampleFiles(['subscript_check.py'], configOptions);
+    const message =
+        'Subscript for class "AbstractContextManager" will generate runtime exception; enclose type annotation in quotes';
+    validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportGeneralTypeIssues, line: 7, message },
+            { code: DiagnosticRule.reportGeneralTypeIssues, line: 9, message },
         ],
     });
 });
