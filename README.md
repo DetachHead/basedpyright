@@ -254,6 +254,8 @@ basedpyright:
 
 we aim to [port most of basedmypy's features to basedpyright](https://github.com/DetachHead/basedpyright/issues?q=is%3Aissue+is%3Aopen+label%3A%22basedmypy+feature+parity%22), however as mentioned above our priority is to first fix the critical problems with pyright.
 
+note that any non-standard features we add will be optional, as we intend to support library developmers who can't control what type checker their library is used with.
+
 # pypi package
 
 basedpyright differs from pyright by publishing the command line tool as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package. this makes it far more convenient for python developers to use, since there's no need to install any additional tools.
