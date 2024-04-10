@@ -1,5 +1,18 @@
 ## Import Resolution
 
+### Implicit relative imports
+
+Python will search for imports using the values in the [module](https://docs.python.org/3/library/sys.html#sys.path) [search path](https://docs.python.org/3/reference/import.html).
+
+There are two common ways to invoke python code:
+
+- file mode `python foo/bar.py`
+- module mode `python -m foo.bar`
+
+The complication is that 'file mode' will add the files directory to the modules search path, instead of the current directory.
+
+
+
 ### Resolution Order
 If the import is relative (the module name starts with one or more dots), it resolves the import relative to the path of the importing source file.
 
@@ -26,7 +39,7 @@ For absolute (non-relative) imports, Pyright employs the following resolution or
 
 5. Try to resolve using a **third-party typeshed** stub. If the `typeshedPath` is configured, use this instead of the typeshed stubs that are packaged with Pyright. This allows for the use of a newer or a patched version of the typeshed third-party stubs.
 
-6. For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory.
+6. For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory. (see [Implicit relative imports](#Implicit relative imports) aboce)
 
 
 ### Configuring Your Python Environment
