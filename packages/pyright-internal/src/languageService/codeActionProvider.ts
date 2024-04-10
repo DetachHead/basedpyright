@@ -19,6 +19,8 @@ import { convertToFileTextEdits, convertToTextEditActions, convertToWorkspaceEdi
 import { Localizer } from '../localization/localize';
 import { Workspace } from '../workspaceFactory';
 import { CompletionProvider } from './completionProvider';
+import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
+import { findNodeByOffset } from '../analyzer/parseTreeUtils';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -104,10 +106,22 @@ export class CodeActionProvider {
             }
         }
         if (diags.find((d) => d.getActions()?.some((action) => action.action === Commands.import))?.getActions()) {
+            const parseResults = workspace.service.backgroundAnalysisProgram.program.getParseResults(fileUri)!;
+            const lines = parseResults.tokenizerOutput.lines;
+            const offset = convertPositionToOffset(range.start, lines);
+            if (offset === undefined) {
+                return [];
+            }
+
+            const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
+            if (node === undefined) {
+                return [];
+            }
+
             const completer = new CompletionProvider(
                 workspace.service.backgroundAnalysisProgram.program,
                 fileUri,
-                range.start,
+                convertOffsetToPosition(node.start + node.length, lines),
                 {
                     format: 'plaintext',
                     lazyEdit: false,
