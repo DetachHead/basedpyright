@@ -1291,7 +1291,7 @@ function getSequencePatternInfo(
                             typeArgs.splice(tupleIndeterminateIndex, 0, typeArgs[tupleIndeterminateIndex]);
                         }
 
-                        if (typeArgs.length > patternEntryCount) {
+                        if (typeArgs.length > patternEntryCount && patternStarEntryIndex === undefined) {
                             typeArgs.splice(tupleIndeterminateIndex, 1);
                         }
                     }

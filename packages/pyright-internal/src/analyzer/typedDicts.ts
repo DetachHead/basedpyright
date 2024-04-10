@@ -113,7 +113,7 @@ export function createTypedDictType(
     classType.details.baseClasses.push(typedDictClass);
     computeMroLinearization(classType);
 
-    const classFields = classType.details.fields;
+    const classFields = ClassType.getSymbolTable(classType);
     classFields.set(
         '__class__',
         Symbol.createWithType(SymbolFlags.ClassMember | SymbolFlags.IgnoredForProtocolMatch, classType)
@@ -256,7 +256,7 @@ export function createTypedDictTypeInlined(
     classType.details.baseClasses.push(typedDictClass);
     computeMroLinearization(classType);
 
-    getTypedDictFieldsFromDictSyntax(evaluator, dictNode, classType.details.fields, /* isInline */ true);
+    getTypedDictFieldsFromDictSyntax(evaluator, dictNode, ClassType.getSymbolTable(classType), /* isInline */ true);
     synthesizeTypedDictClassMethods(evaluator, dictNode, classType);
 
     return classType;
@@ -361,7 +361,7 @@ export function synthesizeTypedDictClassMethods(
         });
     }
 
-    const symbolTable = classType.details.fields;
+    const symbolTable = ClassType.getSymbolTable(classType);
     const initType = OverloadedFunctionType.create([initOverride1, initOverride2]);
     symbolTable.set('__init__', Symbol.createWithType(SymbolFlags.ClassMember, initType));
     symbolTable.set('__new__', Symbol.createWithType(SymbolFlags.ClassMember, newType));
@@ -993,7 +993,7 @@ function getTypedDictMembersForClassRecursive(
     const typeVarContext = buildTypeVarContextFromSpecializedClass(classType);
 
     // Add any new typed dict entries from this class.
-    classType.details.fields.forEach((symbol, name) => {
+    ClassType.getSymbolTable(classType).forEach((symbol, name) => {
         if (!symbol.isIgnoredForProtocolMatch()) {
             // Only variables (not functions, classes, etc.) are considered.
             const lastDecl = getLastTypedDeclaredForSymbol(symbol);
@@ -1075,6 +1075,12 @@ export function assignTypedDictToTypedDict(
     const extraSrcEntries = srcEntries.extraItems ?? getEffectiveExtraItemsEntryType(evaluator, srcType);
 
     destEntries.knownItems.forEach((destEntry, name) => {
+        // If we've already determined that the types are inconsistent and
+        // the caller isn't interested in detailed diagnostics, skip the remainder.
+        if (!typesAreConsistent && !diag) {
+            return;
+        }
+
         const srcEntry = srcEntries.knownItems.get(name);
         if (!srcEntry) {
             if (destEntry.isRequired || !destEntry.isReadOnly) {
@@ -1146,6 +1152,12 @@ export function assignTypedDictToTypedDict(
             }
         }
     });
+
+    // If the types are not consistent and the caller isn't interested
+    // in detailed diagnostics, don't do additional work.
+    if (!typesAreConsistent && !diag) {
+        return false;
+    }
 
     // If the destination TypedDict is closed, check any extra entries in the source
     // TypedDict to ensure that they don't violate the "extra items" type.

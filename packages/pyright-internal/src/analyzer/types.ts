@@ -74,7 +74,6 @@ export type UnionableType =
 export type Type = UnionableType | NeverType | UnionType;
 
 export type TypeVarScopeId = string;
-export const WildcardTypeVarScopeId = '*';
 export const InScopePlaceholderScopeId = '-';
 
 export class EnumLiteral {
@@ -615,7 +614,6 @@ interface ClassDetails {
     dataClassEntries?: DataClassEntry[] | undefined;
     dataClassBehaviors?: DataClassBehaviors | undefined;
     typedDictEntries?: TypedDictEntries | undefined;
-    inheritedSlotsNames?: string[];
     localSlotsNames?: string[];
 
     // A cache of protocol classes (indexed by the class full name)
@@ -635,6 +633,13 @@ interface ClassDetails {
     // A cached value that indicates whether an instance of this class
     // is hashable (i.e. does not override "__hash__" with None).
     isInstanceHashable?: boolean;
+
+    // Callback for deferred synthesis of methods in symbol table.
+    synthesizeMethodsDeferred?: () => void;
+
+    // Callback for calculating inherited slots names.
+    calculateInheritedSlotsNamesDeferred?: () => void;
+    inheritedSlotsNamesCached?: string[];
 }
 
 export interface TupleTypeArgument {
@@ -1136,6 +1141,8 @@ export namespace ClassType {
     }
 
     export function getDataClassEntries(classType: ClassType): DataClassEntry[] {
+        classType.details.synthesizeMethodsDeferred?.();
+
         return classType.details.dataClassEntries || [];
     }
 
@@ -1169,6 +1176,22 @@ export namespace ClassType {
 
     export function hasUnknownBaseClass(classType: ClassType) {
         return classType.details.mro.some((baseClass) => isAnyOrUnknown(baseClass));
+    }
+
+    export function getSymbolTable(classType: ClassType) {
+        classType.details.synthesizeMethodsDeferred?.();
+
+        return classType.details.fields;
+    }
+
+    export function getInheritedSlotsNames(classType: ClassType) {
+        // First synthesize methods if needed. The slots entries
+        // can depend on synthesized methods.
+        classType.details.synthesizeMethodsDeferred?.();
+
+        classType.details.calculateInheritedSlotsNamesDeferred?.();
+
+        return classType.details.inheritedSlotsNamesCached;
     }
 
     // Similar to isPartiallyEvaluated except that it also looks at all of the
@@ -1459,9 +1482,9 @@ interface FunctionDetails {
     constructorTypeVarScopeId?: TypeVarScopeId | undefined;
 
     // For functions whose parameter lists derive from a solved
-    // ParamSpec, this is the TypeVar scope ID of the signature
-    // captured by that ParamSpec.
-    paramSpecTypeVarScopeId?: TypeVarScopeId | undefined;
+    // ParamSpec or higher-order generic functions, this is a list of
+    // additional TypeVar IDs that may need to be solved.
+    higherOrderTypeVarScopeIds?: TypeVarScopeId[];
 }
 
 export interface SpecializedFunctionTypes {
@@ -1706,6 +1729,10 @@ export namespace FunctionType {
         // Make a shallow clone of the details.
         newFunction.details = { ...type.details };
 
+        newFunction.details.typeParameters = newFunction.details.typeParameters.filter(
+            (t) => !newFunction.details.paramSpec || !isTypeSame(t, newFunction.details.paramSpec)
+        );
+
         // The clone should no longer have a parameter specification
         // since we're replacing it.
         delete newFunction.details.paramSpec;
@@ -1790,7 +1817,9 @@ export namespace FunctionType {
                 });
             }
 
-            newFunction.details.paramSpecTypeVarScopeId = paramSpecValue.details.typeVarScopeId;
+            FunctionType.addHigherOrderTypeVarScopeIds(newFunction, paramSpecValue.details.typeVarScopeId);
+            FunctionType.addHigherOrderTypeVarScopeIds(newFunction, paramSpecValue.details.higherOrderTypeVarScopeIds);
+
             newFunction.details.paramSpec = paramSpecValue.details.paramSpec;
         }
 
@@ -1820,6 +1849,11 @@ export namespace FunctionType {
         newFunction.details.typeVarScopeId = newScopeId;
         newFunction.details.typeParameters = typeParameters;
         newFunction.trackedSignatures = trackedSignatures;
+
+        FunctionType.addHigherOrderTypeVarScopeIds(
+            newFunction,
+            typeParameters.map((t) => t.scopeId)
+        );
 
         return newFunction;
     }
@@ -1903,10 +1937,7 @@ export namespace FunctionType {
             newFunction.details.docString = paramSpecValue.details.docString;
         }
 
-        // Note the TypeVar scope ID of the original captured function. This
-        // allows any unsolved TypeVars within that scope to be solved when the
-        // resulting function is called.
-        newFunction.details.paramSpecTypeVarScopeId = paramSpecValue.details.typeVarScopeId;
+        FunctionType.addHigherOrderTypeVarScopeIds(newFunction, paramSpecValue.details.typeVarScopeId);
 
         return newFunction;
     }
@@ -1959,6 +1990,34 @@ export namespace FunctionType {
     export function addDefaultParameters(functionType: FunctionType, useUnknown = false) {
         getDefaultParameters(useUnknown).forEach((param) => {
             FunctionType.addParameter(functionType, param);
+        });
+    }
+
+    export function addHigherOrderTypeVarScopeIds(
+        functionType: FunctionType,
+        scopeIds: (TypeVarScopeId | undefined)[] | TypeVarScopeId | undefined
+    ) {
+        if (!scopeIds) {
+            return;
+        }
+
+        if (!Array.isArray(scopeIds)) {
+            scopeIds = [scopeIds];
+        }
+
+        if (!functionType.details.higherOrderTypeVarScopeIds) {
+            functionType.details.higherOrderTypeVarScopeIds = [];
+        }
+
+        // Add the scope IDs to the function if they're unique.
+        scopeIds.forEach((scopeId) => {
+            if (!scopeId || scopeId === functionType.details.typeVarScopeId) {
+                return;
+            }
+
+            if (!functionType.details.higherOrderTypeVarScopeIds!.some((id) => id === scopeId)) {
+                functionType.details.higherOrderTypeVarScopeIds!.push(scopeId);
+            }
         });
     }
 
