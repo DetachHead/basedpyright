@@ -272,18 +272,13 @@ install the extension from [the vscode extension marketplace](https://marketplac
 
 the basedpyright vscode extension will automatically look for the pypi package in your python environment.
 
-you should change the following config files to prevent pylance from conflicting with basedpyright:
+if you're adding basedpyright as a development dependency in your project, we recommend addibg it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
 
 ```jsonc
 // .vscode/extensions.json
 
 {
-  "recommendations": [
-    "detachhead.basedpyright" // this will prompt developers working on your project to install the extension
-  ],
-  "unwantedRecommendations": [
-    "ms-python.vscode-pylance"
-  ]
+  "recommendations": ["detachhead.basedpyright"]
 }
 ```
 
@@ -296,7 +291,9 @@ you should also disable the built in language server support from the python ext
     "python.languageServer": "None"
 }
 ```
+*(the basedpyright extension will detect this problem and suggest fixing it automatically)*
 
+<!-- if changing this section title, make sure you also change the url in the pylance notification in the vscode extension -->
 ## using basedpyright with pylance (not recommended)
 
 unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
@@ -312,6 +309,7 @@ if you do want to continue using pylance, all of the options and commands in bas
     "basedpyright.disableLanguageServices": true
 }
 ```
+*(the basedpyright extension will detect this problem and suggest fixing it automatically)*
 
 # playground
 

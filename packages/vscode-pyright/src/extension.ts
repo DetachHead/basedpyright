@@ -57,36 +57,61 @@ const pythonPathChangedListenerMap = new Map<string, string>();
 const defaultHeapSize = 3072;
 
 export async function activate(context: ExtensionContext) {
+    const pyrightLanguageServerEnabled = !workspace.getConfiguration('basedpyright').get('disableLanguageServices');
+    const languageServerSetting = workspace.getConfiguration('python').get('languageServer');
+    const moreInfo = 'More info';
+    const disableBasedPyrightLsp = () =>
+        workspace.getConfiguration('basedpyright').update('disableLanguageServices', true);
+    if (pyrightLanguageServerEnabled && languageServerSetting !== 'None') {
+        const disablePythonLanguageServer = 'fix setting & use basedpyright LSP (recommended)';
+        const keepUsingExistingLanguageServer = `disable basedpyright LSP`;
+        const result = await window.showWarningMessage(
+            `basedpyright has detected that \`python.languageServer\` is set to "${languageServerSetting}". This setting conflicts with basedpyright's language server and should be disabled.`,
+            { modal: true },
+            disablePythonLanguageServer,
+            keepUsingExistingLanguageServer,
+            moreInfo
+        );
+        if (result === disablePythonLanguageServer) {
+            workspace.getConfiguration('python').update('languageServer', 'None');
+        } else if (result === keepUsingExistingLanguageServer) {
+            disableBasedPyrightLsp();
+        } else if (result === moreInfo) {
+            env.openExternal(Uri.parse(`${githubRepo}/#usage`));
+        }
+    }
     // See if Pylance is installed. If so, make sure its config doesn't conflict with basedpyright's
-    if (extensions.getExtension('ms-python.vscode-pylance')) {
+    const pylanceIsInstalled = extensions.getExtension('ms-python.vscode-pylance');
+    if (pylanceIsInstalled) {
         const pylanceTypeCheckingEnabled =
             workspace.getConfiguration('python.analysis').get('typeCheckingMode') !== 'off';
-        const pyrightLanguageServerEnabled = !workspace.getConfiguration('basedpyright').get('disableLanguageServices');
         if (pylanceTypeCheckingEnabled || pyrightLanguageServerEnabled) {
-            const problems: { name: string; action: () => void }[] = [];
+            const problems: (() => void)[] = [];
             if (pylanceTypeCheckingEnabled) {
-                problems.push({
-                    name: 'pylance typechecking',
-                    action: () => workspace.getConfiguration('python.analysis').update('typeCheckingMode', 'off'),
-                });
+                problems.push(() => workspace.getConfiguration('python.analysis').update('typeCheckingMode', 'off'));
             }
             if (pyrightLanguageServerEnabled) {
-                problems.push({
-                    name: 'basedpyright LSP',
-                    action: () => workspace.getConfiguration('basedpyright').update('disableLanguageServices', true),
-                });
+                problems.push(disableBasedPyrightLsp);
             }
             if (problems.length > 0) {
-                const moreInfo = 'More info';
+                const uninstallPylance = 'Uninstall Pylance & restart vscode (recommended)';
+                const fixSettings = `Fix settings & keep both extensions`;
                 const result = await window.showWarningMessage(
-                    'BasedPyright has detected that the Pylance extension is installed and overlapping functionality is enabled.',
-                    `Disable ${problems.map((problem) => problem.name).join(' & ')}`,
+                    'basedpyright has detected that the Pylance extension is installed and conflicting settings are enabled.',
+                    { modal: true },
+                    uninstallPylance,
+                    fixSettings,
                     moreInfo
                 );
-                if (result === moreInfo) {
-                    env.openExternal(Uri.parse(`${githubRepo}/#if-using-pylance`));
+                if (result === uninstallPylance) {
+                    commands
+                        .executeCommand('workbench.extensions.uninstallExtension', 'ms-python.vscode-pylance')
+                        // can't use await  because this uses sussy `Thenable` type which doesn't work with it
+                        .then(() => commands.executeCommand('workbench.action.reloadWindow'));
+                } else if (result === moreInfo) {
+                    env.openExternal(Uri.parse(`${githubRepo}/#using-basedpyright-with-pylance-not-recommended`));
                 } else if (result !== undefined) {
-                    problems.forEach((problem) => problem.action());
+                    problems.forEach((problem) => problem());
                 }
             }
         }
