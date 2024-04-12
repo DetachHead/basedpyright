@@ -1666,6 +1666,10 @@
                 }
             }
         },
+        "configurationDefaults": {
+            "python.languageServer": "None",
+            "python.analysis.typeCheckingMode": "off"
+        },
         "jsonValidation": [
             {
                 "fileMatch": "pyrightconfig.json",
