@@ -236,7 +236,7 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportIgnoreCommentWithoutRule"></a> **reportIgnoreCommentWithoutRule** [boolean or string, optional]: Enforce that all `# type:ignore`/`# pyright:ignore` comments specify a rule in brackets (eg. `# pyright:ignore[reportAny]`)
 
-- <a name="reportPrivateLocalImportUsage"></a> **reportAllPrivateImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like `reportPrivateImportUsage` but also checks imports from your own code.
+- <a name="reportPrivateLocalImportUsage"></a> **reportPrivateLocalImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like `reportPrivateImportUsage` but also checks imports from your own code.
 
 - <a name="reportImplicitRelativeImport"></a> **reportImplicitRelativeImport** [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module.
 
