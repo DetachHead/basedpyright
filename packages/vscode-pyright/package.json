@@ -28,6 +28,7 @@
     ],
     "icon": "images/pyright-icon.png",
     "main": "./dist/extension.js",
+    "browser": "./dist/extension.js",
     "contributes": {
         "languages": [
             {
