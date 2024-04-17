@@ -49,6 +49,7 @@ import {
     isFunction,
     isInstantiableClass,
     isOverloadedFunction,
+    isUnion,
     OverloadedFunctionType,
     TupleTypeArgument,
     Type,
@@ -385,6 +386,14 @@ export function synthesizeDataClassMethods(
                             dataClassEntry.hasDefault = true;
                             dataClassEntry.defaultValueExpression = oldEntry.defaultValueExpression;
                             hasDefaultValue = true;
+
+                            // Warn the user of this case because it can result in type errors if the
+                            // default value is incompatible with the new type.
+                            evaluator.addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.dataClassFieldInheritedDefault().format({ fieldName: variableName }),
+                                variableNameNode
+                            );
                         }
 
                         fullDataClassEntries[insertIndex] = dataClassEntry;
@@ -832,7 +841,19 @@ function getConverterAsFunction(
     }
 
     if (isInstantiableClass(converterType)) {
-        return createFunctionFromConstructor(evaluator, converterType);
+        let fromConstructor = createFunctionFromConstructor(evaluator, converterType);
+        if (fromConstructor) {
+            // If conversion to a constructor resulted in a union type, we'll
+            // choose the first of the two subtypes, which typically corresponds
+            // to the __init__ method (rather than the __new__ method).
+            if (isUnion(fromConstructor)) {
+                fromConstructor = fromConstructor.subtypes[0];
+            }
+
+            if (isFunction(fromConstructor) || isOverloadedFunction(fromConstructor)) {
+                return fromConstructor;
+            }
+        }
     }
 
     return undefined;

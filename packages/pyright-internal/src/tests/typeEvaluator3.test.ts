@@ -1536,19 +1536,13 @@ test('Constructor5', () => {
 test('Constructor6', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor6.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('Constructor7', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor7.py']);
 
     TestUtils.validateResults(analysisResults, 0);
-});
-
-test('Constructor8', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor8.py']);
-
-    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('Constructor9', () => {
@@ -1578,7 +1572,7 @@ test('Constructor12', () => {
 test('Constructor13', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor13.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('Constructor14', () => {
@@ -1626,7 +1620,7 @@ test('Constructor20', () => {
 test('Constructor21', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor21.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 2);
 });
 
 test('Constructor22', () => {
@@ -1679,6 +1673,18 @@ test('Constructor28', () => {
 
 test('Constructor29', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor29.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('ConstructorCallable1', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructorCallable1.py']);
+
+    TestUtils.validateResults(analysisResults, 4);
+});
+
+test('ConstructorCallable2', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructorCallable2.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });

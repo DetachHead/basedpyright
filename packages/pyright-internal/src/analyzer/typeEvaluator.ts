@@ -165,7 +165,7 @@ import * as ScopeUtils from './scopeUtils';
 import { evaluateStaticBoolExpression } from './staticExpressions';
 import { Symbol, SymbolFlags, indeterminateSymbolId } from './symbol';
 import { isConstantName, isPrivateName, isPrivateOrProtectedName } from './symbolNameUtils';
-import { getLastTypedDeclaredForSymbol, isEffectivelyClassVar } from './symbolUtils';
+import { getLastTypedDeclarationForSymbol, isEffectivelyClassVar } from './symbolUtils';
 import { SpeculativeModeOptions, SpeculativeTypeTracker } from './typeCacheUtils';
 import {
     AbstractSymbol,
@@ -4499,7 +4499,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         if (typeParamSymbol) {
             symbol = typeParamSymbol;
             assert(symbol.getDeclarations().length === 1);
-            const decl = getLastTypedDeclaredForSymbol(symbol);
+            const decl = getLastTypedDeclarationForSymbol(symbol);
             assert(decl?.type === DeclarationType.TypeParameter);
             type = getTypeOfTypeParameter(decl.node);
             setSymbolAccessed(fileInfo, symbol, node);
@@ -5330,6 +5330,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
         let type: Type | undefined;
         let narrowedTypeForSet: Type | undefined;
+        let typeErrors = false;
         let isIncomplete = !!baseTypeResult.isIncomplete;
         let isAsymmetricAccessor: boolean | undefined;
         const isRequired = false;
@@ -5452,12 +5453,24 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     );
                 }
 
-                if (typeResult && !typeResult.typeErrors) {
-                    type = addConditionToType(
-                        typeResult.type,
-                        getTypeCondition(baseType),
-                        /* skipSelfCondition */ true
-                    );
+                if (typeResult) {
+                    if (!typeResult.typeErrors) {
+                        type = addConditionToType(
+                            typeResult.type,
+                            getTypeCondition(baseType),
+                            /* skipSelfCondition */ true
+                        );
+                    } else {
+                        typeErrors = true;
+                    }
+
+                    if (typeResult.isAsymmetricAccessor) {
+                        isAsymmetricAccessor = true;
+                    }
+
+                    if (typeResult.isIncomplete) {
+                        isIncomplete = true;
+                    }
 
                     if (typeResult.narrowedTypeForSet) {
                         narrowedTypeForSet = addConditionToType(
@@ -5465,14 +5478,6 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                             getTypeCondition(baseType),
                             /* skipSelfCondition */ true
                         );
-                    }
-
-                    if (typeResult.isIncomplete) {
-                        isIncomplete = true;
-                    }
-
-                    if (typeResult.isAsymmetricAccessor) {
-                        isAsymmetricAccessor = true;
                     }
 
                     if (typeResult.memberAccessDeprecationInfo) {
@@ -5625,8 +5630,12 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                         isIncomplete = true;
                     }
 
-                    if (typeResult?.memberAccessDeprecationInfo) {
+                    if (typeResult.memberAccessDeprecationInfo) {
                         memberAccessDeprecationInfo = typeResult.memberAccessDeprecationInfo;
+                    }
+
+                    if (typeResult.typeErrors) {
+                        typeErrors = true;
                     }
 
                     return typeResult.type;
@@ -5725,6 +5734,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             isRequired,
             isNotRequired,
             memberAccessDeprecationInfo,
+            typeErrors,
         };
     }
 
@@ -6012,6 +6022,8 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     );
                 }
 
+                // Do not narrow the type in this case. Assume the declared type.
+                narrowedTypeForSet = type;
                 isDescriptorError = true;
             }
 
@@ -9639,7 +9651,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             return undefined;
         }
 
-        const lastDecl = getLastTypedDeclaredForSymbol(symbol);
+        const lastDecl = getLastTypedDeclarationForSymbol(symbol);
         if (!lastDecl) {
             return undefined;
         }
@@ -11563,13 +11575,10 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 }
             }
 
-            // Some typeshed stubs use specialized type annotations in the "self" parameter
-            // of an overloaded __init__ method to specify which specialized type should
-            // be constructed. Although this isn't part of the official Python spec, other
-            // type checkers appear to honor it.
+            // The type annotation for the "self" parameter in an __init__ method to
+            // can incluence the type being constructed.
             if (
                 type.details.name === '__init__' &&
-                FunctionType.isOverloaded(type) &&
                 type.strippedFirstParamType &&
                 type.boundToType &&
                 isClassInstance(type.strippedFirstParamType) &&
@@ -12332,7 +12341,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             if (isFunction(concreteParamType) || isOverloadedFunction(concreteParamType)) {
                 if (isInstantiableClass(argType)) {
                     const constructor = createFunctionFromConstructor(evaluatorInterface, argType);
-                    if (constructor && isOverloadedFunction(constructor)) {
+                    if (constructor) {
                         return {
                             isCompatible,
                             argType,
@@ -12739,7 +12748,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 if (paramName === 'default') {
                     const expr = argList[i].valueExpression;
                     if (expr) {
-                        const defaultType = getTypeVarTupleDefaultType(expr);
+                        const defaultType = getTypeVarTupleDefaultType(expr, /* isPep695Syntax */ false);
                         if (defaultType) {
                             typeVar.details.defaultType = defaultType;
                             typeVar.details.isDefaultExplicit = true;
@@ -12768,10 +12777,11 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         return typeVar;
     }
 
-    function getTypeVarTupleDefaultType(node: ExpressionNode): Type | undefined {
+    function getTypeVarTupleDefaultType(node: ExpressionNode, isPep695Syntax: boolean): Type | undefined {
         const argType = getTypeOfExpressionExpectingType(node, {
             allowUnpackedTuple: true,
             allowTypeVarsWithoutScopeId: true,
+            allowForwardReference: isPep695Syntax,
         }).type;
         const isUnpackedTuple = isClass(argType) && isTupleClass(argType) && argType.isUnpacked;
         const isUnpackedTypeVarTuple = isUnpackedVariadicTypeVar(argType);
@@ -12818,7 +12828,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 if (paramName === 'default') {
                     const expr = argList[i].valueExpression;
                     if (expr) {
-                        const defaultType = getParamSpecDefaultType(expr);
+                        const defaultType = getParamSpecDefaultType(expr, /* isPep695Syntax */ false);
                         if (defaultType) {
                             paramSpec.details.defaultType = defaultType;
                             paramSpec.details.isDefaultExplicit = true;
@@ -12848,7 +12858,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         return paramSpec;
     }
 
-    function getParamSpecDefaultType(node: ExpressionNode): Type | undefined {
+    function getParamSpecDefaultType(node: ExpressionNode, isPep695Syntax: boolean): Type | undefined {
         const functionType = FunctionType.createSynthesizedInstance(
             '',
             FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck | FunctionTypeFlags.ParamSpecValue
@@ -12861,7 +12871,10 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
         if (node.nodeType === ParseNodeType.List) {
             node.entries.forEach((paramExpr, index) => {
-                const typeResult = getTypeOfExpressionExpectingType(paramExpr, { allowTypeVarsWithoutScopeId: true });
+                const typeResult = getTypeOfExpressionExpectingType(paramExpr, {
+                    allowTypeVarsWithoutScopeId: true,
+                    allowForwardReference: isPep695Syntax,
+                });
 
                 FunctionType.addParameter(functionType, {
                     category: ParameterCategory.Simple,
@@ -19596,6 +19609,15 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     } else {
                         break;
                     }
+                } else if (parent.nodeType === ParseNodeType.TypeParameter) {
+                    // If this is a bound or default expression in a type parameter list,
+                    // we need to evaluate it in the context of the type parameter.
+                    if (node === parent.boundExpression || node === parent.defaultExpression) {
+                        getTypeOfTypeParameter(parent);
+                        return;
+                    }
+
+                    break;
                 } else {
                     break;
                 }
@@ -21254,6 +21276,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 const constraints = node.boundExpression.expressions.map((constraint) => {
                     const constraintType = getTypeOfExpressionExpectingType(constraint, {
                         disallowProtocolAndTypedDict: true,
+                        allowForwardReference: true,
                     }).type;
 
                     if (
@@ -21280,6 +21303,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             } else {
                 const boundType = getTypeOfExpressionExpectingType(node.boundExpression, {
                     disallowProtocolAndTypedDict: true,
+                    allowForwardReference: true,
                 }).type;
 
                 if (requiresSpecialization(boundType, { ignorePseudoGeneric: true })) {
@@ -21293,7 +21317,9 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         }
 
         if (node.typeParamCategory === TypeParameterCategory.ParamSpec) {
-            const defaultType = node.defaultExpression ? getParamSpecDefaultType(node.defaultExpression) : undefined;
+            const defaultType = node.defaultExpression
+                ? getParamSpecDefaultType(node.defaultExpression, /* isPep695Syntax */ true)
+                : undefined;
 
             if (defaultType) {
                 typeVar.details.defaultType = defaultType;
@@ -21302,7 +21328,9 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 typeVar.details.defaultType = getUnknownTypeForParamSpec();
             }
         } else if (node.typeParamCategory === TypeParameterCategory.TypeVarTuple) {
-            const defaultType = node.defaultExpression ? getTypeVarTupleDefaultType(node.defaultExpression) : undefined;
+            const defaultType = node.defaultExpression
+                ? getTypeVarTupleDefaultType(node.defaultExpression, /* isPep695Syntax */ true)
+                : undefined;
 
             if (defaultType) {
                 typeVar.details.defaultType = defaultType;
@@ -21312,7 +21340,9 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
             }
         } else {
             const defaultType = node.defaultExpression
-                ? convertToInstance(getTypeOfExpressionExpectingType(node.defaultExpression).type)
+                ? convertToInstance(
+                      getTypeOfExpressionExpectingType(node.defaultExpression, { allowForwardReference: true }).type
+                  )
                 : undefined;
 
             if (defaultType) {
@@ -24112,6 +24142,20 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 );
                 if (constructor) {
                     concreteSrcType = constructor;
+
+                    // The constructor conversion may result in a union of the
+                    // __init__ and __new__ callables.
+                    if (isUnion(concreteSrcType)) {
+                        return assignType(
+                            destType,
+                            concreteSrcType,
+                            diag,
+                            destTypeVarContext,
+                            srcTypeVarContext,
+                            flags,
+                            recursionCount
+                        );
+                    }
                 }
             }
 
@@ -24445,22 +24489,36 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 } else if (remainingDestSubtypes.length === remainingSrcSubtypes.length) {
                     // If the number of remaining source subtypes is the same as the number
                     // of dest TypeVars, try to assign each source subtype to its own dest TypeVar.
-                    remainingDestSubtypes.forEach((destSubtype, index) => {
-                        const srcSubtype = remainingSrcSubtypes[index];
-                        if (
-                            !assignType(
-                                destSubtype,
-                                srcSubtype,
-                                diag?.createAddendum(),
-                                destTypeVarContext,
-                                srcTypeVarContext,
-                                flags,
-                                recursionCount
-                            )
-                        ) {
-                            canUseFastPath = false;
+                    const reorderedDestSubtypes = [...remainingDestSubtypes];
+
+                    for (let srcIndex = 0; srcIndex < remainingSrcSubtypes.length; srcIndex++) {
+                        let foundMatchForSrc = false;
+
+                        for (let destIndex = 0; destIndex < reorderedDestSubtypes.length; destIndex++) {
+                            if (
+                                assignType(
+                                    reorderedDestSubtypes[destIndex],
+                                    remainingSrcSubtypes[srcIndex],
+                                    diag?.createAddendum(),
+                                    destTypeVarContext,
+                                    srcTypeVarContext,
+                                    flags,
+                                    recursionCount
+                                )
+                            ) {
+                                foundMatchForSrc = true;
+                                // Move the matched dest TypeVar to the end of the list so the other
+                                // dest TypeVars have a better chance of being assigned to.
+                                reorderedDestSubtypes.push(...reorderedDestSubtypes.splice(destIndex, 1));
+                                break;
+                            }
                         }
-                    });
+
+                        if (!foundMatchForSrc) {
+                            canUseFastPath = false;
+                            break;
+                        }
+                    }
 
                     // We can avoid checking the source subtypes that have already been checked.
                     sortedSrcTypes = remainingSrcSubtypes;
@@ -25723,6 +25781,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     remainingFunction.details.typeVarScopeId = effectiveSrcType.details.typeVarScopeId;
                     remainingFunction.details.constructorTypeVarScopeId =
                         effectiveSrcType.details.constructorTypeVarScopeId;
+                    remainingFunction.details.methodClass = effectiveSrcType.details.methodClass;
                     remainingParams.forEach((param) => {
                         FunctionType.addParameter(remainingFunction, param);
                     });
@@ -25785,11 +25844,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     effectiveFlags |= AssignTypeFlags.RetainLiteralsForTypeVar;
                 }
 
-                if (isNever(srcReturnType)) {
-                    // We'll allow any function that returns NoReturn to match any
-                    // function return type, consistent with other type checkers.
-                    isReturnTypeCompatible = true;
-                } else if (
+                if (
                     assignType(
                         destReturnType,
                         srcReturnType,
@@ -26752,7 +26807,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
     // If the memberType is an instance or class method, creates a new
     // version of the function that has the "self" or "cls" parameter bound
-    // to it. If treatConstructorAsClassMember is true, the function is
+    // to it. If treatConstructorAsClassMethod is true, the function is
     // treated like a class method even if it's not marked as such. That's
     // needed to special-case the __new__ magic method when it's invoked as
     // a constructor (as opposed to by name).
@@ -26760,7 +26815,7 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
         baseType: ClassType | undefined,
         memberType: FunctionType | OverloadedFunctionType,
         memberClass?: ClassType,
-        treatConstructorAsClassMember = false,
+        treatConstructorAsClassMethod = false,
         selfType?: ClassType | TypeVarType,
         diag?: DiagnosticAddendum,
         recursionCount = 0
@@ -26782,6 +26837,13 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     ? baseType
                     : ClassType.cloneAsInstance(specializeClassType(baseType));
 
+                let stripFirstParam = false;
+                if (isClassInstance(baseType)) {
+                    stripFirstParam = true;
+                } else if (memberClass && isInstantiableMetaclass(memberClass)) {
+                    stripFirstParam = true;
+                }
+
                 return partiallySpecializeFunctionForBoundClassOrObject(
                     baseType,
                     functionType,
@@ -26789,13 +26851,13 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                     diag,
                     recursionCount,
                     selfType ?? baseObj,
-                    /* stripFirstParam */ isClassInstance(baseType)
+                    stripFirstParam
                 );
             }
 
             if (
                 FunctionType.isClassMethod(functionType) ||
-                (treatConstructorAsClassMember && FunctionType.isConstructorMethod(functionType))
+                (treatConstructorAsClassMethod && FunctionType.isConstructorMethod(functionType))
             ) {
                 const baseClass = isInstantiableClass(baseType) ? baseType : ClassType.cloneAsInstantiable(baseType);
                 const clsType = selfType ? (convertToInstantiable(selfType) as ClassType | TypeVarType) : undefined;

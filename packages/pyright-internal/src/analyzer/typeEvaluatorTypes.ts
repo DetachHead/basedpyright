@@ -610,7 +610,7 @@ export interface TypeEvaluator {
         baseType: ClassType | undefined,
         memberType: FunctionType | OverloadedFunctionType,
         memberClass?: ClassType,
-        treatConstructorAsClassMember?: boolean,
+        treatConstructorAsClassMethod?: boolean,
         selfType?: ClassType | TypeVarType,
         diag?: DiagnosticAddendum,
         recursionCount?: number

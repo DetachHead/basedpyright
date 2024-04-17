@@ -115,7 +115,7 @@ import { SourceMapper, isStubFile } from './sourceMapper';
 import { evaluateStaticBoolExpression } from './staticExpressions';
 import { Symbol } from './symbol';
 import * as SymbolNameUtils from './symbolNameUtils';
-import { getLastTypedDeclaredForSymbol } from './symbolUtils';
+import { getLastTypedDeclarationForSymbol } from './symbolUtils';
 import { maxCodeComplexity } from './typeEvaluator';
 import {
     FunctionArgument,
@@ -3121,7 +3121,7 @@ export class Checker extends ParseTreeWalker {
         // If there's one or more declaration with a declared type,
         // all other declarations should match. The only exception is
         // for functions that have an overload.
-        const primaryDecl = getLastTypedDeclaredForSymbol(symbol);
+        const primaryDecl = getLastTypedDeclarationForSymbol(symbol);
 
         // If there's no declaration with a declared type, we're done.
         if (!primaryDecl) {
@@ -5652,8 +5652,8 @@ export class Checker extends ParseTreeWalker {
             : undefined;
 
         let diag: Diagnostic | undefined;
-        const overrideDecl = getLastTypedDeclaredForSymbol(overrideClassAndSymbol.symbol);
-        const overriddenDecl = getLastTypedDeclaredForSymbol(overriddenClassAndSymbol.symbol);
+        const overrideDecl = getLastTypedDeclarationForSymbol(overrideClassAndSymbol.symbol);
+        const overriddenDecl = getLastTypedDeclarationForSymbol(overriddenClassAndSymbol.symbol);
 
         if (isFunction(overriddenType) || isOverloadedFunction(overriddenType)) {
             const diagAddendum = new DiagnosticAddendum();
@@ -5715,7 +5715,7 @@ export class Checker extends ParseTreeWalker {
             // This check can be expensive, so don't perform it if the corresponding
             // rule is disabled.
             if (this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride !== 'none') {
-                const primaryDecl = getLastTypedDeclaredForSymbol(overriddenClassAndSymbol.symbol);
+                const primaryDecl = getLastTypedDeclarationForSymbol(overriddenClassAndSymbol.symbol);
                 let isInvariant = primaryDecl?.type === DeclarationType.Variable && !primaryDecl.isFinal;
 
                 // If the entry is a member of a frozen dataclass, it is immutable,
@@ -5831,7 +5831,7 @@ export class Checker extends ParseTreeWalker {
     // but subsequent ones are, an error should be reported.
     private _validateOverloadDecoratorConsistency(classType: ClassType) {
         ClassType.getSymbolTable(classType).forEach((symbol, name) => {
-            const primaryDecl = getLastTypedDeclaredForSymbol(symbol);
+            const primaryDecl = getLastTypedDeclarationForSymbol(symbol);
 
             if (!primaryDecl || primaryDecl.type !== DeclarationType.Function) {
                 return;
@@ -6223,7 +6223,7 @@ export class Checker extends ParseTreeWalker {
             }
 
             if (reportFinalMethodOverride) {
-                const decl = getLastTypedDeclaredForSymbol(overrideSymbol);
+                const decl = getLastTypedDeclarationForSymbol(overrideSymbol);
                 if (decl && decl.type === DeclarationType.Function) {
                     const diag = this._evaluator.addDiagnostic(
                         DiagnosticRule.reportIncompatibleMethodOverride,
@@ -6234,7 +6234,7 @@ export class Checker extends ParseTreeWalker {
                         decl.node.name
                     );
 
-                    const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                    const origDecl = getLastTypedDeclarationForSymbol(baseClassAndSymbol.symbol);
                     if (diag && origDecl) {
                         diag.addRelatedInfo(LocAddendum.finalMethod(), origDecl.uri, origDecl.range);
                     }
@@ -6268,7 +6268,7 @@ export class Checker extends ParseTreeWalker {
                         const decl =
                             isFunction(overrideType) && overrideType.details.declaration
                                 ? overrideType.details.declaration
-                                : getLastTypedDeclaredForSymbol(overrideSymbol);
+                                : getLastTypedDeclarationForSymbol(overrideSymbol);
                         if (decl) {
                             const diag = this._evaluator.addDiagnostic(
                                 DiagnosticRule.reportIncompatibleMethodOverride,
@@ -6279,7 +6279,7 @@ export class Checker extends ParseTreeWalker {
                                 getNameNodeForDeclaration(decl) ?? decl.node
                             );
 
-                            const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                            const origDecl = getLastTypedDeclarationForSymbol(baseClassAndSymbol.symbol);
                             if (diag && origDecl) {
                                 diag.addRelatedInfo(LocAddendum.overriddenMethod(), origDecl.uri, origDecl.range);
                             }
@@ -6304,7 +6304,7 @@ export class Checker extends ParseTreeWalker {
                             getNameNodeForDeclaration(lastDecl) ?? lastDecl.node
                         );
 
-                        const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                        const origDecl = getLastTypedDeclarationForSymbol(baseClassAndSymbol.symbol);
                         if (diag && origDecl) {
                             diag.addRelatedInfo(LocAddendum.overriddenMethod(), origDecl.uri, origDecl.range);
                         }
@@ -6502,7 +6502,7 @@ export class Checker extends ParseTreeWalker {
                             getNameNodeForDeclaration(lastDecl) ?? lastDecl.node
                         );
 
-                        const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                        const origDecl = getLastTypedDeclarationForSymbol(baseClassAndSymbol.symbol);
                         if (diag && origDecl) {
                             diag.addRelatedInfo(LocAddendum.overriddenSymbol(), origDecl.uri, origDecl.range);
                         }
@@ -6600,7 +6600,7 @@ export class Checker extends ParseTreeWalker {
                             getNameNodeForDeclaration(lastDecl) ?? lastDecl.node
                         );
 
-                        const origDecl = getLastTypedDeclaredForSymbol(baseClassAndSymbol.symbol);
+                        const origDecl = getLastTypedDeclarationForSymbol(baseClassAndSymbol.symbol);
                         if (diag && origDecl) {
                             diag.addRelatedInfo(LocAddendum.overriddenSymbol(), origDecl.uri, origDecl.range);
                         }
@@ -6821,6 +6821,23 @@ export class Checker extends ParseTreeWalker {
         const paramInfo = functionType.details.parameters[0];
         if (!paramInfo.typeAnnotation || !paramInfo.name) {
             return;
+        }
+
+        // If this is an __init__ method, we need to specifically check for the
+        // use of class-scoped TypeVars, which are not allowed in this context
+        // according to the typing spec.
+        if (functionType.details.name === '__init__' && functionType.details.methodClass) {
+            const typeVars = getTypeVarArgumentsRecursive(paramInfo.type);
+
+            if (
+                typeVars.some((typeVar) => typeVar.scopeId === functionType.details.methodClass?.details.typeVarScopeId)
+            ) {
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportGeneralTypeIssues,
+                    LocMessage.initMethodSelfParamTypeVar(),
+                    paramInfo.typeAnnotation
+                );
+            }
         }
 
         // If this is a protocol class, the self and cls parameters can be bound
