@@ -507,6 +507,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportAny,
         DiagnosticRule.reportIgnoreCommentWithoutRule,
         DiagnosticRule.reportInvalidCast,
+        DiagnosticRule.reportImplicitRelativeImport,
         DiagnosticRule.reportPrivateLocalImportUsage,
     ];
 }
