@@ -22,7 +22,6 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "node_modules/typescript/lib",
-    "python.languageServer": "None",
     "editor.formatOnSave": true,
     "git.allowForcePush": true,
     "git.autofetch": "all",
