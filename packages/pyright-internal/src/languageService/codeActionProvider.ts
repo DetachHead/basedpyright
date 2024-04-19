@@ -6,7 +6,7 @@
  * Handles 'code actions' requests from the client.
  */
 
-import { CancellationToken, CodeAction, CodeActionKind } from 'vscode-languageserver';
+import { CancellationToken, CodeAction, CodeActionKind, TextEdit } from 'vscode-languageserver';
 
 import { Commands } from '../commands/commands';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -134,13 +134,22 @@ export class CodeActionProvider {
                     continue;
                 }
                 completer.resolveCompletionItem(suggestedImport);
-                const textEdit = completer.itemToResolve?.additionalTextEdits;
-                if (textEdit === undefined) {
+                if (!completer.itemToResolve) {
+                    continue;
+                }
+                let textEdits: TextEdit[] = [];
+                if (completer.itemToResolve.textEdit && 'range' in completer.itemToResolve.textEdit) {
+                    textEdits.push(completer.itemToResolve.textEdit);
+                }
+                if (completer.itemToResolve.additionalTextEdits) {
+                    textEdits = textEdits.concat(completer.itemToResolve.additionalTextEdits);
+                }
+                if (textEdits.length === 0) {
                     continue;
                 }
                 const workspaceEdit = convertToWorkspaceEdit(
                     completer.importResolver.fileSystem,
-                    convertToFileTextEdits(fileUri, convertToTextEditActions(textEdit))
+                    convertToFileTextEdits(fileUri, convertToTextEditActions(textEdits))
                 );
                 codeActions.push(
                     CodeAction.create(
