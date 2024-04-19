@@ -284,14 +284,7 @@ if you're adding basedpyright as a development dependency in your project, we re
 
 in `.vscode/settings.json`, remove any settings starting with `python.analysis`, as they are not used by basedpyright. you should instead set these settings using the `tool.basedpyright` (or `tool.pyright`) section in `pyroject.toml` ([see below](#pyprojecttoml))
 
-you should also disable the built in language server support from the python extension, as it conflicts with basedpyright's language server:
-```jsonc
-// .vscode/settings.json
-{
-    "python.languageServer": "None"
-}
-```
-*(the basedpyright extension will detect this problem and suggest fixing it automatically)*
+you should also disable the built in language server support from the python extension, as it conflicts with basedpyright's language server. the basedpyright extension will detect this problem and suggest fixing it automatically.
 
 <!-- if changing this section title, make sure you also change the url in the pylance notification in the vscode extension -->
 ## using basedpyright with pylance (not recommended)
