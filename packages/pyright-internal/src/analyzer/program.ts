@@ -789,7 +789,7 @@ export class Program {
         }
     }
 
-    writeTypeStub(targetImportPath: Uri, targetIsSingleFile: boolean, stubPath: Uri, token: CancellationToken) {
+    async writeTypeStub(targetImportPath: Uri, targetIsSingleFile: boolean, stubPath: Uri, token: CancellationToken) {
         for (const sourceFileInfo of this._sourceFileList) {
             throwIfCancellationRequested(token);
 
@@ -821,9 +821,9 @@ export class Program {
 
                 this._bindFile(sourceFileInfo);
 
-                this._runEvaluatorWithCancellationToken(token, () => {
+                await this._runEvaluatorWithCancellationToken(token, async () => {
                     const writer = new TypeStubWriter(typeStubPath, sourceFileInfo.sourceFile, this._evaluator!);
-                    writer.write();
+                    await writer.write();
                 });
 
                 // This operation can consume significant memory, so check
@@ -1190,7 +1190,7 @@ export class Program {
                 let stubFileInfo = this.getSourceFileInfo(stubFileUri);
                 if (!stubFileInfo) {
                     // make sure uri exits before adding interimFile
-                    if (!this.fileSystem.existsSync(stubFileUri)) {
+                    if (!this.fileSystem.exists(stubFileUri)) {
                         return undefined;
                     }
 
@@ -1206,7 +1206,7 @@ export class Program {
                 let fileInfo = this.getBoundSourceFileInfo(f);
                 if (!fileInfo) {
                     // make sure uri exits before adding interimFile
-                    if (!this.fileSystem.existsSync(f)) {
+                    if (!this.fileSystem.exists(f)) {
                         return undefined;
                     }
 

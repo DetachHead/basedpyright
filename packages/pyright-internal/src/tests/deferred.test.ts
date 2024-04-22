@@ -10,7 +10,7 @@ import { createDeferred } from '../common/deferred';
 test('Deferred - resolve', (done) => {
     const valueToSent = new Date().getTime();
     const def = createDeferred<number>();
-    def.promise
+    void def.promise
         .then((value) => {
             assert.equal(value, valueToSent);
             assert.equal(def.resolved, true, 'resolved property value is not `true`');
@@ -31,7 +31,7 @@ test('Deferred - resolve', (done) => {
 test('Deferred - reject', (done) => {
     const errorToSend = new Error('Something');
     const def = createDeferred<number>();
-    def.promise
+    void def.promise
         .then((value) => {
             assert.fail(value, 'Error', 'Was expecting promise to get rejected, however it was resolved', '');
             done();

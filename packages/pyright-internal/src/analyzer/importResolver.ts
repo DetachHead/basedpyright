@@ -628,7 +628,7 @@ export class ImportResolver {
 
         if (entry?.isSymbolicLink()) {
             const realPath = tryRealpath(this.fileSystem, uri);
-            if (realPath && this.fileSystem.existsSync(realPath) && isFile(this.fileSystem, realPath)) {
+            if (realPath && this.fileSystem.exists(realPath) && isFile(this.fileSystem, realPath)) {
                 return true;
             }
         }
@@ -660,7 +660,7 @@ export class ImportResolver {
 
         if (entry?.isSymbolicLink()) {
             const realPath = tryRealpath(this.fileSystem, uri);
-            if (realPath && this.fileSystem.existsSync(realPath) && isDirectory(this.fileSystem, realPath)) {
+            if (realPath && this.fileSystem.exists(realPath) && isDirectory(this.fileSystem, realPath)) {
                 return true;
             }
         }
@@ -2116,7 +2116,7 @@ export class ImportResolver {
         if (typeshedStdLibPath) {
             const versionsFilePath = typeshedStdLibPath.combinePaths('VERSIONS');
             try {
-                const fileStats = this.fileSystem.statSync(versionsFilePath);
+                const fileStats = this.fileSystem.stat(versionsFilePath);
                 if (fileStats.size > 0 && fileStats.size < 256 * 1024) {
                     const fileContents = this.fileSystem.readFileSync(versionsFilePath, 'utf8');
                     fileContents.split(/\r?\n/).forEach((line) => {

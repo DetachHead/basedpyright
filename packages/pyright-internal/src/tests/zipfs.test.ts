@@ -16,7 +16,7 @@ function runTests(p: string): void {
     const fs = createFromRealFileSystem(tempFile);
 
     test('stat root', () => {
-        const stats = fs.statSync(zipRoot);
+        const stats = fs.stat(zipRoot);
         assert.strictEqual(stats.isDirectory(), true);
         assert.strictEqual(stats.isFile(), false);
         assert.strictEqual((stats as any).isZipDirectory(), true);
@@ -39,7 +39,7 @@ function runTests(p: string): void {
     });
 
     test('stat EGG-INFO', () => {
-        const stats = fs.statSync(zipRoot.combinePaths('EGG-INFO'));
+        const stats = fs.stat(zipRoot.combinePaths('EGG-INFO'));
         assert.strictEqual(stats.isDirectory(), true);
         assert.strictEqual(stats.isFile(), false);
     });
@@ -83,7 +83,7 @@ function runTests(p: string): void {
 
     test('unlink fails', async () => {
         expect(() => {
-            fs.unlinkSync(zipRoot.combinePaths('EGG-INFO', 'top_level.txt'));
+            fs.unlink(zipRoot.combinePaths('EGG-INFO', 'top_level.txt'));
         }).toThrow(/read-only filesystem/);
     });
 
@@ -103,7 +103,7 @@ function runBadTests(p: string): void {
     const fs = createFromRealFileSystem(tempFile);
 
     test('stat root', () => {
-        const stats = fs.statSync(zipRoot);
+        const stats = fs.stat(zipRoot);
         assert.strictEqual(stats.isDirectory(), false);
         assert.strictEqual(stats.isFile(), true);
     });

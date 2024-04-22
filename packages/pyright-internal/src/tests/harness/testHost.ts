@@ -75,7 +75,7 @@ function createHost(): TestHost {
             return false;
         }
         // If this file exists under a different case, we must be case-insensitve.
-        return !vfs.existsSync(UriEx.file(swapCase(__filename)));
+        return !vfs.exists(UriEx.file(swapCase(__filename)));
 
         /** Convert all lowercase chars to uppercase, and vice-versa */
         function swapCase(s: string): string {
@@ -92,7 +92,7 @@ function createHost(): TestHost {
 
             for (const file of vfs.readdirSync(Uri.file(folder, caseDetector))) {
                 const pathToFile = pathModule.join(folder, file);
-                const stat = vfs.statSync(Uri.file(pathToFile, caseDetector));
+                const stat = vfs.stat(Uri.file(pathToFile, caseDetector));
                 if (options.recursive && stat.isDirectory()) {
                     paths = paths.concat(filesInFolder(pathToFile));
                 } else if (stat.isFile() && (!spec || file.match(spec))) {
@@ -119,7 +119,7 @@ function createHost(): TestHost {
                 }
                 const name = combinePaths(dirname, entry);
                 try {
-                    const stat = vfs.statSync(Uri.file(name, caseDetector));
+                    const stat = vfs.stat(Uri.file(name, caseDetector));
                     if (!stat) {
                         continue;
                     }
@@ -167,22 +167,20 @@ function createHost(): TestHost {
         return buffer.toString('utf8');
     }
 
-    function writeFile(fileName: string, data: string, writeByteOrderMark?: boolean): void {
+    function writeFile(fileName: string, data: string, writeByteOrderMark?: boolean): Thenable<void> | void {
         // If a BOM is required, emit one
         if (writeByteOrderMark) {
             data = byteOrderMarkIndicator + data;
         }
 
-        vfs.writeFileSync(Uri.file(fileName, caseDetector), data, 'utf8');
+        return vfs.writeFile(Uri.file(fileName, caseDetector), data, 'utf8');
     }
 
     return {
         useCaseSensitiveFileNames: () => useCaseSensitiveFileNames,
         getFileSize: (path: string) => getFileSize(vfs, Uri.file(path, caseDetector)),
         readFile: (path) => readFile(path),
-        writeFile: (path, content) => {
-            writeFile(path, content);
-        },
+        writeFile,
         fileExists: (path) => fileExists(vfs, Uri.file(path, caseDetector)),
         directoryExists: (path) => directoryExists(vfs, Uri.file(path, caseDetector)),
         listFiles,

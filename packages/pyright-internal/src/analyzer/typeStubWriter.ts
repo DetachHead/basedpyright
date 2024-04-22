@@ -170,14 +170,14 @@ export class TypeStubWriter extends ParseTreeWalker {
         }
     }
 
-    write() {
+    async write() {
         const parseResults = this._sourceFile.getParseResults()!;
         this._lineEnd = parseResults.tokenizerOutput.predominantEndOfLineSequence;
         this._tab = parseResults.tokenizerOutput.predominantTabSequence;
 
         this.walk(parseResults.parserOutput.parseTree);
 
-        this._writeFile();
+        await this._writeFile();
     }
 
     override walk(node: ParseNode) {
@@ -777,11 +777,11 @@ export class TypeStubWriter extends ParseTreeWalker {
         return importStr;
     }
 
-    private _writeFile() {
+    private async _writeFile() {
         let finalText = this._printHeaderDocString();
         finalText += this._printTrackedImports();
         finalText += this._typeStubText;
 
-        this._sourceFile.fileSystem.writeFileSync(this._stubPath, finalText, 'utf8');
+        await this._sourceFile.fileSystem.writeFile(this._stubPath, finalText, 'utf8');
     }
 }

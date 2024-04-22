@@ -155,7 +155,7 @@ test('test edit mode for workspace', async () => {
 
     // After leaving edit mode, we should be back to where we were.
     const oldSourceFile = state.workspace.service.test_program.getSourceFile(range.fileUri);
-    state.workspace.service.backgroundAnalysisProgram.analyzeFile(oldSourceFile!.getUri(), CancellationToken.None);
+    void state.workspace.service.backgroundAnalysisProgram.analyzeFile(oldSourceFile!.getUri(), CancellationToken.None);
 
     assert.strictEqual(oldSourceFile?.getFileContent(), '');
     assert.strictEqual(oldSourceFile.getImports().length, 1);

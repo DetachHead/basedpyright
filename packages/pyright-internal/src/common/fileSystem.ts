@@ -33,16 +33,15 @@ export interface MkDirOptions {
     // mode: string | number;
 }
 
+export type MaybeThenable<T> = Thenable<T> | T;
+
 export interface ReadOnlyFileSystem {
-    existsSync(uri: Uri): boolean;
+    exists(uri: Uri): MaybeThenable<boolean>;
     chdir(uri: Uri): void;
     readdirEntriesSync(uri: Uri): fs.Dirent[];
     readdirSync(uri: Uri): string[];
-    readFileSync(uri: Uri, encoding?: null): Buffer;
-    readFileSync(uri: Uri, encoding: BufferEncoding): string;
-    readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer;
 
-    statSync(uri: Uri): Stats;
+    stat(uri: Uri): MaybeThenable<Stats>;
     realpathSync(uri: Uri): Uri;
     getModulePath(): Uri;
     // Async I/O
@@ -64,16 +63,16 @@ export interface ReadOnlyFileSystem {
 }
 
 export interface FileSystem extends ReadOnlyFileSystem {
-    mkdirSync(uri: Uri, options?: MkDirOptions): void;
-    writeFileSync(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null): void;
+    mkdir(uri: Uri, options?: MkDirOptions): MaybeThenable<void>;
+    writeFile(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null): MaybeThenable<void>;
 
-    unlinkSync(uri: Uri): void;
+    unlink(uri: Uri): MaybeThenable<void>;
     rmdirSync(uri: Uri): void;
 
     createFileSystemWatcher(uris: Uri[], listener: FileWatcherEventHandler): FileWatcher;
     createReadStream(uri: Uri): fs.ReadStream;
     createWriteStream(uri: Uri): fs.WriteStream;
-    copyFileSync(uri: Uri, dst: Uri): void;
+    copyFile(uri: Uri, dst: Uri): MaybeThenable<void>;
 }
 
 export interface TmpfileOptions {

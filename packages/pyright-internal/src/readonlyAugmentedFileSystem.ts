@@ -26,16 +26,16 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
 
     constructor(protected realFS: FileSystem) {}
 
-    existsSync(uri: Uri): boolean {
+    exists(uri: Uri): boolean {
         if (this.isMovedEntry(uri)) {
             // Pretend partial stub folder and its files not exist
             return false;
         }
 
-        return this.realFS.existsSync(this.getOriginalPath(uri));
+        return this.realFS.exists(this.getOriginalPath(uri));
     }
 
-    mkdirSync(uri: Uri, options?: MkDirOptions): void {
+    mkdir(uri: Uri, options?: MkDirOptions): void {
         throw new Error('Operation is not allowed.');
     }
 
@@ -46,7 +46,7 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
     readdirEntriesSync(uri: Uri): fs.Dirent[] {
         const entries: fs.Dirent[] = [];
         const movedEntries = this._folderMap.get(uri.key);
-        if (!movedEntries || this.realFS.existsSync(uri)) {
+        if (!movedEntries || this.realFS.exists(uri)) {
             appendArray(
                 entries,
                 this.realFS.readdirEntriesSync(uri).filter((item) => {
@@ -78,19 +78,19 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
         return this.realFS.readFileSync(this.getOriginalPath(uri), encoding);
     }
 
-    writeFileSync(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null): void {
+    writeFile(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null): void {
         throw new Error('Operation is not allowed.');
     }
 
-    statSync(uri: Uri): Stats {
-        return this.realFS.statSync(this.getOriginalPath(uri));
+    stat(uri: Uri): Stats {
+        return this.realFS.stat(this.getOriginalPath(uri));
     }
 
     rmdirSync(uri: Uri): void {
         throw new Error('Operation is not allowed.');
     }
 
-    unlinkSync(uri: Uri): void {
+    unlink(uri: Uri): void {
         throw new Error('Operation is not allowed.');
     }
 
@@ -118,7 +118,7 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
         throw new Error('Operation is not allowed.');
     }
 
-    copyFileSync(src: Uri, dst: Uri): void {
+    copyFile(src: Uri, dst: Uri): void {
         throw new Error('Operation is not allowed.');
     }
 

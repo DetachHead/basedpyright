@@ -40,7 +40,7 @@ test('virtual file exists', () => {
     fs.processPartialStubPackages([libraryRootUri], [libraryRootUri]);
 
     const stubFile = libraryRootUri.combinePaths('myLib', 'partialStub.pyi');
-    assert(fs.existsSync(stubFile));
+    assert(fs.exists(stubFile));
     assert(fs.isMappedUri(stubFile));
 
     const myLib = libraryRootUri.combinePaths('myLib');
@@ -48,13 +48,13 @@ test('virtual file exists', () => {
     assert.strictEqual(3, entries.length);
 
     const subDirFile = libraryRootUri.combinePaths('myLib', 'subdir', '__init__.pyi');
-    assert(fs.existsSync(subDirFile));
+    assert(fs.exists(subDirFile));
     assert(fs.isMappedUri(subDirFile));
 
     const fakeFile = entries.filter((e) => e.name.endsWith('.pyi'))[0];
     assert(fakeFile.isFile());
 
-    assert(!fs.existsSync(libraryRootUri.combinePaths('myLib-stubs')));
+    assert(!fs.exists(libraryRootUri.combinePaths('myLib-stubs')));
 });
 
 test('virtual file coexists with real', () => {
@@ -85,7 +85,7 @@ test('virtual file coexists with real', () => {
     fs.processPartialStubPackages([libraryRootUri], [libraryRootUri]);
 
     const stubFile = libraryRootUri.combinePaths('myLib', 'partialStub.pyi');
-    assert(fs.existsSync(stubFile));
+    assert(fs.exists(stubFile));
     assert(fs.isMappedUri(stubFile));
 
     const myLib = libraryRootUri.combinePaths('myLib');
@@ -93,16 +93,16 @@ test('virtual file coexists with real', () => {
     assert.strictEqual(3, entries.length);
 
     const subDirFile = libraryRootUri.combinePaths('myLib', 'subdir', '__init__.pyi');
-    assert(fs.existsSync(subDirFile));
+    assert(fs.exists(subDirFile));
     assert(fs.isMappedUri(subDirFile));
 
     const subDirPyiFile = libraryRootUri.combinePaths('myLib', 'subdir', '__init__.pyi');
-    assert(fs.existsSync(subDirPyiFile));
+    assert(fs.exists(subDirPyiFile));
 
     const fakeFile = entries.filter((e) => e.name.endsWith('.pyi'))[0];
     assert(fakeFile.isFile());
 
-    assert(!fs.existsSync(libraryRootUri.combinePaths('myLib-stubs')));
+    assert(!fs.exists(libraryRootUri.combinePaths('myLib-stubs')));
 });
 
 test('virtual file not exist', () => {
@@ -120,7 +120,7 @@ test('virtual file not exist', () => {
     const fs = createFileSystem(files);
     fs.processPartialStubPackages([libraryRootUri], [libraryRootUri]);
 
-    assert(!fs.existsSync(libraryRootUri.combinePaths('myLib', 'partialStub.pyi')));
+    assert(!fs.exists(libraryRootUri.combinePaths('myLib', 'partialStub.pyi')));
 
     const myLib = libraryRootUri.combinePaths('myLib');
     const entries = fs.readdirEntriesSync(myLib);
@@ -128,7 +128,7 @@ test('virtual file not exist', () => {
 
     assert.strictEqual(0, entries.filter((e) => e.name.endsWith('.pyi')).length);
 
-    assert(fs.existsSync(libraryRootUri.combinePaths('myLib-stubs')));
+    assert(fs.exists(libraryRootUri.combinePaths('myLib-stubs')));
 });
 
 test('existing stub file', () => {
@@ -155,7 +155,7 @@ test('existing stub file', () => {
     fs.processPartialStubPackages([libraryRootUri], [libraryRootUri]);
 
     const stubFile = libraryRootUri.combinePaths('myLib', 'partialStub.pyi');
-    assert(fs.existsSync(stubFile));
+    assert(fs.exists(stubFile));
 
     const myLib = libraryRootUri.combinePaths('myLib');
     const entries = fs.readdirEntriesSync(myLib);
@@ -163,7 +163,7 @@ test('existing stub file', () => {
 
     assert.strictEqual('def test(): ...', fs.readFileSync(stubFile, 'utf8'));
 
-    assert(!fs.existsSync(libraryRootUri.combinePaths('myLib-stubs')));
+    assert(!fs.exists(libraryRootUri.combinePaths('myLib-stubs')));
 });
 
 test('multiple package installed', () => {
@@ -194,8 +194,8 @@ test('multiple package installed', () => {
     assert(fs.isPathScanned(libraryRootUri));
     assert(fs.isPathScanned(extraRootUri));
 
-    assert(fs.existsSync(libraryRootUri.combinePaths('myLib', 'partialStub.pyi')));
-    assert(fs.existsSync(extraRootUri.combinePaths('myLib', 'partialStub.pyi')));
+    assert(fs.exists(libraryRootUri.combinePaths('myLib', 'partialStub.pyi')));
+    assert(fs.exists(extraRootUri.combinePaths('myLib', 'partialStub.pyi')));
 
     assert.strictEqual(2, fs.readdirEntriesSync(libraryRootUri.combinePaths('myLib')).length);
     assert.strictEqual(2, fs.readdirEntriesSync(extraRootUri.combinePaths('myLib')).length);
@@ -228,7 +228,7 @@ test('bundled partial stubs', () => {
     fs.processPartialStubPackages([bundledPathUri], [libraryRootUri], bundledPathUri);
 
     const stubFile = libraryRootUri.combinePaths('myLib', 'partialStub.pyi');
-    assert(!fs.existsSync(stubFile));
+    assert(!fs.exists(stubFile));
 
     const myLib = libraryRootUri.combinePaths('myLib');
     const entries = fs.readdirEntriesSync(myLib);
@@ -243,7 +243,7 @@ function createFileSystem(files: { path: string; content: string }[]): PyrightFi
         const dir = getDirectoryPath(path);
         fs.mkdirpSync(dir);
 
-        fs.writeFileSync(Uri.file(path, fs), file.content);
+        fs.writeFile(Uri.file(path, fs), file.content);
     }
 
     return new PyrightFileSystem(fs);

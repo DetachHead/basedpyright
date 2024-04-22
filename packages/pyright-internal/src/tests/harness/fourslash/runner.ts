@@ -75,7 +75,7 @@ export function runFourSlashTestContent(
         throw new Error(`Syntax error in ${absoluteBasePath}: ${output.diagnostics![0].messageText}`);
     }
 
-    runCode(output.outputText, state, cb);
+    void runCode(output.outputText, state, cb);
 }
 
 async function runCode(code: string, state: TestState, cb?: jest.DoneCallback) {

@@ -10,7 +10,8 @@
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "ecmaVersion": 2019,
-        "sourceType": "module"
+        "sourceType": "module",
+        "project": "./tsconfig.json"
     },
     "plugins": [
         "@typescript-eslint/eslint-plugin",
@@ -101,7 +102,8 @@
                     "match": false
                 }
             }
-        ]
+        ],
+        "@typescript-eslint/no-floating-promises": "error"
     },
     "overrides": [
         {

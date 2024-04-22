@@ -31,14 +31,14 @@ export function getTypeShedFallbackPath(fs: FileSystem) {
     }
 
     const typeshedPath = moduleDirectory.combinePaths(pathConsts.typeshedFallback);
-    if (fs.existsSync(typeshedPath)) {
+    if (fs.exists(typeshedPath)) {
         return fs.realCasePath(typeshedPath);
     }
 
     // In the debug version of Pyright, the code is one level
     // deeper, so we need to look one level up for the typeshed fallback.
     const debugTypeshedPath = moduleDirectory.getDirectory().combinePaths(pathConsts.typeshedFallback);
-    if (fs.existsSync(debugTypeshedPath)) {
+    if (fs.exists(debugTypeshedPath)) {
         return fs.realCasePath(debugTypeshedPath);
     }
 
@@ -124,7 +124,7 @@ function findSitePackagesPath(
     pythonVersion: PythonVersion | undefined,
     importFailureInfo: string[]
 ): Uri | undefined {
-    if (fs.existsSync(libPath)) {
+    if (fs.exists(libPath)) {
         importFailureInfo.push(`Found path '${libPath}'; looking for ${pathConsts.sitePackages}`);
     } else {
         importFailureInfo.push(`Did not find '${libPath}'`);
@@ -132,7 +132,7 @@ function findSitePackagesPath(
     }
 
     const sitePackagesPath = libPath.combinePaths(pathConsts.sitePackages);
-    if (fs.existsSync(sitePackagesPath)) {
+    if (fs.exists(sitePackagesPath)) {
         importFailureInfo.push(`Found path '${sitePackagesPath}'`);
         return sitePackagesPath;
     } else {
@@ -147,7 +147,7 @@ function findSitePackagesPath(
     const candidateDirs = entries.directories.filter((dirName) => {
         if (dirName.fileName.startsWith('python3.')) {
             const dirPath = dirName.combinePaths(pathConsts.sitePackages);
-            return fs.existsSync(dirPath);
+            return fs.exists(dirPath);
         }
         return false;
     });
@@ -198,7 +198,7 @@ export function getPathsFromPthFiles(fs: FileSystem, parentDir: Uri): Uri[] {
                 const trimmedLine = line.trim();
                 if (trimmedLine.length > 0 && !trimmedLine.startsWith('#') && !trimmedLine.match(/^import\s/)) {
                     const pthPath = parentDir.combinePaths(trimmedLine);
-                    if (fs.existsSync(pthPath) && isDirectory(fs, pthPath)) {
+                    if (fs.exists(pthPath) && isDirectory(fs, pthPath)) {
                         searchPaths.push(fs.realCasePath(pthPath));
                     }
                 }

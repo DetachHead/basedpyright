@@ -313,7 +313,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         // the extension directory. Otherwise the execution of
         // python can have unintended and surprising results.
         const moduleDirectory = this.fs.getModulePath();
-        if (moduleDirectory && this.fs.existsSync(moduleDirectory)) {
+        if (moduleDirectory && this.fs.exists(moduleDirectory)) {
             this.fs.chdir(moduleDirectory);
         }
 
@@ -420,7 +420,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             tasks.push(this.updateSettingsForWorkspace(workspace, workspace.isInitialized));
         });
 
-        Promise.all(tasks).then(() => {
+        void Promise.all(tasks).then(() => {
             this._setupFileWatcher();
         });
     }
@@ -1218,7 +1218,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (WorkspaceEdit.is(result)) {
                 // Tell client to apply edits.
                 // Do not await; the client isn't expecting a result.
-                this.connection.workspace.applyEdit({
+                void this.connection.workspace.applyEdit({
                     label: `Command '${params.command}'`,
                     edit: result,
                     metadata: { isRefactoring: this.isRefactoringCommand(params.command) },
@@ -1413,7 +1413,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             } else {
                 this.documentsWithDiagnostics.add(param.uri);
             }
-            this.connection.sendDiagnostics(param);
+            void this.connection.sendDiagnostics(param);
         }
     }
 
@@ -1455,7 +1455,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
 
         // Dispose all existing file watchers and create new ones.
-        this.connection.client.register(DidChangeWatchedFilesNotification.type, { watchers }).then((d) => {
+        void this.connection.client.register(DidChangeWatchedFilesNotification.type, { watchers }).then((d) => {
             if (this._lastFileWatcherRegistration) {
                 this._lastFileWatcherRegistration.dispose();
             }

@@ -97,8 +97,8 @@ export function makeDirectories(fs: FileSystem, dir: Uri, startingFrom: Uri) {
 
     for (let i = relativeToComponents.length; i < pathComponents.length; i++) {
         curPath = curPath.combinePaths(pathComponents[i]);
-        if (!fs.existsSync(curPath)) {
-            fs.mkdirSync(curPath);
+        if (!fs.exists(curPath)) {
+            fs.mkdir(curPath);
         }
     }
 }
@@ -138,8 +138,8 @@ export function isFile(fs: ReadOnlyFileSystem, uri: Uri, treatZipDirectoryAsFile
 
 export function tryStat(fs: ReadOnlyFileSystem, uri: Uri): Stats | undefined {
     try {
-        if (fs.existsSync(uri)) {
-            return fs.statSync(uri);
+        if (fs.exists(uri)) {
+            return fs.stat(uri);
         }
     } catch (e: any) {
         return undefined;
@@ -302,7 +302,7 @@ const enum FileSystemEntryKind {
 
 function fileSystemEntryExists(fs: ReadOnlyFileSystem, uri: Uri, entryKind: FileSystemEntryKind): boolean {
     try {
-        const stat = fs.statSync(uri);
+        const stat = fs.stat(uri);
         switch (entryKind) {
             case FileSystemEntryKind.File:
                 return stat.isFile();

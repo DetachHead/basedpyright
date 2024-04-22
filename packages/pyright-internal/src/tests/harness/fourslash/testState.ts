@@ -1760,7 +1760,7 @@ export class TestState {
         fileContent = fileContent.slice(0, editStart) + newText + fileContent.slice(editEnd);
         const uri = Uri.file(fileName, this.serviceProvider);
 
-        this.testFS.writeFileSync(uri, fileContent, 'utf8');
+        this.testFS.writeFile(uri, fileContent, 'utf8');
         const newVersion = (this.program.getSourceFile(uri)?.getClientVersion() ?? -1) + 1;
         this.program.setFileOpened(uri, newVersion, fileContent);
 
@@ -1982,7 +1982,7 @@ export class TestState {
 
     private async _waitForFile(filePath: string) {
         const uri = Uri.file(filePath, this.serviceProvider);
-        while (!this.fs.existsSync(uri)) {
+        while (!this.fs.exists(uri)) {
             await new Promise<void>((res) =>
                 setTimeout(() => {
                     res();

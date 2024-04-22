@@ -224,7 +224,7 @@ class RealFileSystem implements FileSystem {
         // Empty
     }
 
-    existsSync(uri: Uri) {
+    exists(uri: Uri) {
         if (uri.isEmpty() || !FileUri.isFileUri(uri)) {
             return false;
         }
@@ -237,7 +237,7 @@ class RealFileSystem implements FileSystem {
         }
     }
 
-    mkdirSync(uri: Uri, options?: MkDirOptions) {
+    mkdir(uri: Uri, options?: MkDirOptions) {
         const path = uri.getFilePath();
         yarnFS.mkdirSync(path, options);
     }
@@ -290,12 +290,12 @@ class RealFileSystem implements FileSystem {
         return yarnFS.readFileSync(path);
     }
 
-    writeFileSync(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null) {
+    writeFile(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null) {
         const path = uri.getFilePath();
         yarnFS.writeFileSync(path, data, encoding || undefined);
     }
 
-    statSync(uri: Uri): fs.Stats {
+    stat(uri: Uri): fs.Stats {
         if (FileUri.isFileUri(uri)) {
             const path = uri.getFilePath();
             const stat = yarnFS.statSync(path);
@@ -346,7 +346,7 @@ class RealFileSystem implements FileSystem {
         yarnFS.rmdirSync(path);
     }
 
-    unlinkSync(uri: Uri) {
+    unlink(uri: Uri) {
         const path = uri.getFilePath();
         yarnFS.unlinkSync(path);
     }
@@ -384,7 +384,7 @@ class RealFileSystem implements FileSystem {
         return yarnFS.createWriteStream(path);
     }
 
-    copyFileSync(src: Uri, dst: Uri): void {
+    copyFile(src: Uri, dst: Uri): void {
         const srcPath = src.getFilePath();
         const destPath = dst.getFilePath();
         yarnFS.copyFileSync(srcPath, destPath);
@@ -407,7 +407,7 @@ class RealFileSystem implements FileSystem {
     realCasePath(uri: Uri): Uri {
         try {
             // If it doesn't exist in the real FS, then just use this path.
-            if (!this.existsSync(uri)) {
+            if (!this.exists(uri)) {
                 return uri;
             }
 

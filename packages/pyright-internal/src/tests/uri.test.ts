@@ -956,8 +956,8 @@ test('Web URIs dont exist', () => {
     const tempFile = new RealTempFile();
     const fs = createFromRealFileSystem(tempFile);
     const uri = UriEx.parse('http://www.bing.com');
-    assert(!fs.existsSync(uri));
-    const stat = fs.statSync(uri);
+    assert(!fs.exists(uri));
+    const stat = fs.stat(uri);
     assert(!stat.isFile());
 });
 

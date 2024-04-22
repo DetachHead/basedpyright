@@ -540,7 +540,7 @@ export class AnalyzerService {
                     ? Uri.file(commandLineOptions.configFilePath, this.serviceProvider, /* checkRelative */ true)
                     : projectRoot.resolvePaths(commandLineOptions.configFilePath)
             );
-            if (!this.fs.existsSync(configFilePath)) {
+            if (!this.fs.exists(configFilePath)) {
                 this._console.info(`Configuration file not found at ${configFilePath.toUserVisibleString()}.`);
                 configFilePath = projectRoot;
             } else {
@@ -806,7 +806,7 @@ export class AnalyzerService {
 
         if (configOptions.stubPath) {
             // If there was a stub path specified, validate it.
-            if (!this.fs.existsSync(configOptions.stubPath) || !isDirectory(this.fs, configOptions.stubPath)) {
+            if (!this.fs.exists(configOptions.stubPath) || !isDirectory(this.fs, configOptions.stubPath)) {
                 this._console.warn(`stubPath ${configOptions.stubPath} is not a valid directory.`);
             }
         } else {
@@ -817,7 +817,7 @@ export class AnalyzerService {
         // Do some sanity checks on the specified settings and report missing
         // or inconsistent information.
         if (configOptions.venvPath) {
-            if (!this.fs.existsSync(configOptions.venvPath) || !isDirectory(this.fs, configOptions.venvPath)) {
+            if (!this.fs.exists(configOptions.venvPath) || !isDirectory(this.fs, configOptions.venvPath)) {
                 this._console.error(
                     `venvPath ${configOptions.venvPath.toUserVisibleString()} is not a valid directory.`
                 );
@@ -830,7 +830,7 @@ export class AnalyzerService {
             if (configOptions.venv && configOptions.venvPath) {
                 const fullVenvPath = configOptions.venvPath.resolvePaths(configOptions.venv);
 
-                if (!this.fs.existsSync(fullVenvPath) || !isDirectory(this.fs, fullVenvPath)) {
+                if (!this.fs.exists(fullVenvPath) || !isDirectory(this.fs, fullVenvPath)) {
                     this._console.error(
                         `venv ${
                             configOptions.venv
@@ -862,7 +862,7 @@ export class AnalyzerService {
         }
 
         if (configOptions.typeshedPath) {
-            if (!this.fs.existsSync(configOptions.typeshedPath) || !isDirectory(this.fs, configOptions.typeshedPath)) {
+            if (!this.fs.exists(configOptions.typeshedPath) || !isDirectory(this.fs, configOptions.typeshedPath)) {
                 this._console.error(
                     `typeshedPath ${configOptions.typeshedPath.toUserVisibleString()} is not a valid directory.`
                 );
@@ -894,8 +894,8 @@ export class AnalyzerService {
 
         try {
             // Generate a new typings directory if necessary.
-            if (!this.fs.existsSync(stubPath)) {
-                this.fs.mkdirSync(stubPath);
+            if (!this.fs.exists(stubPath)) {
+                this.fs.mkdir(stubPath);
             }
         } catch (e: any) {
             const errMsg = `Could not create typings directory '${stubPath.toUserVisibleString()}'`;
@@ -909,7 +909,7 @@ export class AnalyzerService {
 
         try {
             // Generate a new typings subdirectory if necessary.
-            if (!this.fs.existsSync(typingsSubdirHierarchy)) {
+            if (!this.fs.exists(typingsSubdirHierarchy)) {
                 makeDirectories(this.fs, typingsSubdirHierarchy, stubPath);
             }
         } catch (e: any) {
@@ -928,7 +928,7 @@ export class AnalyzerService {
     private _findConfigFile(searchPath: Uri): Uri | undefined {
         for (const name of configFileNames) {
             const fileName = searchPath.resolvePaths(name);
-            if (this.fs.existsSync(fileName)) {
+            if (this.fs.exists(fileName)) {
                 return this.fs.realCasePath(fileName);
             }
         }
@@ -941,7 +941,7 @@ export class AnalyzerService {
 
     private _findPyprojectTomlFile(searchPath: Uri) {
         const fileName = searchPath.resolvePaths(pyprojectTomlName);
-        if (this.fs.existsSync(fileName)) {
+        if (this.fs.exists(fileName)) {
             return this.fs.realCasePath(fileName);
         }
         return undefined;
@@ -1178,7 +1178,7 @@ export class AnalyzerService {
             }
 
             if (this._configOptions.autoExcludeVenv) {
-                if (envMarkers.some((f) => this.fs.existsSync(absolutePath.resolvePaths(...f)))) {
+                if (envMarkers.some((f) => this.fs.exists(absolutePath.resolvePaths(...f)))) {
                     // Save auto exclude paths in the configOptions once we found them.
                     if (!FileSpec.isInPath(absolutePath, exclude)) {
                         exclude.push(getFileSpec(this._configOptions.projectRoot, `${absolutePath}/**`));
@@ -1406,7 +1406,7 @@ export class AnalyzerService {
         const parentPath = path.getDirectory();
         const hasInit =
             parentPath.startsWith(this._configOptions.projectRoot) &&
-            (this.fs.existsSync(parentPath.initPyUri) || this.fs.existsSync(parentPath.initPyiUri));
+            (this.fs.exists(parentPath.initPyUri) || this.fs.exists(parentPath.initPyiUri));
 
         // We don't have any file under the given path and its parent folder doesn't have __init__ then this folder change
         // doesn't have any meaning to us.
@@ -1487,7 +1487,7 @@ export class AnalyzerService {
                     }
 
                     // If file doesn't exist, it is delete.
-                    const isChange = event === 'change' && this.fs.existsSync(uri);
+                    const isChange = event === 'change' && this.fs.exists(uri);
                     this._scheduleLibraryAnalysis(isChange);
                 });
             } catch {
