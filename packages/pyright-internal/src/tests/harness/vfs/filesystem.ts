@@ -428,7 +428,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
             if (stats.isFile() || stats.isSymbolicLink()) {
                 this.unlink(Uri.file(path, this));
             } else if (stats.isDirectory()) {
-                for (const file of this.readdirSync(Uri.file(path, this))) {
+                for (const file of this.readdir(Uri.file(path, this))) {
                     this.rimrafSync(pathUtil.combinePaths(path, file));
                 }
                 this.rmdirSync(Uri.file(path, this));
@@ -567,7 +567,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    readdirSync(path: Uri) {
+    readdir(path: Uri) {
         const { node } = this._walk(this._resolve(path.getFilePath()));
         if (!node) {
             throw createIOError('ENOENT');
@@ -585,7 +585,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    readdirEntriesSync(path: Uri): Dirent[] {
+    readdirEntries(path: Uri): Dirent[] {
         const { node } = this._walk(this._resolve(path.getFilePath()));
         if (!node) {
             throw createIOError('ENOENT');
@@ -964,7 +964,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
         }
         if (axis === 'descendants-or-self' || axis === 'descendants') {
             if (stats.isDirectory() && (!traversal.traverse || traversal.traverse(path, stats))) {
-                for (const file of this.readdirSync(Uri.file(path, this))) {
+                for (const file of this.readdir(Uri.file(path, this))) {
                     try {
                         const childpath = pathUtil.combinePaths(path, file);
                         const stats = this._stat(this._walk(childpath, noFollow));

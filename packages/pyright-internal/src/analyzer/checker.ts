@@ -1602,7 +1602,7 @@ export class Checker extends ParseTreeWalker {
         return true;
     }
 
-    override visitImportFromAs(node: ImportFromAsNode): boolean {
+    override async visitImportFromAs(node: ImportFromAsNode): Promise<boolean> {
         if (this._fileInfo.isStubFile) {
             return false;
         }
@@ -1624,7 +1624,7 @@ export class Checker extends ParseTreeWalker {
                 continue;
             }
 
-            const importResult = this._getImportResult(node, resolvedAliasUri);
+            const importResult = await this._getImportResult(node, resolvedAliasUri);
             if (!importResult) {
                 continue;
             }

@@ -251,12 +251,12 @@ class RealFileSystem implements FileSystem {
         }
     }
 
-    readdirSync(uri: Uri): string[] {
+    readdir(uri: Uri): string[] {
         const path = uri.getFilePath();
         return yarnFS.readdirSync(path);
     }
 
-    readdirEntriesSync(uri: Uri): fs.Dirent[] {
+    readdirEntries(uri: Uri): fs.Dirent[] {
         const path = uri.getFilePath();
         return yarnFS.readdirSync(path, { withFileTypes: true }).map((entry): fs.Dirent => {
             // Treat zip/egg files as directories.

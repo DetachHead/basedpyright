@@ -917,7 +917,7 @@ test('Realcase', () => {
         .readdirSync(dirFilePath)
         .map((entry) => path.basename(nodefs.realpathSync(path.join(dirFilePath, entry))));
     const normalizedEntries = lowerCaseDrive(entries);
-    const fsentries = fs.readdirSync(dir);
+    const fsentries = fs.readdir(dir);
     assert.deepStrictEqual(normalizedEntries, fsentries);
 
     const paths = entries.map((entry) => nodefs.realpathSync(path.join(dirFilePath, entry)));
@@ -945,7 +945,7 @@ test('Realcase use cwd implicitly', () => {
     const uri = Uri.file(dir, tempFile);
 
     const entries = nodefs.readdirSync(dir).map((entry) => path.basename(nodefs.realpathSync(path.join(dir, entry))));
-    const fsentries = fs.readdirSync(uri);
+    const fsentries = fs.readdir(uri);
     const paths = entries.map((entry) => nodefs.realpathSync(path.join(dir, entry)));
 
     const fspaths = fsentries.map((entry) => fs.realCasePath(uri.combinePaths(entry)).getFilePath());

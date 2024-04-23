@@ -157,7 +157,7 @@ export function tryRealpath(fs: ReadOnlyFileSystem, uri: Uri): Uri | undefined {
 
 export function getFileSystemEntries(fs: ReadOnlyFileSystem, uri: Uri): FileSystemEntries {
     try {
-        return getFileSystemEntriesFromDirEntries(fs.readdirEntriesSync(uri), fs, uri);
+        return getFileSystemEntriesFromDirEntries(fs.readdirEntries(uri), fs, uri);
     } catch (e: any) {
         return { files: [], directories: [] };
     }

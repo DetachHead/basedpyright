@@ -873,18 +873,18 @@ class CombinedFileSystem implements FileSystem {
         this._testFS.chdir(path);
     }
 
-    readdirEntriesSync(path: Uri): Dirent[] {
+    readdirEntries(path: Uri): Dirent[] {
         if (this._testFS.exists(path)) {
-            return this._testFS.readdirEntriesSync(path);
+            return this._testFS.readdirEntries(path);
         }
-        return this._realFS.readdirEntriesSync(path);
+        return this._realFS.readdirEntries(path);
     }
 
-    readdirSync(path: Uri): string[] {
+    readdir(path: Uri): string[] {
         if (this._testFS.exists(path)) {
-            return this._testFS.readdirSync(path);
+            return this._testFS.readdir(path);
         }
-        return this._realFS.readdirSync(path);
+        return this._realFS.readdir(path);
     }
 
     readFileSync(path: Uri, encoding?: null): Buffer;

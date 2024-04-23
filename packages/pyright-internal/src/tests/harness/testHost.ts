@@ -90,7 +90,7 @@ function createHost(): TestHost {
         function filesInFolder(folder: string): string[] {
             let paths: string[] = [];
 
-            for (const file of vfs.readdirSync(Uri.file(folder, caseDetector))) {
+            for (const file of vfs.readdir(Uri.file(folder, caseDetector))) {
                 const pathToFile = pathModule.join(folder, file);
                 const stat = vfs.stat(Uri.file(pathToFile, caseDetector));
                 if (options.recursive && stat.isDirectory()) {
@@ -109,7 +109,7 @@ function createHost(): TestHost {
     function getAccessibleFileSystemEntries(dirname: string): FileSystemEntries {
         try {
             const entries: string[] = vfs
-                .readdirSync(Uri.file(dirname || '.', caseDetector))
+                .readdir(Uri.file(dirname || '.', caseDetector))
                 .sort(useCaseSensitiveFileNames ? compareStringsCaseSensitive : compareStringsCaseInsensitive);
             const files: string[] = [];
             const directories: string[] = [];

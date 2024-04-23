@@ -441,7 +441,7 @@ export class PackageTypeVerifier {
         modulePath: string,
         publicModules: string[]
     ) {
-        const dirEntries = this._serviceProvider.fs().readdirEntriesSync(dirPath);
+        const dirEntries = this._serviceProvider.fs().readdirEntries(dirPath);
 
         dirEntries.forEach((entry) => {
             let isFile = entry.isFile();

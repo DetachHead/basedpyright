@@ -24,7 +24,7 @@ function runTests(p: string): void {
     });
 
     test('readdirEntriesSync root', () => {
-        const entries = fs.readdirEntriesSync(zipRoot);
+        const entries = fs.readdirEntries(zipRoot);
         assert.strictEqual(entries.length, 2);
 
         entries.sort((a, b) => compareStringsCaseSensitive(a.name, b.name));
@@ -45,7 +45,7 @@ function runTests(p: string): void {
     });
 
     test('readdirEntriesSync root', () => {
-        const entries = fs.readdirEntriesSync(zipRoot.combinePaths('EGG-INFO'));
+        const entries = fs.readdirEntries(zipRoot.combinePaths('EGG-INFO'));
         assert.strictEqual(entries.length, 5);
 
         entries.sort((a, b) => compareStringsCaseSensitive(a.name, b.name));

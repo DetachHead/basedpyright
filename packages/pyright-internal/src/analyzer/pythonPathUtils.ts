@@ -182,7 +182,7 @@ export function getPathsFromPthFiles(fs: FileSystem, parentDir: Uri): Uri[] {
 
     // Get a list of all *.pth files within the specified directory.
     const pthFiles = fs
-        .readdirEntriesSync(parentDir)
+        .readdirEntries(parentDir)
         .filter((entry) => (entry.isFile() || entry.isSymbolicLink()) && entry.name.endsWith('.pth'))
         .sort((a, b) => compareComparableValues(a.name, b.name));
 

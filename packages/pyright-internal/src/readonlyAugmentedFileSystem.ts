@@ -43,13 +43,13 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
         throw new Error('Operation is not allowed.');
     }
 
-    readdirEntriesSync(uri: Uri): fs.Dirent[] {
+    readdirEntries(uri: Uri): fs.Dirent[] {
         const entries: fs.Dirent[] = [];
         const movedEntries = this._folderMap.get(uri.key);
         if (!movedEntries || this.realFS.exists(uri)) {
             appendArray(
                 entries,
-                this.realFS.readdirEntriesSync(uri).filter((item) => {
+                this.realFS.readdirEntries(uri).filter((item) => {
                     // Filter out the stub package directory and any
                     // entries that will be overwritten by stub package
                     // virtual items.
@@ -68,8 +68,8 @@ export class ReadOnlyAugmentedFileSystem implements FileSystem {
         return entries.concat(movedEntries.map((e) => new VirtualDirent(e.name, e.isFile)));
     }
 
-    readdirSync(uri: Uri): string[] {
-        return this.readdirEntriesSync(uri).map((p) => p.name);
+    readdir(uri: Uri): string[] {
+        return this.readdirEntries(uri).map((p) => p.name);
     }
 
     readFileSync(uri: Uri, encoding?: null): Buffer;

@@ -100,7 +100,7 @@ export class PyrightFileSystem extends ReadOnlyAugmentedFileSystem implements IP
             let dirEntries: fs.Dirent[] = [];
 
             try {
-                dirEntries = this.realFS.readdirEntriesSync(path);
+                dirEntries = this.realFS.readdirEntries(path);
             } catch {
                 // Leave empty set of dir entries to process.
             }
@@ -184,7 +184,7 @@ export class PyrightFileSystem extends ReadOnlyAugmentedFileSystem implements IP
     private _getRelativePathPartialStubs(partialStubPath: Uri) {
         const relativePaths: string[] = [];
         const searchAllStubs = (uri: Uri) => {
-            for (const entry of this.realFS.readdirEntriesSync(uri)) {
+            for (const entry of this.realFS.readdirEntries(uri)) {
                 const filePath = uri.combinePaths(entry.name);
 
                 let isDirectory = entry.isDirectory();

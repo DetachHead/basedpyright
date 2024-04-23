@@ -38,14 +38,16 @@ export type MaybeThenable<T> = Thenable<T> | T;
 export interface ReadOnlyFileSystem {
     exists(uri: Uri): MaybeThenable<boolean>;
     chdir(uri: Uri): void;
-    readdirEntriesSync(uri: Uri): fs.Dirent[];
-    readdirSync(uri: Uri): string[];
+    readdirEntries(uri: Uri): MaybeThenable<fs.Dirent[]>;
+    readdir(uri: Uri): MaybeThenable<string[]>;
 
     stat(uri: Uri): MaybeThenable<Stats>;
     realpathSync(uri: Uri): Uri;
     getModulePath(): Uri;
     // Async I/O
-    readFile(uri: Uri): Promise<Buffer>;
+    readFile(uri: Uri, encoding?: null): MaybeThenable<Buffer>;
+    readFile(uri: Uri, encoding: BufferEncoding): MaybeThenable<string>;
+    readFile(uri: Uri, encoding?: BufferEncoding | null): MaybeThenable<string | Buffer>;
     readFileText(uri: Uri, encoding?: BufferEncoding): Promise<string>;
     // Return path in casing on OS.
     realCasePath(uri: Uri): Uri;
