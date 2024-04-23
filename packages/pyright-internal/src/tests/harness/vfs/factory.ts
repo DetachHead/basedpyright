@@ -93,7 +93,7 @@ export function createFromFileSystem(
     if (documents) {
         for (const document of documents) {
             fs.mkdirpSync(getDirectoryPath(document.file));
-            fs.writeFileSync(UriEx.file(document.file, !ignoreCase), document.text, 'utf8');
+            fs.writeFile(UriEx.file(document.file, !ignoreCase), document.text, 'utf8');
             fs.filemeta(document.file).set('document', document);
             // Add symlinks
             const symlink = document.meta.get('symlink');

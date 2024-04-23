@@ -326,7 +326,7 @@ test('service runEditMode', () => {
     const closedUri = closed.fileUri;
 
     const newFileUri = Uri.file(combinePaths(getDirectoryPath(open.fileName), 'interimFile.py'), state.serviceProvider);
-    state.testFS.writeFileSync(newFileUri, '# empty', 'utf8');
+    state.testFS.writeFile(newFileUri, '# empty', 'utf8');
 
     const options = {
         isTracked: true,

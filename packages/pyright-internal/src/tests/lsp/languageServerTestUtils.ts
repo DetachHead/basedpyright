@@ -171,7 +171,7 @@ function createServerWorker(file: string, testServerData: CustomLSP.TestServerSt
     // This makes tests run a lot faster because creating a worker is the same
     // as starting a new process.
     if (!serverWorker || serverWorkerFile !== file) {
-        serverWorker?.terminate();
+        void serverWorker?.terminate();
         serverWorkerFile = file;
         serverWorker = new Worker(file);
         logToDisk(`Created new server worker for ${file}`, testServerData.logFile);
@@ -519,10 +519,10 @@ export async function initializeLanguageServer(info: PyrightServerInfo) {
 
     // Send the initialize request.
     const result = await info.connection.sendRequest(InitializeRequest.type, params, CancellationToken.None);
-    info.connection.sendNotification(InitializedNotification.type, {});
+    void info.connection.sendNotification(InitializedNotification.type, {});
 
     if (params.workspaceFolders?.length) {
-        info.connection.sendNotification(DidChangeWorkspaceFoldersNotification.type, {
+        void info.connection.sendNotification(DidChangeWorkspaceFoldersNotification.type, {
             event: {
                 added: params.workspaceFolders!,
                 removed: [],
@@ -552,7 +552,7 @@ export function openFile(info: PyrightServerInfo, markerName: string, text?: str
 
     text = text ?? info.testData.files.find((f) => f.fileName === marker.fileName)!.content;
 
-    info.connection.sendNotification(DidOpenTextDocumentNotification.type, {
+    void info.connection.sendNotification(DidOpenTextDocumentNotification.type, {
         textDocument: { uri, languageId: 'python', version: 1, text },
     });
 }

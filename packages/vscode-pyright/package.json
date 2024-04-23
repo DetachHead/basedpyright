@@ -29,6 +29,7 @@
     ],
     "icon": "images/pyright-icon.png",
     "main": "./dist/extension.js",
+    "browser": "./dist/webExtension.js",
     "contributes": {
         "languages": [
             {
@@ -1690,6 +1691,12 @@
     },
     "dependencies": {
         "@vscode/python-extension": "^1.0.5",
+        "crypto-browserify": "^3.12.0",
+        "os-browserify": "^0.3.0",
+        "path-browserify": "^1.0.1",
+        "stream-browserify": "^3.0.0",
+        "util": "^0.12.5",
+        "vm-browserify": "^1.1.2",
         "vscode-jsonrpc": "^9.0.0-next.2",
         "vscode-languageclient": "^10.0.0-next.2",
         "vscode-languageserver": "^10.0.0-next.2",

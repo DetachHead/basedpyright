@@ -104,7 +104,7 @@ if (msg.requestType === 'cacheUsageBuffer') {
 
     // Get the heap usage and verify it's more than 100%
     const usage = manager.getUsedHeapRatio();
-    worker.terminate();
+    void worker.terminate();
     assert(usage > 1);
 });
 

@@ -1591,7 +1591,7 @@ export class ConfigOptions {
         if (autoSearchPaths) {
             // Auto-detect the common scenario where the sources are under the src folder
             const srcPath = this.projectRoot.resolvePaths(pathConsts.src);
-            if (fs.existsSync(srcPath) && !fs.existsSync(srcPath.resolvePaths('__init__.py'))) {
+            if (fs.exists(srcPath) && !fs.exists(srcPath.resolvePaths('__init__.py'))) {
                 paths.push(fs.realCasePath(srcPath));
             }
         }

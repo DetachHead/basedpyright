@@ -248,7 +248,7 @@ export class FullAccessHost extends LimitedAccessHost {
                         const normalizedUri = Uri.file(normalizedPath, caseDetector);
                         // Skip non-existent paths and broken zips/eggs.
                         if (
-                            this.serviceProvider.fs().existsSync(normalizedUri) &&
+                            this.serviceProvider.fs().exists(normalizedUri) &&
                             isDirectory(this.serviceProvider.fs(), normalizedUri)
                         ) {
                             result.paths.push(normalizedUri);

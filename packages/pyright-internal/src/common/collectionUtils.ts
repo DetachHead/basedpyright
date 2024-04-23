@@ -330,6 +330,18 @@ export function getOrAdd<K, V>(map: Map<K, V>, key: K, newValueFactory: () => V)
     return newValue;
 }
 
+export const getOrAddAsync = async <K, V>(map: Map<K, V>, key: K, newValueFactory: () => Thenable<V>): Promise<V> => {
+    const value = map.get(key);
+    if (value !== undefined) {
+        return value;
+    }
+
+    const newValue = await newValueFactory();
+    map.set(key, newValue);
+
+    return newValue;
+};
+
 /**
  * Remove matching item from the array in place.
  * Returns the given array itself.

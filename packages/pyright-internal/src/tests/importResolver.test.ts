@@ -801,7 +801,7 @@ function createTestFileSystem(files: { path: string; content: string }[]): TestF
         const dir = getDirectoryPath(path);
         fs.mkdirpSync(dir);
 
-        fs.writeFileSync(UriEx.file(path), file.content);
+        fs.writeFile(UriEx.file(path), file.content);
     }
 
     return fs;
@@ -833,16 +833,16 @@ class CombinedFileSystem implements FileSystem {
 
     constructor(private _testFS: TestFileSystem) {}
 
-    mkdirSync(path: Uri, options?: MkDirOptions | undefined): void {
-        this._testFS.mkdirSync(path, options);
+    mkdir(path: Uri, options?: MkDirOptions | undefined): void {
+        this._testFS.mkdir(path, options);
     }
 
-    writeFileSync(path: Uri, data: string | Buffer, encoding: BufferEncoding | null): void {
-        this._testFS.writeFileSync(path, data, encoding);
+    writeFile(path: Uri, data: string | Buffer, encoding: BufferEncoding | null): void {
+        this._testFS.writeFile(path, data, encoding);
     }
 
-    unlinkSync(path: Uri): void {
-        this._testFS.unlinkSync(path);
+    unlink(path: Uri): void {
+        this._testFS.unlink(path);
     }
 
     rmdirSync(path: Uri): void {
@@ -861,51 +861,51 @@ class CombinedFileSystem implements FileSystem {
         return this._testFS.createWriteStream(path);
     }
 
-    copyFileSync(src: Uri, dst: Uri): void {
-        this._testFS.copyFileSync(src, dst);
+    copyFile(src: Uri, dst: Uri): void {
+        this._testFS.copyFile(src, dst);
     }
 
-    existsSync(path: Uri): boolean {
-        return this._testFS.existsSync(path) || this._realFS.existsSync(path);
+    exists(path: Uri): boolean {
+        return this._testFS.exists(path) || this._realFS.exists(path);
     }
 
     chdir(path: Uri): void {
         this._testFS.chdir(path);
     }
 
-    readdirEntriesSync(path: Uri): Dirent[] {
-        if (this._testFS.existsSync(path)) {
-            return this._testFS.readdirEntriesSync(path);
+    readdirEntries(path: Uri): Dirent[] {
+        if (this._testFS.exists(path)) {
+            return this._testFS.readdirEntries(path);
         }
-        return this._realFS.readdirEntriesSync(path);
+        return this._realFS.readdirEntries(path);
     }
 
-    readdirSync(path: Uri): string[] {
-        if (this._testFS.existsSync(path)) {
-            return this._testFS.readdirSync(path);
+    readdir(path: Uri): string[] {
+        if (this._testFS.exists(path)) {
+            return this._testFS.readdir(path);
         }
-        return this._realFS.readdirSync(path);
+        return this._realFS.readdir(path);
     }
 
     readFileSync(path: Uri, encoding?: null): Buffer;
     readFileSync(path: Uri, encoding: BufferEncoding): string;
     readFileSync(path: Uri, encoding?: BufferEncoding | null): string | Buffer;
     readFileSync(path: Uri, encoding: BufferEncoding | null = null) {
-        if (this._testFS.existsSync(path)) {
+        if (this._testFS.exists(path)) {
             return this._testFS.readFileSync(path, encoding);
         }
         return this._realFS.readFileSync(path, encoding);
     }
 
-    statSync(path: Uri): Stats {
-        if (this._testFS.existsSync(path)) {
-            return this._testFS.statSync(path);
+    stat(path: Uri): Stats {
+        if (this._testFS.exists(path)) {
+            return this._testFS.stat(path);
         }
-        return this._realFS.statSync(path);
+        return this._realFS.stat(path);
     }
 
     realpathSync(path: Uri): Uri {
-        if (this._testFS.existsSync(path)) {
+        if (this._testFS.exists(path)) {
             return this._testFS.realpathSync(path);
         }
         return this._realFS.realpathSync(path);
@@ -916,14 +916,14 @@ class CombinedFileSystem implements FileSystem {
     }
 
     readFile(path: Uri): Promise<Buffer> {
-        if (this._testFS.existsSync(path)) {
+        if (this._testFS.exists(path)) {
             return this._testFS.readFile(path);
         }
         return this._realFS.readFile(path);
     }
 
     readFileText(path: Uri, encoding?: BufferEncoding | undefined): Promise<string> {
-        if (this._testFS.existsSync(path)) {
+        if (this._testFS.exists(path)) {
             return this._testFS.readFileText(path, encoding);
         }
         return this._realFS.readFileText(path, encoding);

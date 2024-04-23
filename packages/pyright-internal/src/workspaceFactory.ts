@@ -183,7 +183,7 @@ export class WorkspaceFactory {
             // If the python path has changed, we may need to move the immutable files to the correct workspace.
             if (originalPythonPath && !newPythonPath.equals(originalPythonPath) && workspaceInMap) {
                 // Potentially move immutable files from one workspace to another.
-                this._moveImmutableFilesToCorrectWorkspace(originalPythonPath, workspaceInMap);
+                void this._moveImmutableFilesToCorrectWorkspace(originalPythonPath, workspaceInMap);
             }
         }
 

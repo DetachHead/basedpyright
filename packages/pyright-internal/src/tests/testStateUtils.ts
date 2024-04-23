@@ -70,7 +70,7 @@ export function applyFileEditActions(state: TestState, fileEditActions: FileEdit
 
     for (const [editFileName, editsPerFile] of editsPerFileMap) {
         const result = _applyEdits(state, editFileName, editsPerFile);
-        state.testFS.writeFileSync(Uri.file(editFileName, state.serviceProvider), result.text, 'utf8');
+        state.testFS.writeFile(Uri.file(editFileName, state.serviceProvider), result.text, 'utf8');
 
         // Update open file content if the file is in opened state.
         if (result.version) {
@@ -96,7 +96,7 @@ export function applyFileEditActions(state: TestState, fileEditActions: FileEdit
         switch (fileOperation.kind) {
             case 'create': {
                 state.testFS.mkdirpSync(fileOperation.fileUri.getDirectory().getFilePath());
-                state.testFS.writeFileSync(fileOperation.fileUri, '');
+                state.testFS.writeFile(fileOperation.fileUri, '');
                 break;
             }
             case 'rename': {

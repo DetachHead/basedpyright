@@ -283,7 +283,7 @@ export class PyrightServer extends LanguageServerBase {
                         })
                         .ignoreErrors();
                 } else {
-                    this.connection.sendNotification('pyright/beginProgress');
+                    void this.connection.sendNotification('pyright/beginProgress');
                 }
             },
             report: (message: string) => {
@@ -294,7 +294,7 @@ export class PyrightServer extends LanguageServerBase {
                         })
                         .ignoreErrors();
                 } else {
-                    this.connection.sendNotification('pyright/reportProgress', message);
+                    void this.connection.sendNotification('pyright/reportProgress', message);
                 }
             },
             end: () => {
@@ -306,7 +306,7 @@ export class PyrightServer extends LanguageServerBase {
                         .ignoreErrors();
                     workDoneProgress = undefined;
                 } else {
-                    this.connection.sendNotification('pyright/endProgress');
+                    void this.connection.sendNotification('pyright/endProgress');
                 }
             },
         };

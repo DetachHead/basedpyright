@@ -46,9 +46,7 @@ test('Multiple files', () => {
 
     assert.equal(state.cwd(), normalizeSlashes('/'));
     assert(
-        state.fs.existsSync(
-            Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'file1.py')), state.serviceProvider)
-        )
+        state.fs.exists(Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'file1.py')), state.serviceProvider))
     );
 });
 
@@ -120,9 +118,7 @@ test('Configuration', () => {
 
     assert.equal(state.cwd(), normalizeSlashes('/'));
     assert(
-        state.fs.existsSync(
-            Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'file1.py')), state.serviceProvider)
-        )
+        state.fs.exists(Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'file1.py')), state.serviceProvider))
     );
 
     assert.equal(state.configOptions.diagnosticRuleSet.reportMissingImports, 'error');
@@ -168,7 +164,7 @@ test('ProjectRoot', () => {
     const state = parseAndGetTestState(code).state;
 
     assert.equal(state.cwd(), normalizeSlashes('/root'));
-    assert(state.fs.existsSync(Uri.file(normalizeSlashes('/root/file1.py'), state.serviceProvider)));
+    assert(state.fs.exists(Uri.file(normalizeSlashes('/root/file1.py'), state.serviceProvider)));
 
     assert.equal(state.configOptions.projectRoot.getFilePath(), normalizeSlashes('/root'));
 });
@@ -186,7 +182,7 @@ test('CustomTypeshedFolder', () => {
     // mount the folder this file is in as typeshed folder and check whether
     // in typeshed folder in virtual file system, this file exists.
     const state = parseAndGetTestState(code).state;
-    assert(state.fs.existsSync(factory.typeshedFolder.combinePaths(getFileName(__filename))));
+    assert(state.fs.exists(factory.typeshedFolder.combinePaths(getFileName(__filename))));
 });
 
 test('IgnoreCase', () => {
@@ -202,9 +198,7 @@ test('IgnoreCase', () => {
     const state = parseAndGetTestState(code, factory.srcFolder).state;
 
     assert(
-        state.fs.existsSync(
-            Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'FILE1.py')), state.serviceProvider)
-        )
+        state.fs.exists(Uri.file(normalizeSlashes(combinePaths(factory.srcFolder, 'FILE1.py')), state.serviceProvider))
     );
 });
 

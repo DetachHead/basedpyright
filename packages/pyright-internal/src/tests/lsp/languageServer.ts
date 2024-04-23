@@ -258,7 +258,7 @@ class ServerStateManager {
         try {
             // Debug output to help diagnose sync issues.
             if (message && message.method === CustomLSP.Notifications.TestStartServer) {
-                this._handleStart(message.params);
+                void this._handleStart(message.params);
             } else if (Message.isRequest(message) && message.method === ShutdownRequest.method) {
                 this._shutdownId = message.id;
             }
@@ -376,7 +376,7 @@ async function runTestBackgroundThread() {
 export function run() {
     // Start the background thread if this is not the first worker.
     if (getEnvironmentData(WORKER_STARTED) === 'true') {
-        runTestBackgroundThread();
+        void runTestBackgroundThread();
     } else {
         setEnvironmentData(WORKER_STARTED, 'true');
 

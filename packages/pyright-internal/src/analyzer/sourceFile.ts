@@ -378,7 +378,7 @@ export class SourceFile {
         // that of the previous contents.
         try {
             // Read the file's contents.
-            if (this.fileSystem.existsSync(this._uri)) {
+            if (this.fileSystem.exists(this._uri)) {
                 const fileContents = this.fileSystem.readFileSync(this._uri, 'utf8');
 
                 if (fileContents.length !== this._writableData.lastFileContentLength) {
@@ -468,7 +468,7 @@ export class SourceFile {
         // Otherwise, get content from file system.
         try {
             // Check the file's length before attempting to read its full contents.
-            const fileStat = this.fileSystem.statSync(this._uri);
+            const fileStat = this.fileSystem.stat(this._uri);
             if (fileStat.size > _maxSourceFileSize) {
                 this._console.error(
                     `File length of "${this._uri}" is ${fileStat.size} ` +
@@ -636,7 +636,7 @@ export class SourceFile {
                     diagSink.addError(`Source file could not be read`, getEmptyRange());
                     fileContents = '';
 
-                    if (!this.fileSystem.existsSync(this._uri)) {
+                    if (!this.fileSystem.exists(this._uri)) {
                         this._writableData.isFileDeleted = true;
                     }
                 }

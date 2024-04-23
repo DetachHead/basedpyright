@@ -371,7 +371,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
         const postfix = options?.prefix ? '-' + options.prefix : '';
         const name = `${prefix}-${this._tmpfileCounter++}${postfix}`;
         const path = this.tmpdir().combinePaths(name);
-        this.writeFileSync(path, '');
+        this.writeFile(path, '');
         return path;
     }
 
@@ -426,9 +426,9 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
         try {
             const stats = this.lstatSync(path);
             if (stats.isFile() || stats.isSymbolicLink()) {
-                this.unlinkSync(Uri.file(path, this));
+                this.unlink(Uri.file(path, this));
             } else if (stats.isDirectory()) {
-                for (const file of this.readdirSync(Uri.file(path, this))) {
+                for (const file of this.readdir(Uri.file(path, this))) {
                     this.rimrafSync(pathUtil.combinePaths(path, file));
                 }
                 this.rmdirSync(Uri.file(path, this));
@@ -508,7 +508,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
     /**
      * Determines whether a path exists.
      */
-    existsSync(path: Uri) {
+    exists(path: Uri) {
         if (path.isEmpty()) {
             return false;
         }
@@ -523,7 +523,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    statSync(path: Uri) {
+    stat(path: Uri) {
         return this._stat(this._walk(this._resolve(path.getFilePath())));
     }
 
@@ -567,7 +567,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    readdirSync(path: Uri) {
+    readdir(path: Uri) {
         const { node } = this._walk(this._resolve(path.getFilePath()));
         if (!node) {
             throw createIOError('ENOENT');
@@ -585,7 +585,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    readdirEntriesSync(path: Uri): Dirent[] {
+    readdirEntries(path: Uri): Dirent[] {
         const { node } = this._walk(this._resolve(path.getFilePath()));
         if (!node) {
             throw createIOError('ENOENT');
@@ -604,7 +604,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    mkdirSync(path: Uri, options?: MkDirOptions) {
+    mkdir(path: Uri, options?: MkDirOptions) {
         if (this.isReadonly) {
             throw createIOError('EROFS');
         }
@@ -682,7 +682,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    unlinkSync(path: Uri) {
+    unlink(path: Uri) {
         if (this.isReadonly) {
             throw createIOError('EROFS');
         }
@@ -844,7 +844,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
      *
      * NOTE: do not rename this method as it is intended to align with the same named export of the "fs" module.
      */
-    writeFileSync(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null = null) {
+    writeFile(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null = null) {
         if (this.isReadonly) {
             throw createIOError('EROFS');
         }
@@ -894,7 +894,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
         throw new Error('Not implemented in test file system.');
     }
 
-    copyFileSync(src: Uri, dst: Uri): void {
+    copyFile(src: Uri, dst: Uri): void {
         throw new Error('Not implemented in test file system.');
     }
 
@@ -964,7 +964,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
         }
         if (axis === 'descendants-or-self' || axis === 'descendants') {
             if (stats.isDirectory() && (!traversal.traverse || traversal.traverse(path, stats))) {
-                for (const file of this.readdirSync(Uri.file(path, this))) {
+                for (const file of this.readdir(Uri.file(path, this))) {
                     try {
                         const childpath = pathUtil.combinePaths(path, file);
                         const stats = this._stat(this._walk(childpath, noFollow));
@@ -1598,7 +1598,7 @@ export class TestFileSystem implements FileSystem, TempFile, CaseSensitivityDete
                     throw new TypeError('Roots cannot be files.');
                 }
                 this.mkdirpSync(pathUtil.getDirectoryPath(path));
-                this.writeFileSync(Uri.file(path, this), value.data, value.encoding);
+                this.writeFile(Uri.file(path, this), value.data, value.encoding);
                 this._applyFileExtendedOptions(path, value);
             } else if (value instanceof Directory) {
                 this.mkdirpSync(path);

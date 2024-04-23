@@ -20,12 +20,12 @@ export interface PyTypedInfo {
 // Retrieves information about a py.typed file, if it exists, under the given path.
 //
 export function getPyTypedInfo(fileSystem: FileSystem, dirPath: Uri): PyTypedInfo | undefined {
-    if (!fileSystem.existsSync(dirPath) || !isDirectory(fileSystem, dirPath)) {
+    if (!fileSystem.exists(dirPath) || !isDirectory(fileSystem, dirPath)) {
         return undefined;
     }
 
     const pyTypedPath = dirPath.pytypedUri;
-    if (!fileSystem.existsSync(pyTypedPath) || !isFile(fileSystem, pyTypedPath)) {
+    if (!fileSystem.exists(pyTypedPath) || !isFile(fileSystem, pyTypedPath)) {
         return undefined;
     }
 
@@ -43,7 +43,7 @@ export function getPyTypedInfoForPyTypedFile(fileSystem: FileSystem, pyTypedPath
     let isPartiallyTyped = false;
 
     // Read the contents of the file as text.
-    const fileStats = fileSystem.statSync(pyTypedPath);
+    const fileStats = fileSystem.stat(pyTypedPath);
 
     // Do a quick sanity check on the size before we attempt to read it. This
     // file should always be really small - typically zero bytes in length.

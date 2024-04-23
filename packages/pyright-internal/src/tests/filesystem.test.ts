@@ -29,7 +29,7 @@ test('Folders', () => {
         fs.chdir(cwd.combinePaths('a'));
     });
 
-    fs.mkdirSync(cwd.combinePaths('a'));
+    fs.mkdir(cwd.combinePaths('a'));
     fs.chdir(cwd.combinePaths('a'));
     assert.equal(fs.cwd(), normalizeSlashes('/a'));
 
@@ -52,9 +52,9 @@ test('Folders Recursive', () => {
     });
 
     const path = cwd.combinePaths('a', 'b', 'c');
-    fs.mkdirSync(path, { recursive: true });
+    fs.mkdir(path, { recursive: true });
 
-    assert(fs.existsSync(path));
+    assert(fs.exists(path));
 });
 
 test('Files', () => {
@@ -62,7 +62,7 @@ test('Files', () => {
     const fs = new vfs.TestFileSystem(/*ignoreCase*/ true, { cwd: cwd.getFilePath() });
 
     const uri = cwd.combinePaths('1.txt');
-    fs.writeFileSync(uri, 'hello', 'utf8');
+    fs.writeFile(uri, 'hello', 'utf8');
     const buffer1 = fs.readFileSync(uri);
     assert.equal(buffer1.toString(), 'hello');
 
@@ -70,7 +70,7 @@ test('Files', () => {
     fs.mkdirpSync(p.getFilePath());
 
     const f = p.combinePaths('2.txt');
-    fs.writeFileSync(f, 'hi');
+    fs.writeFile(f, 'hi');
 
     const str = fs.readFileSync(f, 'utf8');
     assert.equal(str, 'hi');
@@ -131,14 +131,14 @@ test('Diffing', () => {
 
     // first snapshot
     fs.snapshot();
-    fs.writeFileSync(cwd.combinePaths('test1.txt'), 'hello1');
+    fs.writeFile(cwd.combinePaths('test1.txt'), 'hello1');
 
     // compared with original
     assert.equal(countFile(fs.diff()!), 1);
 
     // second snapshot
     fs.snapshot();
-    fs.writeFileSync(cwd.combinePaths('test2.txt'), 'hello2');
+    fs.writeFile(cwd.combinePaths('test2.txt'), 'hello2');
 
     // compared with first snapshot
     assert.equal(countFile(fs.diff()!), 1);
@@ -150,11 +150,11 @@ test('Diffing', () => {
     const s = fs.shadowRoot!.shadow();
 
     // "test2.txt" only exist in first snapshot
-    assert(!s.existsSync(cwd.combinePaths('test2.txt')));
+    assert(!s.exists(cwd.combinePaths('test2.txt')));
 
     // create parallel universe where it has another version of test2.txt with different content
     // compared to second snapshot which forked from same first snapshot
-    s.writeFileSync(cwd.combinePaths('test2.txt'), 'hello3');
+    s.writeFile(cwd.combinePaths('test2.txt'), 'hello3');
 
     // diff between non direct snapshots
     // diff gives test2.txt even though it exist in both snapshot
@@ -172,7 +172,7 @@ test('createFromFileSystem1', () => {
     });
 
     // check existing typeshed folder on virtual path inherited from base snapshot from physical file system
-    const entries = fs.readdirSync(factory.typeshedFolder);
+    const entries = fs.readdir(factory.typeshedFolder);
     assert(entries.length > 0);
 
     // confirm file
@@ -181,7 +181,7 @@ test('createFromFileSystem1', () => {
 
 test('createFromFileSystem2', () => {
     const fs = factory.createFromFileSystem(host.HOST, /* ignoreCase */ true, { cwd: factory.srcFolder });
-    const entries = fs.readdirSync(UriEx.file(factory.typeshedFolder.getFilePath().toUpperCase()));
+    const entries = fs.readdir(UriEx.file(factory.typeshedFolder.getFilePath().toUpperCase()));
     assert(entries.length > 0);
 });
 
@@ -192,7 +192,7 @@ test('createFromFileSystemWithCustomTypeshedPath', () => {
         meta: { [factory.typeshedFolder.getFilePath()]: invalidpath },
     });
 
-    const entries = fs.readdirSync(factory.typeshedFolder);
+    const entries = fs.readdir(factory.typeshedFolder);
     assert(entries.filter((e) => e.endsWith('.md')).length > 0);
 });
 
@@ -202,7 +202,7 @@ test('createFromFileSystemWithMetadata', () => {
         meta: { unused: 'unused' },
     });
 
-    assert(fs.existsSync(UriEx.file(factory.srcFolder)));
+    assert(fs.exists(UriEx.file(factory.srcFolder)));
 });
 
 function countFile(files: vfs.FileSet): number {

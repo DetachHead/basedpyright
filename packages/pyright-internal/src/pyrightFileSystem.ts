@@ -50,33 +50,26 @@ export class PyrightFileSystem extends ReadOnlyAugmentedFileSystem implements IP
         super(realFS);
     }
 
-    override mkdirSync(uri: Uri, options?: MkDirOptions): void {
-        this.realFS.mkdirSync(uri, options);
-    }
-
+    override mkdir = (uri: Uri, options?: MkDirOptions) => this.realFS.mkdir(uri, options);
     override chdir(uri: Uri): void {
         this.realFS.chdir(uri);
     }
 
-    override writeFileSync(uri: Uri, data: string | Buffer, encoding: BufferEncoding | null): void {
-        this.realFS.writeFileSync(this.getOriginalPath(uri), data, encoding);
-    }
+    override writeFile = (uri: Uri, data: string | Buffer, encoding: BufferEncoding | null) =>
+        this.realFS.writeFile(this.getOriginalPath(uri), data, encoding);
 
     override rmdirSync(uri: Uri): void {
         this.realFS.rmdirSync(this.getOriginalPath(uri));
     }
 
-    override unlinkSync(uri: Uri): void {
-        this.realFS.unlinkSync(this.getOriginalPath(uri));
-    }
+    override unlink = (uri: Uri) => this.realFS.unlink(this.getOriginalPath(uri));
 
     override createWriteStream(uri: Uri): fs.WriteStream {
         return this.realFS.createWriteStream(this.getOriginalPath(uri));
     }
 
-    override copyFileSync(src: Uri, dst: Uri): void {
-        this.realFS.copyFileSync(this.getOriginalPath(src), this.getOriginalPath(dst));
-    }
+    override copyFile = (src: Uri, dst: Uri) =>
+        this.realFS.copyFile(this.getOriginalPath(src), this.getOriginalPath(dst));
 
     isPartialStubPackagesScanned(execEnv: ExecutionEnvironment): boolean {
         return execEnv.root ? this.isPathScanned(execEnv.root) : false;
@@ -100,14 +93,14 @@ export class PyrightFileSystem extends ReadOnlyAugmentedFileSystem implements IP
         for (const path of paths) {
             this._rootSearched.add(path.key);
 
-            if (!this.realFS.existsSync(path) || !isDirectory(this.realFS, path)) {
+            if (!this.realFS.exists(path) || !isDirectory(this.realFS, path)) {
                 continue;
             }
 
             let dirEntries: fs.Dirent[] = [];
 
             try {
-                dirEntries = this.realFS.readdirEntriesSync(path);
+                dirEntries = this.realFS.readdirEntries(path);
             } catch {
                 // Leave empty set of dir entries to process.
             }
@@ -191,7 +184,7 @@ export class PyrightFileSystem extends ReadOnlyAugmentedFileSystem implements IP
     private _getRelativePathPartialStubs(partialStubPath: Uri) {
         const relativePaths: string[] = [];
         const searchAllStubs = (uri: Uri) => {
-            for (const entry of this.realFS.readdirEntriesSync(uri)) {
+            for (const entry of this.realFS.readdirEntries(uri)) {
                 const filePath = uri.combinePaths(entry.name);
 
                 let isDirectory = entry.isDirectory();
