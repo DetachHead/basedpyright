@@ -53,7 +53,6 @@ import { ImportResolver, ImportResolverFactory, createImportedModuleDescriptor }
 import { MaxAnalysisTime, Program } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
 import { IPythonMode } from './sourceFile';
-import { TypeEvaluator } from './typeEvaluatorTypes';
 import { githubRepo } from '../constants';
 
 export const configFileNames = ['pyrightconfig.json'];
@@ -369,10 +368,6 @@ export class AnalyzerService {
         return this._program.getTextOnRange(fileUri, range, token);
     }
 
-    getEvaluator(): TypeEvaluator | undefined {
-        return this._program.evaluator;
-    }
-
     run<T>(callback: (p: ProgramView) => T, token: CancellationToken): T {
         return this._program.run(callback, token);
     }
@@ -524,7 +519,7 @@ export class AnalyzerService {
             ? optionRoot
             : isString(optionRoot)
             ? Uri.file(optionRoot, this.serviceProvider, /* checkRelative */ true)
-            : Uri.empty();
+            : Uri.defaultWorkspace(this.serviceProvider);
 
         const executionRoot = this.fs.realCasePath(executionRootUri);
         let projectRoot = executionRoot;
