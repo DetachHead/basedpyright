@@ -9,7 +9,7 @@ dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
     # required for running node/npm commands for local development if node is not installed globally:
-    "nodejs-bin[cmd]>=18.4.0a4",
+    "nodejs-wheel>=20.12.2",
 ]
 
 [tool.pdm.version]
@@ -32,8 +32,8 @@ authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
 dependencies = [
-    # required by the basedpyright cli & langserver wrapper scripts, the cmd extra is not needed downstream tho
-    "nodejs-bin>=18.4.0a4",
+    # required by the basedpyright cli & langserver wrapper scripts
+    "nodejs-wheel>=20.12.2",
 ]
 requires-python = ">=3.8"
 readme = "README.md"
@@ -49,8 +49,6 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 [build-system]
 requires = [
     "pdm-backend",
-    # required when building because some transient dependencies call node/npm scripts relying on it being in the PATH
-    "nodejs-bin[cmd]>=18.4.0a4",
 ]
 build-backend = "pdm.backend"
 

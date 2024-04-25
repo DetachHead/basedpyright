@@ -3,22 +3,26 @@ from __future__ import annotations
 from json import loads
 from pathlib import Path
 from shutil import copyfile, copytree
-from typing import TYPE_CHECKING, TypedDict, cast
+from typing import List, TypedDict, cast
 
-# https://github.com/samwillis/nodejs-pypi/pull/23
-if TYPE_CHECKING:
-    # https://github.com/astral-sh/ruff/issues/9528
-    from subprocess import run  # noqa: S404
-else:
-    from nodejs.npm import run
+from nodejs_wheel import executable
+
+# Remove when https://github.com/njzjz/nodejs-wheel/pull/24 is merged
+def run(cmd: List[str]):
+    old_sys_argv = sys.argv
+    sys.argv = [old_sys_argv[0]] + cmd
+    try:
+        executable.npm()
+    finally:
+        sys.argv = old_sys_argv
 
 
 class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-_ = run(["ci"], check=True)
-_ = run(["run", "build:cli:dev"], check=True)
+run(["ci"])
+run(["run", "build:cli:dev"])
 
 npm_package_dir = Path("packages/pyright")
 pypi_package_dir = Path("basedpyright")
