@@ -3,8 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from nodejs import node
+from nodejs_wheel import executable
 
 
 def run(script_name: str):
-    sys.exit(node.call([Path(__file__).parent / f"{script_name}.js", *sys.argv[1:]]))
+    sys.exit(executable.call_node(Path(__file__).parent / f"{script_name}.js", *sys.argv[1:]))
