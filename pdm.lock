@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:3e628d5032bc9a16e9b8d20064f553a9853e89be2c0adf5c30c2d90892030470"
+content_hash = "sha256:322efc3a1c05eaff3c03a52090631d9cefb8a082d73b52ef081701a002afbaf4"
 
 [[package]]
 name = "astroid"
@@ -71,7 +71,7 @@ name = "nodejs-wheel"
 version = "20.12.2"
 requires_python = ">=3.7"
 summary = "unoffical Node.js package"
-groups = ["default", "dev"]
+groups = ["default"]
 files = [
     {file = "nodejs_wheel-20.12.2-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:5c9f7bd4f2149d2d17c9d19e8878c69ac97e0da71d1e4ed7250b15adf31fca70"},
     {file = "nodejs_wheel-20.12.2-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:5b93fe06341d1130dbf6ab9b458cb5983d6a9cf8e8ebc14e496b78aa9ae36c4e"},

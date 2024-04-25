@@ -1,16 +1,11 @@
 [tool.pyprojectx]
-main = ["pdm==2.13.2"]
+main = ["pdm==2.15.1"]
 
 [tool.pdm]
 distribution = true
 
 [tool.pdm.dev-dependencies]
-dev = [
-    "pylint>=3.0.0a7",
-    "ruff>=0.2.2",
-    # required for running node/npm commands for local development if node is not installed globally:
-    "nodejs-wheel>=20.12.2",
-]
+dev = ["pylint>=3.0.0a7", "ruff>=0.2.2"]
 
 [tool.pdm.version]
 source = "call"
@@ -49,6 +44,8 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 [build-system]
 requires = [
     "pdm-backend",
+    # required for building the pyright npm package to be bundled in the pypi package:
+    "nodejs-wheel>=20.12.2",
 ]
 build-backend = "pdm.backend"
 

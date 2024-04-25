@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import sys
 from json import loads
 from pathlib import Path
 from shutil import copyfile, copytree
 from typing import List, TypedDict, cast
 
 from nodejs_wheel import executable
+
 
 # Remove when https://github.com/njzjz/nodejs-wheel/pull/24 is merged
 def run(cmd: List[str]):
