@@ -8,7 +8,8 @@
  */
 
 import { appendArray } from './collectionUtils';
-import { DiagnosticLevel } from './configOptions';
+import { LspDiagnosticLevel } from './configOptions';
+import { assertNever } from './debug';
 import { Diagnostic, DiagnosticAction, DiagnosticCategory } from './diagnostic';
 import { convertOffsetsToRange } from './positionUtils';
 import { hashString } from './stringUtils';
@@ -128,7 +129,7 @@ export class TextRangeDiagnosticSink extends DiagnosticSink {
         this._lines = lines;
     }
 
-    addDiagnosticWithTextRange(level: DiagnosticLevel, message: string, range: TextRange) {
+    addDiagnosticWithTextRange(level: LspDiagnosticLevel, message: string, range: TextRange) {
         const positionRange = convertOffsetsToRange(range.start, range.start + range.length, this._lines);
         switch (level) {
             case 'error':
@@ -139,33 +140,17 @@ export class TextRangeDiagnosticSink extends DiagnosticSink {
 
             case 'information':
                 return this.addInformation(message, positionRange);
-
-            default:
+            case 'unreachable':
+                return this.addUnreachableCode(message, positionRange);
+            case 'unused':
+                return this.addUnusedCode(message, positionRange);
+            case 'deprecated':
+                return this.addDeprecated(message, positionRange);
+            case 'none':
+                //TODO: why is none even allowed here?
                 throw new Error(`${level} is not expected value`);
+            default:
+                assertNever(level, `${level} is not expected value`);
         }
-    }
-
-    addUnusedCodeWithTextRange(message: string, range: TextRange, action?: DiagnosticAction) {
-        return this.addUnusedCode(
-            message,
-            convertOffsetsToRange(range.start, range.start + range.length, this._lines),
-            action
-        );
-    }
-
-    addUnreachableCodeWithTextRange(message: string, range: TextRange, action?: DiagnosticAction) {
-        return this.addUnreachableCode(
-            message,
-            convertOffsetsToRange(range.start, range.start + range.length, this._lines),
-            action
-        );
-    }
-
-    addDeprecatedWithTextRange(message: string, range: TextRange, action?: DiagnosticAction) {
-        return this.addDeprecated(
-            message,
-            convertOffsetsToRange(range.start, range.start + range.length, this._lines),
-            action
-        );
     }
 }

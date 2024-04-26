@@ -18,7 +18,7 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { OperationCanceledException, throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
-import { DiagnosticLevel, DiagnosticRuleSet } from '../common/configOptions';
+import { DiagnosticRuleSet, LspDiagnosticLevel } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { assert, assertNever, fail } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
@@ -3255,34 +3255,8 @@ export function createTypeEvaluator(
         return addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, message, node, range);
     }
 
-    function addUnusedCode(node: ParseNode, textRange: TextRange) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            fileInfo.diagnosticSink.addUnusedCodeWithTextRange(LocMessage.unreachableCode(), textRange);
-        }
-    }
-
-    function addUnreachableCode(node: ParseNode, textRange: TextRange) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            const message = LocMessage.unreachableCode();
-            if (fileInfo.diagnosticRuleSet.reportUnreachable === 'none' || isNotTypeCheckingBlock(node)) {
-                fileInfo.diagnosticSink.addUnreachableCodeWithTextRange(message, textRange);
-            } else {
-                addDiagnostic(DiagnosticRule.reportUnreachable, message, node, textRange);
-            }
-        }
-    }
-
-    function addDeprecated(message: string, node: ParseNode) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            fileInfo.diagnosticSink.addDeprecatedWithTextRange(message, node);
-        }
-    }
-
     function addDiagnosticWithSuppressionCheck(
-        diagLevel: DiagnosticLevel,
+        diagLevel: LspDiagnosticLevel,
         message: string,
         node: ParseNode,
         range?: TextRange
@@ -3304,7 +3278,7 @@ export function createTypeEvaluator(
 
     function addDiagnostic(rule: DiagnosticRule, message: string, node: ParseNode, range?: TextRange) {
         const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-        const diagLevel = fileInfo.diagnosticRuleSet[rule] as DiagnosticLevel;
+        const diagLevel = fileInfo.diagnosticRuleSet[rule] as LspDiagnosticLevel;
 
         if (diagLevel === 'none') {
             return undefined;
@@ -3348,7 +3322,7 @@ export function createTypeEvaluator(
 
     function addDiagnosticForTextRange(
         fileInfo: AnalyzerFileInfo,
-        diagLevel: DiagnosticLevel,
+        diagLevel: LspDiagnosticLevel,
         rule: DiagnosticRule | '',
         message: string,
         range: TextRange
@@ -27292,6 +27266,7 @@ export function createTypeEvaluator(
         validateInitSubclassArgs,
         isAfterNodeReachable,
         isNodeReachable,
+        isNotTypeCheckingBlock,
         isAsymmetricAccessorAssignment,
         suppressDiagnostics,
         isSpecialFormClass,
@@ -27349,9 +27324,6 @@ export function createTypeEvaluator(
         isFinalVariableDeclaration,
         isExplicitTypeAliasDeclaration,
         addInformation,
-        addUnusedCode,
-        addUnreachableCode,
-        addDeprecated,
         addDiagnostic,
         addDiagnosticForTextRange,
         printType,
