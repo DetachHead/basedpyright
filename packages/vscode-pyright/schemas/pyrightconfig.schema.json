@@ -20,6 +20,39 @@
           ]
         }
       ]
+    },
+    "unreachable": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/diagnostic"
+        },
+        {
+          "type": "string",
+          "enum": ["unreachable"]
+        }
+      ]
+    },
+    "unused": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/diagnostic"
+        },
+        {
+          "type": "string",
+          "enum": ["unused"]
+        }
+      ]
+    },
+    "deprecated": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/diagnostic"
+        },
+        {
+          "type": "string",
+          "enum": ["deprecated"]
+        }
+      ]
     }
   },
   "properties": {
@@ -218,25 +251,25 @@
     },
     "reportUnusedImport": {
       "$id": "#/properties/reportUnusedImport",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/unused",
       "title": "Controls reporting of imported symbols that are not referenced within the source file",
       "default": "none"
     },
     "reportUnusedClass": {
       "$id": "#/properties/reportUnusedClass",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/unused",
       "title": "Controls reporting of private classes that are not accessed",
       "default": "none"
     },
     "reportUnusedFunction": {
       "$id": "#/properties/reportUnusedFunction",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/unused",
       "title": "Controls reporting of private functions or methods that are not accessed",
       "default": "none"
     },
     "reportUnusedVariable": {
       "$id": "#/properties/reportUnusedVariable",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/unused",
       "title": "Controls reporting of local variables that are not accessed",
       "default": "none"
     },
@@ -404,7 +437,7 @@
     },
     "reportTypeCommentUsage": {
       "$id": "#/properties/reportTypeCommentUsage",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of deprecated type comment usage",
       "default": "none"
     },
@@ -422,7 +455,7 @@
     },
     "reportDeprecated": {
       "$id": "#/properties/reportDeprecated",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of use of deprecated class or function",
       "default": "none"
     },
@@ -620,7 +653,7 @@
     },
     "reportUnusedExcept": {
       "$id": "#/properties/reportUnusedExcept",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of unreachable except clauses",
       "default": "error"
     },
@@ -656,7 +689,7 @@
     },
     "reportUnreachable": {
       "$id": "#/properties/reportUnreachable",
-      "$ref": "#/definitions/diagnostic",
+      "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of unreachable code",
       "default": "none"
     },

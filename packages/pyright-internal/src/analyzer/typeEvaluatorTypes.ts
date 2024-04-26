@@ -9,7 +9,7 @@
 
 import { CancellationToken } from 'vscode-languageserver-protocol';
 
-import { DiagnosticLevel } from '../common/configOptions';
+import { LspDiagnosticLevel } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -524,6 +524,7 @@ export interface TypeEvaluator {
 
     isAfterNodeReachable: (node: ParseNode) => boolean;
     isNodeReachable: (node: ParseNode, sourceNode?: ParseNode | undefined) => boolean;
+    isNotTypeCheckingBlock: (node: ParseNode) => boolean;
     isAsymmetricAccessorAssignment: (node: ParseNode) => boolean;
     suppressDiagnostics: (node: ParseNode, callback: () => void) => void;
     isSpecialFormClass: (classType: ClassType, flags: AssignTypeFlags) => boolean;
@@ -677,9 +678,6 @@ export interface TypeEvaluator {
     isExplicitTypeAliasDeclaration: (decl: Declaration) => boolean;
 
     addInformation: (message: string, node: ParseNode, range?: TextRange) => Diagnostic | undefined;
-    addUnusedCode: (node: ParseNode, textRange: TextRange) => void;
-    addUnreachableCode: (node: ParseNode, textRange: TextRange) => void;
-    addDeprecated: (message: string, node: ParseNode) => void;
 
     addDiagnostic: (
         rule: DiagnosticRule,
@@ -689,7 +687,7 @@ export interface TypeEvaluator {
     ) => Diagnostic | undefined;
     addDiagnosticForTextRange: (
         fileInfo: AnalyzerFileInfo,
-        diagLevel: DiagnosticLevel,
+        diagLevel: LspDiagnosticLevel,
         rule: DiagnosticRule | '',
         message: string,
         range: TextRange

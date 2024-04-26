@@ -16,7 +16,7 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { Commands } from '../commands/commands';
 import { appendArray } from '../common/collectionUtils';
-import { DiagnosticLevel } from '../common/configOptions';
+import { LspDiagnosticLevel } from '../common/configOptions';
 import { assert, assertNever } from '../common/debug';
 import { ActionKind, Diagnostic, DiagnosticAddendum, RenameShadowedFileAction } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -2696,13 +2696,24 @@ export class Checker extends ParseTreeWalker {
             // No need to report unreachable more than once since the first time
             // covers all remaining statements in the statement list.
             if (!reportedUnreachable) {
-                if (!this._evaluator.isNodeReachable(statement, prevStatement)) {
+                if (
+                    !this._evaluator.isNodeReachable(statement, prevStatement) &&
+                    !this._evaluator.isNotTypeCheckingBlock(statement)
+                ) {
                     // Create a text range that covers the next statement through
                     // the end of the statement list.
                     const start = statement.start;
                     const lastStatement = statements[statements.length - 1];
                     const end = TextRange.getEnd(lastStatement);
-                    this._evaluator.addUnreachableCode(statement, { start, length: end - start });
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportUnreachable,
+                        LocMessage.unreachableCode(),
+                        statement,
+                        {
+                            start,
+                            length: end - start,
+                        }
+                    );
 
                     reportedUnreachable = true;
                 }
@@ -3410,7 +3421,7 @@ export class Checker extends ParseTreeWalker {
     }
 
     private _conditionallyReportUnusedDeclaration(decl: Declaration, isPrivate: boolean) {
-        let diagnosticLevel: DiagnosticLevel;
+        let diagnosticLevel: LspDiagnosticLevel;
         let nameNode: NameNode | undefined;
         let message: string | undefined;
         let rule: DiagnosticRule | undefined;
@@ -3434,19 +3445,15 @@ export class Checker extends ParseTreeWalker {
                             const multipartName = nameParts.map((np) => np.value).join('.');
                             let textRange: TextRange = { start: nameParts[0].start, length: nameParts[0].length };
                             textRange = TextRange.extend(textRange, nameParts[nameParts.length - 1]);
-                            this._fileInfo.diagnosticSink.addUnusedCodeWithTextRange(
-                                LocMessage.unaccessedSymbol().format({ name: multipartName }),
-                                textRange,
-                                { action: Commands.unusedImport }
-                            );
-
-                            this._evaluator.addDiagnosticForTextRange(
-                                this._fileInfo,
-                                this._fileInfo.diagnosticRuleSet.reportUnusedImport,
-                                DiagnosticRule.reportUnusedImport,
-                                LocMessage.unaccessedImport().format({ name: multipartName }),
-                                textRange
-                            );
+                            this._evaluator
+                                .addDiagnosticForTextRange(
+                                    this._fileInfo,
+                                    this._fileInfo.diagnosticRuleSet.reportUnusedImport,
+                                    DiagnosticRule.reportUnusedImport,
+                                    LocMessage.unaccessedImport().format({ name: multipartName }),
+                                    textRange
+                                )
+                                ?.addAction({ action: Commands.unusedImport });
                             return;
                         }
                     }
@@ -3557,15 +3564,10 @@ export class Checker extends ParseTreeWalker {
         }
 
         const action = rule === DiagnosticRule.reportUnusedImport ? { action: Commands.unusedImport } : undefined;
-        if (nameNode) {
-            this._fileInfo.diagnosticSink.addUnusedCodeWithTextRange(
-                LocMessage.unaccessedSymbol().format({ name: nameNode.value }),
-                nameNode,
-                action
-            );
-
-            if (rule !== undefined && message && diagnosticLevel !== 'none') {
-                this._evaluator.addDiagnostic(rule, message, nameNode);
+        if (nameNode && rule !== undefined && message && diagnosticLevel !== 'none') {
+            const diagnostic = this._evaluator.addDiagnostic(rule, message, nameNode);
+            if (action) {
+                diagnostic?.addAction(action);
             }
         }
     }
@@ -4183,24 +4185,14 @@ export class Checker extends ParseTreeWalker {
                 ) {
                     if (this._fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(deprecatedForm.version)) {
                         if (!deprecatedForm.typingImportOnly || isImportFromTyping) {
-                            if (this._fileInfo.diagnosticRuleSet.reportDeprecated === 'none') {
-                                this._evaluator.addDeprecated(
-                                    LocMessage.deprecatedType().format({
-                                        version: deprecatedForm.version.toString(),
-                                        replacement: deprecatedForm.replacementText,
-                                    }),
-                                    node
-                                );
-                            } else {
-                                this._evaluator.addDiagnostic(
-                                    DiagnosticRule.reportDeprecated,
-                                    LocMessage.deprecatedType().format({
-                                        version: deprecatedForm.version.toString(),
-                                        replacement: deprecatedForm.replacementText,
-                                    }),
-                                    node
-                                );
-                            }
+                            this._evaluator.addDiagnostic(
+                                DiagnosticRule.reportDeprecated,
+                                LocMessage.deprecatedType().format({
+                                    version: deprecatedForm.version.toString(),
+                                    replacement: deprecatedForm.replacementText,
+                                }),
+                                node
+                            );
                         }
                     }
                 }
@@ -4214,11 +4206,7 @@ export class Checker extends ParseTreeWalker {
             diag.addMessage(deprecatedMessage);
         }
 
-        if (this._fileInfo.diagnosticRuleSet.reportDeprecated === 'none') {
-            this._evaluator.addDeprecated(diagnosticMessage + diag.getString(), node);
-        } else {
-            this._evaluator.addDiagnostic(DiagnosticRule.reportDeprecated, diagnosticMessage + diag.getString(), node);
-        }
+        this._evaluator.addDiagnostic(DiagnosticRule.reportDeprecated, diagnosticMessage + diag.getString(), node);
     }
 
     private _reportUnboundName(node: NameNode) {
@@ -7111,7 +7099,6 @@ export class Checker extends ParseTreeWalker {
                         LocMessage.unreachableExcept() + diagAddendum.getString(),
                         except.typeExpression
                     );
-                    this._evaluator.addUnreachableCode(except, except.exceptSuite);
                 }
             }
 
