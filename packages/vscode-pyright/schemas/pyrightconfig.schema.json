@@ -253,25 +253,25 @@
       "$id": "#/properties/reportUnusedImport",
       "$ref": "#/definitions/unused",
       "title": "Controls reporting of imported symbols that are not referenced within the source file",
-      "default": "none"
+      "default": "unused"
     },
     "reportUnusedClass": {
       "$id": "#/properties/reportUnusedClass",
       "$ref": "#/definitions/unused",
       "title": "Controls reporting of private classes that are not accessed",
-      "default": "none"
+      "default": "unused"
     },
     "reportUnusedFunction": {
       "$id": "#/properties/reportUnusedFunction",
       "$ref": "#/definitions/unused",
       "title": "Controls reporting of private functions or methods that are not accessed",
-      "default": "none"
+      "default": "unused"
     },
     "reportUnusedVariable": {
       "$id": "#/properties/reportUnusedVariable",
       "$ref": "#/definitions/unused",
       "title": "Controls reporting of local variables that are not accessed",
-      "default": "none"
+      "default": "unused"
     },
     "reportDuplicateImport": {
       "$id": "#/properties/reportDuplicateImport",
@@ -439,7 +439,7 @@
       "$id": "#/properties/reportTypeCommentUsage",
       "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of deprecated type comment usage",
-      "default": "none"
+      "default": "deprecated"
     },
     "reportPrivateImportUsage": {
       "$id": "#/properties/reportPrivateImportUsage",
@@ -457,7 +457,7 @@
       "$id": "#/properties/reportDeprecated",
       "$ref": "#/definitions/deprecated",
       "title": "Controls reporting of use of deprecated class or function",
-      "default": "none"
+      "default": "deprecated"
     },
     "reportIncompatibleMethodOverride": {
       "$id": "#/properties/reportIncompatibleMethodOverride",
@@ -653,7 +653,7 @@
     },
     "reportUnusedExcept": {
       "$id": "#/properties/reportUnusedExcept",
-      "$ref": "#/definitions/deprecated",
+      "$ref": "#/definitions/unreachable",
       "title": "Controls reporting of unreachable except clauses",
       "default": "error"
     },
@@ -689,9 +689,9 @@
     },
     "reportUnreachable": {
       "$id": "#/properties/reportUnreachable",
-      "$ref": "#/definitions/deprecated",
+      "$ref": "#/definitions/unreachable",
       "title": "Controls reporting of unreachable code",
-      "default": "none"
+      "default": "unreachable"
     },
     "reportAny": {
       "$id": "#/properties/reportAny",
