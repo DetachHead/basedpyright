@@ -1093,8 +1093,6 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unaccessedFunction'));
         export const unaccessedImport = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unaccessedImport'));
-        export const unaccessedSymbol = () =>
-            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unaccessedSymbol'));
         export const unaccessedVariable = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unaccessedVariable'));
         export const unannotatedFunctionSkipped = () =>

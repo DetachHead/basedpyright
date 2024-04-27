@@ -562,7 +562,6 @@
         "unaccessedClass": "Třída „{name}“ není přístupná",
         "unaccessedFunction": "Funkce {name} není přístupná",
         "unaccessedImport": "Import {name} není přístupný",
-        "unaccessedSymbol": "{name} není přístupné",
         "unaccessedVariable": "Proměnná {name} není přístupná",
         "unannotatedFunctionSkipped": "Analýza funkce „{name}“ se přeskočila, protože není označená",
         "unaryOperationNotAllowed": "Unární operátor není v poznámce typu povolený.",
