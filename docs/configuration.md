@@ -370,7 +370,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportAssertAlwaysTrue              | "none"        | "warning"     | "warning"     | "error"       | "error" |
 | reportInvalidStringEscapeSequence   | "none"        | "warning"     | "warning"     | "error"       | "error" |
 | reportInvalidTypeVarUse             | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportMissingTypeStubs              | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportMissingTypeStubs              | "none"        | "none"        | "none"        | "error"       | "error" |
 | reportSelfClsParameterName          | "none"        | "warning"     | "warning"     | "error"       | "error" |
 | reportUnsupportedDunderAll          | "none"        | "warning"     | "warning"     | "error"       | "error" |
 | reportUnusedExpression              | "none"        | "warning"     | "warning"     | "error"       | "error" |
