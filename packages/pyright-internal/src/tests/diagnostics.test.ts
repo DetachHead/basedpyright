@@ -20,7 +20,7 @@ test('unused import', async () => {
     const state = parseAndGetTestState(code).state;
 
     state.verifyDiagnostics({
-        marker: { category: 'unused', message: '"foo" is not accessed' },
+        marker: { category: 'unused', message: 'Import "foo" is not accessed' },
     });
 });
 

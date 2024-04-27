@@ -562,7 +562,6 @@
         "unaccessedClass": "Nie uzyskano dostępu do klasy „{name}”",
         "unaccessedFunction": "Brak dostępu do funkcji „{name}”.",
         "unaccessedImport": "Import „{name}” nie jest dostępny",
-        "unaccessedSymbol": "Brak dostępu do „{name}”.",
         "unaccessedVariable": "Brak dostępu do zmiennej „{name}”.",
         "unannotatedFunctionSkipped": "Analiza funkcji „{name}” została pominięta, ponieważ nie ma adnotacji",
         "unaryOperationNotAllowed": "Operator jednoargumentowy nie jest dozwolony w adnotacji typu",

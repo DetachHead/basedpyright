@@ -558,7 +558,6 @@
         "unaccessedClass": "Class \"{name}\" is not accessed",
         "unaccessedFunction": "Function \"{name}\" is not accessed",
         "unaccessedImport": "Import \"{name}\" is not accessed",
-        "unaccessedSymbol": "\"{name}\" is not accessed",
         "unaccessedVariable": "Variable \"{name}\" is not accessed",
         "unannotatedFunctionSkipped": "Analysis of function \"{name}\" is skipped because it is unannotated",
         "unaryOperationNotAllowed": "Unary operator not allowed in type annotation",

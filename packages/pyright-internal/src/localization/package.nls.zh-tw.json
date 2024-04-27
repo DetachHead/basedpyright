@@ -562,7 +562,6 @@
         "unaccessedClass": "未存取類別 \"{name}\"",
         "unaccessedFunction": "未存取函式 \"{name}\"",
         "unaccessedImport": "未存取匯入 \"{name}\"",
-        "unaccessedSymbol": "未存取 \"{name}\"",
         "unaccessedVariable": "未存取變數 \"{name}\"",
         "unannotatedFunctionSkipped": "因為未標註函式 \"{name}\"，所以略過其分析",
         "unaryOperationNotAllowed": "類型註釋中不允許一元運算子",
