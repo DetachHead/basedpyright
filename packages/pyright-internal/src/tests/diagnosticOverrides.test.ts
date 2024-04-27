@@ -13,6 +13,9 @@ import * as path from 'path';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { extraOptionDiagnosticRules, getStandardDiagnosticRuleSet } from '../common/configOptions';
 
+const extraDiagnosticLevel = (name: DiagnosticRule) =>
+    extraOptionDiagnosticRules.find((getter) => getter.get().includes(name))?.name;
+
 describe('Diagnostic overrides', () => {
     test('Compare DiagnosticRule to pyrightconfig.schema.json', () => {
         const schemasFolder = path.resolve(__dirname, '..', '..', '..', 'vscode-pyright', 'schemas');
@@ -45,9 +48,7 @@ describe('Diagnostic overrides', () => {
         for (const propName of overrideNamesInJson) {
             try {
                 const p = json.properties[propName];
-                const extraOptionName = extraOptionDiagnosticRules.find((getter) =>
-                    getter.get().includes(propName)
-                )?.name;
+                const extraOptionName = extraDiagnosticLevel(propName);
                 expect(p['$id']).toEqual(`#/properties/${propName}`);
                 expect(p['$ref']).toEqual(`#/definitions/${extraOptionName ?? 'diagnostic'}`);
                 expect(p.title).toBeDefined();
@@ -81,7 +82,7 @@ describe('Diagnostic overrides', () => {
         const props = overrides.properties;
         expect(props).toBeDefined();
 
-        const overrideNamesInJson = Object.keys(props);
+        const overrideNamesInJson = Object.keys(props) as DiagnosticRule[];
         for (const propName of overrideNamesInJson) {
             const p = props[propName];
 
@@ -92,15 +93,12 @@ describe('Diagnostic overrides', () => {
 
             expect(p.enum).toBeDefined();
             expect(Array.isArray(p.enum));
-            expect(p.enum).toHaveLength(6);
-
-            expect(p.enum[0]).toEqual('none');
-            expect(p.enum[1]).toEqual('information');
-            expect(p.enum[2]).toEqual('warning');
-            expect(p.enum[3]).toEqual('error');
-            expect(p.enum[4]).toEqual(true);
-            expect(p.enum[5]).toEqual(false);
-
+            const expectedEnumValues = ['none', 'information', 'warning', 'error', true, false];
+            const extra = extraDiagnosticLevel(propName);
+            if (extra !== undefined) {
+                expectedEnumValues.splice(1, 0, extra);
+            }
+            expect(p.enum).toEqual(expectedEnumValues);
             expect(p.enum).toContain(p.default);
         }
 
