@@ -5,7 +5,12 @@ main = ["pdm==2.15.1"]
 distribution = true
 
 [tool.pdm.dev-dependencies]
-dev = ["pylint>=3.0.0a7", "ruff>=0.2.2"]
+dev = [
+    "pylint>=3.0.0a7",
+    "ruff>=0.2.2",
+    # cli is needed for development if node is not installed globally
+    "nodejs-wheel>=20.13.0",
+]
 
 [tool.pdm.version]
 source = "call"
@@ -27,8 +32,9 @@ authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
 dependencies = [
-    # required by the basedpyright cli & langserver wrapper scripts
-    "nodejs-wheel>=20.12.2",
+    # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
+    # since the user shouldn't have a node/npm binary unknowingly added to their PATH
+    "nodejs-wheel-binaries>=20.13.0",
 ]
 requires-python = ">=3.8"
 readme = "README.md"
@@ -44,8 +50,9 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 [build-system]
 requires = [
     "pdm-backend",
-    # required for building the pyright npm package to be bundled in the pypi package:
-    "nodejs-wheel>=20.12.2",
+    # required for building the pyright npm package to be bundled in the pypi package.
+    # cli is required due to dependencies with install scripts that assume node/npm is in the path
+    "nodejs-wheel>=20.13.0",
 ]
 build-backend = "pdm.backend"
 
