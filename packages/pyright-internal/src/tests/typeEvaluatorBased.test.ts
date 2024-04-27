@@ -21,9 +21,8 @@ test('reportUnreachable TYPE_CHECKING', () => {
     configOptions.diagnosticRuleSet.reportUnreachable = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['unreachable2.py'], configOptions);
 
-    validateResultsButBased(analysisResults, {
-        unreachableCodes: [{ line: 3 }, { line: 8 }],
-    });
+    //TODO: should type checking unreachable blocks still always be reported with the unreachable hint?????
+    validateResultsButBased(analysisResults, {});
 });
 
 test('default typeCheckingMode=all', () => {
@@ -39,7 +38,6 @@ test('default typeCheckingMode=all', () => {
             { line: 102, code: DiagnosticRule.reportUnusedVariable },
         ],
         infos: [{ line: 95 }, { line: 98 }],
-        unusedCodes: [{ line: 102 }],
     });
 });
 

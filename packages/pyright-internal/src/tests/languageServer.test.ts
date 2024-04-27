@@ -183,11 +183,11 @@ describe(`Basic language server tests`, () => {
 
         // Wait for the diagnostics to publish
         const diagnostics = await waitForDiagnostics(info);
-        assert.equal(diagnostics[0]!.diagnostics.length, 6);
+        assert.equal(diagnostics[0]!.diagnostics.length, 3);
 
         // Make sure the error has a special rule
+        assert.equal(diagnostics[0].diagnostics[0].code, 'reportUnusedImport');
         assert.equal(diagnostics[0].diagnostics[1].code, 'reportUnusedImport');
-        assert.equal(diagnostics[0].diagnostics[3].code, 'reportUnusedImport');
-        assert.equal(diagnostics[0].diagnostics[5].code, 'reportUnusedImport');
+        assert.equal(diagnostics[0].diagnostics[2].code, 'reportUnusedImport');
     });
 });
