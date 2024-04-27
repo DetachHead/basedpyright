@@ -520,19 +520,35 @@ export function getDiagLevelDiagnosticRules() {
     ];
 }
 
-export const getUnreachableDiagnosticRules = () => [
-    DiagnosticRule.reportUnreachable,
-    DiagnosticRule.reportUnusedExcept,
-];
-export const getUnusedDiagnosticRules = () => [
-    DiagnosticRule.reportUnusedClass,
-    DiagnosticRule.reportUnusedImport,
-    DiagnosticRule.reportUnusedFunction,
-    DiagnosticRule.reportUnusedVariable,
-];
-export const getDeprecatedDiagnosticRules = () => [
-    DiagnosticRule.reportDeprecated,
-    DiagnosticRule.reportTypeCommentUsage,
+// this is pretty cringe https://github.com/DetachHead/basedpyright/issues/64
+interface DiagnosticGetter {
+    name: LspDiagnosticLevel;
+    get: () => DiagnosticRule[];
+}
+
+const unreachableDiagnosticRules: DiagnosticGetter = {
+    name: 'unreachable',
+    get: () => [DiagnosticRule.reportUnreachable, DiagnosticRule.reportUnusedExcept],
+};
+
+const unusedDiagnosticRules: DiagnosticGetter = {
+    name: 'unused',
+    get: () => [
+        DiagnosticRule.reportUnusedClass,
+        DiagnosticRule.reportUnusedImport,
+        DiagnosticRule.reportUnusedFunction,
+        DiagnosticRule.reportUnusedVariable,
+    ],
+};
+const deprecatedDiagnosticRules: DiagnosticGetter = {
+    name: 'deprecated',
+    get: () => [DiagnosticRule.reportDeprecated, DiagnosticRule.reportTypeCommentUsage],
+};
+
+export const extraOptionDiagnosticRules = [
+    unreachableDiagnosticRules,
+    unusedDiagnosticRules,
+    deprecatedDiagnosticRules,
 ];
 
 export function getStrictModeNotOverriddenRules() {
@@ -1680,17 +1696,12 @@ export class ConfigOptions {
         ) {
             return value;
         } else {
-            // this is very cringe https://github.com/DetachHead/basedpyright/issues/64
-            for (const [extraValue, getter] of Object.entries({
-                unreachable: getUnreachableDiagnosticRules,
-                unused: getUnusedDiagnosticRules,
-                deprecated: getDeprecatedDiagnosticRules,
-            })) {
-                if ((getter() as string[]).includes(fieldName)) {
-                    if (value === extraValue) {
+            for (const { name, get } of extraOptionDiagnosticRules) {
+                if ((get() as string[]).includes(fieldName)) {
+                    if (value === name) {
                         return value;
                     }
-                    allowedValues.push(extraValue);
+                    allowedValues.push(name);
                 }
             }
         }

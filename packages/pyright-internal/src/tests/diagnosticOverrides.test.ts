@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { extraOptionDiagnosticRules, getStandardDiagnosticRuleSet } from '../common/configOptions';
 
 describe('Diagnostic overrides', () => {
     test('Compare DiagnosticRule to pyrightconfig.schema.json', () => {
@@ -37,17 +38,25 @@ describe('Diagnostic overrides', () => {
         expect(enumValues[3]).toEqual('error');
 
         expect(json.properties).toBeDefined();
-        const overrideNamesInJson = Object.keys(json.properties).filter((n) => n.startsWith('report'));
-
+        const overrideNamesInJson = Object.keys(json.properties).filter((n) =>
+            n.startsWith('report')
+        ) as DiagnosticRule[];
+        const standardDefaults = getStandardDiagnosticRuleSet();
         for (const propName of overrideNamesInJson) {
-            const p = json.properties[propName];
-
-            expect(p['$id']).toEqual(`#/properties/${propName}`);
-            expect(p['$ref']).toEqual(`#/definitions/diagnostic`);
-            expect(p.title).toBeDefined();
-            expect(p.title.length).toBeGreaterThan(0);
-            expect(p.default).toBeDefined();
-            expect(enumValues).toContain(p.default);
+            try {
+                const p = json.properties[propName];
+                const extraOptionName = extraOptionDiagnosticRules.find((getter) =>
+                    getter.get().includes(propName)
+                )?.name;
+                expect(p['$id']).toEqual(`#/properties/${propName}`);
+                expect(p['$ref']).toEqual(`#/definitions/${extraOptionName ?? 'diagnostic'}`);
+                expect(p.title).toBeDefined();
+                expect(p.title.length).toBeGreaterThan(0);
+                expect(p.default).toBeDefined();
+                expect(p.default).toEqual(standardDefaults[propName]);
+            } catch (e) {
+                throw new Error(`check failed for ${propName}: ${e}`);
+            }
         }
 
         const overrideNamesInCode: string[] = Object.values(DiagnosticRule).filter((x) => x.startsWith('report'));
