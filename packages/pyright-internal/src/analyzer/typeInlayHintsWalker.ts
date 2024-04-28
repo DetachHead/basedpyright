@@ -1,7 +1,16 @@
 import { Range } from 'vscode-languageserver-types';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 import { isDunderName, isUnderscoreOnlyName } from '../analyzer/symbolNameUtils';
-import { FunctionType, Type, getTypeAliasInfo, isAny, isClass, isParamSpec, isTypeVar } from '../analyzer/types';
+import {
+    FunctionType,
+    Type,
+    TypeFlags,
+    getTypeAliasInfo,
+    isAny,
+    isClass,
+    isParamSpec,
+    isTypeVar,
+} from '../analyzer/types';
 import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
@@ -113,7 +122,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 this.featureItems.push({
                     inlayHintType: 'variable',
                     position: node.start + node.length,
-                    value: `: ${getTypeAliasInfo(type) ? 'TypeAlias' : this._printType(type)}`,
+                    value: `: ${
+                        getTypeAliasInfo(type) && type.flags & TypeFlags.Instantiable
+                            ? 'TypeAlias'
+                            : this._printType(type)
+                    }`,
                 });
             }
         }
