@@ -54,15 +54,18 @@ basedpyright introduces the `reportAny` option, which will report an error on us
 
 #### `reportIgnoreCommentWithoutRule` - enforce that all ignore comments specify an error code
 
-it's good practice to specify an error code in your `pyright:ignore`/`type:ignore` comments:
+it's good practice to specify an error code in your `pyright: ignore` comments:
 
 ```py
-# type:ignore[reportUnreachable]
+# pyright: ignore[reportUnreachable]
 ```
 
 this way, if the error changes or a new error appears on the same line in the future, you'll get a new error because the comment doesn't account for the other error. unfortunately there are many rules in pyright that do not have error codes, so you can't always do this.
 
 basedpyright resolves this by reporting those errors under the `reportGeneralTypeIssues` diagnostic rule. this isn't a perfect solution, but there were over 100 errors that didn't have diagnostic rules. i intend to split them into their own rules in the future, but this will do for now.
+
+> [!WARNING]  
+> `type: ignore` comments are unsafe and will soon be disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
 
 #### `reportPrivateLocalImportUsage` - prevent implicit re-exports in local code
 
