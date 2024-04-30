@@ -7,23 +7,38 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 53,
+                position: 80,
                 value: ': str',
             },
             {
                 inlayHintType: 'variable',
-                position: 359,
+                position: 386,
                 value: ': TypeAlias',
             },
             {
                 inlayHintType: 'variable',
-                position: 474,
+                position: 547,
                 value: ': Foo',
             },
             {
                 inlayHintType: 'variable',
-                position: 528,
-                value: ': TypeAlias',
+                position: 572,
+                value: ': Foo', //should be `type[Foo]`. see https://github.com/microsoft/pyright/issues/7806
+            },
+            {
+                inlayHintType: 'variable',
+                position: 623,
+                value: ': int | str',
+            },
+            {
+                inlayHintType: 'variable',
+                position: 648,
+                value: ': Literal[1, 2]',
+            },
+            {
+                inlayHintType: 'variable',
+                position: 674,
+                value: ': type[int]',
             },
         ]);
     });
@@ -56,7 +71,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 53,
+                position: 80,
                 value: ': str',
             },
         ]);
