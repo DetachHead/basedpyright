@@ -23,7 +23,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             {
                 inlayHintType: 'variable',
                 position: 572,
-                value: ': Foo', //should be `type[Foo]`. see https://github.com/microsoft/pyright/issues/7806
+                value: ': type[int]',
             },
             {
                 inlayHintType: 'variable',
