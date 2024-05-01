@@ -251,6 +251,10 @@ export namespace TypeBase {
                 newInstance.instantiableNestingLevel === undefined ? 1 : newInstance.instantiableNestingLevel;
         }
 
+        // Remove type alias information because the type will no longer match
+        // that of the type alias definition.
+        delete newInstance.typeAliasInfo;
+
         // Should we cache it for next time?
         if (cache) {
             if (!type.cached) {
@@ -1300,6 +1304,16 @@ export namespace ClassType {
     ): boolean {
         // Is it the exact same class?
         if (isSameGenericClass(subclassType, parentClassType)) {
+            // Handle literal types.
+            if (parentClassType.literalValue !== undefined) {
+                if (
+                    subclassType.literalValue === undefined ||
+                    !ClassType.isLiteralValueSame(parentClassType, subclassType)
+                ) {
+                    return false;
+                }
+            }
+
             if (inheritanceChain) {
                 inheritanceChain.push(subclassType);
             }

@@ -174,6 +174,7 @@ import {
     CallResult,
     CallSignature,
     CallSignatureInfo,
+    CallSiteEvaluationInfo,
     ClassMemberLookup,
     ClassTypeResult,
     DeclaredSymbolTypeInfo,
@@ -4736,6 +4737,19 @@ export function createTypeEvaluator(
                 (decl) =>
                     decl.type === DeclarationType.Parameter ||
                     ScopeUtils.getScopeForNode(decl.node) === symbolWithScope.scope
+            )
+        ) {
+            return undefined;
+        }
+
+        // If the symbol is a non-final variable in the global scope, it is not
+        // eligible because it could be modified by other modules.
+        if (
+            !decls.every(
+                (decl) =>
+                    decl.type !== DeclarationType.Variable ||
+                    decl.isFinal ||
+                    ScopeUtils.getScopeForNode(decl.node)?.type !== ScopeType.Module
             )
         ) {
             return undefined;
@@ -11730,7 +11744,7 @@ export function createTypeEvaluator(
         }
 
         // Calculate the return type.
-        let returnType = getFunctionEffectiveReturnType(type, matchResults.argParams);
+        let returnType = getFunctionEffectiveReturnType(type, { args: matchResults.argParams, errorNode });
 
         if (condition.length > 0) {
             returnType = TypeBase.cloneForCondition(returnType, condition);
@@ -14344,42 +14358,33 @@ export function createTypeEvaluator(
             });
         }
 
-        if (expectedFunctionTypes.length <= 1) {
-            return getTypeOfLambdaWithExpectedType(
-                node,
-                expectedFunctionTypes.length > 0 ? expectedFunctionTypes[0] : undefined,
-                inferenceContext,
-                /* forceSpeculative */ false
-            );
-        }
-
-        // Sort the expected types for deterministic results.
-        expectedFunctionTypes = sortTypes(expectedFunctionTypes) as FunctionType[];
+        let expectedSubtype: FunctionType | undefined;
 
         // If there's more than one type, try each in turn until we find one that works.
-        for (const expectedFunctionType of expectedFunctionTypes) {
-            const result = getTypeOfLambdaWithExpectedType(
-                node,
-                expectedFunctionType,
-                inferenceContext,
-                /* forceSpeculative */ true
-            );
-            if (!result.typeErrors) {
-                return getTypeOfLambdaWithExpectedType(
+        if (expectedFunctionTypes.length > 1) {
+            // Sort the expected types for deterministic results.
+            expectedFunctionTypes = sortTypes(expectedFunctionTypes) as FunctionType[];
+
+            for (const subtype of expectedFunctionTypes) {
+                const result = getTypeOfLambdaWithExpectedType(
                     node,
-                    expectedFunctionType,
+                    subtype,
                     inferenceContext,
-                    /* forceSpeculative */ false
+                    /* forceSpeculative */ true
                 );
+
+                if (!result.typeErrors) {
+                    expectedSubtype = subtype;
+                    break;
+                }
             }
         }
 
-        return getTypeOfLambdaWithExpectedType(
-            node,
-            expectedFunctionTypes[0],
-            inferenceContext,
-            /* forceSpeculative */ true
-        );
+        if (!expectedSubtype && expectedFunctionTypes.length > 0) {
+            expectedSubtype = expectedFunctionTypes[0];
+        }
+
+        return getTypeOfLambdaWithExpectedType(node, expectedSubtype, inferenceContext, /* forceSpeculative */ false);
     }
 
     function getTypeOfLambdaWithExpectedType(
@@ -15658,7 +15663,11 @@ export function createTypeEvaluator(
         for (const typeArg of typeArgs) {
             let typeArgType = typeArg.type;
 
-            if (!validateTypeArg(typeArg, { allowVariadicTypeVar: true, allowUnpackedTuples: true })) {
+            if (
+                !validateTypeArg(typeArg, {
+                    allowVariadicTypeVar: fileInfo.diagnosticRuleSet.enableExperimentalFeatures,
+                })
+            ) {
                 typeArgType = UnknownType.create();
             } else if (!isEffectivelyInstantiable(typeArgType)) {
                 addExpectedClassDiagnostic(typeArgType, typeArg.node);
@@ -17167,6 +17176,7 @@ export function createTypeEvaluator(
                         evaluatorInterface,
                         node,
                         classType,
+                        isNamedTupleSubclass,
                         skipSynthesizedInit,
                         hasExistingInitMethod,
                         skipSynthesizeHash
@@ -20624,11 +20634,14 @@ export function createTypeEvaluator(
 
         // Functions and list comprehensions don't allow access to implicitly
         // aliased symbols in outer scopes if they haven't yet been assigned
-        // within the local scope. Same with type parameter scopes.
-        const scopeTypeHonorsCodeFlow =
-            scopeType !== ScopeType.Function &&
-            scopeType !== ScopeType.ListComprehension &&
-            scopeType !== ScopeType.TypeParameter;
+        // within the local scope.
+        let scopeTypeHonorsCodeFlow = scopeType !== ScopeType.Function && scopeType !== ScopeType.ListComprehension;
+
+        // TypeParameter scopes don't honor code flow, but if the symbol is resolved
+        // using the proxy scope for the TypeParameter scope, we should use code flow.
+        if (scopeType === ScopeType.TypeParameter && symbolWithScope && symbolWithScope.scope === scope) {
+            scopeTypeHonorsCodeFlow = false;
+        }
 
         if (symbolWithScope && honorCodeFlow && scopeTypeHonorsCodeFlow) {
             // Filter the declarations based on flow reachability.
@@ -22112,7 +22125,7 @@ export function createTypeEvaluator(
     // into account argument types to infer the return type.
     function getFunctionEffectiveReturnType(
         type: FunctionType,
-        args?: ValidateArgTypeParams[],
+        callSiteInfo?: CallSiteEvaluationInfo,
         inferTypeIfNeeded = true
     ) {
         const specializedReturnType = FunctionType.getSpecializedReturnType(type, /* includeInferred */ false);
@@ -22121,13 +22134,13 @@ export function createTypeEvaluator(
         }
 
         if (inferTypeIfNeeded) {
-            return getFunctionInferredReturnType(type, args);
+            return getFunctionInferredReturnType(type, callSiteInfo);
         }
 
         return UnknownType.create();
     }
 
-    function _getFunctionInferredReturnType(type: FunctionType, args?: ValidateArgTypeParams[]) {
+    function _getFunctionInferredReturnType(type: FunctionType, callSiteInfo?: CallSiteEvaluationInfo) {
         let returnType: Type | undefined;
         let isIncomplete = false;
         const analyzeUnannotatedFunctions = true;
@@ -22208,7 +22221,7 @@ export function createTypeEvaluator(
             FunctionType.hasUnannotatedParams(type) &&
             !FunctionType.isStubDefinition(type) &&
             !FunctionType.isPyTypedDefinition(type) &&
-            args
+            callSiteInfo
         ) {
             let hasDecorators = false;
             let isAsync = false;
@@ -22225,7 +22238,7 @@ export function createTypeEvaluator(
             // We can't use this technique if decorators or async are used because they
             // would need to be applied to the inferred return type.
             if (!hasDecorators && !isAsync) {
-                const contextualReturnType = getFunctionInferredReturnTypeUsingArguments(type, args);
+                const contextualReturnType = getFunctionInferredReturnTypeUsingArguments(type, callSiteInfo);
                 if (contextualReturnType) {
                     returnType = contextualReturnType;
                 }
@@ -22237,8 +22250,9 @@ export function createTypeEvaluator(
 
     function getFunctionInferredReturnTypeUsingArguments(
         type: FunctionType,
-        args: ValidateArgTypeParams[]
+        callSiteInfo: CallSiteEvaluationInfo
     ): Type | undefined {
+        const args = callSiteInfo.args;
         let contextualReturnType: Type | undefined;
 
         if (!type.details.declaration) {
@@ -22284,6 +22298,10 @@ export function createTypeEvaluator(
 
         const paramTypes: Type[] = [];
         let isResultFromCache = false;
+
+        // If the call is located in a loop, don't use literal argument types
+        // for the same reason we don't do literal math in loops.
+        const stripLiteralArgTypes = ParseTreeUtils.isWithinLoop(callSiteInfo.errorNode);
 
         // Suppress diagnostics because we don't want to generate errors.
         suppressDiagnostics(functionNode, () => {
@@ -22332,6 +22350,10 @@ export function createTypeEvaluator(
 
                         if (!paramType) {
                             paramType = UnknownType.create();
+                        }
+
+                        if (stripLiteralArgTypes) {
+                            paramType = stripLiteralValue(paramType);
                         }
 
                         paramTypes.push(paramType);

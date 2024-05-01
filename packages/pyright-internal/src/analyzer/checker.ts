@@ -3086,11 +3086,20 @@ export class Checker extends ParseTreeWalker {
             if (decl.type === DeclarationType.Variable) {
                 if (decl.inferredTypeSource) {
                     if (sawAssignment) {
-                        // We check for assignment of Final instance and class variables
-                        // the type evaluator because we need to take into account whether
-                        // the assignment is within an `__init__` method, so ignore class
-                        // scopes here.
-                        if (scopeType !== ScopeType.Class) {
+                        let exemptAssignment = false;
+
+                        if (scopeType === ScopeType.Class) {
+                            // We check for assignment of Final instance and class variables
+                            // in the type evaluator because we need to take into account whether
+                            // the assignment is within an `__init__` method, so ignore class
+                            // scopes here.
+                            const classOrFunc = ParseTreeUtils.getEnclosingClassOrFunction(decl.node);
+                            if (classOrFunc?.nodeType === ParseNodeType.Function) {
+                                exemptAssignment = true;
+                            }
+                        }
+
+                        if (!exemptAssignment) {
                             reportRedeclaration = true;
                         }
                     }
@@ -6626,7 +6635,11 @@ export class Checker extends ParseTreeWalker {
                         }
                     }
 
-                    if (isBaseClassVar !== isClassVar) {
+                    // Allow TypedDict members to have the same name as class variables in the
+                    // base class because TypedDict members are not really instance members.
+                    const ignoreTypedDictOverride = ClassType.isTypedDictClass(childClassType) && !isClassVar;
+
+                    if (isBaseClassVar !== isClassVar && !ignoreTypedDictOverride) {
                         const unformattedMessage = overrideSymbol.isClassVar()
                             ? LocMessage.classVarOverridesInstanceVar()
                             : LocMessage.instanceVarOverridesClassVar();
