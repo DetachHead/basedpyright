@@ -723,6 +723,12 @@
       "title": "Controls reporting of diagnostics for `cast`s to non-overlapping types.",
       "default": "none"
     },
+    "reportMultipleInheritance": {
+      "$id": "#/properties/reportMultipleInheritance",
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of classes that inherit from multiple base classes",
+      "default": "none"
+    },
     "extraPaths": {
       "$id": "#/properties/extraPaths",
       "type": "array",

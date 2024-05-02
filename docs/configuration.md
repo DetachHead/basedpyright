@@ -240,7 +240,9 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportImplicitRelativeImport"></a> **reportImplicitRelativeImport** [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module.
 
-- <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types. 
+- <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types.
+
+- <a name="reportMultipleInheritance"></a> **reportMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes, which is unsafe because the `__init__` calls in each base class cannot be statically verified to be compatible.
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
@@ -450,6 +452,7 @@ The following table lists the default severity levels for each diagnostic rule w
 | reportPrivateLocalImportUsage       | "none"        | "none"        | "none"        | "none"        | "error" |
 | reportImplicitRelativeImport        | "none"        | "none"        | "none"        | "none"        | "error" |
 | reportInvalidCast                   | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportMultipleInheritance           | "none"        | "none"        | "none"        | "none"        | "error" |
 
 
 ## Locale Configuration

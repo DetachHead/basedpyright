@@ -5539,6 +5539,11 @@ export class Checker extends ParseTreeWalker {
         if (filteredBaseClasses.length < 2) {
             return;
         }
+        this._evaluator.addDiagnostic(
+            DiagnosticRule.reportMultipleInheritance,
+            LocMessage.multipleInheritance(),
+            errorNode
+        );
 
         const diagAddendum = new DiagnosticAddendum();
 
