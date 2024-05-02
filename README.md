@@ -143,6 +143,31 @@ unfortunately, this will cause a `reportInvalidCast` error when this rule is ena
 
 this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
 
+### `reportMultipleInheritance` - ban inheriting from multiple different base classes
+
+multiple inheritance in python is awful:
+
+```py
+class Foo:
+    def __init__(self):
+        super().__init__()
+class Bar:
+    def __init__(self):
+        ...
+
+class Baz(Foo, Bar):
+    ...
+
+Baz()
+```
+in this example, `Baz()` calls `Foo.__init__`, and the `super().__init__()` in `Foo` now calls to `Bar.__init__` even though `Foo` does not extend `Bar`.
+
+this is complete nonsense and very unsafe, because there's no way to statically know what the super class will be.
+
+pyright has the `reportMissingSuperCall` rule which, for this reason, complains even when your class doesn't have a base class. but that sucks because there's no way to know what arguments the unknown `__init__` takes. so this rule is super annoying when it's enabled, and has very little benefit because it barely makes a difference in terms of type safety.
+
+`reportMultipleInheritance` bans multiple inheritance entirely, which allows `reportMissingSuperCall` to be far more lenient. when `reportMultipleInheritance` is enabled, missing `super().__init__` calls will be reported on classes that actually have a base class.
+
 ### re-implementing pylance-exclusive features
 
 basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)).

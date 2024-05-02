@@ -110,4 +110,5 @@ export enum DiagnosticRule {
     reportPrivateLocalImportUsage = 'reportPrivateLocalImportUsage',
     reportImplicitRelativeImport = 'reportImplicitRelativeImport',
     reportInvalidCast = 'reportInvalidCast',
+    reportMultipleInheritance = 'reportMultipleInheritance',
 }
