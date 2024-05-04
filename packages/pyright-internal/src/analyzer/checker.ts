@@ -5522,7 +5522,7 @@ export class Checker extends ParseTreeWalker {
 
     // Verifies that classes that have more than one base class do not have
     // have conflicting type arguments.
-    private _validateMultipleInheritanceBaseClasses(classType: ClassType, errorNode: ParseNode) {
+    private _validateMultipleInheritanceBaseClasses(classType: ClassType, errorNode: NameNode) {
         // Skip this check if the class has only one base class or one or more
         // of the base classes are Any.
         const filteredBaseClasses: ClassType[] = [];
@@ -5539,17 +5539,26 @@ export class Checker extends ParseTreeWalker {
         if (filteredBaseClasses.length < 2) {
             return;
         }
-        this._evaluator.addDiagnostic(
-            DiagnosticRule.reportMultipleInheritance,
-            LocMessage.multipleInheritance(),
-            errorNode
-        );
-
+        const baseClassesWithConstructors: ClassType[] = [];
         const diagAddendum = new DiagnosticAddendum();
 
         for (const baseClass of filteredBaseClasses) {
             const typeVarContext = buildTypeVarContextFromSpecializedClass(baseClass);
-
+            for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
+                const constructorMethodResult = constructorGetter(
+                    this._evaluator,
+                    errorNode,
+                    ClassType.cloneAsInstance(baseClass)
+                );
+                if (
+                    constructorMethodResult &&
+                    constructorMethodResult.classType &&
+                    isClass(constructorMethodResult.classType)
+                ) {
+                    baseClassesWithConstructors.push(constructorMethodResult.classType);
+                    break;
+                }
+            }
             for (const baseClassMroClass of baseClass.details.mro) {
                 // There's no need to check for conflicts if this class isn't generic.
                 if (isClass(baseClassMroClass) && baseClassMroClass.details.typeParameters.length > 0) {
@@ -5603,6 +5612,15 @@ export class Checker extends ParseTreeWalker {
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportGeneralTypeIssues,
                 LocMessage.baseClassIncompatible().format({ type: classType.details.name }) + diagAddendum.getString(),
+                errorNode
+            );
+        }
+        if (baseClassesWithConstructors.length) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportMultipleInheritance,
+                LocMessage.multipleInheritance().format({
+                    classes: baseClassesWithConstructors.map((type) => type.details.name).join(', '),
+                }),
                 errorNode
             );
         }

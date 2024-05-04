@@ -1184,7 +1184,8 @@ export namespace Localizer {
             new ParameterizedString<{ importName: string }>(getRawString('Diagnostic.implicitRelativeImport'));
         export const invalidCast = () =>
             new ParameterizedString<{ fromType: string; toType: string }>(getRawString('Diagnostic.invalidCast'));
-        export const multipleInheritance = () => getRawString('Diagnostic.multipleInheritance');
+        export const multipleInheritance = () =>
+            new ParameterizedString<{ classes: string }>(getRawString('Diagnostic.multipleInheritance'));
     }
 
     export namespace DiagnosticAddendum {
