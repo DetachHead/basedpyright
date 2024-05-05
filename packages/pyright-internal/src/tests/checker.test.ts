@@ -654,3 +654,16 @@ test('Deprecated6', () => {
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated6.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 3);
 });
+
+test('reportMultipleInheritance', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportMultipleInheritance = 'error';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['multipleInheritance.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportMultipleInheritance, line: 12 },
+            { code: DiagnosticRule.reportMultipleInheritance, line: 13 },
+        ],
+    });
+});
