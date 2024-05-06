@@ -5540,23 +5540,32 @@ export class Checker extends ParseTreeWalker {
             return;
         }
         const baseClassesWithConstructors: ClassType[] = [];
+        /**
+         * the first base class is allowed to have a constructor because it's guaranteed to be called by this
+         * class's constructor
+         */
+        let isAllowedToHaveConstructor = true;
         const diagAddendum = new DiagnosticAddendum();
 
         for (const baseClass of filteredBaseClasses) {
             const typeVarContext = buildTypeVarContextFromSpecializedClass(baseClass);
-            for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
-                const constructorMethodResult = constructorGetter(
-                    this._evaluator,
-                    errorNode,
-                    ClassType.cloneAsInstance(baseClass)
-                );
-                if (
-                    constructorMethodResult &&
-                    constructorMethodResult.classType &&
-                    isClass(constructorMethodResult.classType)
-                ) {
-                    baseClassesWithConstructors.push(constructorMethodResult.classType);
-                    break;
+            if (isAllowedToHaveConstructor) {
+                isAllowedToHaveConstructor = false; // for next time
+            } else {
+                for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
+                    const constructorMethodResult = constructorGetter(
+                        this._evaluator,
+                        errorNode,
+                        ClassType.cloneAsInstance(baseClass)
+                    );
+                    if (
+                        constructorMethodResult &&
+                        constructorMethodResult.classType &&
+                        isClass(constructorMethodResult.classType)
+                    ) {
+                        baseClassesWithConstructors.push(constructorMethodResult.classType);
+                        break;
+                    }
                 }
             }
             for (const baseClassMroClass of baseClass.details.mro) {
