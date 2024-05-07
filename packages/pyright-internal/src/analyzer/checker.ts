@@ -5625,11 +5625,13 @@ export class Checker extends ParseTreeWalker {
             );
         }
         if (baseClassesWithConstructors.length) {
+            const addendum = new DiagnosticAddendum();
+            addendum.addMessage(LocAddendum.firstBaseClassCanHaveConstructor());
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportUnsafeMultipleInheritance,
                 LocMessage.multipleInheritance().format({
                     classes: baseClassesWithConstructors.map((type) => type.details.name).join(', '),
-                }),
+                }) + addendum.getString(),
                 errorNode
             );
         }

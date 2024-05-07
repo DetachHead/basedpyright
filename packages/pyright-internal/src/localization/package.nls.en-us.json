@@ -800,7 +800,8 @@
         "varianceMismatchForClass": "Variance of type argument \"{typeVarName}\" is incompatible with base class \"{className}\"",
         "varianceMismatchForTypeAlias": "Variance of type argument \"{typeVarName}\" is incompatible with \"{typeAliasParam}\"",
         "explicitRelativeImportSuggestion": "Use a relative import from `.{importName}` instead",
-        "fullPathImportSuggestion": "or specify the full module path: `{importName}`"
+        "fullPathImportSuggestion": "or specify the full module path: `{importName}`",
+        "firstBaseClassCanHaveConstructor": "Only the first base class is allowed to have a constructor."
     },
     "CodeAction": {
         "createTypeStub": "Create Type Stub",
