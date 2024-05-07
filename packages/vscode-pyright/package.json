@@ -1597,7 +1597,7 @@
                                 "string",
                                 "boolean"
                             ],
-                            "description": "Diagnostics for classes that inherit from multiple base classes",
+                            "description": "Diagnostics for multiple inheritance where a base class's constructor may not get called",
                             "default": "none",
                             "enum": [
                                 "none",
