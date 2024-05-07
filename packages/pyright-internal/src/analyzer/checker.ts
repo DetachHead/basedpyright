@@ -5626,7 +5626,7 @@ export class Checker extends ParseTreeWalker {
         }
         if (baseClassesWithConstructors.length) {
             this._evaluator.addDiagnostic(
-                DiagnosticRule.reportMultipleInheritance,
+                DiagnosticRule.reportUnsafeMultipleInheritance,
                 LocMessage.multipleInheritance().format({
                     classes: baseClassesWithConstructors.map((type) => type.details.name).join(', '),
                 }),
