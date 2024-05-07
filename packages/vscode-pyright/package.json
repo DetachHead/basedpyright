@@ -1727,7 +1727,7 @@
         "ovsx": "^0.8.3",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
-        "typescript": "~5.2",
+        "typescript": "~5.5.0-beta",
         "vsce": "^2.7.0",
         "webpack": "^5.90.1",
         "webpack-cli": "^5.1.4"
