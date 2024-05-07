@@ -4,8 +4,8 @@
     "scripts": {
         "postinstall": "node ./build/skipBootstrap.js || npm run install:others",
         "clean": "lerna run --no-bail --stream clean",
-        "install:all": "npm install",
-        "install:others": "cross-env SKIP_LERNA_BOOTSTRAP=yes lerna exec --no-bail npm install",
+        "install:all": "npm install --force",
+        "install:others": "cross-env SKIP_LERNA_BOOTSTRAP=yes lerna exec --no-bail npm install -- --force",
         "update:all": "node ./build/updateDeps.js",
         "build:extension:dev": "cd packages/vscode-pyright && npm run webpack",
         "build:extension": "cd packages/vscode-pyright && npm run package",
