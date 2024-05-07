@@ -166,7 +166,7 @@ this is complete nonsense and very unsafe, because there's no way to statically 
 
 pyright has the `reportMissingSuperCall` rule which, for this reason, complains even when your class doesn't have a base class. but that sucks because there's no way to know what arguments the unknown `__init__` takes. so this rule is super annoying when it's enabled, and has very little benefit because it barely makes a difference in terms of type safety.
 
-`reportUnsafeMultipleInheritance` bans multiple inheritance when any base class except for the first one has an `__init__` or `__new__` method, as there's no way to guarantee that they will get called with the correct arguments (or at all). this allows `reportMissingSuperCall` to be far more lenient. when `reportUnsafeMultipleInheritance` is enabled, missing `super()` calls will only be reported on classes that actually have a base class.
+`reportUnsafeMultipleInheritance` bans multiple inheritance when any base class except for the first one has an `__init__` or `__new__` method, as there's no way to guarantee that they will get called with the correct arguments (or at all). this allows `reportMissingSuperCall` to be more lenient, ie. when `reportUnsafeMultipleInheritance` is enabled, missing `super()` calls will only be reported on classes that actually have a base class.
 
 ### re-implementing pylance-exclusive features
 

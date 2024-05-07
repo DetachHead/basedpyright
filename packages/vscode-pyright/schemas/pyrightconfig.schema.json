@@ -726,7 +726,7 @@
     "reportUnsafeMultipleInheritance": {
       "$id": "#/properties/reportUnsafeMultipleInheritance",
       "$ref": "#/definitions/diagnostic",
-      "title": "Controls reporting of classes that inherit from multiple base classes",
+      "title": "Controls reporting of multiple inheritance where a base class's constructor may not get called",
       "default": "none"
     },
     "extraPaths": {
