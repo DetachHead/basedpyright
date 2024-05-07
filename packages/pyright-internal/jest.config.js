@@ -11,13 +11,7 @@ module.exports = {
         '^.+\\.tsx?$': [
             'ts-jest',
             {
-                tsconfig: {
-                    target: 'es6',
-
-                    // Needed because jest calls tsc in a way that doesn't
-                    // inline const enums.
-                    preserveConstEnums: false,
-                },
+                tsconfig: 'src/tests/tsconfig.json',
             },
         ],
     },
