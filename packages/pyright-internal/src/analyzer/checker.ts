@@ -5520,21 +5520,20 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
+    /**
+     * gets the actual base classes (excluding fake base classes like `Generic` and `Protocol`)
+     */
+    private _getActualBaseClasses = (classType: ClassType): ClassType[] =>
+        classType.details.baseClasses
+            .filter(isClass)
+            .filter((baseClass) => !ClassType.isBuiltIn(baseClass, ['Generic', 'Protocol', 'object']));
+
     // Verifies that classes that have more than one base class do not have
     // have conflicting type arguments.
     private _validateMultipleInheritanceBaseClasses(classType: ClassType, errorNode: NameNode) {
         // Skip this check if the class has only one base class or one or more
         // of the base classes are Any.
-        const filteredBaseClasses: ClassType[] = [];
-        for (const baseClass of classType.details.baseClasses) {
-            if (!isClass(baseClass)) {
-                return;
-            }
-
-            if (!ClassType.isBuiltIn(baseClass, ['Generic', 'Protocol', 'object'])) {
-                filteredBaseClasses.push(baseClass);
-            }
-        }
+        const filteredBaseClasses = this._getActualBaseClasses(classType);
 
         if (filteredBaseClasses.length < 2) {
             return;
@@ -6869,6 +6868,17 @@ export class Checker extends ParseTreeWalker {
         let effectiveFlags = MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipOriginalClass;
         if (ClassType.isFinal(classType)) {
             effectiveFlags |= MemberAccessFlags.SkipObjectBaseClass;
+        }
+
+        // if reportUnsafeMultipleInheritance is enabled, we can be less strict
+        // with reportMissingSuperCall by not reporting it on classes that don't
+        // have a base class, because reportUnsafeMultipleInheritance prevents the
+        // possibility of another method being added to the MRO
+        if (
+            this._fileInfo.diagnosticRuleSet.reportUnsafeMultipleInheritance !== 'none' &&
+            this._getActualBaseClasses(classType).length < 1
+        ) {
+            return;
         }
 
         const methodMember = lookUpClassMember(classType, methodType.details.name, effectiveFlags);

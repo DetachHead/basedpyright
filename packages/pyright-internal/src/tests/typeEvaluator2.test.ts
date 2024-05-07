@@ -9,6 +9,7 @@
  */
 
 import { ConfigOptions } from '../common/configOptions';
+import { DiagnosticRule } from '../common/diagnosticRules';
 import { pythonVersion3_10, pythonVersion3_9 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
 import * as TestUtils from './testUtils';
@@ -249,6 +250,26 @@ test('MissingSuper1', () => {
     configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 4);
+});
+
+test('MissingSuper with reportUnsafeMultipleInheritance enabled', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
+    configOptions.diagnosticRuleSet.reportUnsafeMultipleInheritance = 'error';
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
+            { code: DiagnosticRule.reportMissingSuperCall, line: 38 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 32 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 42 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 47 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 52 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 58 },
+            { code: DiagnosticRule.reportMissingSuperCall, line: 65 },
+        ],
+    });
 });
 
 test('NewType1', () => {
