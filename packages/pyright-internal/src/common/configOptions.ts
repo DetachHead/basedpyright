@@ -395,7 +395,7 @@ export interface DiagnosticRuleSet {
     reportPrivateLocalImportUsage: DiagnosticLevel;
     reportImplicitRelativeImport: DiagnosticLevel;
     reportInvalidCast: DiagnosticLevel;
-    reportMultipleInheritance: DiagnosticLevel;
+    reportUnsafeMultipleInheritance: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -518,7 +518,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportInvalidCast,
         DiagnosticRule.reportImplicitRelativeImport,
         DiagnosticRule.reportPrivateLocalImportUsage,
-        DiagnosticRule.reportMultipleInheritance,
+        DiagnosticRule.reportUnsafeMultipleInheritance,
     ];
 }
 
@@ -662,7 +662,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
-        reportMultipleInheritance: 'none',
+        reportUnsafeMultipleInheritance: 'none',
     };
 
     return diagSettings;
@@ -771,7 +771,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
-        reportMultipleInheritance: 'none',
+        reportUnsafeMultipleInheritance: 'none',
     };
 
     return diagSettings;
@@ -880,7 +880,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
-        reportMultipleInheritance: 'none',
+        reportUnsafeMultipleInheritance: 'none',
     };
 
     return diagSettings;
@@ -988,7 +988,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportPrivateLocalImportUsage: 'error',
     reportImplicitRelativeImport: 'error',
     reportInvalidCast: 'error',
-    reportMultipleInheritance: 'error',
+    reportUnsafeMultipleInheritance: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1094,7 +1094,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
-        reportMultipleInheritance: 'none',
+        reportUnsafeMultipleInheritance: 'none',
     };
 
     return diagSettings;

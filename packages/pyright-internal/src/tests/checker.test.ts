@@ -655,15 +655,15 @@ test('Deprecated6', () => {
     TestUtils.validateResults(analysisResults2, 3);
 });
 
-test('reportMultipleInheritance', () => {
+test('reportUnsafeMultipleInheritance', () => {
     const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.reportMultipleInheritance = 'error';
+    configOptions.diagnosticRuleSet.reportUnsafeMultipleInheritance = 'error';
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['multipleInheritance.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
         errors: [
-            { code: DiagnosticRule.reportMultipleInheritance, line: 12 },
-            { code: DiagnosticRule.reportMultipleInheritance, line: 13 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 12 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 13 },
         ],
     });
 });

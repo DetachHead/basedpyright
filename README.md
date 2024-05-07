@@ -143,7 +143,7 @@ unfortunately, this will cause a `reportInvalidCast` error when this rule is ena
 
 this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
 
-### `reportMultipleInheritance` - ban inheriting from multiple different base classes
+### `reportUnsafeMultipleInheritance` - ban inheriting from multiple different base classes with constructors
 
 multiple inheritance in python is awful:
 
@@ -166,7 +166,7 @@ this is complete nonsense and very unsafe, because there's no way to statically 
 
 pyright has the `reportMissingSuperCall` rule which, for this reason, complains even when your class doesn't have a base class. but that sucks because there's no way to know what arguments the unknown `__init__` takes. so this rule is super annoying when it's enabled, and has very little benefit because it barely makes a difference in terms of type safety.
 
-`reportMultipleInheritance` bans multiple inheritance entirely, which allows `reportMissingSuperCall` to be far more lenient. when `reportMultipleInheritance` is enabled, missing `super().__init__` calls will be reported on classes that actually have a base class.
+`reportUnsafeMultipleInheritance` bans multiple inheritance when any base class except for the first one has an `__init__` or `__new__` method, as there's no way to guarantee that they will get called with the correct arguments (or at all). this allows `reportMissingSuperCall` to be far more lenient. when `reportUnsafeMultipleInheritance` is enabled, missing `super()` calls will only be reported on classes that actually have a base class.
 
 ### re-implementing pylance-exclusive features
 

@@ -1592,7 +1592,7 @@
                                 false
                             ]
                         },
-                        "reportMultipleInheritance": {
+                        "reportUnsafeMultipleInheritance": {
                             "type": [
                                 "string",
                                 "boolean"
