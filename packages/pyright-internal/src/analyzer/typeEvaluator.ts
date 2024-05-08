@@ -4715,6 +4715,12 @@ export function createTypeEvaluator(
         symbolWithScope: SymbolWithScope,
         effectiveType: Type
     ): FlowNodeTypeResult | undefined {
+        // This function applies only to captured variables, not those that
+        // are accessed via an explicit nonlocal or global binding.
+        if (symbolWithScope.usesGlobalBinding || symbolWithScope.usesNonlocalBinding) {
+            return undefined;
+        }
+
         // This function applies only to variables, parameters, and imports, not to other
         // types of symbols.
         const decls = symbolWithScope.symbol.getDeclarations();
@@ -15146,7 +15152,13 @@ export function createTypeEvaluator(
             literalTypes.push(type);
         }
 
-        return combineTypes(literalTypes);
+        let result = combineTypes(literalTypes);
+
+        if (isUnion(result) && unionClassType && isInstantiableClass(unionClassType)) {
+            result = TypeBase.cloneAsSpecialForm(result, ClassType.cloneAsInstance(unionClassType));
+        }
+
+        return result;
     }
 
     // Creates a ClassVar type.
@@ -17399,10 +17411,9 @@ export function createTypeEvaluator(
     function evaluateTypeParameterList(node: TypeParameterListNode): TypeVarType[] {
         const paramTypes: TypeVarType[] = [];
         const typeParamScope = AnalyzerNodeInfo.getScope(node);
-        assert(typeParamScope !== undefined);
 
         node.parameters.forEach((param) => {
-            const paramSymbol = typeParamScope.symbolTable.get(param.name.value);
+            const paramSymbol = typeParamScope?.symbolTable.get(param.name.value);
             if (!paramSymbol) {
                 // This can happen if the code is unreachable.
                 return;
@@ -17586,13 +17597,25 @@ export function createTypeEvaluator(
         const errorNode = argList.length > 0 ? argList[0].node?.name ?? node.name : node.name;
         let newMethodMember: ClassMember | undefined;
 
+        // See if the class has a metaclass that overrides `__new__`. If so, we
+        // will validate the signature of the `__new__` method.
         if (classType.details.effectiveMetaclass && isClass(classType.details.effectiveMetaclass)) {
-            // See if the metaclass has a `__new__` method that accepts keyword parameters.
-            newMethodMember = lookUpClassMember(
-                classType.details.effectiveMetaclass,
-                '__new__',
-                MemberAccessFlags.SkipTypeBaseClass
-            );
+            // If the metaclass is 'type' or 'ABCMeta', we'll assume it will call through to
+            // __init_subclass__, so we'll skip the `__new__` method check. We need to exclude
+            // TypedDict classes here because _TypedDict uses ABCMeta as its metaclass, but its
+            // typeshed definition doesn't override __init_subclass__.
+            const metaclassCallsInitSubclass =
+                ClassType.isBuiltIn(classType.details.effectiveMetaclass, ['ABCMeta', 'type']) &&
+                !ClassType.isTypedDictClass(classType);
+
+            if (!metaclassCallsInitSubclass) {
+                // See if the metaclass has a `__new__` method that accepts keyword parameters.
+                newMethodMember = lookUpClassMember(
+                    classType.details.effectiveMetaclass,
+                    '__new__',
+                    MemberAccessFlags.SkipTypeBaseClass
+                );
+            }
         }
 
         if (newMethodMember) {
@@ -18192,6 +18215,16 @@ export function createTypeEvaluator(
             ) {
                 functionType.details.flags |= FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck;
             }
+        }
+
+        // If the function contains an *args and a **kwargs parameter and both
+        // are annotated as Any or are unannotated, make it exempt from
+        // args/kwargs compatibility checks.
+        const variadicsWithAnyType = functionType.details.parameters.filter(
+            (param) => param.category !== ParameterCategory.Simple && param.name && isAnyOrUnknown(param.type)
+        );
+        if (variadicsWithAnyType.length >= 2) {
+            functionType.details.flags |= FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck;
         }
 
         // If there was a defined return type, analyze that first so when we
@@ -24663,22 +24696,21 @@ export function createTypeEvaluator(
         return ClassType.isSpecialFormClass(classType);
     }
 
-    // Determines whether a type is "subsumed by" (i.e. is a proper subtype of) one
-    // of the other type.
+    // Determines whether a type is "subsumed by" (i.e. is a proper subtype of) another type.
     function isTypeSubsumedByOtherType(type: Type, otherType: Type, allowAnyToSubsume: boolean, recursionCount = 0) {
         const concreteType = makeTopLevelTypeVarsConcrete(type);
-        const otherTypes = isUnion(otherType) ? otherType.subtypes : [otherType];
+        const otherSubtypes = isUnion(otherType) ? otherType.subtypes : [otherType];
 
-        for (const otherType of otherTypes) {
-            if (isTypeSame(otherType, type)) {
+        for (const otherSubtype of otherSubtypes) {
+            if (isTypeSame(otherSubtype, type)) {
                 continue;
             }
 
-            if (isAnyOrUnknown(otherType)) {
+            if (isAnyOrUnknown(otherSubtype)) {
                 if (allowAnyToSubsume) {
                     return true;
                 }
-            } else if (isProperSubtype(otherType, concreteType, recursionCount)) {
+            } else if (isProperSubtype(otherSubtype, concreteType, recursionCount)) {
                 return true;
             }
         }

@@ -81,8 +81,8 @@ import {
     mapSubtypes,
     partiallySpecializeType,
     preserveUnknown,
-    specializeClassType,
     specializeTupleClass,
+    specializeWithUnknownTypeArgs,
     transformPossibleRecursiveTypeAlias,
 } from './typeUtils';
 import { TypeVarContext } from './typeVarContext';
@@ -294,9 +294,15 @@ function narrowTypeBasedOnSequencePattern(
             }
         });
 
-        // If the pattern is an empty sequence, use the entry types.
-        if (pattern.entries.length === 0 && entry.entryTypes.length > 0) {
-            narrowedEntryTypes.push(combineTypes(entry.entryTypes));
+        if (pattern.entries.length === 0) {
+            // If the pattern is an empty sequence, use the entry types.
+            if (entry.entryTypes.length > 0) {
+                narrowedEntryTypes.push(combineTypes(entry.entryTypes));
+            }
+
+            if (entry.isPotentialNoMatch) {
+                isDefiniteMatch = false;
+            }
         }
 
         if (!isPositiveTest) {
@@ -669,7 +675,7 @@ function narrowTypeBasedOnClassPattern(
     // specialize it with Unknown type arguments.
     if (isClass(exprType) && !exprType.typeAliasInfo) {
         exprType = ClassType.cloneRemoveTypePromotions(exprType);
-        exprType = specializeClassType(exprType);
+        exprType = specializeWithUnknownTypeArgs(exprType);
     }
 
     // Are there any positional arguments? If so, try to get the mappings for
@@ -733,19 +739,9 @@ function narrowTypeBasedOnClassPattern(
 
                 if (pattern.arguments.length === 0) {
                     if (isClass(classInstance) && isClass(subjectSubtypeExpanded)) {
-                        if (ClassType.isDerivedFrom(subjectSubtypeExpanded, classInstance)) {
-                            // We know that this match will always succeed, so we can
-                            // eliminate this subtype.
-                            return undefined;
-                        }
-
-                        // Handle LiteralString as a special case.
-                        if (
-                            ClassType.isBuiltIn(classInstance, 'str') &&
-                            ClassType.isBuiltIn(subjectSubtypeExpanded, 'LiteralString')
-                        ) {
-                            return undefined;
-                        }
+                        // We know that this match will always succeed, so we can
+                        // eliminate this subtype.
+                        return undefined;
                     }
 
                     return subjectSubtypeExpanded;
