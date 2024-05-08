@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypedDict
 
 class A:
     ...
@@ -32,3 +33,11 @@ class L:
 
 class M(J, K): ... # no error
 class N(J, L): ... # error
+
+class O(TypedDict):
+    ...
+
+class P(TypedDict):
+    ...
+
+class Q(O, P): ... # no error
