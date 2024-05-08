@@ -5540,16 +5540,22 @@ export class Checker extends ParseTreeWalker {
         }
         const baseClassesWithConstructors: ClassType[] = [];
         /**
-         * the first base class is allowed to have a constructor because it's guaranteed to be called by this
-         * class's constructor
+         * whether or not it's safe to allow the base class to have a constructor
          */
-        let isAllowedToHaveConstructor = true;
+        let constructorIsSafe = true;
+        const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
-
         for (const baseClass of filteredBaseClasses) {
             const typeVarContext = buildTypeVarContextFromSpecializedClass(baseClass);
-            if (isAllowedToHaveConstructor) {
-                isAllowedToHaveConstructor = false; // for next time
+            // if classType is a TypedDict, we never need to worry about constructors in base classes because the
+            // following rules are enforced:
+            // - if one base class is a TypedDict, all of them have to be TypedDicts
+            // - TypedDicts are not allowed to have methods, so they can't have a custom __init__ or __new__ function
+            if (constructorIsSafe && !isTypedDict) {
+                // the first base class is allowed to have a constructor because it's guaranteed to be called by this
+                // class's constructor. every other base class isn't allowed to have one (unless it's a synthesized
+                // TypedDict or dataclass constructor, which is checked below in the else branch)
+                constructorIsSafe = false;
             } else {
                 for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
                     const constructorMethodResult = constructorGetter(
@@ -5561,10 +5567,16 @@ export class Checker extends ParseTreeWalker {
                         constructorMethodResult &&
                         constructorMethodResult.classType &&
                         isClass(constructorMethodResult.classType) &&
-                        // dataclass constructors are synthesized. it doesn't matter if they don't get called
+                        // synthesized constructors are safe as the runtime machinery seems to account for multiple inheritance moments
+                        // dataclass:
                         !(
                             isFunction(constructorMethodResult.type) &&
-                            constructorMethodResult.type.details.flags & FunctionTypeFlags.SynthesizedMethod
+                            FunctionType.isSynthesizedMethod(constructorMethodResult.type)
+                        ) &&
+                        // TypedDict:
+                        !(
+                            isOverloadedFunction(constructorMethodResult.type) &&
+                            constructorMethodResult.type.overloads.every(FunctionType.isSynthesizedMethod)
                         )
                     ) {
                         baseClassesWithConstructors.push(constructorMethodResult.classType);
