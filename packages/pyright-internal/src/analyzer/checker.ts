@@ -5560,7 +5560,12 @@ export class Checker extends ParseTreeWalker {
                     if (
                         constructorMethodResult &&
                         constructorMethodResult.classType &&
-                        isClass(constructorMethodResult.classType)
+                        isClass(constructorMethodResult.classType) &&
+                        // dataclass constructors are synthesized. it doesn't matter if they don't get called
+                        !(
+                            isFunction(constructorMethodResult.type) &&
+                            constructorMethodResult.type.details.flags & FunctionTypeFlags.SynthesizedMethod
+                        )
                     ) {
                         baseClassesWithConstructors.push(constructorMethodResult.classType);
                         break;
