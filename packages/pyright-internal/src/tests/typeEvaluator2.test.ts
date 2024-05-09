@@ -241,33 +241,56 @@ test('Super12', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
-test('MissingSuper1', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
+describe('MissingSuper', () => {
+    test('MissingSuper1', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
 
-    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0);
+        const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
+        TestUtils.validateResults(analysisResults1, 0);
 
-    configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
-    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 4);
-});
+        configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
+        const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
+        TestUtils.validateResults(analysisResults2, 4);
+    });
+    test('with reportUnsafeMultipleInheritance enabled', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
 
-test('MissingSuper with reportUnsafeMultipleInheritance enabled', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
+        configOptions.diagnosticRuleSet.reportUnsafeMultipleInheritance = 'error';
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(
+            ['missingSuperBased_reportUnsafeMultipleInheritance.py'],
+            configOptions
+        );
+        TestUtils.validateResultsButBased(analysisResults, {
+            errors: [
+                { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
+                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 32 },
+                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 42 },
+                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 47 },
+                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 52 },
+                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 58 },
+                { code: DiagnosticRule.reportMissingSuperCall, line: 79 },
+            ],
+        });
+    });
+    test('with reportAbstractUsage enabled', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
 
-    configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
-    configOptions.diagnosticRuleSet.reportUnsafeMultipleInheritance = 'error';
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['missingSuperBased.py'], configOptions);
-    TestUtils.validateResultsButBased(analysisResults, {
-        errors: [
-            { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 32 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 42 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 47 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 52 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 58 },
-            { code: DiagnosticRule.reportMissingSuperCall, line: 79 },
-        ],
+        configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
+        configOptions.diagnosticRuleSet.reportAbstractUsage = 'error';
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(
+            ['missingSuperBased_reportAbstractUsage.py'],
+            configOptions
+        );
+        TestUtils.validateResultsButBased(analysisResults, {
+            errors: [
+                { code: DiagnosticRule.reportMissingSuperCall, line: 11 },
+                { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
+                { code: DiagnosticRule.reportMissingSuperCall, line: 38 },
+                { code: DiagnosticRule.reportMissingSuperCall, line: 65 },
+                { code: DiagnosticRule.reportMissingSuperCall, line: 86 },
+            ],
+        });
     });
 });
 

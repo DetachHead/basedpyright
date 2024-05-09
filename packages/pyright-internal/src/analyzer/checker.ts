@@ -6888,7 +6888,7 @@ export class Checker extends ParseTreeWalker {
         // in `object` doesn't do anything. It's not safe to do this normally because it
         // could be combined with other classes in a multi-inheritance situation that
         // effectively adds new superclasses that we don't know about statically.
-        let effectiveFlags = MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipOriginalClass;
+        let effectiveFlags = MemberAccessFlags.Default;
         if (
             ClassType.isFinal(classType) ||
             this._fileInfo.diagnosticRuleSet.reportUnsafeMultipleInheritance !== 'none'
@@ -6896,7 +6896,11 @@ export class Checker extends ParseTreeWalker {
             effectiveFlags |= MemberAccessFlags.SkipObjectBaseClass;
         }
 
-        const methodMember = lookUpClassMember(classType, methodType.details.name, effectiveFlags);
+        const methodMember = lookUpClassMember(
+            classType,
+            methodType.details.name,
+            effectiveFlags | MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipOriginalClass
+        );
         if (!methodMember) {
             return;
         }
@@ -6931,15 +6935,30 @@ export class Checker extends ParseTreeWalker {
         callNodeWalker.walk(node.suite);
 
         // If we didn't find a call to at least one base class, report the problem.
-        if (!foundCallOfMember) {
-            this._evaluator.addDiagnostic(
-                DiagnosticRule.reportMissingSuperCall,
-                LocMessage.missingSuperCall().format({
-                    methodName: methodType.details.name,
-                }),
-                node.name
-            );
+        if (foundCallOfMember) {
+            return;
         }
+        // if reportAbstractUsage is enabled, we need to make sure it's not an abstract
+        // method before whinging, otherwise these two rules will conflict
+        if (this._fileInfo.diagnosticRuleSet.reportAbstractUsage !== 'none') {
+            const baseClass = this._getActualBaseClasses(classType)[0];
+            if (baseClass) {
+                const baseMethodMember = lookUpClassMember(baseClass, methodType.details.name, effectiveFlags);
+                if (baseMethodMember) {
+                    const baseMethod = this._evaluator.getEffectiveTypeOfSymbol(baseMethodMember.symbol);
+                    if (isFunction(baseMethod) && FunctionType.isAbstractMethod(baseMethod)) {
+                        return;
+                    }
+                }
+            }
+        }
+        this._evaluator.addDiagnostic(
+            DiagnosticRule.reportMissingSuperCall,
+            LocMessage.missingSuperCall().format({
+                methodName: methodType.details.name,
+            }),
+            node.name
+        );
     }
 
     // Validates that the annotated type of a "self" or "cls" parameter is
