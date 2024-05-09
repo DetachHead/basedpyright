@@ -6876,26 +6876,17 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        // If the class is marked final, we can skip the "object" base class
-        // because we know that the `__init__` method in `object` doesn't do
-        // anything. It's not safe to do this if the class isn't final because
-        // it could be combined with other classes in a multi-inheritance
-        // situation that effectively adds new superclasses that we don't know
-        // about statically.
+        // If the class is marked final or reportUnsafeMultipleInheritance is enabled,
+        // we can skip the "object" base class because we know that the `__init__` method
+        // in `object` doesn't do anything. It's not safe to do this normally because it
+        // could be combined with other classes in a multi-inheritance situation that
+        // effectively adds new superclasses that we don't know about statically.
         let effectiveFlags = MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipOriginalClass;
-        if (ClassType.isFinal(classType)) {
-            effectiveFlags |= MemberAccessFlags.SkipObjectBaseClass;
-        }
-
-        // if reportUnsafeMultipleInheritance is enabled, we can be less strict
-        // with reportMissingSuperCall by not reporting it on classes that don't
-        // have a base class, because reportUnsafeMultipleInheritance prevents the
-        // possibility of another method being added to the MRO
         if (
-            this._fileInfo.diagnosticRuleSet.reportUnsafeMultipleInheritance !== 'none' &&
-            this._getActualBaseClasses(classType).length < 1
+            ClassType.isFinal(classType) ||
+            this._fileInfo.diagnosticRuleSet.reportUnsafeMultipleInheritance !== 'none'
         ) {
-            return;
+            effectiveFlags |= MemberAccessFlags.SkipObjectBaseClass;
         }
 
         const methodMember = lookUpClassMember(classType, methodType.details.name, effectiveFlags);

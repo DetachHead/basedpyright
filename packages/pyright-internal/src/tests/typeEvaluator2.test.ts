@@ -257,17 +257,16 @@ test('MissingSuper with reportUnsafeMultipleInheritance enabled', () => {
 
     configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
     configOptions.diagnosticRuleSet.reportUnsafeMultipleInheritance = 'error';
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['missingSuperBased.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
         errors: [
             { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
-            { code: DiagnosticRule.reportMissingSuperCall, line: 38 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 32 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 42 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 47 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 52 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 58 },
-            { code: DiagnosticRule.reportMissingSuperCall, line: 65 },
+            { code: DiagnosticRule.reportMissingSuperCall, line: 79 },
         ],
     });
 });
