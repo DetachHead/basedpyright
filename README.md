@@ -301,7 +301,7 @@ install the extension from [the vscode extension marketplace](https://marketplac
 
 the basedpyright vscode extension will automatically look for the pypi package in your python environment.
 
-if you're adding basedpyright as a development dependency in your project, we recommend addibg it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
+if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
 
 ```jsonc
 // .vscode/extensions.json
