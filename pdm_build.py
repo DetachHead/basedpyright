@@ -5,9 +5,7 @@ from pathlib import Path
 from shutil import copyfile, copytree
 from typing import TypedDict, cast
 
-from nodejs_wheel.executable import (  # pyright:ignore[reportMissingTypeStubs]
-    npm,  # pyright:ignore[reportUnknownVariableType]
-)
+from nodejs_wheel.executable import npm
 
 
 class PackageJson(TypedDict):
@@ -15,7 +13,7 @@ class PackageJson(TypedDict):
 
 
 def run_npm(*args: str):
-    exit_code = npm(args)
+    exit_code = npm(list(args))
     if exit_code != 0:
         raise Exception(f"the following npm command exited with {exit_code=}: {args}")
 
