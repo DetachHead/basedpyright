@@ -99,7 +99,7 @@ import { getBoundCallMethod, getBoundInitMethod, getBoundNewMethod } from './con
 import { Declaration, DeclarationType, isAliasDeclaration } from './declaration';
 import { getNameNodeForDeclaration } from './declarationUtils';
 import { deprecatedAliases, deprecatedSpecialForms } from './deprecatedSymbols';
-import { getEnumDeclaredValueType, isEnumClassWithMembers } from './enums';
+import { getEnumDeclaredValueType, isEnumClassWithMembers, transformTypeForEnumMember } from './enums';
 import { ImportResolver, ImportedModuleDescriptor, createImportedModuleDescriptor } from './importResolver';
 import { ImportResult, ImportType } from './importResult';
 import { getRelativeModuleName, getTopLevelImports } from './importStatementUtils';
@@ -1897,7 +1897,7 @@ export class Checker extends ParseTreeWalker {
 
         const exprTypeResult = this._evaluator.getTypeOfExpression(expression);
         let isExprFunction = true;
-        let isCoroutine = false;
+        let isCoroutine = true;
 
         doForEachSubtype(exprTypeResult.type, (subtype) => {
             subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
@@ -1906,8 +1906,8 @@ export class Checker extends ParseTreeWalker {
                 isExprFunction = false;
             }
 
-            if (isClassInstance(subtype) && ClassType.isBuiltIn(subtype, 'Coroutine')) {
-                isCoroutine = true;
+            if (!isClassInstance(subtype) || !ClassType.isBuiltIn(subtype, 'Coroutine')) {
+                isCoroutine = false;
             }
         });
 
@@ -4401,7 +4401,12 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const declarations = this._evaluator.getDeclarationsForNameNode(node);
+        // Get the declarations for this name node, but filter out
+        // any variable declarations that are bound using nonlocal
+        // or global explicit bindings.
+        const declarations = this._evaluator
+            .getDeclarationsForNameNode(node)
+            ?.filter((decl) => decl.type !== DeclarationType.Variable || !decl.isExplicitBinding);
 
         let primaryDeclaration =
             declarations && declarations.length > 0 ? declarations[declarations.length - 1] : undefined;
@@ -4847,9 +4852,11 @@ export class Checker extends ParseTreeWalker {
                 return;
             }
 
-            const symbolType = this._evaluator.getEffectiveTypeOfSymbol(symbol);
+            const symbolType = transformTypeForEnumMember(this._evaluator, classType, name);
+
             // Is this symbol a literal instance of the enum class?
             if (
+                !symbolType ||
                 !isClassInstance(symbolType) ||
                 !ClassType.isSameGenericClass(symbolType, classType) ||
                 !(symbolType.literalValue instanceof EnumLiteral)

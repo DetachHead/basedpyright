@@ -138,7 +138,6 @@ import {
     isDeclInEnumClass,
     isEnumClassWithMembers,
     isEnumMetaclass,
-    transformTypeForPossibleEnumClass,
 } from './enums';
 import { applyFunctionTransform } from './functionTransform';
 import { createNamedTupleType } from './namedTuples';
@@ -256,7 +255,6 @@ import {
     isTupleIndexUnambiguous,
     isTypeAliasPlaceholder,
     isTypeAliasRecursive,
-    isTypeVarLimitedToCallable,
     isTypeVarSame,
     isUnboundedTupleClass,
     isVarianceOfTypeArgumentCompatible,
@@ -369,7 +367,6 @@ export interface MemberAccessTypeResult {
 
 interface ScopedTypeVarResult {
     type: TypeVarType;
-    isRescoped: boolean;
     foundInterveningClass: boolean;
 }
 
@@ -4867,17 +4864,7 @@ export function createTypeEvaluator(
                                 const outerFunctionScope = ParseTreeUtils.getEnclosingClassOrFunction(enclosingScope);
 
                                 if (outerFunctionScope?.nodeType === ParseNodeType.Function) {
-                                    if (scopedTypeVarInfo.isRescoped) {
-                                        addDiagnostic(
-                                            DiagnosticRule.reportGeneralTypeIssues,
-                                            LocMessage.paramSpecScopedToReturnType().format({
-                                                name: type.details.name,
-                                            }),
-                                            node
-                                        );
-                                    } else {
-                                        enclosingScope = outerFunctionScope;
-                                    }
+                                    enclosingScope = outerFunctionScope;
                                 } else if (!scopedTypeVarInfo.type.scopeId) {
                                     addDiagnostic(
                                         DiagnosticRule.reportGeneralTypeIssues,
@@ -4933,16 +4920,9 @@ export function createTypeEvaluator(
                     (type.scopeId === undefined || scopedTypeVarInfo.foundInterveningClass) &&
                     !type.details.isSynthesized
                 ) {
-                    let message: ParameterizedString<{ name: string }>;
-                    if (scopedTypeVarInfo.isRescoped) {
-                        message = isParamSpec(type)
-                            ? LocMessage.paramSpecScopedToReturnType()
-                            : LocMessage.typeVarScopedToReturnType();
-                    } else {
-                        message = isParamSpec(type)
-                            ? LocMessage.paramSpecNotUsedByOuterScope()
-                            : LocMessage.typeVarNotUsedByOuterScope();
-                    }
+                    const message = isParamSpec(type)
+                        ? LocMessage.paramSpecNotUsedByOuterScope()
+                        : LocMessage.typeVarNotUsedByOuterScope();
                     addDiagnostic(
                         DiagnosticRule.reportGeneralTypeIssues,
                         message.format({ name: type.details.name }),
@@ -5082,13 +5062,6 @@ export function createTypeEvaluator(
                 if (functionType) {
                     const functionDetails = functionType.details;
                     typeParametersForScope = functionDetails.typeParameters;
-
-                    // Was this type parameter "rescoped" to a callable found within the
-                    // return type annotation? If so, it is not available for use within
-                    // the function body.
-                    if (functionDetails.rescopedTypeParameters?.some((tp) => tp.details.name === type.details.name)) {
-                        return { type, isRescoped: true, foundInterveningClass: false };
-                    }
                 }
 
                 scopeUsesTypeParameterSyntax = !!curNode.typeParameters;
@@ -5104,7 +5077,6 @@ export function createTypeEvaluator(
                     type = TypeVarType.cloneForScopeId(type, match.scopeId, match.scopeName, match.scopeType);
                     return {
                         type,
-                        isRescoped: false,
                         foundInterveningClass: nestedClassCount > 1 && !scopeUsesTypeParameterSyntax,
                     };
                 }
@@ -5153,7 +5125,7 @@ export function createTypeEvaluator(
                         if (allowedTypeParams) {
                             if (!allowedTypeParams.some((param) => param.details.name === type.details.name)) {
                                 // Return the original type.
-                                return { type, isRescoped: false, foundInterveningClass: false };
+                                return { type, foundInterveningClass: false };
                             }
                         }
                     }
@@ -5165,7 +5137,6 @@ export function createTypeEvaluator(
                             leftType.details.recursiveTypeAliasName,
                             TypeVarScopeType.TypeAlias
                         ),
-                        isRescoped: false,
                         foundInterveningClass: false,
                     };
                 }
@@ -5175,7 +5146,7 @@ export function createTypeEvaluator(
         }
 
         // Return the original type.
-        return { type, isRescoped: false, foundInterveningClass: false };
+        return { type, foundInterveningClass: false };
     }
 
     function getTypeOfMemberAccess(node: MemberAccessNode, flags: EvaluatorFlags): TypeResult {
@@ -5423,8 +5394,35 @@ export function createTypeEvaluator(
 
             case TypeCategory.Class: {
                 let typeResult: TypeResult | undefined;
-                if (usage.method === 'get') {
-                    typeResult = getTypeOfEnumMember(evaluatorInterface, node, baseType, memberName, isIncomplete);
+
+                const enumMemberResult = getTypeOfEnumMember(
+                    evaluatorInterface,
+                    node,
+                    baseType,
+                    memberName,
+                    isIncomplete
+                );
+
+                if (enumMemberResult) {
+                    if (usage.method === 'get') {
+                        typeResult = enumMemberResult;
+                    } else {
+                        // Is this an attempt to delete or overwrite an enum member?
+                        if (
+                            isClassInstance(enumMemberResult.type) &&
+                            ClassType.isSameGenericClass(enumMemberResult.type, baseType) &&
+                            enumMemberResult.type.literalValue !== undefined
+                        ) {
+                            const diagMessage =
+                                usage.method === 'set' ? LocMessage.enumMemberSet() : LocMessage.enumMemberDelete();
+                            addDiagnostic(
+                                DiagnosticRule.reportAttributeAccessIssue,
+                                diagMessage.format({ name: memberName }) + diag.getString(),
+                                node.memberName,
+                                diag.getEffectiveTextRange() ?? node.memberName
+                            );
+                        }
+                    }
                 }
 
                 if (!typeResult) {
@@ -7676,16 +7674,16 @@ export function createTypeEvaluator(
 
             if (value < 0) {
                 value = tupleTypeArgs.length + value;
-                if (value < 0) {
+                if (unboundedIndex >= 0 && value <= unboundedIndex) {
                     return undefined;
-                } else if (unboundedIndex >= 0 && value <= unboundedIndex) {
-                    return undefined;
+                } else if (value < 0) {
+                    return 0;
                 }
             } else {
-                if (value > tupleTypeArgs.length) {
+                if (unboundedIndex >= 0 && value > unboundedIndex) {
                     return undefined;
-                } else if (unboundedIndex >= 0 && value > unboundedIndex) {
-                    return undefined;
+                } else if (value > tupleTypeArgs.length) {
+                    return tupleTypeArgs.length;
                 }
             }
         }
@@ -9809,23 +9807,29 @@ export function createTypeEvaluator(
                 if (expandedCallType.details.name === 'type' && argList.length === 1) {
                     const argType = getTypeOfArgument(argList[0]).type;
                     const returnType = mapSubtypes(argType, (subtype) => {
-                        if (isInstantiableClass(subtype)) {
-                            return subtype.details.effectiveMetaclass ?? AnyType.create();
+                        if (isInstantiableClass(subtype) && subtype.details.effectiveMetaclass) {
+                            return subtype.details.effectiveMetaclass;
                         }
 
-                        if (
-                            isClassInstance(subtype) ||
-                            (isTypeVar(subtype) && TypeBase.isInstance(subtype)) ||
-                            isNoneInstance(subtype)
-                        ) {
-                            return convertToInstantiable(stripLiteralValue(subtype));
+                        if (isNever(subtype)) {
+                            return subtype;
                         }
 
-                        if (isFunction(subtype) && TypeBase.isInstance(subtype)) {
-                            return FunctionType.cloneAsInstantiable(subtype);
+                        if (TypeBase.isInstance(subtype)) {
+                            if (isClass(subtype) || isTypeVar(subtype)) {
+                                return convertToInstantiable(stripLiteralValue(subtype));
+                            }
+
+                            if (isFunction(subtype)) {
+                                return FunctionType.cloneAsInstantiable(subtype);
+                            }
                         }
 
-                        return AnyType.create();
+                        return ClassType.cloneForSpecialization(
+                            ClassType.cloneAsInstance(expandedCallType),
+                            [UnknownType.create()],
+                            /* isTypeArgumentExplicit */ true
+                        );
                     });
 
                     return { returnType };
@@ -11789,10 +11793,9 @@ export function createTypeEvaluator(
         // call to a generic function or if this isn't a callable
         // return with type parameters that are rescoped from the original
         // function to the returned callable.
-        const unknownIfNotFound =
-            !ParseTreeUtils.getTypeVarScopesForNode(errorNode).some((typeVarScope) =>
-                typeVarContext.hasSolveForScope(typeVarScope)
-            ) && !type.details.rescopedTypeParameters;
+        const unknownIfNotFound = !ParseTreeUtils.getTypeVarScopesForNode(errorNode).some((typeVarScope) =>
+            typeVarContext.hasSolveForScope(typeVarScope)
+        );
 
         let specializedReturnType = applySolvedTypeVars(returnType, typeVarContext, {
             unknownIfNotFound,
@@ -12205,7 +12208,8 @@ export function createTypeEvaluator(
                       EvaluatorFlags.EvaluateStringLiteralAsType |
                       EvaluatorFlags.DisallowParamSpec |
                       EvaluatorFlags.DisallowTypeVarTuple |
-                      EvaluatorFlags.DisallowFinal
+                      EvaluatorFlags.DisallowFinal |
+                      EvaluatorFlags.DoNotSpecialize
                     : EvaluatorFlags.DoNotSpecialize | EvaluatorFlags.DisallowFinal;
                 const exprTypeResult = getTypeOfExpression(
                     argParam.argument.valueExpression,
@@ -12845,13 +12849,11 @@ export function createTypeEvaluator(
     }
 
     function getParamSpecDefaultType(node: ExpressionNode, isPep695Syntax: boolean): Type | undefined {
-        const functionType = FunctionType.createSynthesizedInstance(
-            '',
-            FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck | FunctionTypeFlags.ParamSpecValue
-        );
+        const functionType = FunctionType.createSynthesizedInstance('', FunctionTypeFlags.ParamSpecValue);
 
         if (node.nodeType === ParseNodeType.Ellipsis) {
             FunctionType.addDefaultParameters(functionType);
+            functionType.details.flags |= FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck;
             return functionType;
         }
 
@@ -16239,23 +16241,6 @@ export function createTypeEvaluator(
                 // If this is an enum, transform the type as required.
                 rightHandType = srcType;
 
-                let targetName: NameNode | undefined;
-                if (node.leftExpression.nodeType === ParseNodeType.Name) {
-                    targetName = node.leftExpression;
-                } else if (
-                    node.leftExpression.nodeType === ParseNodeType.TypeAnnotation &&
-                    node.leftExpression.valueExpression.nodeType === ParseNodeType.Name
-                ) {
-                    targetName = node.leftExpression.valueExpression;
-                }
-
-                if (targetName) {
-                    rightHandType =
-                        transformTypeForPossibleEnumClass(evaluatorInterface, node, targetName, () => {
-                            return { assignedType: rightHandType };
-                        }) ?? rightHandType;
-                }
-
                 if (typeAliasNameNode) {
                     // If this was a speculative type alias, it becomes a real type alias
                     // only if the evaluated type is an instantiable type.
@@ -17826,12 +17811,6 @@ export function createTypeEvaluator(
             }
         }
 
-        // In case this is an enum class and a method wrapped in an enum.member.
-        decoratedType =
-            transformTypeForPossibleEnumClass(evaluatorInterface, node, node.name, () => {
-                return { assignedType: decoratedType };
-            }) ?? decoratedType;
-
         // See if there are any overloads provided by previous function declarations.
         if (isFunction(decoratedType)) {
             decoratedType.details.deprecatedMessage = functionType.details.deprecatedMessage;
@@ -18257,10 +18236,10 @@ export function createTypeEvaluator(
 
         // Accumulate any type parameters used in the return type.
         if (functionType.details.declaredReturnType && returnTypeAnnotationNode) {
-            rescopeTypeVarsForCallableReturnType(
-                functionType.details.declaredReturnType,
-                functionType,
-                typeParametersSeen
+            addTypeVarsToListIfUnique(
+                typeParametersSeen,
+                getTypeVarArgumentsRecursive(functionType.details.declaredReturnType),
+                functionType.details.typeVarScopeId
             );
         }
 
@@ -18313,46 +18292,6 @@ export function createTypeEvaluator(
             if (symbolWithScope) {
                 setSymbolAccessed(AnalyzerNodeInfo.getFileInfo(param), symbolWithScope.symbol, param.name);
             }
-        }
-    }
-
-    // If the declared return type of a function contains type variables that
-    // are found nowhere else in the signature and are contained within a
-    // Callable, these type variables are "rescoped" from the function to
-    // the Callable.
-    function rescopeTypeVarsForCallableReturnType(
-        returnType: Type,
-        functionType: FunctionType,
-        typeParametersSeen: TypeVarType[]
-    ) {
-        const typeVarsInReturnType = getTypeVarArgumentsRecursive(returnType).filter(
-            (t) => t.scopeId === functionType.details.typeVarScopeId
-        );
-        const rescopedTypeVars: TypeVarType[] = [];
-
-        typeVarsInReturnType.forEach((typeVar) => {
-            if (TypeBase.isInstantiable(typeVar)) {
-                typeVar = TypeVarType.cloneAsInstance(typeVar);
-            }
-
-            // If this type variable was already seen in one or more input parameters,
-            // don't attempt to rescope it.
-            if (typeParametersSeen.some((tp) => isTypeSame(convertToInstance(tp), typeVar))) {
-                return;
-            }
-
-            // Is this type variable seen outside of a single callable?
-            if (isTypeVarLimitedToCallable(returnType, typeVar)) {
-                rescopedTypeVars.push(typeVar);
-            }
-        });
-
-        addTypeVarsToListIfUnique(typeParametersSeen, typeVarsInReturnType);
-
-        // Note that the type parameters have been rescoped so they are not
-        // considered valid for the body of this function.
-        if (rescopedTypeVars.length > 0) {
-            functionType.details.rescopedTypeParameters = rescopedTypeVars;
         }
     }
 
@@ -21244,25 +21183,6 @@ export function createTypeEvaluator(
                     }
 
                     if (declaredType) {
-                        // Apply enum transform if appropriate.
-                        if (declaration.node.nodeType === ParseNodeType.Name) {
-                            const variableNode =
-                                ParseTreeUtils.getParentNodeOfType(declaration.node, ParseNodeType.Assignment) ??
-                                ParseTreeUtils.getParentNodeOfType(declaration.node, ParseNodeType.TypeAnnotation);
-
-                            if (variableNode) {
-                                declaredType =
-                                    transformTypeForPossibleEnumClass(
-                                        evaluatorInterface,
-                                        variableNode,
-                                        declaration.node,
-                                        () => {
-                                            return { declaredType };
-                                        }
-                                    ) ?? declaredType;
-                            }
-                        }
-
                         if (isClassInstance(declaredType) && ClassType.isBuiltIn(declaredType, 'TypeAlias')) {
                             return { type: undefined, isTypeAlias: true };
                         }
@@ -21581,35 +21501,6 @@ export function createTypeEvaluator(
             let inferredType = evaluateTypeForSubnode(resolvedDecl.node, () => {
                 evaluateTypesForStatement(typeSource);
             })?.type;
-
-            if (inferredType && resolvedDecl.node.nodeType === ParseNodeType.Name) {
-                const variableNode =
-                    ParseTreeUtils.getParentNodeOfType(resolvedDecl.node, ParseNodeType.Assignment) ??
-                    ParseTreeUtils.getParentNodeOfType(resolvedDecl.node, ParseNodeType.TypeAnnotation);
-
-                if (variableNode) {
-                    // See if this is an enum member. If so, we need to handle it as a special case.
-                    const enumMemberType = transformTypeForPossibleEnumClass(
-                        evaluatorInterface,
-                        variableNode,
-                        resolvedDecl.node,
-                        () => {
-                            assert(resolvedDecl.inferredTypeSource !== undefined);
-                            const inferredTypeSource = resolvedDecl.inferredTypeSource;
-                            return {
-                                assignedType:
-                                    evaluateTypeForSubnode(inferredTypeSource, () => {
-                                        evaluateTypesForStatement(inferredTypeSource);
-                                    })?.type ?? UnknownType.create(),
-                            };
-                        }
-                    );
-
-                    if (enumMemberType) {
-                        inferredType = enumMemberType;
-                    }
-                }
-            }
 
             if (inferredType && isTypeAlias && resolvedDecl.typeAliasName) {
                 // If this was a speculative type alias, it becomes a real type alias only
@@ -25137,24 +25028,17 @@ export function createTypeEvaluator(
                 recursionCount
             )
         ) {
-            // There are cases involving lambdas where the parameter types are type
-            // variables and match exactly but fail the assignment check because the
-            // TypeVars are out of scope. This happens because parameter types assigned
-            // to lambdas during bidirectional inference do not match the TypeVar scope
-            // of the lambda itself.
-            if (!isTypeSame(destType, srcType)) {
-                if (diag && paramIndex !== undefined) {
-                    diag.addMessage(
-                        LocAddendum.paramAssignment().format({
-                            index: paramIndex + 1,
-                            sourceType: printType(destType),
-                            destType: printType(srcType),
-                        })
-                    );
-                }
-
-                return false;
+            if (diag && paramIndex !== undefined) {
+                diag.addMessage(
+                    LocAddendum.paramAssignment().format({
+                        index: paramIndex + 1,
+                        sourceType: printType(destType),
+                        destType: printType(srcType),
+                    })
+                );
             }
+
+            return false;
         }
 
         return true;
@@ -25188,6 +25072,13 @@ export function createTypeEvaluator(
         });
         if (srcLastToPackIndex < 0) {
             srcLastToPackIndex = srcDetails.params.length;
+        }
+
+        // If both the source and dest have an *args parameter but the dest's is
+        // in a later position, then we can't assign the source's *args to the dest.
+        // Don't make any adjustment in this case.
+        if (srcDetails.argsIndex !== undefined && destDetails.argsIndex > srcDetails.argsIndex) {
+            return;
         }
 
         const destFirstNonPositional = destDetails.firstKeywordOnlyIndex ?? destDetails.params.length;
@@ -25371,7 +25262,9 @@ export function createTypeEvaluator(
                 continue;
             }
 
-            if (
+            if (isUnpacked(srcParamType)) {
+                canAssign = false;
+            } else if (
                 !assignFunctionParameter(
                     destParamType,
                     srcParamType,

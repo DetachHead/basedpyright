@@ -24,6 +24,7 @@ import { KeywordType, OperatorType } from '../parser/tokenizerTypes';
 import { getFileInfo } from './analyzerNodeInfo';
 import { populateTypeVarContextBasedOnExpectedType } from './constraintSolver';
 import { Declaration, DeclarationType } from './declaration';
+import { transformTypeForEnumMember } from './enums';
 import * as ParseTreeUtils from './parseTreeUtils';
 import { ScopeType } from './scope';
 import { getScopeForNode } from './scopeUtils';
@@ -73,6 +74,7 @@ import {
     getSpecializedTupleType,
     getTypeCondition,
     getTypeVarScopeId,
+    getUnknownTypeForCallable,
     isInstantiableMetaclass,
     isLiteralType,
     isLiteralTypeOrUnion,
@@ -630,7 +632,9 @@ export function getTypeNarrowingCallback(
                         EvaluatorFlags.AllowMissingTypeArgs |
                             EvaluatorFlags.EvaluateStringLiteralAsType |
                             EvaluatorFlags.DisallowParamSpec |
-                            EvaluatorFlags.DisallowTypeVarTuple
+                            EvaluatorFlags.DisallowTypeVarTuple |
+                            EvaluatorFlags.DisallowFinal |
+                            EvaluatorFlags.DoNotSpecialize
                     );
                     const arg1Type = arg1TypeResult.type;
 
@@ -1150,6 +1154,14 @@ function getIsInstanceClassTypes(argType: Type): (ClassType | TypeVarType | Func
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {
         types.forEach((subtype) => {
+            if (isClass(subtype)) {
+                subtype = specializeWithUnknownTypeArgs(subtype);
+
+                if (isInstantiableClass(subtype) && ClassType.isBuiltIn(subtype, 'Callable')) {
+                    subtype = convertToInstantiable(getUnknownTypeForCallable());
+                }
+            }
+
             if (isInstantiableClass(subtype) || (isTypeVar(subtype) && TypeBase.isInstantiable(subtype))) {
                 classTypeList.push(subtype);
             } else if (isNoneTypeClass(subtype)) {
@@ -1430,6 +1442,7 @@ function narrowTypeForIsInstanceInternal(
                                 ) {
                                     if (
                                         !filterType.typeArguments ||
+                                        !filterType.isTypeArgumentExplicit ||
                                         !ClassType.isSameGenericClass(concreteVarType, filterType)
                                     ) {
                                         const typeVarContext = new TypeVarContext(getTypeVarScopeId(filterType));
@@ -1452,7 +1465,7 @@ function narrowTypeForIsInstanceInternal(
                                             specializedFilterType = applySolvedTypeVars(
                                                 unspecializedFilterType,
                                                 typeVarContext,
-                                                { unknownIfNotFound: true }
+                                                { unknownIfNotFound: true, useUnknownOverDefault: true }
                                             ) as ClassType;
                                         }
                                     }
@@ -2562,9 +2575,11 @@ export function enumerateLiteralsForType(evaluator: TypeEvaluator, type: ClassTy
         // Enumerate all of the values in this enumeration.
         const enumList: ClassType[] = [];
         const fields = ClassType.getSymbolTable(type);
-        fields.forEach((symbol) => {
+        fields.forEach((symbol, name) => {
             if (!symbol.isIgnoredForProtocolMatch()) {
-                const symbolType = evaluator.getEffectiveTypeOfSymbol(symbol);
+                let symbolType = evaluator.getEffectiveTypeOfSymbol(symbol);
+                symbolType = transformTypeForEnumMember(evaluator, type, name) ?? symbolType;
+
                 if (
                     isClassInstance(symbolType) &&
                     ClassType.isSameGenericClass(type, symbolType) &&

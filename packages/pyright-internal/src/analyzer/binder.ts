@@ -1474,6 +1474,7 @@ export class Binder extends ParseTreeWalker {
                     range: convertTextRangeToRange(node.name, this._fileInfo.lines),
                     moduleName: this._fileInfo.moduleName,
                     isInExceptSuite: this._isInExceptSuite,
+                    isExplicitBinding: this._currentScope.getBindingType(node.name.value) !== undefined,
                 };
                 symbol.addDeclaration(declaration);
             }
@@ -2370,6 +2371,7 @@ export class Binder extends ParseTreeWalker {
                     range: convertTextRangeToRange(node.target, this._fileInfo.lines),
                     moduleName: this._fileInfo.moduleName,
                     isInExceptSuite: this._isInExceptSuite,
+                    isExplicitBinding: this._currentScope.getBindingType(node.target.value) !== undefined,
                 };
                 symbol.addDeclaration(declaration);
             }
@@ -2440,6 +2442,7 @@ export class Binder extends ParseTreeWalker {
                 range: convertTextRangeToRange(slotNameNode, this._fileInfo.lines),
                 moduleName: this._fileInfo.moduleName,
                 isInExceptSuite: this._isInExceptSuite,
+                isExplicitBinding: this._currentScope.getBindingType(slotName) !== undefined,
             };
             symbol.addDeclaration(declaration);
         }
@@ -2489,6 +2492,7 @@ export class Binder extends ParseTreeWalker {
                 range: convertTextRangeToRange(target, this._fileInfo.lines),
                 moduleName: this._fileInfo.moduleName,
                 isInExceptSuite: this._isInExceptSuite,
+                isExplicitBinding: this._currentScope.getBindingType(target.value) !== undefined,
             };
             symbol.addDeclaration(declaration);
         }
@@ -3655,6 +3659,7 @@ export class Binder extends ParseTreeWalker {
                         moduleName: this._fileInfo.moduleName,
                         isInExceptSuite: this._isInExceptSuite,
                         docString: this._getVariableDocString(target),
+                        isExplicitBinding: this._currentScope.getBindingType(name.value) !== undefined,
                     };
                     symbolWithScope.symbol.addDeclaration(declaration);
                 }
@@ -3796,6 +3801,7 @@ export class Binder extends ParseTreeWalker {
                         moduleName: this._fileInfo.moduleName,
                         isInExceptSuite: this._isInExceptSuite,
                         docString: this._getVariableDocString(target),
+                        isExplicitBinding: this._currentScope.getBindingType(name.value) !== undefined,
                     };
                     symbolWithScope.symbol.addDeclaration(declaration);
 

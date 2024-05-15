@@ -243,6 +243,7 @@ export const enum AssignTypeFlags {
 
 export interface ApplyTypeVarOptions {
     unknownIfNotFound?: boolean;
+    useUnknownOverDefault?: boolean;
     unknownExemptTypeVars?: TypeVarType[];
     useNarrowBoundOnly?: boolean;
     eliminateUnsolvedInUnions?: boolean;
@@ -1101,6 +1102,17 @@ export function specializeWithDefaultTypeArgs(type: ClassType): ClassType {
 export function specializeWithUnknownTypeArgs(type: ClassType): ClassType {
     if (type.details.typeParameters.length === 0) {
         return type;
+    }
+
+    if (isTupleClass(type)) {
+        return ClassType.cloneIncludeSubclasses(
+            specializeTupleClass(
+                type,
+                [{ type: UnknownType.create(), isUnbounded: true }],
+                /* isTypeArgumentExplicit */ false
+            ),
+            !!type.includeSubclasses
+        );
     }
 
     return ClassType.cloneForSpecialization(
@@ -2049,96 +2061,6 @@ export function getTypeVarArgumentsRecursive(type: Type, recursionCount = 0): Ty
     }
 
     return [];
-}
-
-// Determines if the type variable appears within the type and only within
-// a particular Callable within that type.
-export function isTypeVarLimitedToCallable(type: Type, typeVar: TypeVarType): boolean {
-    const info = getTypeVarWithinTypeInfoRecursive(type, typeVar);
-    return info.isTypeVarUsed && info.isUsedInCallable;
-}
-
-function getTypeVarWithinTypeInfoRecursive(
-    type: Type,
-    typeVar: TypeVarType,
-    recursionCount = 0
-): {
-    isTypeVarUsed: boolean;
-    isUsedInCallable: boolean;
-} {
-    if (recursionCount > maxTypeRecursionCount) {
-        return { isTypeVarUsed: false, isUsedInCallable: false };
-    }
-    recursionCount++;
-
-    let typeVarUsedCount = 0;
-    let usedInCallableCount = 0;
-
-    if (isTypeVar(type)) {
-        // Ignore P.args or P.kwargs types.
-        if (!isParamSpec(type) || !type.paramSpecAccess) {
-            if (isTypeSame(typeVar, convertToInstance(type))) {
-                typeVarUsedCount++;
-            }
-        }
-    } else if (isClass(type)) {
-        if (type.typeArguments) {
-            type.typeArguments.forEach((typeArg) => {
-                const subResult = getTypeVarWithinTypeInfoRecursive(typeArg, typeVar, recursionCount);
-                if (subResult.isTypeVarUsed) {
-                    typeVarUsedCount++;
-                }
-                if (subResult.isUsedInCallable) {
-                    usedInCallableCount++;
-                }
-            });
-        }
-    } else if (isUnion(type)) {
-        doForEachSubtype(type, (subtype) => {
-            const subResult = getTypeVarWithinTypeInfoRecursive(subtype, typeVar, recursionCount);
-            if (subResult.isTypeVarUsed) {
-                typeVarUsedCount++;
-            }
-            if (subResult.isUsedInCallable) {
-                usedInCallableCount++;
-            }
-        });
-    } else if (isFunction(type)) {
-        for (let i = 0; i < type.details.parameters.length; i++) {
-            if (
-                getTypeVarWithinTypeInfoRecursive(
-                    FunctionType.getEffectiveParameterType(type, i),
-                    typeVar,
-                    recursionCount
-                ).isTypeVarUsed
-            ) {
-                typeVarUsedCount++;
-            }
-        }
-
-        if (type.details.paramSpec) {
-            if (isTypeSame(typeVar, convertToInstance(type.details.paramSpec))) {
-                typeVarUsedCount++;
-            }
-        }
-
-        const returnType = FunctionType.getSpecializedReturnType(type);
-        if (returnType) {
-            if (getTypeVarWithinTypeInfoRecursive(returnType, typeVar, recursionCount).isTypeVarUsed) {
-                typeVarUsedCount++;
-            }
-        }
-
-        if (typeVarUsedCount > 0) {
-            typeVarUsedCount = 1;
-            usedInCallableCount = 1;
-        }
-    }
-
-    return {
-        isTypeVarUsed: typeVarUsedCount > 0,
-        isUsedInCallable: usedInCallableCount === 1 && typeVarUsedCount === 1,
-    };
 }
 
 // Creates a specialized version of the class, filling in any unspecified
@@ -4264,7 +4186,9 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
                             }
 
                             if (this._options.unknownIfNotFound) {
-                                return specializeWithDefaultTypeArgs(subtype);
+                                return this._options.useUnknownOverDefault
+                                    ? specializeWithUnknownTypeArgs(subtype)
+                                    : specializeWithDefaultTypeArgs(subtype);
                             }
                         }
 
@@ -4295,7 +4219,7 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
 
             if (useDefaultOrUnknown) {
                 // Use the default value if there is one.
-                if (typeVar.details.isDefaultExplicit) {
+                if (typeVar.details.isDefaultExplicit && !this._options.useUnknownOverDefault) {
                     return this._solveDefaultType(typeVar.details.defaultType, recursionCount);
                 }
 
@@ -4421,7 +4345,7 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
 
         if (useDefaultOrUnknown) {
             // Use the default value if there is one.
-            if (paramSpec.details.isDefaultExplicit) {
+            if (paramSpec.details.isDefaultExplicit && !this._options.useUnknownOverDefault) {
                 return convertTypeToParamSpecValue(
                     this._solveDefaultType(paramSpec.details.defaultType, recursionCount)
                 );

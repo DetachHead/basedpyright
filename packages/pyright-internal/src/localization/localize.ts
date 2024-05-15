@@ -435,6 +435,10 @@ export namespace Localizer {
         export const ellipsisSecondArg = () => getRawString('Diagnostic.ellipsisSecondArg');
         export const enumClassOverride = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumClassOverride'));
+        export const enumMemberDelete = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberDelete'));
+        export const enumMemberSet = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberSet'));
         export const exceptionGroupIncompatible = () => getRawString('Diagnostic.exceptionGroupIncompatible');
         export const exceptionTypeIncorrect = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.exceptionTypeIncorrect'));
@@ -762,8 +766,6 @@ export namespace Localizer {
         export const paramSpecKwargsUsage = () => getRawString('Diagnostic.paramSpecKwargsUsage');
         export const paramSpecNotUsedByOuterScope = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramSpecNotUsedByOuterScope'));
-        export const paramSpecScopedToReturnType = () =>
-            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramSpecScopedToReturnType'));
         export const paramSpecUnknownArg = () => getRawString('Diagnostic.paramSpecUnknownArg');
         export const paramSpecUnknownMember = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramSpecUnknownMember'));
@@ -1064,8 +1066,6 @@ export namespace Localizer {
             new ParameterizedString<{ name: string; param: string }>(
                 getRawString('Diagnostic.typeVarPossiblyUnsolvable')
             );
-        export const typeVarScopedToReturnType = () =>
-            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeVarScopedToReturnType'));
         export const typeVarSingleConstraint = () => getRawString('Diagnostic.typeVarSingleConstraint');
         export const typeVarsNotInGenericOrProtocol = () => getRawString('Diagnostic.typeVarsNotInGenericOrProtocol');
         export const typeVarTupleContext = () => getRawString('Diagnostic.typeVarTupleContext');
