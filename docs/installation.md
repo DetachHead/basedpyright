@@ -59,7 +59,7 @@ Further info for this LSP server options for `nvim-lspconfig` are available on t
 
 ### Vim
 
-Vim users can install [coc-basedpyright](https://github.com/fannheyward/coc-basedpyright), the Pyright extension for coc.nvim.
+Vim users can install [coc-basedpyright](https://github.com/fannheyward/coc-basedpyright), the BasedPyright extension for coc.nvim.
 
 ### Sublime Text
 
