@@ -50,12 +50,32 @@ most of these IDE plugins require [the pypi package to be installed](#command-li
 install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) or [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
 ### Neovim
-BasedPyright is available through the [`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright) adapter for native Neovim's LSP support.  TL;DR simply add this to your Neovim's settings:
+You need to install the LSP client addapter plugin,
+[nvim-lspconfig](https://github.com/neovim/nvim-lspconfig), for setting up the
+LSP for the editor.  These configurations are for launching the LSP server,
+aswell as for being able to give launching parameters at the same time.
+
+To install the **necessary sever command**, for the LSP server itself, use the
+[pypi package installation method](#command-line--language-server) (as
+mentioned previously in this section, see the [IDE-specific instructions
+above](#ides)).  Or if already using
+[Mason.nvim](https://github.com/williamboman/mason.nvim), follow their
+instructions for installing their packages.  The latter approach allows you to
+have the version of BasedPyright maintained and upgraded by Mason project.
+
+#### Setting-up Neovim
+BasedPyright is available through the
+[`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
+adapter for native Neovim's LSP support.
+
+After having both, the client-side plugin and the LSP server command installed,
+simply add this settings to your Neovim's settings:
 ```lua
 local lspconfig = require("lspconfig")
 lspconfig.basedpyright.setup{}
 ```
-Further info for this LSP server options for `nvim-lspconfig` are available on their docs, linked above.
+Further info for this LSP server options for `nvim-lspconfig` are available on
+their docs, linked above.
 
 ### Vim
 
