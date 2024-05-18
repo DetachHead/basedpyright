@@ -58,11 +58,8 @@ lspconfig.basedpyright.setup{}
 Further info for this LSP server options for `nvim-lspconfig` are available on their docs, linked above.
 
 ### Vim
-*⚠ basedpyright has not been tested on this editor. if you run into issues with these instructions, please raise an issue.*
 
-Vim users can install [coc-pyright](https://github.com/fannheyward/coc-pyright), the Pyright extension for coc.nvim.
-
-Alternatively, [ALE](https://github.com/dense-analysis/ale) will automatically check your code with Pyright if added to the linters list.
+Vim users can install [coc-basedpyright](https://github.com/fannheyward/coc-basedpyright), the Pyright extension for coc.nvim.
 
 ### Sublime Text
 
