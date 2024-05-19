@@ -53,7 +53,7 @@ install the extension from [the vscode extension marketplace](https://marketplac
 You need to install the LSP client addapter plugin,
 [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig), for setting up the
 LSP for the editor.  These configurations are for launching the LSP server,
-aswell as for being able to give launching parameters at the same time.
+as well as for being able to give launching parameters at the same time.
 
 To install the **necessary sever command**, for the LSP server itself, use the
 [pypi package installation method](#command-line--language-server) (as
