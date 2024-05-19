@@ -57,8 +57,7 @@ as well as for being able to give launching parameters at the same time.
 
 To install the **necessary sever command**, for the LSP server itself, use the
 [pypi package installation method](#command-line--language-server) (as
-mentioned previously in this section, see the [IDE-specific instructions
-above](#ides)).  Or if already using
+mentioned previously in this section).  Or if already using
 [Mason.nvim](https://github.com/williamboman/mason.nvim), follow their
 instructions for installing their packages.  The latter approach allows you to
 have the version of BasedPyright maintained and upgraded by Mason project.
