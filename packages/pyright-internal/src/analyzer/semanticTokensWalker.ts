@@ -159,8 +159,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case TypeCategory.Module:
                 this._addItem(node.start, node.length, SemanticTokenTypes.namespace, []);
                 return;
-            // handled bellow
             case TypeCategory.Any:
+                if (type.specialForm) {
+                    this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
+                    return;
+                }
+            // eslint-disable-next-line no-fallthrough -- intentional fallthrough. these are handled below
             case TypeCategory.Unknown:
             case TypeCategory.TypeVar:
                 break;
