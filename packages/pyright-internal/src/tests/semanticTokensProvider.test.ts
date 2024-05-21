@@ -236,13 +236,13 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('unknown.py');
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
-            { type: 'variable', modifiers: [], start: 19, length: 3 }, // Any
-            { type: 'variable', modifiers: [], start: 19, length: 3 },
+            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
+            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
             { type: 'function', modifiers: ['definition'], start: 28, length: 1 }, // f
             { type: 'function', modifiers: [], start: 28, length: 1 },
             { type: 'parameter', modifiers: ['definition'], start: 30, length: 1 }, // l
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
-            { type: 'variable', modifiers: [], start: 42, length: 3 }, // Any
+            { type: 'type', modifiers: [], start: 42, length: 3 }, // Any
             { type: 'variable', modifiers: [], start: 51, length: 1 }, // v
             { type: 'parameter', modifiers: [], start: 55, length: 1 }, // l
             { type: 'variable', modifiers: [], start: 71, length: 1 }, // v
