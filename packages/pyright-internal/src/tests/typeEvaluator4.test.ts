@@ -347,6 +347,12 @@ test('DataClass16', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('DataClass17', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclass17.py']);
+
+    TestUtils.validateResults(analysisResults, 5);
+});
+
 test('DataClassFrozen1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassFrozen1.py']);
 
@@ -388,13 +394,17 @@ test('DataClassDescriptors2', () => {
 });
 
 test('DataClassConverter1', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter1.py']);
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter1.py'], configOptions);
 
-    TestUtils.validateResults(analysisResults, 17);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('DataClassConverter2', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter2.py']);
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter2.py'], configOptions);
 
     TestUtils.validateResults(analysisResults, 4);
 });

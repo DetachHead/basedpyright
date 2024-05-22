@@ -241,6 +241,12 @@ test('Super12', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('Super13', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['super13.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 describe('MissingSuper', () => {
     test('MissingSuper1', () => {
         const configOptions = new ConfigOptions(Uri.empty());
@@ -691,7 +697,7 @@ test('Solver15', () => {
 test('Solver16', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver16.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('Solver17', () => {
@@ -853,7 +859,7 @@ test('SolverHigherOrder4', () => {
 test('SolverHigherOrder5', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solverHigherOrder5.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('SolverHigherOrder6', () => {

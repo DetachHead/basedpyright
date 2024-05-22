@@ -38,7 +38,7 @@ import * as DeclarationUtils from './declarationUtils';
 import { SymbolWithScope } from './scope';
 import { Symbol } from './symbol';
 import { PrintTypeFlags } from './typePrinter';
-import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags } from './typeUtils';
+import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags, UniqueSignatureTracker } from './typeUtils';
 import { TypeVarContext } from './typeVarContext';
 import {
     AnyType,
@@ -523,7 +523,8 @@ export interface TypeEvaluator {
         typeResult: TypeResult<OverloadedFunctionType>,
         typeVarContext: TypeVarContext | undefined,
         skipUnknownArgCheck: boolean,
-        inferenceContext: InferenceContext | undefined
+        inferenceContext: InferenceContext | undefined,
+        signatureTracker: UniqueSignatureTracker | undefined
     ) => CallResult;
     validateInitSubclassArgs: (node: ClassNode, classType: ClassType) => void;
 
@@ -560,7 +561,11 @@ export interface TypeEvaluator {
         emitNotIterableError?: boolean
     ) => TypeResult | undefined;
     getGetterTypeFromProperty: (propertyClass: ClassType, inferTypeIfNeeded: boolean) => Type | undefined;
-    getTypeOfArgument: (arg: FunctionArgument) => TypeResult;
+    getTypeOfArgument: (
+        arg: FunctionArgument,
+        inferenceContext: InferenceContext | undefined,
+        signatureTracker: UniqueSignatureTracker | undefined
+    ) => TypeResult;
     markNamesAccessed: (node: ParseNode, names: string[]) => void;
     expandPromotionTypes: (node: ParseNode, type: Type) => Type;
     makeTopLevelTypeVarsConcrete: (type: Type, makeParamSpecsConcrete?: boolean) => Type;
@@ -646,9 +651,10 @@ export interface TypeEvaluator {
         errorNode: ExpressionNode,
         argList: FunctionArgument[],
         callTypeResult: TypeResult,
-        typeVarContext?: TypeVarContext,
-        skipUnknownArgCheck?: boolean,
-        inferenceContext?: InferenceContext
+        typeVarContext: TypeVarContext | undefined,
+        skipUnknownArgCheck: boolean | undefined,
+        inferenceContext: InferenceContext | undefined,
+        signatureTracker: UniqueSignatureTracker | undefined
     ) => CallResult;
     validateTypeArg: (argResult: TypeResultWithNode, options?: ValidateTypeArgsOptions) => boolean;
     assignTypeToExpression: (

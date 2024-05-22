@@ -1211,8 +1211,7 @@ export function isIsinstanceFilterSuperclass(
     concreteVarType: ClassType,
     filterType: Type,
     concreteFilterType: ClassType,
-    isInstanceCheck: boolean,
-    isTypeIsCheck: boolean
+    isInstanceCheck: boolean
 ) {
     if (isTypeVar(filterType) || concreteFilterType.literalValue !== undefined) {
         return isTypeSame(convertToInstance(filterType), varType);
@@ -1221,7 +1220,7 @@ export function isIsinstanceFilterSuperclass(
     // If the filter type represents all possible subclasses
     // of a type, we can't make any statements about its superclass
     // relationship with concreteVarType.
-    if (!isTypeIsCheck && concreteFilterType.includeSubclasses) {
+    if (concreteFilterType.includeSubclasses) {
         return false;
     }
 
@@ -1344,19 +1343,6 @@ function narrowTypeForIsInstanceInternal(
             let concreteFilterType = evaluator.makeTopLevelTypeVarsConcrete(filterType);
 
             if (isInstantiableClass(concreteFilterType)) {
-                // If the class was implicitly specialized (e.g. because its type
-                // parameters have default values), replace the default type arguments
-                // with Unknown.
-                if (concreteFilterType.typeArguments && !concreteFilterType.isTypeArgumentExplicit) {
-                    concreteFilterType = specializeWithUnknownTypeArgs(
-                        ClassType.cloneForSpecialization(
-                            concreteFilterType,
-                            /* typeArguments */ undefined,
-                            /* isTypeArgumentExplicit */ false
-                        )
-                    );
-                }
-
                 let filterIsSuperclass: boolean;
                 let filterIsSubclass: boolean;
 
@@ -1364,14 +1350,26 @@ function narrowTypeForIsInstanceInternal(
                     filterIsSuperclass = evaluator.assignType(filterType, concreteVarType);
                     filterIsSubclass = evaluator.assignType(concreteVarType, filterType);
                 } else {
+                    // If the class was implicitly specialized (e.g. because its type
+                    // parameters have default values), replace the default type arguments
+                    // with Unknown.
+                    if (concreteFilterType.typeArguments && !concreteFilterType.isTypeArgumentExplicit) {
+                        concreteFilterType = specializeWithUnknownTypeArgs(
+                            ClassType.cloneForSpecialization(
+                                concreteFilterType,
+                                /* typeArguments */ undefined,
+                                /* isTypeArgumentExplicit */ false
+                            )
+                        );
+                    }
+
                     filterIsSuperclass = isIsinstanceFilterSuperclass(
                         evaluator,
                         varType,
                         concreteVarType,
                         filterType,
                         concreteFilterType,
-                        isInstanceCheck,
-                        isTypeIsCheck
+                        isInstanceCheck
                     );
                     filterIsSubclass = isIsinstanceFilterSubclass(
                         evaluator,
@@ -2485,8 +2483,7 @@ function narrowTypeForClassComparison(
                         concreteSubtype,
                         classType,
                         classType,
-                        /* isInstanceCheck */ false,
-                        /* isTypeIsCheck */ false
+                        /* isInstanceCheck */ false
                     )
                 ) {
                     return undefined;
