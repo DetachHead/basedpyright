@@ -7,7 +7,7 @@ unlike the upstream pyright repo, we are very open to ideas for improvements and
 
 ## local development
 
-although pyright is written in typescript, we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a [pypi package](https://pypi.org/project/nodejs-bin/) and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)
+although pyright is written in typescript, we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a [pypi package](https://pypi.org/project/nodejs-wheel/) and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)
 
 we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).
 
