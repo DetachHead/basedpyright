@@ -14,6 +14,6 @@ jobs:
         uses: pdm-project/update-deps-action@v1.8
         with:
           commit-message: 'Update pdm.lock'
-          pr-title: 'Update dependencies'
+          pr-title: 'Update python dependencies'
           update-strategy: eager
           token: ${{ secrets.GH_TOKEN }}
