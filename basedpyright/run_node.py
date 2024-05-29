@@ -7,9 +7,4 @@ from nodejs_wheel.executable import node
 
 
 def run(script_name: str):
-    sys.exit(
-        node(
-            [str(Path(__file__).parent / f"{script_name}.js"), *sys.argv[1:]],
-            return_completed_process=False,
-        )
-    )
+    sys.exit(node([str(Path(__file__).parent / f"{script_name}.js"), *sys.argv[1:]]))
