@@ -19,8 +19,8 @@ import { DiagnosticRule } from './diagnosticRules';
 import { FileSystem } from './fileSystem';
 import { Host } from './host';
 import { PythonVersion, latestStablePythonVersion } from './pythonVersion';
-import { ServiceProvider } from './serviceProvider';
 import { ServiceKeys } from './serviceKeys';
+import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
 import { FileSpec, getFileSpec, isDirectory } from './uri/uriUtils';
 import { userFacingOptionsList } from './stringUtils';
@@ -1180,9 +1180,6 @@ export class ConfigOptions {
     // Minimum threshold for type eval logging
     typeEvaluationTimeThreshold = 50;
 
-    // Current type checking mode.
-    typeCheckingMode?: string;
-
     // Was this config initialized from JSON (pyrightconfig/pyproject)?
     initializedFromJson = false;
 
@@ -1243,10 +1240,9 @@ export class ConfigOptions {
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;
 
-    constructor(projectRoot: Uri, typeCheckingMode?: string) {
+    constructor(projectRoot: Uri) {
         this.projectRoot = projectRoot;
-        this.typeCheckingMode = typeCheckingMode;
-        this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet(typeCheckingMode);
+        this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet();
         this.functionSignatureDisplay = SignatureDisplayType.formatted;
     }
 
@@ -1301,10 +1297,21 @@ export class ConfigOptions {
         return [this.getDefaultExecEnvironment()];
     }
 
+    initializeTypeCheckingMode(
+        typeCheckingMode: string | undefined,
+        severityOverrides?: DiagnosticSeverityOverridesMap
+    ) {
+        this.diagnosticRuleSet = ConfigOptions.getDiagnosticRuleSet(typeCheckingMode);
+
+        if (severityOverrides) {
+            this.applyDiagnosticOverrides(severityOverrides);
+        }
+    }
+
     // Initialize the structure from a JSON object.
     initializeFromJson(
         configObj: any,
-        typeCheckingMode: string | undefined,
+        configDirUri: Uri,
         serviceProvider: ServiceProvider,
         host: Host,
         commandLineOptions?: CommandLineOptions
@@ -1341,7 +1348,7 @@ export class ConfigOptions {
                         } else if (isAbsolute(fileSpec)) {
                             errors.push(`path "${fileSpec}" in "${key}" array should be relative.`);
                         } else {
-                            this[key].push(getFileSpec(this.projectRoot, fileSpec));
+                            this[key].push(getFileSpec(configDirUri, fileSpec));
                         }
                     });
                 }
@@ -1349,11 +1356,10 @@ export class ConfigOptions {
         }
 
         // If there is a "typeCheckingMode", it can override the provided setting.
-        let configTypeCheckingMode: string | undefined;
         if (configObj.typeCheckingMode !== undefined) {
             const validTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'all'];
             if (validTypeCheckingModes.includes(configObj.typeCheckingMode)) {
-                configTypeCheckingMode = configObj.typeCheckingMode;
+                this.diagnosticRuleSet = { ...ConfigOptions.getDiagnosticRuleSet(configObj.typeCheckingMode) };
             } else {
                 errors.push(
                     `Config "typeCheckingMode" entry must contain ${userFacingOptionsList(validTypeCheckingModes)}.`
@@ -1368,15 +1374,6 @@ export class ConfigOptions {
                 errors.push(`Config "useLibraryCodeForTypes" entry must be true or false.`);
             }
         }
-
-        this.typeCheckingMode = configTypeCheckingMode || typeCheckingMode;
-        const defaultSettings = ConfigOptions.getDiagnosticRuleSet(this.typeCheckingMode);
-
-        // Start with the default values for all rules in the rule set.
-        this.diagnosticRuleSet = { ...defaultSettings };
-
-        // Apply host-provided overrides.
-        this.applyDiagnosticOverrides(commandLineOptions?.diagnosticSeverityOverrides);
 
         // Apply overrides from the config file for the boolean rules.
         getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
@@ -1398,17 +1395,15 @@ export class ConfigOptions {
         });
 
         // Read the "venvPath".
-        this.venvPath = undefined;
         if (configObj.venvPath !== undefined) {
             if (typeof configObj.venvPath !== 'string') {
                 errors.push(`Config "venvPath" field must contain a string.`);
             } else {
-                this.venvPath = this.projectRoot.resolvePaths(configObj.venvPath);
+                this.venvPath = configDirUri.resolvePaths(configObj.venvPath);
             }
         }
 
         // Read the "venv" name.
-        this.venv = undefined;
         if (configObj.venv !== undefined) {
             if (typeof configObj.venv !== 'string') {
                 errors.push(`Config "venv" field must contain a string.`);
@@ -1428,7 +1423,7 @@ export class ConfigOptions {
                     if (typeof path !== 'string') {
                         errors.push(`Config "extraPaths" field ${pathIndex} must be a string.`);
                     } else {
-                        this.defaultExtraPaths!.push(this.projectRoot.resolvePaths(path));
+                        this.defaultExtraPaths!.push(configDirUri.resolvePaths(path));
                     }
                 });
             }
@@ -1473,19 +1468,17 @@ export class ConfigOptions {
         this.ensureDefaultPythonPlatform(host, console);
 
         // Read the "typeshedPath" setting.
-        this.typeshedPath = undefined;
         if (configObj.typeshedPath !== undefined) {
             if (typeof configObj.typeshedPath !== 'string') {
                 errors.push(`Config "typeshedPath" field must contain a string.`);
             } else {
                 this.typeshedPath = configObj.typeshedPath
-                    ? this.projectRoot.resolvePaths(configObj.typeshedPath)
+                    ? configDirUri.resolvePaths(configObj.typeshedPath)
                     : undefined;
             }
         }
 
         // Read the "stubPath" setting.
-        this.stubPath = undefined;
 
         // Keep this for backward compatibility
         if (configObj.typingsPath !== undefined) {
@@ -1493,7 +1486,7 @@ export class ConfigOptions {
                 errors.push(`Config "typingsPath" field must contain a string.`);
             } else {
                 errors.push(`Config "typingsPath" is now deprecated. Please, use stubPath instead.`);
-                this.stubPath = this.projectRoot.resolvePaths(configObj.typingsPath);
+                this.stubPath = configDirUri.resolvePaths(configObj.typingsPath);
             }
         }
 
@@ -1501,7 +1494,7 @@ export class ConfigOptions {
             if (typeof configObj.stubPath !== 'string') {
                 errors.push(`Config "stubPath" field must contain a string.`);
             } else {
-                this.stubPath = this.projectRoot.resolvePaths(configObj.stubPath);
+                this.stubPath = configDirUri.resolvePaths(configObj.stubPath);
             }
         }
 
@@ -1545,14 +1538,21 @@ export class ConfigOptions {
 
         // Read the "executionEnvironments" array. This should be done at the end
         // after we've established default values.
-        this.executionEnvironments = [];
         if (configObj.executionEnvironments !== undefined) {
             if (!Array.isArray(configObj.executionEnvironments)) {
                 errors.push(`Config "executionEnvironments" field must contain an array.`);
             } else {
+                this.executionEnvironments = [];
+
                 const execEnvironments = configObj.executionEnvironments as ExecutionEnvironment[];
+
                 execEnvironments.forEach((env, index) => {
-                    const result = this._initExecutionEnvironmentFromJson(env, index, commandLineOptions);
+                    const result = this._initExecutionEnvironmentFromJson(
+                        env,
+                        configDirUri, index,
+                        commandLineOptions
+                    );
+
                     if (result instanceof ExecutionEnvironment) {
                         this.executionEnvironments.push(result);
                     } else {
@@ -1602,6 +1602,18 @@ export class ConfigOptions {
             }
         }
         return errors;
+    }
+
+    static resolveExtends(configObj: any, configDirUri: Uri): Uri | undefined {
+        if (configObj.extends !== undefined) {
+            if (typeof configObj.extends !== 'string') {
+                console.error(`Config "extends" field must contain a string.`);
+            } else {
+                return configDirUri.resolvePaths(configObj.extends);
+            }
+        }
+
+        return undefined;
     }
 
     ensureDefaultPythonPlatform(host: Host, console: ConsoleInterface) {
@@ -1723,6 +1735,7 @@ export class ConfigOptions {
 
     private _initExecutionEnvironmentFromJson(
         envObj: any,
+        configDirUri: Uri,
         index: number,
         commandLineOptions?: CommandLineOptions
     ): ExecutionEnvironment | string[] {
@@ -1730,7 +1743,7 @@ export class ConfigOptions {
         try {
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
-                this.projectRoot,
+                configDirUri,
                 this.defaultPythonVersion,
                 this.defaultPythonPlatform,
                 this.defaultExtraPaths
@@ -1738,7 +1751,7 @@ export class ConfigOptions {
 
             // Validate the root.
             if (envObj.root && typeof envObj.root === 'string') {
-                newExecEnv.root = this.projectRoot.resolvePaths(envObj.root);
+                newExecEnv.root = configDirUri.resolvePaths(envObj.root);
             } else {
                 errors.push(`Config executionEnvironments index ${index}: missing root value.`);
             }
@@ -1756,7 +1769,7 @@ export class ConfigOptions {
                                     ` extraPaths field ${pathIndex} must be a string.`
                             );
                         } else {
-                            newExecEnv.extraPaths.push(this.projectRoot.resolvePaths(path));
+                            newExecEnv.extraPaths.push(configDirUri.resolvePaths(path));
                         }
                     });
                 }
