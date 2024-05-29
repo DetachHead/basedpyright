@@ -15,7 +15,7 @@ import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-langu
 import { BackgroundAnalysisBase, RefreshOptions } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import { CommandLineOptions } from '../common/commandLineOptions';
-import { BasedConfigOptions, ConfigOptions, matchFileSpecs } from '../common/configOptions';
+import { BasedConfigOptions, ConfigErrors, ConfigOptions, matchFileSpecs } from '../common/configOptions';
 import { ConsoleInterface, LogLevel, StandardConsole, log } from '../common/console';
 import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
@@ -55,7 +55,7 @@ import { findPythonSearchPaths } from './pythonPathUtils';
 import { IPythonMode } from './sourceFile';
 import { githubRepo } from '../constants';
 
-export const configFileNames = ['pyrightconfig.json'];
+export const configFileName = 'pyrightconfig.json';
 export const pyprojectTomlName = 'pyproject.toml';
 
 // How long since the last user activity should we wait until running
@@ -85,6 +85,11 @@ export interface AnalyzerServiceOptions {
     fileSystem?: FileSystem;
 }
 
+interface ConfigFileContents {
+    configFileDirUri: Uri;
+    configFileJsonObj: object;
+}
+
 // Hold uniqueId for this service. It can be used to distinguish each service later.
 let _nextServiceId = 1;
 
@@ -104,7 +109,8 @@ export class AnalyzerService {
     private _sourceFileWatcher: FileWatcher | undefined;
     private _reloadConfigTimer: any;
     private _libraryReanalysisTimer: any;
-    private _configFileUri: Uri | undefined;
+    private _primaryConfigFileUri: Uri | undefined;
+    private _extendedConfigFileUris: Uri[] = [];
     private _configFileWatcher: FileWatcher | undefined;
     private _libraryFileWatcher: FileWatcher | undefined;
     private _librarySearchUrisToWatch: Uri[] | undefined;
@@ -535,11 +541,12 @@ export class AnalyzerService {
                     ? Uri.file(commandLineOptions.configFilePath, this.serviceProvider, /* checkRelative */ true)
                     : projectRoot.resolvePaths(commandLineOptions.configFilePath)
             );
+
             if (!this.fs.existsSync(configFilePath)) {
                 this._console.info(`Configuration file not found at ${configFilePath.toUserVisibleString()}.`);
                 configFilePath = projectRoot;
             } else {
-                if (configFilePath.lastExtension.endsWith('.json')) {
+                if (configFilePath.lastExtension.endsWith('.json') || configFilePath.lastExtension.endsWith('.toml')) {
                     projectRoot = configFilePath.getDirectory();
                 } else {
                     projectRoot = configFilePath;
@@ -585,7 +592,11 @@ export class AnalyzerService {
             }
         }
 
-        const configOptions = new BasedConfigOptions(projectRoot, this._typeCheckingMode);
+        const configOptions = new BasedConfigOptions(projectRoot);
+        configOptions.initializeTypeCheckingMode(
+            this._typeCheckingMode,
+            commandLineOptions.diagnosticSeverityOverrides
+        );
         const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
 
         if (commandLineOptions.pythonPath) {
@@ -649,36 +660,37 @@ export class AnalyzerService {
             }
         }
 
-        this._configFileUri = configFilePath || pyprojectFilePath;
-
         configOptions.disableTaggedHints = !!commandLineOptions.disableTaggedHints;
 
-        // If we found a config file, parse it to compute the effective options.
-        let configJsonObj: object | undefined;
-        if (configFilePath) {
-            this._console.info(`Loading configuration file at ${configFilePath.toUserVisibleString()}`);
-            configJsonObj = this._parseJsonConfigFile(configFilePath);
-        } else if (pyprojectFilePath) {
-            this._console.info(`Loading pyproject.toml file at ${pyprojectFilePath.toUserVisibleString()}`);
-            configJsonObj = this._parsePyprojectTomlFile(pyprojectFilePath);
+        const errors: string[] = [];
+
+        configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode ?? 'standard');
+
+        let configs;
+        try {
+            configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
+        } catch (e) {
+            if (e instanceof ConfigErrors) {
+                errors.push(...e.errors);
+            } else {
+                throw e;
+            }
         }
 
-        if (configJsonObj) {
-            const errors = configOptions.initializeFromJson(
-                configJsonObj,
-                this._typeCheckingMode,
-                this.serviceProvider,
-                host,
-                commandLineOptions
+        if (configs) {
+            errors.push(
+                ...configs.flatMap((config) =>
+                    configOptions.initializeFromJson(
+                        config.configFileJsonObj,
+                        config.configFileDirUri,
+                        this.serviceProvider,
+                        host,
+                        commandLineOptions
+                    )
+                )
             );
-            if (errors.length > 0) {
-                for (const error of errors) {
-                    this._console.error(error);
-                }
-                this._reportConfigParseError();
-            }
 
-            const configFileDir = this._configFileUri!.getDirectory();
+            const configFileDir = this._primaryConfigFileUri!.getDirectory();
 
             // If no include paths were provided, assume that all files within
             // the project should be included.
@@ -701,6 +713,13 @@ export class AnalyzerService {
         } else {
             configOptions.autoExcludeVenv = true;
             configOptions.applyDiagnosticOverrides(commandLineOptions.diagnosticSeverityOverrides);
+        }
+
+        if (errors.length > 0) {
+            for (const error of errors) {
+                this._console.error(error);
+            }
+            this._reportConfigParseError();
         }
 
         // Override the analyzeUnannotatedFunctions setting based on the command-line setting.
@@ -867,6 +886,72 @@ export class AnalyzerService {
         return configOptions;
     }
 
+    // Loads the config JSON object from the specified config file along with any
+    // chained config files specified in the "extends" property (recursively).
+    private _getExtendedConfigurations(primaryConfigFileUri: Uri | undefined): ConfigFileContents[] | undefined {
+        this._primaryConfigFileUri = primaryConfigFileUri;
+        this._extendedConfigFileUris = [];
+
+        if (!primaryConfigFileUri) {
+            return undefined;
+        }
+
+        let curConfigFileUri = primaryConfigFileUri;
+
+        const configJsonObjs: ConfigFileContents[] = [];
+        const errors = [];
+
+        while (true) {
+            this._extendedConfigFileUris.push(curConfigFileUri);
+
+            let configFileJsonObj: object | undefined;
+
+            // Is this a TOML or JSON file?
+            if (curConfigFileUri.lastExtension.endsWith('.toml')) {
+                this._console.info(`Loading pyproject.toml file at ${curConfigFileUri.toUserVisibleString()}`);
+                configFileJsonObj = this._parsePyprojectTomlFile(curConfigFileUri);
+            } else {
+                this._console.info(`Loading configuration file at ${curConfigFileUri.toUserVisibleString()}`);
+                configFileJsonObj = this._parseJsonConfigFile(curConfigFileUri);
+            }
+
+            if (!configFileJsonObj) {
+                break;
+            }
+
+            // Push onto the start of the array so base configs are processed first.
+            configJsonObjs.unshift({ configFileJsonObj, configFileDirUri: curConfigFileUri.getDirectory() });
+            let baseConfigUri;
+            try {
+                baseConfigUri = ConfigOptions.resolveExtends(configFileJsonObj, curConfigFileUri.getDirectory());
+            } catch (e) {
+                if (e instanceof ConfigErrors) {
+                    errors.push(...e.errors);
+                } else {
+                    throw e;
+                }
+            }
+            if (!baseConfigUri) {
+                break;
+            }
+
+            // Check for circular references.
+            if (this._extendedConfigFileUris.some((uri) => uri.equals(baseConfigUri))) {
+                errors.push(
+                    `Circular reference in configuration file "extends" setting: ${curConfigFileUri.toUserVisibleString()} ` +
+                        `extends ${baseConfigUri.toUserVisibleString()}`
+                );
+                break;
+            }
+
+            curConfigFileUri = baseConfigUri;
+        }
+        if (errors.length) {
+            throw new ConfigErrors(errors);
+        }
+        return configJsonObjs;
+    }
+
     private _getTypeStubFolder() {
         const stubPath =
             this._configOptions.stubPath ??
@@ -921,12 +1006,11 @@ export class AnalyzerService {
     }
 
     private _findConfigFile(searchPath: Uri): Uri | undefined {
-        for (const name of configFileNames) {
-            const fileName = searchPath.resolvePaths(name);
-            if (this.fs.existsSync(fileName)) {
-                return this.fs.realCasePath(fileName);
-            }
+        const fileName = searchPath.resolvePaths(configFileName);
+        if (this.fs.existsSync(fileName)) {
+            return this.fs.realCasePath(fileName);
         }
+
         return undefined;
     }
 
@@ -1103,7 +1187,7 @@ export class AnalyzerService {
                     this._typeStubTargetUri = rootPackagePath.getDirectory();
                 }
 
-                if (!finalResolvedPath) {
+                if (finalResolvedPath.isEmpty()) {
                     this._typeStubTargetIsSingleFile = false;
                 } else {
                     filesToImport.push(finalResolvedPath);
@@ -1590,8 +1674,8 @@ export class AnalyzerService {
             return;
         }
 
-        if (this._configFileUri) {
-            this._configFileWatcher = this.fs.createFileSystemWatcher([this._configFileUri], (event) => {
+        if (this._primaryConfigFileUri) {
+            this._configFileWatcher = this.fs.createFileSystemWatcher(this._extendedConfigFileUris, (event) => {
                 if (this._verboseOutput) {
                     this._console.info(`Received fs event '${event}' for config file`);
                 }
@@ -1605,7 +1689,7 @@ export class AnalyzerService {
 
                 if (event === 'add' || event === 'change') {
                     const fileName = getFileName(path);
-                    if (fileName && configFileNames.some((name) => name === fileName)) {
+                    if (fileName === configFileName) {
                         if (this._verboseOutput) {
                             this._console.info(`Received fs event '${event}' for config file`);
                         }
@@ -1641,8 +1725,8 @@ export class AnalyzerService {
     private _reloadConfigFile() {
         this._updateConfigFileWatcher();
 
-        if (this._configFileUri) {
-            this._console.info(`Reloading configuration file at ${this._configFileUri.toUserVisibleString()}`);
+        if (this._primaryConfigFileUri) {
+            this._console.info(`Reloading configuration file at ${this._primaryConfigFileUri.toUserVisibleString()}`);
 
             const host = this._backgroundAnalysisProgram.host;
 
@@ -1747,7 +1831,7 @@ export class AnalyzerService {
             this._onCompletionCallback({
                 diagnostics: [],
                 filesInProgram: 0,
-                filesRequiringAnalysis: 0,
+                requiringAnalysisCount: { files: 0, cells: 0 },
                 checkingOnlyOpenFiles: true,
                 fatalErrorOccurred: false,
                 configParseErrorOccurred: true,

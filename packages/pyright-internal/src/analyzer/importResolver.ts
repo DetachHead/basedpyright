@@ -338,7 +338,7 @@ export class ImportResolver {
 
     isStdlibModule(module: ImportedModuleDescriptor, execEnv: ExecutionEnvironment): boolean {
         if (!this._stdlibModules) {
-            this._stdlibModules = this._buildStdlibCache(this.getTypeshedStdLibPath(execEnv));
+            this._stdlibModules = this._buildStdlibCache(this.getTypeshedStdLibPath(execEnv), execEnv);
         }
 
         return this._stdlibModules.has(module.nameParts.join('.'));
@@ -564,6 +564,7 @@ export class ImportResolver {
             return importResult;
         }
 
+        const localImportFailureInfo: string[] = [`Attempting to resolve using local imports: ${importName}`];
         const importPath: ImportPath = { importPath: undefined };
 
         // Going up the given folder one by one until we can resolve the import.
@@ -575,7 +576,7 @@ export class ImportResolver {
                 execEnv,
                 moduleDescriptor,
                 importName,
-                [],
+                localImportFailureInfo,
                 /* allowPartial */ undefined,
                 /* allowNativeLib */ undefined,
                 /* useStubPackage */ false,
@@ -610,6 +611,12 @@ export class ImportResolver {
         if (current) {
             this.cachedParentImportResults.checked(current, importName, importPath);
         }
+
+        if (this._configOptions.verboseOutput) {
+            const console = this.serviceProvider.console();
+            localImportFailureInfo.forEach((diag) => console.log(diag));
+        }
+
         return importResult;
     }
 
@@ -1897,7 +1904,7 @@ export class ImportResolver {
     }
 
     // Finds all of the stdlib modules and returns a Set containing all of their names.
-    private _buildStdlibCache(stdlibRoot: Uri | undefined): Set<string> {
+    private _buildStdlibCache(stdlibRoot: Uri | undefined, executionEnvironment: ExecutionEnvironment): Set<string> {
         const cache = new Set<string>();
 
         if (stdlibRoot) {
@@ -1910,7 +1917,17 @@ export class ImportResolver {
                         const stripped = stripFileExtension(entry.name);
                         // Skip anything starting with an underscore.
                         if (!stripped.startsWith('_')) {
-                            cache.add(prefix ? `${prefix}.${stripped}` : stripped);
+                            if (
+                                this._isStdlibTypeshedStubValidForVersion(
+                                    createImportedModuleDescriptor(stripped),
+                                    root,
+                                    executionEnvironment.pythonVersion,
+                                    executionEnvironment.pythonPlatform,
+                                    []
+                                )
+                            ) {
+                                cache.add(prefix ? `${prefix}.${stripped}` : stripped);
+                            }
                         }
                     }
                 });

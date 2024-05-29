@@ -218,7 +218,7 @@ test('PythonPlatform', () => {
     const nullConsole = new NullConsole();
 
     const sp = createServiceProvider(fs, nullConsole);
-    configOptions.initializeFromJson(json, undefined, sp, new NoAccessHost());
+    configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
 
     const env = configOptions.executionEnvironments[0];
     assert.strictEqual(env.pythonPlatform, 'platform');
@@ -353,10 +353,9 @@ test('both pyright and basedpyright in pyproject.toml', () => {
 });
 
 test('invalid option value in pyproject.toml', () => {
-    const { configOptions, analysisResult } = setupPyprojectToml(
+    const analysisResult = setupPyprojectToml(
         'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
-    );
-    assert.strictEqual(configOptions.typeCheckingMode, undefined);
+    ).analysisResult;
     assert(analysisResult?.configParseErrorOccurred);
     assert(!analysisResult.fatalErrorOccurred);
 });
@@ -392,9 +391,10 @@ test('verify config fileSpecs after cloning', () => {
         ignore: ['**/node_modules/**'],
     };
 
-    const config = new ConfigOptions(Uri.file(process.cwd(), fs));
+    const rootUri = Uri.file(process.cwd(), fs);
+    const config = new ConfigOptions(rootUri);
     const sp = createServiceProvider(fs, new NullConsole());
-    config.initializeFromJson(configFile, undefined, sp, new TestAccessHost());
+    config.initializeFromJson(configFile, rootUri, sp, new TestAccessHost());
     const cloned = deserialize(serialize(config));
 
     assert.deepEqual(config.ignore, cloned.ignore);
@@ -422,4 +422,19 @@ test('extra paths on undefined execution root/default workspace', () => {
         configOptions.defaultExtraPaths?.map((u) => u.getFilePath()),
         expectedExtraPaths.map((u) => u.getFilePath())
     );
+});
+
+test('Extended config files', () => {
+    const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/project_with_extended_config'));
+    const service = createAnalyzer();
+    const commandLineOptions = new CommandLineOptions(cwd, /* fromVsCodeExtension */ true);
+
+    service.setOptions(commandLineOptions);
+
+    const fileList = service.test_getFileNamesFromFileSpecs();
+    const fileNames = fileList.map((p) => p.fileName).sort();
+    assert.deepStrictEqual(fileNames, ['sample.pyi', 'test.py']);
+
+    const configOptions = service.test_getConfigOptions(commandLineOptions);
+    assert.equal(configOptions.diagnosticRuleSet.strictListInference, true);
 });
