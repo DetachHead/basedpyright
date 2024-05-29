@@ -13,7 +13,7 @@ class PackageJson(TypedDict):
 
 
 def run_npm(*args: str):
-    exit_code = npm(list(args))
+    exit_code = npm(args)
     if exit_code != 0:
         raise Exception(f"the following npm command exited with {exit_code=}: {args}")
 
