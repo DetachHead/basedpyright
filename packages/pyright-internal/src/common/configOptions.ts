@@ -1329,7 +1329,10 @@ export class ConfigOptions {
         // keep track of which options have been parsed so we can raise an error on unknown options later
         // this is pretty cringe and we should just replace all this with some sort of schema validator thingy
         // https://github.com/DetachHead/basedpyright/issues/64
-        const readOptions: (string | symbol)[] = [];
+        const readOptions: (string | symbol)[] = [
+            // we initialize it with `extends` because this option gets read before this function gets called
+            'extends',
+        ];
         configObj = new Proxy(configObj, {
             get: (target, name) => {
                 const result = target[name];
