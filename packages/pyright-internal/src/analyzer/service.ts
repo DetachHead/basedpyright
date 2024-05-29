@@ -15,7 +15,7 @@ import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-langu
 import { BackgroundAnalysisBase, RefreshOptions } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import { CommandLineOptions } from '../common/commandLineOptions';
-import { BasedConfigOptions, ConfigOptions, matchFileSpecs } from '../common/configOptions';
+import { BasedConfigOptions, ConfigErrors, ConfigOptions, matchFileSpecs } from '../common/configOptions';
 import { ConsoleInterface, LogLevel, StandardConsole, log } from '../common/console';
 import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
@@ -662,26 +662,33 @@ export class AnalyzerService {
 
         configOptions.disableTaggedHints = !!commandLineOptions.disableTaggedHints;
 
+        const errors: string[] = [];
+
         configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode ?? 'standard');
 
-        const configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
+        let configs;
+        try {
+            configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
+        } catch (e) {
+            if (e instanceof ConfigErrors) {
+                errors.push(...e.errors);
+            } else {
+                throw e;
+            }
+        }
 
         if (configs) {
-            const errors = configs.flatMap((config) =>
-                configOptions.initializeFromJson(
-                    config.configFileJsonObj,
-                    config.configFileDirUri,
-                    this.serviceProvider,
-                    host,
-                    commandLineOptions
+            errors.push(
+                ...configs.flatMap((config) =>
+                    configOptions.initializeFromJson(
+                        config.configFileJsonObj,
+                        config.configFileDirUri,
+                        this.serviceProvider,
+                        host,
+                        commandLineOptions
+                    )
                 )
             );
-            if (errors.length > 0) {
-                for (const error of errors) {
-                    this._console.error(error);
-                }
-                this._reportConfigParseError();
-            }
 
             const configFileDir = this._primaryConfigFileUri!.getDirectory();
 
@@ -706,6 +713,13 @@ export class AnalyzerService {
         } else {
             configOptions.autoExcludeVenv = true;
             configOptions.applyDiagnosticOverrides(commandLineOptions.diagnosticSeverityOverrides);
+        }
+
+        if (errors.length > 0) {
+            for (const error of errors) {
+                this._console.error(error);
+            }
+            this._reportConfigParseError();
         }
 
         // Override the analyzeUnannotatedFunctions setting based on the command-line setting.
@@ -885,6 +899,7 @@ export class AnalyzerService {
         let curConfigFileUri = primaryConfigFileUri;
 
         const configJsonObjs: ConfigFileContents[] = [];
+        const errors = [];
 
         while (true) {
             this._extendedConfigFileUris.push(curConfigFileUri);
@@ -906,15 +921,23 @@ export class AnalyzerService {
 
             // Push onto the start of the array so base configs are processed first.
             configJsonObjs.unshift({ configFileJsonObj, configFileDirUri: curConfigFileUri.getDirectory() });
-
-            const baseConfigUri = ConfigOptions.resolveExtends(configFileJsonObj, curConfigFileUri.getDirectory());
+            let baseConfigUri;
+            try {
+                baseConfigUri = ConfigOptions.resolveExtends(configFileJsonObj, curConfigFileUri.getDirectory());
+            } catch (e) {
+                if (e instanceof ConfigErrors) {
+                    errors.push(...e.errors);
+                } else {
+                    throw e;
+                }
+            }
             if (!baseConfigUri) {
                 break;
             }
 
             // Check for circular references.
             if (this._extendedConfigFileUris.some((uri) => uri.equals(baseConfigUri))) {
-                this._console.error(
+                errors.push(
                     `Circular reference in configuration file "extends" setting: ${curConfigFileUri.toUserVisibleString()} ` +
                         `extends ${baseConfigUri.toUserVisibleString()}`
                 );
@@ -923,7 +946,9 @@ export class AnalyzerService {
 
             curConfigFileUri = baseConfigUri;
         }
-
+        if (errors.length) {
+            throw new ConfigErrors(errors);
+        }
         return configJsonObjs;
     }
 

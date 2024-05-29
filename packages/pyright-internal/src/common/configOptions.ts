@@ -1110,6 +1110,12 @@ export function matchFileSpecs(configOptions: ConfigOptions, uri: Uri, isFile = 
     return false;
 }
 
+export class ConfigErrors extends Error {
+    constructor(public errors: string[]) {
+        super(errors.join('\n'));
+    }
+}
+
 // Internal configuration options. These are derived from a combination
 // of the command line and from a JSON-based config file.
 export class ConfigOptions {
@@ -1547,11 +1553,7 @@ export class ConfigOptions {
                 const execEnvironments = configObj.executionEnvironments as ExecutionEnvironment[];
 
                 execEnvironments.forEach((env, index) => {
-                    const result = this._initExecutionEnvironmentFromJson(
-                        env,
-                        configDirUri, index,
-                        commandLineOptions
-                    );
+                    const result = this._initExecutionEnvironmentFromJson(env, configDirUri, index, commandLineOptions);
 
                     if (result instanceof ExecutionEnvironment) {
                         this.executionEnvironments.push(result);
@@ -1607,7 +1609,7 @@ export class ConfigOptions {
     static resolveExtends(configObj: any, configDirUri: Uri): Uri | undefined {
         if (configObj.extends !== undefined) {
             if (typeof configObj.extends !== 'string') {
-                console.error(`Config "extends" field must contain a string.`);
+                throw new ConfigErrors([`Config "extends" field must contain a string.`]);
             } else {
                 return configDirUri.resolvePaths(configObj.extends);
             }
