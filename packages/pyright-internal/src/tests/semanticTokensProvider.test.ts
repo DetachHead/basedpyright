@@ -51,16 +51,35 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('never', () => {
         const result = semanticTokenizeSampleFile('never.py');
         expect(result).toStrictEqual([
-            { type: 'namespace', modifiers: [], start: 5, length: 6 },
-            { type: 'class', modifiers: [], start: 19, length: 5 },
-            { type: 'class', modifiers: [], start: 19, length: 5 },
-            { type: 'variable', modifiers: [], start: 26, length: 3 },
-            { type: 'type', modifiers: [], start: 31, length: 5 },
-            { type: 'class', modifiers: [], start: 37, length: 3 },
-            { type: 'class', modifiers: [], start: 43, length: 5 },
-            { type: 'function', modifiers: ['definition'], start: 54, length: 3 },
-            { type: 'function', modifiers: [], start: 54, length: 3 },
-            { type: 'type', modifiers: [], start: 63, length: 5 },
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'class', modifiers: [], start: 19, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 19, length: 5 }, // Never
+            { type: 'variable', modifiers: [], start: 26, length: 3 }, // foo
+            { type: 'type', modifiers: [], start: 31, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 37, length: 3 }, // bar
+            { type: 'class', modifiers: [], start: 43, length: 5 }, // Never
+            { type: 'function', modifiers: ['definition'], start: 54, length: 3 }, // baz
+            { type: 'function', modifiers: [], start: 54, length: 3 }, // baz
+            { type: 'type', modifiers: [], start: 63, length: 5 }, // Never
+            { type: 'function', modifiers: ['definition'], start: 83, length: 4 }, // asdf
+            { type: 'function', modifiers: [], start: 83, length: 4 }, // asdf
+            { type: 'parameter', modifiers: ['definition'], start: 88, length: 3 }, // foo
+            { type: 'type', modifiers: [], start: 93, length: 5 }, // Never
+            { type: 'variable', modifiers: [], start: 105, length: 5 }, // value
+            { type: 'type', modifiers: [], start: 112, length: 5 }, // Never
+            { type: 'parameter', modifiers: [], start: 120, length: 3 }, // foo
+            { type: 'variable', modifiers: [], start: 128, length: 5 }, // value
+            { type: 'class', modifiers: [], start: 135, length: 4 }, // Type
+            { type: 'class', modifiers: [], start: 142, length: 5 }, // Never
+            { type: 'variable', modifiers: [], start: 148, length: 5 }, // value
+            { type: 'type', modifiers: [], start: 155, length: 4 }, // Type
+            { type: 'function', modifiers: ['definition'], start: 169, length: 8 }, // inferred
+            { type: 'function', modifiers: [], start: 169, length: 8 }, // inferred
+            { type: 'variable', modifiers: [], start: 185, length: 5 }, // value
+            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 207, length: 10 }, // isinstance
+            { type: 'variable', modifiers: [], start: 218, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 225, length: 3 }, // str
+            { type: 'variable', modifiers: [], start: 239, length: 5 }, // value
         ]);
     });
 

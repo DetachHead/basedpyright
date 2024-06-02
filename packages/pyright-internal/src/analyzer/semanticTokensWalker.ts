@@ -205,11 +205,19 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 }
         }
         const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.value, false)?.symbol;
-        if (type?.category === TypeCategory.Never && symbol && !this._evaluator.getDeclaredTypeOfSymbol(symbol).type) {
-            // for some reason Never is considered both instantiable and an instance, so we need to look up the type this way
-            // to differentiate between "instances" of `Never` and type aliases/annotations of Never:
-            this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
-            return;
+        if (type?.category === TypeCategory.Never && symbol) {
+            // for some reason Never is considered both instantiable and an instance, so we need a way
+            // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
+            // this is probably extremely cringe since i have no idea what this is doing and i literally
+            // just brute forced random shit until all the tests passed
+            const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
+            if (
+                typeResult.type.category !== TypeCategory.Never &&
+                (typeResult.type.category !== TypeCategory.Unbound || !typeResult.includesIllegalTypeAliasDecl)
+            ) {
+                this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
+                return;
+            }
         }
         const declarations = this._evaluator?.getDeclarationsForNameNode(node);
         if (declarations?.some(isParameterDeclaration)) {
