@@ -101,7 +101,7 @@ export function assignTypeToTypeVar(
 
     let isTypeVarInScope = true;
     const isInvariant = (flags & AssignTypeFlags.EnforceInvariance) !== 0;
-    const isContravariant = (flags & AssignTypeFlags.ReverseTypeVarMatching) !== 0;
+    const isContravariant = (flags & AssignTypeFlags.ReverseTypeVarMatching) !== 0 && !isInvariant;
 
     // If the TypeVar doesn't have a scope ID, then it's being used
     // outside of a valid TypeVar scope. This will be reported as a
@@ -513,6 +513,31 @@ export function assignTypeToTypeVar(
                         );
                     }
                 }
+            }
+        }
+
+        // If this is an invariant context, make sure the narrow type bound
+        // isn't too wide.
+        if (isInvariant && newNarrowTypeBound) {
+            if (
+                !evaluator.assignType(
+                    adjSrcType,
+                    newNarrowTypeBound,
+                    diag?.createAddendum(),
+                    /* destTypeVarContext */ undefined,
+                    /* srcTypeVarContext */ undefined,
+                    AssignTypeFlags.IgnoreTypeVarScope,
+                    recursionCount
+                )
+            ) {
+                if (diag && diagAddendum) {
+                    diag.addMessage(
+                        LocAddendum.typeAssignmentMismatch().format(
+                            evaluator.printSrcDestTypes(newNarrowTypeBound, adjSrcType)
+                        )
+                    );
+                }
+                return false;
             }
         }
 

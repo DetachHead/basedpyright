@@ -439,6 +439,7 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberDelete'));
         export const enumMemberSet = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberSet'));
+        export const enumMemberTypeAnnotation = () => getRawString('Diagnostic.enumMemberTypeAnnotation');
         export const exceptionGroupIncompatible = () => getRawString('Diagnostic.exceptionGroupIncompatible');
         export const exceptionTypeIncorrect = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.exceptionTypeIncorrect'));
@@ -1175,7 +1176,7 @@ export namespace Localizer {
         export const yieldFromIllegal = () => getRawString('Diagnostic.yieldFromIllegal');
         export const yieldFromOutsideAsync = () => getRawString('Diagnostic.yieldFromOutsideAsync');
         export const yieldOutsideFunction = () => getRawString('Diagnostic.yieldOutsideFunction');
-        export const yieldWithinListCompr = () => getRawString('Diagnostic.yieldWithinListCompr');
+        export const yieldWithinComprehension = () => getRawString('Diagnostic.yieldWithinComprehension');
         export const zeroCaseStatementsFound = () => getRawString('Diagnostic.zeroCaseStatementsFound');
         export const zeroLengthTupleNotAllowed = () => getRawString('Diagnostic.zeroLengthTupleNotAllowed');
         export const pyrightIgnoreCommentWithoutRule = () => getRawString('Diagnostic.pyrightIgnoreCommentWithoutRule');

@@ -36,6 +36,8 @@ import {
     CallNode,
     CaseNode,
     ClassNode,
+    ComprehensionIfNode,
+    ComprehensionNode,
     DelNode,
     DictionaryNode,
     ErrorNode,
@@ -52,8 +54,6 @@ import {
     ImportNode,
     IndexNode,
     LambdaNode,
-    ListComprehensionIfNode,
-    ListComprehensionNode,
     ListNode,
     MatchNode,
     MemberAccessNode,
@@ -891,12 +891,12 @@ export class Checker extends ParseTreeWalker {
         return true;
     }
 
-    override visitListComprehension(node: ListComprehensionNode): boolean {
+    override visitComprehension(node: ComprehensionNode): boolean {
         this._scopedNodes.push(node);
         return true;
     }
 
-    override visitListComprehensionIf(node: ListComprehensionIfNode): boolean {
+    override visitComprehensionIf(node: ComprehensionIfNode): boolean {
         this._validateConditionalIsBool(node.testExpression);
         this._reportUnnecessaryConditionExpression(node.testExpression);
         return true;
@@ -1952,7 +1952,7 @@ export class Checker extends ParseTreeWalker {
             node.nodeType === ParseNodeType.Dictionary
         ) {
             // Exclude comprehensions.
-            if (!node.entries.some((entry) => entry.nodeType === ParseNodeType.ListComprehension)) {
+            if (!node.entries.some((entry) => entry.nodeType === ParseNodeType.Comprehension)) {
                 reportAsUnused = true;
             }
         }
@@ -4025,7 +4025,7 @@ export class Checker extends ParseTreeWalker {
     private _isSymbolPrivate(nameValue: string, scopeType: ScopeType) {
         // All variables within the scope of a function or a list
         // comprehension are considered private.
-        if (scopeType === ScopeType.Function || scopeType === ScopeType.ListComprehension) {
+        if (scopeType === ScopeType.Function || scopeType === ScopeType.Comprehension) {
             return true;
         }
 
@@ -4846,12 +4846,17 @@ export class Checker extends ParseTreeWalker {
         }
 
         ClassType.getSymbolTable(classType).forEach((symbol, name) => {
-            // Enum members don't have type annotations.
-            if (symbol.getTypedDeclarations().length > 0) {
-                return;
-            }
-
-            const symbolType = transformTypeForEnumMember(this._evaluator, classType, name);
+            // Determine whether this is an enum member. We ignore the presence
+            // of an annotation in this case because the runtime does. From a
+            // type checking perspective, if the runtime treats the assignment
+            // as an enum member but there is a type annotation present, it is
+            // considered a type checking error.
+            const symbolType = transformTypeForEnumMember(
+                this._evaluator,
+                classType,
+                name,
+                /* ignoreAnnotation */ true
+            );
 
             // Is this symbol a literal instance of the enum class?
             if (
@@ -4860,6 +4865,19 @@ export class Checker extends ParseTreeWalker {
                 !ClassType.isSameGenericClass(symbolType, classType) ||
                 !(symbolType.literalValue instanceof EnumLiteral)
             ) {
+                return;
+            }
+
+            // Enum members should not have type annotations.
+            const typedDecls = symbol.getTypedDeclarations();
+            if (typedDecls.length > 0) {
+                if (typedDecls[0].type === DeclarationType.Variable && typedDecls[0].inferredTypeSource) {
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        LocMessage.enumMemberTypeAnnotation(),
+                        typedDecls[0].node
+                    );
+                }
                 return;
             }
 

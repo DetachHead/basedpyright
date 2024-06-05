@@ -154,6 +154,8 @@
         "ellipsisContext": "\"...\" не допускается в данном контексте",
         "ellipsisSecondArg": "\"...\" разрешается только в качестве второго из двух аргументов",
         "enumClassOverride": "Перечислимый класс \"{name}\" является окончательным и не может иметь производных классов",
+        "enumMemberDelete": "Не удается удалить элемент перечисления \"{name}\"",
+        "enumMemberSet": "Не удается назначить элемент перечисления \"{name}\"",
         "exceptionGroupIncompatible": "Синтаксис группы исключений (\"except*\") можно использовать в Python версии не ранее 3.11",
         "exceptionTypeIncorrect": "\"{type}\" не является производным от BaseException",
         "exceptionTypeNotClass": "\"{type}\" не является допустимым классом исключений",
@@ -621,7 +623,7 @@
         "yieldFromIllegal": "\"Yield from\" можно использовать в Python версии не ниже 3.3",
         "yieldFromOutsideAsync": "\"yield from\" не допускается в асинхронной функции",
         "yieldOutsideFunction": "\"yield\" не допускается за пределами функции или лямбда-выражении",
-        "yieldWithinListCompr": "\"yield\" не допускается внутри понимания списка",
+        "yieldWithinComprehension": "\"yield\" не допускается внутри понимания списка",
         "zeroCaseStatementsFound": "Операторе match должен включать по крайней мере один оператор case",
         "zeroLengthTupleNotAllowed": "Кортеж нулевой длины не допускается в этом контексте"
     },

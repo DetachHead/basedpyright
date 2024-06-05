@@ -34,9 +34,9 @@ import { RealTempFile, createFromRealFileSystem } from './common/realFileSystem'
 import { ServiceProvider } from './common/serviceProvider';
 import { createServiceProvider } from './common/serviceProviderExtensions';
 import { Range, isEmptyRange } from './common/textRange';
+import { Uri } from './common/uri/uri';
 import { getFileSpec, tryStat } from './common/uri/uriUtils';
 import { PyrightFileSystem } from './pyrightFileSystem';
-import { Uri } from './common/uri/uri';
 import { toolName } from './constants';
 import version from './version.json';
 import * as core from '@actions/core';
@@ -468,10 +468,10 @@ async function processArgs(): Promise<ExitStatus> {
             } catch (err) {
                 let errMessage = '';
                 if (err instanceof Error) {
-                    errMessage = ': ' + err.message;
+                    errMessage = err.message;
                 }
 
-                console.error(`Error occurred when creating type stub: ` + errMessage);
+                console.error(`Error occurred when creating type stub: ${errMessage}`);
                 exitStatus.resolve(ExitStatus.FatalError);
                 return;
             }
