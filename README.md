@@ -239,11 +239,23 @@ used to be `basic`, but now defaults to `all`. in the future we intend to add [b
 #### `pythonPlatform`
 used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
 
+### inline `TypedDict` support
+
+pyright used to support defining `TypedDict`s inline, like so:
+
+```py
+foo: dict[{"foo": int, "bar": str}] = {"foo": "a", "bar": 1}
+```
+
+this was an experimental feature and was removed because it never made it into a PEP. but this functionality is very convenient and we see no reason not to continue supporting it, so we added it back in basedpyright.
+
+currently this can be disabled by setting `enableExperimentalFeatures` to `false`. in the future there will be a separate `enableNonStandardFeatures` option once we [add more "based" features](#basedmypy-feature-parity).
+
 ### improved integration with CI platforms
 
 regular pyright has third party integrations for github actions and gitlab, but they are difficult to install/set up. these integrations are built into basedpyright, which makes them much easier to use.
 
-### github actions
+#### github actions
 
 basedpyright automatically detects when it's running in a github action, and modifies its output to use [github workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions). this means errors will be displayed on the affected lines of code in your pull requests automatically:
 
@@ -261,7 +273,7 @@ jobs:
       - run: basedpyright  # no additional arguments required. it automatically detects if it's running in a github action 
 ```
 
-### gitlab code quality reports
+#### gitlab code quality reports
 
 the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html) which shows up on merge requests:
 

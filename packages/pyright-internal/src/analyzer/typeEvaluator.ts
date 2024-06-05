@@ -7180,7 +7180,8 @@ export function createTypeEvaluator(
                         isInstantiableClass(concreteSubtype) && ClassType.isBuiltIn(concreteSubtype, 'ClassVar');
 
                     // Inlined TypedDicts are supported only for 'dict' (and not for 'Dict').
-                    // This feature is currently experimental.
+                    // This feature was originally an experimental feature in pyright but was removed because
+                    // no one ever turned it into a pep. but i dont care!!!!!!!!!!!!!!!
                     const supportsTypedDictTypeArg =
                         AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures &&
                         ClassType.isBuiltIn(concreteSubtype, 'dict') &&
