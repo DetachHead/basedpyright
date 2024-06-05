@@ -9,7 +9,12 @@ Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with v
 
 ## why?
 
-the main motivation behind this fork was the fact that pyright has several serious issues that the maintainers didn't want to address, and many bugs that they consider to be intentional behavior. here is a list of some of its major problems that basedpyright resolves:
+there are two main reasons for this fork:
+
+1. pyright is lacking several features that are made exclusive to pylance, microsoft's closed-source vscode extension
+2. the maintainer of pyright [closes valid issues for no reason and lashes out at users](https://github.com/microsoft/pyright/issues/8065#issuecomment-2146352290)
+
+here is a (mostly) comprehensive list of the new features we've added to basedpyright:
 
 ### ability to pin the version used by vscode
 
