@@ -288,6 +288,7 @@ import {
     assignToTypedDict,
     assignTypedDictToTypedDict,
     createTypedDictType,
+    createTypedDictTypeInlined,
     getTypeOfIndexedTypedDict,
     getTypedDictDictEquivalent,
     getTypedDictMappingEquivalent,
@@ -354,6 +355,7 @@ interface GetTypeArgsOptions {
     hasCustomClassGetItem?: boolean;
     isFinalAnnotation?: boolean;
     isClassVarAnnotation?: boolean;
+    supportsTypedDictTypeArg?: boolean;
 }
 
 export interface MemberAccessTypeResult {
@@ -601,6 +603,7 @@ export function createTypeEvaluator(
     let intClass: Type | undefined;
     let strClass: Type | undefined;
     let dictClass: Type | undefined;
+    let typedDictClass: Type | undefined;
     let typedDictPrivateClass: Type | undefined;
     let supportsKeysAndGetItemClass: Type | undefined;
     let mappingClass: Type | undefined;
@@ -945,6 +948,7 @@ export function createTypeEvaluator(
             intClass = getBuiltInType(node, 'int');
             strClass = getBuiltInType(node, 'str');
             dictClass = getBuiltInType(node, 'dict');
+            typedDictClass = getTypingType(node, 'TypedDict');
             typedDictPrivateClass = getTypingType(node, '_TypedDict');
             awaitableClass = getTypingType(node, 'Awaitable');
             mappingClass = getTypingType(node, 'Mapping');
@@ -7175,11 +7179,19 @@ export function createTypeEvaluator(
                     const isClassVarAnnotation =
                         isInstantiableClass(concreteSubtype) && ClassType.isBuiltIn(concreteSubtype, 'ClassVar');
 
+                    // Inlined TypedDicts are supported only for 'dict' (and not for 'Dict').
+                    // This feature is currently experimental.
+                    const supportsTypedDictTypeArg =
+                        AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures &&
+                        ClassType.isBuiltIn(concreteSubtype, 'dict') &&
+                        !ClassType.isBuiltIn(concreteSubtype, 'Dict');
+
                     let typeArgs = getTypeArgs(node, flags, {
                         isAnnotatedClass,
                         hasCustomClassGetItem: hasCustomClassGetItem || !isGenericClass,
                         isFinalAnnotation,
                         isClassVarAnnotation,
+                        supportsTypedDictTypeArg,
                     });
 
                     if (!isAnnotatedClass) {
@@ -7766,7 +7778,7 @@ export function createTypeEvaluator(
                     node: expr,
                 };
             } else {
-                typeResult = getTypeArg(expr, adjFlags);
+                typeResult = getTypeArg(expr, adjFlags, !!options?.supportsTypedDictTypeArg && argIndex === 0);
             }
 
             return typeResult;
@@ -7819,7 +7831,11 @@ export function createTypeEvaluator(
         return typeArgs;
     }
 
-    function getTypeArg(node: ExpressionNode, flags: EvaluatorFlags): TypeResultWithNode {
+    function getTypeArg(
+        node: ExpressionNode,
+        flags: EvaluatorFlags,
+        supportsDictExpression: boolean
+    ): TypeResultWithNode {
         let typeResult: TypeResultWithNode;
 
         let adjustedFlags =
@@ -7844,6 +7860,18 @@ export function createTypeEvaluator(
 
             // Set the node's type so it isn't reevaluated later.
             setTypeResultForNode(node, { type: UnknownType.create() });
+        } else if (node.nodeType === ParseNodeType.Dictionary && supportsDictExpression) {
+            const inlinedTypeDict =
+                typedDictClass && isInstantiableClass(typedDictClass)
+                    ? createTypedDictTypeInlined(evaluatorInterface, node, typedDictClass)
+                    : undefined;
+            const keyTypeFallback = strClass && isInstantiableClass(strClass) ? strClass : UnknownType.create();
+
+            typeResult = {
+                type: keyTypeFallback,
+                inlinedTypeDict,
+                node,
+            };
         } else {
             typeResult = { ...getTypeOfExpression(node, adjustedFlags), node };
 
