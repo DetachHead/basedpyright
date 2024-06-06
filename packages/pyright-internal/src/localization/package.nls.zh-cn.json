@@ -648,8 +648,8 @@
         "zeroLengthTupleNotAllowed": "此上下文中不允许使用零长度元组",
         "pyrightIgnoreCommentWithoutRule": "`pyright: ignore` 注释必须指定具体规则（例如 `# pyright: ignore[ruleName]`）",
         "typeIgnoreCommentWithoutRule": "`type: ignore` 注释必须指定具体规则（例如 `# type: ignore[ruleName]`）",
-        "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module",
-        "invalidCast": "Conversion of type `{fromType}` to type `{toType}` may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to `object` first."
+        "implicitRelativeImport": "从 `{importName}` 导入会进行隐式的相对导入，如果此文件作为模块导入则会出错",
+        "invalidCast": "从 `{fromType}` 类型到 `{toType}` 类型的转换可能有误，这两个类型不完全重叠。如果是有意为之，请先将其转换为 `object`。"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "特化的 \"Annotated\" 形式不能与实例检查和类检查一起使用",
