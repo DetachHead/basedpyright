@@ -6,23 +6,39 @@ Due to some issues with the translation of Pylance, some adjustments have been m
 
 ## 用词调整 (Word Adjustments)
 
+用词调整针对专有名词和非专有名词采取了不同的调整策略：
+- 对于存在争议的专有名词翻译，按照如下规则进行调整，若翻译后：
+  - 如果该名词已经被广泛接受，且翻译并未导致歧义，保留原翻译；
+  - 如果该翻译存在歧义，则寻找Python官方文档中的翻译，若官方文档中存在翻译，则采用官方翻译；
+  - 若官方文档中不存在翻译，或者翻译仍然存在歧义，则采用大众普遍认知的翻译形式并标注英文原词；
+  - 若以上方法均无法解决，则直接使用原词不进行翻译；
+- 对于非专有名词，向更符合中文书写习惯的方向进行调整。
+
+Word adjustments take different adjustment strategies for proper nouns and non-proper nouns:
+- For controversial translations of proper nouns, adjustments are made according to the following rules:
+  - If the noun has been widely accepted and the translation does not cause ambiguity, the original translation is retained;
+  - If the translation is ambiguous, look for the translation in the Python official documentation. If there is a translation in the official documentation, use the official translation;
+  - If there is no translation in the official documentation, or the translation is still ambiguous, use the translation form that is generally recognized by the public and mark the original English word;
+  - If none of the above methods can solve the problem, use the original word directly without translation;
+---
+
 下列是调整的速查表，调整的原因和影响的范围将在下文进行描述。
 
 Below is a quick reference table of the adjustments. The reasons for the adjustments and the scope of their impact will be described in the following text.
 
-| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) | 错译类型 (Type of Mistranslation)           |
-| ---------------------------- | ------------------------------- | ------------------------------- | ------------------------------------------- |
+| 原词 (Original Word)         | 原始翻译 (Original Translation) | 调整翻译 (Adjusted Translation) | 错译类型 (Type of Mistranslation)          |
+| ---------------------------- | ------------------------------- | ------------------------------- | ------------------------------------------ |
 | annotation                   | （类型）批注                    | （类型）标注                    | 与文档不一致/Inconsistent with Python docs |
-| Any                          | 任意                            | Any                             | 语义错误/Wrong meaning in context           |
+| Any                          | 任意                            | Any                             | 语义错误/Wrong meaning in context          |
 | argument                     | 参数                            | 参数/实参                       | 语义错误/Wrong meaning in context          |
-| import                       | 导入/Import                     | 导入                            | 语义错误/Wrong meaning in context           |
+| import                       | 导入/Import                     | 导入                            | 语义错误/Wrong meaning in context          |
 | parameter                    | 参数                            | 参数/形参                       | 语义错误/Wrong meaning in context          |
 | True                         | true/True                       | True                            | 语义错误/Wrong meaning in context          |
-| assign                       | 分配                            | 赋值                            | 词义错误/Wrong word meaning                 |
-| comprehension                | 理解                            | 推导式                          | 词义错误/Wrong word meaning                 |
-| follow                       | 遵循                            | 在..之后                        | 词义错误/Wrong word meaning                 |
-| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                | 词义错误/Wrong word meaning                 |
-| obscure                      | 遮盖/隐蔽                       | 覆盖                            | 词义错误/Wrong word meaning                 |
+| assign                       | 分配                            | 赋值                            | 词义错误/Wrong word meaning                |
+| comprehension                | 理解                            | 推导式                          | 词义错误/Wrong word meaning                |
+| follow                       | 遵循                            | 在..之后                        | 词义错误/Wrong word meaning                |
+| implementation/unimplemented | （未）实施/实行（的）           | （未）实现（的）                | 词义错误/Wrong word meaning                |
+| obscure                      | 遮盖/隐蔽                       | 覆盖                            | 词义错误/Wrong word meaning                |
 
 其中，**import**, **obscure** 和 **True** 在原本的翻译中存在多种翻译，因此在本次调整中统一了翻译。在 Pylance 注释相关的规则中，**True** 则统一为 **true**，因为它代表的并不是 Python 中的布尔值。
 
@@ -162,9 +178,11 @@ Style adjustments refer to the project [sparanoid/chinese-copywriting-guidelines
 
 Usually, when mixing Chinese and English, spaces need to be added between Chinese and English to increase readability. In the original translation, this rule was only followed in some texts, so it was adjusted. Text enclosed in quotes and parameter text also follow this rule, adding spaces on both sides to emphasize their content.
 
-### 统一标点符号 (Unified punctuation)
+## 统一标点符号 (Unified punctuation)
 
 在原始翻译中，中文的全角标点符号和英文的半角标点符号混用，于是对其进行了调整，除英文之间的标点以外，全部统一为全角标点符号。
+
+
 
 ---
 
