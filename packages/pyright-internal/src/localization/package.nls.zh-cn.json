@@ -649,7 +649,8 @@
         "pyrightIgnoreCommentWithoutRule": "`pyright: ignore` 注释必须指定具体规则（例如 `# pyright: ignore[ruleName]`）",
         "typeIgnoreCommentWithoutRule": "`type: ignore` 注释必须指定具体规则（例如 `# type: ignore[ruleName]`）",
         "implicitRelativeImport": "从 `{importName}` 导入会进行隐式的相对导入，如果此文件作为模块导入则会出错",
-        "invalidCast": "从 `{fromType}` 类型到 `{toType}` 类型的转换可能有误，这两个类型不完全重叠。如果是有意为之，请先将其转换为 `object`。"
+        "invalidCast": "从 `{fromType}` 类型到 `{toType}` 类型的转换可能有误，这两个类型不完全重叠。如果是有意为之，请先将其转换为 `object`。",
+        "multipleInheritance": "当前的基类无法进行多继承；因为下列基类具有 `__init__` 或 `__new__` 方法：{classes}"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "特化的 \"Annotated\" 形式不能与实例检查和类检查一起使用",
@@ -825,7 +826,8 @@
         "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的差异与基类 \"{className}\" 不兼容",
         "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的差异与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 `.{importName}` 作为相对导入",
-        "fullPathImportSuggestion": "或指定完整模块路径：`{importName}`"
+        "fullPathImportSuggestion": "或指定完整模块路径：`{importName}`",
+        "firstBaseClassCanHaveConstructor": "只允许第一个基类拥有构造函数。"
     },
     "Service": {
         "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
