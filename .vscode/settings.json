@@ -63,7 +63,8 @@
     "editor.acceptSuggestionOnCommitCharacter": false,
     "jest.runMode": "on-demand",
     "pylint.ignorePatterns": [
-        "**/pyright-internal/src/tests/samples/*"
+        "**/pyright-internal/src/tests/samples/*",
+        "**/build/generateUnicodeTables.py"
     ],
     "terminal.integrated.env.windows": {
       "PATH": "${env:PATH};./.pyprojectx/main"
