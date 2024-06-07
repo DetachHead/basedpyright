@@ -161,10 +161,9 @@ score = "no"
 max-line-length = 200
 
 [tool.basedpyright]
-ignore = ["pw", "basedpyright/dist", "packages"]
 pythonVersion = "3.8"
 include = ["basedpyright", "get_version.py", "pdm_build.py"]
-exclude = ["pw", "basedpyright/dist", "packages"]
+ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
 reportImplicitStringConcatenation = false                    # conflicts with ruff formatter
 
