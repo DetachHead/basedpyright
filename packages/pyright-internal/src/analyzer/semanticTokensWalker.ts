@@ -212,8 +212,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             // just brute forced random shit until all the tests passed
             const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
             if (
-                typeResult.type.category !== TypeCategory.Never &&
-                (typeResult.type.category !== TypeCategory.Unbound || !typeResult.includesIllegalTypeAliasDecl)
+                (typeResult.type.category !== TypeCategory.Never &&
+                    typeResult.type.category !== TypeCategory.Unbound &&
+                    typeResult.type.flags & TypeFlags.Instantiable) ||
+                (typeResult.type.category === TypeCategory.Unbound && !typeResult.includesIllegalTypeAliasDecl)
             ) {
                 this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
                 return;
