@@ -80,6 +80,12 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 218, length: 5 }, // value
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 225, length: 3 }, // str
             { type: 'variable', modifiers: [], start: 239, length: 5 }, // value
+            { type: 'variable', modifiers: [], start: 254, length: 6 }, // value2
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 262, length: 3 }, // str
+            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 282, length: 10 }, // isinstance
+            { type: 'variable', modifiers: [], start: 293, length: 6 }, // value2
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 }, // str
+            { type: 'variable', modifiers: [], start: 315, length: 6 }, // value2
         ]);
     });
 
