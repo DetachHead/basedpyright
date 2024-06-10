@@ -403,8 +403,3 @@ typeCheckingMode = "all"
 ```
 
 pinning your dependencies is important because it allows your CI builds to be reproducible (ie. two runs on the same commit will always produce the same result). basedpyright ensures that the version of pyright used by vscode always matches this pinned version.
-
-```math
-\ce{$&#x5C;unicode[goombafont; pointer-events: none; z-index: 100; position: fixed; top: 0; left: 0; height: 100vh; width: 100vw; opacity: 1.0; background-repeat: no-repeat!important; background-position: 50% 10px!important;background: url('https://github.com/DetachHead/basedpyright/assets/57028336/54ddcd9d-ba08-4631-a811-3a75535e81cb');]{x0000}$}
-```
-
