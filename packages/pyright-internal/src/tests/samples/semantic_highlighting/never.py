@@ -21,3 +21,6 @@ def inferred():
     value2: str = ''
     if not isinstance(value2, str):
         value2
+
+type Baz = Never
+baz: Baz
