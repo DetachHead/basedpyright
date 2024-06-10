@@ -1,6 +1,6 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
+import { ClassType, FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
 import {
     ClassNode,
     DecoratorNode,
@@ -206,12 +206,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
         const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.value, false)?.symbol;
         if (type?.category === TypeCategory.Never && symbol) {
-            // for some reason Never is considered both instantiable and an instance, so we need a way
-            // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
-            // this is probably extremely cringe since i have no idea what this is doing and i literally
-            // just brute forced random shit until all the tests passed
             const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
             if (
+                // check for new python 3.12 type alias syntax
+                (typeResult.type.specialForm && ClassType.isBuiltIn(typeResult.type.specialForm, 'TypeAliasType')) ||
+                // for some reason Never is considered both instantiable and an instance, so we need a way
+                // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
+                // this is probably extremely cringe since i have no idea what this is doing and i literally
+                // just brute forced random shit until all the tests passed
                 (typeResult.type.category !== TypeCategory.Never &&
                     typeResult.type.category !== TypeCategory.Unbound &&
                     typeResult.type.flags & TypeFlags.Instantiable) ||
