@@ -148,7 +148,7 @@ unfortunately, this will cause a `reportInvalidCast` error when this rule is ena
 
 this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
 
-### `reportUnsafeMultipleInheritance` - ban inheriting from multiple different base classes with constructors
+#### `reportUnsafeMultipleInheritance` - ban inheriting from multiple different base classes with constructors
 
 multiple inheritance in python is awful:
 
