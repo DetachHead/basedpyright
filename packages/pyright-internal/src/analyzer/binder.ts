@@ -369,7 +369,6 @@ export class Binder extends ParseTreeWalker {
 
         if (!importResult.isImportFound) {
             this._addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportMissingImports,
                 DiagnosticRule.reportMissingImports,
                 LocMessage.importResolveFailure().format({
                     importName: importResult.importName,
@@ -393,7 +392,6 @@ export class Binder extends ParseTreeWalker {
             }
 
             this._addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportImplicitRelativeImport,
                 DiagnosticRule.reportImplicitRelativeImport,
                 LocMessage.implicitRelativeImport().format({
                     importName: importResult.importName,
@@ -409,7 +407,6 @@ export class Binder extends ParseTreeWalker {
             !importResult.pyTypedInfo
         ) {
             const diagnostic = this._addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportMissingTypeStubs,
                 DiagnosticRule.reportMissingTypeStubs,
                 LocMessage.stubFileMissing().format({ importName: importResult.importName }),
                 node
@@ -776,7 +773,6 @@ export class Binder extends ParseTreeWalker {
                 this._usesUnsupportedDunderAllForm = true;
 
                 this._addDiagnostic(
-                    this._fileInfo.diagnosticRuleSet.reportUnsupportedDunderAll,
                     DiagnosticRule.reportUnsupportedDunderAll,
                     LocMessage.unsupportedDunderAllOperation(),
                     node
@@ -887,7 +883,6 @@ export class Binder extends ParseTreeWalker {
 
         if (node.chainedTypeAnnotationComment) {
             this._addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportInvalidTypeForm,
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.annotationNotSupported(),
                 node.chainedTypeAnnotationComment
@@ -980,7 +975,6 @@ export class Binder extends ParseTreeWalker {
                     this._usesUnsupportedDunderAllForm = true;
 
                     this._addDiagnostic(
-                        this._fileInfo.diagnosticRuleSet.reportUnsupportedDunderAll,
                         DiagnosticRule.reportUnsupportedDunderAll,
                         LocMessage.unsupportedDunderAllOperation(),
                         node
@@ -1135,7 +1129,6 @@ export class Binder extends ParseTreeWalker {
                 this._usesUnsupportedDunderAllForm = true;
 
                 this._addDiagnostic(
-                    this._fileInfo.diagnosticRuleSet.reportUnsupportedDunderAll,
                     DiagnosticRule.reportUnsupportedDunderAll,
                     LocMessage.unsupportedDunderAllOperation(),
                     node
@@ -3890,7 +3883,6 @@ export class Binder extends ParseTreeWalker {
 
         if (!declarationHandled) {
             this._addDiagnostic(
-                this._fileInfo.diagnosticRuleSet.reportInvalidTypeForm,
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.annotationNotSupported(),
                 typeAnnotation
@@ -3979,6 +3971,12 @@ export class Binder extends ParseTreeWalker {
 
             if (this._isTypingAnnotation(typeAnnotation, 'Final')) {
                 isFinal = true;
+            } else if (
+                typeAnnotation.nodeType === ParseNodeType.Index &&
+                typeAnnotation.items.length > 0 &&
+                this._isTypingAnnotation(typeAnnotation.baseExpression, 'Annotated')
+            ) {
+                return this._isAnnotationFinal(typeAnnotation.items[0].valueExpression);
             } else if (typeAnnotation.nodeType === ParseNodeType.Index && typeAnnotation.items.length === 1) {
                 // Recursively call to see if the base expression is "Final".
                 const finalInfo = this._isAnnotationFinal(typeAnnotation.baseExpression);
@@ -4272,7 +4270,9 @@ export class Binder extends ParseTreeWalker {
         return getUniqueFlowNodeId();
     }
 
-    private _addDiagnostic(diagLevel: LspDiagnosticLevel, rule: DiagnosticRule, message: string, textRange: TextRange) {
+    private _addDiagnostic(rule: DiagnosticRule, message: string, textRange: TextRange) {
+        const diagLevel = this._fileInfo.diagnosticRuleSet[rule] as LspDiagnosticLevel;
+
         let diagnostic: Diagnostic | undefined;
         switch (diagLevel) {
             case 'error':

@@ -48,13 +48,16 @@ describe('Diagnostic overrides', () => {
         for (const propName of overrideNamesInJson) {
             try {
                 const p = json.properties[propName];
+
+                const ref = p['$ref'];
+                const def = json.definitions[ref.substring(ref.lastIndexOf('/') + 1)];
+
                 const extraOptionName = extraDiagnosticLevel(propName);
-                expect(p['$id']).toEqual(`#/properties/${propName}`);
-                expect(p['$ref']).toEqual(`#/definitions/${extraOptionName ?? 'diagnostic'}`);
-                expect(p.title).toBeDefined();
-                expect(p.title.length).toBeGreaterThan(0);
-                expect(p.default).toBeDefined();
-                expect(p.default).toEqual(standardDefaults[propName]);
+                expect(def['$ref']).toEqual(`#/definitions/${extraOptionName ?? 'diagnostic'}`);
+                expect(def.title).toBeDefined();
+                expect(def.title.length).toBeGreaterThan(0);
+                expect(def.default).toBeDefined();
+                expect(def.default).toEqual(standardDefaults[propName]);
             } catch (e) {
                 throw new Error(`check failed for ${propName}: ${e}`);
             }

@@ -32,6 +32,7 @@ import {
     TypeBase,
     TypeVarType,
     UnknownType,
+    Variance,
 } from './types';
 import {
     applySolvedTypeVars,
@@ -43,7 +44,6 @@ import {
     MemberAccessFlags,
     partiallySpecializeType,
     populateTypeVarContextForSelfType,
-    removeParamSpecVariadicsFromSignature,
     requiresSpecialization,
     synthesizeTypeVarForSelfCls,
 } from './typeUtils';
@@ -474,7 +474,7 @@ function assignClassToProtocolInternal(
                             );
 
                             if (boundSrcFunction) {
-                                srcMemberType = removeParamSpecVariadicsFromSignature(boundSrcFunction);
+                                srcMemberType = boundSrcFunction;
                             } else {
                                 typesAreConsistent = false;
                                 return;
@@ -533,7 +533,7 @@ function assignClassToProtocolInternal(
                 }
 
                 if (boundDeclaredType) {
-                    destMemberType = removeParamSpecVariadicsFromSignature(boundDeclaredType);
+                    destMemberType = boundDeclaredType;
                 } else {
                     typesAreConsistent = false;
                     return;
@@ -779,7 +779,7 @@ function createProtocolTypeVarContext(
             );
         } else if (destType.typeArguments && index < destType.typeArguments.length) {
             let typeArg = destType.typeArguments[index];
-            let flags = AssignTypeFlags.PopulatingExpectedType;
+            let flags: AssignTypeFlags;
             let hasUnsolvedTypeVars = requiresSpecialization(typeArg);
 
             // If the type argument has unsolved TypeVars, see if they have
@@ -788,6 +788,15 @@ function createProtocolTypeVarContext(
                 typeArg = applySolvedTypeVars(typeArg, destTypeVarContext, { useNarrowBoundOnly: true });
                 flags = AssignTypeFlags.Default;
                 hasUnsolvedTypeVars = requiresSpecialization(typeArg);
+            } else {
+                flags = AssignTypeFlags.PopulatingExpectedType;
+
+                const variance = TypeVarType.getVariance(typeParam);
+                if (variance === Variance.Invariant) {
+                    flags |= AssignTypeFlags.EnforceInvariance;
+                } else if (variance === Variance.Contravariant) {
+                    flags |= AssignTypeFlags.ReverseTypeVarMatching;
+                }
             }
 
             if (!hasUnsolvedTypeVars) {

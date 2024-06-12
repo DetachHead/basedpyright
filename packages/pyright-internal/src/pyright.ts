@@ -879,6 +879,11 @@ const reportDiagnosticsAsJson = (
     timeInSec: number
 ): DiagnosticResult => {
     const result = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
+
+    // Output a blank line to help tools that are attempting to parse the
+    // JSON output when used in watch mode.
+    console.info('');
+
     console.info(JSON.stringify(result, /* replacer */ undefined, 4));
     return pyrightJsonResultsToDiagnosticResult(result);
 };

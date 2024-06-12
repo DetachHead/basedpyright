@@ -9,7 +9,6 @@
 
 import { CancellationToken } from 'vscode-languageserver-protocol';
 
-import { LspDiagnosticLevel } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -661,12 +660,7 @@ export interface TypeEvaluator {
         signatureTracker: UniqueSignatureTracker | undefined
     ) => CallResult;
     validateTypeArg: (argResult: TypeResultWithNode, options?: ValidateTypeArgsOptions) => boolean;
-    assignTypeToExpression: (
-        target: ExpressionNode,
-        type: Type,
-        isTypeIncomplete: boolean,
-        srcExpr: ExpressionNode
-    ) => void;
+    assignTypeToExpression: (target: ExpressionNode, typeResult: TypeResult, srcExpr: ExpressionNode) => void;
     assignClassToSelf: (destType: ClassType, srcType: ClassType, assumedVariance: Variance) => boolean;
     getBuiltInObject: (node: ParseNode, name: string, typeArguments?: Type[]) => Type;
     getTypedDictClassType: () => ClassType | undefined;
@@ -702,8 +696,7 @@ export interface TypeEvaluator {
     ) => Diagnostic | undefined;
     addDiagnosticForTextRange: (
         fileInfo: AnalyzerFileInfo,
-        diagLevel: LspDiagnosticLevel,
-        rule: DiagnosticRule | '',
+        rule: DiagnosticRule,
         message: string,
         range: TextRange
     ) => Diagnostic | undefined;

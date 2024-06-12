@@ -253,7 +253,6 @@ export class Checker extends ParseTreeWalker {
         if (codeComplexity > maxCodeComplexity) {
             this._evaluator.addDiagnosticForTextRange(
                 this._fileInfo,
-                this._fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
                 DiagnosticRule.reportGeneralTypeIssues,
                 LocMessage.codeTooComplexToAnalyze(),
                 { start: 0, length: 0 }
@@ -867,7 +866,6 @@ export class Checker extends ParseTreeWalker {
         if (node.typeComment) {
             this._evaluator.addDiagnosticForTextRange(
                 this._fileInfo,
-                this._fileInfo.diagnosticRuleSet.reportInvalidTypeForm,
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.annotationNotSupported(),
                 node.typeComment
@@ -922,7 +920,6 @@ export class Checker extends ParseTreeWalker {
         if (node.typeComment) {
             this._evaluator.addDiagnosticForTextRange(
                 this._fileInfo,
-                this._fileInfo.diagnosticRuleSet.reportInvalidTypeForm,
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.annotationNotSupported(),
                 node.typeComment
@@ -1174,7 +1171,7 @@ export class Checker extends ParseTreeWalker {
 
             const exceptionType = this._evaluator.getType(node.typeExpression);
             if (exceptionType) {
-                this._validateExceptionType(exceptionType, node.typeExpression);
+                this._validateExceptionType(exceptionType, node.typeExpression, node.isExceptGroup);
             }
         }
 
@@ -1198,7 +1195,6 @@ export class Checker extends ParseTreeWalker {
                     if (!isUnboundedTupleClass(type)) {
                         this._evaluator.addDiagnosticForTextRange(
                             this._fileInfo,
-                            this._fileInfo.diagnosticRuleSet.reportAssertAlwaysTrue,
                             DiagnosticRule.reportAssertAlwaysTrue,
                             LocMessage.assertAlwaysTrue(),
                             node.testExpression
@@ -1415,7 +1411,6 @@ export class Checker extends ParseTreeWalker {
                     if (error.errorType === UnescapeErrorType.InvalidEscapeSequence) {
                         this._evaluator.addDiagnosticForTextRange(
                             this._fileInfo,
-                            this._fileInfo.diagnosticRuleSet.reportInvalidStringEscapeSequence,
                             DiagnosticRule.reportInvalidStringEscapeSequence,
                             LocMessage.stringUnsupportedEscape(),
                             { start: start + error.offset, length: error.length }
@@ -1429,7 +1424,6 @@ export class Checker extends ParseTreeWalker {
                     if (escapeOffset >= 0) {
                         this._evaluator.addDiagnosticForTextRange(
                             this._fileInfo,
-                            this._fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
                             DiagnosticRule.reportGeneralTypeIssues,
                             LocMessage.formatStringEscape(),
                             { start, length: 1 }
@@ -1465,7 +1459,6 @@ export class Checker extends ParseTreeWalker {
         if (node.strings.length > 1 && !node.isParenthesized) {
             this._evaluator.addDiagnosticForTextRange(
                 this._fileInfo,
-                this._fileInfo.diagnosticRuleSet.reportImplicitStringConcatenation,
                 DiagnosticRule.reportImplicitStringConcatenation,
                 LocMessage.implicitStringConcat(),
                 node
@@ -1600,7 +1593,6 @@ export class Checker extends ParseTreeWalker {
             ) {
                 this._evaluator.addDiagnosticForTextRange(
                     this._fileInfo,
-                    this._fileInfo.diagnosticRuleSet.reportWildcardImportFromLibrary,
                     DiagnosticRule.reportWildcardImportFromLibrary,
                     LocMessage.wildcardLibraryImport(),
                     node.wildcardToken || node
@@ -2578,8 +2570,8 @@ export class Checker extends ParseTreeWalker {
         for (let i = 0; i < prevOverloads.length; i++) {
             const prevOverload = prevOverloads[i];
             if (this._isOverlappingOverload(prevOverload, functionType, /* partialOverlap */ true)) {
-                const prevReturnType = FunctionType.getSpecializedReturnType(prevOverload);
-                const returnType = FunctionType.getSpecializedReturnType(functionType);
+                const prevReturnType = FunctionType.getEffectiveReturnType(prevOverload);
+                const returnType = FunctionType.getEffectiveReturnType(functionType);
 
                 if (
                     prevReturnType &&
@@ -2847,7 +2839,9 @@ export class Checker extends ParseTreeWalker {
         exceptionType: Type,
         diag: DiagnosticAddendum,
         baseExceptionType: Type | undefined,
-        allowTuple: boolean
+        baseExceptionGroupType: Type | undefined,
+        allowTuple: boolean,
+        isExceptGroup: boolean
     ) {
         const derivesFromBaseException = (classType: ClassType) => {
             if (!baseExceptionType || !isInstantiableClass(baseExceptionType)) {
@@ -2855,6 +2849,14 @@ export class Checker extends ParseTreeWalker {
             }
 
             return derivesFromClassRecursive(classType, baseExceptionType, /* ignoreUnknown */ false);
+        };
+
+        const derivesFromBaseExceptionGroup = (classType: ClassType) => {
+            if (!baseExceptionGroupType || !isInstantiableClass(baseExceptionGroupType)) {
+                return true;
+            }
+
+            return derivesFromClassRecursive(classType, baseExceptionGroupType, /* ignoreUnknown */ false);
         };
 
         doForEachSubtype(exceptionType, (exceptionSubtype) => {
@@ -2871,6 +2873,10 @@ export class Checker extends ParseTreeWalker {
                             })
                         );
                     }
+
+                    if (isExceptGroup && derivesFromBaseExceptionGroup(exceptionSubtype)) {
+                        diag.addMessage(LocMessage.exceptionGroupTypeIncorrect());
+                    }
                     return;
                 }
 
@@ -2880,7 +2886,9 @@ export class Checker extends ParseTreeWalker {
                             typeArg.type,
                             diag,
                             baseExceptionType,
-                            /* allowTuple */ false
+                            baseExceptionGroupType,
+                            /* allowTuple */ false,
+                            isExceptGroup
                         );
                     });
                     return;
@@ -2895,11 +2903,19 @@ export class Checker extends ParseTreeWalker {
         });
     }
 
-    private _validateExceptionType(exceptionType: Type, errorNode: ExpressionNode): void {
+    private _validateExceptionType(exceptionType: Type, errorNode: ExpressionNode, isExceptGroup: boolean): void {
         const baseExceptionType = this._evaluator.getBuiltInType(errorNode, 'BaseException');
+        const baseExceptionGroupType = this._evaluator.getBuiltInType(errorNode, 'BaseExceptionGroup');
         const diagAddendum = new DiagnosticAddendum();
 
-        this._validateExceptionTypeRecursive(exceptionType, diagAddendum, baseExceptionType, /* allowTuple */ true);
+        this._validateExceptionTypeRecursive(
+            exceptionType,
+            diagAddendum,
+            baseExceptionType,
+            baseExceptionGroupType,
+            /* allowTuple */ true,
+            isExceptGroup
+        );
 
         if (!diagAddendum.isEmpty()) {
             this._evaluator.addDiagnostic(
@@ -3477,7 +3493,6 @@ export class Checker extends ParseTreeWalker {
                             this._evaluator
                                 .addDiagnosticForTextRange(
                                     this._fileInfo,
-                                    this._fileInfo.diagnosticRuleSet.reportUnusedImport,
                                     DiagnosticRule.reportUnusedImport,
                                     LocMessage.unaccessedImport().format({ name: multipartName }),
                                     textRange
@@ -4286,7 +4301,6 @@ export class Checker extends ParseTreeWalker {
             // This means the user has a module that is overwriting the stdlib module.
             const diag = this._evaluator.addDiagnosticForTextRange(
                 this._fileInfo,
-                this._fileInfo.diagnosticRuleSet.reportShadowedImports,
                 DiagnosticRule.reportShadowedImports,
                 LocMessage.stdlibModuleOverridden().format({
                     name: moduleName,
@@ -5476,15 +5490,11 @@ export class Checker extends ParseTreeWalker {
         // because we don't care about the return type for this check.
         initMemberType = FunctionType.cloneWithNewFlags(
             initMemberType,
-            initMemberType.details.flags |
-                FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck |
-                FunctionTypeFlags.ParamSpecValue
+            initMemberType.details.flags | FunctionTypeFlags.GradualCallableForm | FunctionTypeFlags.ParamSpecValue
         );
         newMemberType = FunctionType.cloneWithNewFlags(
             newMemberType,
-            initMemberType.details.flags |
-                FunctionTypeFlags.SkipArgsKwargsCompatibilityCheck |
-                FunctionTypeFlags.ParamSpecValue
+            initMemberType.details.flags | FunctionTypeFlags.GradualCallableForm | FunctionTypeFlags.ParamSpecValue
         );
 
         if (
@@ -7104,7 +7114,7 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const declaredReturnType = FunctionType.getSpecializedReturnType(functionTypeResult.functionType);
+        const declaredReturnType = FunctionType.getEffectiveReturnType(functionTypeResult.functionType);
         if (!declaredReturnType) {
             return;
         }

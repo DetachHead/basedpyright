@@ -33,7 +33,7 @@ test('Final2', () => {
 
 test('Final3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['final3.py']);
-    TestUtils.validateResults(analysisResults, 36);
+    TestUtils.validateResults(analysisResults, 39);
 });
 
 test('Final4', () => {
@@ -119,7 +119,7 @@ test('FString5', () => {
 
 test('MemberAccess1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess1.py']);
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('MemberAccess2', () => {
@@ -235,6 +235,11 @@ test('MemberAccess23', () => {
 test('MemberAccess24', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess24.py']);
     TestUtils.validateResults(analysisResults, 0);
+});
+
+test('MemberAccess25', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess25.py']);
+    TestUtils.validateResults(analysisResults, 12);
 });
 
 test('DataClassNamedTuple1', () => {
@@ -601,7 +606,7 @@ test('ParamSpec11', () => {
 
 test('ParamSpec12', () => {
     const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec12.py']);
-    TestUtils.validateResults(results, 16);
+    TestUtils.validateResults(results, 15);
 });
 
 test('ParamSpec13', () => {

@@ -1,5 +1,6 @@
 {
     "Diagnostic": {
+        "annotatedMetadataInconsistent": "Annotated metadata type \"{metadataType}\" is not compatible with type \"{type}\"",
         "abstractMethodInvocation": "Method \"{method}\" cannot be called because it is abstract and unimplemented",
         "annotatedParamCountMismatch": "Parameter annotation count mismatch: expected {expected} but received {received}",
         "annotatedTypeArgMissing": "Expected one type argument and one or more annotations for \"Annotated\"",
@@ -147,6 +148,7 @@
         "enumMemberSet": "Enum member \"{name}\" cannot be assigned",
         "enumMemberTypeAnnotation": "Type annotations are not allowed for enum members",
         "exceptionGroupIncompatible": "Exception group syntax (\"except*\") requires Python 3.11 or newer",
+        "exceptionGroupTypeIncorrect": "Exception type in except* cannot derive from BaseGroupException",
         "exceptionTypeIncorrect": "\"{type}\" does not derive from BaseException",
         "exceptionTypeNotClass": "\"{type}\" is not a valid exception class",
         "exceptionTypeNotInstantiable": "Constructor for exception type \"{type}\" requires one or more arguments",

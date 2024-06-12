@@ -858,7 +858,7 @@ export function createFunctionFromConstructor(
         let skipInitMethod = false;
 
         doForEachSignature(fromNew, (signature) => {
-            const newMethodReturnType = FunctionType.getSpecializedReturnType(signature);
+            const newMethodReturnType = FunctionType.getEffectiveReturnType(signature);
             if (newMethodReturnType && shouldSkipInitEvaluation(evaluator, classType, newMethodReturnType)) {
                 skipInitMethod = true;
             }
@@ -932,7 +932,7 @@ function createFunctionFromMetaclassCall(
     // constructed.
     doForEachSignature(boundCallType, (signature) => {
         if (signature.details.declaredReturnType) {
-            const returnType = FunctionType.getSpecializedReturnType(signature);
+            const returnType = FunctionType.getEffectiveReturnType(signature);
             if (returnType && shouldSkipNewAndInitEvaluation(evaluator, classType, returnType)) {
                 useMetaclassCall = true;
             }
@@ -1087,8 +1087,6 @@ function createFunctionFromInitMethod(
 
         const convertedInit = FunctionType.clone(boundInit);
         convertedInit.details.declaredReturnType = boundInit.strippedFirstParamType ?? selfType ?? objectType;
-        convertedInit.details.name = '';
-        convertedInit.details.fullName = '';
 
         if (convertedInit.specializedTypes) {
             convertedInit.specializedTypes.returnType = selfType ?? objectType;
@@ -1188,10 +1186,6 @@ function shouldSkipInitEvaluation(evaluator: TypeEvaluator, classType: ClassType
 // of "def __new__(cls, *args, **kwargs) -> Self".
 function isDefaultNewMethod(newMethod?: Type): boolean {
     if (!newMethod || !isFunction(newMethod)) {
-        return false;
-    }
-
-    if (newMethod.details.paramSpec) {
         return false;
     }
 

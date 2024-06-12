@@ -15,7 +15,7 @@ import { ImportResolver } from '../analyzer/importResolver';
 import { Program } from '../analyzer/program';
 import { NameTypeWalker } from '../analyzer/testWalker';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
-import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
+import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
 import { ConsoleWithLogLevel, NullConsole } from '../common/console';
 import { fail } from '../common/debug';
 import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
@@ -79,6 +79,7 @@ export function parseSampleFile(
     execEnvironment = new ExecutionEnvironment(
         'python',
         UriEx.file('.'),
+        getStandardDiagnosticRuleSet(),
         /* defaultPythonVersion */ undefined,
         /* defaultPythonPlatform */ undefined,
         /* defaultExtraPaths */ undefined

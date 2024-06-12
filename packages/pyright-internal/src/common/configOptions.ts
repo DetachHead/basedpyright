@@ -53,10 +53,14 @@ export class ExecutionEnvironment {
     // Default to no extra paths.
     extraPaths: Uri[] = [];
 
+    // Diagnostic rules with overrides.
+    diagnosticRuleSet: DiagnosticRuleSet;
+
     // Default to "." which indicates every file in the project.
     constructor(
         name: string,
         root: Uri,
+        defaultDiagRuleSet: DiagnosticRuleSet,
         defaultPythonVersion: PythonVersion | undefined,
         defaultPythonPlatform: string | undefined,
         defaultExtraPaths: Uri[] | undefined
@@ -66,6 +70,7 @@ export class ExecutionEnvironment {
         this.pythonVersion = defaultPythonVersion ?? latestStablePythonVersion;
         this.pythonPlatform = defaultPythonPlatform;
         this.extraPaths = Array.from(defaultExtraPaths ?? []);
+        this.diagnosticRuleSet = { ...defaultDiagRuleSet };
     }
 }
 
@@ -1276,6 +1281,7 @@ export class ConfigOptions {
         return new ExecutionEnvironment(
             this._getEnvironmentName(),
             this.projectRoot,
+            this.diagnosticRuleSet,
             this.defaultPythonVersion,
             this.defaultPythonPlatform,
             this.defaultExtraPaths
@@ -1348,7 +1354,7 @@ export class ConfigOptions {
             const configValue = configObj[key];
             if (configValue !== undefined) {
                 if (!Array.isArray(configValue)) {
-                    errors.push(`Config "${key}" entry must must contain an array.`);
+                    errors.push(`Config "${key}" entry must contain an array.`);
                 } else {
                     this[key] = [];
                     (configValue as unknown[]).forEach((fileSpec, index) => {
@@ -1744,11 +1750,12 @@ export class ConfigOptions {
         index: number,
         commandLineOptions?: CommandLineOptions
     ): ExecutionEnvironment | string[] {
-        const errors = [];
+        const errors: string[] = [];
         try {
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
                 configDirUri,
+                this.diagnosticRuleSet,
                 this.defaultPythonVersion,
                 this.defaultPythonPlatform,
                 this.defaultExtraPaths
@@ -1823,6 +1830,25 @@ export class ConfigOptions {
                     errors.push(`Config executionEnvironments index ${index} pythonPlatform must be a string.`);
                 }
             }
+
+            // Apply overrides from the config file for the boolean overrides.
+            getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
+                (newExecEnv.diagnosticRuleSet as any)[ruleName] = this._convertBoolean(
+                    envObj[ruleName],
+                    ruleName,
+                    newExecEnv.diagnosticRuleSet[ruleName] as boolean
+                );
+            });
+
+            // Apply overrides from the config file for the diagnostic level overrides.
+            getDiagLevelDiagnosticRules().forEach((ruleName) => {
+                (newExecEnv.diagnosticRuleSet as any)[ruleName] = this._convertDiagnosticLevel(
+                    envObj[ruleName],
+                    ruleName,
+                    newExecEnv.diagnosticRuleSet[ruleName] as DiagnosticLevel,
+                    errors
+                );
+            });
 
             return errors.length > 0 ? errors : newExecEnv;
         } catch {
