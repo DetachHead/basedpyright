@@ -1121,6 +1121,29 @@ export class ConfigErrors extends Error {
     }
 }
 
+/**
+ * keep track of which options have been parsed so we can raise an error on unknown options later.
+ * this is pretty cringe and we should just replace all this with some sort of schema validator thingy
+ * https://github.com/DetachHead/basedpyright/issues/64
+ */
+class UnusedConfigDetector<T extends object> {
+    proxy: T;
+    constructor(object: T, private _readOptions: (keyof T)[] = []) {
+        this.proxy = new Proxy<T>(object, {
+            // @ts-expect-error https://github.com/microsoft/TypeScript/issues/51514
+            get: (target, name: keyof T) => {
+                const result = target[name];
+                if (!_readOptions.includes(name)) {
+                    _readOptions.push(name);
+                }
+                return result;
+            },
+        });
+    }
+    /** returns a list of keys that have not yet been accessed on the proxied object */
+    unreadOptions = () => (Object.keys(this.proxy) as (keyof T)[]).filter((key) => !this._readOptions.includes(key));
+}
+
 // Internal configuration options. These are derived from a combination
 // of the command line and from a JSON-based config file.
 export class ConfigOptions {
@@ -1332,22 +1355,9 @@ export class ConfigOptions {
         const console = serviceProvider.tryGet(ServiceKeys.console) ?? new NullConsole();
         const errors: string[] = [];
 
-        // keep track of which options have been parsed so we can raise an error on unknown options later
-        // this is pretty cringe and we should just replace all this with some sort of schema validator thingy
-        // https://github.com/DetachHead/basedpyright/issues/64
-        const readOptions: (string | symbol)[] = [
-            // we initialize it with `extends` because this option gets read before this function gets called
-            'extends',
-        ];
-        configObj = new Proxy(configObj, {
-            get: (target, name) => {
-                const result = target[name];
-                if (!readOptions.includes(name)) {
-                    readOptions.push(name);
-                }
-                return result;
-            },
-        });
+        // we initialize it with `extends` because this option gets read before this function gets called
+        const unusedConfigDetector = new UnusedConfigDetector<Record<string, object>>(configObj, ['extends']);
+        configObj = unusedConfigDetector.proxy;
 
         // Read the entries that should be an array of relative file paths
         for (const key of ['include', 'exclude', 'ignore', 'strict'] as const) {
@@ -1562,10 +1572,17 @@ export class ConfigOptions {
                 const execEnvironments = configObj.executionEnvironments as ExecutionEnvironment[];
 
                 execEnvironments.forEach((env, index) => {
+                    const unusedConfigDetector = new UnusedConfigDetector(env);
+                    env = unusedConfigDetector.proxy;
                     const result = this._initExecutionEnvironmentFromJson(env, configDirUri, index, commandLineOptions);
 
                     if (result instanceof ExecutionEnvironment) {
                         this.executionEnvironments.push(result);
+                        errors.push(
+                            ...unusedConfigDetector
+                                .unreadOptions()
+                                .map((key) => `unknown config option in execution environment "${env.root}": ${key}`)
+                        );
                     } else {
                         errors.push(...result);
                     }
@@ -1607,11 +1624,7 @@ export class ConfigOptions {
                 }
             }
         }
-        for (const key of Object.keys(configObj)) {
-            if (!readOptions.includes(key)) {
-                errors.push(`unknown config option: ${key}`);
-            }
-        }
+        errors.push(...unusedConfigDetector.unreadOptions().map((key) => `unknown config option: ${key}`));
         return errors;
     }
 

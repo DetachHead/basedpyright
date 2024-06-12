@@ -226,6 +226,63 @@ test('PythonPlatform', () => {
     assert.strictEqual(env.pythonPlatform, 'platform');
 });
 
+describe('invalid config', () => {
+    test('unknown top-level option', () => {
+        const cwd = UriEx.file(normalizePath(process.cwd()));
+
+        const configOptions = new ConfigOptions(cwd);
+
+        const json = { asdf: 1 };
+
+        const fs = new TestFileSystem(/* ignoreCase */ false);
+        const nullConsole = new NullConsole();
+
+        const sp = createServiceProvider(fs, nullConsole);
+        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+        assert.deepStrictEqual(errors, ['unknown config option: asdf']);
+    });
+    test('unknown value for top-level option', () => {
+        const cwd = UriEx.file(normalizePath(process.cwd()));
+
+        const configOptions = new ConfigOptions(cwd);
+
+        const json = { typeCheckingMode: 'asdf' };
+
+        const fs = new TestFileSystem(/* ignoreCase */ false);
+        const nullConsole = new NullConsole();
+
+        const sp = createServiceProvider(fs, nullConsole);
+        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+        assert.deepStrictEqual(errors, [
+            'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".',
+        ]);
+    });
+    test('unknown value for top-level option', () => {
+        const cwd = UriEx.file(normalizePath(process.cwd()));
+
+        const configOptions = new ConfigOptions(cwd);
+
+        const json = {
+            executionEnvironments: [
+                {
+                    root: 'foo',
+                    asdf: true,
+                },
+            ],
+        };
+
+        const fs = new TestFileSystem(/* ignoreCase */ false);
+        const nullConsole = new NullConsole();
+
+        const sp = createServiceProvider(fs, nullConsole);
+        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+        assert.deepStrictEqual(errors, [`unknown config option in execution environment "foo": asdf`]);
+    });
+});
+
 test('AutoSearchPathsOn', () => {
     const nullConsole = new NullConsole();
     const service = createAnalyzer(nullConsole);
