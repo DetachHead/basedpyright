@@ -10,6 +10,9 @@ dev = [
     "ruff>=0.2.2",
     # cli is needed for development if node is not installed globally
     "nodejs-wheel>=20.13.1",
+    # only used for types in pdm_build.py. at runtime the dependency is specified in build-system.requires:
+    "pdm-backend>=2.3.0",
+    "typing_extensions>=4.12.2",
 ]
 
 [tool.pdm.version]
@@ -49,10 +52,12 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [build-system]
 requires = [
-    "pdm-backend",
+    "pdm-backend>=2.3.0",
     # required for building the pyright npm package to be bundled in the pypi package.
     # cli is required due to dependencies with install scripts that assume node/npm is in the path
     "nodejs-wheel>=20.13.1",
+    # used in pdm_build.py:
+    "typing_extensions>=4.12.2",
 ]
 build-backend = "pdm.backend"
 
