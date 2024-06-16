@@ -147,6 +147,13 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: lerna version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --yes --no-git-tag-version
 
+      - name: build package - pypi
+        run: pdm build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: publish package - pypi
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         run: pdm publish
