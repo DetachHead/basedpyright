@@ -5,6 +5,7 @@ from pathlib import Path
 from shutil import copyfile, copytree
 from typing import TYPE_CHECKING, TypedDict, cast
 
+from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
 from nodejs_wheel.executable import npm
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
@@ -28,13 +29,16 @@ class Hook(BuildHookInterface):
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
         run_npm("ci")
         run_npm("run", "build:cli:dev")
-
         npm_package_dir = Path("packages/pyright")
         pypi_package_dir = Path("basedpyright")
         dist_dir = Path("dist")
         npm_script_paths = cast(PackageJson, loads((npm_package_dir / "package.json").read_text()))[
             "bin"
         ].values()
+
+        docify(
+            str(npm_package_dir / "dist/typeshed-fallback/stdlib"), "--builtins-only", "--in-place"
+        )
 
         if context.target == "editable":
             copytree(npm_package_dir / dist_dir, pypi_package_dir / dist_dir, dirs_exist_ok=True)
