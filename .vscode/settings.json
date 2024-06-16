@@ -64,7 +64,7 @@
     "jest.runMode": "on-demand",
     "pylint.ignorePatterns": [
         "**/pyright-internal/src/tests/samples/*",
-        "**/build/generateUnicodeTables.py"
+        "**/build/*"
     ],
     "terminal.integrated.env.windows": {
       "PATH": "${env:PATH};./.pyprojectx/main"
