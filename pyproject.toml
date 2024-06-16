@@ -171,6 +171,7 @@ include = ["basedpyright", "get_version.py", "pdm_build.py"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
 reportImplicitStringConcatenation = false                    # conflicts with ruff formatter
+enableTypeIgnoreComments = false                             # https://github.com/DetachHead/basedpyright/issues/330 & https://github.com/DetachHead/basedpyright/issues/55
 
 [tool.ruff]
 target-version = "py38"
