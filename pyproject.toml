@@ -10,23 +10,28 @@ dev = [
     "ruff>=0.2.2",
     # cli is needed for development if node is not installed globally
     "nodejs-wheel>=20.13.1",
-    # only used for types in pdm_build.py. at runtime the dependency is specified in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947:
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
+]
+# these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
+docstubs = [
     "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633", # https://github.com/AThePeanut4/docify/pull/2 & https://github.com/AThePeanut4/docify/issues/3
+    "libcst==1.4.0",
+    "tqdm==4.66.4",
 ]
 
 [tool.pdm.version]
 source = "call"
-getter = "get_version:get_version"
+getter = "based_build.get_version:get_version"
 
 [tool.pdm.scripts]
-update = "pdm update"
-refresh_lockfile = "pdm lock --update-reuse"
+update = "pdm update --dev"
+refresh_lockfile = "pdm lock --update-reuse --dev"
 typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
 ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
-pylint = 'pylint basedpyright pdm_build.py get_version.py'
+pylint = 'pylint basedpyright based_build pdm_build.py'
+generate_docstubs = { call = "based_build.generate_docstubs:main" }
 
 [project]
 name = "basedpyright"
@@ -171,11 +176,12 @@ max-line-length = 200
 
 [tool.basedpyright]
 pythonVersion = "3.9"
-include = ["basedpyright", "get_version.py", "pdm_build.py"]
+include = ["basedpyright", "based_build", "pdm_build.py"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
-reportImplicitStringConcatenation = false                    # conflicts with ruff formatter
-enableTypeIgnoreComments = false                             # https://github.com/DetachHead/basedpyright/issues/330 & https://github.com/DetachHead/basedpyright/issues/55
+reportImplicitStringConcatenation = false                 # conflicts with ruff formatter
+enableTypeIgnoreComments = false                          # https://github.com/DetachHead/basedpyright/issues/330 & https://github.com/DetachHead/basedpyright/issues/55
+
 
 [tool.ruff]
 target-version = "py39"
@@ -188,7 +194,7 @@ extend-exclude = [
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
     "packages/pyright-internal/src/tests/samples",
-    "build/generateUnicodeTables.py",
+    "build",
 ]
 
 [tool.ruff.lint]

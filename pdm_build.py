@@ -24,6 +24,15 @@ def run_npm(*args: str):
         raise Exception(f"the following npm command exited with {exit_code=}: {args}")
 
 
+def generate_docstubs():
+    """ideally this should be imported from `based_build`. see https://github.com/pdm-project/pdm/issues/2948"""
+    stubs_path = Path("packages/pyright-internal/typeshed-fallback")
+    stubs_with_docs_path = Path("docstubs")
+    if not stubs_with_docs_path.exists():
+        copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
+    docify(str(stubs_with_docs_path / "stdlib"), "--builtins-only", "--in-place")
+
+
 class Hook(BuildHookInterface):
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
@@ -34,16 +43,7 @@ class Hook(BuildHookInterface):
             "bin"
         ].values()
 
-        stubs_path = Path("packages/pyright-internal/typeshed-fallback")
-        stubs_with_docs_path = Path("docstubs")
-        if not stubs_with_docs_path.exists():
-            copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
-        docify(
-            str(stubs_with_docs_path / "stdlib"),
-            "--builtins-only",
-            "--output",
-            str(stubs_with_docs_path),
-        )
+        generate_docstubs()
 
         run_npm("ci")
         run_npm("run", "build:cli:dev")
