@@ -75,5 +75,5 @@
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
-    
+    "ruff.nativeServer": true
 }
