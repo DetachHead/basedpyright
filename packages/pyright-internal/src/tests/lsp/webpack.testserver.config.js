@@ -8,7 +8,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const { tsconfigResolveAliases } = require('../../../../../build/lib/webpack');
 
 const outPath = path.resolve(__dirname, '..', '..', '..', 'out');
-const typeshedFallback = path.resolve(__dirname, '..', '..', '..', 'typeshed-fallback');
+const typeshedFallback = path.resolve(__dirname, '..', '..', '..', '..', '..', 'docstubs');
 
 /**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => import('webpack').Configuration}*/
 module.exports = (_, { mode }) => {

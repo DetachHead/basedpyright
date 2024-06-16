@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:ac84d9e9ad84815d1d666b2d9a623c24645941b57fa435aae09aacc676ab20d9"
+content_hash = "sha256:fd3904f323e37e8d9347742f254a43a4b81a766e9c52bd19147bae3e595d6382"
 
 [[package]]
 name = "astroid"
@@ -48,8 +48,8 @@ files = [
 name = "docify"
 version = "0.0.0"
 git = "https://github.com/DetachHead/docify"
-ref = "patch-1"
-revision = "e65a84ef8b0a4869f6ce563246d2bda5e42bacc2"
+ref = "20ac945391c14de82cb5281e4ce019f262311633"
+revision = "20ac945391c14de82cb5281e4ce019f262311633"
 summary = ""
 groups = ["dev"]
 

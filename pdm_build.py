@@ -27,8 +27,6 @@ def run_npm(*args: str):
 class Hook(BuildHookInterface):
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
-        run_npm("ci")
-        run_npm("run", "build:cli:dev")
         npm_package_dir = Path("packages/pyright")
         pypi_package_dir = Path("basedpyright")
         dist_dir = Path("dist")
@@ -36,9 +34,19 @@ class Hook(BuildHookInterface):
             "bin"
         ].values()
 
+        stubs_path = Path("packages/pyright-internal/typeshed-fallback")
+        stubs_with_docs_path = Path("docstubs")
+        if not stubs_with_docs_path.exists():
+            copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
         docify(
-            str(npm_package_dir / "dist/typeshed-fallback/stdlib"), "--builtins-only", "--in-place"
+            str(stubs_with_docs_path / "stdlib"),
+            "--builtins-only",
+            "--output",
+            str(stubs_with_docs_path),
         )
+
+        run_npm("ci")
+        run_npm("run", "build:cli:dev")
 
         if context.target == "editable":
             copytree(npm_package_dir / dist_dir, pypi_package_dir / dist_dir, dirs_exist_ok=True)

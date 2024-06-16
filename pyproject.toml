@@ -13,7 +13,7 @@ dev = [
     # only used for types in pdm_build.py. at runtime the dependency is specified in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947:
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
-    "docify @ git+https://github.com/DetachHead/docify@patch-1", # https://github.com/AThePeanut4/docify/pull/2 & https://github.com/AThePeanut4/docify/issues/3
+    "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633", # https://github.com/AThePeanut4/docify/pull/2 & https://github.com/AThePeanut4/docify/issues/3
 ]
 
 [tool.pdm.version]
@@ -59,7 +59,7 @@ requires = [
     "nodejs-wheel>=20.13.1",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
-    "docify @ git+https://github.com/DetachHead/docify@patch-1",
+    "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633",
     "libcst==1.4.0",
     "tqdm==4.66.4",
 ]
@@ -186,6 +186,7 @@ unsafe-fixes = true
 extend-exclude = [
     "pw",
     "packages/pyright-internal/typeshed-fallback",
+    "docstubs",
     "packages/pyright-internal/src/tests/samples",
     "build/generateUnicodeTables.py",
 ]

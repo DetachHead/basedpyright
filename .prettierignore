@@ -2,6 +2,7 @@
 **/dist/**
 **/out/**
 **/typeshed-fallback/**
+docstubs
 
 *.json
 *.md
