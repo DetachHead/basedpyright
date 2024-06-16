@@ -132,3 +132,6 @@ Thumbs.db
 
 # js files copied into the basedpyright pypi package
 basedpyright/*.js
+
+# typeshed stubs with docstrings
+docstubs
