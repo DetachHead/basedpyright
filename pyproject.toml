@@ -33,6 +33,9 @@ ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
 pylint = 'pylint basedpyright based_build pdm_build.py'
 generate_docstubs = { call = "based_build.generate_docstubs:main" }
 
+[tool.pdm.build]
+excludes = ["based_build/"]
+
 [project]
 name = "basedpyright"
 description = "static type checking for Python (but based)"
