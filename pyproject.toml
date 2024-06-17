@@ -16,7 +16,7 @@ dev = [
 # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
 docstubs = [
     "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633", # https://github.com/AThePeanut4/docify/pull/2 & https://github.com/AThePeanut4/docify/issues/3
-    "libcst==1.4.0",
+    "libcst==1.1.0",
     "tqdm==4.66.4",
 ]
 
@@ -48,7 +48,7 @@ dependencies = [
     # since the user shouldn't have a node/npm binary unknowingly added to their PATH
     "nodejs-wheel-binaries>=20.13.1",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 readme = "README.md"
 license = { text = "MIT" }
 
@@ -68,7 +68,7 @@ requires = [
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
     "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633",
-    "libcst==1.4.0",
+    "libcst==1.1.0",
     "tqdm==4.66.4",
 ]
 build-backend = "pdm.backend"
@@ -178,7 +178,7 @@ score = "no"
 max-line-length = 200
 
 [tool.basedpyright]
-pythonVersion = "3.9"
+pythonVersion = "3.8"
 include = ["basedpyright", "based_build", "pdm_build.py"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
@@ -187,7 +187,7 @@ enableTypeIgnoreComments = false                          # https://github.com/D
 
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py38"
 respect-gitignore = true
 line-length = 100
 preview = true
