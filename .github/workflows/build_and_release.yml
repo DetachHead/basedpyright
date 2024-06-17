@@ -81,7 +81,7 @@ jobs:
           name: docstubs
           path: docstubs
 
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }}
+      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
 
       - run: ./pw pdm install
 
