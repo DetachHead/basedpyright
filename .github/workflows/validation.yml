@@ -73,8 +73,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: ./pw pdm install
       - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
+      - run: ./pw pdm install
+
+      - name: python tests
+        run: ./pw pdm run test_python -- -m "not needs_all_docstubs"
 
       - name: npm test (pyright-internal)
         run: npm test
