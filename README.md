@@ -215,7 +215,8 @@ pylance works around this problem by running a "docstring scraper" script on the
 - only docstrings for modules and functions available on the user's current OS and python version will be generated. so if you're working on a cross-platform project, or code that's intended to be run on multiple versions of python, you won't be able to see docstrings for compiled builtin modules that are not available in your current python installation.
 - it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
 
-in basedpyright's implementation, the docstrings for all compiled builtin modules for all python versions (except 3.8 for now, sorry!) and all platforms (macos, windows and linux) are bundled in the default typeshed stubs that come with the basedpyright package.
+in basedpyright's implementation, the docstrings for all compiled builtin modules for all currently supported python versions and all platforms (macos, windows and linux) are bundled in the default typeshed stubs that come with the basedpyright package.
+
 ##### examples
 
 here's a demo of basedpyright's builtin docstrings when running on windows, compared to pylance:
