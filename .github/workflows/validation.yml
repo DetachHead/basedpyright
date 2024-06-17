@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }}
+      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
 
       # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
       - run: ./pw pdm lock --check
@@ -73,13 +73,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: npm run install:all
+      - run: ./pw pdm install
+      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
 
       - name: npm test (pyright-internal)
         run: npm test
         working-directory: packages/pyright-internal
 
       # Install python so we can create a VENV for tests
+      # ideally this should only be handled by pdm. see TODO at the top of this file
       - name: Use Python ${{env.PYTHON_VERSION}}
         uses: actions/setup-python@v5
         id: install_python
