@@ -206,6 +206,42 @@ initial implementation of the semantic highlighting provider was adapted from th
 
 basedpyright contains several improvements and bug fixes to the original implementation adapted from [pyright-inlay-hints](https://github.com/jbradaric/pyright-inlay-hints).
 
+#### docstrings for compiled builtin modules
+
+many of the builtin modules are written in c, meaning the pyright language server cannot statically inspect and display their docstrings to the user. unfortunately they are also not available in the `.pyi` stubs for these modules, as [the typeshed maintainers consider it to be too much of a maintanance nightmare](https://github.com/python/typeshed/issues/4881#issuecomment-1275775973).
+
+pylance works around this problem by running a "docstring scraper" script on the user's machine, which imports compiled builtin modules, scrapes all the docstrings from them at runtime, then saves them so that the language server can read them. however this isn't ideal for a few reasons:
+
+- only docstrings for modules and functions available on the user's current OS and python version will be generated. so if you're working on a cross-platform project, or code that's intended to be run on multiple versions of python, you won't be able to see docstrings for compiled builtin modules that are not available in your current python installation.
+- it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
+
+in basedpyright's implementation, the docstrings for all compiled builtin modules for all python versions (except 3.8 for now, sorry!) and all platforms (macos, windows and linux) are bundled in the default typeshed stubs that come with the basedpyright package.
+##### examples
+
+here's a demo of basedpyright's builtin docstrings when running on windows, compared to pylance:
+
+###### basedpyright
+
+![](docs/img/basedDocs.gif)
+
+###### pylance
+
+![](docs/img/pylanceDocs.gif)
+
+##### generating your own stubs with docstrings
+
+basedpyright uses [docify](https://github.com/AThePeanut4/docify) to add docstrings to its stubs. if you have third party compiled modules, you can use docify to add docstrings to its stubs:
+
+```
+python -m docify path/to/package_name --output typings/package_name
+```
+
+or if you're using a different version of typeshed, you can use the `--builtins-only` argument to replicate how basedpyright's version of typeshed is generated for your current platform and python version:
+
+```
+python -m docify path/to/typeshed/stdlib --builtins-only --in-place
+```
+
 ### errors on invalid configuration
 
 in pyright, if you have any invalid config, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
