@@ -56,7 +56,6 @@ jobs:
         shell: bash
         run: |
           cd pyright_to_test
-          ./pw pdm install # generates stubdocs because the primer just runs npm build which will fail if they haven't been generated yet
           echo "new commit"
           git rev-list --format=%s --max-count=1 $GITHUB_SHA
 
