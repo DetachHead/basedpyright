@@ -81,7 +81,7 @@ import {
 import { TestAccessHost } from '../testAccessHost';
 import * as host from '../testHost';
 import { stringify } from '../utils';
-import { createFromFileSystem, distlibFolder, libFolder, typeshedFolder } from '../vfs/factory';
+import { createFromFileSystem, distlibFolder, libFolder } from '../vfs/factory';
 import * as vfs from '../vfs/filesystem';
 import { parseTestData } from './fourSlashParser';
 import {
@@ -1714,9 +1714,9 @@ export class TestState {
         }
 
         configOptions.include.push(getFileSpec(configOptions.projectRoot, '.'));
-        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, typeshedFolder.getFilePath()));
-        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, distlibFolder.getFilePath()));
-        configOptions.exclude.push(getFileSpec(configOptions.projectRoot, libFolder.getFilePath()));
+        // configOptions.exclude.push(getFileSpec(configOptions.projectRoot, typeshedFolder.getFilePath()));
+        // configOptions.exclude.push(getFileSpec(configOptions.projectRoot, distlibFolder.getFilePath()));
+        // configOptions.exclude.push(getFileSpec(configOptions.projectRoot, libFolder.getFilePath()));
 
         if (mountPaths) {
             for (const mountPath of mountPaths.keys()) {

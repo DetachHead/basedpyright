@@ -12,6 +12,9 @@ dev = [
     "nodejs-wheel>=20.13.1",
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
+    "pytest>=8.2.2",
+    "pytest-github-actions-annotate-failures>=0.2.0",
+    "basedtyping>=0.1.4",
 ]
 # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
 docstubs = [
@@ -31,10 +34,11 @@ typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
 ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
 pylint = 'pylint basedpyright based_build pdm_build.py'
+test_python = 'pytest tests'
 generate_docstubs = { call = "based_build.generate_docstubs:main" }
 
 [tool.pdm.build]
-excludes = ["based_build/"]
+excludes = ["based_build/", "tests/", "pdm_build.py"]
 
 [project]
 name = "basedpyright"
@@ -249,7 +253,7 @@ ignore-overlong-task-comments = true
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = ["A001", "A002", "N"] # we don't control names in 3rd party modules
 "tests/**/*.py" = [
-    "S101", # Use of assert detected (pytest uses assert statements)
+    "S", # none of these security focused rules are relevant for the tests
 ]
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -258,3 +262,10 @@ split-on-trailing-comma = false
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
+
+[tool.pytest.ini_options]
+xfail_strict = true
+addopts = ['--strict-markers']
+markers = [
+    'needs_all_docstubs', # indicates that the test needs to run after the docstubs are built, rather than during validation
+]

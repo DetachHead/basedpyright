@@ -92,6 +92,11 @@ jobs:
           realpath ./.pyprojectx/main >> $GITHUB_PATH
           echo ./node_modules/.bin >> $GITHUB_PATH
 
+      # ideally this should be run with the rest of the pytest tests in the validation workflow,
+      # but they depend on the docstubs generated in the previous job
+      - name: validate docstubs
+        run: pdm run test_python -- -m needs_all_docstubs
+
       - id: current-version
         run: |
           echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
