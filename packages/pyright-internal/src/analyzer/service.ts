@@ -642,7 +642,7 @@ export class AnalyzerService {
 
         const errors: string[] = [];
 
-        configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode ?? 'standard');
+        configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode);
 
         let configs;
         try {
