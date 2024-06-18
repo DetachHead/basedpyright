@@ -26,6 +26,12 @@ test('reportUnreachable TYPE_CHECKING', () => {
 });
 
 test('default typeCheckingMode=all', () => {
+    // there's a better test for this in `config.test.ts` which tests it in a more complete way.
+    // the logic for loading the config seems very convoluted and messy. the default typeCheckingMode
+    // seems to be determined multiple times. and there was an upstream change that broke our defaulting
+    // to "all" which went undetected by this test, because it was being changed to "standard" later on.
+    // i'm keeping both tests just in case, because i don't really get why it gets set multiple times.
+    // maybe this one effects something else
     const configOptions = new BasedConfigOptions(Uri.empty());
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
