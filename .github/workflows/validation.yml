@@ -2,7 +2,6 @@ name: 'Validation'
 
 env:
   # TODO: ideally this would be controlled by the nodejs-bin package, but idk how the venv tests work so i left them as-is
-  # also nodejs-wheel-binaries installation is unreliable on the windows runner (it tries to build it for some reason?)
   NODE_VERSION: '18' # Shipped with VS Code.
   PYTHON_VERSION: 3.11
 
@@ -75,10 +74,8 @@ jobs:
             ${{ runner.os }}-node-
 
       - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
-      - name: generate docstubs
-        run: |
-          ./pw pdm install --group=docstubs --no-self --no-default
-          ./pw pdm run generate_docstubs
+      # try twice due to https://github.com/njzjz/nodejs-wheel/issues/49
+      - run: ./pw pdm install || ./pw pdm install
 
       - name: python tests
         run: ./pw pdm run test_python -- -m "not needs_all_docstubs"
