@@ -18,7 +18,7 @@ dev = [
 ]
 # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
 docstubs = [
-    "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633", # https://github.com/AThePeanut4/docify/pull/2 & https://github.com/AThePeanut4/docify/issues/3
+    "docify @ git+https://github.com/AThePeanut4/docify@8896d7f4f3543b4f48ef8ebdec3b96250d5d1900", # https://github.com/AThePeanut4/docify/issues/3
     "libcst==1.1.0",
     "tqdm==4.66.4",
 ]
@@ -71,7 +71,7 @@ requires = [
     "nodejs-wheel>=20.13.1",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
-    "docify @ git+https://github.com/DetachHead/docify@20ac945391c14de82cb5281e4ce019f262311633",
+    "docify @ git+https://github.com/AThePeanut4/docify@8896d7f4f3543b4f48ef8ebdec3b96250d5d1900",
     "libcst==1.1.0",
     "tqdm==4.66.4",
 ]

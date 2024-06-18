@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docstubs"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:195b0001ae81c3042c797c5bca36e9f178097fa9d81989f945008f418a2ae531"
+content_hash = "sha256:39265ba9098b9b85d3d1a38ecba76cdc5383eb3454c6de782ef86204f5487d7e"
 
 [[package]]
 name = "astroid"
@@ -61,9 +61,9 @@ files = [
 [[package]]
 name = "docify"
 version = "0.0.0"
-git = "https://github.com/DetachHead/docify"
-ref = "20ac945391c14de82cb5281e4ce019f262311633"
-revision = "20ac945391c14de82cb5281e4ce019f262311633"
+git = "https://github.com/AThePeanut4/docify"
+ref = "8896d7f4f3543b4f48ef8ebdec3b96250d5d1900"
+revision = "8896d7f4f3543b4f48ef8ebdec3b96250d5d1900"
 summary = ""
 groups = ["docstubs"]
 
