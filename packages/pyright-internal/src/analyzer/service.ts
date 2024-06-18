@@ -639,7 +639,7 @@ export class AnalyzerService {
 
         configOptions.disableTaggedHints = !!commandLineOptions.disableTaggedHints;
 
-        configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode ?? 'standard');
+        configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode);
 
         const configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
 

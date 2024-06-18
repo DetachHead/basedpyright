@@ -1210,7 +1210,7 @@ export class ConfigOptions {
         typeCheckingMode: string | undefined,
         severityOverrides?: DiagnosticSeverityOverridesMap
     ) {
-        this.diagnosticRuleSet = ConfigOptions.getDiagnosticRuleSet(typeCheckingMode);
+        this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet(typeCheckingMode);
 
         if (severityOverrides) {
             this.applyDiagnosticOverrides(severityOverrides);

@@ -389,3 +389,18 @@ test('Extended config files', () => {
     const configOptions = service.test_getConfigOptions(commandLineOptions);
     assert.equal(configOptions.diagnosticRuleSet.strictListInference, true);
 });
+
+test('default typeCheckingMode should be "all"', () => {
+    const cwd = normalizePath(process.cwd());
+    const service = createAnalyzer();
+    const commandLineOptions = new CommandLineOptions(cwd, /* fromVsCodeExtension */ true);
+    commandLineOptions.configFilePath = 'src/tests/samples/project1';
+
+    const configOptions = service.test_getConfigOptions(commandLineOptions);
+    service.setOptions(commandLineOptions);
+
+    // as far as i can tell the typeCheckingMode value isn't saved anywhere, so we instead just check some options
+    // that are typically disabled by default unless typeCheckingMode is set to `"all"`
+    assert(configOptions.diagnosticRuleSet.deprecateTypingAliases);
+    assert.equal(configOptions.diagnosticRuleSet.reportAny, 'error');
+});
