@@ -42,7 +42,19 @@ jobs:
       - name: pylint
         run: pdm run pylint
 
-  test:
+  python_tests:
+    # ideally this would run in the same matrix as the node tests below but can't because nodejs-wheel-binaries is flaky
+    # on windows runners. see https://github.com/njzjz/nodejs-wheel/issues/49
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
+      - run: ./pw pdm install
+
+      - name: python tests
+        run: ./pw pdm run test_python -- -m "not needs_all_docstubs"
+
+  node_tests:
     strategy:
       fail-fast: false
       matrix:
@@ -73,12 +85,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
-      # try twice due to https://github.com/njzjz/nodejs-wheel/issues/49
-      - run: ./pw pdm install || ./pw pdm install
+      - run: npm run install:all
 
-      - name: python tests
-        run: ./pw pdm run test_python -- -m "not needs_all_docstubs"
+      - name: gneerate docstubs
+        run: |
+          ./pw pdm use ${{ env.PYTHON_VERSION }} --first
+          ./pw pdm install --group=docstubs --no-self --no-default
+          ./pw pdm run generate_docstubs
 
       - name: npm test (pyright-internal)
         run: npm test
@@ -132,7 +145,8 @@ jobs:
     name: Required
     needs:
       - static_checks
-      - test
+      - python_tests
+      - node_tests
 
     steps:
       - run: echo All required jobs succeeded.
