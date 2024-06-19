@@ -104,11 +104,7 @@ import {
     getBoundNewMethod,
     validateConstructorArguments,
 } from './constructors';
-import {
-    applyDataClassClassBehaviorOverrides,
-    applyDataClassDefaultBehaviors,
-    synthesizeDataClassMethods,
-} from './dataClasses';
+import { applyDataClassClassBehaviorOverrides, synthesizeDataClassMethods } from './dataClasses';
 import {
     ClassDeclaration,
     Declaration,
@@ -130,6 +126,7 @@ import {
     addOverloadsToFunctionType,
     applyClassDecorator,
     applyFunctionDecorator,
+    getDeprecatedMessageFromCall,
     getFunctionInfoFromDecorators,
 } from './decorators';
 import {
@@ -1320,6 +1317,14 @@ export function createTypeEvaluator(
             validateTypeIsInstantiable(typeResult, flags, node);
         }
 
+        // If this is a PEP 695 type alias, remove the special form so the type
+        // printer prints it as its aliased type rather than TypeAliasType.
+        if ((flags & EvaluatorFlags.ExpectingTypeAnnotation) !== 0) {
+            if (typeResult.type.specialForm && ClassType.isBuiltIn(typeResult.type.specialForm, 'TypeAliasType')) {
+                typeResult.type = TypeBase.cloneAsSpecialForm(typeResult.type, undefined);
+            }
+        }
+
         return typeResult;
     }
 
@@ -2225,7 +2230,7 @@ export function createTypeEvaluator(
 
         // If this is a type[Any] or type[Unknown], allow any other members.
         if (isClassInstance(objectType) && ClassType.isBuiltIn(objectType, 'type') && objectType.includeSubclasses) {
-            if ((flags & MemberAccessFlags.SkipTypeBaseClass) === 0) {
+            if ((flags & (MemberAccessFlags.SkipTypeBaseClass | MemberAccessFlags.SkipAttributeAccessOverride)) === 0) {
                 const typeArg =
                     objectType.typeArguments && objectType.typeArguments.length >= 1
                         ? objectType.typeArguments[0]
@@ -6013,7 +6018,7 @@ export function createTypeEvaluator(
 
             if (
                 isInstantiableClass(memberInfo.classType) &&
-                ClassType.isFrozenDataClass(memberInfo.classType) &&
+                ClassType.isDataClassFrozen(memberInfo.classType) &&
                 isAccessedThroughObject
             ) {
                 diag?.addMessage(
@@ -8197,11 +8202,7 @@ export function createTypeEvaluator(
         // the base type of this call is not the same as one of the tracked signatures.
         // This is important for nested generic calls (e.g. "foo(foo(x))").
         if (signatureTracker) {
-            baseTypeResult.type = ensureFunctionSignaturesAreUnique(
-                baseTypeResult.type,
-                signatureTracker,
-                node.leftExpression.start
-            );
+            baseTypeResult.type = ensureFunctionSignaturesAreUnique(baseTypeResult.type, signatureTracker, node.start);
         }
 
         if (!isTypeAliasPlaceholder(baseTypeResult.type)) {
@@ -10112,6 +10113,17 @@ export function createTypeEvaluator(
         // we have `cls: Type[_T]` followed by `_T()`.
         if (isTypeVar(unexpandedCallType)) {
             returnType = convertToInstance(unexpandedCallType);
+        }
+
+        // If we instantiated the "deprecated" class, attach the deprecation
+        // message to the instance.
+        if (
+            errorNode.nodeType === ParseNodeType.Call &&
+            returnType &&
+            isClassInstance(returnType) &&
+            ClassType.isBuiltIn(returnType, 'deprecated')
+        ) {
+            returnType = ClassType.cloneForDeprecatedInstance(returnType, getDeprecatedMessageFromCall(errorNode));
         }
 
         // If we instantiated a type, transform it into a class.
@@ -16922,10 +16934,7 @@ export function createTypeEvaluator(
                             if (fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_6)) {
                                 if (ClassType.isBuiltIn(argType, 'NamedTuple')) {
                                     isNamedTupleSubclass = true;
-                                    classType.details.flags |=
-                                        ClassTypeFlags.DataClass |
-                                        ClassTypeFlags.SkipSynthesizedDataClassEq |
-                                        ClassTypeFlags.ReadOnlyInstanceVariables;
+                                    classType.details.flags |= ClassTypeFlags.ReadOnlyInstanceVariables;
                                 }
                             }
 
@@ -17389,7 +17398,6 @@ export function createTypeEvaluator(
             }
 
             if (dataClassBehaviors) {
-                applyDataClassDefaultBehaviors(classType, dataClassBehaviors);
                 applyDataClassClassBehaviorOverrides(
                     evaluatorInterface,
                     node.name,
@@ -17432,8 +17440,8 @@ export function createTypeEvaluator(
             }
 
             // Synthesize dataclass methods.
-            if (ClassType.isDataClass(classType)) {
-                const skipSynthesizedInit = ClassType.isSkipSynthesizedDataClassInit(classType);
+            if (ClassType.isDataClass(classType) || isNamedTupleSubclass) {
+                const skipSynthesizedInit = ClassType.isDataClassSkipGenerateInit(classType);
                 let hasExistingInitMethod = skipSynthesizedInit;
 
                 // See if there's already a non-synthesized __init__ method.
@@ -18987,8 +18995,14 @@ export function createTypeEvaluator(
                                             isClassInstance(iteratorTypeResult.type) &&
                                             ClassType.isBuiltIn(iteratorTypeResult.type, 'Coroutine')
                                         ) {
+                                            const yieldType =
+                                                iteratorTypeResult.type.typeArguments &&
+                                                iteratorTypeResult.type.typeArguments.length > 0
+                                                    ? iteratorTypeResult.type.typeArguments[0]
+                                                    : UnknownType.create();
+
                                             // Handle old-style (pre-await) Coroutines.
-                                            inferredYieldTypes.push();
+                                            inferredYieldTypes.push(yieldType);
                                             useAwaitableGenerator = true;
                                         } else {
                                             const yieldType = getTypeOfIterator(
@@ -18996,6 +19010,7 @@ export function createTypeEvaluator(
                                                 /* isAsync */ false,
                                                 yieldNode
                                             )?.type;
+
                                             inferredYieldTypes.push(yieldType ?? UnknownType.create());
                                         }
                                     } else {
@@ -19016,9 +19031,6 @@ export function createTypeEvaluator(
                             });
                         }
 
-                        if (inferredYieldTypes.length === 0) {
-                            inferredYieldTypes.push(getNoneType());
-                        }
                         const inferredYieldType = combineTypes(inferredYieldTypes);
 
                         // Inferred yield types need to be wrapped in a Generator or
@@ -20349,6 +20361,12 @@ export function createTypeEvaluator(
                         addError(LocMessage.protocolNotAllowed(), errorNode);
                     }
 
+                    typeArgs?.forEach((typeArg) => {
+                        if (typeArg.typeList || !isTypeVar(typeArg.type)) {
+                            addError(LocMessage.protocolTypeArgMustBeTypeParam(), typeArg.node);
+                        }
+                    });
+
                     return {
                         type: createSpecialType(
                             classType,
@@ -20517,22 +20535,7 @@ export function createTypeEvaluator(
                 minTypeArgCount = firstDefaultParamIndex;
             }
 
-            // Classes that accept inlined type dict type args allow only one.
-            if (typeArgs[0].inlinedTypeDict) {
-                if (typeArgs.length > 1) {
-                    addDiagnostic(
-                        DiagnosticRule.reportInvalidTypeArguments,
-                        LocMessage.typeArgsTooMany().format({
-                            name: classType.aliasName || classType.details.name,
-                            expected: 1,
-                            received: typeArgCount,
-                        }),
-                        typeArgs[1].node
-                    );
-                }
-
-                return { type: typeArgs[0].inlinedTypeDict };
-            } else if (typeArgCount > typeParameters.length) {
+            if (typeArgCount > typeParameters.length) {
                 if (!ClassType.isPartiallyEvaluated(classType) && !ClassType.isTupleClass(classType)) {
                     if (typeParameters.length === 0) {
                         addDiagnostic(
@@ -23014,7 +23017,7 @@ export function createTypeEvaluator(
                     if (
                         primaryDecl?.type === DeclarationType.Variable &&
                         !isFinalVariableDeclaration(primaryDecl) &&
-                        !ClassType.isFrozenDataClass(destType)
+                        !ClassType.isDataClassFrozen(destType)
                     ) {
                         // Class and instance variables that are mutable need to
                         // enforce invariance. We will exempt variables that are

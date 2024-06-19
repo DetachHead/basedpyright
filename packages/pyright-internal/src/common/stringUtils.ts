@@ -167,6 +167,10 @@ export function truncate(text: string, maxLength: number) {
     return text;
 }
 
+export function escapeRegExp(text: string) {
+    return text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
+
 /** turns an array into a list of options to be presented to the user
  * @example
  * userFacingOptionsList(['a', 'b', 'c']) // `"a", "b" or "c"`
