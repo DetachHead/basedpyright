@@ -231,10 +231,10 @@ here's a demo of basedpyright's builtin docstrings when running on windows, comp
 
 ##### generating your own stubs with docstrings
 
-basedpyright uses [docify](https://github.com/AThePeanut4/docify) to add docstrings to its stubs. if you have third party compiled modules, you can use docify to add docstrings to its stubs:
+basedpyright uses [docify](https://github.com/AThePeanut4/docify) to add docstrings to its stubs. if you have third party compiled modules and you want basedpyright to see its docstrings, you can do the same:
 
 ```
-python -m docify path/to/package_name --output typings/package_name
+python -m docify path/to/stubs/for/package --in-place
 ```
 
 or if you're using a different version of typeshed, you can use the `--builtins-only` argument to replicate how basedpyright's version of typeshed is generated for your current platform and python version:
