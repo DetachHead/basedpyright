@@ -223,11 +223,11 @@ here's a demo of basedpyright's builtin docstrings when running on windows, comp
 
 ###### basedpyright
 
-![](docs/img/basedDocs.gif)
+![](https://github.com/DetachHead/basedpyright/assets/57028336/df4f4916-4b5e-4367-bd88-4ddadf283780)
 
 ###### pylance
 
-![](docs/img/pylanceDocs.gif)
+![](https://github.com/DetachHead/basedpyright/assets/57028336/15a38478-8405-419c-a6e1-3c0801808896)
 
 ##### generating your own stubs with docstrings
 
