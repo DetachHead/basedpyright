@@ -310,10 +310,11 @@ The following is an example of a pyright config file:
     },
     {
       "root": "src/tests",
+      "reportPrivateUsage": false,
       "extraPaths": [
         "src/tests/e2e",
         "src/sdk"
-      ]
+      ],
     },
     {
       "root": "src"
@@ -344,7 +345,7 @@ pythonPlatform = "Linux"
 executionEnvironments = [
   { root = "src/web", pythonVersion = "3.5", pythonPlatform = "Windows", extraPaths = [ "src/service_libs" ] },
   { root = "src/sdk", pythonVersion = "3.0", extraPaths = [ "src/backend" ] },
-  { root = "src/tests", extraPaths = ["src/tests/e2e", "src/sdk" ]},
+  { root = "src/tests", reportPrivateUsage = false, extraPaths = ["src/tests/e2e", "src/sdk" ]},
   { root = "src" }
 ]
 ```
