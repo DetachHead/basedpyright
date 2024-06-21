@@ -314,7 +314,7 @@ The following is an example of a pyright config file:
       "extraPaths": [
         "src/tests/e2e",
         "src/sdk"
-      ],
+      ]
     },
     {
       "root": "src"
