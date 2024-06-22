@@ -82,7 +82,7 @@ describe(`Basic language server tests`, () => {
     test('Initialize without workspace folder support', async () => {
         const code = `
 // @filename: test.py
-//// import [|/*marker*/os|]
+//// import [|/*marker*/_typeshed|]
         `;
         const info = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, /* callInitialize */ false);
 
@@ -103,12 +103,12 @@ describe(`Basic language server tests`, () => {
         const hoverResult = await hover(info, 'marker');
         assert(hoverResult);
         assert(MarkupContent.is(hoverResult.contents));
-        assert.strictEqual(hoverResult.contents.value, '```python\n(module) os\n```');
+        assert.strictEqual(hoverResult.contents.value, '```python\n(module) _typeshed\n```');
     });
     test('Hover', async () => {
         const code = `
 // @filename: test.py
-//// import [|/*marker*/os|]
+//// import [|/*marker*/_typeshed|]
         `;
         const info = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, /* callInitialize */ true);
 
@@ -117,7 +117,7 @@ describe(`Basic language server tests`, () => {
         const hoverResult = await hover(info, 'marker');
         assert(hoverResult);
         assert(MarkupContent.is(hoverResult.contents));
-        assert.strictEqual(hoverResult.contents.value, '```python\n(module) os\n```');
+        assert.strictEqual(hoverResult.contents.value, '```python\n(module) _typeshed\n```');
     });
     test('Completions', async () => {
         const code = `
