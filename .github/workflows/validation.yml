@@ -1,8 +1,6 @@
 name: 'Validation'
 
 env:
-  # TODO: ideally this would be controlled by the nodejs-bin package, but idk how the venv tests work so i left them as-is
-  NODE_VERSION: '18' # Shipped with VS Code.
   PYTHON_VERSION: 3.11
 
 on:
@@ -42,19 +40,7 @@ jobs:
       - name: pylint
         run: pdm run pylint
 
-  python_tests:
-    # ideally this would run in the same matrix as the node tests below but can't because nodejs-wheel-binaries is flaky
-    # on windows runners. see https://github.com/njzjz/nodejs-wheel/issues/49
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
-      - run: ./pw pdm install
-
-      - name: python tests
-        run: ./pw pdm run test_python -- -m "not needs_all_docstubs"
-
-  node_tests:
+  tests:
     strategy:
       fail-fast: false
       matrix:
@@ -65,45 +51,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # Don't cache on Windows; the cache ends up being very large and
-      # the Windows implementation of the cache task uses a much slower archiver.
-      - name: Get npm cache directory
-        if: runner.os != 'Windows'
-        id: npm-cache
-        shell: bash
-        run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        if: runner.os != 'Windows'
-        with:
-          path: ${{ steps.npm-cache.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - run: npm run install:all
-
-      - name: gneerate docstubs
-        run: |
-          ./pw pdm use ${{ env.PYTHON_VERSION }} --first
-          ./pw pdm install --group=docstubs --no-self --no-default
-          ./pw pdm run generate_docstubs
-
-      - name: npm test (pyright-internal)
-        run: npm test
-        working-directory: packages/pyright-internal
-
-      # Install python so we can create a VENV for tests
-      # ideally this should only be handled by pdm. see TODO at the top of this file
       - name: Use Python ${{env.PYTHON_VERSION}}
         uses: actions/setup-python@v5
         id: install_python
         with:
           python-version: ${{env.PYTHON_VERSION}}
+
+      - run: ./pw pdm install
+
+      # using relative path for npm scripts because it needs to work in the package directories too
+      - name: add pyprojectx and npm scripts to PATH
+        run: |
+          realpath ./.pyprojectx/main >> $GITHUB_PATH
+          echo ./node_modules/.bin >> $GITHUB_PATH
+
+      - name: python tests
+        run: pdm run test_python -- -m "not needs_all_docstubs"
+
+      - name: npm test (pyright-internal)
+        run: npm test
+        working-directory: packages/pyright-internal
 
       - name: Create Venv
         run: |
@@ -145,8 +112,7 @@ jobs:
     name: Required
     needs:
       - static_checks
-      - python_tests
-      - node_tests
+      - tests
 
     steps:
       - run: echo All required jobs succeeded.
