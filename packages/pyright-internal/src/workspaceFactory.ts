@@ -241,14 +241,13 @@ export class WorkspaceFactory {
                     // Copy the source file data (closing can destroy the sourceFile)
                     const version = fileInfo.sourceFile.getClientVersion() ?? null;
                     const content = fileInfo.sourceFile.getFileContent() || '';
-                    const ipythonMode = fileInfo.sourceFile.getIPythonMode();
                     const chainedSourceFile = fileInfo.chainedSourceFile?.sourceFile.getUri();
 
                     // Remove the file from the old workspace first (closing will propagate to the toWorkspace automatically).
                     fromWorkspace.service.setFileClosed(f, /* isTracked */ false);
 
                     // Then open it in the toWorkspace so that it is marked tracked there.
-                    toWorkspace.service.setFileOpened(f, version, content, ipythonMode, chainedSourceFile);
+                    toWorkspace.service.setFileOpened(f, version, content, chainedSourceFile);
                 }
             });
 
@@ -492,7 +491,6 @@ export class WorkspaceFactory {
                     file,
                     sourceFile.getClientVersion() || null,
                     fileContents || '',
-                    sourceFile.getIPythonMode(),
                     sourceFileInfo.chainedSourceFile?.sourceFile.getUri()
                 );
             }

@@ -78,7 +78,6 @@ export type PreCheckCallback = (parserOutput: ParserOutput, evaluator: TypeEvalu
 
 export interface OpenFileOptions {
     isTracked: boolean;
-    ipythonMode: IPythonMode;
     chainedFileUri: Uri | undefined;
 }
 
@@ -376,8 +375,7 @@ export class Program {
                 moduleImportInfo.isThirdPartyPyTypedPresent,
                 this._editModeTracker,
                 this._console,
-                this._logTracker,
-                options?.ipythonMode ?? IPythonMode.None
+                this._logTracker
             );
             const chainedFilePath = options?.chainedFileUri;
             sourceFileInfo = new SourceFileInfo(
@@ -387,7 +385,7 @@ export class Program {
                 /* isThirdPartyPyTypedPresent */ false,
                 this._editModeTracker,
                 {
-                    isTracked: options?.isTracked ?? false,
+                    isTracked: (options?.isTracked || sourceFile.getIPythonMode() !== IPythonMode.None) ?? false,
                     chainedSourceFile: chainedFilePath ? this.getSourceFileInfo(chainedFilePath) : undefined,
                     isOpenByClient: true,
                 }
@@ -973,7 +971,6 @@ export class Program {
                 fileInfo.sourceFile.getOpenFileContents() ?? '',
                 {
                     chainedFileUri: fileInfo.chainedSourceFile?.sourceFile.getUri(),
-                    ipythonMode: fileInfo.sourceFile.getIPythonMode(),
                     isTracked: fileInfo.isTracked,
                 }
             );

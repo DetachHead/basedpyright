@@ -7,7 +7,7 @@
  */
 import { CacheManager } from '../analyzer/cacheManager';
 import { ISourceFileFactory } from '../analyzer/programTypes';
-import { IPythonMode, SourceFile, SourceFileEditMode } from '../analyzer/sourceFile';
+import { SourceFile, SourceFileEditMode } from '../analyzer/sourceFile';
 import { SupportPartialStubs } from '../pyrightFileSystem';
 import { ServiceKeys } from './serviceKeys';
 import { CaseSensitivityDetector } from './caseSensitivityDetector';
@@ -99,8 +99,7 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
         isThirdPartyPyTypedPresent: boolean,
         editMode: SourceFileEditMode,
         console?: ConsoleInterface,
-        logTracker?: LogTracker,
-        ipythonMode?: IPythonMode
+        logTracker?: LogTracker
     ) {
         return new SourceFile(
             serviceProvider,
@@ -110,8 +109,7 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
             isThirdPartyPyTypedPresent,
             editMode,
             console,
-            logTracker,
-            ipythonMode
+            logTracker
         );
     },
 };

@@ -268,8 +268,7 @@ export class SourceFile {
         isThirdPartyPyTypedPresent: boolean,
         editMode: SourceFileEditMode,
         console?: ConsoleInterface,
-        logTracker?: LogTracker,
-        ipythonMode?: IPythonMode
+        logTracker?: LogTracker
     ) {
         this.fileSystem = serviceProvider.get(ServiceKeys.fs);
         this._console = console || new StandardConsole();
@@ -308,7 +307,7 @@ export class SourceFile {
 
         // 'FG' or 'BG' based on current thread.
         this._logTracker = logTracker ?? new LogTracker(console, isMainThread ? 'FG' : 'BG');
-        this._ipythonMode = ipythonMode ?? IPythonMode.None;
+        this._ipythonMode = uri.hasExtension('.ipynb') ? IPythonMode.CellDocs : IPythonMode.None;
     }
 
     getIPythonMode(): IPythonMode {
