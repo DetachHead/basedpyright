@@ -399,20 +399,13 @@ integration with [pre-commit](https://pre-commit.com) is also supported.
 # .pre-commit-config.yaml
 
 repos:
-  - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.8.0
+  - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
+    rev: v1.13.0  # or whatever the latest version is at the time
     hooks:
     - id: basedpyright
 ```
 
-to ensure that basedpyright is able to find all of the dependencies in your
-virtual env, add the following to your `pyproject.toml`:
-
-```toml
-[tool.basedpyright]
-# ...
-venvPath = "."
-```
+for more information, see the documentation [here](https://github.com/DetachHead/basedpyright-pre-commit-mirror/blob/main/README.md)
 
 # recommended setup
 
