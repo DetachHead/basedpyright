@@ -1608,8 +1608,6 @@ export namespace Localizer {
             new ParameterizedString<{ importName: string }>(
                 getRawString('DiagnosticAddendum.fullPathImportSuggestion')
             );
-        export const firstBaseClassCanHaveConstructor = () =>
-            getRawString('DiagnosticAddendum.firstBaseClassCanHaveConstructor');
     }
 
     export namespace CodeAction {

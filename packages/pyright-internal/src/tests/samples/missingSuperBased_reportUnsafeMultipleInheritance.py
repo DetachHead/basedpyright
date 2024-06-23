@@ -8,7 +8,7 @@ class ParentA:
 
 
 class ParentB:
-    # This should generate an error because it's missing a super().__init__ call.
+    # This should generate an error because it's missing a super().__init__ call. NOT!!!!
     def __init__(self):
         pass
 
