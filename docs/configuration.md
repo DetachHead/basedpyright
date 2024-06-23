@@ -244,7 +244,7 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types.
 
-- <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes where any base class other than the first one defines an `__init__` or `__new__` method, which is unsafe because those constructors may either never be called or get called with invalid arguments.
+- <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
