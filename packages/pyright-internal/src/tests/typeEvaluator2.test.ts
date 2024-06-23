@@ -270,11 +270,6 @@ describe('MissingSuper', () => {
         TestUtils.validateResultsButBased(analysisResults, {
             errors: [
                 { code: DiagnosticRule.reportMissingSuperCall, line: 34 },
-                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 32 },
-                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 42 },
-                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 47 },
-                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 52 },
-                { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 58 },
                 { code: DiagnosticRule.reportMissingSuperCall, line: 79 },
             ],
         });

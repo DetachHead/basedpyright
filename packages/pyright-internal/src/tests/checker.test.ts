@@ -673,9 +673,9 @@ test('reportUnsafeMultipleInheritance', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['multipleInheritance.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
         errors: [
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 15 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 16 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 34 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 17 },
+            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 35 },
         ],
     });
 });
