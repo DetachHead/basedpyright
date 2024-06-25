@@ -25,6 +25,21 @@ test('reportUnreachable TYPE_CHECKING', () => {
     validateResultsButBased(analysisResults, {});
 });
 
+test('unreachable assert_never', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnreachable = 'error';
+    const analysisResults = typeAnalyzeSampleFiles(['unreachableAssertNever.py'], configOptions);
+
+    validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportUnreachable, line: 7 },
+            { code: DiagnosticRule.reportUnreachable, line: 12 },
+            { code: DiagnosticRule.reportArgumentType, line: 12 },
+            { code: DiagnosticRule.reportUnreachable, line: 17 },
+        ],
+    });
+});
+
 test('default typeCheckingMode=all', () => {
     // there's a better test for this in `config.test.ts` which tests it in a more complete way.
     // the logic for loading the config seems very convoluted and messy. the default typeCheckingMode
