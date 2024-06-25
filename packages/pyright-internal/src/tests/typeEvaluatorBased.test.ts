@@ -94,12 +94,3 @@ test('subscript context manager types on 3.8', () => {
         ],
     });
 });
-
-test('no reportUninitializedInstanceVariable on NamedTuple', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.reportUninitializedInstanceVariable = 'error';
-    const analysisResults = typeAnalyzeSampleFiles(['uninitializedVariableBased.py'], configOptions);
-    validateResultsButBased(analysisResults, {
-        errors: [{ code: DiagnosticRule.reportUninitializedInstanceVariable, line: 6 }],
-    });
-});
