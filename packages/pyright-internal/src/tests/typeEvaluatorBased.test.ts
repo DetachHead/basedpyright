@@ -10,7 +10,7 @@ test('reportUnreachable', () => {
     configOptions.diagnosticRuleSet.reportUnreachable = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
-        errors: [78, 89, 106, 110].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
+        errors: [78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
         infos: [{ line: 95 }, { line: 98 }],
         unusedCodes: [{ line: 102 }],
     });
@@ -36,12 +36,20 @@ test('default typeCheckingMode=all', () => {
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
         errors: [
-            ...[78, 89, 106, 110].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
+            ...[78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
             { line: 16, code: DiagnosticRule.reportUninitializedInstanceVariable },
             { line: 19, code: DiagnosticRule.reportUnknownParameterType },
             { line: 33, code: DiagnosticRule.reportUnknownParameterType },
             { line: 94, code: DiagnosticRule.reportUnnecessaryComparison },
             { line: 102, code: DiagnosticRule.reportUnusedVariable },
+            { line: 113, code: DiagnosticRule.reportUnknownParameterType },
+            { line: 113, code: DiagnosticRule.reportMissingTypeArgument },
+            { line: 114, code: DiagnosticRule.reportUnnecessaryIsInstance },
+            { line: 115, code: DiagnosticRule.reportUnknownVariableType },
+            { line: 121, code: DiagnosticRule.reportUnknownParameterType },
+            { line: 121, code: DiagnosticRule.reportMissingTypeArgument },
+            { line: 122, code: DiagnosticRule.reportUnnecessaryIsInstance },
+            { line: 123, code: DiagnosticRule.reportUnknownVariableType },
         ],
         infos: [{ line: 95 }, { line: 98 }],
     });
