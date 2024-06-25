@@ -167,7 +167,7 @@ test('With2', () => {
 test('With3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with3.py']);
 
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 6);
 });
 
 test('With4', () => {
@@ -551,7 +551,7 @@ test('UninitializedVariable2', () => {
     // Enable it as an error.
     configOptions.diagnosticRuleSet.reportUninitializedInstanceVariable = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['uninitializedVariable2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('Deprecated1', () => {

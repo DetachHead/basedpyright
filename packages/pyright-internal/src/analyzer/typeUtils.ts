@@ -3114,8 +3114,11 @@ export function computeMroLinearization(classType: ClassType): boolean {
 
     // The first class in the MRO is the class itself.
     const typeVarContext = buildTypeVarContextFromSpecializedClass(classType);
-    const specializedClassType = applySolvedTypeVars(classType, typeVarContext);
-    assert(isClass(specializedClassType) || isAny(specializedClassType) || isUnknown(specializedClassType));
+    let specializedClassType = applySolvedTypeVars(classType, typeVarContext);
+    if (!isClass(specializedClassType) && !isAny(specializedClassType) && !isUnknown(specializedClassType)) {
+        specializedClassType = UnknownType.create();
+    }
+
     classType.details.mro.push(specializedClassType);
 
     // Helper function that returns true if the specified searchClass
@@ -3326,7 +3329,7 @@ export function convertParamSpecValueToType(type: FunctionType): Type {
     FunctionType.addHigherOrderTypeVarScopeIds(functionType, withoutParamSpec.details.typeVarScopeId);
     FunctionType.addHigherOrderTypeVarScopeIds(functionType, withoutParamSpec.details.higherOrderTypeVarScopeIds);
 
-    withoutParamSpec.details.parameters.forEach((entry) => {
+    withoutParamSpec.details.parameters.forEach((entry, index) => {
         FunctionType.addParameter(functionType, {
             category: entry.category,
             name: entry.name,
@@ -3334,7 +3337,7 @@ export function convertParamSpecValueToType(type: FunctionType): Type {
             defaultValueExpression: entry.defaultValueExpression,
             isNameSynthesized: entry.isNameSynthesized,
             hasDeclaredType: true,
-            type: entry.type,
+            type: FunctionType.getEffectiveParameterType(withoutParamSpec, index),
         });
     });
 
