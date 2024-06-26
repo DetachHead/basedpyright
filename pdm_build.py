@@ -36,13 +36,14 @@ def generate_docstubs():
 class Hook(BuildHookInterface):
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
+        if context.target == "wheel":
+            return
         npm_package_dir = Path("packages/pyright")
         pypi_package_dir = Path("basedpyright")
         dist_dir = Path("dist")
         npm_script_paths = cast(PackageJson, loads((npm_package_dir / "package.json").read_text()))[
             "bin"
         ].values()
-
         generate_docstubs()
 
         run_npm("ci")
