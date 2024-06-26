@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from venv import EnvBuilder
 
-VERSION = "2.1.6"
+VERSION = "2.2.0"
 
 PYPROJECTX_INSTALL_DIR_ENV_VAR = "PYPROJECTX_INSTALL_DIR"
 PYPROJECTX_PACKAGE_ENV_VAR = "PYPROJECTX_PACKAGE"
@@ -57,7 +57,7 @@ def get_options(args):
         options.pyprojectx_package = os.environ.get(PYPROJECTX_PACKAGE_ENV_VAR)
     else:
         options.version = VERSION
-        options.pyprojectx_package = f"pyprojectx~={VERSION}"
+        options.pyprojectx_package = f"pyprojectx[locked]=={VERSION}"
     options.verbosity = 0 if options.quiet or not options.verbosity else options.verbosity
     return options
 
