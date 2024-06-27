@@ -76,7 +76,6 @@ import { BackgroundAnalysisProgram, InvalidatedReason } from './analyzer/backgro
 import { ImportResolver } from './analyzer/importResolver';
 import { MaxAnalysisTime } from './analyzer/program';
 import { AnalyzerService, LibraryReanalysisTimeProvider, getNextServiceId } from './analyzer/service';
-import { IPythonMode } from './analyzer/sourceFile';
 import type { BackgroundAnalysisBase } from './backgroundAnalysisBase';
 import { CommandResult } from './commands/commandResult';
 import { CancelAfter } from './common/cancellationUtils';
@@ -1113,7 +1112,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }, token);
     }
 
-    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams, ipythonMode = IPythonMode.None) {
+    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams) {
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
 
         let doc = this.openFileMap.get(uri.key);
@@ -1134,11 +1133,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         // Send this open to all the workspaces that might contain this file.
         const workspaces = await this.getContainingWorkspacesForFile(uri);
         workspaces.forEach((w) => {
-            w.service.setFileOpened(uri, params.textDocument.version, params.textDocument.text, ipythonMode);
+            w.service.setFileOpened(uri, params.textDocument.version, params.textDocument.text);
         });
     }
 
-    protected async onDidChangeTextDocument(params: DidChangeTextDocumentParams, ipythonMode = IPythonMode.None) {
+    protected async onDidChangeTextDocument(params: DidChangeTextDocumentParams) {
         this.recordUserInteractionTime();
 
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
@@ -1155,7 +1154,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         // Send this change to all the workspaces that might contain this file.
         const workspaces = await this.getContainingWorkspacesForFile(uri);
         workspaces.forEach((w) => {
-            w.service.updateOpenFileContents(uri, params.textDocument.version, newContents, ipythonMode);
+            w.service.updateOpenFileContents(uri, params.textDocument.version, newContents);
         });
     }
 

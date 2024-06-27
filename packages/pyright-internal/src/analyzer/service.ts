@@ -52,7 +52,6 @@ import {
 import { ImportResolver, ImportResolverFactory, createImportedModuleDescriptor } from './importResolver';
 import { MaxAnalysisTime, Program } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
-import { IPythonMode } from './sourceFile';
 import { githubRepo } from '../constants';
 
 export const configFileName = 'pyrightconfig.json';
@@ -232,7 +231,6 @@ export class AnalyzerService {
                     fileInfo.sourceFile.getUri(),
                     version,
                     fileInfo.sourceFile.getOpenFileContents()!,
-                    fileInfo.sourceFile.getIPythonMode(),
                     fileInfo.chainedSourceFile?.sourceFile.getUri()
                 );
             }
@@ -313,19 +311,12 @@ export class AnalyzerService {
         return this._program.getOpened().map((i) => i.sourceFile.getUri());
     }
 
-    setFileOpened(
-        uri: Uri,
-        version: number | null,
-        contents: string,
-        ipythonMode = IPythonMode.None,
-        chainedFileUri?: Uri
-    ) {
+    setFileOpened(uri: Uri, version: number | null, contents: string, chainedFileUri?: Uri) {
         // Open the file. Notebook cells are always tracked as they aren't 3rd party library files.
         // This is how it's worked in the past since each notebook used to have its own
         // workspace and the workspace include setting marked all cells as tracked.
         this._backgroundAnalysisProgram.setFileOpened(uri, version, contents, {
-            isTracked: this.isTracked(uri) || ipythonMode !== IPythonMode.None,
-            ipythonMode,
+            isTracked: this.isTracked(uri),
             chainedFileUri: chainedFileUri,
         });
         this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
@@ -340,10 +331,9 @@ export class AnalyzerService {
         this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
     }
 
-    updateOpenFileContents(uri: Uri, version: number | null, contents: string, ipythonMode = IPythonMode.None) {
+    updateOpenFileContents(uri: Uri, version: number | null, contents: string) {
         this._backgroundAnalysisProgram.updateOpenFileContents(uri, version, contents, {
             isTracked: this.isTracked(uri),
-            ipythonMode,
             chainedFileUri: undefined,
         });
         this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
