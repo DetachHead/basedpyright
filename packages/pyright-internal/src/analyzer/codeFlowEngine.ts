@@ -898,7 +898,8 @@ export function getCodeFlowEngine(
                     }
                 }
 
-                const effectiveType = typesToCombine.length > 0 ? combineTypes(typesToCombine) : undefined;
+                const effectiveType =
+                    typesToCombine.length > 0 ? combineTypes(typesToCombine, undefined, evaluator) : undefined;
 
                 return setCacheEntry(branchNode, effectiveType, sawIncomplete);
             }

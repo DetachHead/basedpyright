@@ -656,7 +656,7 @@ export function getTypeOfBinaryOperation(
                 flags | EvaluatorFlags.ExpectingInstantiableType
             );
 
-            let newUnion = combineTypes([adjustedLeftType, adjustedRightType]);
+            let newUnion = combineTypes([adjustedLeftType, adjustedRightType], undefined, evaluator);
 
             const unionClass = evaluator.getUnionClassType();
             if (unionClass && isInstantiableClass(unionClass)) {
