@@ -47,6 +47,8 @@ import {
     DocumentSymbol,
     DocumentSymbolParams,
     ExecuteCommandParams,
+    FileRename,
+    HandlerResult,
     HoverParams,
     InitializeParams,
     InitializeResult,
@@ -56,10 +58,12 @@ import {
     PublishDiagnosticsParams,
     ReferenceParams,
     RemoteWindow,
+    RenameFilesParams,
     RenameParams,
     SignatureHelp,
     SignatureHelpParams,
     SymbolInformation,
+    TextDocumentEdit,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
     WorkDoneProgressReporter,
@@ -104,7 +108,7 @@ import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
 import { DocumentRange, Position, Range } from './common/textRange';
 import { Uri } from './common/uri/uri';
-import { convertUriToLspUriString } from './common/uri/uriUtils';
+import { convertUriToLspUriString, isDirectory } from './common/uri/uriUtils';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';
 import { InlayHintsProvider } from './languageService/inlayHintsProvider';
@@ -126,6 +130,7 @@ import { DynamicFeature, DynamicFeatures } from './languageService/dynamicFeatur
 import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicFeature';
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
+import { UsageFinder } from './analyzer/usageFinder';
 
 const nullProgressReporter = attachWorkDone(undefined as any, /* params */ undefined);
 
@@ -570,7 +575,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
         this.connection.onDidCloseTextDocument(async (params) => this.onDidCloseTextDocument(params));
         this.connection.onDidChangeWatchedFiles((params) => this.onDidChangeWatchedFiles(params));
-
+        this.connection.workspace.onWillRenameFiles(this.onRenameFiles);
         this.connection.onExecuteCommand(async (params, token, reporter) =>
             this.onExecuteCommand(params, token, reporter)
         );
@@ -644,7 +649,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 )
             );
         }
-
         const result: InitializeResult = {
             capabilities: {
                 textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -686,6 +690,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     full: true,
                 },
                 workspace: {
+                    fileOperations: { willRename: { filters: [{ pattern: { glob: '**/*' } }] } },
                     workspaceFolders: {
                         supported: true,
                         changeNotifications: true,
@@ -1180,6 +1185,72 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             this.serverOptions.fileWatcherHandler.onFileChange(eventType, filePath);
         });
     }
+
+    /**
+     * if a folder is renamed, it doesn't send its children as individual renames, but we need to recurse
+     * into all of its children because any imports from this package will need to be updated
+     **/
+    protected getRenamesRecursive = async (renames: FileRename[]): Promise<FileRename[]> => {
+        const result: FileRename[] = [];
+        await Promise.all(
+            renames.map(async (rename) => {
+                const oldUri = this.convertLspUriStringToUri(rename.oldUri);
+                const newUri = this.convertLspUriStringToUri(rename.newUri);
+                const workspace = await this.getWorkspaceForFile(oldUri);
+                if (isDirectory(workspace.service.fs, oldUri)) {
+                    result.push(
+                        ...(await this.getRenamesRecursive(
+                            workspace.service.fs.readdirEntriesSync(oldUri).map((entry) => {
+                                const path = oldUri.combinePaths(entry.name).toString();
+                                return {
+                                    oldUri: path,
+                                    newUri: path.replace(oldUri.toString(), newUri.toString()),
+                                };
+                            })
+                        ))
+                    );
+                } else if (newUri.hasExtension('.py') || newUri.hasExtension('.pyi')) {
+                    result.push(rename);
+                }
+            })
+        );
+        return result;
+    };
+
+    protected onRenameFiles = async (params: RenameFilesParams) => {
+        const result = { documentChanges: Array<TextDocumentEdit>() } satisfies HandlerResult<
+            WorkspaceEdit | null,
+            never
+        >;
+
+        const allRenames = await this.getRenamesRecursive(params.files);
+
+        for (const renamedFile of allRenames) {
+            //TODO: these are being evaluated multiple times, kinda cringe
+            const oldUri = this.convertLspUriStringToUri(renamedFile.oldUri);
+            const newUri = this.convertLspUriStringToUri(renamedFile.newUri);
+            const workspace = await this.getWorkspaceForFile(newUri);
+            const program = workspace.service.backgroundAnalysisProgram.program;
+            workspace.service.getUserFiles().forEach((file) => {
+                const currentFileParseResults = program.getParseResults(file);
+                const oldFileParseResults = program.getParseResults(oldUri);
+                if (currentFileParseResults && oldFileParseResults && workspace.rootUri) {
+                    const importFinder = new UsageFinder(
+                        currentFileParseResults,
+                        oldFileParseResults,
+                        newUri,
+                        workspace.rootUri
+                    );
+                    importFinder.walk(currentFileParseResults.parserOutput.parseTree);
+                    result.documentChanges.push({
+                        edits: importFinder.edits,
+                        textDocument: { uri: file.toString(), version: null },
+                    });
+                }
+            });
+        }
+        return result;
+    };
 
     protected async onExecuteCommand(
         params: ExecuteCommandParams,
