@@ -47,6 +47,7 @@ import {
     DocumentSymbol,
     DocumentSymbolParams,
     ExecuteCommandParams,
+    HandlerResult,
     HoverParams,
     InitializeParams,
     InitializeResult,
@@ -56,10 +57,12 @@ import {
     PublishDiagnosticsParams,
     ReferenceParams,
     RemoteWindow,
+    RenameFilesParams,
     RenameParams,
     SignatureHelp,
     SignatureHelpParams,
     SymbolInformation,
+    TextDocumentEdit,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
     WorkDoneProgressReporter,
@@ -126,6 +129,7 @@ import { DynamicFeature, DynamicFeatures } from './languageService/dynamicFeatur
 import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicFeature';
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
+import { ImportFinder } from './analyzer/importFinder';
 
 const nullProgressReporter = attachWorkDone(undefined as any, /* params */ undefined);
 
@@ -568,7 +572,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
         this.connection.onDidCloseTextDocument(async (params) => this.onDidCloseTextDocument(params));
         this.connection.onDidChangeWatchedFiles((params) => this.onDidChangeWatchedFiles(params));
-
+        this.connection.workspace.onWillRenameFiles(this.onRenameFiles);
         this.connection.onExecuteCommand(async (params, token, reporter) =>
             this.onExecuteCommand(params, token, reporter)
         );
@@ -642,7 +646,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 )
             );
         }
-
         const result: InitializeResult = {
             capabilities: {
                 textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -684,6 +687,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     full: true,
                 },
                 workspace: {
+                    fileOperations: { willRename: { filters: [{ pattern: { glob: '**/*.{py,pyi}' } }] } },
                     workspaceFolders: {
                         supported: true,
                         changeNotifications: true,
@@ -1178,6 +1182,31 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             this.serverOptions.fileWatcherHandler.onFileChange(eventType, filePath);
         });
     }
+
+    protected onRenameFiles = async (params: RenameFilesParams) => {
+        const result = { documentChanges: Array<TextDocumentEdit>() } satisfies HandlerResult<
+            WorkspaceEdit | null,
+            never
+        >;
+        for (const renamedFile of params.files) {
+            const oldUri = this.convertLspUriStringToUri(renamedFile.oldUri);
+            const newUri = this.convertLspUriStringToUri(renamedFile.newUri);
+            const workspace = await this.getWorkspaceForFile(newUri);
+            const program = workspace.service.backgroundAnalysisProgram.program;
+            workspace.service.getUserFiles().forEach((file) => {
+                const parseResults = program.getParseResults(file);
+                if (parseResults) {
+                    const importFinder = new ImportFinder(parseResults, oldUri, newUri);
+                    importFinder.walk(parseResults.parserOutput.parseTree);
+                    result.documentChanges.push({
+                        edits: importFinder.edits,
+                        textDocument: { uri: file.toString(), version: null },
+                    });
+                }
+            });
+        }
+        return result;
+    };
 
     protected async onExecuteCommand(
         params: ExecuteCommandParams,
