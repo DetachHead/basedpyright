@@ -164,6 +164,14 @@ test('With2', () => {
     TestUtils.validateResults(analysisResults, 3);
 });
 
+test('context manager where __exit__ returns bool | None', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withBased.py']);
+    TestUtils.validateResultsButBased(analysisResults, {
+        unreachableCodes: [{ line: 47 }, { line: 62 }],
+        unusedCodes: undefined,
+    });
+});
+
 test('With3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with3.py']);
 
