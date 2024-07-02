@@ -5667,12 +5667,11 @@ export class Checker extends ParseTreeWalker {
         const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
         for (const baseClass of filteredBaseClasses) {
-            const typeVarContext = buildTypeVarContextFromSpecializedClass(baseClass);
             // if classType is a TypedDict, we never need to worry about constructors in base classes because the
             // following rules are enforced:
             // - if one base class is a TypedDict, all of them have to be TypedDicts
             // - TypedDicts are not allowed to have methods, so they can't have a custom __init__ or __new__ function
-            if (!isTypedDict) {
+            if (!isTypedDict && this._fileInfo.diagnosticRuleSet.reportUnsafeMultipleInheritance !== 'none') {
                 for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
                     const constructorMethodResult = constructorGetter(
                         this._evaluator,
@@ -5701,6 +5700,7 @@ export class Checker extends ParseTreeWalker {
                     constructorIsSafe = false;
                 }
             }
+            const typeVarContext = buildTypeVarContextFromSpecializedClass(baseClass);
             for (const baseClassMroClass of baseClass.details.mro) {
                 // There's no need to check for conflicts if this class isn't generic.
                 if (isClass(baseClassMroClass) && baseClassMroClass.details.typeParameters.length > 0) {
