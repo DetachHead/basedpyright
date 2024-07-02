@@ -36,7 +36,7 @@ def generate_docstubs():
 class Hook(BuildHookInterface):
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
-        if context.target == "wheel":
+        if context.target not in {"editable", "wheel"}:
             return
         npm_package_dir = Path("packages/pyright")
         pypi_package_dir = Path("basedpyright")
