@@ -2722,6 +2722,7 @@ export class Checker extends ParseTreeWalker {
                     // other statements in that case.
                     if (
                         index === '0' &&
+                        !(this._fileInfo.diagnosticRuleSet.reportUnreachable in ['none', 'unreachable']) &&
                         statement.nodeType === ParseNodeType.StatementList &&
                         statement.statements.find(
                             (statement) =>
