@@ -75,6 +75,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        id: install_python
+        with:
+          python-version: ${{env.PYTHON_VERSION}}
+
       - uses: actions/download-artifact@v4
         name: download docstubs
         with:
