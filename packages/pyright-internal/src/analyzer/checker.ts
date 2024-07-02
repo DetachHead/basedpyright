@@ -2706,7 +2706,8 @@ export class Checker extends ParseTreeWalker {
         let reportedUnreachable = false;
         let prevStatement: StatementNode | undefined;
 
-        for (const statement of statements) {
+        for (const index in statements) {
+            const statement = statements[index];
             // No need to report unreachable more than once since the first time
             // covers all remaining statements in the statement list.
             if (!reportedUnreachable) {
@@ -2717,7 +2718,10 @@ export class Checker extends ParseTreeWalker {
                     // if a statement is a function call where an argument is typed as `Never`, then it's probably an `assert_never` pattern,
                     // so don't report the statement as unreachable. this check is probably overkill and we could instead just special-case
                     // `typing.assert_never`, but we want to support user-defined "assert never" functions to be more flexible.
+                    // for performance reasons we only do this check on the first unreachable statement because there's no reason to have any
+                    // other statements in that case.
                     if (
+                        index === '0' &&
                         statement.nodeType === ParseNodeType.StatementList &&
                         statement.statements.find(
                             (statement) =>
