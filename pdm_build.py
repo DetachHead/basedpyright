@@ -5,10 +5,11 @@ from pathlib import Path
 from shutil import copyfile, copytree
 from typing import TYPE_CHECKING, TypedDict, cast
 
-from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
 from nodejs_wheel.executable import npm
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
+
+from based_build.generate_docstubs import main as generate_docstubs
 
 if TYPE_CHECKING:
     from pdm.backend.hooks import Context
@@ -22,15 +23,6 @@ def run_npm(*args: str):
     exit_code = npm(args)
     if exit_code != 0:
         raise Exception(f"the following npm command exited with {exit_code=}: {args}")
-
-
-def generate_docstubs():
-    """ideally this should be imported from `based_build`. see https://github.com/pdm-project/pdm/issues/2948"""
-    stubs_path = Path("packages/pyright-internal/typeshed-fallback")
-    stubs_with_docs_path = Path("docstubs")
-    if not stubs_with_docs_path.exists():
-        copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
-    docify([str(stubs_with_docs_path / "stdlib"), "--builtins-only", "--in-place"])
 
 
 class Hook(BuildHookInterface):

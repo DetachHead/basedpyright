@@ -37,7 +37,18 @@ test_python = 'pytest tests'
 generate_docstubs = { call = "based_build.generate_docstubs:main" }
 
 [tool.pdm.build]
-excludes = ["based_build/", "tests/", "pdm_build.py"]
+excludes = ["tests/", "pdm_build.py"]
+source-includes = [
+    "build",
+    "based_build",
+    "docstubs",
+    "packages/pyright",
+    "packages/pyright-internal",
+    "lerna.json",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+]
 
 [project]
 name = "basedpyright"
