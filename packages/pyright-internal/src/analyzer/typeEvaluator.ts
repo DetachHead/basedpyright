@@ -7799,11 +7799,7 @@ export function createTypeEvaluator(
         return typeArgs;
     }
 
-    function getTypeArg(
-        node: ExpressionNode,
-        flags: EvalFlags,
-        supportsDictExpression: boolean
-    ): TypeResultWithNode {
+    function getTypeArg(node: ExpressionNode, flags: EvalFlags, supportsDictExpression: boolean): TypeResultWithNode {
         let typeResult: TypeResultWithNode;
 
         let adjustedFlags =
