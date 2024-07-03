@@ -565,6 +565,10 @@ export const enum ClassTypeFlags {
     // A special form is not compatible with type[T] and cannot
     // be directly instantiated.
     SpecialFormClass = 1 << 23,
+
+    // This class is rejected when used as the second argument to
+    // an isinstance or issubclass call.
+    IllegalIsinstanceClass = 1 << 24,
 }
 
 export interface DataClassBehaviors {
@@ -825,9 +829,7 @@ export namespace ClassType {
             newClassType.includeSubclasses = true;
         }
 
-        newClassType.tupleTypeArguments = tupleTypeArguments?.map((t) =>
-            isNever(t.type) ? { type: UnknownType.create(), isUnbounded: t.isUnbounded, isOptional: t.isOptional } : t
-        );
+        newClassType.tupleTypeArguments = tupleTypeArguments ? [...tupleTypeArguments] : undefined;
 
         if (isEmptyContainer !== undefined) {
             newClassType.isEmptyContainer = isEmptyContainer;
@@ -1086,6 +1088,10 @@ export namespace ClassType {
 
     export function isSpecialFormClass(classType: ClassType) {
         return !!(classType.details.flags & ClassTypeFlags.SpecialFormClass);
+    }
+
+    export function isIllegalIsinstanceClass(classType: ClassType) {
+        return !!(classType.details.flags & ClassTypeFlags.IllegalIsinstanceClass);
     }
 
     export function isTypedDictClass(classType: ClassType) {
@@ -1766,6 +1772,7 @@ export namespace FunctionType {
 
         FunctionType.addHigherOrderTypeVarScopeIds(newFunction, paramSpecValue.details.typeVarScopeId);
         FunctionType.addHigherOrderTypeVarScopeIds(newFunction, paramSpecValue.details.higherOrderTypeVarScopeIds);
+        newFunction.details.constructorTypeVarScopeId = paramSpecValue.details.constructorTypeVarScopeId;
 
         if (!newFunction.details.methodClass && paramSpecValue.details.methodClass) {
             newFunction.details.methodClass = paramSpecValue.details.methodClass;

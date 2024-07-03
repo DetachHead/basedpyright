@@ -38,8 +38,8 @@ class MyClass2(SuperClass):
         self.property2: None = None
 
 
-def f(instance: Union[SuperClass, UnrelatedClass]) -> None:
-    if isinstance(instance, (MyClass1, UnrelatedSubclass, Any)):
+def f(instance: Union[SuperClass, UnrelatedClass], a: Any) -> None:
+    if isinstance(instance, (MyClass1, UnrelatedSubclass, a)):
         print(instance.property)
 
         # This should generate two errors:
@@ -55,8 +55,8 @@ def f(instance: Union[SuperClass, UnrelatedClass]) -> None:
         print(instance.property2)
 
 
-def g(cls: Union[type[SuperClass], type[UnrelatedClass]]) -> None:
-    if issubclass(cls, (MyClass1, UnrelatedSubclass, Any)):
+def g(cls: Union[type[SuperClass], type[UnrelatedClass]], a: Any) -> None:
+    if issubclass(cls, (MyClass1, UnrelatedSubclass, a)):
         print(cls.class_var1)
 
         # This should generate two errors:

@@ -655,7 +655,7 @@ export class AnalyzerService {
             }
         }
 
-        if (configs) {
+        if (configs && configs.length > 0) {
             errors.push(
                 ...configs.flatMap((config) =>
                     configOptions.initializeFromJson(
