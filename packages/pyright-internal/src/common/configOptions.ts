@@ -906,7 +906,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportMatchNotExhaustive: 'error',
     reportShadowedImports: 'error',
     reportImplicitOverride: 'error',
-    reportUnreachable: 'error',
+    reportUnhashable: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1210,6 +1210,7 @@ export class ConfigOptions {
         typeCheckingMode: string | undefined,
         severityOverrides?: DiagnosticSeverityOverridesMap
     ) {
+        // @ts-expect-error
         this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet(typeCheckingMode);
 
         if (severityOverrides) {
