@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import TypedDict
 
 class A:
-    def __init__(self) -> None:
-        pass
+    ...
 class B:
     def __init__(self) -> None:
         pass
@@ -17,7 +16,7 @@ class E(B):
 class F(A, B): ... # error
 class G(A, E): ... # error
 class H(A, C): ... # no error
-class I(B, C): ... # no error
+class I(B, A): ... # no error
 
 @dataclass
 class J:
@@ -42,11 +41,3 @@ class P(TypedDict):
     ...
 
 class Q(O, P): ... # no error
-
-class R:
-    ...
-class S:
-    def __init__(self, a: int):
-        super().__init__()
-class T(R, S): # no error
-    pass

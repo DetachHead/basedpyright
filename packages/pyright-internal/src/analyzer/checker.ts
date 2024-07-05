@@ -5607,9 +5607,11 @@ export class Checker extends ParseTreeWalker {
         if (filteredBaseClasses.length < 2) {
             return;
         }
-        /** if it's a dataclass then no further base classes in the MRO can have constructors */
-        let constructorIsSafe = !ClassType.isDataClass(classType);
-        const baseClassesWithPossiblyUncalledConstructors: ClassType[] = [];
+        const baseClassesWithConstructors: ClassType[] = [];
+        /**
+         * whether or not it's safe to allow the base class to have a constructor
+         */
+        let constructorIsSafe = true;
         const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
         for (const baseClass of filteredBaseClasses) {
@@ -5618,7 +5620,12 @@ export class Checker extends ParseTreeWalker {
             // following rules are enforced:
             // - if one base class is a TypedDict, all of them have to be TypedDicts
             // - TypedDicts are not allowed to have methods, so they can't have a custom __init__ or __new__ function
-            if (!isTypedDict) {
+            if (constructorIsSafe && !isTypedDict) {
+                // the first base class is allowed to have a constructor because it's guaranteed to be called by this
+                // class's constructor. every other base class isn't allowed to have one (unless it's a synthesized
+                // TypedDict or dataclass constructor, which is checked below in the else branch)
+                constructorIsSafe = false;
+            } else {
                 for (const constructorGetter of [getBoundInitMethod, getBoundNewMethod]) {
                     const constructorMethodResult = constructorGetter(
                         this._evaluator,
@@ -5629,22 +5636,21 @@ export class Checker extends ParseTreeWalker {
                         constructorMethodResult &&
                         constructorMethodResult.classType &&
                         isClass(constructorMethodResult.classType) &&
-                        // synthesized dataclass constructors are safe as the runtime machinery seems to account for multiple inheritance moments
+                        // synthesized constructors are safe as the runtime machinery seems to account for multiple inheritance moments
+                        // dataclass:
                         !(
                             isFunction(constructorMethodResult.type) &&
                             FunctionType.isSynthesizedMethod(constructorMethodResult.type)
+                        ) &&
+                        // TypedDict:
+                        !(
+                            isOverloadedFunction(constructorMethodResult.type) &&
+                            constructorMethodResult.type.overloads.every(FunctionType.isSynthesizedMethod)
                         )
                     ) {
-                        if (constructorIsSafe) {
-                            constructorIsSafe = false;
-                        } else {
-                            baseClassesWithPossiblyUncalledConstructors.push(constructorMethodResult.classType);
-                        }
+                        baseClassesWithConstructors.push(constructorMethodResult.classType);
                         break;
                     }
-                }
-                if (constructorIsSafe && ClassType.isDataClass(baseClass)) {
-                    constructorIsSafe = false;
                 }
             }
             for (const baseClassMroClass of baseClass.details.mro) {
@@ -5703,12 +5709,14 @@ export class Checker extends ParseTreeWalker {
                 errorNode
             );
         }
-        if (baseClassesWithPossiblyUncalledConstructors.length) {
+        if (baseClassesWithConstructors.length) {
+            const addendum = new DiagnosticAddendum();
+            addendum.addMessage(LocAddendum.firstBaseClassCanHaveConstructor());
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportUnsafeMultipleInheritance,
                 LocMessage.multipleInheritance().format({
-                    classes: baseClassesWithPossiblyUncalledConstructors.map((type) => type.details.name).join(', '),
-                }),
+                    classes: baseClassesWithConstructors.map((type) => type.details.name).join(', '),
+                }) + addendum.getString(),
                 errorNode
             );
         }
