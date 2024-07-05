@@ -5597,9 +5597,6 @@ export class Checker extends ParseTreeWalker {
             .filter(isClass)
             .filter((baseClass) => !ClassType.isBuiltIn(baseClass, ['Generic', 'Protocol', 'object']));
 
-    private _isDataclassWithGeneratedConstructor = (type: ClassType) =>
-        ClassType.isDataClass(type) && !ClassType.isDataClassSkipGenerateInit(type);
-
     // Verifies that classes that have more than one base class do not have
     // have conflicting type arguments.
     private _validateMultipleInheritanceBaseClasses(classType: ClassType, errorNode: NameNode) {
@@ -5611,7 +5608,7 @@ export class Checker extends ParseTreeWalker {
             return;
         }
         /** if it's a dataclass then no further base classes in the MRO can have constructors */
-        let constructorIsSafe = !this._isDataclassWithGeneratedConstructor(classType);
+        let constructorIsSafe = !ClassType.isDataClass(classType);
         const baseClassesWithPossiblyUncalledConstructors: ClassType[] = [];
         const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
@@ -5646,7 +5643,7 @@ export class Checker extends ParseTreeWalker {
                         break;
                     }
                 }
-                if (constructorIsSafe && this._isDataclassWithGeneratedConstructor(baseClass)) {
+                if (constructorIsSafe && ClassType.isDataClass(baseClass)) {
                     constructorIsSafe = false;
                 }
             }

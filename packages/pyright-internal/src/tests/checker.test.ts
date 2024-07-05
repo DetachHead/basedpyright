@@ -676,7 +676,6 @@ test('reportUnsafeMultipleInheritance', () => {
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 16 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 17 },
             { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 35 },
-            { code: DiagnosticRule.reportUnsafeMultipleInheritance, line: 54 },
         ],
     });
 });

@@ -50,11 +50,3 @@ class S:
         super().__init__()
 class T(R, S): # no error
     pass
-
-@dataclass
-class U(A, C): # error
-    ...
-
-@dataclass(init=False)
-class V(A, C): # no error
-    ...
