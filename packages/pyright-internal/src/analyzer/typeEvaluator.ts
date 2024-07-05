@@ -10959,16 +10959,11 @@ export function createTypeEvaluator(
             while (argIndex < argList.length) {
                 if (argList[argIndex].argumentCategory === ArgumentCategory.UnpackedDictionary) {
                     // Verify that the type used in this expression is a SupportsKeysAndGetItem[str, T].
-                    const argTypeResult = getTypeOfArgument(
+                    const argType = getTypeOfArgument(
                         argList[argIndex],
                         makeInferenceContext(paramDetails.unpackedKwargsTypedDictType),
                         signatureTracker
-                    );
-                    const argType = argTypeResult.type;
-
-                    if (argTypeResult.isIncomplete) {
-                        isTypeIncomplete = true;
-                    }
+                    ).type;
 
                     if (isAnyOrUnknown(argType)) {
                         unpackedDictionaryArgType = argType;
