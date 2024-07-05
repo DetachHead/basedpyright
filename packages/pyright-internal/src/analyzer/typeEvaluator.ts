@@ -20187,7 +20187,7 @@ export function createTypeEvaluator(
         }
 
         // Allocate a new code flow analyzer.
-        const analyzer = codeFlowEngine.createCodeFlowAnalyzer();
+        const analyzer = codeFlowEngine.createCodeFlowAnalyzer(typeAtStart);
         if (entries) {
             entries.push({ typeAtStart, codeFlowAnalyzer: analyzer });
         } else {
@@ -22507,7 +22507,7 @@ export function createTypeEvaluator(
             const prevTypeCache = returnTypeInferenceTypeCache;
             returnTypeInferenceContextStack.push({
                 functionNode,
-                codeFlowAnalyzer: codeFlowEngine.createCodeFlowAnalyzer(),
+                codeFlowAnalyzer: codeFlowEngine.createCodeFlowAnalyzer(/* typeAtStart */ undefined),
             });
 
             try {

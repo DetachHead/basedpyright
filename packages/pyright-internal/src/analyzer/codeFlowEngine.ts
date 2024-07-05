@@ -95,7 +95,7 @@ export interface CodeFlowAnalyzer {
 }
 
 export interface CodeFlowEngine {
-    createCodeFlowAnalyzer: () => CodeFlowAnalyzer;
+    createCodeFlowAnalyzer: (typeAtStart: TypeResult | undefined) => CodeFlowAnalyzer;
     isFlowNodeReachable: (flowNode: FlowNode, sourceFlowNode?: FlowNode, ignoreNoReturn?: boolean) => boolean;
     narrowConstrainedTypeVar: (flowNode: FlowNode, typeVar: TypeVarType) => Type | undefined;
     printControlFlowGraph: (
@@ -173,7 +173,11 @@ export function getCodeFlowEngine(
     // Creates a new code flow analyzer that can be used to narrow the types
     // of the expressions within an execution context. Each code flow analyzer
     // instance maintains a cache of types it has already determined.
-    function createCodeFlowAnalyzer(): CodeFlowAnalyzer {
+    // The caller should pass a typeAtStart value because the code flow
+    // analyzer may cache types based on this value, but the typeAtStart
+    // may vary depending on the context in which the code flow analysis
+    // is performed.
+    function createCodeFlowAnalyzer(typeAtStart: TypeResult | undefined): CodeFlowAnalyzer {
         const flowNodeTypeCacheSet = new Map<string, CodeFlowTypeCache>();
 
         function getFlowNodeTypeCacheForReference(referenceKey: string) {
@@ -507,6 +511,10 @@ export function getCodeFlowEngine(
                                     ) {
                                         flowTypeResult = undefined;
                                     }
+                                }
+
+                                if (flowTypeResult && !isFlowNodeReachable(flowNode)) {
+                                    flowTypeResult = undefined;
                                 }
 
                                 return setCacheEntry(curFlowNode, flowTypeResult?.type, !!flowTypeResult?.isIncomplete);
@@ -1218,6 +1226,8 @@ export function getCodeFlowEngine(
                     curFlowNode.flags &
                     (FlowFlags.VariableAnnotation |
                         FlowFlags.Assignment |
+                        FlowFlags.TrueCondition |
+                        FlowFlags.FalseCondition |
                         FlowFlags.WildcardImport |
                         FlowFlags.NarrowForPattern |
                         FlowFlags.ExhaustedMatch)
@@ -1225,19 +1235,15 @@ export function getCodeFlowEngine(
                     const typedFlowNode = curFlowNode as
                         | FlowVariableAnnotation
                         | FlowAssignment
+                        | FlowCondition
                         | FlowWildcardImport
+                        | FlowCondition
                         | FlowExhaustedMatch;
                     curFlowNode = typedFlowNode.antecedent;
                     continue;
                 }
 
-                if (
-                    curFlowNode.flags &
-                    (FlowFlags.TrueCondition |
-                        FlowFlags.FalseCondition |
-                        FlowFlags.TrueNeverCondition |
-                        FlowFlags.FalseNeverCondition)
-                ) {
+                if (curFlowNode.flags & (FlowFlags.TrueNeverCondition | FlowFlags.FalseNeverCondition)) {
                     const conditionalFlowNode = curFlowNode as FlowCondition;
                     if (conditionalFlowNode.reference) {
                         // Make sure the reference type has a declared type. If not,
@@ -1359,7 +1365,7 @@ export function getCodeFlowEngine(
 
         // Protect against infinite recursion.
         if (isReachableRecursionSet.has(flowNode.id)) {
-            return false;
+            return true;
         }
         isReachableRecursionSet.add(flowNode.id);
 

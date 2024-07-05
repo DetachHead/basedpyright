@@ -1,10 +1,7 @@
 # This sample validates that the exception type provided
 # within a raise statement is valid.
 
-from random import random
-
-
-a: bool = True if random() > 0.5 else False
+a: bool = True
 
 
 class CustomException1(BaseException):
@@ -14,10 +11,10 @@ class CustomException1(BaseException):
 
 # This should generate an error because CustomException1
 # requires an argument to instantiate.
-if a or 2 > 1:
+if a:
     raise CustomException1
 
-if a or 2 > 1:
+if a:
     raise CustomException1(3)
 
 
@@ -27,5 +24,5 @@ class CustomException2:
 
 # This should generate an error because
 # the exception doesn't derive from BaseException.
-if a or 2 > 1:
+if a:
     raise CustomException2
