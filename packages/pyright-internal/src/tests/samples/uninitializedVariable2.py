@@ -3,7 +3,7 @@
 # (but does not assign) variables.
 
 from abc import ABC
-from typing import NamedTuple, final
+from typing import final
 
 
 class Abstract1(ABC):
@@ -48,7 +48,3 @@ class Abstract3(Abstract1):
 @final
 class G(Abstract3):
     pass
-
-
-class H(NamedTuple):
-    x: int
