@@ -6,7 +6,6 @@
  * Interface for service that parses docstrings and converts them to other formats.
  */
 
-import { MarkupKind } from 'vscode-languageserver-types';
 import { convertDocStringToMarkdown, convertDocStringToPlainText } from '../analyzer/docStringConversion';
 import { extractParameterDocumentation } from '../analyzer/docStringUtils';
 
@@ -16,7 +15,6 @@ export interface DocStringService {
     extractParameterDocumentation(
         functionDocString: string,
         paramName: string,
-        format?: MarkupKind,
         forceLiteral?: boolean
     ): string | undefined;
     clone(): DocStringService;

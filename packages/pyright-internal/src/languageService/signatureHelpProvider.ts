@@ -140,17 +140,12 @@ export class SignatureHelpProvider {
         const signatures = signatureHelpResults.signatures.map((sig) => {
             let paramInfo: ParameterInformation[] = [];
             if (sig.parameters) {
-                paramInfo = sig.parameters.map((param) => {
-                    return {
-                        label: this._hasSignatureLabelOffsetCapability
-                            ? [param.startOffset, param.endOffset]
-                            : param.text,
-                        documentation: {
-                            kind: this._format,
-                            value: param.documentation ?? '',
-                        },
-                    };
-                });
+                paramInfo = sig.parameters.map((param) =>
+                    ParameterInformation.create(
+                        this._hasSignatureLabelOffsetCapability ? [param.startOffset, param.endOffset] : param.text,
+                        param.documentation
+                    )
+                );
             }
 
             const sigInfo = SignatureInformation.create(sig.label, /* documentation */ undefined, ...paramInfo);
@@ -249,6 +244,7 @@ export class SignatureHelpProvider {
                 startOffset: label.length,
                 endOffset: label.length + paramString.length,
                 text: paramString,
+                documentation: this._docStringService.extractParameterDocumentation(functionDocString || '', paramName),
             });
 
             // Name match for active parameter. The set of parameters from the function
@@ -269,18 +265,6 @@ export class SignatureHelpProvider {
             activeParameter = params.indexOf(signature.activeParam);
             if (activeParameter === -1) {
                 activeParameter = undefined;
-            }
-        }
-
-        // Extract the documentation only for the active parameter.
-        if (activeParameter !== undefined) {
-            const activeParam = parameters[activeParameter];
-            if (activeParam) {
-                activeParam.documentation = this._docStringService.extractParameterDocumentation(
-                    functionDocString || '',
-                    params[activeParameter].name || '',
-                    this._format
-                );
             }
         }
 

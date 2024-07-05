@@ -118,8 +118,8 @@ export function addModuleSymbolsMap(files: readonly SourceFileInfo[], moduleSymb
         const fileName = stripFileExtension(uri.fileName);
 
         // Don't offer imports from files that are named with private
-        // naming semantics like "_ast.py" unless they're in the current userfile list.
-        if (SymbolNameUtils.isPrivateOrProtectedName(fileName) && !isUserCode(file)) {
+        // naming semantics like "_ast.py".
+        if (SymbolNameUtils.isPrivateOrProtectedName(fileName)) {
             return;
         }
 

@@ -115,10 +115,6 @@ export class CacheManager {
 
     // Returns a ratio of used bytes to total bytes.
     getUsedHeapRatio(console?: ConsoleInterface) {
-        if (this._pausedCount > 0) {
-            return -1;
-        }
-
         const heapStats = getHeapStatistics();
         let usage = this._getTotalHeapUsage(heapStats);
 
