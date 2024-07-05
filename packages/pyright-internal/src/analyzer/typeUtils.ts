@@ -3114,11 +3114,8 @@ export function computeMroLinearization(classType: ClassType): boolean {
 
     // The first class in the MRO is the class itself.
     const typeVarContext = buildTypeVarContextFromSpecializedClass(classType);
-    let specializedClassType = applySolvedTypeVars(classType, typeVarContext);
-    if (!isClass(specializedClassType) && !isAny(specializedClassType) && !isUnknown(specializedClassType)) {
-        specializedClassType = UnknownType.create();
-    }
-
+    const specializedClassType = applySolvedTypeVars(classType, typeVarContext);
+    assert(isClass(specializedClassType) || isAny(specializedClassType) || isUnknown(specializedClassType));
     classType.details.mro.push(specializedClassType);
 
     // Helper function that returns true if the specified searchClass
