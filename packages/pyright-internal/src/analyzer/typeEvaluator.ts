@@ -3276,7 +3276,7 @@ export function createTypeEvaluator(
         node: ParseNode,
         range?: TextRange
     ) {
-        if (!isDiagnosticSuppressedForNode(node) && isNodeReachable(node)) {
+        if (!isDiagnosticSuppressedForNode(node)) {
             const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
             return fileInfo.diagnosticSink.addDiagnosticWithTextRange(diagLevel, message, range || node);
         }
