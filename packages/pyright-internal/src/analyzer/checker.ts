@@ -2714,31 +2714,6 @@ export class Checker extends ParseTreeWalker {
                     !this._evaluator.isNodeReachable(statement, prevStatement) &&
                     !this._evaluator.isNotTypeCheckingBlock(statement)
                 ) {
-                    // if a statement is a function call where an argument is typed as `Never`, then it's probably an `assert_never` pattern,
-                    // so don't report the statement as unreachable. this check is probably overkill and we could instead just special-case
-                    // `typing.assert_never`, but we want to support user-defined "assert never" functions to be more flexible.
-                    if (
-                        statement.nodeType === ParseNodeType.StatementList &&
-                        statement.statements.find(
-                            (statement) =>
-                                statement.nodeType === ParseNodeType.Call &&
-                                this._evaluator.matchCallArgsToParams(statement)?.find((result) =>
-                                    result.match.argParams.find(
-                                        (param) =>
-                                            //check the function parameter type:
-                                            param.paramType.category === TypeCategory.Never &&
-                                            // check the provided argument type (ideally this shouldn't be necessary and it should instead report a reportCallIssue
-                                            // if the argument is wrong, but since we're in unreachable code, no type errors occur.)
-                                            param.argument.valueExpression &&
-                                            isNever(
-                                                this._evaluator.getTypeOfExpression(param.argument.valueExpression).type
-                                            )
-                                    )
-                                )
-                        )
-                    ) {
-                        continue;
-                    }
                     // Create a text range that covers the next statement through
                     // the end of the statement list.
                     const start = statement.start;
