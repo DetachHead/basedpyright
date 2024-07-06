@@ -85,6 +85,15 @@
             "clear": true
           },
           "problemMatcher": []
+        },
+        {
+          "label": "update pyprojectx lockfile",
+          "type": "shell",
+          "command": "./pw",
+          "args": ["--lock"],
+          "presentation": {
+            "clear": true
+          }
         }
     ]
 }

@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update python dependencies
+      - name: Update pyprojectx dependencies
+        run: ./pw --lock
+      - name: Update pdm dependencies
         uses: pdm-project/update-deps-action@v1.8
         with:
           commit-message: 'Update pdm.lock'
