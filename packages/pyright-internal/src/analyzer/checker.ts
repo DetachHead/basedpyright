@@ -5232,13 +5232,19 @@ export class Checker extends ParseTreeWalker {
             if (parentSymbol) {
                 return;
             }
-
-            // Report the variable as uninitialized only on the first decl.
-            this._evaluator.addDiagnostic(
-                DiagnosticRule.reportUninitializedInstanceVariable,
-                LocMessage.uninitializedInstanceVariable().format({ name: name }),
-                decls[0].node
-            );
+            if (
+                !classType.details.baseClasses.some(
+                    (baseClass) =>
+                        baseClass.category === TypeCategory.Class && baseClass.details.fullName === 'typing.NamedTuple'
+                )
+            ) {
+                // Report the variable as uninitialized only on the first decl.
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportUninitializedInstanceVariable,
+                    LocMessage.uninitializedInstanceVariable().format({ name: name }),
+                    decls[0].node
+                );
+            }
         });
 
         // See if there are any variables from abstract base classes
