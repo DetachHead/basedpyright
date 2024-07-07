@@ -8,7 +8,7 @@
 [![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](./docs/installation.md#pycharm)
 [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
 [![coc.nvim](https://img.shields.io/badge/coc.nvim-grey?logo=vim)](https://github.com/fannheyward/coc-basedpyright)
-[![emacs](https://img.shields.io/badge/emacs-grey?logo=gnuemacs&logoColor=ffffff)](https://github.com/fannheyward/coc-basedpyright)
+[![emacs](https://img.shields.io/badge/emacs-grey?logo=gnuemacs&logoColor=ffffff)](https://github.com/manateelazycat/lsp-bridge)
 [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
 [![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://detachhead.github.io/basedpyright)
 
