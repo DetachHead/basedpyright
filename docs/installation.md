@@ -85,7 +85,6 @@ Vim users can install [coc-basedpyright](https://github.com/fannheyward/coc-base
 Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP) and [LSP-basedpyright](https://packagecontrol.io/packages/LSP-basedpyright) via [Package Control](https://packagecontrol.io).
 
 ### Emacs
-*⚠ basedpyright has not been tested on this editor. if you run into issues with these instructions, please raise an issue.*
 
 Emacs users can install [eglot](https://github.com/joaotavora/eglot), [lsp-bridge](https://github.com/manateelazycat/lsp-bridge) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode) with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright).
 
