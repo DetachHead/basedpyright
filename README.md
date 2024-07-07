@@ -1,7 +1,16 @@
 <h1><img src="https://github.com/DetachHead/basedpyright/assets/57028336/c7342c31-bf23-413c-af6d-bc430898b3dd"> basedpyright</h1>
 
-[![pypi](https://img.shields.io/pypi/dm/basedpyright?logo=pypi&color=3775A9)](https://pypi.org/project/basedpyright/) [![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC
-)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright) [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright) [![coc.nvim](https://img.shields.io/badge/coc.nvim-grey?logo=vim)](https://github.com/fannheyward/coc-basedpyright) [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright) [![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm&color=000000)](./docs/installation.md#pycharm) [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2) [![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://detachhead.github.io/basedpyright)
+[![pypi](https://img.shields.io/pypi/dm/basedpyright?logo=pypi&color=3775A9)](https://pypi.org/project/basedpyright/)
+[![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC
+)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+[![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright)
+[![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
+[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](./docs/installation.md#pycharm)
+[![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
+[![coc.nvim](https://img.shields.io/badge/coc.nvim-grey?logo=vim)](https://github.com/fannheyward/coc-basedpyright)
+[![emacs](https://img.shields.io/badge/emacs-grey?logo=gnuemacs&logoColor=ffffff)](https://github.com/fannheyward/coc-basedpyright)
+[![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
+[![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://detachhead.github.io/basedpyright)
 
 Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, improved vscode support and pylance features built into the language server.
 
