@@ -10,12 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        id: install_python
+        with:
+          python-version: 3.12
+
+      - name: update pyprojectx
+        run: curl -LO https://github.com/pyprojectx/pyprojectx/releases/latest/download/wrappers.zip && unzip -o wrappers.zip && rm -f wrappers.zip
+
       - name: Update pyprojectx dependencies
         run: ./pw --lock
-      - name: Update pdm dependencies
+
+      - name: Update pdm dependencies & create PR
         uses: pdm-project/update-deps-action@v1.8
         with:
-          commit-message: 'Update pdm.lock'
+          commit-message: 'Update python dependencies'
           pr-title: 'Update python dependencies'
           update-strategy: eager
           token: ${{ secrets.GH_TOKEN }}
