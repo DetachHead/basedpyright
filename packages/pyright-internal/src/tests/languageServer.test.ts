@@ -64,9 +64,6 @@ describe(`Basic language server tests`, () => {
             await serverInfo.dispose();
             serverInfo = undefined;
         }
-    });
-
-    afterAll(async () => {
         await cleanupAfterAll();
     });
 
