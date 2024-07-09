@@ -80,7 +80,7 @@
           "label": "install dependencies",
           "type": "shell",
           "command": "./pw",
-          "args": ["pdm", "sync", "--clean", "--dev"],
+          "args": ["pdm", "sync", "--clean", "-G:all"],
           "presentation": {
             "clear": true
           },
