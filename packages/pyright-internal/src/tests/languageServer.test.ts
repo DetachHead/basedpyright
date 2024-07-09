@@ -14,6 +14,7 @@ import {
     InitializedNotification,
     InitializeRequest,
     MarkupContent,
+    WillRenameFilesRequest,
 } from 'vscode-languageserver';
 
 import { convertOffsetToPosition } from '../common/positionUtils';
@@ -32,6 +33,9 @@ import {
     runPyrightServer,
     waitForDiagnostics,
 } from './lsp/languageServerTestUtils';
+
+/** objects from `sendRequest` don't work with assertions and i cant figure out why */
+const assertEqual = <T>(actual: T, expected: T) => expect(JSON.parse(JSON.stringify(actual))).toStrictEqual(expected);
 
 describe(`Basic language server tests`, () => {
     let serverInfo: PyrightServerInfo | undefined;
@@ -234,5 +238,154 @@ describe(`Basic language server tests`, () => {
 
         // Make sure the error has a special rule
         assert.equal(diagnostic.diagnostics[0].code, 'reportUnknownParameterType');
+    });
+    describe('module renaming', () => {
+        test('import', async () => {
+            const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo.bar
+//// 
+    `;
+            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+            openFile(serverInfo, 'marker');
+            const marker = serverInfo.testData.markerPositions.get('marker')!;
+            const result = await serverInfo.connection.sendRequest(
+                WillRenameFilesRequest.type,
+                {
+                    files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
+                },
+                CancellationToken.None
+            );
+            assertEqual(result, {
+                documentChanges: [
+                    {
+                        edits: [
+                            {
+                                range: {
+                                    start: {
+                                        line: 0,
+                                        character: 7,
+                                    },
+                                    end: {
+                                        line: 0,
+                                        character: 14,
+                                    },
+                                },
+                                newText: 'foo.baz',
+                            },
+                        ],
+                        textDocument: {
+                            uri: 'file:///src/baz.py',
+                            version: null,
+                        },
+                    },
+                    {
+                        edits: [],
+                        textDocument: {
+                            uri: marker.fileUri.toString(),
+                            version: null,
+                        },
+                    },
+                ],
+            });
+        });
+        test('import from', async () => {
+            const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// from foo import bar
+//// 
+    `;
+            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+            openFile(serverInfo, 'marker');
+            const marker = serverInfo.testData.markerPositions.get('marker')!;
+            const result = await serverInfo.connection.sendRequest(
+                WillRenameFilesRequest.type,
+                {
+                    files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
+                },
+                CancellationToken.None
+            );
+            assertEqual(result, {
+                documentChanges: [
+                    {
+                        edits: [
+                            {
+                                range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } },
+                                newText: 'baz',
+                            },
+                        ],
+                        textDocument: {
+                            uri: 'file:///src/baz.py',
+                            version: null,
+                        },
+                    },
+                    {
+                        edits: [],
+                        textDocument: {
+                            uri: marker.fileUri.toString(),
+                            version: null,
+                        },
+                    },
+                ],
+            });
+        });
+        test('rename folder', async () => {
+            const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo.bar
+//// 
+    `;
+            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+            openFile(serverInfo, 'marker');
+            const marker = serverInfo.testData.markerPositions.get('marker')!;
+            const result = await serverInfo.connection.sendRequest(
+                WillRenameFilesRequest.type,
+                {
+                    files: [{ oldUri: 'file:///src/foo', newUri: 'file:///src/foo2' }],
+                },
+                CancellationToken.None
+            );
+            assertEqual(result, {
+                documentChanges: [
+                    {
+                        edits: [
+                            {
+                                range: {
+                                    start: {
+                                        line: 0,
+                                        character: 7,
+                                    },
+                                    end: {
+                                        line: 0,
+                                        character: 14,
+                                    },
+                                },
+                                newText: 'foo2.bar',
+                            },
+                        ],
+                        textDocument: {
+                            uri: 'file:///src/baz.py',
+                            version: null,
+                        },
+                    },
+                    {
+                        edits: [],
+                        textDocument: {
+                            uri: marker.fileUri.toString(),
+                            version: null,
+                        },
+                    },
+                ],
+            });
+        });
     });
 });
