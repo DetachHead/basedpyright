@@ -63,8 +63,8 @@ name = "docify"
 version = "0.1.0"
 requires_python = ">= 3.8"
 git = "https://github.com/AThePeanut4/docify"
-ref = "7380a6faa6d1e8a3dc790a00254e6d77f84cbd91"
-revision = "7380a6faa6d1e8a3dc790a00254e6d77f84cbd91"
+ref = "8eab4e70ec8cc43309913604c8f0ae7cee524584"
+revision = "8eab4e70ec8cc43309913604c8f0ae7cee524584"
 summary = "A script to add docstrings to Python type stubs using reflection"
 groups = ["docstubs"]
 dependencies = [
@@ -190,32 +190,32 @@ files = [
 
 [[package]]
 name = "nodejs-wheel"
-version = "20.15.0"
+version = "20.15.1"
 requires_python = ">=3.7"
 summary = "unoffical Node.js package"
 groups = ["dev"]
 dependencies = [
-    "nodejs-wheel-binaries==20.15.0",
+    "nodejs-wheel-binaries==20.15.1",
 ]
 files = [
-    {file = "nodejs_wheel-20.15.0-py3-none-any.whl", hash = "sha256:58d2e4ce1f325e3c8b20a5f85c9db0e051ca38f4fc65f2f50f50b8a5ed04f8c9"},
-    {file = "nodejs_wheel-20.15.0.tar.gz", hash = "sha256:056171a89336c9c43ecac2ee46c977e38080642169c3a783380aee587f6a5526"},
+    {file = "nodejs_wheel-20.15.1-py3-none-any.whl", hash = "sha256:834c55cff9272e3adb51be8326d8dfbbfefcbba43065fa52ea84c5707cbbdc94"},
+    {file = "nodejs_wheel-20.15.1.tar.gz", hash = "sha256:8d039d86f2f39b65c461b9e8028e7d82cfc77ef99094e6614738fc8305b52856"},
 ]
 
 [[package]]
 name = "nodejs-wheel-binaries"
-version = "20.15.0"
+version = "20.15.1"
 requires_python = ">=3.7"
 summary = "unoffical Node.js package"
 groups = ["default", "dev"]
 files = [
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:16cf7edbb67c57d3eb2482db0d95fb58a9c65170063b48c2fe877b6e129fe802"},
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:1be468912a5f666bf6f035474b1ed87d04e9908ff3ffe82fc485ec67c771c6ff"},
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3d5b3d53f1b992d766190578daf1f719bd412e8df2667dbd3f5864df70c0c99f"},
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:036122f5d33f0d9a0160e5a60c2b98fc5cf55308ca826a48a0e0323ffdc4e9c8"},
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:6637bcc4aa995adddfa35bd69dd7cc5432497ad35be48f0c1b98cd781790a6f5"},
-    {file = "nodejs_wheel_binaries-20.15.0-py2.py3-none-win_amd64.whl", hash = "sha256:f2ff3240ecda17375f78905ebc25a3d0f055a5c29e1f327a9a37d974af6729a0"},
-    {file = "nodejs_wheel_binaries-20.15.0.tar.gz", hash = "sha256:ef3820341946396abd2ebffc45bbb9386ef84ed51c0d04759f8fe8e50615c85e"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:a04537555f59e53021f8a2b07fa7aaac29d7793b7fae7fbf561bf9a859f4c67a"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:b5ff04efa56a3fcd1fd09b30f5236c12bd84c10fcb222f3c0e04e1d497342b70"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:29c3e172e3fde3c13e7509312c81700736304dbd250745d87f00e7506065f3a5"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9740f7456a43cb09521a1ac93a4355dc8282c41420f2d61ff631a01f39e2aa18"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:bf5e239676efabb2fbaeff2f36d0bad8e2379f260ef44e13ef2151d037e40af3"},
+    {file = "nodejs_wheel_binaries-20.15.1-py2.py3-none-win_amd64.whl", hash = "sha256:624936171b1aa2e1cc6d1718b1caa089e943b54df16568fa2f4576d145ac279a"},
+    {file = "nodejs_wheel_binaries-20.15.1.tar.gz", hash = "sha256:b2f25b4f0e9a827ae1af8218ab13a385e279c236faf7b7c821e969bb8f6b25e8"},
 ]
 
 [[package]]

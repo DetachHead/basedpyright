@@ -27,8 +27,8 @@ source = "call"
 getter = "based_build.get_version:get_version"
 
 [tool.pdm.scripts]
-update = "pdm update --dev"
-refresh_lockfile = "pdm lock --update-reuse --dev"
+update = "pdm update -G:all"
+refresh_lockfile = "pdm lock --update-reuse -G:all"
 typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
 ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
