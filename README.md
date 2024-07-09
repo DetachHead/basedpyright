@@ -222,9 +222,10 @@ many of the builtin modules are written in c, meaning the pyright language serve
 pylance works around this problem by running a "docstring scraper" script on the user's machine, which imports compiled builtin modules, scrapes all the docstrings from them at runtime, then saves them so that the language server can read them. however this isn't ideal for a few reasons:
 
 - only docstrings for modules and functions available on the user's current OS and python version will be generated. so if you're working on a cross-platform project, or code that's intended to be run on multiple versions of python, you won't be able to see docstrings for compiled builtin modules that are not available in your current python installation.
+- the check to determine whether a builtin object is compiled is done at the module level, meaning modules like `re` and `os` which have python source files but contain re-exports of compiled functions, are treated as if they are entirely written in python. this means many of their docstrings are still missing in pylance.
 - it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
 
-in basedpyright's implementation, the docstrings for all compiled builtin modules for all currently supported python versions and all platforms (macos, windows and linux) are bundled in the default typeshed stubs that come with the basedpyright package.
+basedpyright solves all of these problems by using [docify](https://github.com/AThePeanut4/docify) to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.
 
 ##### examples
 
