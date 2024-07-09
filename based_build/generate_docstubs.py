@@ -17,7 +17,7 @@ def main():
     stubs_with_docs_path = Path("docstubs")
     if not stubs_with_docs_path.exists():
         copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
-    docify([str(stubs_with_docs_path / "stdlib"), "--builtins-only", "--in-place"])
+    docify([str(stubs_with_docs_path / "stdlib"), "--if-needed", "--in-place"])
 
 
 if __name__ == "__main__":

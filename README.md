@@ -246,10 +246,10 @@ basedpyright uses [docify](https://github.com/AThePeanut4/docify) to add docstri
 python -m docify path/to/stubs/for/package --in-place
 ```
 
-or if you're using a different version of typeshed, you can use the `--builtins-only` argument to replicate how basedpyright's version of typeshed is generated for your current platform and python version:
+or if you're using a different version of typeshed, you can use the `--if-needed` argument to replicate how basedpyright's version of typeshed is generated for your current platform and python version:
 
 ```
-python -m docify path/to/typeshed/stdlib --builtins-only --in-place
+python -m docify path/to/typeshed/stdlib --if-needed --in-place
 ```
 
 ### errors on invalid configuration
