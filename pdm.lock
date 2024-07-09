@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docstubs"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:8e4d12ef1cd66f34b6046555374ae86fadba50f721c64b7b9db7b762421b7450"
+content_hash = "sha256:c4f6e5e67dc5fa3decbbf4dce974528db14c928521082b396e531a988a1bc2f2"
 
 [[package]]
 name = "astroid"
@@ -60,16 +60,17 @@ files = [
 
 [[package]]
 name = "docify"
-version = "0.1.0"
-requires_python = ">= 3.8"
-git = "https://github.com/AThePeanut4/docify"
-ref = "8eab4e70ec8cc43309913604c8f0ae7cee524584"
-revision = "8eab4e70ec8cc43309913604c8f0ae7cee524584"
+version = "1.0.0"
+requires_python = ">=3.8"
 summary = "A script to add docstrings to Python type stubs using reflection"
 groups = ["docstubs"]
 dependencies = [
     "libcst>=1.1.0",
     "tqdm>=4.66.4",
+]
+files = [
+    {file = "docify-1.0.0-py3-none-any.whl", hash = "sha256:518b4ad32eaec2ff527968055ee74ca2fbf9cabad3eb0e4db830fa06997e5609"},
+    {file = "docify-1.0.0.tar.gz", hash = "sha256:8d779f8348dd8d46796709c0db7d710cbc6354935d90a727c9ff3ab77b4cd3bf"},
 ]
 
 [[package]]

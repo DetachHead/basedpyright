@@ -17,10 +17,7 @@ dev = [
     "basedtyping>=0.1.4",
 ]
 # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
-docstubs = [
-    # https://github.com/AThePeanut4/docify/pull/8
-    "docify @ git+https://github.com/AThePeanut4/docify@8eab4e70ec8cc43309913604c8f0ae7cee524584", # https://github.com/AThePeanut4/docify/issues/3
-]
+docstubs = ["docify>=1.0.0"]
 
 [tool.pdm.version]
 source = "call"
@@ -81,7 +78,7 @@ requires = [
     "nodejs-wheel>=20.13.1",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
-    "docify @ git+https://github.com/AThePeanut4/docify@8eab4e70ec8cc43309913604c8f0ae7cee524584",
+    "docify>=1.0.0",
 ]
 build-backend = "pdm.backend"
 
