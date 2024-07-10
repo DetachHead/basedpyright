@@ -20452,7 +20452,7 @@ export function createTypeEvaluator(
             }
 
             // Classes that accept inlined type dict type args allow only one.
-            if (typeArgs[0].inlinedTypeDict) {
+            if (typeArgs.length && typeArgs[0].inlinedTypeDict) {
                 if (typeArgs.length > 1) {
                     addDiagnostic(
                         DiagnosticRule.reportInvalidTypeArguments,
