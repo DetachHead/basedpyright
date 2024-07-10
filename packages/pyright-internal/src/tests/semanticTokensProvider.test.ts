@@ -72,7 +72,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: [], start: 135, length: 4 }, // Type
             { type: 'class', modifiers: [], start: 142, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 148, length: 5 }, // value
-            { type: 'type', modifiers: [], start: 155, length: 4 }, // Type
+            { type: 'variable', modifiers: [], start: 155, length: 4 }, // Type (should be type. https://github.com/DetachHead/basedpyright/issues/490)
             { type: 'function', modifiers: ['definition'], start: 169, length: 8 }, // inferred
             { type: 'function', modifiers: [], start: 169, length: 8 }, // inferred
             { type: 'variable', modifiers: [], start: 185, length: 5 }, // value
