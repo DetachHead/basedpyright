@@ -77,7 +77,7 @@ class NoneProto(Protocol):
 
 def func7(x: NoneProto | None):
     if x is None:
-        reveal_type(x, expected_text="None")
+        reveal_type(x, expected_text="Never") # should be None. see https://github.com/DetachHead/basedpyright/issues/459
     else:
         reveal_type(x, expected_text="NoneProto")
 

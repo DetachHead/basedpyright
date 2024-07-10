@@ -38,4 +38,4 @@ def func1(
     if isinstance(obj, Callable):
         reveal_type(obj, expected_text="((int, str) -> int) | B | TCall1@func1")
     else:
-        reveal_type(obj, expected_text="list[int] | C | D | A")
+        reveal_type(obj, expected_text="list[int] | C | A")

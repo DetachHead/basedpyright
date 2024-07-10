@@ -117,3 +117,12 @@ test('subscript context manager types on 3.8', () => {
         ],
     });
 });
+
+test("useless type isn't added to union after if statement", () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportAssertTypeFailure = 'error';
+    const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingBased.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [],
+    });
+});
