@@ -55,6 +55,7 @@ import {
     isOverloadedFunction,
     isTypeSame,
     isTypeVar,
+    isUnion,
     maxTypeRecursionCount,
     NeverType,
     OverloadedFunctionType,
@@ -1871,8 +1872,15 @@ export function getCodeFlowEngine(
                     }
 
                     cmSwallowsExceptions = false;
-                    if (isClassInstance(returnType) && ClassType.isBuiltIn(returnType, 'bool')) {
-                        if (returnType.literalValue === undefined || returnType.literalValue === true) {
+                    // valid return types here are `bool | None`. if the context manager returns `True` then it suppresses,
+                    // meaning we only know for sure that the context manager can't swallow exceptions if its return type
+                    // does not allow `True`.
+                    const typesToCheck = isUnion(returnType) ? returnType.subtypes : [returnType];
+                    const boolType = typesToCheck.find(
+                        (type): type is ClassType => isClassInstance(type) && ClassType.isBuiltIn(type, 'bool')
+                    );
+                    if (boolType) {
+                        if (boolType.literalValue === undefined || boolType.literalValue === true) {
                             cmSwallowsExceptions = true;
                         }
                     }
