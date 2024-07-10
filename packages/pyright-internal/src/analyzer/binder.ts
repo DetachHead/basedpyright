@@ -555,7 +555,7 @@ export class Binder extends ParseTreeWalker {
                 const enclosingClass = ParseTreeUtils.getEnclosingClass(node);
                 if (enclosingClass) {
                     // Add the implicit "__class__" symbol described in PEP 3135.
-                    this._addImplicitSymbolToCurrentScope('__class__', node, 'class');
+                    this._addImplicitSymbolToCurrentScope('__class__', node, 'type[self]');
                 }
 
                 this._deferBinding(() => {
