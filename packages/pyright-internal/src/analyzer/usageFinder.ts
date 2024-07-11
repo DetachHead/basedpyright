@@ -34,12 +34,12 @@ export class UsageFinder extends ParseTreeWalker {
         //TODO: this is pretty gross and also doesn't change renames where there's no longer a . in the name
         // eg. `foo.bar` > `foo`
         if (this._oldModuleName.includes('.')) {
-            const index = this._oldModuleName.lastIndexOf('.');
-            const oldImportFrom = this._oldModuleName.slice(0, index);
-            const oldImport = this._oldModuleName.slice(index + 1);
-            if (importedFromModule === oldImportFrom && this._newModuleName.includes('.')) {
-                const newImport = this._newModuleName.slice(index + 1);
-                if (node.name.value === oldImport) {
+            // split a module name (eg. `foo.bar.baz`) into the "from" and "import" parts (eg. `from foo.bar import baz`)
+            const oldImportFrom = this._getImportFrom(this._oldModuleName);
+            const oldImport = this._getImportedName(this._oldModuleName);
+            if (importedFromModule === oldImportFrom) {
+                const newImport = this._newModuleName.slice(this._newModuleName.lastIndexOf('.') + 1);
+                if (node.name.value === oldImport && newImport !== oldImport) {
                     this.edits.push({
                         range: convertTextRangeToRange(node.name, this._lines),
                         newText: newImport,
@@ -51,8 +51,7 @@ export class UsageFinder extends ParseTreeWalker {
     }
 
     override visitModuleName = (node: ModuleNameNode): boolean => {
-        const moduleName = getImportInfo(node)?.importName;
-        if (moduleName === this._oldModuleName) {
+        if (getImportInfo(node)?.importName === this._oldModuleName) {
             this.edits.push({
                 range: convertTextRangeToRange(node, this._lines),
                 newText: this._newModuleName,
@@ -60,4 +59,16 @@ export class UsageFinder extends ParseTreeWalker {
         }
         return super.visitModuleName(node);
     };
+
+    /**
+     * @example
+     * this._getImportFrom("foo.bar.baz") === "foo.bar"
+     */
+    private _getImportFrom = (module: string) => module.slice(0, module.lastIndexOf('.'));
+
+    /**
+     * @example
+     * this._getImportedName("foo.bar.baz") === "baz"
+     */
+    private _getImportedName = (module: string) => module.slice(module.lastIndexOf('.') + 1);
 }

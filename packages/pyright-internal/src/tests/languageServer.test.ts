@@ -332,6 +332,49 @@ describe(`Basic language server tests`, () => {
                 ],
             });
         });
+        test('import from - rename package', async () => {
+            const code = `
+// @filename: foo/bar/baz.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// from foo.bar import baz
+//// 
+    `;
+            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+            openFile(serverInfo, 'marker');
+            const marker = serverInfo.testData.markerPositions.get('marker')!;
+            const result = await serverInfo.connection.sendRequest(
+                WillRenameFilesRequest.type,
+                {
+                    files: [{ oldUri: 'file:///src/foo/bar', newUri: 'file:///src/foo/bar2' }],
+                },
+                CancellationToken.None
+            );
+            assertEqual(result, {
+                documentChanges: [
+                    {
+                        edits: [
+                            {
+                                range: { start: { line: 0, character: 5 }, end: { line: 0, character: 12 } },
+                                newText: 'foo.bar2',
+                            },
+                        ],
+                        textDocument: {
+                            uri: 'file:///src/baz.py',
+                            version: null,
+                        },
+                    },
+                    {
+                        edits: [],
+                        textDocument: {
+                            uri: marker.fileUri.toString(),
+                            version: null,
+                        },
+                    },
+                ],
+            });
+        });
         test('rename folder', async () => {
             const code = `
 // @filename: foo/bar.py
