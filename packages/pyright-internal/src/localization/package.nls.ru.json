@@ -494,7 +494,7 @@
         "typeAssignmentMismatchWildcard": "Символ импорта \"{name}\" имеет тип \"{sourceType}\", который несовместим с объявленным типом \"{destType}\"",
         "typeCallNotAllowed": "Вызов type() не разрешен в аннотации типа",
         "typeCheckOnly": "\"{name}\" помечено как @type_check_only и может использоваться только в аннотациях типа",
-        "typeCommentDeprecated": "Комментарии типа устарели, используйте аннотации типа",
+        "typeCommentDeprecated": "Комментарии типа упразднены, используйте аннотации типа",
         "typeExpectedClass": "Ожидался класс, но получен \"{type}\"",
         "typeGuardArgCount": "После \"TypeGuard\" или \"TypeIs\" ожидается один аргумент типа",
         "typeGuardParamCount": "Определяемые пользователем функции и методы защиты типов должны иметь по крайней мере один входной параметр",
