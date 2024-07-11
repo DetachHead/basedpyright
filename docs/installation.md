@@ -86,7 +86,28 @@ Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP
 
 ### Emacs
 
-Emacs users can install [eglot](https://github.com/joaotavora/eglot), [lsp-bridge](https://github.com/manateelazycat/lsp-bridge) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode) with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright).
+Emacs users have 3 options:
+
+#### [lsp-bridge](https://github.com/manateelazycat/lsp-bridge)
+
+basedpyright is the default language server for python in lsp-bridge, so no additional configuration is required.
+
+#### [eglot](https://github.com/joaotavora/eglot)
+
+add the following to your emacs config:
+
+```emacs-lisp
+(add-to-list 'eglot-server-programs
+             '((python-mode python-ts-mode)
+               "basedpyright-langserver" "--stdio"))
+```
+
+#### [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
+
+with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright)
+
+> [!WARNING]  
+> this has not been tested with basedpyright. i think it's hardcoded to use pyright so it might not work
 
 ### PyCharm
 
