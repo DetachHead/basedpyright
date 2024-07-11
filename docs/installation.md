@@ -86,7 +86,7 @@ Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP
 
 ### Emacs
 
-Emacs users can install [lsp-bridge](https://github.com/manateelazycat/lsp-bridge).
+Emacs users can install [eglot](https://github.com/joaotavora/eglot), [lsp-bridge](https://github.com/manateelazycat/lsp-bridge) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode) with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright).
 
 ### PyCharm
 
