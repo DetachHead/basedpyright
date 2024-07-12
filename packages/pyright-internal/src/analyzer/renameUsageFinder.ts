@@ -1,3 +1,7 @@
+/**
+ * visitor that looks for imports of an old file path and creates {@link TextEdit}s to update them for the new file path
+ */
+
 import { TextEdit } from 'vscode-languageserver-types';
 import { ImportFromAsNode, ImportFromNode, ModuleNameNode } from '../parser/parseNodes';
 import { ParseTreeWalker } from './parseTreeWalker';
@@ -8,7 +12,7 @@ import { Uri } from '../common/uri/uri';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { TextRange } from '../common/textRange';
 
-export class UsageFinder extends ParseTreeWalker {
+export class RenameUsageFinder extends ParseTreeWalker {
     edits: TextEdit[] = [];
     private _oldModuleName: string;
     private _newModuleName: string;
@@ -55,10 +59,10 @@ export class UsageFinder extends ParseTreeWalker {
         let newText;
         if (moduleName === this._oldModuleName) {
             newText = this._newModuleName;
-        } else if (this._oldModuleName.startsWith(`${moduleName}.`)) {
-            newText = this._getImportFrom(this._newModuleName);
+        } else if (moduleName?.startsWith(`${this._oldModuleName}.`)) {
+            newText = moduleName.replace(this._oldModuleName, this._newModuleName);
         }
-        if (newText) {
+        if (newText && newText !== moduleName) {
             this.edits.push({
                 range: convertTextRangeToRange(node, this._lines),
                 newText,

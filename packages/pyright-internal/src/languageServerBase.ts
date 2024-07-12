@@ -129,7 +129,7 @@ import { DynamicFeature, DynamicFeatures } from './languageService/dynamicFeatur
 import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicFeature';
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
-import { UsageFinder } from './analyzer/usageFinder';
+import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 
 const nullProgressReporter = attachWorkDone(undefined as any, /* params */ undefined);
 
@@ -1200,7 +1200,12 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 const currentFileParseResults = program.getParseResults(file);
                 const oldFile = program.getParseResults(oldUri) ?? oldUri;
                 if (currentFileParseResults && workspace.rootUri) {
-                    const importFinder = new UsageFinder(currentFileParseResults, oldFile, newUri, workspace.rootUri);
+                    const importFinder = new RenameUsageFinder(
+                        currentFileParseResults,
+                        oldFile,
+                        newUri,
+                        workspace.rootUri
+                    );
                     importFinder.walk(currentFileParseResults.parserOutput.parseTree);
                     result.documentChanges.push({
                         edits: importFinder.edits,
