@@ -1204,13 +1204,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 const currentFileParseResults = program.getParseResults(file);
                 const oldFile = program.getParseResults(oldUri) ?? oldUri;
                 if (currentFileParseResults && workspace.rootUri && program.evaluator) {
-                    const importFinder = new RenameUsageFinder(
-                        program.evaluator,
-                        currentFileParseResults,
-                        oldFile,
-                        newUri,
-                        workspace.rootUri
-                    );
+                    const importFinder = new RenameUsageFinder(program, currentFileParseResults, oldFile, newUri);
                     importFinder.walk(currentFileParseResults.parserOutput.parseTree);
                     result.documentChanges.push({
                         edits: importFinder.edits,

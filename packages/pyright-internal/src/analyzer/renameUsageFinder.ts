@@ -11,8 +11,8 @@ import { ParseFileResults } from '../parser/parser';
 import { Uri } from '../common/uri/uri';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { TextRange } from '../common/textRange';
-import { TypeEvaluator } from './typeEvaluatorTypes';
 import { TypeCategory } from './types';
+import { Program } from './program';
 
 export class RenameUsageFinder extends ParseTreeWalker {
     edits: TextEdit[] = [];
@@ -21,11 +21,10 @@ export class RenameUsageFinder extends ParseTreeWalker {
     private _lines: TextRangeCollection<TextRange>;
 
     constructor(
-        private _evaluator: TypeEvaluator,
+        private _program: Program,
         fileToCheck: ParseFileResults,
         oldFile: ParseFileResults | Uri,
-        newUri: Uri,
-        private _rootUri: Uri
+        newUri: Uri
     ) {
         super();
         this._lines = fileToCheck.tokenizerOutput.lines;
@@ -34,10 +33,6 @@ export class RenameUsageFinder extends ParseTreeWalker {
                 ? getFileInfo(oldFile.parserOutput.parseTree).moduleName
                 : this._uriToModuleName(oldFile);
 
-        // we need to guess what the new module name will be based on the file name because it
-        // doesn't exist yet. this might not be the best way to do it because it doesn't account
-        // for whether the import was relative or not. but for now i don't care because relative
-        // imports are cringe anyway
         this._newModuleName = this._uriToModuleName(newUri);
     }
 
@@ -56,7 +51,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
         // `NameNode`s that are part of a `ModuleName` are handled in visitModuleName, because
         // TypeEvaluator.getType doesn't work on them
         if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
-            const nodeType = this._evaluator.getType(node);
+            const nodeType = this._program.evaluator?.getType(node);
             if (nodeType?.category === TypeCategory.Module && nodeType.moduleName) {
                 this._visitName(node, nodeType.moduleName);
             }
@@ -84,11 +79,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
      */
     private _getImportedName = (module: string) => module.slice(module.lastIndexOf('.') + 1);
 
-    /** probably cringe. surely there's already a function somewhere that does this */
-    // getModuleNameForImport or getModuleName???
     private _uriToModuleName = (uri: Uri) =>
-        this._rootUri
-            .getRelativePathComponents(uri)
-            .join('.')
-            .replace(/(\.__init__)?\.pyi?$/, '');
+        this._program.importResolver.getModuleNameForImport(uri, this._program.configOptions.findExecEnvironment(uri))
+            .moduleName;
 }
