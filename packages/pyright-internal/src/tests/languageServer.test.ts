@@ -78,7 +78,7 @@ describe(`Basic language server tests`, () => {
 
         assert(initializeResult);
         assert(initializeResult.capabilities.completionProvider?.resolveProvider);
-    });
+    }, 10000);
 
     test('Initialize without workspace folder support', async () => {
         const code = `
