@@ -253,6 +253,12 @@ or if you're using a different version of typeshed, you can use the `--if-needed
 python -m docify path/to/typeshed/stdlib --if-needed --in-place
 ```
 
+#### renaming packages and modules
+
+when renaming a package or module, basedpyright will update all usages to the new name, just like pylance does:
+
+![](https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c)
+
 ### errors on invalid configuration
 
 in pyright, if you have any invalid config, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
