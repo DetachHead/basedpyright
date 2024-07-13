@@ -244,6 +244,7 @@ describe(`Basic language server tests`, () => {
 //// 
 // @filename: baz.py
 //// import foo.bar
+//// foo.bar
 //// 
     `;
             const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
@@ -264,14 +265,27 @@ describe(`Basic language server tests`, () => {
                                 range: {
                                     start: {
                                         line: 0,
-                                        character: 7,
+                                        character: 11,
                                     },
                                     end: {
                                         line: 0,
                                         character: 14,
                                     },
                                 },
-                                newText: 'foo.baz',
+                                newText: 'baz',
+                            },
+                            {
+                                range: {
+                                    start: {
+                                        line: 1,
+                                        character: 4,
+                                    },
+                                    end: {
+                                        line: 1,
+                                        character: 7,
+                                    },
+                                },
+                                newText: 'baz',
                             },
                         ],
                         textDocument: {
@@ -296,6 +310,7 @@ describe(`Basic language server tests`, () => {
 //// 
 // @filename: baz.py
 //// from foo import bar
+//// bar
 //// 
     `;
             const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
@@ -314,6 +329,10 @@ describe(`Basic language server tests`, () => {
                         edits: [
                             {
                                 range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } },
+                                newText: 'baz',
+                            },
+                            {
+                                range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } },
                                 newText: 'baz',
                             },
                         ],
@@ -356,8 +375,8 @@ describe(`Basic language server tests`, () => {
                     {
                         edits: [
                             {
-                                range: { start: { line: 0, character: 5 }, end: { line: 0, character: 12 } },
-                                newText: 'foo.bar2',
+                                range: { start: { line: 0, character: 9 }, end: { line: 0, character: 12 } },
+                                newText: 'bar2',
                             },
                         ],
                         textDocument: {
@@ -382,6 +401,7 @@ describe(`Basic language server tests`, () => {
 //// 
 // @filename: baz.py
 //// import foo.bar
+//// foo.bar
 //// 
     `;
             const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
@@ -406,10 +426,23 @@ describe(`Basic language server tests`, () => {
                                     },
                                     end: {
                                         line: 0,
-                                        character: 14,
+                                        character: 10,
                                     },
                                 },
-                                newText: 'foo2.bar',
+                                newText: 'foo2',
+                            },
+                            {
+                                range: {
+                                    start: {
+                                        line: 1,
+                                        character: 0,
+                                    },
+                                    end: {
+                                        line: 1,
+                                        character: 3,
+                                    },
+                                },
+                                newText: 'foo2',
                             },
                         ],
                         textDocument: {

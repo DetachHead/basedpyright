@@ -1199,8 +1199,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.service.getUserFiles().forEach((file) => {
                 const currentFileParseResults = program.getParseResults(file);
                 const oldFile = program.getParseResults(oldUri) ?? oldUri;
-                if (currentFileParseResults && workspace.rootUri) {
+                if (currentFileParseResults && workspace.rootUri && program.evaluator) {
                     const importFinder = new RenameUsageFinder(
+                        program.evaluator,
                         currentFileParseResults,
                         oldFile,
                         newUri,

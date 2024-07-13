@@ -3,14 +3,16 @@
  */
 
 import { TextEdit } from 'vscode-languageserver-types';
-import { ImportFromAsNode, ImportFromNode, ModuleNameNode } from '../parser/parseNodes';
+import { ModuleNameNode, NameNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseTreeWalker } from './parseTreeWalker';
-import { getFileInfo, getImportInfo } from './analyzerNodeInfo';
+import { getFileInfo } from './analyzerNodeInfo';
 import { convertTextRangeToRange } from '../common/positionUtils';
 import { ParseFileResults } from '../parser/parser';
 import { Uri } from '../common/uri/uri';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { TextRange } from '../common/textRange';
+import { TypeEvaluator } from './typeEvaluatorTypes';
+import { TypeCategory } from './types';
 
 export class RenameUsageFinder extends ParseTreeWalker {
     edits: TextEdit[] = [];
@@ -18,7 +20,13 @@ export class RenameUsageFinder extends ParseTreeWalker {
     private _newModuleName: string;
     private _lines: TextRangeCollection<TextRange>;
 
-    constructor(fileToCheck: ParseFileResults, oldFile: ParseFileResults | Uri, newUri: Uri, private _rootUri: Uri) {
+    constructor(
+        private _evaluator: TypeEvaluator,
+        fileToCheck: ParseFileResults,
+        oldFile: ParseFileResults | Uri,
+        newUri: Uri,
+        private _rootUri: Uri
+    ) {
         super();
         this._lines = fileToCheck.tokenizerOutput.lines;
         this._oldModuleName =
@@ -33,49 +41,42 @@ export class RenameUsageFinder extends ParseTreeWalker {
         this._newModuleName = this._uriToModuleName(newUri);
     }
 
-    override visitImportFromAs(node: ImportFromAsNode): boolean {
-        const importedFromModule = getImportInfo((node.parent as ImportFromNode).module)?.importName;
-        //TODO: this is pretty gross and also doesn't change renames where there's no longer a . in the name
-        // eg. `foo.bar` > `foo`
-        if (this._oldModuleName.includes('.')) {
-            // split a module name (eg. `foo.bar.baz`) into the "from" and "import" parts (eg. `from foo.bar import baz`)
-            const oldImportFrom = this._getImportFrom(this._oldModuleName);
-            const oldImport = this._getImportedName(this._oldModuleName);
-            if (importedFromModule === oldImportFrom) {
-                const newImport = this._newModuleName.slice(this._newModuleName.lastIndexOf('.') + 1);
-                if (node.name.value === oldImport && newImport !== oldImport) {
-                    this.edits.push({
-                        range: convertTextRangeToRange(node.name, this._lines),
-                        newText: newImport,
-                    });
-                }
-            }
-        }
-        return super.visitImportFromAs(node);
-    }
-
     override visitModuleName = (node: ModuleNameNode): boolean => {
-        const moduleName = getImportInfo(node)?.importName;
-        let newText;
-        if (moduleName === this._oldModuleName) {
-            newText = this._newModuleName;
-        } else if (moduleName?.startsWith(`${this._oldModuleName}.`)) {
-            newText = moduleName.replace(this._oldModuleName, this._newModuleName);
-        }
-        if (newText && newText !== moduleName) {
-            this.edits.push({
-                range: convertTextRangeToRange(node, this._lines),
-                newText,
-            });
-        }
+        // ideally this would be covered by visitName, but it seems that for performance reasons,
+        // TypeEvaluator.getType doesn't evaluate types on `NameNode`s in import statements
+        const currentNameParts: string[] = [];
+        node.nameParts.forEach((name) => {
+            currentNameParts.push(name.value);
+            this._visitName(name, currentNameParts.join('.'));
+        });
         return super.visitModuleName(node);
     };
 
-    /**
-     * @example
-     * this._getImportFrom("foo.bar.baz") === "foo.bar"
-     */
-    private _getImportFrom = (module: string) => module.slice(0, module.lastIndexOf('.'));
+    override visitName(node: NameNode): boolean {
+        // `NameNode`s that are part of a `ModuleName` are handled in visitModuleName, because
+        // TypeEvaluator.getType doesn't work on them
+        if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
+            const nodeType = this._evaluator.getType(node);
+            if (nodeType?.category === TypeCategory.Module && nodeType.moduleName) {
+                this._visitName(node, nodeType.moduleName);
+            }
+        }
+        return super.visitName(node);
+    }
+
+    private _visitName = (node: NameNode, moduleName: string) => {
+        if (moduleName === this._oldModuleName) {
+            const oldImport = this._getImportedName(this._oldModuleName);
+            const newImport = this._getImportedName(this._newModuleName);
+            if (node.value === oldImport && newImport !== oldImport) {
+                this.edits.push({
+                    range: convertTextRangeToRange(node, this._lines),
+                    newText: newImport,
+                });
+            }
+        }
+        return super.visitName(node);
+    };
 
     /**
      * @example
@@ -84,6 +85,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
     private _getImportedName = (module: string) => module.slice(module.lastIndexOf('.') + 1);
 
     /** probably cringe. surely there's already a function somewhere that does this */
+    // getModuleNameForImport or getModuleName???
     private _uriToModuleName = (uri: Uri) =>
         this._rootUri
             .getRelativePathComponents(uri)
