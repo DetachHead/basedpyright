@@ -1194,6 +1194,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         for (const renamedFile of params.files) {
             const oldUri = this.convertLspUriStringToUri(renamedFile.oldUri);
             const newUri = this.convertLspUriStringToUri(renamedFile.newUri);
+            if ([oldUri, newUri].some((uri) => uri.stripExtension().pathEndsWith('__init__'))) {
+                // TODO: support __init__ files. pylance doesn't support renaming them either so that gives me an excuse to be lazy too
+                continue;
+            }
             const workspace = await this.getWorkspaceForFile(newUri);
             const program = workspace.service.backgroundAnalysisProgram.program;
             workspace.service.getUserFiles().forEach((file) => {

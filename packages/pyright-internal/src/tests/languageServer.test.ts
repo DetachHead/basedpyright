@@ -237,8 +237,9 @@ describe(`Basic language server tests`, () => {
         assert.equal(diagnostic.diagnostics[0].code, 'reportUnknownParameterType');
     });
     describe('module renaming', () => {
-        test('import', async () => {
-            const code = `
+        describe('import statement', () => {
+            test('rename module', async () => {
+                const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
 //// 
@@ -247,64 +248,157 @@ describe(`Basic language server tests`, () => {
 //// foo.bar
 //// 
     `;
-            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-            openFile(serverInfo, 'marker');
-            const marker = serverInfo.testData.markerPositions.get('marker')!;
-            const result = await serverInfo.connection.sendRequest(
-                WillRenameFilesRequest.type,
-                {
-                    files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
-                },
-                CancellationToken.None
-            );
-            assertEqual(result, {
-                documentChanges: [
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
                     {
-                        edits: [
-                            {
-                                range: {
-                                    start: {
-                                        line: 0,
-                                        character: 11,
-                                    },
-                                    end: {
-                                        line: 0,
-                                        character: 14,
-                                    },
-                                },
-                                newText: 'baz',
-                            },
-                            {
-                                range: {
-                                    start: {
-                                        line: 1,
-                                        character: 4,
-                                    },
-                                    end: {
-                                        line: 1,
-                                        character: 7,
-                                    },
-                                },
-                                newText: 'baz',
-                            },
-                        ],
-                        textDocument: {
-                            uri: 'file:///src/baz.py',
-                            version: null,
-                        },
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
                     },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: {
+                                        start: {
+                                            line: 0,
+                                            character: 11,
+                                        },
+                                        end: {
+                                            line: 0,
+                                            character: 14,
+                                        },
+                                    },
+                                    newText: 'baz',
+                                },
+                                {
+                                    range: {
+                                        start: {
+                                            line: 1,
+                                            character: 4,
+                                        },
+                                        end: {
+                                            line: 1,
+                                            character: 7,
+                                        },
+                                    },
+                                    newText: 'baz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
+            test('rename package', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo.bar
+//// foo.bar
+//// 
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
                     {
-                        edits: [],
-                        textDocument: {
-                            uri: marker.fileUri.toString(),
-                            version: null,
-                        },
+                        files: [{ oldUri: 'file:///src/foo', newUri: 'file:///src/foo2' }],
                     },
-                ],
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: {
+                                        start: {
+                                            line: 0,
+                                            character: 7,
+                                        },
+                                        end: {
+                                            line: 0,
+                                            character: 10,
+                                        },
+                                    },
+                                    newText: 'foo2',
+                                },
+                                {
+                                    range: {
+                                        start: {
+                                            line: 1,
+                                            character: 0,
+                                        },
+                                        end: {
+                                            line: 1,
+                                            character: 3,
+                                        },
+                                    },
+                                    newText: 'foo2',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
+
+            test('rename __init__ file to module (currently not supported so no edits should be created)', async () => {
+                const code = `
+// @filename: foo/__init__.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo
+//// foo
+//// 
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/bar.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [],
+                });
             });
         });
-        test('import from', async () => {
-            const code = `
+        describe('import from statement', () => {
+            test('rename imported name', async () => {
+                const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
 //// 
@@ -313,46 +407,46 @@ describe(`Basic language server tests`, () => {
 //// bar
 //// 
     `;
-            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-            openFile(serverInfo, 'marker');
-            const marker = serverInfo.testData.markerPositions.get('marker')!;
-            const result = await serverInfo.connection.sendRequest(
-                WillRenameFilesRequest.type,
-                {
-                    files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
-                },
-                CancellationToken.None
-            );
-            assertEqual(result, {
-                documentChanges: [
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
                     {
-                        edits: [
-                            {
-                                range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } },
-                                newText: 'baz',
-                            },
-                            {
-                                range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } },
-                                newText: 'baz',
-                            },
-                        ],
-                        textDocument: {
-                            uri: 'file:///src/baz.py',
-                            version: null,
-                        },
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
                     },
-                    {
-                        edits: [],
-                        textDocument: {
-                            uri: marker.fileUri.toString(),
-                            version: null,
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } },
+                                    newText: 'baz',
+                                },
+                                {
+                                    range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } },
+                                    newText: 'baz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
                         },
-                    },
-                ],
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
             });
-        });
-        test('import from - rename package', async () => {
-            const code = `
+            test('rename package', async () => {
+                const code = `
 // @filename: foo/bar/baz.py
 //// # empty file [|/*marker*/|]
 //// 
@@ -360,42 +454,42 @@ describe(`Basic language server tests`, () => {
 //// from foo.bar import baz
 //// 
     `;
-            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-            openFile(serverInfo, 'marker');
-            const marker = serverInfo.testData.markerPositions.get('marker')!;
-            const result = await serverInfo.connection.sendRequest(
-                WillRenameFilesRequest.type,
-                {
-                    files: [{ oldUri: 'file:///src/foo/bar', newUri: 'file:///src/foo/bar2' }],
-                },
-                CancellationToken.None
-            );
-            assertEqual(result, {
-                documentChanges: [
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
                     {
-                        edits: [
-                            {
-                                range: { start: { line: 0, character: 9 }, end: { line: 0, character: 12 } },
-                                newText: 'bar2',
+                        files: [{ oldUri: 'file:///src/foo/bar', newUri: 'file:///src/foo/bar2' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: { start: { line: 0, character: 9 }, end: { line: 0, character: 12 } },
+                                    newText: 'bar2',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
                             },
-                        ],
-                        textDocument: {
-                            uri: 'file:///src/baz.py',
-                            version: null,
                         },
-                    },
-                    {
-                        edits: [],
-                        textDocument: {
-                            uri: marker.fileUri.toString(),
-                            version: null,
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
                         },
-                    },
-                ],
+                    ],
+                });
             });
-        });
-        test('import from - rename top level package', async () => {
-            const code = `
+            test('rename top level package', async () => {
+                const code = `
 // @filename: foo/bar/baz.py
 //// # empty file [|/*marker*/|]
 //// 
@@ -403,104 +497,39 @@ describe(`Basic language server tests`, () => {
 //// from foo.bar import baz
 //// 
     `;
-            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-            openFile(serverInfo, 'marker');
-            const marker = serverInfo.testData.markerPositions.get('marker')!;
-            const result = await serverInfo.connection.sendRequest(
-                WillRenameFilesRequest.type,
-                {
-                    files: [{ oldUri: 'file:///src/foo', newUri: 'file:///src/foo2' }],
-                },
-                CancellationToken.None
-            );
-            assertEqual(result, {
-                documentChanges: [
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
                     {
-                        edits: [
-                            {
-                                range: { start: { line: 0, character: 5 }, end: { line: 0, character: 8 } },
-                                newText: 'foo2',
-                            },
-                        ],
-                        textDocument: {
-                            uri: 'file:///src/baz.py',
-                            version: null,
-                        },
+                        files: [{ oldUri: 'file:///src/foo', newUri: 'file:///src/foo2' }],
                     },
-                    {
-                        edits: [],
-                        textDocument: {
-                            uri: marker.fileUri.toString(),
-                            version: null,
-                        },
-                    },
-                ],
-            });
-        });
-        test('rename folder', async () => {
-            const code = `
-// @filename: foo/bar.py
-//// # empty file [|/*marker*/|]
-//// 
-// @filename: baz.py
-//// import foo.bar
-//// foo.bar
-//// 
-    `;
-            const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-            openFile(serverInfo, 'marker');
-            const marker = serverInfo.testData.markerPositions.get('marker')!;
-            const result = await serverInfo.connection.sendRequest(
-                WillRenameFilesRequest.type,
-                {
-                    files: [{ oldUri: 'file:///src/foo', newUri: 'file:///src/foo2' }],
-                },
-                CancellationToken.None
-            );
-            assertEqual(result, {
-                documentChanges: [
-                    {
-                        edits: [
-                            {
-                                range: {
-                                    start: {
-                                        line: 0,
-                                        character: 7,
-                                    },
-                                    end: {
-                                        line: 0,
-                                        character: 10,
-                                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: { start: { line: 0, character: 5 }, end: { line: 0, character: 8 } },
+                                    newText: 'foo2',
                                 },
-                                newText: 'foo2',
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
                             },
-                            {
-                                range: {
-                                    start: {
-                                        line: 1,
-                                        character: 0,
-                                    },
-                                    end: {
-                                        line: 1,
-                                        character: 3,
-                                    },
-                                },
-                                newText: 'foo2',
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
                             },
-                        ],
-                        textDocument: {
-                            uri: 'file:///src/baz.py',
-                            version: null,
                         },
-                    },
-                    {
-                        edits: [],
-                        textDocument: {
-                            uri: marker.fileUri.toString(),
-                            version: null,
-                        },
-                    },
-                ],
+                    ],
+                });
             });
         });
     });
