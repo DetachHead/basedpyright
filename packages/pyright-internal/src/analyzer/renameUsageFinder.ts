@@ -11,7 +11,7 @@ import { ParseFileResults } from '../parser/parser';
 import { Uri } from '../common/uri/uri';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { TextRange } from '../common/textRange';
-import { TypeCategory } from './types';
+import { ModuleType, TypeCategory } from './types';
 import { Program } from './program';
 
 export class RenameUsageFinder extends ParseTreeWalker {
@@ -52,8 +52,8 @@ export class RenameUsageFinder extends ParseTreeWalker {
         // TypeEvaluator.getType doesn't work on them
         if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
             const nodeType = this._program.evaluator?.getType(node);
-            if (nodeType?.category === TypeCategory.Module && nodeType.moduleName) {
-                this._visitName(node, nodeType.moduleName);
+            if (nodeType?.category === TypeCategory.Module) {
+                this._visitName(node, this._uriToModuleName(this._moduleTypeToUri(nodeType)));
             }
         }
         return super.visitName(node);
@@ -82,4 +82,24 @@ export class RenameUsageFinder extends ParseTreeWalker {
     private _uriToModuleName = (uri: Uri) =>
         this._program.importResolver.getModuleNameForImport(uri, this._program.configOptions.findExecEnvironment(uri))
             .moduleName;
+
+    private _moduleTypeToUri = (module: ModuleType): Uri => {
+        const result = module.fileUri;
+        if (result.isEmpty()) {
+            // if the name is a package with no __init__.py it gets a synthesized type instead because there's
+            // no associated file, so we need to recurse into its children until we find an actual module. this
+            // won't work when the package directory is completely empty (ie. has no modules in it at all) but
+            // pyright doesn't seem to support such packages anyway.
+            const iteratorResult = module.loaderFields.values().next();
+            if (!iteratorResult.done) {
+                const synthesizedType = iteratorResult.value.getSynthesizedType();
+                if (synthesizedType?.category === TypeCategory.Module) {
+                    return this._moduleTypeToUri(synthesizedType).getDirectory();
+                } else {
+                    return module.fileUri;
+                }
+            }
+        }
+        return result;
+    };
 }
