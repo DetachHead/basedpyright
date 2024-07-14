@@ -395,6 +395,38 @@ describe(`Basic language server tests`, () => {
                     documentChanges: [],
                 });
             });
+            test('move file (currently not supported so no edits should be created)', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo
+//// foo
+//// 
+`;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/bar.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
         });
         describe('import from statement', () => {
             test('rename imported name', async () => {
