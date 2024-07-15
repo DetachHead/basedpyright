@@ -304,6 +304,59 @@ describe(`Basic language server tests`, () => {
                     ],
                 });
             });
+            test('rename module - alias', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// import foo.bar as qux
+//// qux
+//// 
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: {
+                                        start: {
+                                            line: 0,
+                                            character: 11,
+                                        },
+                                        end: {
+                                            line: 0,
+                                            character: 14,
+                                        },
+                                    },
+                                    newText: 'baz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
             test('rename package', async () => {
                 const code = `
 // @filename: foo/bar.py
@@ -543,6 +596,50 @@ describe(`Basic language server tests`, () => {
                     ],
                 });
             });
+            test('rename imported name - alias', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// from foo import bar as qux
+//// qux
+//// 
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/baz.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [
+                                {
+                                    range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } },
+                                    newText: 'baz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
             test('rename imported name from relative import', async () => {
                 const code = `
 // @filename: bar.py
@@ -580,6 +677,50 @@ describe(`Basic language server tests`, () => {
                                 },
                                 {
                                     range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } },
+                                    newText: 'baz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
+            test('rename imported name from relative import - alias', async () => {
+                const code = `
+// @filename: bar.py
+//// # empty file [|/*marker*/|]
+//// 
+// @filename: baz.py
+//// from . import bar as qux
+//// qux
+//// 
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/baz.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [
+                                {
+                                    range: { start: { line: 0, character: 14 }, end: { line: 0, character: 17 } },
                                     newText: 'baz',
                                 },
                             ],
