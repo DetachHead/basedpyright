@@ -51,7 +51,11 @@ export class RenameUsageFinder extends ParseTreeWalker {
         // `NameNode`s that are part of a `ModuleName` are handled in visitModuleName, because
         // TypeEvaluator.getType doesn't work on them
         if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
-            const nodeType = this._program.evaluator?.getType(node);
+            const nodeType = this._program.evaluator?.getType(
+                // when a name is part of an import alias, its type is not available so we need to get it from the
+                // alias name instead
+                node.parent?.nodeType === ParseNodeType.ImportFromAs && node.parent.alias ? node.parent.alias : node
+            );
             if (nodeType?.category === TypeCategory.Module) {
                 this._visitName(node, this._uriToModuleName(this._moduleTypeToUri(nodeType)));
             }
