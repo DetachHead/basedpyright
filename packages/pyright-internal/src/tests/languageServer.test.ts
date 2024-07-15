@@ -236,7 +236,7 @@ describe(`Basic language server tests`, () => {
         // Make sure the error has a special rule
         assert.equal(diagnostic.diagnostics[0].code, 'reportUnknownParameterType');
     });
-    describe('module renaming', () => {
+    describe('module/package renaming', () => {
         describe('import statement', () => {
             test('rename module', async () => {
                 const code = `
