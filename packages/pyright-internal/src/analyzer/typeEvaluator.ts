@@ -3303,7 +3303,8 @@ export function createTypeEvaluator(
         diagLevel: LspDiagnosticLevel,
         message: string,
         node: ParseNode,
-        range?: TextRange
+        range?: TextRange,
+        mustBeReachable: boolean = true
     ) {
         if (isDiagnosticSuppressedForNode(node)) {
             // See if this node is suppressed but the diagnostic should be generated
@@ -3316,10 +3317,10 @@ export function createTypeEvaluator(
 
             return undefined;
         }
-
-        const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-        return fileInfo.diagnosticSink.addDiagnosticWithTextRange(diagLevel, message, range ?? node);
-
+        if (!mustBeReachable || isNodeReachable(node)) {
+            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+            return fileInfo.diagnosticSink.addDiagnosticWithTextRange(diagLevel, message, range ?? node);
+        }
         return undefined;
     }
 
@@ -3388,7 +3389,13 @@ export function createTypeEvaluator(
             }
         }
 
-        const diagnostic = addDiagnosticWithSuppressionCheck(diagLevel, message, node, range);
+        const diagnostic = addDiagnosticWithSuppressionCheck(
+            diagLevel,
+            message,
+            node,
+            range,
+            rule !== DiagnosticRule.reportUnreachable
+        );
         if (diagnostic) {
             diagnostic.setRule(rule);
         }

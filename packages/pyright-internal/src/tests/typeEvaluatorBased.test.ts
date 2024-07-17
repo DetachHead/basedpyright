@@ -34,7 +34,6 @@ test('unreachable assert_never', () => {
         errors: [
             { code: DiagnosticRule.reportUnreachable, line: 7 },
             { code: DiagnosticRule.reportUnreachable, line: 12 },
-            { code: DiagnosticRule.reportArgumentType, line: 12 },
             { code: DiagnosticRule.reportUnreachable, line: 17 },
         ],
     });
