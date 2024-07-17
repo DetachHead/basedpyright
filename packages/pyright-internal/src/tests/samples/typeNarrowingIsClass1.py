@@ -29,8 +29,6 @@ def func2(x: type[A] | type[B] | None | int, y: type[A]):
     if x is not y:
         reveal_type(x, expected_text="type[B] | int | None")
     else:
-        # this is wrong due to a bug from upstream that went undetected because they don't have reportUnreachable
-        # https://github.com/DetachHead/basedpyright/issues/467
         reveal_type(x, expected_text="type[A]")
 
 
