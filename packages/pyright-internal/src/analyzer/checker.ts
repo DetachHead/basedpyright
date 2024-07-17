@@ -493,7 +493,7 @@ export class Checker extends ParseTreeWalker {
                             } else if (isAny(paramType)) {
                                 this._evaluator.addDiagnostic(
                                     DiagnosticRule.reportAny,
-                                    LocMessage.paramTypeAny().format({ paramName: param.d.name.value }),
+                                    LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
                                     param.d.name
                                 );
                             }
@@ -767,7 +767,7 @@ export class Checker extends ParseTreeWalker {
                     } else if (isAny(paramType)) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportAny,
-                            LocMessage.paramTypeAny().format({ paramName: param.d.name.value }),
+                            LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
                             param.d.name
                         );
                     }
@@ -792,11 +792,7 @@ export class Checker extends ParseTreeWalker {
                     node.d.expr
                 );
             } else if (isAny(returnType)) {
-                this._evaluator.addDiagnostic(
-                    DiagnosticRule.reportAny,
-                    LocMessage.lambdaReturnTypeAny(),
-                    node.d.expr
-                );
+                this._evaluator.addDiagnostic(DiagnosticRule.reportAny, LocMessage.lambdaReturnTypeAny(), node.d.expr);
             }
         }
 
@@ -2720,7 +2716,7 @@ export class Checker extends ParseTreeWalker {
                     // `typing.assert_never`, but we want to support user-defined "assert never" functions to be more flexible.
                     if (
                         statement.nodeType === ParseNodeType.StatementList &&
-                        statement.statements.find(
+                        statement.d.statements.find(
                             (statement) =>
                                 statement.nodeType === ParseNodeType.Call &&
                                 this._evaluator.matchCallArgsToParams(statement)?.find((result) =>
@@ -4830,7 +4826,7 @@ export class Checker extends ParseTreeWalker {
                 node.d.name
             );
         } else if (isAny(returnType)) {
-            this._evaluator.addDiagnostic(DiagnosticRule.reportAny, LocMessage.returnTypeAny(), node.name);
+            this._evaluator.addDiagnostic(DiagnosticRule.reportAny, LocMessage.returnTypeAny(), node.d.name);
         }
     }
 
@@ -7531,7 +7527,7 @@ export class Checker extends ParseTreeWalker {
         const importedNames: string[] = [];
         getTopLevelImports(this._moduleNode).orderedImports.forEach((importStatement) => {
             if (importStatement.node.nodeType === ParseNodeType.ImportFrom) {
-                importStatement.node.imports.forEach((importFromAs) => {
+                importStatement.node.d.imports.forEach((importFromAs) => {
                     const node = importFromAs.d.alias ?? importFromAs.d.name;
                     const name = node.d.value;
                     if (importedNames.includes(name)) {

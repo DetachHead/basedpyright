@@ -1337,7 +1337,7 @@ export class Binder extends ParseTreeWalker {
         };
 
         const isTypeCheckingNode = (node: ExpressionNode): node is NameNode =>
-            node.nodeType === ParseNodeType.Name && node.value === 'TYPE_CHECKING';
+            node.nodeType === ParseNodeType.Name && node.d.value === 'TYPE_CHECKING';
 
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
             // Determine if the test condition is always true or always false. If so,
@@ -1356,8 +1356,8 @@ export class Binder extends ParseTreeWalker {
             if (constExprValue === false) {
                 this._currentFlowNode =
                     node.d.testExpr.nodeType === ParseNodeType.UnaryOperation &&
-                    node.d.testExpr.operator === OperatorType.Not &&
-                    isTypeCheckingNode(node.d.testExpr.expression) &&
+                    node.d.testExpr.d.operator === OperatorType.Not &&
+                    isTypeCheckingNode(node.d.testExpr.d.expr) &&
                     constExprValue === false
                         ? notTypeCheckingNode
                         : Binder._unreachableFlowNode;

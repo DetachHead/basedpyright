@@ -63,21 +63,21 @@ const ignoredBuiltinFunctions = new Set([
 ]);
 
 function isIgnoredBuiltin(type: FunctionType): boolean {
-    if (type.details.moduleName !== 'builtins') {
+    if (type.shared.moduleName !== 'builtins') {
         return false;
     }
-    const funcName = type.details.name;
+    const funcName = type.shared.name;
     if (funcName === '__new__' || funcName === '__init__') {
-        return ignoredBuiltinTypes.has(type.details.fullName);
+        return ignoredBuiltinTypes.has(type.shared.fullName);
     }
-    return ignoredBuiltinFunctions.has(type.details.fullName);
+    return ignoredBuiltinFunctions.has(type.shared.fullName);
 }
 
 function isLeftSideOfAssignment(node: ParseNode): boolean {
     if (node.parent?.nodeType !== ParseNodeType.Assignment) {
         return false;
     }
-    return node.start < node.parent.rightExpression.start;
+    return node.start < node.parent.d.rightExpr.start;
 }
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
@@ -99,8 +99,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         if (
             this._checkInRange(node) &&
             isLeftSideOfAssignment(node) &&
-            !isDunderName(node.value) &&
-            !isUnderscoreOnlyName(node.value)
+            !isDunderName(node.d.value) &&
+            !isUnderscoreOnlyName(node.d.value)
         ) {
             const type = this._program.evaluator?.getType(node);
             if (
@@ -108,16 +108,17 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 !isAny(type) &&
                 !(isClass(type) && isLiteralType(type)) &&
                 !isTypeVar(type) &&
+                // !isFunction(type) &&
                 !isParamSpec(type)
             ) {
                 this.featureItems.push({
                     inlayHintType: 'variable',
                     position: node.start + node.length,
                     value: `: ${
-                        type.typeAliasInfo &&
+                        type.props?.typeAliasInfo &&
                         node.nodeType === ParseNodeType.Name &&
                         // prevent variables whose type comes from a type alias from being incorrectly treated as a TypeAlias.
-                        getTypeAliasInfo(type)?.name === node.value
+                        getTypeAliasInfo(type)?.name === node.d.value
                             ? 'TypeAlias'
                             : this._printType(type)
                     }`,
@@ -138,12 +139,12 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         if (this._checkInRange(node)) {
             const evaluator = this._program.evaluator;
             const functionType = evaluator?.getTypeOfFunction(node)?.functionType;
-            if (functionType !== undefined && !functionType.details.declaredReturnType) {
+            if (functionType !== undefined && !functionType.shared.declaredReturnType) {
                 const inferredReturnType = evaluator?.getFunctionInferredReturnType(functionType);
                 if (inferredReturnType) {
                     this.featureItems.push({
                         inlayHintType: 'functionReturn',
-                        position: node.suite.start,
+                        position: node.d.suite.start,
                         value: `-> ${this._printType(inferredReturnType)}`,
                     });
                 }
@@ -153,7 +154,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         return super.visitFunction(node);
     }
 
-    private _checkInRange = (node: ParseNodeBase) =>
+    private _checkInRange = (node: ParseNodeBase<ParseNodeType>) =>
         !this._range || TextRange.overlapsRange(this._range, TextRange.create(node.start, node.length));
 
     private _generateHintsForCallNode(node: CallNode) {
@@ -161,12 +162,12 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         if (!evaluator) {
             return;
         }
-        const functionType = evaluator.getType(node.leftExpression);
+        const functionType = evaluator.getType(node.d.leftExpr);
         if (!functionType) {
             return;
         }
         // if it's an overload, figure out which one to use based on the arguments:
-        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, functionType, node.leftExpression);
+        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, functionType, node.d.leftExpr);
         const matchedArgs = this._program.evaluator?.matchCallArgsToParams(node, matchedFunctionType);
 
         // if there was no match, or if there were multiple matches, we don't want to show any inlay hints because they'd likely be wrong:
@@ -191,7 +192,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             if (!argNode) {
                 continue;
             }
-            const funcParam = result.type.details.parameters.find((a) => a.name && a.name === p.paramName);
+            const funcParam = result.type.shared.parameters.find((a) => a.name && a.name === p.paramName);
             if (funcParam?.category !== ParameterCategory.Simple) {
                 continue;
             }
@@ -201,7 +202,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             if (p.paramName?.startsWith('__')) {
                 continue;
             }
-            if (argNode.nodeType === ParseNodeType.Name && p.paramName === argNode.value) {
+            if (argNode.nodeType === ParseNodeType.Name && p.paramName === argNode.d.value) {
                 continue;
             }
             if (p.paramName) {

@@ -2326,20 +2326,20 @@ export function createTypeEvaluator(
     //TODO: refactor this. it's mostly copied from getCallSignatureInfo, and duplicated code is bad esspecially when merging upstream changes
     function matchCallArgsToParams(
         callNode: CallNode,
-        callType: Type | undefined = getType(callNode.leftExpression)
+        callType: Type | undefined = getType(callNode.d.leftExpr)
     ): MatchCallArgsToParams[] | undefined {
-        const exprNode = callNode.leftExpression;
+        const exprNode = callNode.d.leftExpr;
         if (callType === undefined) {
             return undefined;
         }
 
         const argList: FunctionArgument[] = [];
 
-        callNode.arguments.forEach((arg) => {
+        callNode.d.args.forEach((arg) => {
             argList.push({
-                valueExpression: arg.valueExpression,
-                argumentCategory: arg.argumentCategory,
-                name: arg.name,
+                valueExpression: arg.d.valueExpr,
+                argumentCategory: arg.d.argCategory,
+                name: arg.d.name,
             });
         });
 
@@ -2396,7 +2396,7 @@ export function createTypeEvaluator(
                         const isObjectInit =
                             constructorType &&
                             isFunction(constructorType) &&
-                            constructorType.details.fullName === 'builtins.object.__init__';
+                            constructorType.shared.fullName === 'builtins.object.__init__';
                         const isDefaultParams =
                             constructorType &&
                             isFunction(constructorType) &&
@@ -2411,7 +2411,7 @@ export function createTypeEvaluator(
                             if (newMethodResult && !newMethodResult.typeErrors && isFunction(newMethodResult.type)) {
                                 if (
                                     isFunction(newMethodResult.type) &&
-                                    newMethodResult.type.details.fullName !== 'builtins.object.__new__'
+                                    newMethodResult.type.shared.fullName !== 'builtins.object.__new__'
                                 ) {
                                     constructorType = newMethodResult.type;
                                 } else if (isOverloadedFunction(newMethodResult.type)) {
@@ -5575,7 +5575,7 @@ export function createTypeEvaluator(
                                 name: memberName,
                                 module: baseType.priv.moduleName,
                             }),
-                            node.memberName
+                            node.d.member
                         );
                     } else if (symbol.isPrivateLocalImport()) {
                         addDiagnostic(
@@ -10376,7 +10376,7 @@ export function createTypeEvaluator(
             }
             if (checkEq) {
                 // Does the class have an operator overload for eq?
-                const metaclass = leftType.details.effectiveMetaclass;
+                const metaclass = leftType.shared.effectiveMetaclass;
                 if (metaclass && isClass(metaclass)) {
                     if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
                         return true;
@@ -17343,7 +17343,7 @@ export function createTypeEvaluator(
                         addDiagnostic(
                             DiagnosticRule.reportAny,
                             LocMessage.classDecoratorTypeAny(),
-                            node.decorators[i].expression
+                            node.d.decorators[i].d.expr
                         );
                     }
                 }
@@ -18057,7 +18057,7 @@ export function createTypeEvaluator(
                     addDiagnostic(
                         DiagnosticRule.reportAny,
                         LocMessage.functionDecoratorTypeAny(),
-                        node.decorators[i].expression
+                        node.d.decorators[i].d.expr
                     );
                 }
             }
@@ -20507,7 +20507,7 @@ export function createTypeEvaluator(
                     addDiagnostic(
                         DiagnosticRule.reportInvalidTypeArguments,
                         LocMessage.typeArgsTooMany().format({
-                            name: classType.aliasName || classType.details.name,
+                            name: classType.priv.aliasName || classType.shared.name,
                             expected: 1,
                             received: typeArgCount,
                         }),

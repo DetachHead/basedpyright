@@ -253,9 +253,9 @@ export function createTypedDictTypeInlined(
         ClassTypeFlags.TypedDictClass,
         ParseTreeUtils.getTypeSourceId(dictNode),
         /* declaredMetaclass */ undefined,
-        typedDictClass.details.effectiveMetaclass
+        typedDictClass.shared.effectiveMetaclass
     );
-    classType.details.baseClasses.push(typedDictClass);
+    classType.shared.baseClasses.push(typedDictClass);
     computeMroLinearization(classType);
 
     getTypedDictFieldsFromDictSyntax(evaluator, dictNode, ClassType.getSymbolTable(classType), /* isInline */ true);

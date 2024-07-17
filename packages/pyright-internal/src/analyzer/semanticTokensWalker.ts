@@ -34,28 +34,30 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         super();
     }
     override visitClass(node: ClassNode): boolean {
-        this._addItem(node.name.start, node.name.length, SemanticTokenTypes.class, [SemanticTokenModifiers.definition]);
+        this._addItem(node.d.name.start, node.d.name.length, SemanticTokenTypes.class, [
+            SemanticTokenModifiers.definition,
+        ]);
         return super.visitClass(node);
     }
 
     override visitFunction(node: FunctionNode): boolean {
         const modifiers = [SemanticTokenModifiers.definition];
-        if (node.isAsync) {
+        if (node.d.isAsync) {
             modifiers.push(SemanticTokenModifiers.async);
         }
         //TODO: whats the correct type here
-        if ((node as any).declaration?.isMethod) {
-            this._addItem(node.name.start, node.name.length, SemanticTokenTypes.method, modifiers);
+        if ((node.a as any).declaration?.isMethod) {
+            this._addItem(node.d.name.start, node.d.name.length, SemanticTokenTypes.method, modifiers);
         } else {
-            this._addItem(node.name.start, node.name.length, SemanticTokenTypes.function, modifiers);
+            this._addItem(node.d.name.start, node.d.name.length, SemanticTokenTypes.function, modifiers);
         }
         // parameters & return type are covered by visitName
         return super.visitFunction(node);
     }
 
     override visitParameter(node: ParameterNode): boolean {
-        if (node.name) {
-            this._addItem(node.name.start, node.name.length, SemanticTokenTypes.parameter, [
+        if (node.d.name) {
+            this._addItem(node.d.name.start, node.d.name.length, SemanticTokenTypes.parameter, [
                 SemanticTokenModifiers.definition,
             ]);
         }
@@ -65,19 +67,19 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     override visitDecorator(node: DecoratorNode) {
         let nameNode: NameNode | undefined;
         this._addItem(node.start, 1 /* '@' symbol */, SemanticTokenTypes.decorator, []);
-        switch (node.expression.nodeType) {
+        switch (node.d.expr.nodeType) {
             case ParseNodeType.Call:
-                if (node.expression.leftExpression.nodeType === ParseNodeType.MemberAccess) {
-                    nameNode = node.expression.leftExpression.memberName;
-                } else if (node.expression.leftExpression.nodeType === ParseNodeType.Name) {
-                    nameNode = node.expression.leftExpression;
+                if (node.d.expr.d.leftExpr.nodeType === ParseNodeType.MemberAccess) {
+                    nameNode = node.d.expr.d.leftExpr.d.member;
+                } else if (node.d.expr.d.leftExpr.nodeType === ParseNodeType.Name) {
+                    nameNode = node.d.expr.d.leftExpr;
                 }
                 break;
             case ParseNodeType.MemberAccess:
-                nameNode = node.expression.memberName;
+                nameNode = node.d.expr.d.member;
                 break;
             case ParseNodeType.Name:
-                nameNode = node.expression;
+                nameNode = node.d.expr;
                 break;
         }
         if (nameNode) {
@@ -87,22 +89,22 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitImportAs(node: ImportAsNode): boolean {
-        for (const part of node.module.nameParts) {
+        for (const part of node.d.module.d.nameParts) {
             this._addItem(part.start, part.length, SemanticTokenTypes.namespace, []);
         }
-        if (node.alias) {
-            this._addItem(node.alias.start, node.alias.length, SemanticTokenTypes.namespace, []);
+        if (node.d.alias) {
+            this._addItem(node.d.alias.start, node.d.alias.length, SemanticTokenTypes.namespace, []);
         }
         return super.visitImportAs(node);
     }
 
     override visitImportFromAs(node: ImportFromAsNode): boolean {
-        this._visitNameWithType(node.name, this._evaluator?.getType(node.alias ?? node.name));
+        this._visitNameWithType(node.d.name, this._evaluator?.getType(node.d.alias ?? node.d.name));
         return super.visitImportFromAs(node);
     }
 
     override visitImportFrom(node: ImportFromNode): boolean {
-        for (const part of node.module.nameParts) {
+        for (const part of node.d.module.d.nameParts) {
             this._addItem(part.start, part.length, SemanticTokenTypes.namespace, []);
         }
         return super.visitImportFrom(node);
@@ -126,10 +128,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (type?.category) {
             case TypeCategory.Function:
                 if (type.flags & TypeFlags.Instance) {
-                    if ((type as FunctionType).details.declaration?.isMethod) {
+                    if ((type as FunctionType).shared.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
-                        const modifiers = this.builtinModules.has(type.details.moduleName)
+                        const modifiers = this.builtinModules.has(type.shared.moduleName)
                             ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
                             : [];
                         this._addItem(node.start, node.length, SemanticTokenTypes.function, modifiers);
@@ -141,7 +143,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             case TypeCategory.OverloadedFunction:
                 if (type.flags & TypeFlags.Instance) {
-                    const details = OverloadedFunctionType.getOverloads(type)[0].details;
+                    const details = OverloadedFunctionType.getOverloads(type)[0].shared;
                     if (details.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {
@@ -160,7 +162,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 this._addItem(node.start, node.length, SemanticTokenTypes.namespace, []);
                 return;
             case TypeCategory.Any:
-                if (type.specialForm) {
+                if (type.props?.specialForm) {
                     this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
                     return;
                 }
@@ -189,13 +191,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         declarations.some((declaration) =>
                             this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
                         );
-                    const isTypeAlias = isPEP613TypeAlias || type.typeAliasInfo?.isPep695Syntax;
+                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.isPep695Syntax;
 
                     const isBuiltIn =
                         (!isTypeAlias &&
-                            this.builtinModules.has(type.details.moduleName) &&
-                            type.aliasName === undefined) ||
-                        (type.typeAliasInfo?.moduleName && this.builtinModules.has(type.typeAliasInfo.moduleName));
+                            this.builtinModules.has(type.shared.moduleName) &&
+                            type.priv.aliasName === undefined) ||
+                        (type.props?.typeAliasInfo?.moduleName &&
+                            this.builtinModules.has(type.props.typeAliasInfo.moduleName));
 
                     const modifiers = isBuiltIn
                         ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
@@ -204,12 +207,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     return;
                 }
         }
-        const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.value, false)?.symbol;
+        const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
         if (type?.category === TypeCategory.Never && symbol) {
             const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
             if (
                 // check for new python 3.12 type alias syntax
-                (typeResult.type.specialForm && ClassType.isBuiltIn(typeResult.type.specialForm, 'TypeAliasType')) ||
+                (typeResult.type.props?.specialForm &&
+                    ClassType.isBuiltIn(typeResult.type.props.specialForm, 'TypeAliasType')) ||
                 // for some reason Never is considered both instantiable and an instance, so we need a way
                 // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
                 // this is probably extremely cringe since i have no idea what this is doing and i literally
@@ -227,7 +231,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (declarations?.some(isParameterDeclaration)) {
             const parent = declarations[0].node.parent as FunctionNode | LambdaNode;
             // Avoid duplicates for parameters visited by `visitParameter`
-            if (!parent.parameters.some((param) => param.name?.id === node.id)) {
+            if (!parent.d.params.some((param) => param.d.name?.id === node.id)) {
                 this._addItem(node.start, node.length, SemanticTokenTypes.parameter, []);
             }
         } else if (type?.category === TypeCategory.TypeVar && !(type.flags & TypeFlags.Instance)) {
@@ -241,7 +245,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             (declarations === undefined || declarations.length === 0)
         ) {
             return;
-        } else if (isConstantName(node.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
+        } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
             this._addItem(node.start, node.length, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
         } else {
             this._addItem(node.start, node.length, SemanticTokenTypes.variable, []);

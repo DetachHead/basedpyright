@@ -1720,7 +1720,7 @@ export function assignTypeToPatternTargets(
                         evaluator.addDiagnostic(
                             DiagnosticRule.reportAny,
                             LocMessage.wildcardPatternTypeAny(),
-                            pattern.target
+                            pattern.d.target
                         );
                     }
                 }
