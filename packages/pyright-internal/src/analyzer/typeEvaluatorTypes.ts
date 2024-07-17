@@ -42,7 +42,7 @@ import { TypeVarContext } from './typeVarContext';
 import {
     AnyType,
     ClassType,
-    FunctionParameter,
+    FunctionParam,
     FunctionType,
     OverloadedFunctionType,
     Type,
@@ -160,7 +160,7 @@ export const enum EvalFlags {
 
     // Interpret the expression using the specialized behaviors associated
     // with the second argument to isinstance and issubclass calls.
-    IsinstanceParam = 1 << 29,
+    IsinstanceArg = 1 << 29,
 
     // Defaults used for evaluating the LHS of a call expression.
     CallBaseDefaults = NoSpecialize,
@@ -170,6 +170,16 @@ export const enum EvalFlags {
 
     // Defaults used for evaluating the LHS of a member access expression.
     MemberAccessBaseDefaults = NoSpecialize,
+
+    // Defaults used for evaluating the second argument of an 'isinstance'
+    // or 'issubclass' call.
+    IsInstanceArgDefaults = AllowMissingTypeArgs |
+        StrLiteralAsType |
+        NoParamSpec |
+        NoTypeVarTuple |
+        NoFinal |
+        NoSpecialize |
+        IsinstanceArg,
 }
 
 export interface TypeResult<T extends Type = Type> {
@@ -264,7 +274,7 @@ export interface FunctionTypeResult {
 
 export interface CallSignature {
     type: FunctionType;
-    activeParam?: FunctionParameter | undefined;
+    activeParam?: FunctionParam | undefined;
 }
 
 export interface CallSignatureInfo {
@@ -383,7 +393,7 @@ export interface CallResult {
 
     // The parameter associated with the "active" argument (used
     // for signature help provider)
-    activeParam?: FunctionParameter | undefined;
+    activeParam?: FunctionParam | undefined;
 
     // If the call is to an __init__ with an annotated self parameter,
     // this field indicates the specialized type of that self type; this
@@ -525,7 +535,7 @@ export interface TypeEvaluator {
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
     verifyRaiseExceptionType: (node: RaiseNode) => void;
     verifyDeleteExpression: (node: ExpressionNode) => void;
-    validateOverloadedFunctionArguments: (
+    validateOverloadedArgTypes: (
         errorNode: ExpressionNode,
         argList: FunctionArgument[],
         typeResult: TypeResult<OverloadedFunctionType>,
@@ -673,6 +683,7 @@ export interface TypeEvaluator {
     getObjectType: () => Type;
     getNoneType: () => Type;
     getUnionClassType(): Type;
+    getTypeClassType(): ClassType | undefined;
     getTypingType: (node: ParseNode, symbolName: string) => Type | undefined;
     inferReturnTypeIfNecessary: (type: Type) => void;
     inferTypeParameterVarianceForClass: (type: ClassType) => void;

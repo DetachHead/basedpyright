@@ -15,6 +15,7 @@ import * as ParseTreeUtils from './parseTreeUtils';
 import {
     ClassType,
     EnumLiteral,
+    FunctionParam,
     FunctionType,
     isAnyOrUnknown,
     isClass,
@@ -126,8 +127,8 @@ export function printObjectTypeForClass(
 const maxLiteralStringLength = 50;
 
 export function isLiteralValueTruncated(type: ClassType): boolean {
-    if (typeof type.literalValue === 'string') {
-        if (type.literalValue.length > maxLiteralStringLength) {
+    if (typeof type.priv.literalValue === 'string') {
+        if (type.priv.literalValue.length > maxLiteralStringLength) {
             return true;
         }
     }
@@ -136,16 +137,16 @@ export function isLiteralValueTruncated(type: ClassType): boolean {
 }
 
 export function printLiteralValueTruncated(type: ClassType): string {
-    if (type.details.name === 'bytes') {
+    if (type.shared.name === 'bytes') {
         return 'bytes';
     }
 
-    assert(type.details.name === 'str');
+    assert(type.shared.name === 'str');
     return 'LiteralString';
 }
 
 export function printLiteralValue(type: ClassType, quotation = "'"): string {
-    const literalValue = type.literalValue;
+    const literalValue = type.priv.literalValue;
     if (literalValue === undefined) {
         return '';
     }
@@ -159,7 +160,7 @@ export function printLiteralValue(type: ClassType, quotation = "'"): string {
             effectiveLiteralValue = literalValue.substring(0, maxLiteralStringLength) + '…';
         }
 
-        if (type.details.name === 'bytes') {
+        if (type.shared.name === 'bytes') {
             let bytesString = '';
 
             // There's no good built-in conversion routine in javascript to convert
@@ -230,7 +231,8 @@ function printTypeInternal(
 
     // If this is a type alias, see if we should use its name rather than
     // the type it represents.
-    if (type.typeAliasInfo) {
+    const aliasInfo = type.props?.typeAliasInfo;
+    if (aliasInfo) {
         let expandTypeAlias = true;
         if ((printTypeFlags & PrintTypeFlags.ExpandTypeAlias) === 0) {
             expandTypeAlias = false;
@@ -245,27 +247,27 @@ function printTypeInternal(
                 recursionTypes.push(type);
                 let aliasName =
                     (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
-                        ? type.typeAliasInfo.fullName
-                        : type.typeAliasInfo.name;
+                        ? aliasInfo.fullName
+                        : aliasInfo.name;
 
                 // Use the fully-qualified name if the name isn't unique.
                 if (!uniqueNameMap.isUnique(aliasName)) {
-                    aliasName = type.typeAliasInfo.fullName;
+                    aliasName = aliasInfo.fullName;
                 }
 
-                const typeParams = type.typeAliasInfo.typeParameters;
+                const typeParams = aliasInfo.typeParameters;
 
                 if (typeParams && typeParams.length > 0) {
                     let argumentStrings: string[] | undefined;
 
                     // If there is a type arguments array, it's a specialized type alias.
-                    if (type.typeAliasInfo.typeArguments) {
+                    if (aliasInfo.typeArguments) {
                         if (
                             (printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0 ||
-                            type.typeAliasInfo.typeArguments.some((typeArg) => !isUnknown(typeArg))
+                            aliasInfo.typeArguments.some((typeArg) => !isUnknown(typeArg))
                         ) {
                             argumentStrings = [];
-                            type.typeAliasInfo.typeArguments.forEach((typeArg, index) => {
+                            aliasInfo.typeArguments.forEach((typeArg, index) => {
                                 // Which type parameter does this map to?
                                 const typeParam =
                                     index < typeParams.length ? typeParams[index] : typeParams[typeParams.length - 1];
@@ -275,10 +277,10 @@ function printTypeInternal(
                                     isVariadicTypeVar(typeParam) &&
                                     isClassInstance(typeArg) &&
                                     isTupleClass(typeArg) &&
-                                    typeArg.tupleTypeArguments &&
-                                    typeArg.tupleTypeArguments.every((typeArg) => !typeArg.isUnbounded)
+                                    typeArg.priv.tupleTypeArguments &&
+                                    typeArg.priv.tupleTypeArguments.every((typeArg) => !typeArg.isUnbounded)
                                 ) {
-                                    typeArg.tupleTypeArguments.forEach((tupleTypeArg) => {
+                                    typeArg.priv.tupleTypeArguments.forEach((tupleTypeArg) => {
                                         argumentStrings!.push(
                                             printTypeInternal(
                                                 tupleTypeArg.type,
@@ -347,26 +349,24 @@ function printTypeInternal(
 
     if (
         recursionTypes.find(
-            (t) =>
-                t === type ||
-                (t.typeAliasInfo !== undefined && t.typeAliasInfo.fullName === type.typeAliasInfo?.fullName)
+            (t) => t === type || (!!t.props?.typeAliasInfo && t.props.typeAliasInfo.fullName === aliasInfo?.fullName)
         ) ||
         recursionTypes.length > maxTypeRecursionCount
     ) {
         // If this is a recursive TypeVar, we've already expanded it once, so
         // just print its name at this point.
-        if (isTypeVar(type) && type.details.isSynthesized && type.details.recursiveTypeAliasName) {
-            return type.details.recursiveTypeAliasName;
+        if (isTypeVar(type) && type.shared.isSynthesized && type.shared.recursiveAlias) {
+            return type.shared.recursiveAlias.name;
         }
 
-        if (type.typeAliasInfo) {
-            if (!type.typeAliasInfo.typeParameters) {
+        if (aliasInfo) {
+            if (!aliasInfo.typeParameters) {
                 let name =
                     (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
-                        ? type.typeAliasInfo.fullName
-                        : type.typeAliasInfo.name;
+                        ? aliasInfo.fullName
+                        : aliasInfo.name;
                 if (!uniqueNameMap.isUnique(name)) {
-                    name = type.typeAliasInfo.fullName;
+                    name = aliasInfo.fullName;
                 }
                 return name;
             }
@@ -396,7 +396,7 @@ function printTypeInternal(
         const includeConditionalIndicator =
             (printTypeFlags & (PrintTypeFlags.OmitConditionalConstraint | PrintTypeFlags.PythonSyntax)) === 0;
         const getConditionalIndicator = (subtype: Type) => {
-            return subtype.condition !== undefined && includeConditionalIndicator ? '*' : '';
+            return !!subtype.props?.condition && includeConditionalIndicator ? '*' : '';
         };
 
         switch (type.category) {
@@ -418,12 +418,12 @@ function printTypeInternal(
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
                     return 'Any';
                 }
-                return `Module("${type.moduleName}")`;
+                return `Module("${type.priv.moduleName}")`;
             }
 
             case TypeCategory.Class: {
                 if (TypeBase.isInstance(type)) {
-                    if (type.literalValue !== undefined) {
+                    if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             return printLiteralValueTruncated(type);
                         } else {
@@ -442,16 +442,16 @@ function printTypeInternal(
                 } else {
                     let typeToWrap: string;
 
-                    if (type.literalValue !== undefined) {
+                    if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             typeToWrap = printLiteralValueTruncated(type);
                         } else {
                             typeToWrap = `Literal[${printLiteralValue(type)}]`;
                         }
                     } else {
-                        if (type.specialForm) {
+                        if (type.props?.specialForm) {
                             return printTypeInternal(
-                                type.specialForm,
+                                type.props.specialForm,
                                 printTypeFlags,
                                 returnTypeCallback,
                                 uniqueNameMap,
@@ -523,9 +523,9 @@ function printTypeInternal(
             case TypeCategory.Union: {
                 // If this is a value expression that evaluates to a union type but is
                 // not a type alias, simply print the special form ("UnionType").
-                if (TypeBase.isInstantiable(type) && type.specialForm && !type.typeAliasInfo) {
+                if (TypeBase.isInstantiable(type) && type.props?.specialForm && !aliasInfo) {
                     return printTypeInternal(
-                        type.specialForm,
+                        type.props.specialForm,
                         printTypeFlags,
                         returnTypeCallback,
                         uniqueNameMap,
@@ -550,18 +550,18 @@ function printTypeInternal(
                         : printTypeFlags;
 
                 // Start by matching possible type aliases to the subtypes.
-                if ((printTypeFlags & PrintTypeFlags.ExpandTypeAlias) === 0 && type.typeAliasSources) {
-                    for (const typeAliasSource of type.typeAliasSources) {
+                if ((printTypeFlags & PrintTypeFlags.ExpandTypeAlias) === 0 && type.priv.typeAliasSources) {
+                    for (const typeAliasSource of type.priv.typeAliasSources) {
                         let matchedAllSubtypes = true;
                         let allSubtypesPreviouslyHandled = true;
                         const indicesCoveredByTypeAlias = new Set<number>();
 
-                        for (const sourceSubtype of typeAliasSource.subtypes) {
+                        for (const sourceSubtype of typeAliasSource.priv.subtypes) {
                             let unionSubtypeIndex = 0;
                             let foundMatch = false;
                             const sourceSubtypeInstance = convertToInstance(sourceSubtype);
 
-                            for (const unionSubtype of type.subtypes) {
+                            for (const unionSubtype of type.priv.subtypes) {
                                 if (isTypeSame(sourceSubtypeInstance, unionSubtype)) {
                                     if (!subtypeHandledSet.has(unionSubtypeIndex)) {
                                         allSubtypesPreviouslyHandled = false;
@@ -596,7 +596,7 @@ function printTypeInternal(
                     }
                 }
 
-                const noneIndex = type.subtypes.findIndex((subtype) => isNoneInstance(subtype));
+                const noneIndex = type.priv.subtypes.findIndex((subtype) => isNoneInstance(subtype));
                 if (noneIndex >= 0 && !subtypeHandledSet.has(noneIndex)) {
                     const typeWithoutNone = removeNoneFromUnion(type);
                     if (isNever(typeWithoutNone)) {
@@ -627,7 +627,7 @@ function printTypeInternal(
                 const literalClassStrings = new Set<string>();
                 doForEachSubtype(type, (subtype, index) => {
                     if (!subtypeHandledSet.has(index)) {
-                        if (isClassInstance(subtype) && subtype.literalValue !== undefined) {
+                        if (isClassInstance(subtype) && subtype.priv.literalValue !== undefined) {
                             if (
                                 isLiteralValueTruncated(subtype) &&
                                 (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
@@ -636,7 +636,7 @@ function printTypeInternal(
                             } else {
                                 literalObjectStrings.add(printLiteralValue(subtype));
                             }
-                        } else if (isInstantiableClass(subtype) && subtype.literalValue !== undefined) {
+                        } else if (isInstantiableClass(subtype) && subtype.priv.literalValue !== undefined) {
                             if (
                                 isLiteralValueTruncated(subtype) &&
                                 (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
@@ -695,15 +695,15 @@ function printTypeInternal(
                 // This will confuse users. The exception is if it's a bound synthesized
                 // type, in which case we'll print the bound type. This is used for
                 // "self" and "cls" parameters.
-                if (type.details.isSynthesized) {
+                if (type.shared.isSynthesized) {
                     // If it's a synthesized type var used to implement recursive type
                     // aliases, return the type alias name.
-                    if (type.details.recursiveTypeAliasName) {
-                        if ((printTypeFlags & PrintTypeFlags.ExpandTypeAlias) !== 0 && type.details.boundType) {
+                    if (type.shared.recursiveAlias) {
+                        if ((printTypeFlags & PrintTypeFlags.ExpandTypeAlias) !== 0 && type.shared.boundType) {
                             return printTypeInternal(
                                 TypeBase.isInstance(type)
-                                    ? convertToInstance(type.details.boundType)
-                                    : type.details.boundType,
+                                    ? convertToInstance(type.shared.boundType)
+                                    : type.shared.boundType,
                                 printTypeFlags,
                                 returnTypeCallback,
                                 uniqueNameMap,
@@ -711,15 +711,15 @@ function printTypeInternal(
                                 recursionCount
                             );
                         }
-                        return type.details.recursiveTypeAliasName;
+                        return type.shared.recursiveAlias.name;
                     }
 
                     // If it's a synthesized type var used to implement `self` or `cls` types,
                     // print the type with a special character that indicates that the type
                     // is internally represented as a TypeVar.
-                    if (type.details.isSynthesizedSelf && type.details.boundType) {
+                    if (type.shared.isSynthesizedSelf && type.shared.boundType) {
                         let boundTypeString = printTypeInternal(
-                            type.details.boundType,
+                            type.shared.boundType,
                             printTypeFlags & ~PrintTypeFlags.ExpandTypeAlias,
                             returnTypeCallback,
                             uniqueNameMap,
@@ -727,7 +727,7 @@ function printTypeInternal(
                             recursionCount
                         );
 
-                        if (!isAnyOrUnknown(type.details.boundType)) {
+                        if (!isAnyOrUnknown(type.shared.boundType)) {
                             if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
                                 boundTypeString = `Self`;
                             } else {
@@ -747,24 +747,24 @@ function printTypeInternal(
                         : 'Unknown';
                 }
 
-                if (type.details.isParamSpec) {
+                if (type.shared.isParamSpec) {
                     const paramSpecText = _getReadableTypeVarName(
                         type,
                         (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
                     );
 
-                    if (type.paramSpecAccess) {
-                        return `${paramSpecText}.${type.paramSpecAccess}`;
+                    if (type.priv.paramSpecAccess) {
+                        return `${paramSpecText}.${type.priv.paramSpecAccess}`;
                     }
                     return paramSpecText;
                 }
 
                 let typeVarName = _getReadableTypeVarName(type, (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0);
-                if (type.isVariadicUnpacked) {
+                if (type.priv.isVariadicUnpacked) {
                     typeVarName = _printUnpack(typeVarName, printTypeFlags);
                 }
 
-                if (type.isVariadicInUnion) {
+                if (type.priv.isVariadicInUnion) {
                     typeVarName = `Union[${typeVarName}]`;
                 }
 
@@ -772,7 +772,7 @@ function printTypeInternal(
                     typeVarName = `${_printNestedInstantiable(type, typeVarName)}`;
                 }
 
-                if (!type.details.isVariadic && (printTypeFlags & PrintTypeFlags.PrintTypeVarVariance) !== 0) {
+                if (!type.shared.isVariadic && (printTypeFlags & PrintTypeFlags.PrintTypeVarVariance) !== 0) {
                     const varianceText = _getTypeVarVarianceText(type);
                     if (varianceText) {
                         typeVarName = `${typeVarName} (${varianceText})`;
@@ -783,12 +783,12 @@ function printTypeInternal(
             }
 
             case TypeCategory.Never: {
-                return type.isNoReturn ? 'NoReturn' : 'Never';
+                return type.priv.isNoReturn ? 'NoReturn' : 'Never';
             }
 
             case TypeCategory.Any: {
                 const anyType = type;
-                return anyType.isEllipsis ? '...' : 'Any';
+                return anyType.priv.isEllipsis ? '...' : 'Any';
             }
         }
 
@@ -812,12 +812,12 @@ function printFunctionType(
 
         // Callable works only in cases where all parameters are positional-only.
         let isPositionalParamsOnly = false;
-        if (typeWithoutParamSpec.details.parameters.length === 0) {
+        if (typeWithoutParamSpec.shared.parameters.length === 0) {
             isPositionalParamsOnly = true;
         } else {
-            if (typeWithoutParamSpec.details.parameters.every((param) => param.category === ParameterCategory.Simple)) {
+            if (typeWithoutParamSpec.shared.parameters.every((param) => param.category === ParameterCategory.Simple)) {
                 const lastParam =
-                    typeWithoutParamSpec.details.parameters[typeWithoutParamSpec.details.parameters.length - 1];
+                    typeWithoutParamSpec.shared.parameters[typeWithoutParamSpec.shared.parameters.length - 1];
                 if (!lastParam.name) {
                     isPositionalParamsOnly = true;
                 }
@@ -840,7 +840,7 @@ function printFunctionType(
         if (isPositionalParamsOnly) {
             const paramTypes: string[] = [];
 
-            typeWithoutParamSpec.details.parameters.forEach((param, index) => {
+            typeWithoutParamSpec.shared.parameters.forEach((param, index) => {
                 if (param.name) {
                     const paramType = FunctionType.getEffectiveParameterType(typeWithoutParamSpec, index);
                     if (recursionTypes.length < maxTypeRecursionCount) {
@@ -863,11 +863,11 @@ function printFunctionType(
             if (paramSpec) {
                 if (paramTypes.length > 0) {
                     return `Callable[Concatenate[${paramTypes.join(', ')}, ${
-                        paramSpec.details.name
+                        paramSpec.shared.name
                     }], ${returnTypeString}]`;
                 }
 
-                return `Callable[${paramSpec.details.name}, ${returnTypeString}]`;
+                return `Callable[${paramSpec.shared.name}, ${returnTypeString}]`;
             }
 
             return `Callable[[${paramTypes.join(', ')}], ${returnTypeString}]`;
@@ -913,10 +913,10 @@ function printObjectTypeForClassInternal(
     recursionTypes: Type[],
     recursionCount: number
 ): string {
-    let objName = type.aliasName;
+    let objName = type.priv.aliasName;
     if (!objName) {
         objName =
-            (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0 ? type.details.fullName : type.details.name;
+            (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0 ? type.shared.fullName : type.shared.name;
     }
 
     // Special-case NoneType to convert it to None.
@@ -926,7 +926,7 @@ function printObjectTypeForClassInternal(
 
     // Use the fully-qualified name if the name isn't unique.
     if (!uniqueNameMap.isUnique(objName)) {
-        objName = type.details.fullName;
+        objName = type.shared.fullName;
     }
 
     // If this is a pseudo-generic class, don't display the type arguments
@@ -934,12 +934,12 @@ function printObjectTypeForClassInternal(
     if (!ClassType.isPseudoGenericClass(type)) {
         const typeParams = ClassType.getTypeParameters(type);
         const lastTypeParam = typeParams.length > 0 ? typeParams[typeParams.length - 1] : undefined;
-        const isVariadic = lastTypeParam ? lastTypeParam.details.isVariadic : false;
+        const isVariadic = lastTypeParam ? lastTypeParam.shared.isVariadic : false;
 
         // If there is a type arguments array, it's a specialized class.
         const typeArgs: TupleTypeArgument[] | undefined =
-            type.tupleTypeArguments ??
-            type.typeArguments?.map((t) => {
+            type.priv.tupleTypeArguments ??
+            type.priv.typeArguments?.map((t) => {
                 return { type: t, isUnbounded: false };
             });
         if (typeArgs) {
@@ -952,13 +952,13 @@ function printObjectTypeForClassInternal(
                     const typeParam = index < typeParams.length ? typeParams[index] : undefined;
                     if (
                         typeParam &&
-                        typeParam.details.isVariadic &&
+                        typeParam.shared.isVariadic &&
                         isClassInstance(typeArg.type) &&
                         ClassType.isBuiltIn(typeArg.type, 'tuple') &&
-                        typeArg.type.tupleTypeArguments
+                        typeArg.type.priv.tupleTypeArguments
                     ) {
                         // Expand the tuple type that maps to the variadic type parameter.
-                        if (typeArg.type.tupleTypeArguments.length === 0) {
+                        if (typeArg.type.priv.tupleTypeArguments.length === 0) {
                             if (!isUnknown(typeArg.type)) {
                                 isAllUnknown = false;
                             }
@@ -969,7 +969,7 @@ function printObjectTypeForClassInternal(
                         } else {
                             appendArray(
                                 typeArgStrings,
-                                typeArg.type.tupleTypeArguments.map((typeArg) => {
+                                typeArg.type.priv.tupleTypeArguments.map((typeArg) => {
                                     if (!isUnknown(typeArg.type)) {
                                         isAllUnknown = false;
                                     }
@@ -1017,7 +1017,7 @@ function printObjectTypeForClassInternal(
                     }
                 });
 
-                if (type.isUnpacked) {
+                if (type.priv.isUnpacked) {
                     objName = _printUnpack(objName, printTypeFlags);
                 }
 
@@ -1025,7 +1025,7 @@ function printObjectTypeForClassInternal(
                     objName += '[' + typeArgStrings.join(', ') + ']';
                 }
             } else {
-                if (type.isUnpacked) {
+                if (type.priv.isUnpacked) {
                     objName = _printUnpack(objName, printTypeFlags);
                 }
 
@@ -1034,7 +1034,7 @@ function printObjectTypeForClassInternal(
                 }
             }
         } else {
-            if (type.isUnpacked) {
+            if (type.priv.isUnpacked) {
                 objName = _printUnpack(objName, printTypeFlags);
             }
 
@@ -1064,7 +1064,7 @@ function printObjectTypeForClassInternal(
     }
 
     // Wrap in a "Partial" for TypedDict that has been synthesized as partial.
-    if (type.isTypedDictPartial) {
+    if (type.priv.isTypedDictPartial) {
         if ((printTypeFlags & PrintTypeFlags.PythonSyntax) === 0) {
             objName = `Partial[${objName}]`;
         }
@@ -1083,6 +1083,7 @@ function printFunctionPartsInternal(
 ): [string[], string] {
     const paramTypeStrings: string[] = [];
     let sawDefinedName = false;
+    const functionNode = type.shared.declaration?.node;
 
     // Remove the (*args: P.args, **kwargs: P.kwargs) from the end of the parameter list.
     const paramSpec = FunctionType.getParamSpecFromArgsKwargs(type);
@@ -1090,10 +1091,10 @@ function printFunctionPartsInternal(
         type = FunctionType.cloneRemoveParamSpecArgsKwargs(type);
     }
 
-    type.details.parameters.forEach((param, index) => {
+    type.shared.parameters.forEach((param, index) => {
         // Handle specialized variadic type parameters specially.
         if (
-            index === type.details.parameters.length - 1 &&
+            index === type.shared.parameters.length - 1 &&
             param.category === ParameterCategory.ArgsList &&
             isVariadicTypeVar(param.type)
         ) {
@@ -1101,9 +1102,9 @@ function printFunctionPartsInternal(
             if (
                 isClassInstance(specializedParamType) &&
                 ClassType.isBuiltIn(specializedParamType, 'tuple') &&
-                specializedParamType.tupleTypeArguments
+                specializedParamType.priv.tupleTypeArguments
             ) {
-                specializedParamType.tupleTypeArguments.forEach((paramType) => {
+                specializedParamType.priv.tupleTypeArguments.forEach((paramType) => {
                     const paramString = printTypeInternal(
                         paramType.type,
                         printTypeFlags,
@@ -1124,7 +1125,7 @@ function printFunctionPartsInternal(
             printTypeFlags & PrintTypeFlags.ExpandTypedDictArgs &&
             param.type.category === TypeCategory.Class
         ) {
-            param.type.details.typedDictEntries!.knownItems.forEach((v, k) => {
+            param.type.shared.typedDictEntries!.knownItems.forEach((v, k) => {
                 const valueTypeString = printTypeInternal(
                     v.valueType,
                     printTypeFlags,
@@ -1140,7 +1141,7 @@ function printFunctionPartsInternal(
 
         let paramString = '';
         if (param.category === ParameterCategory.ArgsList) {
-            if (!param.name || !param.isNameSynthesized) {
+            if (!param.name || !FunctionParam.isNameSynthesized(param)) {
                 paramString += '*';
             }
         } else if (param.category === ParameterCategory.KwargsDict) {
@@ -1148,7 +1149,7 @@ function printFunctionPartsInternal(
         }
 
         let emittedParamName = false;
-        if (param.name && !param.isNameSynthesized) {
+        if (param.name && !FunctionParam.isNameSynthesized(param)) {
             paramString += param.name;
             sawDefinedName = true;
             emittedParamName = true;
@@ -1163,7 +1164,7 @@ function printFunctionPartsInternal(
 
         if (param.name) {
             // Avoid printing type types if parameter have unknown type.
-            if (param.hasDeclaredType || param.isTypeInferred) {
+            if (FunctionParam.isTypeDeclared(param) || FunctionParam.isTypeInferred(param)) {
                 const paramType = FunctionType.getEffectiveParameterType(type, index);
                 let paramTypeString =
                     recursionTypes.length < maxTypeRecursionCount
@@ -1208,7 +1209,7 @@ function printFunctionPartsInternal(
                 // spaces when used with a type annotation.
                 defaultValueAssignment = ' = ';
             } else if ((printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0) {
-                if (!param.isNameSynthesized) {
+                if (!FunctionParam.isNameSynthesized(param)) {
                     paramString += ': ';
                 }
                 if (printTypeFlags & (PrintTypeFlags.PrintUnknownWithAny | PrintTypeFlags.PythonSyntax)) {
@@ -1226,9 +1227,10 @@ function printFunctionPartsInternal(
             }
         }
 
-        if (param.hasDefault) {
-            if (param.defaultValueExpression) {
-                paramString += defaultValueAssignment + ParseTreeUtils.printExpression(param.defaultValueExpression);
+        if (param.defaultType) {
+            const paramNode = functionNode?.d.params.find((p) => p.d.name?.d.value === param.name);
+            if (paramNode?.d.defaultValue) {
+                paramString += defaultValueAssignment + ParseTreeUtils.printExpression(paramNode.d.defaultValue);
             } else {
                 // If the function doesn't originate from a function declaration (e.g. it is
                 // synthesized), we can't get to the default declaration, but we can still indicate
@@ -1290,7 +1292,7 @@ function _printUnpack(textToWrap: string, flags: PrintTypeFlags) {
 // Surrounds a printed type with Type[...] as many times as needed
 // for the nested instantiable count.
 function _printNestedInstantiable(type: Type, textToWrap: string) {
-    const nestedTypes = (type.instantiableNestingLevel ?? 0) + 1;
+    const nestedTypes = (type.props?.instantiableDepth ?? 0) + 1;
 
     for (let nestLevel = 0; nestLevel < nestedTypes; nestLevel++) {
         textToWrap = `type[${textToWrap}]`;
@@ -1301,14 +1303,14 @@ function _printNestedInstantiable(type: Type, textToWrap: string) {
 
 function _getReadableTypeVarName(type: TypeVarType, usePythonSyntax: boolean) {
     if (usePythonSyntax) {
-        return type.details.name;
+        return type.shared.name;
     }
 
     return TypeVarType.getReadableName(type);
 }
 
 function _getTypeVarVarianceText(type: TypeVarType) {
-    const computedVariance = type.computedVariance ?? type.details.declaredVariance;
+    const computedVariance = type.priv.computedVariance ?? type.shared.declaredVariance;
     if (computedVariance === Variance.Invariant) {
         return 'invariant';
     }
@@ -1338,7 +1340,8 @@ class UniqueNameMap {
         }
         recursionCount++;
 
-        if (type.typeAliasInfo) {
+        const aliasInfo = type.props?.typeAliasInfo;
+        if (aliasInfo) {
             let expandTypeAlias = true;
             if ((this._printTypeFlags & PrintTypeFlags.ExpandTypeAlias) === 0) {
                 expandTypeAlias = false;
@@ -1351,16 +1354,16 @@ class UniqueNameMap {
             if (!expandTypeAlias) {
                 const typeAliasName =
                     (this._printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
-                        ? type.typeAliasInfo.fullName
-                        : type.typeAliasInfo.name;
+                        ? aliasInfo.fullName
+                        : aliasInfo.name;
                 this._addIfUnique(typeAliasName, type, /* useTypeAliasName */ true);
 
                 // Recursively add the type arguments if present.
-                if (type.typeAliasInfo.typeArguments) {
+                if (aliasInfo.typeArguments) {
                     recursionTypes.push(type);
 
                     try {
-                        type.typeAliasInfo.typeArguments.forEach((typeArg) => {
+                        aliasInfo.typeArguments.forEach((typeArg) => {
                             this.build(typeArg, recursionTypes, recursionCount);
                         });
                     } finally {
@@ -1377,7 +1380,7 @@ class UniqueNameMap {
 
             switch (type.category) {
                 case TypeCategory.Function: {
-                    type.details.parameters.forEach((_, index) => {
+                    type.shared.parameters.forEach((_, index) => {
                         const paramType = FunctionType.getEffectiveParameterType(type, index);
                         this.build(paramType, recursionTypes, recursionCount);
                     });
@@ -1388,34 +1391,34 @@ class UniqueNameMap {
                 }
 
                 case TypeCategory.OverloadedFunction: {
-                    type.overloads.forEach((overload) => {
+                    type.priv.overloads.forEach((overload) => {
                         this.build(overload, recursionTypes, recursionCount);
                     });
                     break;
                 }
 
                 case TypeCategory.Class: {
-                    if (type.literalValue !== undefined) {
+                    if (type.priv.literalValue !== undefined) {
                         break;
                     }
 
-                    let className = type.aliasName;
+                    let className = type.priv.aliasName;
                     if (!className) {
                         className =
                             (this._printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
-                                ? type.details.fullName
-                                : type.details.name;
+                                ? type.shared.fullName
+                                : type.shared.name;
                     }
 
                     this._addIfUnique(className, type);
 
                     if (!ClassType.isPseudoGenericClass(type)) {
-                        if (type.tupleTypeArguments) {
-                            type.tupleTypeArguments.forEach((typeArg) => {
+                        if (type.priv.tupleTypeArguments) {
+                            type.priv.tupleTypeArguments.forEach((typeArg) => {
                                 this.build(typeArg.type, recursionTypes, recursionCount);
                             });
-                        } else if (type.typeArguments) {
-                            type.typeArguments.forEach((typeArg) => {
+                        } else if (type.priv.typeArguments) {
+                            type.priv.typeArguments.forEach((typeArg) => {
                                 this.build(typeArg, recursionTypes, recursionCount);
                             });
                         }
@@ -1428,7 +1431,7 @@ class UniqueNameMap {
                         this.build(subtype, recursionTypes, recursionCount);
                     });
 
-                    type.typeAliasSources?.forEach((typeAliasSource) => {
+                    type.priv.typeAliasSources?.forEach((typeAliasSource) => {
                         this.build(typeAliasSource, recursionTypes, recursionCount);
                     });
                     break;
@@ -1457,7 +1460,7 @@ class UniqueNameMap {
 
     private _isSameTypeName(type1: Type, type2: Type, useTypeAliasName: boolean): boolean {
         if (useTypeAliasName) {
-            return type1.typeAliasInfo?.fullName === type2.typeAliasInfo?.fullName;
+            return type1.props?.typeAliasInfo?.fullName === type2.props?.typeAliasInfo?.fullName;
         }
 
         if (isClass(type1) && isClass(type2)) {

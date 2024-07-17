@@ -178,7 +178,7 @@ export function isMethodOnlyProtocol(classType: ClassType): boolean {
     }
 
     // First check for data members in any protocol base classes.
-    for (const baseClass of classType.details.baseClasses) {
+    for (const baseClass of classType.shared.baseClasses) {
         if (isClass(baseClass) && ClassType.isProtocolClass(baseClass) && !isMethodOnlyProtocol(baseClass)) {
             return false;
         }
@@ -208,7 +208,7 @@ export function isProtocolUnsafeOverlap(evaluator: TypeEvaluator, protocol: Clas
 
     let isUnsafeOverlap = true;
 
-    protocol.details.mro.forEach((mroClass) => {
+    protocol.shared.mro.forEach((mroClass) => {
         if (!isUnsafeOverlap || !isInstantiableClass(mroClass) || !ClassType.isProtocolClass(mroClass)) {
             return;
         }
@@ -237,8 +237,8 @@ function getProtocolCompatibility(
     flags: AssignTypeFlags,
     typeVarContext: TypeVarContext | undefined
 ): boolean | undefined {
-    const map = srcType.details.protocolCompatibility as Map<string, ProtocolCompatibility[]> | undefined;
-    const entries = map?.get(destType.details.fullName);
+    const map = srcType.shared.protocolCompatibility as Map<string, ProtocolCompatibility[]> | undefined;
+    const entries = map?.get(destType.shared.fullName);
     if (entries === undefined) {
         return undefined;
     }
@@ -262,16 +262,16 @@ function setProtocolCompatibility(
     typeVarContext: TypeVarContext | undefined,
     isCompatible: boolean
 ) {
-    let map = srcType.details.protocolCompatibility as Map<string, ProtocolCompatibility[]> | undefined;
+    let map = srcType.shared.protocolCompatibility as Map<string, ProtocolCompatibility[]> | undefined;
     if (!map) {
         map = new Map<string, ProtocolCompatibility[]>();
-        srcType.details.protocolCompatibility = map;
+        srcType.shared.protocolCompatibility = map;
     }
 
-    let entries = map.get(destType.details.fullName);
+    let entries = map.get(destType.shared.fullName);
     if (!entries) {
         entries = [];
-        map.set(destType.details.fullName, entries);
+        map.set(destType.shared.fullName, entries);
     }
 
     entries.push({
@@ -319,7 +319,8 @@ function assignClassToProtocolInternal(
     if (isClass(srcType)) {
         // If the srcType is conditioned on "self", use "Self" as the selfType.
         // Otherwise use the class type for selfType.
-        if (srcType.condition?.some((c) => c.typeVar.details.isSynthesizedSelf)) {
+        const synthCond = srcType.props?.condition?.find((c) => c.typeVar.shared.isSynthesizedSelf);
+        if (synthCond) {
             selfType = synthesizeTypeVarForSelfCls(
                 TypeBase.cloneForCondition(srcType, undefined),
                 /* isClsType */ false
@@ -349,7 +350,7 @@ function assignClassToProtocolInternal(
         ? AssignTypeFlags.RetainLiteralsForTypeVar
         : AssignTypeFlags.Default;
 
-    destType.details.mro.forEach((mroClass) => {
+    destType.shared.mro.forEach((mroClass) => {
         if (!isInstantiableClass(mroClass) || !ClassType.isProtocolClass(mroClass)) {
             return;
         }
@@ -403,10 +404,10 @@ function assignClassToProtocolInternal(
                 // Look in the metaclass first if we're treating the source as an instantiable class.
                 if (
                     sourceIsClassObject &&
-                    srcType.details.effectiveMetaclass &&
-                    isInstantiableClass(srcType.details.effectiveMetaclass)
+                    srcType.shared.effectiveMetaclass &&
+                    isInstantiableClass(srcType.shared.effectiveMetaclass)
                 ) {
-                    srcMemberInfo = lookUpClassMember(srcType.details.effectiveMetaclass, name);
+                    srcMemberInfo = lookUpClassMember(srcType.shared.effectiveMetaclass, name);
                     if (srcMemberInfo) {
                         isMemberFromMetaclass = true;
                     }
@@ -428,7 +429,12 @@ function assignClassToProtocolInternal(
                 // We can skip this if it's the dest class because it is already
                 // specialized.
                 if (!ClassType.isSameGenericClass(mroClass, destType)) {
-                    destMemberType = partiallySpecializeType(destMemberType, mroClass, selfType);
+                    destMemberType = partiallySpecializeType(
+                        destMemberType,
+                        mroClass,
+                        evaluator.getTypeClassType(),
+                        selfType
+                    );
                 }
 
                 if (isInstantiableClass(srcMemberInfo.classType)) {
@@ -439,7 +445,12 @@ function assignClassToProtocolInternal(
                         evaluator.inferReturnTypeIfNecessary(symbolType);
                     }
 
-                    srcMemberType = partiallySpecializeType(symbolType, srcMemberInfo.classType, selfType);
+                    srcMemberType = partiallySpecializeType(
+                        symbolType,
+                        srcMemberInfo.classType,
+                        evaluator.getTypeClassType(),
+                        selfType
+                    );
                 } else {
                     srcMemberType = UnknownType.create();
                 }
@@ -490,7 +501,7 @@ function assignClassToProtocolInternal(
                     isSrcReadOnly = true;
                 }
             } else {
-                srcSymbol = srcType.fields.get(name);
+                srcSymbol = srcType.priv.fields.get(name);
 
                 if (!srcSymbol) {
                     diag?.addMessage(LocAddendum.protocolMemberMissing().format({ name }));
@@ -574,7 +585,7 @@ function assignClassToProtocolInternal(
                     let getterType = evaluator.getGetterTypeFromProperty(destMemberType, /* inferTypeIfNeeded */ true);
 
                     if (getterType) {
-                        getterType = partiallySpecializeType(getterType, mroClass);
+                        getterType = partiallySpecializeType(getterType, mroClass, evaluator.getTypeClassType());
                     }
 
                     if (
@@ -716,7 +727,7 @@ function assignClassToProtocolInternal(
     });
 
     // If the dest protocol has type parameters, make sure the source type arguments match.
-    if (typesAreConsistent && destType.details.typeParameters.length > 0) {
+    if (typesAreConsistent && destType.shared.typeParameters.length > 0) {
         // Create a specialized version of the protocol defined by the dest and
         // make sure the resulting type args can be assigned.
         const genericProtocolType = ClassType.cloneForSpecialization(
@@ -726,7 +737,7 @@ function assignClassToProtocolInternal(
         );
         const specializedProtocolType = applySolvedTypeVars(genericProtocolType, protocolTypeVarContext) as ClassType;
 
-        if (destType.typeArguments) {
+        if (destType.priv.typeArguments) {
             if (
                 !evaluator.assignTypeArguments(
                     destType,
@@ -741,7 +752,7 @@ function assignClassToProtocolInternal(
                 typesAreConsistent = false;
             }
         } else if (destTypeVarContext && !destTypeVarContext.isLocked()) {
-            for (const typeParam of destType.details.typeParameters) {
+            for (const typeParam of destType.shared.typeParameters) {
                 const typeArgEntry = protocolTypeVarContext.getPrimarySignature().getTypeVar(typeParam);
 
                 if (typeArgEntry) {
@@ -769,7 +780,7 @@ function createProtocolTypeVarContext(
 ): TypeVarContext {
     const protocolTypeVarContext = new TypeVarContext(getTypeVarScopeId(destType));
 
-    destType.details.typeParameters.forEach((typeParam, index) => {
+    destType.shared.typeParameters.forEach((typeParam, index) => {
         const entry = destTypeVarContext?.getPrimarySignature().getTypeVar(typeParam);
 
         if (entry) {
@@ -779,8 +790,8 @@ function createProtocolTypeVarContext(
                 entry.narrowBoundNoLiterals,
                 entry.wideBound
             );
-        } else if (destType.typeArguments && index < destType.typeArguments.length) {
-            let typeArg = destType.typeArguments[index];
+        } else if (destType.priv.typeArguments && index < destType.priv.typeArguments.length) {
+            let typeArg = destType.priv.typeArguments[index];
             let flags: AssignTypeFlags;
             let hasUnsolvedTypeVars = requiresSpecialization(typeArg);
 

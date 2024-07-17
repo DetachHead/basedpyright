@@ -9,10 +9,12 @@ resources:
       name: 1ESPipelineTemplates/MicroBuildTemplate
       ref: refs/tags/release
 variables:
-  - SigningType: 'real'
-  - TeamName: Pyright
-  - VSIX_NAME: vscode-pyright.vsix
-  - ARTIFACT_NAME_VSIX: vsix
+  - name: TeamName
+    value: Pyright
+  - name: VSIX_NAME
+    value: vscode-pyright.vsix
+  - name: ARTIFACT_NAME_VSIX
+    value: vsix
 
 extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
@@ -31,8 +33,12 @@ extends:
         jobs:
           - job: build
             displayName: Build VSIX
-            timeoutInMinutes: 720
+            timeoutInMinutes: 60
             templateContext:
+              mb:
+                signing:
+                  enabled: true
+                  signType: 'real'
               outputs:
                 - output: pipelineArtifact
                   displayName: 'publish vsix artifact'
@@ -44,12 +50,6 @@ extends:
                 submodules: true
                 fetchTags: true
                 persistCredentials: True
-              - task: MicroBuildSigningPlugin@4
-                inputs:
-                  signType: '$(SignType)'
-                  feedSource: 'https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json'
-                env:
-                  TeamName: '$(TeamName)'
               - task: NodeTool@0
                 displayName: Use Node 18.x
                 inputs:
