@@ -325,7 +325,7 @@ test('TypeNarrowingIsNone2', () => {
 test('TypeNarrowingIsClass1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsClass1.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('TypeNarrowingIsNoneTuple1', () => {
