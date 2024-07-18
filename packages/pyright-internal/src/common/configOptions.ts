@@ -903,7 +903,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     analyzeUnannotatedFunctions: true,
     strictParameterNoneValue: true,
     enableExperimentalFeatures: true,
-    enableTypeIgnoreComments: true,
+    enableTypeIgnoreComments: false,
     deprecateTypingAliases: true,
     disableBytesTypePromotions: true,
     reportGeneralTypeIssues: 'error',

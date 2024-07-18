@@ -120,7 +120,7 @@
     "enableTypeIgnoreComments": {
       "type": "boolean",
       "title": "Allow \"# type: ignore\" comments",
-      "default": true
+      "default": false
     },
     "deprecateTypingAliases": {
       "type": "boolean",
