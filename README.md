@@ -78,8 +78,7 @@ this way, if the error changes or a new error appears on the same line in the fu
 
 basedpyright resolves this by reporting those errors under the `reportGeneralTypeIssues` diagnostic rule. this isn't a perfect solution, but there were over 100 errors that didn't have diagnostic rules. i intend to split them into their own rules in the future, but this will do for now.
 
-> [!WARNING]  
-> `type: ignore` comments are unsafe and will soon be disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
+note that `type: ignore` comments (`enableTypeIgnoreComments`) are unsafe and are disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
 
 #### `reportPrivateLocalImportUsage` - prevent implicit re-exports in local code
 
