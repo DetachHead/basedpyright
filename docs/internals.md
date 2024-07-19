@@ -2,15 +2,17 @@
 
 ## Code Structure
 
-* packages/vscode-pyright/src/extension.ts: Language Server Protocol (LSP) client entry point for VS Code extension.
-* packages/pyright-internal/typeshed-fallback/: Recent copy of Typeshed type stub files for Python stdlib
-* packages/pyright-internal/src/pyright.ts: Main entry point for command-line tool
-* packages/pyright-internal/src/server.ts: Main entry point for LSP server
-* packages/pyright-internal/src/analyzer: Modules that perform analysis passes over Python parse tree
-* packages/pyright-internal/src/common: Modules  that are common to the parser and analyzer
-* packages/pyright-internal/src/parser: Modules that perform tokenization and parsing of Python source
-* packages/pyright-internal/src/tests: Tests for the parser and analyzer
-
+* `packages/vscode-pyright/src/extension.ts`: Language Server Protocol (LSP) client entry point for VS Code extension.
+* `packages/pyright-internal/typeshed-fallback/`: Recent copy of Typeshed type stub files for Python stdlib
+* `packages/pyright-internal/src/pyright.ts`: Main entry point for command-line tool
+* `packages/pyright-internal/src/server.ts`: Main entry point for LSP server
+* `packages/pyright-internal/src/analyzer`: Modules that perform analysis passes over Python parse tree
+* `packages/pyright-internal/src/common`: Modules  that are common to the parser and analyzer
+* `packages/pyright-internal/src/parser`: Modules that perform tokenization and parsing of Python source
+* `packages/pyright-internal/src/tests`: Tests for the parser and analyzer
+* `packages/pyright`: basedpyright npm package (used internally by [the playground](http://basedpyright.com))
+* `basedpyright`: pypi package wrapper for the npm package, so that users don't need to install nodejs themselves
+* `docstubs`: stubs with [docstrings on compiled modules](https://docs.basedpyright.com/#/?id=docstrings-for-compiled-builtin-modules) (generated from `packages/pyright-internal/typeshed-fallback/` when building the pypi package)
 
 ## Core Concepts
 
