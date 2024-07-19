@@ -35,6 +35,7 @@
 
 - Development
 
+  - [How we keep up-to-date with upstream](upstream.md)
   - [Building & Debugging](build-debug.md)
   - [Pyright Internals](internals.md)
 
