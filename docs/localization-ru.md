@@ -28,6 +28,6 @@
 | keyword argument/parameter| Именованный аргумент/параметр |
 | mapping                   | mapping (нет перевода) |
 | awaitable                 | awaitable (нет перевода) или: поддерживающий await |
-| positional-only           | чисто позиционный     |
+| positional-only           | только позиционный     |
 
 Технические термины ("type annotation", "function", "type variable") всегда следует переводить одинаково.
