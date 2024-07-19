@@ -14892,7 +14892,7 @@ export function createTypeEvaluator(
                     errorNode
                 );
             }
-        } else if (isAny(simplifiedType)) {
+        } else if (isAny(simplifiedType) && !simplifiedType.props?.specialForm) {
             addDiagnostic(DiagnosticRule.reportAny, LocMessage.typeAny().format({ name: nameValue }), errorNode);
         }
     }

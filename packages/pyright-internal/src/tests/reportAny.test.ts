@@ -11,7 +11,6 @@ test('reportAny', () => {
 
     validateResultsButBased(analysisResults, {
         errors: [
-            { line: 0, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'Any' }) },
             { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
             {
                 line: 3,
