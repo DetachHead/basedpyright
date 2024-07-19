@@ -19,7 +19,7 @@
 | Type variable             | Переменная тип**а**   |
 | Type variables            | Переменные тип**а**   |
 | Final класс               | Окончательный класс   |
-| Data class                | `dataclass`           |
+| Data class                | Датакласс             |
 | Enum                      | Перечисление          |
 | f-string                  | f-строка              |
 | Format string literal     | f-строка              |
