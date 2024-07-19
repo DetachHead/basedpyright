@@ -1,33 +1,17 @@
-## Building Pyright
+## Building basedpyright
 
-To install the dependencies for all packages in the repo:
-1. Install [nodejs](https://nodejs.org/en/) version 16.x
-2. Open terminal window in main directory of cloned source
-3. Execute `npm run install:all` to install dependencies for projects and sub-projects
+although pyright is written in typescript, in basedpyright we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a [pypi package](https://pypi.org/project/nodejs-wheel/) and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)
 
+we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).
 
-## Building the CLI
+1. hit `F1` > `Tasks: Run task` > `install dependencies`, or run the following command:
+   ```
+   ./pw pdm install
+   ```
+   this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules` 
+2. press "Yes" when prompted by vscode to use the newly created virtualenv
 
-1. cd to the `packages/pyright` directory
-2. Execute `npm run build`
-
-Once built, you can run the command-line tool by executing the following:
-
-`node index.js`
-
-## Building the VS Code extension
-
-1. cd to the `packages/vscode-pyright` directory
-2. Execute `npm run package`
-
-The resulting package (pyright-X.Y.Z.vsix) can be found in the client directory.
-To install in VS Code, go to the extensions panel and choose “Install from VSIX...” from the menu, then select the package.
-
-
-## Running Pyright tests
-
-1. cd to the `packages/pyright-internal` directory
-2. Execute `npm run test`
+you can now run any node/npm commands from inside the venv.
 
 
 ## Debugging Pyright
