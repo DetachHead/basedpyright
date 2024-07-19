@@ -58,7 +58,7 @@ in basedpyright, all of these options are enabled by default, using the new `"al
 
 - <a name="strictParameterNoneValue"></a> **strictParameterNoneValue** [boolean]: PEP 484 indicates that when a function parameter is assigned a default value of None, its type should implicitly be Optional even if the explicit type is not. When enabled, this rule requires that parameter type annotations use Optional explicitly in this case.
 
-- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for "# type: ignore" comments. This switch enables or disables support for these comments. this option is deprecated in favor of `pyright: ignore` comments in basedpyright, as they are safer. [see here](https://docs.basedpyright.com/#/?id=reportignorecommentwithoutrule-enforce-that-all-ignore-comments-specify-an-error-code) for more information.
+- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](https://docs.basedpyright.com/#/?id=reportignorecommentwithoutrule-enforce-that-all-ignore-comments-specify-an-error-code) for more information.
 
 - <a name="deprecateTypingAliases"></a> **deprecateTypingAliases** [boolean]: PEP 585 indicates that aliases to types in standard collections that were introduced solely to support generics are deprecated as of Python 3.9. This switch controls whether these are treated as deprecated. This applies only when pythonVersion is 3.9 or newer.
 
@@ -358,7 +358,7 @@ Some rules have an additional severity level such as `"unused"`, `"deprecated"` 
 
 The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"` and `"all"`).
 
-note that the even when `typeCheckingMode` is set to `"All"`, rules that are considered deprecated in basedpyright are disabled by default.
+note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default `typeCheckingMode` is `"all"`). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
 
 | Diagnostic Rule                     | Off           | Basic         | Standard      | Strict        | All     |
 |:------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|
