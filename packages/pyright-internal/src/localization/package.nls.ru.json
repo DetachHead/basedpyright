@@ -136,7 +136,7 @@
         "dictKeyValuePairs": "Записи словаря должны содержать пары \"ключ-значение\"",
         "dictUnpackIsNotMapping": "Ожидается mapping для оператора распаковки словаря",
         "dunderAllSymbolNotPresent": "\"{name}\" указано в методе __all__, но отсутствует в модуле",
-        "duplicateArgsParam": "Разрешен только один  параметр \"*\"",
+        "duplicateArgsParam": "Разрешен только один параметр \"*\"",
         "duplicateBaseClass": "Дублирование базового класса не допускается",
         "duplicateCapturePatternTarget": "Целевой объект захвата \"{name}\" не может появляться более одного раза в одном шаблоне",
         "duplicateCatchAll": "Допускается только один универсальный блок \"except\"",
