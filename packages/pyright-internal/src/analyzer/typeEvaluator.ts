@@ -5305,7 +5305,7 @@ export function createTypeEvaluator(
         }
 
         // See if we need to log an "unknown member access" diagnostic.
-        let skipPartialUnknownCheck = typeResult.isIncomplete;
+        let skipPartialUnknownCheck = typeResult.isIncomplete || flags & EvalFlags.AllowAnyOrUnknown;
 
         // Don't report an error if the type is a partially-specialized
         // class being passed as an argument. This comes up frequently in
@@ -10269,7 +10269,8 @@ export function createTypeEvaluator(
         let castFromType = getTypeOfArgument(
             argList[1],
             /* inferenceContext */ undefined,
-            /* signatureTracker */ undefined
+            /* signatureTracker */ undefined,
+            EvalFlags.AllowAnyOrUnknown
         ).type;
 
         if (castFromType.props?.specialForm) {
@@ -20767,7 +20768,8 @@ export function createTypeEvaluator(
     function getTypeOfArgument(
         arg: FunctionArgument,
         inferenceContext: InferenceContext | undefined,
-        signatureTracker: UniqueSignatureTracker | undefined
+        signatureTracker: UniqueSignatureTracker | undefined,
+        flags: EvalFlags = EvalFlags.None
     ): TypeResult {
         if (arg.typeResult) {
             const type = arg.typeResult.type;
@@ -20781,12 +20783,7 @@ export function createTypeEvaluator(
 
         // If there was no defined type provided, there should always
         // be a value expression from which we can retrieve the type.
-        const typeResult = getTypeOfExpression(
-            arg.valueExpression,
-            /* flags */ undefined,
-            inferenceContext,
-            signatureTracker
-        );
+        const typeResult = getTypeOfExpression(arg.valueExpression, flags, inferenceContext, signatureTracker);
 
         if (signatureTracker) {
             typeResult.type = ensureFunctionSignaturesAreUnique(
