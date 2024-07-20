@@ -162,6 +162,9 @@ export const enum EvalFlags {
     // with the second argument to isinstance and issubclass calls.
     IsinstanceArg = 1 << 29,
 
+    /** don't report an error if the type is `Any` or "Unknown" */
+    AllowAnyOrUnknown = 1 << 30,
+
     // Defaults used for evaluating the LHS of a call expression.
     CallBaseDefaults = NoSpecialize,
 
