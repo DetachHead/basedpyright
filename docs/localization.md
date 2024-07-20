@@ -31,7 +31,7 @@ Here are some guidelines for contributors who would like to help improve the tra
 | Final                     | `Final` (как есть)    |
 | @final / final class      | `@final` (как есть)   |
 | Data class                | Датакласс             |
-| Enum                      | Enum (как есть)       |
+| Enum                      | Перечисление          |
 | f-string                  | f-строка              |
 | Format string literal     | f-строка              |
 | XYZ is deprecated         | XYZ [больше] не рекомендуется |
