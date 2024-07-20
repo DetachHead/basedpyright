@@ -23,7 +23,7 @@ jobs:
         run: ./pw --lock
 
       - name: Update pdm dependencies & create PR
-        uses: pdm-project/update-deps-action@v1.8
+        uses: pdm-project/update-deps-action@v1.9
         with:
           commit-message: 'Update python dependencies'
           pr-title: 'Update python dependencies'
