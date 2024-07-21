@@ -17,6 +17,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import '../common/serviceProviderExtensions';
 import { Range } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
+import { FileSet } from '../tests/harness/vfs/filesystem';
 import { AnalysisCompleteCallback, analyzeProgram } from './analysis';
 import { ImportResolver } from './importResolver';
 import { MaxAnalysisTime, OpenFileOptions, Program } from './program';
@@ -114,6 +115,10 @@ export class BackgroundAnalysisProgram {
     updateChainedUri(fileUri: Uri, chainedUri: Uri | undefined) {
         this._backgroundAnalysis?.updateChainedUri(fileUri, chainedUri);
         this._program.updateChainedUri(fileUri, chainedUri);
+    }
+
+    initializeFileSystem(files: Record<string, string>) {
+        this._backgroundAnalysis?.initializeFileSystem(files);
     }
 
     updateOpenFileContents(uri: Uri, version: number | null, contents: string, options: OpenFileOptions) {

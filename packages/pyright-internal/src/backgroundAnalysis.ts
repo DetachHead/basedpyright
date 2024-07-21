@@ -6,13 +6,16 @@
  * run analyzer from background thread
  */
 
-import { Worker } from 'worker_threads';
+import { workerData } from 'worker_threads';
 
 import { ImportResolver } from './analyzer/importResolver';
 import { BackgroundAnalysisBase, BackgroundAnalysisRunnerBase } from './backgroundAnalysisBase';
 import { InitializationData } from './backgroundThreadBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConfigOptions } from './common/configOptions';
+import { FileSystem } from './common/fileSystem';
+import { createFromRealFileSystem } from './common/realFileSystem';
+import { createWorker, parentPort } from './common/workersHost';
 import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
 import { ServiceProvider } from './common/serviceProvider';
@@ -32,9 +35,7 @@ export class BackgroundAnalysis extends BackgroundAnalysisBase {
             runner: undefined,
             workerIndex: index,
         };
-
-        // this will load this same file in BG thread and start listener
-        const worker = new Worker(__filename, { workerData: initialData });
+        const worker = createWorker(initialData);
         this.setup(worker);
 
         // Tell the cacheManager we have a worker that needs to share data.
@@ -44,7 +45,10 @@ export class BackgroundAnalysis extends BackgroundAnalysisBase {
 
 export class BackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
     constructor(serviceProvider: ServiceProvider) {
-        super(serviceProvider);
+        super(serviceProvider, parentPort(), workerData as InitializationData);
+    }
+    protected createRealFileSystem(): FileSystem {
+        return createFromRealFileSystem(this.getConsole());
     }
 
     protected override createHost(): Host {

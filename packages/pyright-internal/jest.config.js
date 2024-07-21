@@ -17,4 +17,5 @@ module.exports = {
     },
     testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+    setupFiles: ['./src/tests/setupTests.ts'],
 };

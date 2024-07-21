@@ -14,6 +14,10 @@ import { BasedConfigOptions, ConfigOptions } from './common/configOptions';
 import { ConsoleInterface, LogLevel } from './common/console';
 import { Disposable, isThenable } from './common/core';
 import * as debug from './common/debug';
+import { FileSystem } from './common/fileSystem';
+import { FileSpec, normalizeSlashes } from './common/pathUtils';
+import { PyrightFileSystem } from './pyrightFileSystem';
+import { TestFileSystem } from './tests/harness/vfs/filesystem';
 import { PythonVersion } from './common/pythonVersion';
 import { createFromRealFileSystem, RealTempFile } from './common/realFileSystem';
 import { ServiceKeys } from './common/serviceKeys';
@@ -53,10 +57,13 @@ export class BackgroundConsole implements ConsoleInterface {
     }
 }
 
-export class BackgroundThreadBase {
+export abstract class BackgroundThreadBase {
+    // Exposed for browser filesystem operations.
+    // In future these should go via fs.
+    protected _realFs: FileSystem;
     private readonly _serviceProvider: ServiceProvider;
 
-    protected constructor(data: InitializationData, serviceProvider?: ServiceProvider) {
+    constructor(protected parentPort: MessagePort | null, data: InitializationData, serviceProvider?: ServiceProvider) {
         setCancellationFolderName(data.cancellationFolderName);
 
         // Make sure there's a file system and a console interface.
@@ -90,14 +97,16 @@ export class BackgroundThreadBase {
 
         // Stash the base directory into a global variable.
         (global as any).__rootDirectory = Uri.parse(data.rootUri, this._serviceProvider).getFilePath();
+
+        this._realFs = this.createRealFileSystem();
+        this.fs = new PyrightFileSystem(this._realFs);
     }
 
-    protected get fs() {
-        return this._serviceProvider.fs();
-    }
+    // Hook for Browser vs NodeJS file system.
+    protected abstract createRealFileSystem(): FileSystem;
 
     protected log(level: LogLevel, msg: string) {
-        parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
+        this.parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
     }
 
     protected getConsole() {

@@ -7,7 +7,7 @@
  * Class that represents a single Python source or stub file.
  */
 
-import { isMainThread } from 'worker_threads';
+import { isMainThread } from '../common/workersHost';
 
 import { OperationCanceledException } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
@@ -307,7 +307,7 @@ export class SourceFile {
         }
 
         // 'FG' or 'BG' based on current thread.
-        this._logTracker = logTracker ?? new LogTracker(console, isMainThread ? 'FG' : 'BG');
+        this._logTracker = logTracker ?? new LogTracker(console, isMainThread() ? 'FG' : 'BG');
         this._ipythonMode = ipythonMode ?? IPythonMode.None;
     }
 
