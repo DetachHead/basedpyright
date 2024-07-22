@@ -6,7 +6,7 @@
  * base class for background worker thread.
  */
 
-import { MessagePort, parentPort, TransferListItem } from 'worker_threads';
+import { parentPort, TransferListItem } from 'worker_threads';
 
 import { CacheManager } from './analyzer/cacheManager';
 import { OperationCanceledException, setCancellationFolderName } from './common/cancellationUtils';
@@ -15,15 +15,14 @@ import { ConsoleInterface, LogLevel } from './common/console';
 import { Disposable, isThenable } from './common/core';
 import * as debug from './common/debug';
 import { FileSystem } from './common/fileSystem';
-import { FileSpec, normalizeSlashes } from './common/pathUtils';
 import { PyrightFileSystem } from './pyrightFileSystem';
-import { TestFileSystem } from './tests/harness/vfs/filesystem';
 import { PythonVersion } from './common/pythonVersion';
 import { createFromRealFileSystem, RealTempFile } from './common/realFileSystem';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
 import './common/serviceProviderExtensions';
 import { Uri } from './common/uri/uri';
+import { MessagePort } from './common/workersHost';
 
 export class BackgroundConsole implements ConsoleInterface {
     private _level = LogLevel.Log;
@@ -60,7 +59,8 @@ export class BackgroundConsole implements ConsoleInterface {
 export abstract class BackgroundThreadBase {
     // Exposed for browser filesystem operations.
     // In future these should go via fs.
-    protected _realFs: FileSystem;
+    protected realFs: FileSystem;
+    protected fs: FileSystem;
     private readonly _serviceProvider: ServiceProvider;
 
     constructor(protected parentPort: MessagePort | null, data: InitializationData, serviceProvider?: ServiceProvider) {
@@ -98,8 +98,8 @@ export abstract class BackgroundThreadBase {
         // Stash the base directory into a global variable.
         (global as any).__rootDirectory = Uri.parse(data.rootUri, this._serviceProvider).getFilePath();
 
-        this._realFs = this.createRealFileSystem();
-        this.fs = new PyrightFileSystem(this._realFs);
+        this.realFs = this.createRealFileSystem();
+        this.fs = new PyrightFileSystem(this.realFs);
     }
 
     // Hook for Browser vs NodeJS file system.
@@ -192,17 +192,19 @@ export function deserialize<T = any>(json: string | null): T {
     return JSON.parse(json, (k, v) => deserializeReviver(v));
 }
 
+// TODO: whats this for? it came from a pylance commit that doesn't seem to be used for anything
+//  that MessagePort can't do
 export interface MessagePoster {
     postMessage(value: any, transferList?: ReadonlyArray<TransferListItem>): void;
 }
 
-export function run<T = any>(code: () => Promise<T>, port: MessagePoster): Promise<void>;
-export function run<T = any>(code: () => Promise<T>, port: MessagePoster, serializer: (obj: any) => any): Promise<void>;
-export function run<T = any>(code: () => T, port: MessagePoster): void;
-export function run<T = any>(code: () => T, port: MessagePoster, serializer: (obj: any) => any): void;
+export function run<T = any>(code: () => Promise<T>, port: MessagePort): Promise<void>;
+export function run<T = any>(code: () => Promise<T>, port: MessagePort, serializer: (obj: any) => any): Promise<void>;
+export function run<T = any>(code: () => T, port: MessagePort): void;
+export function run<T = any>(code: () => T, port: MessagePort, serializer: (obj: any) => any): void;
 export function run<T = any>(
     code: () => T | Promise<T>,
-    port: MessagePoster,
+    port: MessagePort,
     serializer = serialize
 ): void | Promise<void> {
     try {

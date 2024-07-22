@@ -47,7 +47,7 @@ import { toolName } from './constants';
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
 export class PyrightServer extends LanguageServerBase {
-    private _controller: CommandController;
+    protected controller: CommandController;
 
     constructor(connection: Connection, maxWorkers: number, realFileSystem?: FileSystem) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -82,7 +82,7 @@ export class PyrightServer extends LanguageServerBase {
             connection
         );
 
-        this._controller = new CommandController(this);
+        this.controller = new CommandController(this);
     }
 
     async getSettings(workspace: Workspace): Promise<ServerSettings> {
@@ -226,7 +226,7 @@ export class PyrightServer extends LanguageServerBase {
         return new BackgroundAnalysis(this.serverOptions.serviceProvider);
     }
 
-    protected override createHost() {
+    protected override createHost(): Host {
         return new FullAccessHost(this.serverOptions.serviceProvider);
     }
 
@@ -245,15 +245,15 @@ export class PyrightServer extends LanguageServerBase {
     }
 
     protected executeCommand(params: ExecuteCommandParams, token: CancellationToken): Promise<any> {
-        return this._controller.execute(params, token);
+        return this.controller.execute(params, token);
     }
 
     protected isLongRunningCommand(command: string): boolean {
-        return this._controller.isLongRunningCommand(command);
+        return this.controller.isLongRunningCommand(command);
     }
 
     protected isRefactoringCommand(command: string): boolean {
-        return this._controller.isRefactoringCommand(command);
+        return this.controller.isRefactoringCommand(command);
     }
 
     protected async executeCodeAction(

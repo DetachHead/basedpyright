@@ -7,8 +7,6 @@
  */
 
 import { CancellationToken, CreateFile, DeleteFile } from 'vscode-languageserver';
-import { TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
-import { MessageChannel, MessagePort, Worker, parentPort, threadId, workerData } from 'worker_threads';
 
 import {
     AnalysisCompleteCallback,
@@ -43,9 +41,8 @@ import { disposeCancellationToken, getCancellationTokenFromId } from './common/f
 import { Host, HostKind } from './common/host';
 import { LogTracker } from './common/logTracker';
 import { ServiceProvider } from './common/serviceProvider';
-import { convertUriToPath } from './common/pathUtils';
 import { Range } from './common/textRange';
-import { createMessageChannel, MessageSourceSink } from './common/workersHost';
+import { createMessageChannel, MessagePort, MessageSourceSink, threadId } from './common/workersHost';
 import { Uri } from './common/uri/uri';
 import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
@@ -63,17 +60,17 @@ export class BackgroundAnalysisBase {
 
     // Server-side FS initialization for browser usecase.
     initializeFileSystem(params: Record<string, string>) {
-        this.enqueueRequest({ requestType: 'initializeFileSystem', data: params });
+        this.enqueueRequest({ requestType: 'initializeFileSystem', data: serialize(params) });
     }
 
     // Server-side FS mutation for browser usecase.
     createFile(params: CreateFile) {
-        this.enqueueRequest({ requestType: 'createFile', data: params });
+        this.enqueueRequest({ requestType: 'createFile', data: serialize(params) });
     }
 
     // Server-side FS mutation for browser usecase.
     deleteFile(params: DeleteFile) {
-        this.enqueueRequest({ requestType: 'deleteFile', data: params });
+        this.enqueueRequest({ requestType: 'deleteFile', data: serialize(params) });
     }
 
     setImportResolver(importResolver: ImportResolver) {
@@ -355,33 +352,33 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.log(LogLevel.Info, `Background analysis(${threadId()}) started`);
 
         // Get requests from main thread.
-        parentPort?.on('message', this._onMessageWrapper.bind(this));
-        parentPort?.on('error', (msg) => debug.fail(`failed ${msg}`));
-        parentPort?.on('exit', (c) => {
+        this.parentPort?.on('message', this._onMessageWrapper.bind(this));
+        this.parentPort?.on('error', (msg) => debug.fail(`failed ${msg}`));
+        this.parentPort?.on('exit', (c) => {
             if (c !== 0) {
                 debug.fail(`worker stopped with exit code ${c}`);
             }
         });
 
-        parentPort?.start();
+        this.parentPort?.start();
     }
 
     protected onMessage(msg: AnalysisRequest) {
         switch (msg.requestType) {
             // FS mutation support for browser usecase.
             case 'initializeFileSystem': {
-                (this._realFs as TestFileSystem).apply(msg.data);
+                (this.realFs as TestFileSystem).apply(deserialize(msg.data));
                 break;
             }
 
             case 'createFile': {
-                const filePath = convertUriToPath(this.fs, msg.data.uri);
-                (this._realFs as TestFileSystem).apply({ [filePath]: '' });
+                const filePath = Uri.parse(deserialize<CreateFile>(msg.data).uri, this.serviceProvider).getPath();
+                (this.realFs as TestFileSystem).apply({ [filePath]: '' });
                 break;
             }
 
             case 'deleteFile': {
-                const filePath = convertUriToPath(this.fs, msg.data.uri);
+                const filePath = Uri.parse(deserialize<DeleteFile>(msg.data).uri, this.serviceProvider);
                 this.fs.unlinkSync(filePath);
                 break;
             }
@@ -720,11 +717,11 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             this.log(LogLevel.Log, `Background analysis exception leak: ${e}`);
 
             if (OperationCanceledException.is(e)) {
-                parentPort?.postMessage({ kind: 'cancelled', data: e.message });
+                this.parentPort?.postMessage({ kind: 'cancelled', data: e.message });
                 return;
             }
 
-            parentPort?.postMessage({
+            this.parentPort?.postMessage({
                 kind: 'failed',
                 data: `Exception: for msg ${msg.requestType}: ${e.message} in ${e.stack}`,
             });

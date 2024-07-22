@@ -9,7 +9,7 @@ export type Transferable = ArrayBuffer | MessagePort;
 export interface MessageSourceSink {
     // As per worker_thread, except any transferables may only be
     // `value` itself or one level nested in an object or array value.
-    postMessage(value: any, transferList?: Transferable[]): void;
+    postMessage(value: any, transferList?: readonly Transferable[]): void;
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void;
 }
 

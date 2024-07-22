@@ -52,6 +52,7 @@ module.exports = (_, { mode }) => {
                 // fileBasedCancellationUtils (we've removed the RealFileSystem)
                 fs: false,
                 os: false,
+                v8: false,
             },
         },
         module: {

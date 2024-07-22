@@ -17,7 +17,6 @@ import { ServiceProvider } from '../common/serviceProvider';
 import '../common/serviceProviderExtensions';
 import { Range } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { FileSet } from '../tests/harness/vfs/filesystem';
 import { AnalysisCompleteCallback, analyzeProgram } from './analysis';
 import { ImportResolver } from './importResolver';
 import { MaxAnalysisTime, OpenFileOptions, Program } from './program';
@@ -27,6 +26,7 @@ export enum InvalidatedReason {
     SourceWatcherChanged,
     LibraryWatcherChanged,
     LibraryWatcherContentOnlyChanged,
+    Nunya, // TODO: whats the actual reason
 }
 
 export class BackgroundAnalysisProgram {

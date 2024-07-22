@@ -20,6 +20,7 @@ import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
 import { ServiceProvider } from './common/serviceProvider';
 import { getRootUri } from './common/uri/uriUtils';
+import { ServiceKeys } from './common/serviceKeys';
 
 export class BackgroundAnalysis extends BackgroundAnalysisBase {
     private static _workerIndex = 0;
@@ -45,10 +46,13 @@ export class BackgroundAnalysis extends BackgroundAnalysisBase {
 
 export class BackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
     constructor(serviceProvider: ServiceProvider) {
-        super(serviceProvider, parentPort(), workerData as InitializationData);
+        super(parentPort(), workerData as InitializationData, serviceProvider);
     }
     protected createRealFileSystem(): FileSystem {
-        return createFromRealFileSystem(this.getConsole());
+        return createFromRealFileSystem(
+            this.serviceProvider.get(ServiceKeys.caseSensitivityDetector),
+            this.getConsole()
+        );
     }
 
     protected override createHost(): Host {

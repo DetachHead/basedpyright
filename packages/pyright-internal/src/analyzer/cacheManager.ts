@@ -9,11 +9,11 @@
  */
 
 import type { HeapInfo } from 'v8';
-import { Worker } from 'worker_threads';
 import { AnalysisRequest } from '../backgroundAnalysisBase';
 import { ConsoleInterface } from '../common/console';
 import { fail } from '../common/debug';
 import { getHeapStatistics } from '../common/memUtils';
+import { MessageSourceSink } from '../common/workersHost';
 
 export interface CacheOwner {
     // Returns a number between 0 and 1 that indicates how full
@@ -36,7 +36,7 @@ export class CacheManager {
         this._cacheOwners.push(provider);
     }
 
-    addWorker(index: number, worker: Worker) {
+    addWorker(index: number, worker: MessageSourceSink) {
         // Send the sharedArrayBuffer to the worker so it can be used
         // to keep track of heap usage on all threads.
         const buffer = this._getSharedUsageBuffer();

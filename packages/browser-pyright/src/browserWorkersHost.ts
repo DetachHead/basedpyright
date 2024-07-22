@@ -47,31 +47,31 @@ export class BrowserWorkersHost implements WorkersHost {
 }
 
 class BrowserMessagePort implements MessagePort {
-    constructor(private delegate: globalThis.MessagePort) {}
+    constructor(private _delegate: globalThis.MessagePort) {}
     unwrap() {
-        return this.delegate;
+        return this._delegate;
     }
     postMessage(value: any, transferList?: Transferable[]): void {
         if (transferList) {
-            this.delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
+            this._delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
         } else {
-            this.delegate.postMessage(value);
+            this._delegate.postMessage(value);
         }
     }
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void {
         // We don't support error/exit for now.
         if (type === 'message') {
-            this.delegate.addEventListener(type, (e: MessageEvent) => {
+            this._delegate.addEventListener(type, (e: MessageEvent) => {
                 const data = e.data;
                 listener(wrapOnReceive(data));
             });
         }
     }
     start() {
-        this.delegate.start();
+        this._delegate.start();
     }
     close() {
-        this.delegate.close();
+        this._delegate.close();
     }
 }
 
