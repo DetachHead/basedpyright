@@ -352,7 +352,7 @@ basedpyright:
 
 we aim to [port most of basedmypy's features to basedpyright](https://github.com/DetachHead/basedpyright/issues?q=is%3Aissue+is%3Aopen+label%3A%22basedmypy+feature+parity%22), however as mentioned above our priority is to first fix the critical problems with pyright.
 
-note that any non-standard features we add will be optional, as we intend to support library developmers who can't control what type checker their library is used with.
+note that any non-standard features we add will be optional, as we intend to support library developers who can't control what type checker their library is used with.
 
 # pypi package
 
