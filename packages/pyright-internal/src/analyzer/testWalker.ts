@@ -8,7 +8,7 @@
  */
 
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
-import { assertNever, fail } from '../common/debug';
+import { fail } from '../common/debug';
 import { TextRange } from '../common/textRange';
 import { NameNode, ParseNode, ParseNodeArray, ParseNodeType } from '../parser/parseNodes';
 import { isCompliantWithNodeRangeRules } from './parseTreeUtils';
@@ -82,7 +82,7 @@ export class TestWalker extends ParseTreeWalker {
                         }
 
                         default:
-                            assertNever(node, 'node is not marked as not following range rules.');
+                            fail(`node ${node.nodeType} is not marked as not following range rules.`);
                     }
                 }
 
