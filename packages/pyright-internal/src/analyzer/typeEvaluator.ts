@@ -2361,7 +2361,7 @@ export function createTypeEvaluator(
 
         function addOneFunctionToSignature(type: FunctionType) {
             useSpeculativeMode(callNode!, () => {
-                const match = matchArgsToParams(exprNode, argList, { type }, 0, /* signatureTracker */ undefined);
+                const match = matchArgsToParams(exprNode, argList, { type }, 0);
                 calls.push({
                     match: match,
                     type: type,
@@ -3303,27 +3303,6 @@ export function createTypeEvaluator(
 
     function addInformation(message: string, node: ParseNode, range?: TextRange) {
         return addDiagnosticWithSuppressionCheck('information', message, node, range);
-    }
-
-    function addUnusedCode(node: ParseNode, textRange: TextRange) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            fileInfo.diagnosticSink.addUnusedCodeWithTextRange(LocMessage.unreachableCode(), textRange);
-        }
-    }
-
-    function addUnreachableCode(node: ParseNode, textRange: TextRange) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            fileInfo.diagnosticSink.addUnreachableCodeWithTextRange(LocMessage.unreachableCode(), textRange);
-        }
-    }
-
-    function addDeprecated(message: string, node: ParseNode) {
-        if (!isDiagnosticSuppressedForNode(node)) {
-            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-            fileInfo.diagnosticSink.addDeprecatedWithTextRange(message, node);
-        }
     }
 
     function addDiagnosticWithSuppressionCheck(
