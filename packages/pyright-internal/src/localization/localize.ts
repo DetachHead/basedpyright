@@ -605,6 +605,7 @@ export namespace Localizer {
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.isSubclassInvalidType'));
         export const keyValueInSet = () => getRawString('Diagnostic.keyValueInSet');
         export const keywordArgInTypeArgument = () => getRawString('Diagnostic.keywordArgInTypeArgument');
+        export const keywordArgShortcutIllegal = () => getRawString('Diagnostic.keywordArgShortcutIllegal');
         export const keywordOnlyAfterArgs = () => getRawString('Diagnostic.keywordOnlyAfterArgs');
         export const keywordParameterMissing = () => getRawString('Diagnostic.keywordParameterMissing');
         export const keywordSubscriptIllegal = () => getRawString('Diagnostic.keywordSubscriptIllegal');
@@ -1061,6 +1062,8 @@ export namespace Localizer {
         export const typeVarDefaultInvalidTypeVar = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeVarDefaultInvalidTypeVar'));
         export const typeVarFirstArg = () => getRawString('Diagnostic.typeVarFirstArg');
+        export const typeVarInvalidForMemberVariable = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeVarInvalidForMemberVariable'));
         export const typeVarNoMember = () =>
             new ParameterizedString<{ type: string; name: string }>(getRawString('Diagnostic.typeVarNoMember'));
         export const typeVarNotSubscriptable = () =>

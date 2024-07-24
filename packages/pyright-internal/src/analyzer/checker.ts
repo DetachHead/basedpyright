@@ -160,6 +160,7 @@ import {
     partiallySpecializeType,
     selfSpecializeClass,
     transformPossibleRecursiveTypeAlias,
+    updateTypeWithInternalTypeVars,
 } from './typeUtils';
 import { TypeVarContext } from './typeVarContext';
 import { getEffectiveExtraItemsEntryType, getTypedDictMembersForClass } from './typedDicts';
@@ -171,7 +172,6 @@ import {
     EnumLiteral,
     FunctionParam,
     FunctionType,
-    FunctionTypeFlags,
     OverloadedFunctionType,
     Type,
     TypeBase,
@@ -934,7 +934,7 @@ export class Checker extends ParseTreeWalker {
         let returnType: Type | undefined;
 
         const enclosingFunctionNode = ParseTreeUtils.getEnclosingFunction(node);
-        const declaredReturnType = enclosingFunctionNode
+        let declaredReturnType = enclosingFunctionNode
             ? this._evaluator.getFunctionDeclaredReturnType(enclosingFunctionNode)
             : undefined;
 
@@ -975,6 +975,9 @@ export class Checker extends ParseTreeWalker {
                         node
                     );
                 } else {
+                    const liveScopes = ParseTreeUtils.getTypeVarScopesForNode(node);
+                    declaredReturnType = updateTypeWithInternalTypeVars(declaredReturnType, liveScopes);
+
                     let diagAddendum = new DiagnosticAddendum();
                     let returnTypeMatches = false;
 
@@ -2631,16 +2634,16 @@ export class Checker extends ParseTreeWalker {
             return false;
         }
 
-        let flags = AssignTypeFlags.SkipFunctionReturnTypeCheck | AssignTypeFlags.OverloadOverlapCheck;
+        let flags = AssignTypeFlags.SkipReturnTypeCheck | AssignTypeFlags.OverloadOverlap;
         if (partialOverlap) {
-            flags |= AssignTypeFlags.PartialOverloadOverlapCheck;
+            flags |= AssignTypeFlags.PartialOverloadOverlap;
         }
 
         return this._evaluator.assignType(
             functionType,
             prevOverload,
             /* diag */ undefined,
-            new TypeVarContext(getTypeVarScopeId(functionType)),
+            new TypeVarContext(),
             /* srcTypeVarContext */ undefined,
             flags
         );
@@ -2661,7 +2664,7 @@ export class Checker extends ParseTreeWalker {
             diag,
             overloadTypeVarContext,
             implTypeVarContext,
-            AssignTypeFlags.SkipFunctionReturnTypeCheck |
+            AssignTypeFlags.SkipReturnTypeCheck |
                 AssignTypeFlags.ReverseTypeVarMatching |
                 AssignTypeFlags.SkipSelfClsTypeCheck
         );
@@ -4994,8 +4997,7 @@ export class Checker extends ParseTreeWalker {
                             newMemberTypeResult,
                             /* typeVarContext */ undefined,
                             /* skipUnknownArgCheck */ undefined,
-                            /* inferenceContext */ undefined,
-                            /* signatureTracker */ undefined
+                            /* inferenceContext */ undefined
                         );
                     }
 
@@ -5006,8 +5008,7 @@ export class Checker extends ParseTreeWalker {
                             initMemberTypeResult,
                             /* typeVarContext */ undefined,
                             /* skipUnknownArgCheck */ undefined,
-                            /* inferenceContext */ undefined,
-                            /* signatureTracker */ undefined
+                            /* inferenceContext */ undefined
                         );
                     }
                 }
@@ -5558,18 +5559,6 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        // We'll set the "SkipArgsKwargs" flag for pragmatic reasons since __new__
-        // often has an *args and/or **kwargs. We'll also set the ParamSpecValue
-        // because we don't care about the return type for this check.
-        initMemberType = FunctionType.cloneWithNewFlags(
-            initMemberType,
-            initMemberType.shared.flags | FunctionTypeFlags.GradualCallableForm | FunctionTypeFlags.ParamSpecValue
-        );
-        newMemberType = FunctionType.cloneWithNewFlags(
-            newMemberType,
-            initMemberType.shared.flags | FunctionTypeFlags.GradualCallableForm | FunctionTypeFlags.ParamSpecValue
-        );
-
         if (
             !this._evaluator.assignType(
                 newMemberType,
@@ -5577,7 +5566,7 @@ export class Checker extends ParseTreeWalker {
                 /* diag */ undefined,
                 /* destTypeVarContext */ undefined,
                 /* srcTypeVarContext */ undefined,
-                AssignTypeFlags.SkipFunctionReturnTypeCheck
+                AssignTypeFlags.SkipReturnTypeCheck
             ) ||
             !this._evaluator.assignType(
                 initMemberType,
@@ -5585,7 +5574,7 @@ export class Checker extends ParseTreeWalker {
                 /* diag */ undefined,
                 /* destTypeVarContext */ undefined,
                 /* srcTypeVarContext */ undefined,
-                AssignTypeFlags.SkipFunctionReturnTypeCheck
+                AssignTypeFlags.SkipReturnTypeCheck
             )
         ) {
             const displayOnInit = ClassType.isSameGenericClass(initMethodResult.classType, classType);
@@ -7376,10 +7365,13 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const declaredReturnType = FunctionType.getEffectiveReturnType(functionTypeResult.functionType);
+        let declaredReturnType = FunctionType.getEffectiveReturnType(functionTypeResult.functionType);
         if (!declaredReturnType) {
             return;
         }
+
+        const liveScopes = ParseTreeUtils.getTypeVarScopesForNode(node);
+        declaredReturnType = updateTypeWithInternalTypeVars(declaredReturnType, liveScopes);
 
         let generatorType: Type | undefined;
         if (

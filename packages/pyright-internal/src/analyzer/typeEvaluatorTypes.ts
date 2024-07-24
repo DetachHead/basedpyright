@@ -37,7 +37,7 @@ import * as DeclarationUtils from './declarationUtils';
 import { SymbolWithScope } from './scope';
 import { Symbol } from './symbol';
 import { PrintTypeFlags } from './typePrinter';
-import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags, UniqueSignatureTracker } from './typeUtils';
+import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags } from './typeUtils';
 import { TypeVarContext } from './typeVarContext';
 import {
     AnyType,
@@ -162,8 +162,12 @@ export const enum EvalFlags {
     // with the second argument to isinstance and issubclass calls.
     IsinstanceArg = 1 << 29,
 
+    // Enforce that any type variables referenced in this type are associated
+    // with the enclosing class or an outer scope.
+    EnforceClassTypeVarScope = 1 << 30,
+
     /** don't report an error if the type is `Any` or "Unknown" */
-    AllowAnyOrUnknown = 1 << 30,
+    AllowAnyOrUnknown = 1 << 31,
 
     // Defaults used for evaluating the LHS of a call expression.
     CallBaseDefaults = NoSpecialize,
@@ -348,6 +352,7 @@ export interface AnnotationTypeOptions {
     allowUnpackedTypedDict?: boolean;
     allowUnpackedTuple?: boolean;
     notParsedByInterpreter?: boolean;
+    enforceClassTypeVarScope?: boolean;
 }
 
 export interface ExpectedTypeOptions {
@@ -544,8 +549,7 @@ export interface TypeEvaluator {
         typeResult: TypeResult<OverloadedFunctionType>,
         typeVarContext: TypeVarContext | undefined,
         skipUnknownArgCheck: boolean,
-        inferenceContext: InferenceContext | undefined,
-        signatureTracker: UniqueSignatureTracker | undefined
+        inferenceContext: InferenceContext | undefined
     ) => CallResult;
     validateInitSubclassArgs: (node: ClassNode, classType: ClassType) => void;
 
@@ -582,11 +586,7 @@ export interface TypeEvaluator {
         emitNotIterableError?: boolean
     ) => TypeResult | undefined;
     getGetterTypeFromProperty: (propertyClass: ClassType, inferTypeIfNeeded: boolean) => Type | undefined;
-    getTypeOfArgument: (
-        arg: FunctionArgument,
-        inferenceContext: InferenceContext | undefined,
-        signatureTracker: UniqueSignatureTracker | undefined
-    ) => TypeResult;
+    getTypeOfArgument: (arg: FunctionArgument, inferenceContext: InferenceContext | undefined) => TypeResult;
     markNamesAccessed: (node: ParseNode, names: string[]) => void;
     expandPromotionTypes: (node: ParseNode, type: Type) => Type;
     makeTopLevelTypeVarsConcrete: (type: Type, makeParamSpecsConcrete?: boolean) => Type;
@@ -674,8 +674,7 @@ export interface TypeEvaluator {
         callTypeResult: TypeResult,
         typeVarContext: TypeVarContext | undefined,
         skipUnknownArgCheck: boolean | undefined,
-        inferenceContext: InferenceContext | undefined,
-        signatureTracker: UniqueSignatureTracker | undefined
+        inferenceContext: InferenceContext | undefined
     ) => CallResult;
     validateTypeArg: (argResult: TypeResultWithNode, options?: ValidateTypeArgsOptions) => boolean;
     assignTypeToExpression: (target: ExpressionNode, typeResult: TypeResult, srcExpr: ExpressionNode) => void;

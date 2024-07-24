@@ -1415,9 +1415,7 @@ function narrowTypeForIsInstanceInternal(
                                 /* diag */ undefined,
                                 /* destTypeVarContext */ undefined,
                                 /* srcTypeVarContext */ undefined,
-                                AssignTypeFlags.IgnoreTypeVarScope |
-                                    AssignTypeFlags.IgnoreProtocolAssignmentCheck |
-                                    AssignTypeFlags.AllowIsinstanceSpecialForms
+                                AssignTypeFlags.IgnoreTypeVarScope | AssignTypeFlags.AllowIsinstanceSpecialForms
                             )
                         ) {
                             // If the variable type is a superclass of the isinstance
@@ -1433,8 +1431,7 @@ function narrowTypeForIsInstanceInternal(
                                     filterType.shared.typeParameters.length > 0
                                 ) {
                                     if (
-                                        !filterType.priv.typeArguments ||
-                                        !filterType.priv.isTypeArgumentExplicit ||
+                                        !filterType.priv.isTypeArgumentExplicit &&
                                         !ClassType.isSameGenericClass(concreteVarType, filterType)
                                     ) {
                                         const typeVarContext = new TypeVarContext(getTypeVarScopeId(filterType));

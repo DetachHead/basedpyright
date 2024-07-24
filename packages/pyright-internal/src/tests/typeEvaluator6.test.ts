@@ -758,7 +758,7 @@ test('Constructor25', () => {
 test('Constructor26', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor26.py']);
 
-    TestUtils.validateResults(analysisResults, 8);
+    TestUtils.validateResults(analysisResults, 9);
 });
 
 test('Constructor27', () => {
@@ -794,7 +794,7 @@ test('ConstructorCallable1', () => {
 test('ConstructorCallable2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructorCallable2.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('InconsistentConstructor1', () => {
@@ -807,7 +807,7 @@ test('InconsistentConstructor1', () => {
     // Enable it as an error.
     configOptions.diagnosticRuleSet.reportInconsistentConstructor = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentConstructor1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('ClassGetItem1', () => {

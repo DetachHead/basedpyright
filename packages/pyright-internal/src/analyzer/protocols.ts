@@ -325,6 +325,10 @@ function assignClassToProtocolInternal(
                 TypeBase.cloneForCondition(srcType, undefined),
                 /* isClsType */ false
             );
+
+            if (TypeVarType.hasInternalScopeId(synthCond.typeVar)) {
+                selfType = TypeVarType.cloneWithInternalScopeId(selfType);
+            }
         } else {
             selfType = srcType;
         }
@@ -344,7 +348,7 @@ function assignClassToProtocolInternal(
 
     let typesAreConsistent = true;
     const checkedSymbolSet = new Set<string>();
-    let assignTypeFlags = flags & (AssignTypeFlags.OverloadOverlapCheck | AssignTypeFlags.PartialOverloadOverlapCheck);
+    let assignTypeFlags = flags & (AssignTypeFlags.OverloadOverlap | AssignTypeFlags.PartialOverloadOverlap);
 
     assignTypeFlags |= containsLiteralType(srcType, /* includeTypeArgs */ true)
         ? AssignTypeFlags.RetainLiteralsForTypeVar

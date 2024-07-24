@@ -40,7 +40,7 @@ test('GenericType4', () => {
 test('GenericType5', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericType5.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('GenericType6', () => {
@@ -166,7 +166,7 @@ test('GenericType25', () => {
 test('GenericType26', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericType26.py']);
 
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('GenericType27', () => {
@@ -281,6 +281,12 @@ test('GenericType45', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericType45.py']);
 
     TestUtils.validateResults(analysisResults, 6);
+});
+
+test('GenericType46', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericType46.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('Protocol1', () => {
@@ -840,7 +846,7 @@ test('Annotated1', () => {
 
     configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults38 = TestUtils.typeAnalyzeSampleFiles(['annotated1.py'], configOptions);
-    TestUtils.validateResults(analysisResults38, 32);
+    TestUtils.validateResults(analysisResults38, 34);
 
     configOptions.defaultPythonVersion = pythonVersion3_11;
     const analysisResults39 = TestUtils.typeAnalyzeSampleFiles(['annotated1.py'], configOptions);
