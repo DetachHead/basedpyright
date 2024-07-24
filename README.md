@@ -5,7 +5,7 @@
 )](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright)
 [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
-[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](./docs/installation.md#pycharm)
+[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](https://plugins.jetbrains.com/plugin/24145)
 [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
 [![coc.nvim](https://img.shields.io/badge/coc.nvim-grey?logo=vim)](https://github.com/fannheyward/coc-basedpyright)
 [![emacs](https://img.shields.io/badge/emacs-grey?logo=gnuemacs&logoColor=ffffff)](https://github.com/manateelazycat/lsp-bridge)
