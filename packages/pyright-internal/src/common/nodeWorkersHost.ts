@@ -39,39 +39,39 @@ export class NodeWorkersHost implements WorkersHost {
 }
 
 class NodeMessagePort implements MessagePort {
-    constructor(private delegate: WorkerThreadsMessagePort) {}
+    constructor(private _delegate: WorkerThreadsMessagePort) {}
     unwrap() {
-        return this.delegate;
+        return this._delegate;
     }
     postMessage(value: any, transferList?: Transferable[]): void {
         if (transferList) {
-            this.delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
+            this._delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
         } else {
-            this.delegate.postMessage(value);
+            this._delegate.postMessage(value);
         }
     }
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void {
-        this.delegate.on(type, (data) => listener(wrapOnReceive(data)));
+        this._delegate.on(type, (data) => listener(wrapOnReceive(data)));
     }
     start() {
-        this.delegate.start();
+        this._delegate.start();
     }
     close() {
-        this.delegate.close();
+        this._delegate.close();
     }
 }
 
 class NodeWorker implements MessageSourceSink {
-    constructor(private delegate: WorkerThreadsWorker) {}
+    constructor(private _delegate: WorkerThreadsWorker) {}
     postMessage(value: any, transferList?: Transferable[]): void {
         if (transferList) {
-            this.delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
+            this._delegate.postMessage(unwrapForSend(value), unwrapForSend(transferList));
         } else {
-            this.delegate.postMessage(value);
+            this._delegate.postMessage(value);
         }
     }
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void {
-        this.delegate.on(type, (data) => listener(wrapOnReceive(data)));
+        this._delegate.on(type, (data) => listener(wrapOnReceive(data)));
     }
 }
 

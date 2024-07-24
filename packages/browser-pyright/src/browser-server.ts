@@ -9,11 +9,9 @@
 import { ImportResolver } from 'pyright-internal/analyzer/importResolver';
 import { BackgroundAnalysisBase, BackgroundAnalysisRunnerBase } from 'pyright-internal/backgroundAnalysisBase';
 import { InitializationData } from 'pyright-internal/backgroundThreadBase';
-import { CommandController } from 'pyright-internal/commands/commandController';
 import { ConfigOptions } from 'pyright-internal/common/configOptions';
-import { FileSystem } from 'pyright-internal/common/fileSystem';
 import { Host, NoAccessHost } from 'pyright-internal/common/host';
-import { PyrightServer } from 'pyright-internal/server';
+import { RealLanguageServer } from 'pyright-internal/realLanguageServer';
 import { normalizeSlashes } from 'pyright-internal/common/pathUtils';
 import { createWorker, parentPort } from 'pyright-internal/common/workersHost';
 import { TestFileSystem } from 'pyright-internal/tests/harness/vfs/filesystem';
@@ -22,31 +20,28 @@ import { Uri } from 'pyright-internal/common/uri/uri';
 import { InvalidatedReason } from 'pyright-internal/analyzer/backgroundAnalysisProgram';
 import { getRootUri } from 'pyright-internal/common/uri/uriUtils';
 import { ServiceProvider } from 'pyright-internal/common/serviceProvider';
-import { isDebugMode } from 'pyright-internal/common/core';
-import { getCancellationFolderName } from 'pyright-internal/common/cancellationUtils';
+import { DefaultCancellationProvider } from 'pyright-internal/common/cancellationUtils';
+import { nullFileWatcherHandler } from 'pyright-internal/common/fileWatcher';
 
 type InitialFiles = Record<string, string>;
 
-export class PyrightBrowserServer extends PyrightServer {
+export class PyrightBrowserServer extends RealLanguageServer {
     private _initialFiles: InitialFiles | undefined;
 
     constructor(connection: Connection) {
-        const fileSystem = new TestFileSystem(false, {
+        const testFileSystem = new TestFileSystem(false, {
             cwd: normalizeSlashes('/'),
         });
-        super(connection, 0, fileSystem);
-
-        this.controller = new CommandController(this);
+        super(connection, 0, testFileSystem, new DefaultCancellationProvider(), testFileSystem, nullFileWatcherHandler);
     }
 
-    override createBackgroundAnalysis(): BackgroundAnalysisBase | undefined {
-        if (isDebugMode() || !getCancellationFolderName()) {
-            // Don't do background analysis if we're in debug mode or an old client
-            // is used where cancellation is not supported.
-            return undefined;
+    createBackgroundAnalysis(): BackgroundAnalysisBase | undefined {
+        // Ignore cancellation restriction for now. Needs investigation for browser support.
+        const result = new BrowserBackgroundAnalysis(this.serviceProvider);
+        if (this._initialFiles) {
+            result.initializeFileSystem(this._initialFiles);
         }
-
-        return new BrowserBackgroundAnalysis(this.serverOptions.serviceProvider);
+        return result;
     }
 
     protected override setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
@@ -111,14 +106,16 @@ export class BrowserBackgroundAnalysis extends BackgroundAnalysisBase {
 }
 
 export class BrowserBackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
-    constructor(initialData: InitializationData, serviceProvider: ServiceProvider) {
+    constructor(initialData: InitializationData, serviceProvider?: ServiceProvider) {
         super(parentPort(), initialData, serviceProvider);
     }
-    createRealFileSystem(): FileSystem {
+    createRealFileSystem() {
         return new TestFileSystem(false, {
             cwd: normalizeSlashes('/'),
         });
     }
+    protected override createRealTempFile = () => this.createRealFileSystem();
+
     protected override createHost(): Host {
         return new NoAccessHost();
     }

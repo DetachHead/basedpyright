@@ -6,26 +6,26 @@
  * base class for background worker thread.
  */
 
-import { parentPort, TransferListItem } from 'worker_threads';
-
 import { CacheManager } from './analyzer/cacheManager';
 import { OperationCanceledException, setCancellationFolderName } from './common/cancellationUtils';
 import { BasedConfigOptions, ConfigOptions } from './common/configOptions';
 import { ConsoleInterface, LogLevel } from './common/console';
 import { Disposable, isThenable } from './common/core';
 import * as debug from './common/debug';
-import { FileSystem } from './common/fileSystem';
+import { FileSystem, TempFile } from './common/fileSystem';
 import { PyrightFileSystem } from './pyrightFileSystem';
 import { PythonVersion } from './common/pythonVersion';
-import { createFromRealFileSystem, RealTempFile } from './common/realFileSystem';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
 import './common/serviceProviderExtensions';
 import { Uri } from './common/uri/uri';
 import { MessagePort } from './common/workersHost';
+import { CaseSensitivityDetector } from './common/caseSensitivityDetector';
 
 export class BackgroundConsole implements ConsoleInterface {
     private _level = LogLevel.Log;
+
+    constructor(private _parentPort: MessagePort | null) {}
 
     get level() {
         return this._level;
@@ -52,7 +52,7 @@ export class BackgroundConsole implements ConsoleInterface {
     }
 
     protected post(level: LogLevel, msg: string) {
-        parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
+        this._parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
     }
 }
 
@@ -61,69 +61,65 @@ export abstract class BackgroundThreadBase {
     // In future these should go via fs.
     protected realFs: FileSystem;
     protected fs: FileSystem;
-    private readonly _serviceProvider: ServiceProvider;
+    protected readonly serviceProvider: ServiceProvider;
 
     constructor(protected parentPort: MessagePort | null, data: InitializationData, serviceProvider?: ServiceProvider) {
         setCancellationFolderName(data.cancellationFolderName);
 
         // Make sure there's a file system and a console interface.
-        this._serviceProvider = serviceProvider ?? new ServiceProvider();
-        if (!this._serviceProvider.tryGet(ServiceKeys.console)) {
-            this._serviceProvider.add(ServiceKeys.console, new BackgroundConsole());
-        }
-
-        let tempFile: RealTempFile | undefined = undefined;
-        if (!this._serviceProvider.tryGet(ServiceKeys.tempFile)) {
-            tempFile = new RealTempFile();
-            this._serviceProvider.add(ServiceKeys.tempFile, tempFile);
-        }
-
-        if (!this._serviceProvider.tryGet(ServiceKeys.caseSensitivityDetector)) {
-            this._serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile ?? new RealTempFile());
-        }
-
-        if (!this._serviceProvider.tryGet(ServiceKeys.fs)) {
-            this._serviceProvider.add(
-                ServiceKeys.fs,
-                createFromRealFileSystem(
-                    this._serviceProvider.get(ServiceKeys.caseSensitivityDetector),
-                    this.getConsole()
-                )
-            );
-        }
-        if (!this._serviceProvider.tryGet(ServiceKeys.cacheManager)) {
-            this._serviceProvider.add(ServiceKeys.cacheManager, new CacheManager());
-        }
+        this.serviceProvider = serviceProvider ?? new ServiceProvider();
 
         // Stash the base directory into a global variable.
-        (global as any).__rootDirectory = Uri.parse(data.rootUri, this._serviceProvider).getFilePath();
+        (global as any).__rootDirectory = Uri.parse(data.rootUri, this.serviceProvider).getFilePath();
 
         this.realFs = this.createRealFileSystem();
         this.fs = new PyrightFileSystem(this.realFs);
+
+        if (!this.serviceProvider.tryGet(ServiceKeys.console)) {
+            this.serviceProvider.add(ServiceKeys.console, new BackgroundConsole(this.parentPort));
+        }
+
+        let tempFile: (TempFile & CaseSensitivityDetector) | undefined = undefined;
+        if (!this.serviceProvider.tryGet(ServiceKeys.tempFile)) {
+            tempFile = this.createRealTempFile();
+            this.serviceProvider.add(ServiceKeys.tempFile, tempFile);
+        }
+
+        if (!this.serviceProvider.tryGet(ServiceKeys.caseSensitivityDetector)) {
+            this.serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile ?? this.createRealTempFile());
+        }
+
+        if (!this.serviceProvider.tryGet(ServiceKeys.fs)) {
+            this.serviceProvider.add(ServiceKeys.fs, this.realFs);
+        }
+        if (!this.serviceProvider.tryGet(ServiceKeys.cacheManager)) {
+            this.serviceProvider.add(ServiceKeys.cacheManager, new CacheManager());
+        }
     }
 
-    // Hook for Browser vs NodeJS file system.
+    // Hooks for Browser vs NodeJS file system.
     protected abstract createRealFileSystem(): FileSystem;
+    protected abstract createRealTempFile(): TempFile & CaseSensitivityDetector;
 
     protected log(level: LogLevel, msg: string) {
         this.parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
     }
 
     protected getConsole() {
-        return this._serviceProvider.console();
+        return this.serviceProvider.console();
     }
 
     protected getServiceProvider() {
-        return this._serviceProvider;
+        return this.serviceProvider;
     }
 
     protected handleShutdown() {
-        const tempFile = this._serviceProvider.tryGet(ServiceKeys.tempFile);
+        const tempFile = this.serviceProvider.tryGet(ServiceKeys.tempFile);
         if (Disposable.is(tempFile)) {
             tempFile.dispose();
         }
 
-        parentPort?.close();
+        this.parentPort?.close();
     }
 }
 
@@ -194,9 +190,9 @@ export function deserialize<T = any>(json: string | null): T {
 
 // TODO: whats this for? it came from a pylance commit that doesn't seem to be used for anything
 //  that MessagePort can't do
-export interface MessagePoster {
-    postMessage(value: any, transferList?: ReadonlyArray<TransferListItem>): void;
-}
+// export interface MessagePoster {
+//     postMessage(value: any, transferList?: ReadonlyArray<TransferListItem>): void;
+// }
 
 export function run<T = any>(code: () => Promise<T>, port: MessagePort): Promise<void>;
 export function run<T = any>(code: () => Promise<T>, port: MessagePort, serializer: (obj: any) => any): Promise<void>;

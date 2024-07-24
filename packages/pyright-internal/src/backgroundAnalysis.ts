@@ -14,7 +14,7 @@ import { InitializationData } from './backgroundThreadBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConfigOptions } from './common/configOptions';
 import { FileSystem } from './common/fileSystem';
-import { createFromRealFileSystem } from './common/realFileSystem';
+import { createFromRealFileSystem, RealTempFile } from './common/realFileSystem';
 import { createWorker, parentPort } from './common/workersHost';
 import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
@@ -54,6 +54,8 @@ export class BackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
             this.getConsole()
         );
     }
+
+    protected override createRealTempFile = () => new RealTempFile();
 
     protected override createHost(): Host {
         return new FullAccessHost(this.getServiceProvider());

@@ -8,7 +8,6 @@ import { FakeFS, NativePath, PortablePath, PosixFS, ppath, VirtualFS, ZipFS, Zip
 import { getLibzipSync } from '@yarnpkg/libzip';
 import * as fs from 'fs';
 import * as tmp from 'tmp';
-import { isMainThread } from 'worker_threads';
 
 import { CaseSensitivityDetector } from './caseSensitivityDetector';
 import { ConsoleInterface, NullConsole } from './console';
@@ -26,6 +25,7 @@ import { combinePaths, getRootLength } from './pathUtils';
 import { FileUri, FileUriSchema } from './uri/fileUri';
 import { Uri } from './uri/uri';
 import { getRootUri } from './uri/uriUtils';
+import { isMainThread } from './workersHost';
 
 // Automatically remove files created by tmp at process exit.
 tmp.setGracefulCleanup();
@@ -248,7 +248,7 @@ export class RealFileSystem implements FileSystem {
         const path = uri.getFilePath();
         // If this file system happens to be running in a worker thread,
         // then we can't call 'chdir'.
-        if (isMainThread) {
+        if (isMainThread()) {
             process.chdir(path);
         }
     }

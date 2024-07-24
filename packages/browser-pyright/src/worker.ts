@@ -1,11 +1,11 @@
 import { BrowserMessageReader, BrowserMessageWriter, createConnection } from 'vscode-languageserver/browser';
 
-import { BrowserBackgroundAnalysisRunner, PyrightServer } from './browser-server';
+import { BrowserBackgroundAnalysisRunner, PyrightBrowserServer } from './browser-server';
 import { InitializationData } from 'pyright-internal/backgroundThreadBase';
 import { initializeWorkersHost } from 'pyright-internal/common/workersHost';
 import { BrowserWorkersHost } from './browserWorkersHost';
 
-const ctx: DedicatedWorkerGlobalScope & { app: PyrightServer | BrowserBackgroundAnalysisRunner | undefined } =
+const ctx: DedicatedWorkerGlobalScope & { app: PyrightBrowserServer | BrowserBackgroundAnalysisRunner | undefined } =
     self as any;
 
 interface BootParams {
@@ -27,7 +27,7 @@ ctx.addEventListener('message', (e: MessageEvent) => {
         try {
             if (mode === 'foreground') {
                 initializeWorkersHost(new BrowserWorkersHost());
-                ctx.app = new PyrightServer(
+                ctx.app = new PyrightBrowserServer(
                     createConnection(new BrowserMessageReader(ctx), new BrowserMessageWriter(ctx))
                 );
             } else if (mode === 'background') {

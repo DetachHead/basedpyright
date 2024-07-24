@@ -321,15 +321,15 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
     protected constructor(
         parentPort: MessagePort | null,
         initializationData: InitializationData,
-        protected serviceProvider: ServiceProvider
+        serviceProvider?: ServiceProvider
     ) {
         super(parentPort, initializationData, serviceProvider);
 
         // Stash the base directory into a global variable.
         const data = initializationData;
         this.log(LogLevel.Info, `Background analysis(${threadId()}) root directory: ${data.rootUri}`);
-        this._configOptions = new BasedConfigOptions(Uri.parse(data.rootUri, serviceProvider));
-        this.importResolver = this.createImportResolver(serviceProvider, this._configOptions, this.createHost());
+        this._configOptions = new BasedConfigOptions(Uri.parse(data.rootUri, this.serviceProvider));
+        this.importResolver = this.createImportResolver(this.serviceProvider, this._configOptions, this.createHost());
 
         const console = this.getConsole();
         this.logTracker = new LogTracker(console, `BG(${threadId()})`);
@@ -337,7 +337,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this._program = new Program(
             this.importResolver,
             this._configOptions,
-            serviceProvider,
+            this.serviceProvider,
             this.logTracker,
             undefined,
             data.serviceId
