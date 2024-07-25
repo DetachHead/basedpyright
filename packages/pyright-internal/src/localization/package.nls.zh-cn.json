@@ -92,7 +92,7 @@
         "comprehensionInDict": "字典推导式中不能混入其他字典项，建议使用形如 \"{**comprehension, key: value}\" 的形式",
         "comprehensionInSet": "集合推导式中不能混入其他集合项，建议使用形如 \"{*comprehension, item}\" 的形式",
         "concatenateContext": "该上下文中不允许使用 \"Concatenate\"",
-        "concatenateParamSpecMissing": "\"Concatenate\" 的最后一个类型参数必须是 ParamSpec 或\"...\"",
+        "concatenateParamSpecMissing": "\"Concatenate\" 的最后一个类型参数必须是 ParamSpec 或 \"...\"",
         "concatenateTypeArgsMissing": "\"Concatenate\" 中至少需要传入两个类型参数",
         "conditionalOperandInvalid": "类型 {type} 的条件值（源于 __bool__ 方法）无效",
         "constantRedefinition": "不能重新定义常量 \"{name}\"（全大写名称）",
@@ -280,7 +280,7 @@
         "isSubclassInvalidType": "\"issubclass\" 的第二个参数必须是单个类或由多个类构成的元组",
         "keyValueInSet": "集合内不允许存在键值对",
         "keywordArgInTypeArgument": "关键字参数不能在类型参数列表中使用",
-        "keywordArgShortcutIllegal": "关键字参数快捷方式需要 Python 3.14 或更高版本",
+        "keywordArgShortcutIllegal": "关键字参数的简写形式需要 Python 3.14 或更高版本",
         "keywordOnlyAfterArgs": "参数声明中，\"/\" 不允许出现在 \"*\" 之后",
         "keywordParameterMissing": "\"*\" 参数之后必须有关键字参数",
         "keywordSubscriptIllegal": "下标中不支持使用关键字参数",
@@ -412,7 +412,7 @@
         "protocolBaseClassWithTypeArgs": "协议类不允许使用类型参数语法声明类型参数",
         "protocolIllegal": "使用 \"Protocol\" 需要 Python 3.7 或更高版本",
         "protocolNotAllowed": "\"Protocol\" 不能用于此上下文",
-        "protocolTypeArgMustBeTypeParam": "“协议”的类型参数必须是类型参数",
+        "protocolTypeArgMustBeTypeParam": "不能向 \"Protocol\" 传入除 TypeVar、TypeVarTuple、ParamSpec 以外的类型参数",
         "protocolUnsafeOverlap": "类与 \"{name}\" 不安全的重叠，并且可能在运行时生成匹配项",
         "protocolVarianceContravariant": "协议类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为逆变形式",
         "protocolVarianceCovariant": "协议类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为协变形式",
@@ -507,7 +507,7 @@
         "typeCallNotAllowed": "type() 调用不应用于类型注解",
         "typeCheckOnly": "\"{name}\" 标记为 @type_check_only，只能在类型注解中使用",
         "typeCommentDeprecated": "类型注释已弃用；请改用类型注解",
-        "typeExpectedClass": "此处应为类型表达式而非 \"{type}\"",
+        "typeExpectedClass": "此处应为类而非 \"{type}\"",
         "typeFormArgs": "\"TypeForm\" 接受单个位置参数",
         "typeGuardArgCount": "\"TypeGuard\" 或 \"TypeIs\" 后应为单个类型参数",
         "typeGuardParamCount": "用户定义的类型保护器函数和方法必须至少有一个输入参数",
@@ -539,7 +539,7 @@
         "typeVarDefaultIllegal": "类型变量默认类型需要 Python 3.13 或更高版本",
         "typeVarDefaultInvalidTypeVar": "\"{name}\" 类型参数的默认类型是指超出范围的一个或多个类型变量",
         "typeVarFirstArg": "TypeVar 的第一个参数应为其名称",
-        "typeVarInvalidForMemberVariable": "属性类型不能使用作用域为本地方法的类型变量\"{name}\"",
+        "typeVarInvalidForMemberVariable": "属性类型不能使用作用域为本地方法的类型变量 \"{name}\"",
         "typeVarNoMember": "TypeVar \"{type}\" 没有 \"{name}\" 属性",
         "typeVarNotSubscriptable": "TypeVar \"{type}\" 不能取下标",
         "typeVarNotUsedByOuterScope": "\"{name}\" 类型变量在此上下文中没有意义",
@@ -650,7 +650,7 @@
         "typeIgnoreCommentWithoutRule": "`type: ignore` 注释必须指定具体规则（例如 `# type: ignore[ruleName]`）",
         "implicitRelativeImport": "从 `{importName}` 导入会进行隐式的相对导入，如果此文件作为模块导入则会出错",
         "invalidCast": "从 `{fromType}` 类型到 `{toType}` 类型的转换可能有误，这两个类型不完全重叠。如果是有意为之，请先将其转换为 `object`。",
-        "multipleInheritance": "当前的基类无法进行多继承；因为下列基类具有 `__init__` 或 `__new__` 方法：{classes}"
+        "multipleInheritance": "当前的基类无法进行多继承；因为基类 {classes} 具有的 `__init__` 或 `__new__` 方法可能不会被执行"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "特化的 \"Annotated\" 形式不能与实例检查和类检查一起使用",
@@ -690,7 +690,7 @@
         "invariantSuggestionDict": "请考虑从 \"dict\" 切换到值类型为协变的 \"Mapping\"",
         "invariantSuggestionList": "请考虑从 \"list\" 切换到协变的 \"Sequence\"",
         "invariantSuggestionSet": "请考虑从 \"set\" 切换到协变的 \"Container\"",
-        "isinstanceClassNotSupported": "实例和类检查不支持“{type}”",
+        "isinstanceClassNotSupported": "不支持对 \"{type}\" 的实例检查或类检查",
         "keyNotRequired": "\"{type}\" 中 \"{name}\" 不是必需的键，因此获取其值可能会导致运行时异常",
         "keyReadOnly": "\"{name}\" 是 \"{type}\" 中的只读键",
         "keyRequiredDeleted": "\"{name}\" 是必需的键，无法删除",
@@ -826,8 +826,7 @@
         "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的差异与基类 \"{className}\" 不兼容",
         "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的差异与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 `.{importName}` 作为相对导入",
-        "fullPathImportSuggestion": "或指定完整模块路径：`{importName}`",
-        "firstBaseClassCanHaveConstructor": "只允许第一个基类拥有构造函数。"
+        "fullPathImportSuggestion": "或指定完整模块路径：`{importName}`"
     },
     "Service": {
         "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
