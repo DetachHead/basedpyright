@@ -142,7 +142,7 @@
         "duplicateArgsParam": "最多有一个 \"*\" 参数",
         "duplicateBaseClass": "不允许重复的基类",
         "duplicateCapturePatternTarget": "\"{name}\" 捕获目标不能在同一模式中多次出现",
-        "duplicateCatchAll": "最多有一个能够捕获所有错误的 except 子句",
+        "duplicateCatchAll": "最多有一个能够捕获所有异常的 except 子句",
         "duplicateEnumMember": "重复的枚举声明 \"{name}\"",
         "duplicateGenericAndProtocolBase": "最多有一个 Generic[...] 或 Protocol[...] 基类",
         "duplicateImport": "\"{importName}\" 被重复导入",
