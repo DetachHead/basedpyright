@@ -1,20 +1,21 @@
 {
-    "name": "browser-pyright",
-    "displayName": "Pyright (browser)",
-    "description": "Browser build of Pyright type checker for the Python language",
-    "version": "1.1.159",
+    "name": "browser-basedpyright",
+    "displayName": "basedpyright (browser)",
+    "description": "Browser build of basedpyright",
+    "//": "version gets set in the ci when publishing",
+    "version": "0.0.0",
     "license": "MIT",
     "author": {
-        "name": "Microsoft Corporation"
+        "name": "detachhead"
     },
-    "publisher": "Microsoft Corporation",
+    "publisher": "detachhead",
     "engines": {
         "node": ">=12.0.0"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/Microsoft/pyright",
-        "directory": "packages/pyright"
+        "url": "https://github.com/detachhead/basedpyright",
+        "directory": "packages/browser-pyright"
     },
     "scripts": {
         "build": "webpack --mode production --progress",

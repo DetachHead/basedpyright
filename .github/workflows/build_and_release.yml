@@ -6,6 +6,7 @@ env:
   VSIX_NAME: vscode-pyright.vsix
   VSIX_DIR: packages/vscode-pyright
   NPM_PACKAGE_DIR: packages/pyright
+  BROWSER_NPM_PACKAGE_DIR: packages/browser-pyright
 
 on: push
 
@@ -141,6 +142,18 @@ jobs:
           access: public
           tag: canary
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+      - name: set version for npm canary (browser)
+        if: github.ref != 'refs/heads/main'
+        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --git-tag-version false
+        working-directory: ${{ env.BROWSER_NPM_PACKAGE_DIR }}
+      - name: publish package - npm canary (browser)
+        if: github.ref != 'refs/heads/main'
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          tag: canary
+          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
       - name: publish package - npm
         # publish npm & pypi packages, vscode extension and github release if the version in lerna.json was changed:
@@ -150,6 +163,14 @@ jobs:
           token: ${{ secrets.NPM_TOKEN }}
           access: public
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+      - name: publish package - npm (browser)
+        # publish npm & pypi packages, vscode extension and github release if the version in lerna.json was changed:
+        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
       # this isn't ideal, but it's required becayse pdm publish re-builds the npm packages even tho they were already built earlier.
       # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
