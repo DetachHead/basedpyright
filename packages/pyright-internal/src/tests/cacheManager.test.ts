@@ -91,6 +91,8 @@ if (msg.requestType === 'cacheUsageBuffer') {
     worker.on('error', (err) => {
         throw err;
     });
+    // @ts-expect-error TODO: figure out how to fix this error. it works at runtime atm because this test is only
+    // run in node but not the browser
     manager.addWorker(1, worker);
 
     // Wait for the worker to post a message back to us.
