@@ -13,7 +13,6 @@ import { ConsoleInterface, LogLevel } from './common/console';
 import { Disposable, isThenable } from './common/core';
 import * as debug from './common/debug';
 import { FileSystem, TempFile } from './common/fileSystem';
-import { PyrightFileSystem } from './pyrightFileSystem';
 import { PythonVersion } from './common/pythonVersion';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
@@ -60,21 +59,12 @@ export abstract class BackgroundThreadBase {
     // Exposed for browser filesystem operations.
     // In future these should go via fs.
     protected realFs: FileSystem;
-    protected fs: FileSystem;
     protected readonly serviceProvider: ServiceProvider;
 
     constructor(protected parentPort: MessagePort | null, data: InitializationData, serviceProvider?: ServiceProvider) {
         setCancellationFolderName(data.cancellationFolderName);
-
         // Make sure there's a file system and a console interface.
         this.serviceProvider = serviceProvider ?? new ServiceProvider();
-
-        // Stash the base directory into a global variable.
-        (global as any).__rootDirectory = Uri.parse(data.rootUri, this.serviceProvider).getFilePath();
-
-        this.realFs = this.createRealFileSystem();
-        this.fs = new PyrightFileSystem(this.realFs);
-
         if (!this.serviceProvider.tryGet(ServiceKeys.console)) {
             this.serviceProvider.add(ServiceKeys.console, new BackgroundConsole(this.parentPort));
         }
@@ -84,17 +74,22 @@ export abstract class BackgroundThreadBase {
             tempFile = this.createRealTempFile();
             this.serviceProvider.add(ServiceKeys.tempFile, tempFile);
         }
-
         if (!this.serviceProvider.tryGet(ServiceKeys.caseSensitivityDetector)) {
             this.serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile ?? this.createRealTempFile());
         }
-
+        this.realFs = this.createRealFileSystem();
         if (!this.serviceProvider.tryGet(ServiceKeys.fs)) {
             this.serviceProvider.add(ServiceKeys.fs, this.realFs);
         }
         if (!this.serviceProvider.tryGet(ServiceKeys.cacheManager)) {
             this.serviceProvider.add(ServiceKeys.cacheManager, new CacheManager());
         }
+        // Stash the base directory into a global variable.
+        (global as any).__rootDirectory = Uri.parse(data.rootUri, this.serviceProvider).getFilePath();
+    }
+
+    protected get fs() {
+        return this.serviceProvider.fs();
     }
 
     // Hooks for Browser vs NodeJS file system.
