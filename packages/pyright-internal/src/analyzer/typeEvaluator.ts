@@ -101,7 +101,12 @@ import {
 } from './codeFlowTypes';
 import { addConstraintsForExpectedType, assignTypeVar, updateTypeVarType } from './constraintSolver';
 import { ConstraintSet, ConstraintTracker } from './constraintTracker';
-import { createFunctionFromConstructor, getBoundInitMethod, validateConstructorArgs } from './constructors';
+import {
+    createFunctionFromConstructor,
+    getBoundInitMethod,
+    getBoundNewMethod,
+    validateConstructorArgs,
+} from './constructors';
 import { applyDataClassClassBehaviorOverrides, synthesizeDataClassMethods } from './dataClasses';
 import {
     ClassDeclaration,
@@ -2303,12 +2308,12 @@ export function createTypeEvaluator(
             return undefined;
         }
 
-        const argList: FunctionArgument[] = [];
+        const argList: Arg[] = [];
 
         callNode.d.args.forEach((arg) => {
             argList.push({
                 valueExpression: arg.d.valueExpr,
-                argumentCategory: arg.d.argCategory,
+                argCategory: arg.d.argCategory,
                 name: arg.d.name,
             });
         });
@@ -2370,7 +2375,7 @@ export function createTypeEvaluator(
                         const isDefaultParams =
                             constructorType &&
                             isFunction(constructorType) &&
-                            FunctionType.hasDefaultParameters(constructorType);
+                            FunctionType.hasDefaultParams(constructorType);
 
                         // If there was no `__init__` or the only `__init__` that was found was from
                         // the `object` class or accepts only default parameters(* args, ** kwargs),
@@ -10201,11 +10206,7 @@ export function createTypeEvaluator(
     function evaluateCastCall(argList: Arg[], errorNode: ExpressionNode) {
         // Verify that the cast is necessary.
         const castToType = getTypeOfArgExpectingType(argList[0], { typeExpression: true }).type;
-        let castFromType = getTypeOfArg(
-            argList[1],
-            /* inferenceContext */ undefined,
-            EvalFlags.AllowAnyOrUnknown
-        ).type;
+        let castFromType = getTypeOfArg(argList[1], /* inferenceContext */ undefined, EvalFlags.AllowAnyOrUnknown).type;
 
         if (castFromType.props?.specialForm) {
             castFromType = castFromType.props.specialForm;
@@ -10323,16 +10324,8 @@ export function createTypeEvaluator(
 
         if (isClassInstance(leftType)) {
             if (isClassInstance(rightType)) {
-                const genericLeftType = ClassType.cloneForSpecialization(
-                    leftType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
-                const genericRightType = ClassType.cloneForSpecialization(
-                    rightType,
-                    /* typeArguments */ undefined,
-                    /* isTypeArgumentExplicit */ false
-                );
+                const genericLeftType = ClassType.specialize(leftType, /* typeArgs */ undefined);
+                const genericRightType = ClassType.specialize(rightType, /* typeArgs */ undefined);
 
                 if (assignType(genericLeftType, genericRightType) || assignType(genericRightType, genericLeftType)) {
                     return true;

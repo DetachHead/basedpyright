@@ -44,6 +44,7 @@ import {
     FunctionParam,
     FunctionType,
     OverloadedFunctionType,
+    ParamSpecType,
     Type,
     TypeCondition,
     TypeVarType,
@@ -506,8 +507,8 @@ export interface MatchArgsToParamsResult {
     isTypeIncomplete: boolean;
     argParams: ValidateArgTypeParams[];
     activeParam?: FunctionParam | undefined;
-    paramSpecTarget?: TypeVarType | undefined;
-    paramSpecArgList?: FunctionArgument[] | undefined;
+    paramSpecTarget?: ParamSpecType | undefined;
+    paramSpecArgList?: Arg[] | undefined;
 
     // A higher relevance means that it should be considered
     // first, before lower relevance overloads.

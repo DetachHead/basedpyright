@@ -8,7 +8,7 @@ import {
     CallNode,
     FunctionNode,
     NameNode,
-    ParameterCategory,
+    ParamCategory,
     ParseNode,
     ParseNodeBase,
     ParseNodeType,
@@ -193,7 +193,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 continue;
             }
             const funcParam = result.type.shared.parameters.find((a) => a.name && a.name === p.paramName);
-            if (funcParam?.category !== ParameterCategory.Simple) {
+            if (funcParam?.category !== ParamCategory.Simple) {
                 continue;
             }
             // Arguments starting with double underscores usually come from type stubs,

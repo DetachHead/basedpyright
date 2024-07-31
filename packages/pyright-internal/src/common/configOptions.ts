@@ -911,6 +911,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     strictParameterNoneValue: true,
     enableExperimentalFeatures: true,
     enableTypeIgnoreComments: false,
+    enableReachabilityAnalysis: true,
     deprecateTypingAliases: true,
     disableBytesTypePromotions: true,
     reportGeneralTypeIssues: 'error',
@@ -1410,11 +1411,16 @@ export class ConfigOptions {
 
         // Apply overrides from the config file for the boolean rules.
         getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
-            (this.diagnosticRuleSet as any)[ruleName] = this._convertBoolean(
+            const value = this._convertBoolean(
                 configObj[ruleName],
                 ruleName,
                 this.diagnosticRuleSet[ruleName] as boolean
             );
+            (this.diagnosticRuleSet as any)[ruleName] = value;
+            if (ruleName === DiagnosticRule.enableReachabilityAnalysis && !value) {
+                // backwards compatibility with the worse way of configuring unreachability diagnostics
+                this.diagnosticRuleSet.reportUnreachable = 'none';
+            }
         });
 
         // Apply overrides from the config file for the diagnostic level rules.

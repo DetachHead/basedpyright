@@ -2725,10 +2725,7 @@ export class Checker extends ParseTreeWalker {
             // covers all remaining statements in the statement list.
             if (!reportedUnreachable) {
                 const reachability = this._evaluator.getNodeReachability(statement, prevStatement);
-                if (
-                    reachability !== Reachability.Reachable &&
-                    !this._evaluator.isNotTypeCheckingBlock(statement)
-                ) {
+                if (reachability !== Reachability.Reachable && !this._evaluator.isNotTypeCheckingBlock(statement)) {
                     // if a statement is a function call where an argument is typed as `Never`, then it's probably an `assert_never` pattern,
                     // so don't report the statement as unreachable. this check is probably overkill and we could instead just special-case
                     // `typing.assert_never`, but we want to support user-defined "assert never" functions to be more flexible.
@@ -2763,7 +2760,6 @@ export class Checker extends ParseTreeWalker {
                         DiagnosticRule.reportUnreachable,
                         LocMessage.unreachableCode(),
                         statement,
-                        reachability,
                         {
                             start,
                             length: end - start,
@@ -7571,7 +7567,6 @@ export class Checker extends ParseTreeWalker {
                         LocMessage.unreachableExcept() + diagAddendum.getString(),
                         except.d.typeExpr
                     );
-                    this._evaluator.addUnreachableCode(except, except.d.exceptSuite);
                 }
             }
 
