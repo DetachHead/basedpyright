@@ -57,13 +57,9 @@ in basedpyright, all of these options are enabled by default, using the new `"al
 
 - <a name="strictParameterNoneValue"></a> **strictParameterNoneValue** [boolean]: PEP 484 indicates that when a function parameter is assigned a default value of None, its type should implicitly be Optional even if the explicit type is not. When enabled, this rule requires that parameter type annotations use Optional explicitly in this case.
 
-- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](https://docs.basedpyright.com/#/?id=reportignorecommentwithoutrule-enforce-that-all-ignore-comments-specify-an-error-code) for more information.
-
 - <a name="deprecateTypingAliases"></a> **deprecateTypingAliases** [boolean]: PEP 585 indicates that aliases to types in standard collections that were introduced solely to support generics are deprecated as of Python 3.9. This switch controls whether these are treated as deprecated. This applies only when pythonVersion is 3.9 or newer.
 
 - <a name="enableExperimentalFeatures"></a> **enableExperimentalFeatures** [boolean]: Enables a set of experimental (mostly undocumented) features that correspond to proposed or exploratory changes to the Python typing standard. These features will likely change or be removed, so they should not be used except for experimentation purposes.
-
-- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: (⚠ this rule is discoruaged in basedpyright in favor of `reportUnreachable`, it's only here for backwards compatibility) If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code.
 
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
 
@@ -253,6 +249,14 @@ the following additional options are not available in regular pyright:
 - <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types.
 
 - <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.
+
+## Discouraged options
+
+there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.
+
+- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](https://docs.basedpyright.com/#/?id=reportignorecommentwithoutrule-enforce-that-all-ignore-comments-specify-an-error-code) for more information.
+
+- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of [`reportUnreachable`](https://docs.basedpyright.com/#/?id=reportunreachable-report-errors-on-code-that-would-otherwise-be-completely-unchecked).
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
