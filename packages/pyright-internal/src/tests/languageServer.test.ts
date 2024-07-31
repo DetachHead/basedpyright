@@ -539,6 +539,13 @@ describe(`Basic language server tests`, () => {
                         {
                             edits: [],
                             textDocument: {
+                                uri: 'file:///src/baz.py',
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [],
+                            textDocument: {
                                 uri: marker.fileUri.toString(),
                                 version: null,
                             },
