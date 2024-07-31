@@ -1,7 +1,7 @@
 # This sample exercises the type analyzer's isinstance type narrowing logic.
 
 from types import NoneType
-from typing import Any, Generic, Protocol, Sized, TypeVar, Union, runtime_checkable
+from typing import Any, Generic, Iterable, Iterator, Protocol, Sized, TypeVar, Union, runtime_checkable
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -223,3 +223,13 @@ def func12(x: TA3) -> None:
         reveal_type(x, expected_text="dict[str, str | list[TA3] | dict[str, TA3]]")
     else:
         reveal_type(x, expected_text="str | list[str | list[TA3] | dict[str, TA3]]")
+
+
+def func13(x: object | type[object]) -> None:
+    if isinstance(x, object):
+        reveal_type(x, expected_text="object | type[object]")
+
+
+def func14(x: Iterable[T]):
+    if isinstance(x, Iterator):
+        reveal_type(x, expected_text="Iterator[T@func14]")

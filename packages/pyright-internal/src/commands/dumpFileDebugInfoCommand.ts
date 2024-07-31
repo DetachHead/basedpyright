@@ -32,7 +32,7 @@ import { TextRange } from '../common/textRange';
 import { TextRangeCollection } from '../common/textRangeCollection';
 import { Uri } from '../common/uri/uri';
 import {
-    ArgumentCategory,
+    ArgCategory,
     ArgumentNode,
     AssertNode,
     AssignmentExpressionNode,
@@ -79,7 +79,7 @@ import {
     NameNode,
     NonlocalNode,
     NumberNode,
-    ParameterCategory,
+    ParamCategory,
     ParameterNode,
     ParseNode,
     ParseNodeType,
@@ -107,7 +107,7 @@ import {
     TupleNode,
     TypeAliasNode,
     TypeAnnotationNode,
-    TypeParameterKind,
+    TypeParamKind,
     TypeParameterListNode,
     TypeParameterNode,
     UnaryOperationNode,
@@ -578,7 +578,7 @@ class TreeDumper extends ParseTreeWalker {
     }
 
     override visitArgument(node: ArgumentNode) {
-        this._log(`${this._getPrefix(node)} ${getArgumentCategoryString(node.d.argCategory)}`);
+        this._log(`${this._getPrefix(node)} ${getArgCategoryString(node.d.argCategory)}`);
         return true;
     }
 
@@ -1002,35 +1002,35 @@ class TreeDumper extends ParseTreeWalker {
     }
 }
 
-function getTypeParameterCategoryString(type: TypeParameterKind) {
+function getTypeParameterCategoryString(type: TypeParamKind) {
     switch (type) {
-        case TypeParameterKind.TypeVar:
+        case TypeParamKind.TypeVar:
             return 'TypeVar';
-        case TypeParameterKind.TypeVarTuple:
+        case TypeParamKind.TypeVarTuple:
             return 'TypeVarTuple';
-        case TypeParameterKind.ParamSpec:
+        case TypeParamKind.ParamSpec:
             return 'ParamSpec';
     }
 }
 
-function getParameterCategoryString(type: ParameterCategory) {
+function getParameterCategoryString(type: ParamCategory) {
     switch (type) {
-        case ParameterCategory.Simple:
+        case ParamCategory.Simple:
             return 'Simple';
-        case ParameterCategory.ArgsList:
+        case ParamCategory.ArgsList:
             return 'ArgsList';
-        case ParameterCategory.KwargsDict:
+        case ParamCategory.KwargsDict:
             return 'KwargsDict';
     }
 }
 
-function getArgumentCategoryString(type: ArgumentCategory) {
+function getArgCategoryString(type: ArgCategory) {
     switch (type) {
-        case ArgumentCategory.Simple:
+        case ArgCategory.Simple:
             return 'Simple';
-        case ArgumentCategory.UnpackedList:
+        case ArgCategory.UnpackedList:
             return 'UnpackedList';
-        case ArgumentCategory.UnpackedDictionary:
+        case ArgCategory.UnpackedDictionary:
             return 'UnpackedDictionary';
         default:
             return `Unknown Value!! (${type})`;

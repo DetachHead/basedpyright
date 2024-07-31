@@ -6,7 +6,7 @@
  * Utility functions for parameters.
  */
 
-import { ParameterCategory } from '../parser/parseNodes';
+import { ParamCategory } from '../parser/parseNodes';
 import { isDunderName } from './symbolNameUtils';
 import {
     ClassType,
@@ -19,8 +19,8 @@ import {
     isPositionOnlySeparator,
     isTypeSame,
     isTypeVar,
+    isTypeVarTuple,
     isUnpackedClass,
-    isVariadicTypeVar,
     Type,
     TypeVarType,
 } from './types';
@@ -28,7 +28,7 @@ import { doForEachSubtype, partiallySpecializeType } from './typeUtils';
 
 export function isTypedKwargs(param: FunctionParam): boolean {
     return (
-        param.category === ParameterCategory.KwargsDict &&
+        param.category === ParamCategory.KwargsDict &&
         isClassInstance(param.type) &&
         isUnpackedClass(param.type) &&
         ClassType.isTypedDictClass(param.type) &&
@@ -36,23 +36,23 @@ export function isTypedKwargs(param: FunctionParam): boolean {
     );
 }
 
-export enum ParameterKind {
+export enum ParamKind {
     Positional,
     Standard,
     Keyword,
 }
 
-export interface VirtualParameterDetails {
+export interface VirtualParamDetails {
     param: FunctionParam;
     type: Type;
     defaultArgType?: Type | undefined;
     index: number;
-    kind: ParameterKind;
+    kind: ParamKind;
 }
 
-export interface ParameterListDetails {
+export interface ParamListDetails {
     // Virtual parameter list that refers to original parameters
-    params: VirtualParameterDetails[];
+    params: VirtualParamDetails[];
 
     // Counts of virtual parameters
     positionOnlyParamCount: number;
@@ -65,26 +65,26 @@ export interface ParameterListDetails {
     firstPositionOrKeywordIndex: number;
 
     // Other information
-    hasUnpackedVariadicTypeVar: boolean;
+    hasUnpackedTypeVarTuple: boolean;
     hasUnpackedTypedDict: boolean;
     unpackedKwargsTypedDictType?: ClassType;
     paramSpec?: TypeVarType;
 }
 
-export function firstParametersExcludingSelf(type: FunctionType): FunctionParam | undefined {
-    return type.shared.parameters.find((p) => !(isTypeVar(p.type) && p.type.shared.isSynthesizedSelf));
+export function firstParamsExcludingSelf(type: FunctionType): FunctionParam | undefined {
+    return type.shared.parameters.find((p) => !(isTypeVar(p.type) && TypeVarType.isSelf(p.type)));
 }
 
 // Examines the input parameters within a function signature and creates a
 // "virtual list" of parameters, stripping out any markers and expanding
 // any *args with unpacked tuples.
-export function getParameterListDetails(type: FunctionType): ParameterListDetails {
-    const result: ParameterListDetails = {
+export function getParamListDetails(type: FunctionType): ParamListDetails {
+    const result: ParamListDetails = {
         firstPositionOrKeywordIndex: 0,
         positionParamCount: 0,
         positionOnlyParamCount: 0,
         params: [],
-        hasUnpackedVariadicTypeVar: false,
+        hasUnpackedTypeVarTuple: false,
         hasUnpackedTypedDict: false,
     };
 
@@ -95,7 +95,7 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
     if (positionOnlyIndex < 0) {
         for (let i = 0; i < type.shared.parameters.length; i++) {
             const p = type.shared.parameters[i];
-            if (p.category !== ParameterCategory.Simple) {
+            if (p.category !== ParamCategory.Simple) {
                 break;
             }
 
@@ -126,31 +126,31 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
 
     let sawKeywordOnlySeparator = false;
 
-    const addVirtualParameter = (
+    const addVirtualParam = (
         param: FunctionParam,
         index: number,
         typeOverride?: Type,
         defaultArgTypeOverride?: Type,
-        sourceOverride?: ParameterKind
+        sourceOverride?: ParamKind
     ) => {
         if (param.name) {
-            let kind: ParameterKind;
+            let kind: ParamKind;
             if (sourceOverride !== undefined) {
                 kind = sourceOverride;
-            } else if (param.category === ParameterCategory.ArgsList) {
-                kind = ParameterKind.Positional;
+            } else if (param.category === ParamCategory.ArgsList) {
+                kind = ParamKind.Positional;
             } else if (sawKeywordOnlySeparator) {
-                kind = ParameterKind.Keyword;
+                kind = ParamKind.Keyword;
             } else if (positionOnlyIndex >= 0 && index < positionOnlyIndex) {
-                kind = ParameterKind.Positional;
+                kind = ParamKind.Positional;
             } else {
-                kind = ParameterKind.Standard;
+                kind = ParamKind.Standard;
             }
 
             result.params.push({
                 param,
                 index,
-                type: typeOverride ?? FunctionType.getEffectiveParameterType(type, index),
+                type: typeOverride ?? FunctionType.getEffectiveParamType(type, index),
                 defaultArgType: defaultArgTypeOverride,
                 kind,
             });
@@ -158,27 +158,27 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
     };
 
     type.shared.parameters.forEach((param, index) => {
-        if (param.category === ParameterCategory.ArgsList) {
+        if (param.category === ParamCategory.ArgsList) {
             // If this is an unpacked tuple, expand the entries.
-            const paramType = FunctionType.getEffectiveParameterType(type, index);
-            if (param.name && isUnpackedClass(paramType) && paramType.priv.tupleTypeArguments) {
+            const paramType = FunctionType.getEffectiveParamType(type, index);
+            if (param.name && isUnpackedClass(paramType) && paramType.priv.tupleTypeArgs) {
                 const addToPositionalOnly = index < result.positionOnlyParamCount;
 
-                paramType.priv.tupleTypeArguments.forEach((tupleArg, tupleIndex) => {
+                paramType.priv.tupleTypeArgs.forEach((tupleArg, tupleIndex) => {
                     const category =
-                        isVariadicTypeVar(tupleArg.type) || tupleArg.isUnbounded
-                            ? ParameterCategory.ArgsList
-                            : ParameterCategory.Simple;
+                        isTypeVarTuple(tupleArg.type) || tupleArg.isUnbounded
+                            ? ParamCategory.ArgsList
+                            : ParamCategory.Simple;
 
-                    if (category === ParameterCategory.ArgsList) {
+                    if (category === ParamCategory.ArgsList) {
                         result.argsIndex = result.params.length;
                     }
 
-                    if (isVariadicTypeVar(param.type)) {
-                        result.hasUnpackedVariadicTypeVar = true;
+                    if (isTypeVarTuple(param.type)) {
+                        result.hasUnpackedTypeVarTuple = true;
                     }
 
-                    addVirtualParameter(
+                    addVirtualParam(
                         FunctionParam.create(
                             category,
                             tupleArg.type,
@@ -188,10 +188,10 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                         index,
                         tupleArg.type,
                         /* defaultArgTypeOverride */ undefined,
-                        ParameterKind.Positional
+                        ParamKind.Positional
                     );
 
-                    if (category === ParameterCategory.Simple) {
+                    if (category === ParamCategory.Simple) {
                         result.positionParamCount++;
                     }
 
@@ -212,8 +212,8 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                 if (param.name && result.argsIndex === undefined) {
                     result.argsIndex = result.params.length;
 
-                    if (isVariadicTypeVar(param.type)) {
-                        result.hasUnpackedVariadicTypeVar = true;
+                    if (isTypeVarTuple(param.type)) {
+                        result.hasUnpackedTypeVarTuple = true;
                     }
                 }
 
@@ -229,12 +229,12 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                     sawKeywordOnlySeparator = true;
                 }
 
-                addVirtualParameter(param, index);
+                addVirtualParam(param, index);
             }
-        } else if (param.category === ParameterCategory.KwargsDict) {
+        } else if (param.category === ParamCategory.KwargsDict) {
             sawKeywordOnlySeparator = true;
 
-            const paramType = FunctionType.getEffectiveParameterType(type, index);
+            const paramType = FunctionType.getEffectiveParamType(type, index);
 
             // Is this an unpacked TypedDict? If so, expand the entries.
             if (isClassInstance(paramType) && isUnpackedClass(paramType) && paramType.shared.typedDictEntries) {
@@ -250,9 +250,9 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                         /* typeClassType */ undefined
                     );
 
-                    addVirtualParameter(
+                    addVirtualParam(
                         FunctionParam.create(
-                            ParameterCategory.Simple,
+                            ParamCategory.Simple,
                             specializedParamType,
                             FunctionParamFlags.TypeDeclared,
                             name,
@@ -264,9 +264,9 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                 });
 
                 if (paramType.shared.typedDictEntries.extraItems) {
-                    addVirtualParameter(
+                    addVirtualParam(
                         FunctionParam.create(
-                            ParameterCategory.KwargsDict,
+                            ParamCategory.KwargsDict,
                             paramType.shared.typedDictEntries.extraItems.valueType,
                             FunctionParamFlags.TypeDeclared,
                             'kwargs'
@@ -289,14 +289,14 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
                     result.firstKeywordOnlyIndex = result.params.length;
                 }
 
-                addVirtualParameter(param, index);
+                addVirtualParam(param, index);
             }
-        } else if (param.category === ParameterCategory.Simple) {
+        } else if (param.category === ParamCategory.Simple) {
             if (param.name && !sawKeywordOnlySeparator) {
                 result.positionParamCount++;
             }
 
-            addVirtualParameter(
+            addVirtualParam(
                 param,
                 index,
                 /* typeOverride */ undefined,
@@ -311,7 +311,7 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
     // extract the ParamSpec P.
     result.paramSpec = FunctionType.getParamSpecFromArgsKwargs(type);
 
-    result.firstPositionOrKeywordIndex = result.params.findIndex((p) => p.kind !== ParameterKind.Positional);
+    result.firstPositionOrKeywordIndex = result.params.findIndex((p) => p.kind !== ParamKind.Positional);
     if (result.firstPositionOrKeywordIndex < 0) {
         result.firstPositionOrKeywordIndex = result.params.length;
     }
@@ -321,7 +321,7 @@ export function getParameterListDetails(type: FunctionType): ParameterListDetail
 
 // Returns true if the type of the argument type is "*args: P.args" or
 // "*args: Any". Both of these match a parameter of type "*args: P.args".
-export function isParamSpecArgsArgument(paramSpec: TypeVarType, argType: Type) {
+export function isParamSpecArgs(paramSpec: TypeVarType, argType: Type) {
     let isCompatible = true;
 
     doForEachSubtype(argType, (argSubtype) => {
@@ -335,10 +335,10 @@ export function isParamSpecArgsArgument(paramSpec: TypeVarType, argType: Type) {
 
         if (
             isClassInstance(argSubtype) &&
-            argSubtype.priv.tupleTypeArguments &&
-            argSubtype.priv.tupleTypeArguments.length === 1 &&
-            argSubtype.priv.tupleTypeArguments[0].isUnbounded &&
-            isAnyOrUnknown(argSubtype.priv.tupleTypeArguments[0].type)
+            argSubtype.priv.tupleTypeArgs &&
+            argSubtype.priv.tupleTypeArgs.length === 1 &&
+            argSubtype.priv.tupleTypeArgs[0].isUnbounded &&
+            isAnyOrUnknown(argSubtype.priv.tupleTypeArgs[0].type)
         ) {
             return;
         }
@@ -355,7 +355,7 @@ export function isParamSpecArgsArgument(paramSpec: TypeVarType, argType: Type) {
 
 // Returns true if the type of the argument type is "**kwargs: P.kwargs" or
 // "*kwargs: Any". Both of these match a parameter of type "*kwargs: P.kwargs".
-export function isParamSpecKwargsArgument(paramSpec: TypeVarType, argType: Type) {
+export function isParamSpecKwargs(paramSpec: TypeVarType, argType: Type) {
     let isCompatible = true;
 
     doForEachSubtype(argType, (argSubtype) => {
@@ -370,11 +370,11 @@ export function isParamSpecKwargsArgument(paramSpec: TypeVarType, argType: Type)
         if (
             isClassInstance(argSubtype) &&
             ClassType.isBuiltIn(argSubtype, 'dict') &&
-            argSubtype.priv.typeArguments &&
-            argSubtype.priv.typeArguments.length === 2 &&
-            isClassInstance(argSubtype.priv.typeArguments[0]) &&
-            ClassType.isBuiltIn(argSubtype.priv.typeArguments[0], 'str') &&
-            isAnyOrUnknown(argSubtype.priv.typeArguments[1])
+            argSubtype.priv.typeArgs &&
+            argSubtype.priv.typeArgs.length === 2 &&
+            isClassInstance(argSubtype.priv.typeArgs[0]) &&
+            ClassType.isBuiltIn(argSubtype.priv.typeArgs[0], 'str') &&
+            isAnyOrUnknown(argSubtype.priv.typeArgs[1])
         ) {
             return;
         }

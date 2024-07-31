@@ -14,7 +14,7 @@ import { Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { TextRange } from '../common/textRange';
 import {
-    ArgumentCategory,
+    ArgCategory,
     ArgumentNode,
     CallNode,
     CaseNode,
@@ -24,7 +24,7 @@ import {
     FunctionNode,
     MatchNode,
     NameNode,
-    ParameterCategory,
+    ParamCategory,
     ParameterNode,
     ParseNode,
     RaiseNode,
@@ -32,13 +32,12 @@ import {
 } from '../parser/parseNodes';
 import { AnalyzerFileInfo } from './analyzerFileInfo';
 import { CodeFlowReferenceExpressionNode, FlowNode } from './codeFlowTypes';
+import { ConstraintTracker } from './constraintTracker';
 import { Declaration } from './declaration';
 import * as DeclarationUtils from './declarationUtils';
 import { SymbolWithScope } from './scope';
 import { Symbol } from './symbol';
 import { PrintTypeFlags } from './typePrinter';
-import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags } from './typeUtils';
-import { TypeVarContext } from './typeVarContext';
 import {
     AnyType,
     ClassType,
@@ -51,6 +50,7 @@ import {
     UnknownType,
     Variance,
 } from './types';
+import { AssignTypeFlags, ClassMember, InferenceContext, MemberAccessFlags } from './typeUtils';
 
 // Maximum number of unioned subtypes for an inferred type (e.g.
 // a list) before the type is considered an "Any".
@@ -245,6 +245,9 @@ export interface TypeResult<T extends Type = Type> {
     // For member access expressions, deprecation messages related to
     // magic methods invoked via the member access
     memberAccessDeprecationInfo?: MemberAccessDeprecationInfo;
+
+    // Deprecation messages related to magic methods.
+    magicMethodDeprecationInfo?: MagicMethodDeprecationInfo;
 }
 
 export interface TypeResultWithNode extends TypeResult {
@@ -257,7 +260,13 @@ export interface TypeResultWithNode extends TypeResult {
 export interface MemberAccessDeprecationInfo {
     accessType: 'property' | 'descriptor';
     accessMethod: 'get' | 'set' | 'del';
-    deprecationMessage: string;
+    deprecatedMessage: string;
+}
+
+export interface MagicMethodDeprecationInfo {
+    className: string;
+    methodName: string;
+    deprecatedMessage: string;
 }
 
 export interface EvaluatorUsage {
@@ -298,8 +307,8 @@ export interface AbstractSymbol {
     hasImplementation: boolean;
 }
 
-export interface FunctionArgumentBase {
-    argumentCategory: ArgumentCategory;
+export interface ArgBase {
+    argCategory: ArgCategory;
     node?: ArgumentNode | undefined;
     name?: NameNode | undefined;
     typeResult?: TypeResult | undefined;
@@ -307,15 +316,15 @@ export interface FunctionArgumentBase {
     active?: boolean | undefined;
 }
 
-export interface FunctionArgumentWithType extends FunctionArgumentBase {
+export interface ArgWithType extends ArgBase {
     typeResult: TypeResult;
 }
 
-export interface FunctionArgumentWithExpression extends FunctionArgumentBase {
+export interface ArgWithExpression extends ArgBase {
     valueExpression: ExpressionNode;
 }
 
-export type FunctionArgument = FunctionArgumentWithType | FunctionArgumentWithExpression;
+export type Arg = ArgWithType | ArgWithExpression;
 
 export interface EffectiveTypeResult {
     type: Type;
@@ -328,10 +337,10 @@ export interface EffectiveTypeResult {
 }
 
 export interface ValidateArgTypeParams {
-    paramCategory: ParameterCategory;
+    paramCategory: ParamCategory;
     paramType: Type;
     requiresTypeVarMatching: boolean;
-    argument: FunctionArgument;
+    argument: Arg;
     isDefaultArg?: boolean;
     argType?: Type | undefined;
     errorNode: ExpressionNode;
@@ -341,29 +350,23 @@ export interface ValidateArgTypeParams {
     isinstanceParam?: boolean;
 }
 
-export interface AnnotationTypeOptions {
-    isVariableAnnotation?: boolean;
-    allowFinal?: boolean;
-    allowClassVar?: boolean;
-    associateTypeVarsWithScope?: boolean;
-    allowTypeVarTuple?: boolean;
-    allowParamSpec?: boolean;
-    allowRequired?: boolean;
-    allowUnpackedTypedDict?: boolean;
-    allowUnpackedTuple?: boolean;
-    notParsedByInterpreter?: boolean;
-    enforceClassTypeVarScope?: boolean;
-}
-
 export interface ExpectedTypeOptions {
     allowFinal?: boolean;
     allowRequired?: boolean;
     allowUnpackedTuple?: boolean;
+    allowUnpackedTypedDict?: boolean;
     allowParamSpec?: boolean;
-    allowForwardReference?: boolean;
+    allowClassVar?: boolean;
+    varTypeAnnotation?: boolean;
+    typeVarGetsCurScope?: boolean;
     allowTypeVarsWithoutScopeId?: boolean;
-    enforceTypeAnnotationRules?: boolean;
-    disallowProtocolAndTypedDict?: boolean;
+    enforceClassTypeVarScope?: boolean;
+    parsesStringLiteral?: boolean;
+    notParsed?: boolean;
+    noNonTypeSpecialForms?: boolean;
+    forwardRefs?: boolean;
+    typeExpression?: boolean;
+    convertEllipsisToAny?: boolean;
 }
 
 export interface ExpectedTypeResult {
@@ -397,7 +400,7 @@ export interface CallResult {
     argumentErrors?: boolean;
 
     // Did one or more arguments evaluated to Any or Unknown?
-    anyOrUnknownArgument?: UnknownType | AnyType;
+    anyOrUnknownArg?: UnknownType | AnyType;
 
     // The parameter associated with the "active" argument (used
     // for signature help provider)
@@ -450,6 +453,12 @@ export interface ClassMemberLookup {
     memberAccessDeprecationInfo?: MemberAccessDeprecationInfo;
 }
 
+export enum Reachability {
+    Reachable,
+    UnreachableAlways,
+    UnreachableByAnalysis,
+}
+
 export interface PrintTypeOptions {
     expandTypeAlias?: boolean;
     enforcePythonSyntax?: boolean;
@@ -457,7 +466,7 @@ export interface PrintTypeOptions {
     useTypingUnpack?: boolean;
     printUnknownWithAny?: boolean;
     printTypeVarVariance?: boolean;
-    omitTypeArgumentsIfUnknown?: boolean;
+    omitTypeArgsIfUnknown?: boolean;
 }
 
 export interface DeclaredSymbolTypeInfo {
@@ -472,7 +481,7 @@ export interface ResolveAliasOptions {
 
 export interface ValidateTypeArgsOptions {
     allowEmptyTuple?: boolean;
-    allowVariadicTypeVar?: boolean;
+    allowTypeVarTuple?: boolean;
     allowParamSpec?: boolean;
     allowTypeArgList?: boolean;
     allowUnpackedTuples?: boolean;
@@ -524,38 +533,43 @@ export interface TypeEvaluator {
     getTypeResultForDecorator: (node: DecoratorNode) => TypeResult | undefined;
     getCachedType: (node: ExpressionNode) => Type | undefined;
     getTypeOfExpression: (node: ExpressionNode, flags?: EvalFlags, context?: InferenceContext) => TypeResult;
-    getTypeOfAnnotation: (node: ExpressionNode, options?: AnnotationTypeOptions) => Type;
+    getTypeOfAnnotation: (node: ExpressionNode, options?: ExpectedTypeOptions) => Type;
     getTypeOfClass: (node: ClassNode) => ClassTypeResult | undefined;
+    createSubclass: (errorNode: ExpressionNode, type1: ClassType, type2: ClassType) => ClassType;
     getTypeOfFunction: (node: FunctionNode) => FunctionTypeResult | undefined;
     getTypeOfExpressionExpectingType: (node: ExpressionNode, options?: ExpectedTypeOptions) => TypeResult;
     evaluateTypeForSubnode: (subnode: ParseNode, callback: () => void) => TypeResult | undefined;
     evaluateTypesForStatement: (node: ParseNode) => void;
     evaluateTypesForMatchStatement: (node: MatchNode) => void;
     evaluateTypesForCaseStatement: (node: CaseNode) => void;
-    evaluateTypeOfParameter: (node: ParameterNode) => void;
+    evaluateTypeOfParam: (node: ParameterNode) => void;
 
     canBeTruthy: (type: Type) => boolean;
     canBeFalsy: (type: Type) => boolean;
     stripLiteralValue: (type: Type) => Type;
     removeTruthinessFromType: (type: Type) => Type;
     removeFalsinessFromType: (type: Type) => Type;
+    stripTypeGuard: (type: Type) => Type;
 
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
     verifyRaiseExceptionType: (node: RaiseNode) => void;
     verifyDeleteExpression: (node: ExpressionNode) => void;
     validateOverloadedArgTypes: (
         errorNode: ExpressionNode,
-        argList: FunctionArgument[],
+        argList: Arg[],
         typeResult: TypeResult<OverloadedFunctionType>,
-        typeVarContext: TypeVarContext | undefined,
+        constraints: ConstraintTracker | undefined,
         skipUnknownArgCheck: boolean,
         inferenceContext: InferenceContext | undefined
     ) => CallResult;
     validateInitSubclassArgs: (node: ClassNode, classType: ClassType) => void;
 
-    isAfterNodeReachable: (node: ParseNode) => boolean;
     isNodeReachable: (node: ParseNode, sourceNode?: ParseNode | undefined) => boolean;
+    isAfterNodeReachable: (node: ParseNode) => boolean;
+    getNodeReachability: (node: ParseNode, sourceNode?: ParseNode | undefined) => Reachability;
+    getAfterNodeReachability: (node: ParseNode) => Reachability;
     isNotTypeCheckingBlock: (node: ParseNode) => boolean;
+
     isAsymmetricAccessorAssignment: (node: ParseNode) => boolean;
     suppressDiagnostics: (node: ParseNode, callback: () => void) => void;
     isSpecialFormClass: (classType: ClassType, flags: AssignTypeFlags) => boolean;
@@ -586,7 +600,7 @@ export interface TypeEvaluator {
         emitNotIterableError?: boolean
     ) => TypeResult | undefined;
     getGetterTypeFromProperty: (propertyClass: ClassType, inferTypeIfNeeded: boolean) => Type | undefined;
-    getTypeOfArgument: (arg: FunctionArgument, inferenceContext: InferenceContext | undefined) => TypeResult;
+    getTypeOfArg: (arg: Arg, inferenceContext: InferenceContext | undefined) => TypeResult;
     markNamesAccessed: (node: ParseNode, names: string[]) => void;
     expandPromotionTypes: (node: ParseNode, type: Type) => Type;
     makeTopLevelTypeVarsConcrete: (type: Type, makeParamSpecsConcrete?: boolean) => Type;
@@ -608,10 +622,10 @@ export interface TypeEvaluator {
     getDeclaredTypeForExpression: (expression: ExpressionNode, usage?: EvaluatorUsage) => Type | undefined;
     getFunctionDeclaredReturnType: (node: FunctionNode) => Type | undefined;
     getFunctionInferredReturnType: (type: FunctionType, callSiteInfo?: CallSiteEvaluationInfo) => Type;
-    getBestOverloadForArguments: (
+    getBestOverloadForArgs: (
         errorNode: ExpressionNode,
         typeResult: TypeResult<OverloadedFunctionType>,
-        argList: FunctionArgument[]
+        argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
     getTypeOfMember: (member: ClassMember) => Type;
@@ -637,7 +651,7 @@ export interface TypeEvaluator {
         argList: TypeResult[],
         errorNode: ExpressionNode,
         inferenceContext: InferenceContext | undefined
-    ) => Type | undefined;
+    ) => TypeResult | undefined;
     bindFunctionToClassOrObject: (
         baseType: ClassType | undefined,
         memberType: FunctionType | OverloadedFunctionType,
@@ -656,8 +670,8 @@ export interface TypeEvaluator {
         destType: Type,
         srcType: Type,
         diag?: DiagnosticAddendum,
-        destTypeVarContext?: TypeVarContext,
-        srcTypeVarContext?: TypeVarContext,
+        destConstraints?: ConstraintTracker,
+        srcConstraints?: ConstraintTracker,
         flags?: AssignTypeFlags,
         recursionCount?: number
     ) => boolean;
@@ -668,18 +682,18 @@ export interface TypeEvaluator {
         diag: DiagnosticAddendum,
         enforceParamNames?: boolean
     ) => boolean;
-    validateCallArguments: (
+    validateCallArgs: (
         errorNode: ExpressionNode,
-        argList: FunctionArgument[],
+        argList: Arg[],
         callTypeResult: TypeResult,
-        typeVarContext: TypeVarContext | undefined,
+        constraints: ConstraintTracker | undefined,
         skipUnknownArgCheck: boolean | undefined,
         inferenceContext: InferenceContext | undefined
     ) => CallResult;
     validateTypeArg: (argResult: TypeResultWithNode, options?: ValidateTypeArgsOptions) => boolean;
     assignTypeToExpression: (target: ExpressionNode, typeResult: TypeResult, srcExpr: ExpressionNode) => void;
     assignClassToSelf: (destType: ClassType, srcType: ClassType, assumedVariance: Variance) => boolean;
-    getBuiltInObject: (node: ParseNode, name: string, typeArguments?: Type[]) => Type;
+    getBuiltInObject: (node: ParseNode, name: string, typeArgs?: Type[]) => Type;
     getTypedDictClassType: () => ClassType | undefined;
     getTupleClassType: () => ClassType | undefined;
     getObjectType: () => Type;
@@ -688,17 +702,17 @@ export interface TypeEvaluator {
     getTypeClassType(): ClassType | undefined;
     getTypingType: (node: ParseNode, symbolName: string) => Type | undefined;
     inferReturnTypeIfNecessary: (type: Type) => void;
-    inferTypeParameterVarianceForClass: (type: ClassType) => void;
-    assignTypeArguments: (
+    inferVarianceForClass: (type: ClassType) => void;
+    assignTypeArgs: (
         destType: ClassType,
         srcType: ClassType,
         diag: DiagnosticAddendum | undefined,
-        destTypeVarContext: TypeVarContext | undefined,
-        srcTypeVarContext: TypeVarContext | undefined,
+        destConstraints: ConstraintTracker | undefined,
+        srcConstraints: ConstraintTracker | undefined,
         flags: AssignTypeFlags,
         recursionCount: number
     ) => boolean;
-    reportMissingTypeArguments: (node: ExpressionNode, type: Type, flags: EvalFlags) => Type;
+    reportMissingTypeArgs: (node: ExpressionNode, type: Type, flags: EvalFlags) => Type;
 
     isFinalVariable: (symbol: Symbol) => boolean;
     isFinalVariableDeclaration: (decl: Declaration) => boolean;
@@ -736,6 +750,6 @@ export interface TypeEvaluator {
         callName: string,
         logger: ConsoleInterface
     ) => void;
-    printTypeVarContext: (typeVarContext: TypeVarContext) => void;
+    printConstraintTracker: (constraints: ConstraintTracker) => void;
     typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
 }

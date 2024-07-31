@@ -32,6 +32,7 @@ import {
     isFunction,
     isModule,
     isOverloadedFunction,
+    isParamSpec,
     isTypeVar,
 } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -141,7 +142,7 @@ export function getVariableTypeText(
         const typeAliasInfo = getTypeAliasInfo(type);
         if (typeAliasInfo?.name === typeNode.d.value) {
             if (isTypeVar(type)) {
-                label = type.shared.isParamSpec ? 'param spec' : 'type variable';
+                label = isParamSpec(type) ? 'param spec' : 'type variable';
                 typeVarName = type.shared.name;
             } else {
                 // Handle type aliases specially.
@@ -358,7 +359,7 @@ export class HoverProvider {
                 break;
             }
 
-            case DeclarationType.Parameter: {
+            case DeclarationType.Param: {
                 this._addResultsPart(parts, '(parameter) ' + node.d.value + this._getTypeText(node), /* python */ true);
 
                 if (resolvedDecl.docString) {
@@ -368,7 +369,7 @@ export class HoverProvider {
                 break;
             }
 
-            case DeclarationType.TypeParameter: {
+            case DeclarationType.TypeParam: {
                 // If the user is hovering over a type parameter name in a class type parameter
                 // list, display the computed variance of the type param.
                 const typeParamListNode = ParseTreeUtils.getParentNodeOfType(node, ParseNodeType.TypeParameterList);

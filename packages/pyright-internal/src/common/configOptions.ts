@@ -129,6 +129,9 @@ export interface DiagnosticRuleSet {
     // Enable support for type: ignore comments?
     enableTypeIgnoreComments: boolean;
 
+    // Use tagged hints to identify unreachable code via type analysis?
+    enableReachabilityAnalysis: boolean;
+
     // No longer treat bytearray and memoryview as subclasses of bytes?
     disableBytesTypePromotions: boolean;
 
@@ -427,6 +430,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
         // want to override it in strict mode or support
         // it within pyright comments.
         boolRules.push(DiagnosticRule.enableTypeIgnoreComments);
+        boolRules.push(DiagnosticRule.enableReachabilityAnalysis);
     }
 
     return boolRules;
@@ -578,6 +582,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         strictParameterNoneValue: false,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
+        enableReachabilityAnalysis: false,
         deprecateTypingAliases: false,
         disableBytesTypePromotions: false,
         reportGeneralTypeIssues: 'none',
@@ -687,6 +692,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         strictParameterNoneValue: true,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
+        enableReachabilityAnalysis: true,
         deprecateTypingAliases: false,
         disableBytesTypePromotions: false,
         reportGeneralTypeIssues: 'error',
@@ -796,6 +802,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         strictParameterNoneValue: true,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
+        enableReachabilityAnalysis: true,
         deprecateTypingAliases: false,
         disableBytesTypePromotions: false,
         reportGeneralTypeIssues: 'error',
@@ -1010,6 +1017,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         strictParameterNoneValue: true,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true, // Not overridden by strict mode
+        enableReachabilityAnalysis: true, // Not overridden by strict mode
         deprecateTypingAliases: false,
         disableBytesTypePromotions: true,
         reportGeneralTypeIssues: 'error',

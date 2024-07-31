@@ -43,8 +43,7 @@ Relative paths specified within the config file are relative to the config file�
 - **useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
 
 
-## Type Check Diagnostics Settings
-The following settings control pyright’s diagnostic output (warnings or errors). Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level.
+## Type Evaluation Settings
 
 in basedpyright, all of these options are enabled by default, using the new `"all"` setting for `typeCheckingMode`. if you only want the rules enabled by default in regular pyright, you can set this option to `"standard"` or `"strict"`. see [this section in the README](../README.md#better-defaults) for more information.
 
@@ -64,7 +63,16 @@ in basedpyright, all of these options are enabled by default, using the new `"al
 
 - <a name="enableExperimentalFeatures"></a> **enableExperimentalFeatures** [boolean]: Enables a set of experimental (mostly undocumented) features that correspond to proposed or exploratory changes to the Python typing standard. These features will likely change or be removed, so they should not be used except for experimentation purposes.
 
+- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code.
+
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
+
+- <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors. The default value for this setting is `"error"`.
+
+## Type Check Diagnostics Settings
+The following settings control pyright’s diagnostic output (warnings or errors). Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level.
+
+- <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors. The default value for this setting is `"error"`.
 
 - <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.
 
@@ -360,105 +368,106 @@ The following table lists the default severity levels for each diagnostic rule w
 
 note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default `typeCheckingMode` is `"all"`). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
 
-| Diagnostic Rule                     | Off           | Basic         | Standard      | Strict        | All     |
-|:------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|
-| analyzeUnannotatedFunctions         | true          | true          | true          | true          | true    |
-| strictParameterNoneValue            | false         | true          | true          | true          | true    |
-| enableTypeIgnoreComments            | true          | true          | true          | true          | false   |
-| disableBytesTypePromotions          | false         | false         | false         | true          | true    |
-| strictListInference                 | false         | false         | false         | true          | true    |
-| strictDictionaryInference           | false         | false         | false         | true          | true    |
-| strictSetInference                  | false         | false         | false         | true          | true    |
-| deprecateTypingAliases              | false         | false         | false         | false         | true    |
-| enableExperimentalFeatures          | false         | false         | false         | false         | true    |
-| reportMissingModuleSource           | "none"        | "warning"     | "warning"     | "warning"     | "error" |
-| reportInvalidTypeForm               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportMissingImports                | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUndefinedVariable             | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssertAlwaysTrue              | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportInvalidStringEscapeSequence   | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportInvalidTypeVarUse             | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportMissingTypeStubs              | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportSelfClsParameterName          | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportUnsupportedDunderAll          | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportUnusedExpression              | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportWildcardImportFromLibrary     | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportAbstractUsage                 | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportArgumentType                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssertTypeFailure             | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssignmentType                | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAttributeAccessIssue          | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportCallIssue                     | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportGeneralTypeIssues             | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportInconsistentOverload          | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportIndexIssue                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportInvalidTypeArguments          | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportNoOverloadImplementation      | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOperatorIssue                 | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalSubscript             | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalMemberAccess          | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalCall                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalIterable              | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalContextManager        | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalOperand               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportRedeclaration                 | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportReturnType                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportTypedDictNotRequiredAccess    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportPrivateImportUsage            | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnboundVariable               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnhashable                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnusedCoroutine               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnusedExcept                  | "unreachable" | "error"       | "error"       | "error"       | "error" |
-| reportFunctionMemberAccess          | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportIncompatibleMethodOverride    | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportIncompatibleVariableOverride  | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportOverlappingOverload           | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportPossiblyUnboundVariable       | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportConstantRedefinition          | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportDeprecated                    | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
-| reportDuplicateImport               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportIncompleteStub                | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportInconsistentConstructor       | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportInvalidStubStatement          | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMatchNotExhaustive            | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMissingParameterType          | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMissingTypeArgument           | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportPrivateUsage                  | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportTypeCommentUsage              | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
-| reportUnknownArgumentType           | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownLambdaType             | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownMemberType             | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownParameterType          | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownVariableType           | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryCast               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryComparison         | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryContains           | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryIsInstance         | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnusedClass                   | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedImport                  | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedFunction                | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedVariable                | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUntypedBaseClass              | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedClassDecorator         | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedFunctionDecorator      | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedNamedTuple             | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportCallInDefaultInitializer      | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitOverride              | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitStringConcatenation   | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImportCycles                  | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportMissingSuperCall              | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportPropertyTypeMismatch          | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportShadowedImports               | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUninitializedInstanceVariable | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnnecessaryTypeIgnoreComment  | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnusedCallResult              | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnreachable                   | "unreachable" | "unreachable" | "unreachable" | "unreachable" | "error" |
-| reportAny                           | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportIgnoreCommentWithoutRule      | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportPrivateLocalImportUsage       | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitRelativeImport        | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportInvalidCast                   | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnsafeMultipleInheritance     | "none"        | "none"        | "none"        | "none"        | "error" |
+| Diagnostic Rule                          | Off           | Basic         | Standard      | Strict        | All     |
+|:-----------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|
+| analyzeUnannotatedFunctions              | true          | true          | true          | true          | true    |
+| strictParameterNoneValue                 | false         | true          | true          | true          | true    |
+| enableTypeIgnoreComments                 | true          | true          | true          | true          | false   |
+| enableReachabilityAnalysis               | false         | true          | true          | true          | true    |
+| disableBytesTypePromotions               | false         | false         | false         | true          | true    |
+| strictListInference                      | false         | false         | false         | true          | true    |
+| strictDictionaryInference                | false         | false         | false         | true          | true    |
+| strictSetInference                       | false         | false         | false         | true          | true    |
+| deprecateTypingAliases                   | false         | false         | false         | false         | true    |
+| enableExperimentalFeatures               | false         | false         | false         | false         | true    |
+| reportMissingModuleSource                | "none"        | "warning"     | "warning"     | "warning"     | "error" |
+| reportInvalidTypeForm                    | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportMissingImports                     | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportUndefinedVariable                  | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportAssertAlwaysTrue                   | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportInvalidStringEscapeSequence        | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportInvalidTypeVarUse                  | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportMissingTypeStubs                   | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportSelfClsParameterName               | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportUnsupportedDunderAll               | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportUnusedExpression                   | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportWildcardImportFromLibrary          | "none"        | "warning"     | "warning"     | "error"       | "error" |
+| reportAbstractUsage                      | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportArgumentType                       | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportAssertTypeFailure                  | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportAssignmentType                     | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportAttributeAccessIssue               | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportCallIssue                          | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportGeneralTypeIssues                  | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportInconsistentOverload               | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportIndexIssue                         | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportInvalidTypeArguments               | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportNoOverloadImplementation           | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOperatorIssue                      | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalSubscript                  | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalMemberAccess               | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalCall                       | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalIterable                   | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalContextManager             | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportOptionalOperand                    | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportRedeclaration                      | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportReturnType                         | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportTypedDictNotRequiredAccess         | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportPrivateImportUsage                 | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportUnboundVariable                    | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportUnhashable                         | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportUnusedCoroutine                    | "none"        | "error"       | "error"       | "error"       | "error" |
+| reportUnusedExcept                       | "unreachable" | "error"       | "error"       | "error"       | "error" |
+| reportFunctionMemberAccess               | "none"        | "none"        | "error"       | "error"       | "error" |
+| reportIncompatibleMethodOverride         | "none"        | "none"        | "error"       | "error"       | "error" |
+| reportIncompatibleVariableOverride       | "none"        | "none"        | "error"       | "error"       | "error" |
+| reportOverlappingOverload                | "none"        | "none"        | "error"       | "error"       | "error" |
+| reportPossiblyUnboundVariable            | "none"        | "none"        | "error"       | "error"       | "error" |
+| reportConstantRedefinition               | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportDeprecated                         | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
+| reportDuplicateImport                    | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportIncompleteStub                     | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportInconsistentConstructor            | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportInvalidStubStatement               | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportMatchNotExhaustive                 | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportMissingParameterType               | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportMissingTypeArgument                | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportPrivateUsage                       | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportTypeCommentUsage                   | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
+| reportUnknownArgumentType                | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnknownLambdaType                  | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnknownMemberType                  | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnknownParameterType               | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnknownVariableType                | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnnecessaryCast                    | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnnecessaryComparison              | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnnecessaryContains                | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnnecessaryIsInstance              | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUnusedClass                        | "unused"      | "unused"      | "unused"      | "error"       | "error" |
+| reportUnusedImport                       | "unused"      | "unused"      | "unused"      | "error"       | "error" |
+| reportUnusedFunction                     | "unused"      | "unused"      | "unused"      | "error"       | "error" |
+| reportUnusedVariable                     | "unused"      | "unused"      | "unused"      | "error"       | "error" |
+| reportUntypedBaseClass                   | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUntypedClassDecorator              | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUntypedFunctionDecorator           | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportUntypedNamedTuple                  | "none"        | "none"        | "none"        | "error"       | "error" |
+| reportCallInDefaultInitializer           | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportImplicitOverride                   | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportImplicitStringConcatenation        | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportImportCycles                       | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportMissingSuperCall                   | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportPropertyTypeMismatch               | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportShadowedImports                    | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUninitializedInstanceVariable      | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUnnecessaryTypeIgnoreComment       | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUnusedCallResult                   | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUnreachable                        | "unreachable" | "unreachable" | "unreachable" | "unreachable" | "error" |
+| reportAny                                | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportIgnoreCommentWithoutRule           | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportPrivateLocalImportUsage            | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportImplicitRelativeImport             | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportInvalidCast                        | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUnsafeMultipleInheritance          | "none"        | "none"        | "none"        | "none"        | "error" |
 
 
 ## Locale Configuration

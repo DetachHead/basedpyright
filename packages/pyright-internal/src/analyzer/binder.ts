@@ -29,7 +29,7 @@ import { TextRange, getEmptyRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { LocAddendum, LocMessage } from '../localization/localize';
 import {
-    ArgumentCategory,
+    ArgCategory,
     AssertNode,
     AssignmentExpressionNode,
     AssignmentNode,
@@ -112,10 +112,10 @@ import {
     FunctionDeclaration,
     IntrinsicType,
     ModuleLoaderActions,
-    ParameterDeclaration,
+    ParamDeclaration,
     SpecialBuiltInClassDeclaration,
     TypeAliasDeclaration,
-    TypeParameterDeclaration,
+    TypeParamDeclaration,
     UnresolvedModuleMarker,
     VariableDeclaration,
 } from './declaration';
@@ -565,8 +565,8 @@ export class Binder extends ParseTreeWalker {
                             }
 
                             if (symbol) {
-                                const paramDeclaration: ParameterDeclaration = {
-                                    type: DeclarationType.Parameter,
+                                const paramDeclaration: ParamDeclaration = {
+                                    type: DeclarationType.Param,
                                     node: paramNode,
                                     uri: this._fileInfo.fileUri,
                                     range: convertTextRangeToRange(paramNode, this._fileInfo.lines),
@@ -638,8 +638,8 @@ export class Binder extends ParseTreeWalker {
                     if (paramNode.d.name) {
                         const symbol = this._bindNameToScope(this._currentScope, paramNode.d.name);
                         if (symbol) {
-                            const paramDeclaration: ParameterDeclaration = {
-                                type: DeclarationType.Parameter,
+                            const paramDeclaration: ParamDeclaration = {
+                                type: DeclarationType.Param,
                                 node: paramNode,
                                 uri: this._fileInfo.fileUri,
                                 range: convertTextRangeToRange(paramNode, this._fileInfo.lines),
@@ -672,7 +672,7 @@ export class Binder extends ParseTreeWalker {
         this._disableTrueFalseTargets(() => {
             this.walk(node.d.leftExpr);
 
-            const sortedArgs = ParseTreeUtils.getArgumentsByRuntimeOrder(node);
+            const sortedArgs = ParseTreeUtils.getArgsByRuntimeOrder(node);
 
             sortedArgs.forEach((argNode) => {
                 if (this._currentFlowNode) {
@@ -793,8 +793,8 @@ export class Binder extends ParseTreeWalker {
         node.d.params.forEach((param) => {
             const name = param.d.name;
             const symbol = typeParamScope.addSymbol(name.d.value, SymbolFlags.None);
-            const paramDeclaration: TypeParameterDeclaration = {
-                type: DeclarationType.TypeParameter,
+            const paramDeclaration: TypeParamDeclaration = {
+                type: DeclarationType.TypeParam,
                 node: param,
                 uri: this._fileInfo.fileUri,
                 range: convertTextRangeToRange(node, this._fileInfo.lines),
@@ -3049,7 +3049,7 @@ export class Binder extends ParseTreeWalker {
                             expression.nodeType === ParseNodeType.Index &&
                             expression.d.items.length === 1 &&
                             !expression.d.trailingComma &&
-                            expression.d.items[0].d.argCategory === ArgumentCategory.Simple
+                            expression.d.items[0].d.argCategory === ArgCategory.Simple
                         ) {
                             if (isCodeFlowSupportedForReference(expression.d.leftExpr)) {
                                 expressionList.push(expression.d.leftExpr);
@@ -3101,7 +3101,7 @@ export class Binder extends ParseTreeWalker {
                         expression.d.leftExpr.d.leftExpr.nodeType === ParseNodeType.Name &&
                         expression.d.leftExpr.d.leftExpr.d.value === 'type' &&
                         expression.d.leftExpr.d.args.length === 1 &&
-                        expression.d.leftExpr.d.args[0].d.argCategory === ArgumentCategory.Simple
+                        expression.d.leftExpr.d.args[0].d.argCategory === ArgCategory.Simple
                     ) {
                         return this._isNarrowingExpression(
                             expression.d.leftExpr.d.args[0].d.valueExpr,
@@ -3976,7 +3976,7 @@ export class Binder extends ParseTreeWalker {
                 const finalInfo = this._isAnnotationFinal(typeAnnotation.d.leftExpr);
                 if (
                     finalInfo.isFinal &&
-                    typeAnnotation.d.items[0].d.argCategory === ArgumentCategory.Simple &&
+                    typeAnnotation.d.items[0].d.argCategory === ArgCategory.Simple &&
                     !typeAnnotation.d.items[0].d.name &&
                     !typeAnnotation.d.trailingComma
                 ) {
@@ -4016,7 +4016,7 @@ export class Binder extends ParseTreeWalker {
                 const finalInfo = this._isAnnotationClassVar(typeAnnotation.d.leftExpr);
                 if (
                     finalInfo.isClassVar &&
-                    typeAnnotation.d.items[0].d.argCategory === ArgumentCategory.Simple &&
+                    typeAnnotation.d.items[0].d.argCategory === ArgCategory.Simple &&
                     !typeAnnotation.d.items[0].d.name &&
                     !typeAnnotation.d.trailingComma
                 ) {

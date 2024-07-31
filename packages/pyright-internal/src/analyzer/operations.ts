@@ -25,7 +25,7 @@ import { getFileInfo } from './analyzerNodeInfo';
 import { getEnclosingLambda, isWithinLoop, operatorSupportsChaining, printOperator } from './parseTreeUtils';
 import { getScopeForNode } from './scopeUtils';
 import { evaluateStaticBoolExpression } from './staticExpressions';
-import { EvalFlags, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
+import { EvalFlags, MagicMethodDeprecationInfo, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
 import {
     InferenceContext,
     convertToInstantiable,
@@ -114,12 +114,13 @@ export function validateBinaryOperation(
     inferenceContext: InferenceContext | undefined,
     diag: DiagnosticAddendum,
     options: BinaryOperationOptions
-): Type {
+): TypeResult {
     const leftType = leftTypeResult.type;
     const rightType = rightTypeResult.type;
     const isIncomplete = !!leftTypeResult.isIncomplete || !!rightTypeResult.isIncomplete;
     let type: Type | undefined;
     let concreteLeftType = evaluator.makeTopLevelTypeVarsConcrete(leftType);
+    let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     if (booleanOperatorMap[operator] !== undefined) {
         // If it's an AND or OR, we need to handle short-circuiting by
@@ -128,42 +129,42 @@ export function validateBinaryOperation(
             // If the LHS evaluates to falsy, the And expression will
             // always return the type of the left-hand side.
             if (!evaluator.canBeTruthy(concreteLeftType)) {
-                return leftType;
+                return { type: leftType };
             }
 
             // If the LHS evaluates to truthy, the And expression will
             // always return the type of the right-hand side.
             if (!evaluator.canBeFalsy(concreteLeftType)) {
-                return rightType;
+                return { type: rightType };
             }
 
             concreteLeftType = evaluator.removeTruthinessFromType(concreteLeftType);
 
             if (isNever(rightType)) {
-                return concreteLeftType;
+                return { type: concreteLeftType };
             }
         } else if (operator === OperatorType.Or) {
             // If the LHS evaluates to truthy, the Or expression will
             // always return the type of the left-hand side.
             if (!evaluator.canBeFalsy(concreteLeftType)) {
-                return leftType;
+                return { type: leftType };
             }
 
             // If the LHS evaluates to falsy, the Or expression will
             // always return the type of the right-hand side.
             if (!evaluator.canBeTruthy(concreteLeftType)) {
-                return rightType;
+                return { type: rightType };
             }
 
             concreteLeftType = evaluator.removeFalsinessFromType(concreteLeftType);
 
             if (isNever(rightType)) {
-                return concreteLeftType;
+                return { type: concreteLeftType };
             }
         }
 
         if (isNever(leftType) || isNever(rightType)) {
-            return NeverType.createNever();
+            return { type: NeverType.createNever() };
         }
 
         // The "in" and "not in" operators make use of the __contains__
@@ -181,7 +182,7 @@ export function validateBinaryOperation(
                                 return preserveUnknown(leftSubtype, rightSubtypeExpanded);
                             }
 
-                            let returnType = evaluator.getTypeOfMagicMethodCall(
+                            let returnTypeResult = evaluator.getTypeOfMagicMethodCall(
                                 rightSubtypeExpanded,
                                 '__contains__',
                                 [{ type: leftSubtype, isIncomplete: leftTypeResult.isIncomplete }],
@@ -189,7 +190,7 @@ export function validateBinaryOperation(
                                 /* inferenceContext */ undefined
                             );
 
-                            if (!returnType) {
+                            if (!returnTypeResult) {
                                 // If __contains__ was not supported, fall back
                                 // on an iterable.
                                 const iteratorType = evaluator.getTypeOfIterator(
@@ -200,11 +201,11 @@ export function validateBinaryOperation(
                                 )?.type;
 
                                 if (iteratorType && evaluator.assignType(iteratorType, leftSubtype)) {
-                                    returnType = evaluator.getBuiltInObject(errorNode, 'bool');
+                                    returnTypeResult = { type: evaluator.getBuiltInObject(errorNode, 'bool') };
                                 }
                             }
 
-                            if (!returnType) {
+                            if (!returnTypeResult) {
                                 diag.addMessage(
                                     LocMessage.typeNotSupportBinaryOperator().format({
                                         operator: printOperator(operator),
@@ -214,7 +215,11 @@ export function validateBinaryOperation(
                                 );
                             }
 
-                            return returnType;
+                            if (returnTypeResult?.magicMethodDeprecationInfo) {
+                                deprecatedInfo = returnTypeResult.magicMethodDeprecationInfo;
+                            }
+
+                            return returnTypeResult?.type;
                         }
                     );
                 }
@@ -246,7 +251,7 @@ export function validateBinaryOperation(
         }
     } else if (binaryOperatorMap[operator]) {
         if (isNever(leftType) || isNever(rightType)) {
-            return NeverType.createNever();
+            return { type: NeverType.createNever() };
         }
 
         // Handle certain operations on certain homogenous literal types
@@ -277,10 +282,10 @@ export function validateBinaryOperation(
                                 operator === OperatorType.Add &&
                                 isClassInstance(leftSubtypeExpanded) &&
                                 isTupleClass(leftSubtypeExpanded) &&
-                                leftSubtypeExpanded.priv.tupleTypeArguments &&
+                                leftSubtypeExpanded.priv.tupleTypeArgs &&
                                 isClassInstance(rightSubtypeExpanded) &&
                                 isTupleClass(rightSubtypeExpanded) &&
-                                rightSubtypeExpanded.priv.tupleTypeArguments &&
+                                rightSubtypeExpanded.priv.tupleTypeArgs &&
                                 tupleClassType &&
                                 isInstantiableClass(tupleClassType)
                             ) {
@@ -295,15 +300,15 @@ export function validateBinaryOperation(
                                 ) {
                                     return ClassType.cloneAsInstance(
                                         specializeTupleClass(tupleClassType, [
-                                            ...leftSubtypeExpanded.priv.tupleTypeArguments,
-                                            ...rightSubtypeExpanded.priv.tupleTypeArguments,
+                                            ...leftSubtypeExpanded.priv.tupleTypeArgs,
+                                            ...rightSubtypeExpanded.priv.tupleTypeArgs,
                                         ])
                                     );
                                 }
                             }
 
                             const magicMethodName = binaryOperatorMap[operator][0];
-                            let resultType = evaluator.getTypeOfMagicMethodCall(
+                            let resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                 convertFunctionToObject(evaluator, leftSubtypeUnexpanded),
                                 magicMethodName,
                                 [{ type: rightSubtypeUnexpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -311,9 +316,9 @@ export function validateBinaryOperation(
                                 inferenceContext
                             );
 
-                            if (!resultType && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
+                            if (!resultTypeResult && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
                                 // Try the expanded left type.
-                                resultType = evaluator.getTypeOfMagicMethodCall(
+                                resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                     convertFunctionToObject(evaluator, leftSubtypeExpanded),
                                     magicMethodName,
                                     [{ type: rightSubtypeUnexpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -322,9 +327,9 @@ export function validateBinaryOperation(
                                 );
                             }
 
-                            if (!resultType && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
+                            if (!resultTypeResult && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
                                 // Try the expanded left and right type.
-                                resultType = evaluator.getTypeOfMagicMethodCall(
+                                resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                     convertFunctionToObject(evaluator, leftSubtypeExpanded),
                                     magicMethodName,
                                     [{ type: rightSubtypeExpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -333,10 +338,10 @@ export function validateBinaryOperation(
                                 );
                             }
 
-                            if (!resultType) {
+                            if (!resultTypeResult) {
                                 // Try the alternate form (swapping right and left).
                                 const altMagicMethodName = binaryOperatorMap[operator][1];
-                                resultType = evaluator.getTypeOfMagicMethodCall(
+                                resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                     convertFunctionToObject(evaluator, rightSubtypeUnexpanded),
                                     altMagicMethodName,
                                     [{ type: leftSubtypeUnexpanded, isIncomplete: leftTypeResult.isIncomplete }],
@@ -344,9 +349,9 @@ export function validateBinaryOperation(
                                     inferenceContext
                                 );
 
-                                if (!resultType && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
+                                if (!resultTypeResult && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
                                     // Try the expanded right type.
-                                    resultType = evaluator.getTypeOfMagicMethodCall(
+                                    resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                         convertFunctionToObject(evaluator, rightSubtypeExpanded),
                                         altMagicMethodName,
                                         [
@@ -360,9 +365,9 @@ export function validateBinaryOperation(
                                     );
                                 }
 
-                                if (!resultType && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
+                                if (!resultTypeResult && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
                                     // Try the expanded right and left type.
-                                    resultType = evaluator.getTypeOfMagicMethodCall(
+                                    resultTypeResult = evaluator.getTypeOfMagicMethodCall(
                                         convertFunctionToObject(evaluator, rightSubtypeExpanded),
                                         altMagicMethodName,
                                         [{ type: leftSubtypeExpanded, isIncomplete: leftTypeResult.isIncomplete }],
@@ -372,7 +377,7 @@ export function validateBinaryOperation(
                                 }
                             }
 
-                            if (!resultType) {
+                            if (!resultTypeResult) {
                                 if (inferenceContext) {
                                     diag.addMessage(
                                         LocMessage.typeNotSupportBinaryOperatorBidirectional().format({
@@ -393,7 +398,11 @@ export function validateBinaryOperation(
                                 }
                             }
 
-                            return resultType ?? UnknownType.create(isIncomplete);
+                            if (resultTypeResult?.magicMethodDeprecationInfo) {
+                                deprecatedInfo = resultTypeResult.magicMethodDeprecationInfo;
+                            }
+
+                            return resultTypeResult?.type ?? UnknownType.create(isIncomplete);
                         }
                     );
                 }
@@ -401,7 +410,7 @@ export function validateBinaryOperation(
         }
     }
 
-    return type ?? UnknownType.create(isIncomplete);
+    return { type: type ?? UnknownType.create(isIncomplete), magicMethodDeprecationInfo: deprecatedInfo };
 }
 
 export function getTypeOfBinaryOperation(
@@ -449,8 +458,8 @@ export function getTypeOfBinaryOperation(
         inferenceContext &&
         isClassInstance(inferenceContext.expectedType) &&
         ClassType.isBuiltIn(inferenceContext.expectedType, 'list') &&
-        inferenceContext.expectedType.priv.typeArguments &&
-        inferenceContext.expectedType.priv.typeArguments.length >= 1 &&
+        inferenceContext.expectedType.priv.typeArgs &&
+        inferenceContext.expectedType.priv.typeArgs.length >= 1 &&
         node.d.leftExpr.nodeType === ParseNodeType.List
     ) {
         expectedLeftOperandType = inferenceContext.expectedType;
@@ -476,7 +485,7 @@ export function getTypeOfBinaryOperation(
                         return false;
                     }
 
-                    return ClassType.isTypedDictClass(subtype) || subtype.shared.typeParameters.length > 0;
+                    return ClassType.isTypedDictClass(subtype) || subtype.shared.typeParams.length > 0;
                 })
             ) {
                 expectedOperandType = leftType;
@@ -551,12 +560,12 @@ export function getTypeOfBinaryOperation(
                 return { type: UnknownType.create() };
             }
 
-            adjustedLeftType = evaluator.reportMissingTypeArguments(
+            adjustedLeftType = evaluator.reportMissingTypeArgs(
                 node.d.leftExpr,
                 adjustedLeftType,
                 flags | EvalFlags.InstantiableType
             );
-            adjustedRightType = evaluator.reportMissingTypeArguments(
+            adjustedRightType = evaluator.reportMissingTypeArgs(
                 node.d.rightExpr,
                 adjustedRightType,
                 flags | EvalFlags.InstantiableType
@@ -590,7 +599,7 @@ export function getTypeOfBinaryOperation(
                 if (stringNode && otherNode && otherType) {
                     let isAllowed = true;
                     if (isClass(otherType)) {
-                        if (!otherType.priv.isTypeArgumentExplicit || isClassInstance(otherType)) {
+                        if (!otherType.priv.isTypeArgExplicit || isClassInstance(otherType)) {
                             isAllowed = false;
                         }
                     }
@@ -646,7 +655,7 @@ export function getTypeOfBinaryOperation(
     // within a loop construct using __add__.
     const isTupleAddAllowed = !isUnion(leftType);
 
-    const type = validateBinaryOperation(
+    const typeResult = validateBinaryOperation(
         evaluator,
         node.d.operator,
         { type: leftType, isIncomplete: leftTypeResult.isIncomplete },
@@ -656,6 +665,10 @@ export function getTypeOfBinaryOperation(
         diag,
         { isLiteralMathAllowed, isTupleAddAllowed }
     );
+
+    if (typeResult.isIncomplete) {
+        isIncomplete = true;
+    }
 
     if (!diag.isEmpty()) {
         typeErrors = true;
@@ -698,7 +711,12 @@ export function getTypeOfBinaryOperation(
         }
     }
 
-    return { type, isIncomplete, typeErrors };
+    return {
+        type: typeResult.type,
+        isIncomplete,
+        typeErrors,
+        magicMethodDeprecationInfo: typeResult.magicMethodDeprecationInfo,
+    };
 }
 
 export function getTypeOfAugmentedAssignment(
@@ -725,6 +743,7 @@ export function getTypeOfAugmentedAssignment(
     let type: Type | undefined;
     let typeResult: TypeResult | undefined;
     const diag = new DiagnosticAddendum();
+    let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     const leftTypeResult = evaluator.getTypeOfExpression(node.d.leftExpr);
     const leftType = leftTypeResult.type;
@@ -760,7 +779,7 @@ export function getTypeOfAugmentedAssignment(
                         }
 
                         const magicMethodName = operatorMap[node.d.operator][0];
-                        let returnType = evaluator.getTypeOfMagicMethodCall(
+                        let returnTypeResult = evaluator.getTypeOfMagicMethodCall(
                             leftSubtypeUnexpanded,
                             magicMethodName,
                             [{ type: rightSubtypeUnexpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -768,9 +787,9 @@ export function getTypeOfAugmentedAssignment(
                             inferenceContext
                         );
 
-                        if (!returnType && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
+                        if (!returnTypeResult && leftSubtypeUnexpanded !== leftSubtypeExpanded) {
                             // Try with the expanded left type.
-                            returnType = evaluator.getTypeOfMagicMethodCall(
+                            returnTypeResult = evaluator.getTypeOfMagicMethodCall(
                                 leftSubtypeExpanded,
                                 magicMethodName,
                                 [{ type: rightSubtypeUnexpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -779,9 +798,9 @@ export function getTypeOfAugmentedAssignment(
                             );
                         }
 
-                        if (!returnType && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
+                        if (!returnTypeResult && rightSubtypeUnexpanded !== rightSubtypeExpanded) {
                             // Try with the expanded left and right type.
-                            returnType = evaluator.getTypeOfMagicMethodCall(
+                            returnTypeResult = evaluator.getTypeOfMagicMethodCall(
                                 leftSubtypeExpanded,
                                 magicMethodName,
                                 [{ type: rightSubtypeExpanded, isIncomplete: rightTypeResult.isIncomplete }],
@@ -790,7 +809,7 @@ export function getTypeOfAugmentedAssignment(
                             );
                         }
 
-                        if (!returnType) {
+                        if (!returnTypeResult) {
                             // If the LHS class didn't support the magic method for augmented
                             // assignment, fall back on the normal binary expression evaluator.
                             const binaryOperator = operatorMap[node.d.operator][1];
@@ -808,7 +827,7 @@ export function getTypeOfAugmentedAssignment(
                             // within a loop construct using __add__.
                             const isTupleAddAllowed = !isUnion(leftType);
 
-                            returnType = validateBinaryOperation(
+                            returnTypeResult = validateBinaryOperation(
                                 evaluator,
                                 binaryOperator,
                                 { type: leftSubtypeUnexpanded, isIncomplete: leftTypeResult.isIncomplete },
@@ -820,7 +839,11 @@ export function getTypeOfAugmentedAssignment(
                             );
                         }
 
-                        return returnType;
+                        if (returnTypeResult?.magicMethodDeprecationInfo) {
+                            deprecatedInfo = returnTypeResult.magicMethodDeprecationInfo;
+                        }
+
+                        return returnTypeResult?.type;
                     }
                 );
             }
@@ -842,7 +865,7 @@ export function getTypeOfAugmentedAssignment(
             }
         }
 
-        typeResult = { type, isIncomplete };
+        typeResult = { type, isIncomplete, magicMethodDeprecationInfo: deprecatedInfo };
     }
 
     evaluator.assignTypeToExpression(node.d.destExpr, typeResult, node.d.rightExpr);
@@ -876,9 +899,11 @@ export function getTypeOfUnaryOperation(
         [OperatorType.Add]: '__pos__',
         [OperatorType.Subtract]: '__neg__',
         [OperatorType.BitwiseInvert]: '__invert__',
+        [OperatorType.Not]: '__bool__',
     };
 
     let type: Type | undefined;
+    let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     if (node.d.operator !== OperatorType.Not) {
         if (isOptionalType(exprType)) {
@@ -932,70 +957,74 @@ export function getTypeOfUnaryOperation(
     }
 
     if (!type) {
+        if (isAnyOrUnknown(exprType)) {
+            type = exprType;
+        } else {
+            const magicMethodName = unaryOperatorMap[node.d.operator];
+            let isResultValid = true;
+
+            type = evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
+                const typeResult = evaluator.getTypeOfMagicMethodCall(
+                    subtypeExpanded,
+                    magicMethodName,
+                    [],
+                    node,
+                    inferenceContext
+                );
+
+                if (!typeResult) {
+                    isResultValid = false;
+                }
+
+                if (typeResult?.magicMethodDeprecationInfo) {
+                    deprecatedInfo = typeResult.magicMethodDeprecationInfo;
+                }
+
+                return typeResult?.type;
+            });
+
+            if (!isResultValid) {
+                type = undefined;
+            }
+        }
+
         // __not__ always returns a boolean.
         if (node.d.operator === OperatorType.Not) {
             type = evaluator.getBuiltInObject(node, 'bool');
             if (!type) {
                 type = UnknownType.create();
             }
-        } else {
-            if (isAnyOrUnknown(exprType)) {
-                type = exprType;
-            } else {
-                const magicMethodName = unaryOperatorMap[node.d.operator];
-                let isResultValid = true;
+        }
 
-                type = evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
-                    const result = evaluator.getTypeOfMagicMethodCall(
-                        subtypeExpanded,
-                        magicMethodName,
-                        [],
-                        node,
-                        inferenceContext
+        if (!type) {
+            if (!isIncomplete) {
+                if (inferenceContext) {
+                    evaluator.addDiagnostic(
+                        DiagnosticRule.reportOperatorIssue,
+                        LocMessage.typeNotSupportUnaryOperatorBidirectional().format({
+                            operator: printOperator(node.d.operator),
+                            type: evaluator.printType(exprType),
+                            expectedType: evaluator.printType(inferenceContext.expectedType),
+                        }),
+                        node
                     );
-
-                    if (!result) {
-                        isResultValid = false;
-                    }
-
-                    return result;
-                });
-
-                if (!isResultValid) {
-                    type = undefined;
+                } else {
+                    evaluator.addDiagnostic(
+                        DiagnosticRule.reportOperatorIssue,
+                        LocMessage.typeNotSupportUnaryOperator().format({
+                            operator: printOperator(node.d.operator),
+                            type: evaluator.printType(exprType),
+                        }),
+                        node
+                    );
                 }
             }
 
-            if (!type) {
-                if (!isIncomplete) {
-                    if (inferenceContext) {
-                        evaluator.addDiagnostic(
-                            DiagnosticRule.reportOperatorIssue,
-                            LocMessage.typeNotSupportUnaryOperatorBidirectional().format({
-                                operator: printOperator(node.d.operator),
-                                type: evaluator.printType(exprType),
-                                expectedType: evaluator.printType(inferenceContext.expectedType),
-                            }),
-                            node
-                        );
-                    } else {
-                        evaluator.addDiagnostic(
-                            DiagnosticRule.reportOperatorIssue,
-                            LocMessage.typeNotSupportUnaryOperator().format({
-                                operator: printOperator(node.d.operator),
-                                type: evaluator.printType(exprType),
-                            }),
-                            node
-                        );
-                    }
-                }
-
-                type = UnknownType.create(isIncomplete);
-            }
+            type = UnknownType.create(isIncomplete);
         }
     }
 
-    return { type, isIncomplete };
+    return { type, isIncomplete, magicMethodDeprecationInfo: deprecatedInfo };
 }
 
 export function getTypeOfTernaryOperation(

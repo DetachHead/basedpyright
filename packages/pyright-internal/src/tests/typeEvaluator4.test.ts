@@ -34,7 +34,7 @@ test('Final2', () => {
 
 test('Final3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['final3.py']);
-    TestUtils.validateResults(analysisResults, 39);
+    TestUtils.validateResults(analysisResults, 43);
 });
 
 test('Final4', () => {
@@ -769,7 +769,7 @@ test('ParamSpec40', () => {
 
 test('ParamSpec41', () => {
     const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec41.py']);
-    TestUtils.validateResults(results, 2);
+    TestUtils.validateResults(results, 1);
 });
 
 test('ParamSpec42', () => {

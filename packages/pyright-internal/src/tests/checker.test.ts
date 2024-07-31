@@ -604,11 +604,11 @@ test('Deprecated2', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated2.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 13);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 14);
 
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated2.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 13);
+    TestUtils.validateResults(analysisResults2, 14);
 });
 
 test('Deprecated3', () => {
@@ -626,11 +626,11 @@ test('Deprecated4', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated4.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 6);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 7);
 
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated4.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 6);
+    TestUtils.validateResults(analysisResults2, 7);
 });
 
 test('Deprecated5', () => {
@@ -664,6 +664,17 @@ test('Deprecated7', () => {
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated7.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 2);
+});
+
+test('Deprecated8', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated8.py'], configOptions);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 4);
+
+    configOptions.diagnosticRuleSet.reportDeprecated = 'error';
+    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated8.py'], configOptions);
+    TestUtils.validateResults(analysisResults2, 4);
 });
 
 test('reportUnsafeMultipleInheritance', () => {

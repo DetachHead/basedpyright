@@ -14,7 +14,7 @@ import { convertPositionToOffset, convertTextRangeToRange } from '../common/posi
 import { Position, Range, TextRange } from '../common/textRange';
 import { TextRangeCollection, getIndexContaining } from '../common/textRangeCollection';
 import {
-    ArgumentCategory,
+    ArgCategory,
     ArgumentNode,
     AssignmentExpressionNode,
     AwaitNode,
@@ -31,7 +31,7 @@ import {
     MemberAccessNode,
     ModuleNode,
     NameNode,
-    ParameterCategory,
+    ParamCategory,
     ParameterNode,
     ParseNode,
     ParseNodeType,
@@ -195,11 +195,11 @@ export function getTypeSourceId(node: ParseNode): number {
     return node.start;
 }
 
-export function printArgument(node: ArgumentNode, flags: PrintExpressionFlags) {
+export function printArg(node: ArgumentNode, flags: PrintExpressionFlags) {
     let argStr = '';
-    if (node.d.argCategory === ArgumentCategory.UnpackedList) {
+    if (node.d.argCategory === ArgCategory.UnpackedList) {
         argStr = '*';
-    } else if (node.d.argCategory === ArgumentCategory.UnpackedDictionary) {
+    } else if (node.d.argCategory === ArgCategory.UnpackedDictionary) {
         argStr = '**';
     }
     if (node.d.name) {
@@ -234,14 +234,14 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                 lhs = `(${lhs})`;
             }
 
-            return lhs + '(' + node.d.args.map((arg) => printArgument(arg, flags)).join(', ') + ')';
+            return lhs + '(' + node.d.args.map((arg) => printArg(arg, flags)).join(', ') + ')';
         }
 
         case ParseNodeType.Index: {
             return (
                 printExpression(node.d.leftExpr, flags) +
                 '[' +
-                node.d.items.map((item) => printArgument(item, flags)).join(', ') +
+                node.d.items.map((item) => printArg(item, flags)).join(', ') +
                 (node.d.trailingComma ? ',' : '') +
                 ']'
             );
@@ -495,15 +495,15 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                     .map((param) => {
                         let paramStr = '';
 
-                        if (param.d.category === ParameterCategory.ArgsList) {
+                        if (param.d.category === ParamCategory.ArgsList) {
                             paramStr += '*';
-                        } else if (param.d.category === ParameterCategory.KwargsDict) {
+                        } else if (param.d.category === ParamCategory.KwargsDict) {
                             paramStr += '**';
                         }
 
                         if (param.d.name) {
                             paramStr += param.d.name.d.value;
-                        } else if (param.d.category === ParameterCategory.Simple) {
+                        } else if (param.d.category === ParamCategory.Simple) {
                             paramStr += '/';
                         }
 
@@ -1124,12 +1124,12 @@ export function getTypeAnnotationNode(node: ParseNode): TypeAnnotationNode | und
 // In general, arguments passed to a call are evaluated by the runtime in
 // left-to-right order. There is one exception, however, when an unpacked
 // iterable is used after a keyword argument.
-export function getArgumentsByRuntimeOrder(node: CallNode) {
+export function getArgsByRuntimeOrder(node: CallNode) {
     const positionalArgs = node.d.args.filter(
-        (arg) => !arg.d.name && arg.d.argCategory !== ArgumentCategory.UnpackedDictionary
+        (arg) => !arg.d.name && arg.d.argCategory !== ArgCategory.UnpackedDictionary
     );
     const keywordArgs = node.d.args.filter(
-        (arg) => !!arg.d.name || arg.d.argCategory === ArgumentCategory.UnpackedDictionary
+        (arg) => !!arg.d.name || arg.d.argCategory === ArgCategory.UnpackedDictionary
     );
     return positionalArgs.concat(keywordArgs);
 }
@@ -1332,7 +1332,7 @@ export function isMatchingExpression(reference: ExpressionNode, expression: Expr
             expression.d.items.length !== 1 ||
             expression.d.trailingComma ||
             expression.d.items[0].d.name ||
-            expression.d.items[0].d.argCategory !== ArgumentCategory.Simple
+            expression.d.items[0].d.argCategory !== ArgCategory.Simple
         ) {
             return false;
         }
@@ -1729,7 +1729,7 @@ export class CallNodeWalker extends ParseTreeWalker {
     }
 }
 
-export function getEnclosingParameter(node: ParseNode): ParameterNode | undefined {
+export function getEnclosingParam(node: ParseNode): ParameterNode | undefined {
     let curNode: ParseNode | undefined = node;
 
     while (curNode) {
@@ -1747,7 +1747,7 @@ export function getEnclosingParameter(node: ParseNode): ParameterNode | undefine
     return undefined;
 }
 
-export function getCallNodeAndActiveParameterIndex(
+export function getCallNodeAndActiveParamIndex(
     node: ParseNode,
     insertionOffset: number,
     tokens: TextRangeCollection<Token>
@@ -2338,7 +2338,7 @@ export function isFunctionSuiteEmpty(node: FunctionNode) {
     return isEmpty;
 }
 
-export function getTypeAnnotationForParameter(node: FunctionNode, paramIndex: number): ExpressionNode | undefined {
+export function getTypeAnnotationForParam(node: FunctionNode, paramIndex: number): ExpressionNode | undefined {
     if (paramIndex >= node.d.params.length) {
         return undefined;
     }
