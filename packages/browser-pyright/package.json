@@ -19,8 +19,8 @@
     },
     "scripts": {
         "build": "webpack --mode production --progress",
-        "clean": "shx rm -rf ./dist ./out README.md LICENSE.txt",
-        "prepack": "npm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && npm run build",
+        "clean": "shx rm -rf ./dist ./out LICENSE.txt",
+        "prepack": "npm run clean && shx cp ../../LICENSE.txt . && npm run build",
         "webpack": "webpack --mode development --progress"
     },
     "devDependencies": {
