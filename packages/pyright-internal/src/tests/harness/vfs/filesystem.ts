@@ -1877,6 +1877,12 @@ function makeDirEnt(name: string, node: Inode): Dirent {
         isSocket: () => false,
         isSymbolicLink: () => isSymlink(node),
         name,
+        get parentPath(): never {
+            throw new Error('TODO');
+        },
+        get path() {
+            return this.parentPath;
+        },
     };
     return de;
 }

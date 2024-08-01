@@ -1720,7 +1720,7 @@
         "vscode-languageserver-protocol": "^3.17.6-next.6"
     },
     "devDependencies": {
-        "@types/node": "^17.0.45",
+        "@types/node": "^20",
         "@types/vscode": "^1.82.0",
         "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",

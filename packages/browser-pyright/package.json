@@ -25,13 +25,14 @@
     },
     "devDependencies": {
         "@types/copy-webpack-plugin": "^8.0.1",
-        "@types/node": "^17.0.45",
+        "@types/node": "^20",
         "copy-webpack-plugin": "^11.0.0",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
         "typescript": "~5.5.0-beta",
         "webpack": "^5.90.1",
-        "webpack-cli": "^5.1.4"
+        "webpack-cli": "^5.1.4",
+        "webpack-virtual-modules": "^0.6.2"
     },
     "files": [
         "/dist",
@@ -40,12 +41,12 @@
     "main": "index.js",
     "dependencies": {
         "buffer": "^6.0.3",
-        "path-browserify": "^1.0.1",
-        "vscode-languageserver": "^10.0.0-next.6",
         "crypto-browserify": "^3.12.0",
         "os-browserify": "^0.3.0",
+        "path-browserify": "^1.0.1",
         "stream-browserify": "^3.0.0",
         "util": "^0.12.5",
-        "vm-browserify": "^1.1.2"
+        "vm-browserify": "^1.1.2",
+        "vscode-languageserver": "^10.0.0-next.6"
     }
 }

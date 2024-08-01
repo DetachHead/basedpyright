@@ -103,6 +103,13 @@ export namespace TempFile {
 export class VirtualDirent implements fs.Dirent {
     constructor(public name: string, private _file: boolean) {}
 
+    get parentPath(): never {
+        throw new Error('TODO');
+    }
+    get path(): never {
+        return this.parentPath;
+    }
+
     isFile(): boolean {
         return this._file;
     }

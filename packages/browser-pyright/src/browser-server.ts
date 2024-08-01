@@ -75,7 +75,11 @@ export class PyrightBrowserServer extends RealLanguageServer {
         const { files } = params.initializationOptions;
         if (typeof files === 'object') {
             this._initialFiles = files as InitialFiles;
-            (this.serverOptions.serviceProvider.fs() as TestFileSystem).apply(files);
+            (this.serverOptions.serviceProvider.fs() as TestFileSystem).apply({
+                ...files,
+                // virtual module generated in webpack config
+                ...require('typeshed-json'),
+            });
         }
         return super.initialize(params, supportedCommands, supportedCodeActions);
     }
@@ -114,7 +118,9 @@ export class BrowserBackgroundAnalysisRunner extends BackgroundAnalysisRunnerBas
             cwd: normalizeSlashes('/'),
         });
     }
-    protected override createRealTempFile = () => this.createRealFileSystem();
+    protected override createRealTempFile() {
+        return this.createRealFileSystem();
+    }
 
     protected override createHost(): Host {
         return new NoAccessHost();

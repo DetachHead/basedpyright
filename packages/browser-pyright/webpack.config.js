@@ -5,19 +5,23 @@
 
 const path = require('path');
 const { DefinePlugin, ProvidePlugin } = require('webpack');
+const VirtualModulesPlugin = require('webpack-virtual-modules');
+const fs = require('fs/promises');
+const { readFileSync } = require('fs');
 const { cacheConfig, monorepoResourceNameMapper, tsconfigResolveAliases } = require('../../build/lib/webpack');
 
 const outPath = path.resolve(__dirname, 'dist');
 
-/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => import('webpack').Configuration}*/
-module.exports = (_, { mode }) => {
+const typeshedFallback = path.resolve(__dirname, '..', '..', 'docstubs');
+
+/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => Promise<import('webpack').Configuration>}*/
+module.exports = async (_, { mode }) => {
     return {
         context: __dirname,
         entry: {
             pyright: './src/worker.ts',
         },
         output: {
-            // Use a hash for now, eventually a version. Maybe best done elsewhere but handy for now.
             filename: '[name].worker.js',
             path: outPath,
             devtoolModuleFilenameTemplate:
@@ -73,6 +77,26 @@ module.exports = (_, { mode }) => {
             }),
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
+            }),
+            new VirtualModulesPlugin({
+                'node_modules/typeshed-json': `module.exports = ${JSON.stringify(
+                    (await fs.readdir(typeshedFallback, { recursive: true, withFileTypes: true }))
+                        .filter((entry) => entry.isFile())
+                        .map((file) => [
+                            '/' +
+                                path
+                                    .join('typeshed', path.relative(typeshedFallback, file.parentPath), file.name)
+                                    .replaceAll(path.win32.sep, path.posix.sep),
+                            readFileSync(path.join(file.parentPath, file.name), { encoding: 'utf8' }),
+                        ])
+                        .reduce(
+                            (prev, [currentFile, currentFileContents]) => ({
+                                ...prev,
+                                [currentFile]: currentFileContents,
+                            }),
+                            {}
+                        )
+                )}`,
             }),
         ],
     };
