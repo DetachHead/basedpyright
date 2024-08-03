@@ -74,12 +74,13 @@ export class PyrightBrowserServer extends RealLanguageServer {
     ): Promise<InitializeResult> {
         const { files } = params.initializationOptions;
         if (typeof files === 'object') {
-            this._initialFiles = files as InitialFiles;
-            (this.serverOptions.serviceProvider.fs() as TestFileSystem).apply({
-                ...files,
+            const initialFiles = {
                 // virtual module generated in webpack config
                 ...require('typeshed-json'),
-            });
+                ...files,
+            } as InitialFiles;
+            this._initialFiles = initialFiles;
+            (this.serverOptions.serviceProvider.fs() as TestFileSystem).apply(initialFiles);
         }
         return super.initialize(params, supportedCommands, supportedCodeActions);
     }
