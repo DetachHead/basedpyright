@@ -6,11 +6,9 @@
 
 import { Connection } from 'vscode-languageserver';
 
-import { ImportResolver } from './analyzer/importResolver';
 import { BackgroundAnalysis } from './backgroundAnalysis';
 import { BackgroundAnalysisBase } from './backgroundAnalysisBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
-import { ConfigOptions } from './common/configOptions';
 import { ConsoleWithLogLevel } from './common/console';
 import { isDebugMode } from './common/core';
 import { FileBasedCancellationProvider } from './common/fileBasedCancellationUtils';
@@ -18,7 +16,6 @@ import { FileSystem } from './common/fileSystem';
 import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
 import { RealTempFile, WorkspaceFileWatcherProvider, createFromRealFileSystem } from './common/realFileSystem';
-import { ServiceProvider } from './common/serviceProvider';
 import { RealLanguageServer } from './realLanguageServer';
 
 export class PyrightServer extends RealLanguageServer {
@@ -49,19 +46,5 @@ export class PyrightServer extends RealLanguageServer {
 
     protected override createHost(): Host {
         return new FullAccessHost(this.serverOptions.serviceProvider);
-    }
-
-    protected override createImportResolver(
-        serviceProvider: ServiceProvider,
-        options: ConfigOptions,
-        host: Host
-    ): ImportResolver {
-        const importResolver = new ImportResolver(serviceProvider, options, host);
-
-        // In case there was cached information in the file system related to
-        // import resolution, invalidate it now.
-        importResolver.invalidateCache();
-
-        return importResolver;
     }
 }
