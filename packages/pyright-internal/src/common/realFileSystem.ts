@@ -267,6 +267,8 @@ export class RealFileSystem implements FileSystem {
                 if (entry.isFile() && yarnFS.isZip(path)) {
                     return {
                         name: entry.name,
+                        parentPath: entry.parentPath,
+                        path: entry.path,
                         isFile: () => false,
                         isDirectory: () => true,
                         isBlockDevice: () => false,
