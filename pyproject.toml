@@ -192,6 +192,8 @@ include = ["basedpyright", "based_build", "pdm_build.py"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
 reportImplicitStringConcatenation = false                 # conflicts with ruff formatter
+venvPath = "."
+venv = ".venv"
 
 
 [tool.ruff]

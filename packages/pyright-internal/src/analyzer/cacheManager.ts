@@ -12,7 +12,7 @@ import type { HeapInfo } from 'v8';
 import { AnalysisRequest } from '../backgroundAnalysisBase';
 import { ConsoleInterface } from '../common/console';
 import { fail } from '../common/debug';
-import { getHeapStatistics } from '../common/memUtils';
+import { getHeapStatistics, getSystemMemoryInfo } from '../common/memUtils';
 import { MessageSourceSink } from '../common/workersHost';
 
 export interface CacheOwner {
@@ -125,8 +125,12 @@ export class CacheManager {
         if (console && Date.now() - this._lastHeapStats > 1000) {
             // This can fill up the user's console, so we only do it once per second.
             this._lastHeapStats = Date.now();
+            const systemMemInfo = getSystemMemoryInfo();
+
             console.info(
                 `Heap stats: ` +
+                    `total_memory_size=${this._convertToMB(systemMemInfo.total)}, ` +
+                    `total_free_size=${this._convertToMB(systemMemInfo.free)}, ` +
                     `total_heap_size=${this._convertToMB(heapStats.total_heap_size)}, ` +
                     `used_heap_size=${this._convertToMB(heapStats.used_heap_size)}, ` +
                     `cross_worker_used_heap_size=${this._convertToMB(usage)}, ` +

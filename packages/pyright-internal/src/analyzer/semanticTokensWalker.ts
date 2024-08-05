@@ -17,7 +17,7 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
-import { isParameterDeclaration } from './declaration';
+import { isParamDeclaration } from './declaration';
 
 export type SemanticTokenItem = {
     type: string;
@@ -228,7 +228,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
         }
         const declarations = this._evaluator?.getDeclarationsForNameNode(node);
-        if (declarations?.some(isParameterDeclaration)) {
+        if (declarations?.some(isParamDeclaration)) {
             const parent = declarations[0].node.parent as FunctionNode | LambdaNode;
             // Avoid duplicates for parameters visited by `visitParameter`
             if (!parent.d.params.some((param) => param.d.name?.id === node.id)) {

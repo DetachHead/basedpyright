@@ -815,6 +815,24 @@ test('Solver35', () => {
     TestUtils.validateResults(analysisResults, 4);
 });
 
+test('Solver36', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver36.py']);
+
+    TestUtils.validateResults(analysisResults, 1);
+});
+
+test('Solver37', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver37.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Solver38', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver38.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('SolverScoring1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solverScoring1.py']);
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 
 def foo(bar: Any) -> Any:
@@ -18,3 +18,6 @@ qux: Callable[[], Any] = lambda: bar
 match(bar):
     case _:
         ...
+
+cast(int, bar)
+cast(int, bar.asdf)

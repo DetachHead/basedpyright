@@ -9,7 +9,7 @@
 
 import { appendArray } from '../common/collectionUtils';
 import { assert } from '../common/debug';
-import { ParameterCategory } from '../parser/parseNodes';
+import { ParamCategory } from '../parser/parseNodes';
 import { isTypedKwargs } from './parameterUtils';
 import * as ParseTreeUtils from './parseTreeUtils';
 import {
@@ -25,12 +25,12 @@ import {
     isParamSpec,
     isTypeSame,
     isTypeVar,
+    isTypeVarTuple,
     isUnknown,
     isUnpacked,
-    isVariadicTypeVar,
     maxTypeRecursionCount,
     OverloadedFunctionType,
-    TupleTypeArgument,
+    TupleTypeArg,
     Type,
     TypeBase,
     TypeCategory,
@@ -49,7 +49,7 @@ export const enum PrintTypeFlags {
     PrintUnknownWithAny = 1 << 0,
 
     // Omit type arguments for generic classes if they are "Unknown".
-    OmitTypeArgumentsIfUnknown = 1 << 1,
+    OmitTypeArgsIfUnknown = 1 << 1,
 
     // Omit printing type for param if type is not specified.
     OmitUnannotatedParamType = 1 << 2,
@@ -255,32 +255,32 @@ function printTypeInternal(
                     aliasName = aliasInfo.fullName;
                 }
 
-                const typeParams = aliasInfo.typeParameters;
+                const typeParams = aliasInfo.typeParams;
 
                 if (typeParams && typeParams.length > 0) {
                     let argumentStrings: string[] | undefined;
 
                     // If there is a type arguments array, it's a specialized type alias.
-                    if (aliasInfo.typeArguments) {
+                    if (aliasInfo.typeArgs) {
                         if (
-                            (printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0 ||
-                            aliasInfo.typeArguments.some((typeArg) => !isUnknown(typeArg))
+                            (printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0 ||
+                            aliasInfo.typeArgs.some((typeArg) => !isUnknown(typeArg))
                         ) {
                             argumentStrings = [];
-                            aliasInfo.typeArguments.forEach((typeArg, index) => {
+                            aliasInfo.typeArgs.forEach((typeArg, index) => {
                                 // Which type parameter does this map to?
                                 const typeParam =
                                     index < typeParams.length ? typeParams[index] : typeParams[typeParams.length - 1];
 
                                 // If this type argument maps to a variadic type parameter, unpack it.
                                 if (
-                                    isVariadicTypeVar(typeParam) &&
+                                    isTypeVarTuple(typeParam) &&
                                     isClassInstance(typeArg) &&
                                     isTupleClass(typeArg) &&
-                                    typeArg.priv.tupleTypeArguments &&
-                                    typeArg.priv.tupleTypeArguments.every((typeArg) => !typeArg.isUnbounded)
+                                    typeArg.priv.tupleTypeArgs &&
+                                    typeArg.priv.tupleTypeArgs.every((typeArg) => !typeArg.isUnbounded)
                                 ) {
-                                    typeArg.priv.tupleTypeArguments.forEach((tupleTypeArg) => {
+                                    typeArg.priv.tupleTypeArgs.forEach((tupleTypeArg) => {
                                         argumentStrings!.push(
                                             printTypeInternal(
                                                 tupleTypeArg.type,
@@ -308,7 +308,7 @@ function printTypeInternal(
                         }
                     } else {
                         if (
-                            (printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0 ||
+                            (printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0 ||
                             typeParams.some((typeParam) => !isUnknown(typeParam))
                         ) {
                             argumentStrings = [];
@@ -360,7 +360,7 @@ function printTypeInternal(
         }
 
         if (aliasInfo) {
-            if (!aliasInfo.typeParameters) {
+            if (!aliasInfo.typeParams) {
                 let name =
                     (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
                         ? aliasInfo.fullName
@@ -717,7 +717,7 @@ function printTypeInternal(
                     // If it's a synthesized type var used to implement `self` or `cls` types,
                     // print the type with a special character that indicates that the type
                     // is internally represented as a TypeVar.
-                    if (type.shared.isSynthesizedSelf && type.shared.boundType) {
+                    if (TypeVarType.isSelf(type) && type.shared.boundType) {
                         let boundTypeString = printTypeInternal(
                             type.shared.boundType,
                             printTypeFlags & ~PrintTypeFlags.ExpandTypeAlias,
@@ -747,7 +747,7 @@ function printTypeInternal(
                         : 'Unknown';
                 }
 
-                if (type.shared.isParamSpec) {
+                if (isParamSpec(type)) {
                     const paramSpecText = _getReadableTypeVarName(
                         type,
                         (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
@@ -760,19 +760,22 @@ function printTypeInternal(
                 }
 
                 let typeVarName = _getReadableTypeVarName(type, (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0);
-                if (type.priv.isVariadicUnpacked) {
-                    typeVarName = _printUnpack(typeVarName, printTypeFlags);
-                }
 
-                if (type.priv.isVariadicInUnion) {
-                    typeVarName = `Union[${typeVarName}]`;
+                if (isTypeVarTuple(type)) {
+                    if (type.priv.isVariadicUnpacked) {
+                        typeVarName = _printUnpack(typeVarName, printTypeFlags);
+                    }
+
+                    if (type.priv.isVariadicInUnion) {
+                        typeVarName = `Union[${typeVarName}]`;
+                    }
                 }
 
                 if (TypeBase.isInstantiable(type)) {
                     typeVarName = `${_printNestedInstantiable(type, typeVarName)}`;
                 }
 
-                if (!type.shared.isVariadic && (printTypeFlags & PrintTypeFlags.PrintTypeVarVariance) !== 0) {
+                if (!isTypeVarTuple(type) && (printTypeFlags & PrintTypeFlags.PrintTypeVarVariance) !== 0) {
                     const varianceText = _getTypeVarVarianceText(type);
                     if (varianceText) {
                         typeVarName = `${typeVarName} (${varianceText})`;
@@ -815,7 +818,7 @@ function printFunctionType(
         if (typeWithoutParamSpec.shared.parameters.length === 0) {
             isPositionalParamsOnly = true;
         } else {
-            if (typeWithoutParamSpec.shared.parameters.every((param) => param.category === ParameterCategory.Simple)) {
+            if (typeWithoutParamSpec.shared.parameters.every((param) => param.category === ParamCategory.Simple)) {
                 const lastParam =
                     typeWithoutParamSpec.shared.parameters[typeWithoutParamSpec.shared.parameters.length - 1];
                 if (!lastParam.name) {
@@ -842,7 +845,7 @@ function printFunctionType(
 
             typeWithoutParamSpec.shared.parameters.forEach((param, index) => {
                 if (param.name) {
-                    const paramType = FunctionType.getEffectiveParameterType(typeWithoutParamSpec, index);
+                    const paramType = FunctionType.getEffectiveParamType(typeWithoutParamSpec, index);
                     if (recursionTypes.length < maxTypeRecursionCount) {
                         paramTypes.push(
                             printTypeInternal(
@@ -932,14 +935,14 @@ function printObjectTypeForClassInternal(
     // If this is a pseudo-generic class, don't display the type arguments
     // or type parameters because it will confuse users.
     if (!ClassType.isPseudoGenericClass(type)) {
-        const typeParams = ClassType.getTypeParameters(type);
+        const typeParams = ClassType.getTypeParams(type);
         const lastTypeParam = typeParams.length > 0 ? typeParams[typeParams.length - 1] : undefined;
-        const isVariadic = lastTypeParam ? lastTypeParam.shared.isVariadic : false;
+        const isVariadic = lastTypeParam ? isTypeVarTuple(lastTypeParam) : false;
 
         // If there is a type arguments array, it's a specialized class.
-        const typeArgs: TupleTypeArgument[] | undefined =
-            type.priv.tupleTypeArguments ??
-            type.priv.typeArguments?.map((t) => {
+        const typeArgs: TupleTypeArg[] | undefined =
+            type.priv.tupleTypeArgs ??
+            type.priv.typeArgs?.map((t) => {
                 return { type: t, isUnbounded: false };
             });
         if (typeArgs) {
@@ -952,13 +955,13 @@ function printObjectTypeForClassInternal(
                     const typeParam = index < typeParams.length ? typeParams[index] : undefined;
                     if (
                         typeParam &&
-                        typeParam.shared.isVariadic &&
+                        isTypeVarTuple(typeParam) &&
                         isClassInstance(typeArg.type) &&
                         ClassType.isBuiltIn(typeArg.type, 'tuple') &&
-                        typeArg.type.priv.tupleTypeArguments
+                        typeArg.type.priv.tupleTypeArgs
                     ) {
                         // Expand the tuple type that maps to the variadic type parameter.
-                        if (typeArg.type.priv.tupleTypeArguments.length === 0) {
+                        if (typeArg.type.priv.tupleTypeArgs.length === 0) {
                             if (!isUnknown(typeArg.type)) {
                                 isAllUnknown = false;
                             }
@@ -969,7 +972,7 @@ function printObjectTypeForClassInternal(
                         } else {
                             appendArray(
                                 typeArgStrings,
-                                typeArg.type.priv.tupleTypeArguments.map((typeArg) => {
+                                typeArg.type.priv.tupleTypeArgs.map((typeArg) => {
                                     if (!isUnknown(typeArg.type)) {
                                         isAllUnknown = false;
                                     }
@@ -1021,7 +1024,7 @@ function printObjectTypeForClassInternal(
                     objName = _printUnpack(objName, printTypeFlags);
                 }
 
-                if ((printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0 || !isAllUnknown) {
+                if ((printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0 || !isAllUnknown) {
                     objName += '[' + typeArgStrings.join(', ') + ']';
                 }
             } else {
@@ -1040,7 +1043,7 @@ function printObjectTypeForClassInternal(
 
             if (typeParams.length > 0) {
                 if (
-                    (printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0 ||
+                    (printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0 ||
                     typeParams.some((typeParam) => !isUnknown(typeParam))
                 ) {
                     objName +=
@@ -1095,16 +1098,16 @@ function printFunctionPartsInternal(
         // Handle specialized variadic type parameters specially.
         if (
             index === type.shared.parameters.length - 1 &&
-            param.category === ParameterCategory.ArgsList &&
-            isVariadicTypeVar(param.type)
+            param.category === ParamCategory.ArgsList &&
+            isTypeVarTuple(param.type)
         ) {
-            const specializedParamType = FunctionType.getEffectiveParameterType(type, index);
+            const specializedParamType = FunctionType.getEffectiveParamType(type, index);
             if (
                 isClassInstance(specializedParamType) &&
                 ClassType.isBuiltIn(specializedParamType, 'tuple') &&
-                specializedParamType.priv.tupleTypeArguments
+                specializedParamType.priv.tupleTypeArgs
             ) {
-                specializedParamType.priv.tupleTypeArguments.forEach((paramType) => {
+                specializedParamType.priv.tupleTypeArgs.forEach((paramType) => {
                     const paramString = printTypeInternal(
                         paramType.type,
                         printTypeFlags,
@@ -1140,11 +1143,11 @@ function printFunctionPartsInternal(
         }
 
         let paramString = '';
-        if (param.category === ParameterCategory.ArgsList) {
+        if (param.category === ParamCategory.ArgsList) {
             if (!param.name || !FunctionParam.isNameSynthesized(param)) {
                 paramString += '*';
             }
-        } else if (param.category === ParameterCategory.KwargsDict) {
+        } else if (param.category === ParamCategory.KwargsDict) {
             paramString += '**';
         }
 
@@ -1165,7 +1168,7 @@ function printFunctionPartsInternal(
         if (param.name) {
             // Avoid printing type types if parameter have unknown type.
             if (FunctionParam.isTypeDeclared(param) || FunctionParam.isTypeInferred(param)) {
-                const paramType = FunctionType.getEffectiveParameterType(type, index);
+                const paramType = FunctionType.getEffectiveParamType(type, index);
                 let paramTypeString =
                     recursionTypes.length < maxTypeRecursionCount
                         ? printTypeInternal(
@@ -1180,11 +1183,11 @@ function printFunctionPartsInternal(
 
                 if (emittedParamName) {
                     paramString += ': ';
-                } else if (param.category === ParameterCategory.ArgsList && !isUnpacked(paramType)) {
+                } else if (param.category === ParamCategory.ArgsList && !isUnpacked(paramType)) {
                     paramString += '*';
                 }
 
-                if (param.category === ParameterCategory.KwargsDict && isUnpacked(paramType)) {
+                if (param.category === ParamCategory.KwargsDict && isUnpacked(paramType)) {
                     if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
                         // Use "Unpack" because ** isn't legal syntax prior to Python 3.12.
                         paramTypeString = `Unpack[${paramTypeString.substring(1)}]`;
@@ -1197,10 +1200,7 @@ function printFunctionPartsInternal(
                 paramString += paramTypeString;
 
                 if (isParamSpec(paramType)) {
-                    if (
-                        param.category === ParameterCategory.ArgsList ||
-                        param.category === ParameterCategory.KwargsDict
-                    ) {
+                    if (param.category === ParamCategory.ArgsList || param.category === ParamCategory.KwargsDict) {
                         isParamSpecArgsKwargsParam = true;
                     }
                 }
@@ -1208,7 +1208,7 @@ function printFunctionPartsInternal(
                 // PEP8 indicates that the "=" for the default value should have surrounding
                 // spaces when used with a type annotation.
                 defaultValueAssignment = ' = ';
-            } else if ((printTypeFlags & PrintTypeFlags.OmitTypeArgumentsIfUnknown) === 0) {
+            } else if ((printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0) {
                 if (!FunctionParam.isNameSynthesized(param)) {
                     paramString += ': ';
                 }
@@ -1219,7 +1219,7 @@ function printFunctionPartsInternal(
                 }
                 defaultValueAssignment = ' = ';
             }
-        } else if (param.category === ParameterCategory.Simple) {
+        } else if (param.category === ParamCategory.Simple) {
             if (sawDefinedName) {
                 paramString += '/';
             } else {
@@ -1241,9 +1241,9 @@ function printFunctionPartsInternal(
 
         // If this is a (...) signature, replace the *args, **kwargs with "...".
         if (FunctionType.isGradualCallableForm(type) && !isParamSpecArgsKwargsParam) {
-            if (param.category === ParameterCategory.ArgsList) {
+            if (param.category === ParamCategory.ArgsList) {
                 paramString = '...';
-            } else if (param.category === ParameterCategory.KwargsDict) {
+            } else if (param.category === ParamCategory.KwargsDict) {
                 return;
             }
         }
@@ -1359,11 +1359,11 @@ class UniqueNameMap {
                 this._addIfUnique(typeAliasName, type, /* useTypeAliasName */ true);
 
                 // Recursively add the type arguments if present.
-                if (aliasInfo.typeArguments) {
+                if (aliasInfo.typeArgs) {
                     recursionTypes.push(type);
 
                     try {
-                        aliasInfo.typeArguments.forEach((typeArg) => {
+                        aliasInfo.typeArgs.forEach((typeArg) => {
                             this.build(typeArg, recursionTypes, recursionCount);
                         });
                     } finally {
@@ -1381,7 +1381,7 @@ class UniqueNameMap {
             switch (type.category) {
                 case TypeCategory.Function: {
                     type.shared.parameters.forEach((_, index) => {
-                        const paramType = FunctionType.getEffectiveParameterType(type, index);
+                        const paramType = FunctionType.getEffectiveParamType(type, index);
                         this.build(paramType, recursionTypes, recursionCount);
                     });
 
@@ -1413,12 +1413,12 @@ class UniqueNameMap {
                     this._addIfUnique(className, type);
 
                     if (!ClassType.isPseudoGenericClass(type)) {
-                        if (type.priv.tupleTypeArguments) {
-                            type.priv.tupleTypeArguments.forEach((typeArg) => {
+                        if (type.priv.tupleTypeArgs) {
+                            type.priv.tupleTypeArgs.forEach((typeArg) => {
                                 this.build(typeArg.type, recursionTypes, recursionCount);
                             });
-                        } else if (type.priv.typeArguments) {
-                            type.priv.typeArguments.forEach((typeArg) => {
+                        } else if (type.priv.typeArgs) {
+                            type.priv.typeArgs.forEach((typeArg) => {
                                 this.build(typeArg, recursionTypes, recursionCount);
                             });
                         }

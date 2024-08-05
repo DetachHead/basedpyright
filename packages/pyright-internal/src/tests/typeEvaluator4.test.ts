@@ -13,6 +13,7 @@ import {
     pythonVersion3_10,
     pythonVersion3_11,
     pythonVersion3_12,
+    pythonVersion3_13,
     pythonVersion3_7,
     pythonVersion3_8,
     pythonVersion3_9,
@@ -33,7 +34,7 @@ test('Final2', () => {
 
 test('Final3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['final3.py']);
-    TestUtils.validateResults(analysisResults, 39);
+    TestUtils.validateResults(analysisResults, 43);
 });
 
 test('Final4', () => {
@@ -242,6 +243,16 @@ test('MemberAccess25', () => {
     TestUtils.validateResults(analysisResults, 12);
 });
 
+test('MemberAccess26', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess26.py']);
+    TestUtils.validateResults(analysisResults, 3);
+});
+
+test('MemberAccess27', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess27.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('DataClassNamedTuple1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassNamedTuple1.py']);
 
@@ -358,6 +369,17 @@ test('DataClass17', () => {
     TestUtils.validateResults(analysisResults, 5);
 });
 
+test('DataClassReplace1', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['dataclassReplace1.py'], configOptions);
+    TestUtils.validateResults(analysisResults1, 10);
+
+    configOptions.defaultPythonVersion = pythonVersion3_13;
+    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['dataclassReplace1.py'], configOptions);
+    TestUtils.validateResults(analysisResults2, 4);
+});
+
 test('DataClassFrozen1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassFrozen1.py']);
 
@@ -399,17 +421,13 @@ test('DataClassDescriptors2', () => {
 });
 
 test('DataClassConverter1', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter1.py'], configOptions);
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter1.py']);
 
     TestUtils.validateResults(analysisResults, 3);
 });
 
 test('DataClassConverter2', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter2.py'], configOptions);
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassConverter2.py']);
 
     TestUtils.validateResults(analysisResults, 4);
 });
@@ -751,7 +769,7 @@ test('ParamSpec40', () => {
 
 test('ParamSpec41', () => {
     const results = TestUtils.typeAnalyzeSampleFiles(['paramSpec41.py']);
-    TestUtils.validateResults(results, 2);
+    TestUtils.validateResults(results, 1);
 });
 
 test('ParamSpec42', () => {

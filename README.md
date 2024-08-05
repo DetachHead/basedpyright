@@ -5,7 +5,7 @@
 )](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright)
 [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
-[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](./docs/installation.md#pycharm)
+[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](https://plugins.jetbrains.com/plugin/24145)
 [![nvim-lspconfig](https://img.shields.io/badge/nvim--lspconfig-grey?logo=neovim)](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
 [![coc.nvim](https://img.shields.io/badge/coc.nvim-grey?logo=vim)](https://github.com/fannheyward/coc-basedpyright)
 [![emacs](https://img.shields.io/badge/emacs-grey?logo=gnuemacs&logoColor=ffffff)](https://github.com/manateelazycat/lsp-bridge)
@@ -74,9 +74,7 @@ it's good practice to specify an error code in your `pyright: ignore` comments:
 # pyright: ignore[reportUnreachable]
 ```
 
-this way, if the error changes or a new error appears on the same line in the future, you'll get a new error because the comment doesn't account for the other error. unfortunately there are many rules in pyright that do not have error codes, so you can't always do this.
-
-basedpyright resolves this by reporting those errors under the `reportGeneralTypeIssues` diagnostic rule. this isn't a perfect solution, but there were over 100 errors that didn't have diagnostic rules. i intend to split them into their own rules in the future, but this will do for now.
+this way, if the error changes or a new error appears on the same line in the future, you'll get a new error because the comment doesn't account for the other error.
 
 note that `type: ignore` comments (`enableTypeIgnoreComments`) are unsafe and are disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
 
@@ -352,7 +350,7 @@ basedpyright:
 
 we aim to [port most of basedmypy's features to basedpyright](https://github.com/DetachHead/basedpyright/issues?q=is%3Aissue+is%3Aopen+label%3A%22basedmypy+feature+parity%22), however as mentioned above our priority is to first fix the critical problems with pyright.
 
-note that any non-standard features we add will be optional, as we intend to support library developmers who can't control what type checker their library is used with.
+note that any non-standard features we add will be optional, as we intend to support library developers who can't control what type checker their library is used with.
 
 # pypi package
 

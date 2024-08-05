@@ -29,11 +29,11 @@ export function hasTypeForDeclaration(declaration: Declaration): boolean {
         case DeclarationType.Class:
         case DeclarationType.SpecialBuiltInClass:
         case DeclarationType.Function:
-        case DeclarationType.TypeParameter:
+        case DeclarationType.TypeParam:
         case DeclarationType.TypeAlias:
             return true;
 
-        case DeclarationType.Parameter: {
+        case DeclarationType.Param: {
             if (declaration.node.d.annotation || declaration.node.d.annotationComment) {
                 return true;
             }
@@ -123,11 +123,11 @@ export function getNameFromDeclaration(declaration: Declaration) {
 
         case DeclarationType.Class:
         case DeclarationType.Function:
-        case DeclarationType.TypeParameter:
+        case DeclarationType.TypeParam:
         case DeclarationType.TypeAlias:
             return declaration.node.d.name.d.value;
 
-        case DeclarationType.Parameter:
+        case DeclarationType.Param:
             return declaration.node.d.name?.d.value;
 
         case DeclarationType.Variable:
@@ -157,8 +157,8 @@ export function getNameNodeForDeclaration(declaration: Declaration): NameNode | 
 
         case DeclarationType.Class:
         case DeclarationType.Function:
-        case DeclarationType.TypeParameter:
-        case DeclarationType.Parameter:
+        case DeclarationType.TypeParam:
+        case DeclarationType.Param:
         case DeclarationType.TypeAlias:
             return declaration.node.d.name;
 

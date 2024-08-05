@@ -32,9 +32,9 @@ import { isDefinedInFile } from '../analyzer/declarationUtils';
 import { transformTypeForEnumMember } from '../analyzer/enums';
 import { ImportedModuleDescriptor, ImportResolver } from '../analyzer/importResolver';
 import { ImportResult } from '../analyzer/importResult';
-import { getParameterListDetails, ParameterKind } from '../analyzer/parameterUtils';
+import { getParamListDetails, ParamKind } from '../analyzer/parameterUtils';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
-import { getCallNodeAndActiveParameterIndex } from '../analyzer/parseTreeUtils';
+import { getCallNodeAndActiveParamIndex } from '../analyzer/parseTreeUtils';
 import { getScopeForNode } from '../analyzer/scopeUtils';
 import { isStubFile, SourceMapper } from '../analyzer/sourceMapper';
 import { Symbol, SymbolTable } from '../analyzer/symbol';
@@ -89,7 +89,7 @@ import { Uri } from '../common/uri/uri';
 import { convertToTextEdits } from '../common/workspaceEditUtils';
 import { Localizer } from '../localization/localize';
 import {
-    ArgumentCategory,
+    ArgCategory,
     DecoratorNode,
     DictionaryKeyEntryNode,
     DictionaryNode,
@@ -102,7 +102,7 @@ import {
     isExpressionNode,
     ModuleNameNode,
     NameNode,
-    ParameterCategory,
+    ParamCategory,
     ParameterNode,
     ParseNode,
     ParseNodeType,
@@ -319,7 +319,7 @@ export class CompletionProvider {
     resolveCompletionItem(completionItem: CompletionItem) {
         throwIfCancellationRequested(this.cancellationToken);
 
-        const completionItemData = fromLSPAny<CompletionItemData>(completionItem.data);
+        const completionItemData = this.getCompletionItemData(completionItem);
 
         const label = completionItem.label;
         let autoImportText = '';
@@ -407,6 +407,10 @@ export class CompletionProvider {
 
     protected get configOptions() {
         return this.program.configOptions;
+    }
+
+    protected getCompletionItemData(item: CompletionItem): CompletionItemData {
+        return fromLSPAny<CompletionItemData>(item.data);
     }
 
     protected getMethodOverrideCompletions(
@@ -559,15 +563,13 @@ export class CompletionProvider {
                 if (parameter.d.name) {
                     results.push([
                         parameter,
-                        parameter.d.category === ParameterCategory.Simple &&
-                            !!parameter.d.name &&
-                            sawKeywordOnlySeparator,
+                        parameter.d.category === ParamCategory.Simple && !!parameter.d.name && sawKeywordOnlySeparator,
                     ]);
                 }
 
                 // All simple parameters after a `*` or `*args` parameter
                 // are considered keyword only.
-                if (parameter.d.category === ParameterCategory.ArgsList) {
+                if (parameter.d.category === ParamCategory.ArgsList) {
                     sawKeywordOnlySeparator = true;
                 }
             }
@@ -577,11 +579,11 @@ export class CompletionProvider {
 
         function convertToString(parameter: [node: ParameterNode, keywordOnly: boolean]) {
             const name = parameter[0].d.name?.d.value;
-            if (parameter[0].d.category === ParameterCategory.ArgsList) {
+            if (parameter[0].d.category === ParamCategory.ArgsList) {
                 return `*${name}`;
             }
 
-            if (parameter[0].d.category === ParameterCategory.KwargsDict) {
+            if (parameter[0].d.category === ParamCategory.KwargsDict) {
                 return `**${name}`;
             }
 
@@ -641,7 +643,7 @@ export class CompletionProvider {
         // Are we resolving a completion item? If so, see if this symbol
         // is the one that we're trying to match.
         if (this.itemToResolve) {
-            const completionItemData = fromLSPAny<CompletionItemData>(this.itemToResolve.data);
+            const completionItemData = this.getCompletionItemData(this.itemToResolve);
 
             if (completionItemData.symbolLabel !== name) {
                 // It's not what we are looking for.
@@ -794,6 +796,26 @@ export class CompletionProvider {
         return completionMap;
     }
 
+    protected createAutoImporter(completionMap: CompletionMap, lazyEdit: boolean) {
+        const currentFile = this.program.getSourceFileInfo(this.fileUri);
+        const moduleSymbolMap = buildModuleSymbolsMap(
+            this.program.getSourceFileInfoList().filter((s) => s !== currentFile)
+        );
+
+        return new AutoImporter(
+            this.execEnv,
+            this.program,
+            this.importResolver,
+            this.parseResults,
+            this.position,
+            completionMap,
+            moduleSymbolMap,
+            {
+                lazyEdit,
+            }
+        );
+    }
+
     protected addAutoImportCompletions(
         priorWord: string,
         similarityLimit: number,
@@ -806,23 +828,7 @@ export class CompletionProvider {
             return;
         }
 
-        const currentFile = this.program.getSourceFileInfo(this.fileUri);
-        const moduleSymbolMap = buildModuleSymbolsMap(
-            this.program.getSourceFileInfoList().filter((s) => s !== currentFile)
-        );
-
-        const autoImporter = new AutoImporter(
-            this.execEnv,
-            this.program,
-            this.importResolver,
-            this.parseResults,
-            this.position,
-            completionMap,
-            moduleSymbolMap,
-            {
-                lazyEdit,
-            }
-        );
+        const autoImporter = this.createAutoImporter(completionMap, lazyEdit);
 
         const results: AutoImportResult[] = [];
         appendArray(
@@ -887,7 +893,12 @@ export class CompletionProvider {
         }
 
         if (
-            completionMap.has(name, CompletionMap.matchKindAndImportText, itemKind, detail?.autoImportText?.importText)
+            completionMap.has(
+                name,
+                (i) => CompletionMap.matchKindAndImportText(i, this.getCompletionItemData.bind(this)),
+                itemKind,
+                detail?.autoImportText?.importText
+            )
         ) {
             return;
         }
@@ -1025,7 +1036,7 @@ export class CompletionProvider {
 
             // This is for auto import entries from indices which skip symbols.
             if (this.itemToResolve) {
-                const data = fromLSPAny<CompletionItemData>(this.itemToResolve.data);
+                const data = this.getCompletionItemData(this.itemToResolve);
                 if (data.autoImportText === completionItemData.autoImportText) {
                     this.itemToResolve.additionalTextEdits = completionItem.additionalTextEdits;
                 }
@@ -1841,9 +1852,9 @@ export class CompletionProvider {
         const paramList = node.d.params
             .map((param, index) => {
                 let paramString = '';
-                if (param.d.category === ParameterCategory.ArgsList) {
+                if (param.d.category === ParamCategory.ArgsList) {
                     paramString += '*';
-                } else if (param.d.category === ParameterCategory.KwargsDict) {
+                } else if (param.d.category === ParamCategory.KwargsDict) {
                     paramString += '**';
                 }
 
@@ -1853,7 +1864,7 @@ export class CompletionProvider {
 
                 // Currently, we don't automatically add import if the type used in the annotation is not imported
                 // in current file.
-                const paramTypeAnnotation = ParseTreeUtils.getTypeAnnotationForParameter(node, index);
+                const paramTypeAnnotation = ParseTreeUtils.getTypeAnnotationForParam(node, index);
                 if (paramTypeAnnotation) {
                     paramString += ': ' + ParseTreeUtils.printExpression(paramTypeAnnotation, printFlags);
                 }
@@ -1867,7 +1878,7 @@ export class CompletionProvider {
                         : ParseTreeUtils.printExpression(param.d.defaultValue, printFlags);
                 }
 
-                if (!paramString && !param.d.name && param.d.category === ParameterCategory.Simple) {
+                if (!paramString && !param.d.name && param.d.category === ParamCategory.Simple) {
                     return '/';
                 }
 
@@ -1973,7 +1984,7 @@ export class CompletionProvider {
         return (
             currentNode &&
             currentNode.nodeType === ParseNodeType.Argument &&
-            currentNode.d.argCategory === ArgumentCategory.Simple &&
+            currentNode.d.argCategory === ArgCategory.Simple &&
             currentNode.parent &&
             currentNode.parent.nodeType === ParseNodeType.Index &&
             currentNode.parent.d.leftExpr &&
@@ -1991,11 +2002,7 @@ export class CompletionProvider {
     ) {
         // If we're within the argument list of a call, add parameter names.
         const offset = convertPositionToOffset(this.position, this.parseResults.tokenizerOutput.lines)!;
-        const callInfo = getCallNodeAndActiveParameterIndex(
-            parseNode,
-            offset,
-            this.parseResults.tokenizerOutput.tokens
-        );
+        const callInfo = getCallNodeAndActiveParamIndex(parseNode, offset, this.parseResults.tokenizerOutput.tokens);
 
         if (!callInfo) {
             return;
@@ -2135,9 +2142,9 @@ export class CompletionProvider {
             doForEachSignature(getItemType, (signature) => {
                 if (
                     signature.shared.parameters.length >= 1 &&
-                    signature.shared.parameters[0].category === ParameterCategory.Simple
+                    signature.shared.parameters[0].category === ParamCategory.Simple
                 ) {
-                    typesToCombine.push(FunctionType.getEffectiveParameterType(signature, 0));
+                    typesToCombine.push(FunctionType.getEffectiveParamType(signature, 0));
                 }
             });
 
@@ -2189,7 +2196,7 @@ export class CompletionProvider {
         const declaration = declarations.length > 0 ? declarations[0] : undefined;
         if (
             !declaration ||
-            (declaration.type !== DeclarationType.Variable && declaration.type !== DeclarationType.Parameter)
+            (declaration.type !== DeclarationType.Variable && declaration.type !== DeclarationType.Param)
         ) {
             return [];
         }
@@ -2860,10 +2867,10 @@ export class CompletionProvider {
     }
 
     private _addNamedParametersToMap(type: FunctionType, names: Set<string>) {
-        const paramDetails = getParameterListDetails(type);
+        const paramDetails = getParamListDetails(type);
 
         paramDetails.params.forEach((paramInfo) => {
-            if (paramInfo.param.name && paramInfo.kind !== ParameterKind.Positional) {
+            if (paramInfo.param.name && paramInfo.kind !== ParamKind.Positional) {
                 if (!SymbolNameUtils.isPrivateOrProtectedName(paramInfo.param.name)) {
                     names.add(paramInfo.param.name);
                 }
@@ -3043,10 +3050,10 @@ export class CompletionProvider {
                     ? CompletionItemKind.Class
                     : CompletionItemKind.Variable;
 
-            case DeclarationType.Parameter:
+            case DeclarationType.Param:
                 return CompletionItemKind.Variable;
 
-            case DeclarationType.TypeParameter:
+            case DeclarationType.TypeParam:
                 return CompletionItemKind.TypeParameter;
 
             case DeclarationType.Variable:
@@ -3226,36 +3233,36 @@ export class CompletionMap {
 
     static matchKindAndImportText(
         completionItemOrItems: CompletionItem | CompletionItem[],
+        getCompletionData: (d: CompletionItem) => CompletionItemData | undefined,
         kind?: CompletionItemKind,
         autoImportText?: string
     ): boolean {
         if (!Array.isArray(completionItemOrItems)) {
             return (
                 completionItemOrItems.kind === kind &&
-                _getCompletionData(completionItemOrItems)?.autoImportText === autoImportText
+                getCompletionData(completionItemOrItems)?.autoImportText === autoImportText
             );
         } else {
             return !!completionItemOrItems.find(
-                (c) => c.kind === kind && _getCompletionData(c)?.autoImportText === autoImportText
+                (c) => c.kind === kind && getCompletionData(c)?.autoImportText === autoImportText
             );
         }
     }
 
-    static labelOnlyIgnoringAutoImports(completionItemOrItems: CompletionItem | CompletionItem[]): boolean {
+    static labelOnlyIgnoringAutoImports(
+        completionItemOrItems: CompletionItem | CompletionItem[],
+        getCompletionData: (d: CompletionItem) => CompletionItemData | undefined
+    ): boolean {
         if (!Array.isArray(completionItemOrItems)) {
-            if (!_getCompletionData(completionItemOrItems)?.autoImportText) {
+            if (!getCompletionData(completionItemOrItems)?.autoImportText) {
                 return true;
             }
         } else {
-            if (completionItemOrItems.find((c) => !_getCompletionData(c)?.autoImportText)) {
+            if (completionItemOrItems.find((c) => !getCompletionData(c)?.autoImportText)) {
                 return true;
             }
         }
 
         return false;
     }
-}
-
-function _getCompletionData(completionItem: CompletionItem): CompletionItemData | undefined {
-    return fromLSPAny(completionItem.data);
 }

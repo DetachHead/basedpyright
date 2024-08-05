@@ -111,8 +111,8 @@ test('subscript context manager types on 3.8', () => {
         'Subscript for class "AbstractContextManager" will generate runtime exception; enclose type annotation in quotes';
     validateResultsButBased(analysisResults, {
         errors: [
-            { code: DiagnosticRule.reportGeneralTypeIssues, line: 7, message },
-            { code: DiagnosticRule.reportGeneralTypeIssues, line: 9, message },
+            { code: DiagnosticRule.reportIndexIssue, line: 7, message },
+            { code: DiagnosticRule.reportIndexIssue, line: 9, message },
         ],
     });
 });

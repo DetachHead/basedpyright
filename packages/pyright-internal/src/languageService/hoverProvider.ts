@@ -32,6 +32,7 @@ import {
     isFunction,
     isModule,
     isOverloadedFunction,
+    isParamSpec,
     isTypeVar,
 } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -141,7 +142,7 @@ export function getVariableTypeText(
         const typeAliasInfo = getTypeAliasInfo(type);
         if (typeAliasInfo?.name === typeNode.d.value) {
             if (isTypeVar(type)) {
-                label = type.shared.isParamSpec ? 'param spec' : 'type variable';
+                label = isParamSpec(type) ? 'param spec' : 'type variable';
                 typeVarName = type.shared.name;
             } else {
                 // Handle type aliases specially.
@@ -228,7 +229,7 @@ export class HoverProvider {
             return null;
         }
 
-        const node = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
+        let node = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
         if (node === undefined) {
             return null;
         }
@@ -242,7 +243,19 @@ export class HoverProvider {
         };
 
         if (node.nodeType === ParseNodeType.Name) {
+            // Handle the case where we're pointing to a "fused" keyword argument.
+            // We want to display the hover information for the value expression.
+            if (
+                node.parent?.nodeType === ParseNodeType.Argument &&
+                node.parent.d.isNameSameAsValue &&
+                node.parent.d.name === node &&
+                node.parent.d.valueExpr.nodeType === ParseNodeType.Name
+            ) {
+                node = node.parent.d.valueExpr;
+            }
+
             const declarations = this._evaluator.getDeclarationsForNameNode(node);
+
             if (declarations && declarations.length > 0) {
                 const primaryDeclaration = HoverProvider.getPrimaryDeclaration(declarations);
                 this._addResultsForDeclaration(results.parts, primaryDeclaration, node);
@@ -346,7 +359,7 @@ export class HoverProvider {
                 break;
             }
 
-            case DeclarationType.Parameter: {
+            case DeclarationType.Param: {
                 this._addResultsPart(parts, '(parameter) ' + node.d.value + this._getTypeText(node), /* python */ true);
 
                 if (resolvedDecl.docString) {
@@ -356,7 +369,7 @@ export class HoverProvider {
                 break;
             }
 
-            case DeclarationType.TypeParameter: {
+            case DeclarationType.TypeParam: {
                 // If the user is hovering over a type parameter name in a class type parameter
                 // list, display the computed variance of the type param.
                 const typeParamListNode = ParseTreeUtils.getParentNodeOfType(node, ParseNodeType.TypeParameterList);

@@ -127,6 +127,7 @@ export const enum ErrorExpressionCategory {
     MissingPattern,
     MissingPatternSubject,
     MissingDictValue,
+    MissingKeywordArgValue,
     MaxDepthExceeded,
 }
 
@@ -496,7 +497,7 @@ export namespace FunctionNode {
     }
 }
 
-export const enum ParameterCategory {
+export const enum ParamCategory {
     Simple,
     ArgsList,
     KwargsDict,
@@ -504,7 +505,7 @@ export const enum ParameterCategory {
 
 export interface ParameterNode extends ParseNodeBase<ParseNodeType.Parameter> {
     d: {
-        category: ParameterCategory;
+        category: ParamCategory;
         name: NameNode | undefined;
         annotation: ExpressionNode | undefined;
         annotationComment: ExpressionNode | undefined;
@@ -513,7 +514,7 @@ export interface ParameterNode extends ParseNodeBase<ParseNodeType.Parameter> {
 }
 
 export namespace ParameterNode {
-    export function create(startToken: Token, paramCategory: ParameterCategory) {
+    export function create(startToken: Token, paramCategory: ParamCategory) {
         const node: ParameterNode = {
             start: startToken.start,
             length: startToken.length,
@@ -1018,7 +1019,7 @@ export namespace AssignmentNode {
     }
 }
 
-export enum TypeParameterKind {
+export enum TypeParamKind {
     TypeVar,
     TypeVarTuple,
     ParamSpec,
@@ -1027,7 +1028,7 @@ export enum TypeParameterKind {
 export interface TypeParameterNode extends ParseNodeBase<ParseNodeType.TypeParameter> {
     d: {
         name: NameNode;
-        typeParamKind: TypeParameterKind;
+        typeParamKind: TypeParamKind;
         boundExpr?: ExpressionNode;
         defaultExpr?: ExpressionNode;
     };
@@ -1036,7 +1037,7 @@ export interface TypeParameterNode extends ParseNodeBase<ParseNodeType.TypeParam
 export namespace TypeParameterNode {
     export function create(
         name: NameNode,
-        typeParamKind: TypeParameterKind,
+        typeParamKind: TypeParamKind,
         boundExpr?: ExpressionNode,
         defaultExpr?: ExpressionNode
     ) {
@@ -1963,7 +1964,7 @@ export namespace ListNode {
     }
 }
 
-export const enum ArgumentCategory {
+export const enum ArgCategory {
     Simple,
     UnpackedList,
     UnpackedDictionary,
@@ -1971,14 +1972,17 @@ export const enum ArgumentCategory {
 
 export interface ArgumentNode extends ParseNodeBase<ParseNodeType.Argument> {
     d: {
-        argCategory: ArgumentCategory;
+        argCategory: ArgCategory;
         name: NameNode | undefined;
         valueExpr: ExpressionNode;
+
+        // Is this an argument of the form "x=" as introduced in PEP 736?
+        isNameSameAsValue: boolean;
     };
 }
 
 export namespace ArgumentNode {
-    export function create(startToken: Token | undefined, valueExpr: ExpressionNode, argCategory: ArgumentCategory) {
+    export function create(startToken: Token | undefined, valueExpr: ExpressionNode, argCategory: ArgCategory) {
         const node: ArgumentNode = {
             start: startToken ? startToken.start : valueExpr.start,
             length: startToken ? startToken.length : valueExpr.length,
@@ -1990,6 +1994,7 @@ export namespace ArgumentNode {
                 argCategory,
                 name: undefined,
                 valueExpr,
+                isNameSameAsValue: false,
             },
         };
 

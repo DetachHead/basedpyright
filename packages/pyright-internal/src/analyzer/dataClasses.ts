@@ -11,21 +11,23 @@
 import { assert } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { pythonVersion3_13 } from '../common/pythonVersion';
 import { LocMessage } from '../localization/localize';
 import {
-    ArgumentCategory,
+    ArgCategory,
     ArgumentNode,
     CallNode,
     ClassNode,
     ExpressionNode,
     NameNode,
-    ParameterCategory,
+    ParamCategory,
     ParseNode,
     ParseNodeType,
     TypeAnnotationNode,
 } from '../parser/parseNodes';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { getFileInfo } from './analyzerNodeInfo';
+import { ConstraintTracker } from './constraintTracker';
 import { createFunctionFromConstructor, getBoundInitMethod } from './constructors';
 import { DeclarationType } from './declaration';
 import { updateNamedTupleBaseClass } from './namedTuples';
@@ -33,7 +35,7 @@ import { getClassFullName, getEnclosingClassOrFunction, getScopeIdForNode, getTy
 import { evaluateStaticBoolExpression } from './staticExpressions';
 import { Symbol, SymbolFlags } from './symbol';
 import { isPrivateName } from './symbolNameUtils';
-import { EvalFlags, FunctionArgument, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
+import { Arg, EvalFlags, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
 import {
     AnyType,
     ClassType,
@@ -52,28 +54,27 @@ import {
     isOverloadedFunction,
     isUnion,
     OverloadedFunctionType,
-    TupleTypeArgument,
+    TupleTypeArg,
     Type,
     TypeVarType,
     UnknownType,
 } from './types';
 import {
+    addConstraintForSelfType,
     applySolvedTypeVars,
-    buildTypeVarContextFromSpecializedClass,
+    buildConstraintsFromSpecializedClass,
     computeMroLinearization,
-    convertArgumentNodeToFunctionArgument,
+    convertNodeToArg,
     convertToInstance,
     doForEachSignature,
     getTypeVarScopeId,
     getTypeVarScopeIds,
     isLiteralType,
     isMetaclassInstance,
-    populateTypeVarContextForSelfType,
     requiresSpecialization,
     specializeTupleClass,
     synthesizeTypeVarForSelfCls,
 } from './typeUtils';
-import { TypeVarContext } from './typeVarContext';
 
 // Validates fields for compatibility with a dataclass and synthesizes
 // an appropriate __new__ and __init__ methods plus __dataclass_fields__
@@ -99,26 +100,33 @@ export function synthesizeDataClassMethods(
     // __new__ method are based on field definitions for NamedTuple classes,
     // and the parameters of the __init__ method are based on field definitions
     // in other cases.
-    FunctionType.addParameter(
+    FunctionType.addParam(
         newType,
-        FunctionParam.create(ParameterCategory.Simple, classTypeVar, FunctionParamFlags.TypeDeclared, 'cls')
+        FunctionParam.create(ParamCategory.Simple, classTypeVar, FunctionParamFlags.TypeDeclared, 'cls')
     );
     if (!isNamedTuple) {
-        FunctionType.addDefaultParameters(newType);
+        FunctionType.addDefaultParams(newType);
+        newType.shared.flags |= FunctionTypeFlags.GradualCallableForm;
     }
     newType.shared.declaredReturnType = convertToInstance(classTypeVar);
 
-    const selfParam = FunctionParam.create(
-        ParameterCategory.Simple,
-        synthesizeTypeVarForSelfCls(classType, /* isClsParam */ false),
-        FunctionParamFlags.TypeDeclared,
-        'self'
-    );
-    FunctionType.addParameter(initType, selfParam);
+    const selfType = synthesizeTypeVarForSelfCls(classType, /* isClsParam */ false);
+    const selfParam = FunctionParam.create(ParamCategory.Simple, selfType, FunctionParamFlags.TypeDeclared, 'self');
+    FunctionType.addParam(initType, selfParam);
     if (isNamedTuple) {
-        FunctionType.addDefaultParameters(initType);
+        FunctionType.addDefaultParams(initType);
+        initType.shared.flags |= FunctionTypeFlags.GradualCallableForm;
     }
     initType.shared.declaredReturnType = evaluator.getNoneType();
+
+    // For Python 3.13 and newer, synthesize a __replace__ method.
+    let replaceType: FunctionType | undefined;
+    if (AnalyzerNodeInfo.getFileInfo(node).executionEnvironment.pythonVersion >= pythonVersion3_13) {
+        replaceType = FunctionType.createSynthesizedInstance('__replace__');
+        FunctionType.addParam(replaceType, selfParam);
+        FunctionType.addKeywordOnlyParamSeparator(replaceType);
+        replaceType.shared.declaredReturnType = selfType;
+    }
 
     // Maintain a list of all dataclass entries (including
     // those from inherited classes) plus a list of only those
@@ -131,7 +139,11 @@ export function synthesizeDataClassMethods(
         // If one or more ancestor classes have an unknown type, we cannot
         // safely determine the parameter list, so we'll accept any parameters
         // to avoid a false positive.
-        FunctionType.addDefaultParameters(initType);
+        FunctionType.addDefaultParams(initType);
+
+        if (replaceType) {
+            FunctionType.addDefaultParams(replaceType);
+        }
     }
 
     // Add field-based parameters to either the __new__ or __init__ method
@@ -209,7 +221,7 @@ export function synthesizeDataClassMethods(
                         evaluator.getTypeOfAnnotation(
                             (assignmentStatement.d.leftExpr as TypeAnnotationNode).d.annotation,
                             {
-                                isVariableAnnotation: true,
+                                varTypeAnnotation: true,
                                 allowFinal: true,
                                 allowClassVar: true,
                             }
@@ -297,10 +309,7 @@ export function synthesizeDataClassMethods(
                             (arg) => arg.d.name?.d.value === 'converter'
                         );
                         if (converterArg && converterArg.d.valueExpr) {
-                            // Converter support is dependent on PEP 712, which has not yet been approved.
-                            if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures) {
-                                converter = converterArg;
-                            }
+                            converter = converterArg;
                         }
                     }
                 }
@@ -310,7 +319,7 @@ export function synthesizeDataClassMethods(
                     const annotationStatement = statement;
                     variableTypeEvaluator = () =>
                         evaluator.getTypeOfAnnotation(annotationStatement.d.annotation, {
-                            isVariableAnnotation: true,
+                            varTypeAnnotation: true,
                             allowFinal: true,
                             allowClassVar: true,
                         });
@@ -491,9 +500,9 @@ export function synthesizeDataClassMethods(
                     // transform it to refer to the Self of this subclass.
                     let effectiveType = entry.type;
                     if (entry.classType !== classType && requiresSpecialization(effectiveType)) {
-                        const typeVarContext = new TypeVarContext(getTypeVarScopeId(entry.classType));
-                        populateTypeVarContextForSelfType(typeVarContext, entry.classType, classType);
-                        effectiveType = applySolvedTypeVars(effectiveType, typeVarContext);
+                        const constraints = new ConstraintTracker();
+                        addConstraintForSelfType(constraints, entry.classType, classType);
+                        effectiveType = applySolvedTypeVars(effectiveType, constraints);
                     }
 
                     // Is the field type a descriptor object? If so, we need to extract the corresponding
@@ -527,7 +536,7 @@ export function synthesizeDataClassMethods(
                     }
 
                     const functionParam = FunctionParam.create(
-                        ParameterCategory.Simple,
+                        ParamCategory.Simple,
                         effectiveType,
                         FunctionParamFlags.TypeDeclared,
                         effectiveName,
@@ -537,21 +546,33 @@ export function synthesizeDataClassMethods(
                     if (entry.isKeywordOnly) {
                         keywordOnlyParams.push(functionParam);
                     } else {
-                        FunctionType.addParameter(constructorType, functionParam);
+                        FunctionType.addParam(constructorType, functionParam);
+                    }
+
+                    if (replaceType) {
+                        const paramWithDefault = {
+                            ...functionParam,
+                            defaultType: AnyType.create(/* isEllipsis */ true),
+                        };
+                        FunctionType.addParam(replaceType, paramWithDefault);
                     }
                 }
             });
 
             if (keywordOnlyParams.length > 0) {
-                FunctionType.addKeywordOnlyParameterSeparator(constructorType);
+                FunctionType.addKeywordOnlyParamSeparator(constructorType);
                 keywordOnlyParams.forEach((param) => {
-                    FunctionType.addParameter(constructorType, param);
+                    FunctionType.addParam(constructorType, param);
                 });
             }
         }
 
         symbolTable.set('__init__', Symbol.createWithType(SymbolFlags.ClassMember, initType));
         symbolTable.set('__new__', Symbol.createWithType(SymbolFlags.ClassMember, newType));
+
+        if (replaceType) {
+            symbolTable.set('__replace__', Symbol.createWithType(SymbolFlags.ClassMember, replaceType));
+        }
     }
 
     // Synthesize the __match_args__ class variable if it doesn't exist.
@@ -571,7 +592,7 @@ export function synthesizeDataClassMethods(
                 matchArgsNames.push(entry.name);
             }
         });
-        const literalTypes: TupleTypeArgument[] = matchArgsNames.map((name) => {
+        const literalTypes: TupleTypeArg[] = matchArgsNames.map((name) => {
             return { type: ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strType, name)), isUnbounded: false };
         });
         const matchArgsType = ClassType.cloneAsInstance(specializeTupleClass(tupleClassType, literalTypes));
@@ -580,10 +601,10 @@ export function synthesizeDataClassMethods(
 
     const synthesizeComparisonMethod = (operator: string, paramType: Type) => {
         const operatorMethod = FunctionType.createSynthesizedInstance(operator);
-        FunctionType.addParameter(operatorMethod, selfParam);
-        FunctionType.addParameter(
+        FunctionType.addParam(operatorMethod, selfParam);
+        FunctionType.addParam(
             operatorMethod,
-            FunctionParam.create(ParameterCategory.Simple, paramType, FunctionParamFlags.TypeDeclared, 'other')
+            FunctionParam.create(ParamCategory.Simple, paramType, FunctionParamFlags.TypeDeclared, 'other')
         );
         operatorMethod.shared.declaredReturnType = evaluator.getBuiltInObject(node, 'bool');
         // If a method of this name already exists, don't override it.
@@ -620,7 +641,7 @@ export function synthesizeDataClassMethods(
 
     if (synthesizeHashFunction) {
         const hashMethod = FunctionType.createSynthesizedInstance('__hash__');
-        FunctionType.addParameter(hashMethod, selfParam);
+        FunctionType.addParam(hashMethod, selfParam);
         hashMethod.shared.declaredReturnType = evaluator.getBuiltInObject(node, 'int');
         symbolTable.set(
             '__hash__',
@@ -639,11 +660,7 @@ export function synthesizeDataClassMethods(
     let dictType = evaluator.getBuiltInType(node, 'dict');
     if (isInstantiableClass(dictType)) {
         dictType = ClassType.cloneAsInstance(
-            ClassType.cloneForSpecialization(
-                dictType,
-                [evaluator.getBuiltInObject(node, 'str'), AnyType.create()],
-                /* isTypeArgumentExplicit */ true
-            )
+            ClassType.specialize(dictType, [evaluator.getBuiltInObject(node, 'str'), AnyType.create()])
         );
     }
 
@@ -664,11 +681,7 @@ export function synthesizeDataClassMethods(
 
         if (isInstantiableClass(iterableType)) {
             iterableType = ClassType.cloneAsInstance(
-                ClassType.cloneForSpecialization(
-                    iterableType,
-                    [evaluator.getBuiltInObject(node, 'str')],
-                    /* isTypeArgumentExplicit */ true
-                )
+                ClassType.specialize(iterableType, [evaluator.getBuiltInObject(node, 'str')])
             );
         }
 
@@ -684,7 +697,7 @@ export function synthesizeDataClassMethods(
         updateNamedTupleBaseClass(
             classType,
             fullDataClassEntries.map((entry) => entry.type),
-            /* isTypeArgumentExplicit */ true
+            /* isTypeArgExplicit */ true
         )
     ) {
         // Recompute the MRO based on the updated NamedTuple base class.
@@ -708,10 +721,10 @@ function getDefaultArgValueForFieldSpecifier(
     if (isFunction(callType)) {
         callTarget = callType;
     } else if (isOverloadedFunction(callType)) {
-        callTarget = evaluator.getBestOverloadForArguments(
+        callTarget = evaluator.getBestOverloadForArgs(
             callNode,
             { type: callType, isIncomplete: callTypeResult.isIncomplete },
-            callNode.d.args.map((arg) => convertArgumentNodeToFunctionArgument(arg))
+            callNode.d.args.map((arg) => convertNodeToArg(arg))
         );
     } else if (isInstantiableClass(callType)) {
         const initMethodResult = getBoundInitMethod(evaluator, callNode, callType);
@@ -719,10 +732,10 @@ function getDefaultArgValueForFieldSpecifier(
             if (isFunction(initMethodResult.type)) {
                 callTarget = initMethodResult.type;
             } else if (isOverloadedFunction(initMethodResult.type)) {
-                callTarget = evaluator.getBestOverloadForArguments(
+                callTarget = evaluator.getBestOverloadForArgs(
                     callNode,
                     { type: initMethodResult.type },
-                    callNode.d.args.map((arg) => convertArgumentNodeToFunctionArgument(arg))
+                    callNode.d.args.map((arg) => convertNodeToArg(arg))
                 );
             }
         }
@@ -778,41 +791,43 @@ function getConverterInputType(
     const targetFunction = FunctionType.createSynthesizedInstance('');
     targetFunction.shared.typeVarScopeId = typeVar.priv.scopeId;
     targetFunction.shared.declaredReturnType = fieldType;
-    FunctionType.addParameter(
+    FunctionType.addParam(
         targetFunction,
         FunctionParam.create(
-            ParameterCategory.Simple,
+            ParamCategory.Simple,
             typeVar,
             FunctionParamFlags.TypeDeclared | FunctionParamFlags.NameSynthesized,
             '__input'
         )
     );
-    FunctionType.addPositionOnlyParameterSeparator(targetFunction);
+    FunctionType.addPositionOnlyParamSeparator(targetFunction);
 
     if (isFunction(converterType) || isOverloadedFunction(converterType)) {
         const acceptedTypes: Type[] = [];
         const diagAddendum = new DiagnosticAddendum();
 
         doForEachSignature(converterType, (signature) => {
-            const returnTypeVarContext = new TypeVarContext(getTypeVarScopeIds(signature));
+            const returnConstraints = new ConstraintTracker();
 
             if (
                 evaluator.assignType(
                     FunctionType.getEffectiveReturnType(signature) ?? UnknownType.create(),
                     fieldType,
                     /* diag */ undefined,
-                    returnTypeVarContext
+                    returnConstraints
                 )
             ) {
-                signature = applySolvedTypeVars(signature, returnTypeVarContext) as FunctionType;
+                signature = applySolvedTypeVars(signature, returnConstraints) as FunctionType;
             }
 
-            const inputTypeVarContext = new TypeVarContext(typeVar.priv.scopeId);
+            const inputConstraints = new ConstraintTracker();
 
-            if (evaluator.assignType(targetFunction, signature, diagAddendum, inputTypeVarContext)) {
-                const overloadSolution = applySolvedTypeVars(typeVar, inputTypeVarContext, {
-                    unknownIfNotFound: true,
-                    tupleClassType: evaluator.getTupleClassType(),
+            if (evaluator.assignType(targetFunction, signature, diagAddendum, inputConstraints)) {
+                const overloadSolution = applySolvedTypeVars(typeVar, inputConstraints, {
+                    replaceUnsolved: {
+                        scopeIds: getTypeVarScopeIds(typeVar),
+                        tupleClassType: evaluator.getTupleClassType(),
+                    },
                 });
                 acceptedTypes.push(overloadSolution);
             }
@@ -914,34 +929,34 @@ function getDescriptorForConverterField(
     const selfType = synthesizeTypeVarForSelfCls(descriptorClass, /* isClsParam */ false);
 
     const setFunction = FunctionType.createSynthesizedInstance('__set__');
-    FunctionType.addParameter(
+    FunctionType.addParam(
         setFunction,
-        FunctionParam.create(ParameterCategory.Simple, selfType, FunctionParamFlags.TypeDeclared, 'self')
+        FunctionParam.create(ParamCategory.Simple, selfType, FunctionParamFlags.TypeDeclared, 'self')
     );
-    FunctionType.addParameter(
+    FunctionType.addParam(
         setFunction,
-        FunctionParam.create(ParameterCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'obj')
+        FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'obj')
     );
-    FunctionType.addParameter(
+    FunctionType.addParam(
         setFunction,
-        FunctionParam.create(ParameterCategory.Simple, setType, FunctionParamFlags.TypeDeclared, 'value')
+        FunctionParam.create(ParamCategory.Simple, setType, FunctionParamFlags.TypeDeclared, 'value')
     );
     setFunction.shared.declaredReturnType = evaluator.getNoneType();
     const setSymbol = Symbol.createWithType(SymbolFlags.ClassMember, setFunction);
     fields.set('__set__', setSymbol);
 
     const getFunction = FunctionType.createSynthesizedInstance('__get__');
-    FunctionType.addParameter(
+    FunctionType.addParam(
         getFunction,
-        FunctionParam.create(ParameterCategory.Simple, selfType, FunctionParamFlags.TypeDeclared, 'self')
+        FunctionParam.create(ParamCategory.Simple, selfType, FunctionParamFlags.TypeDeclared, 'self')
     );
-    FunctionType.addParameter(
+    FunctionType.addParam(
         getFunction,
-        FunctionParam.create(ParameterCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'obj')
+        FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'obj')
     );
-    FunctionType.addParameter(
+    FunctionType.addParam(
         getFunction,
-        FunctionParam.create(ParameterCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'objtype')
+        FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'objtype')
     );
     getFunction.shared.declaredReturnType = getType;
     const getSymbol = Symbol.createWithType(SymbolFlags.ClassMember, getFunction);
@@ -968,7 +983,7 @@ function transformDescriptorType(evaluator: TypeEvaluator, type: Type): Type {
     }
 
     // The value parameter for a bound __set__ method is parameter index 1.
-    return FunctionType.getEffectiveParameterType(setMethodType, 1);
+    return FunctionType.getEffectiveParamType(setMethodType, 1);
 }
 
 // Builds a sorted list of dataclass entries that are inherited by
@@ -980,7 +995,7 @@ export function addInheritedDataClassEntries(classType: ClassType, entries: Data
 
     ClassType.getReverseMro(classType).forEach((mroClass) => {
         if (isInstantiableClass(mroClass)) {
-            const typeVarContext = buildTypeVarContextFromSpecializedClass(mroClass);
+            const constraints = buildConstraintsFromSpecializedClass(mroClass);
             const dataClassEntries = ClassType.getDataClassEntries(mroClass);
 
             // Add the entries to the end of the list, replacing same-named
@@ -991,7 +1006,7 @@ export function addInheritedDataClassEntries(classType: ClassType, entries: Data
                 // If the type from the parent class is generic, we need to convert
                 // to the type parameter namespace of child class.
                 const updatedEntry = { ...entry };
-                updatedEntry.type = applySolvedTypeVars(updatedEntry.type, typeVarContext);
+                updatedEntry.type = applySolvedTypeVars(updatedEntry.type, constraints);
 
                 if (entry.isClassVar) {
                     // If this entry is a class variable, it overrides an existing
@@ -1051,7 +1066,7 @@ export function validateDataClassTransformDecorator(
 
     // Parse the arguments to the call.
     node.d.args.forEach((arg) => {
-        if (!arg.d.name || arg.d.argCategory !== ArgumentCategory.Simple) {
+        if (!arg.d.name || arg.d.argCategory !== ArgCategory.Simple) {
             evaluator.addDiagnostic(
                 DiagnosticRule.reportCallIssue,
                 LocMessage.dataClassTransformPositionalParam(),
@@ -1152,8 +1167,8 @@ export function validateDataClassTransformDecorator(
                 if (
                     !isClassInstance(valueType) ||
                     !ClassType.isBuiltIn(valueType, 'tuple') ||
-                    !valueType.priv.tupleTypeArguments ||
-                    valueType.priv.tupleTypeArguments.some(
+                    !valueType.priv.tupleTypeArgs ||
+                    valueType.priv.tupleTypeArgs.some(
                         (entry) =>
                             !isInstantiableClass(entry.type) &&
                             !isFunction(entry.type) &&
@@ -1170,7 +1185,7 @@ export function validateDataClassTransformDecorator(
                     return;
                 }
 
-                valueType.priv.tupleTypeArguments.forEach((arg) => {
+                valueType.priv.tupleTypeArgs.forEach((arg) => {
                     if (isInstantiableClass(arg.type) || isFunction(arg.type)) {
                         behaviors.fieldDescriptorNames.push(arg.type.shared.fullName);
                     } else if (isOverloadedFunction(arg.type)) {
@@ -1350,7 +1365,7 @@ export function applyDataClassClassBehaviorOverrides(
     evaluator: TypeEvaluator,
     errorNode: ParseNode,
     classType: ClassType,
-    args: FunctionArgument[],
+    args: Arg[],
     defaultBehaviors: DataClassBehaviors
 ) {
     let sawFrozenArg = false;
@@ -1406,7 +1421,7 @@ export function applyDataClassDecorator(
         evaluator,
         errorNode,
         classType,
-        (callNode?.d.args ?? []).map((arg) => convertArgumentNodeToFunctionArgument(arg)),
+        (callNode?.d.args ?? []).map((arg) => convertNodeToArg(arg)),
         defaultBehaviors
     );
 }

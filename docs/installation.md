@@ -111,16 +111,9 @@ with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright)
 
 ### PyCharm
 
-### If using Community edition
-install [pyright-for-pycharm](https://plugins.jetbrains.com/plugin/24145)
+install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
 
-configure it to use basedpyright by specifying the path to the `basedpyright` executable:
+configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable and set "Running mode" to "LSP4IJ":
 
-![image](https://github.com/DetachHead/basedpyright/assets/57028336/b373a5ee-c423-4b94-b833-00b5335a9611)
+![](https://github.com/user-attachments/assets/accfc498-825c-4c39-9e2c-35195c41fd67)
 
-### If using Professional edition
-intsall [pyright-langserver-for-pycharm](https://plugins.jetbrains.com/plugin/24146-pyright-language-server). This plugin makes use of PyCharm's experimental [LSP API](https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html).
-
-configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable:
-
-![image](https://github.com/DetachHead/basedpyright/assets/57028336/4ee471ad-68cb-410e-8b67-81c57f4bb80b)

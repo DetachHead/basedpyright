@@ -10,9 +10,9 @@
 
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { LocMessage } from '../localization/localize';
-import { ExpressionNode, ParameterCategory } from '../parser/parseNodes';
+import { ExpressionNode, ParamCategory } from '../parser/parseNodes';
 import { Symbol, SymbolFlags } from './symbol';
-import { FunctionArgument, FunctionResult, TypeEvaluator } from './typeEvaluatorTypes';
+import { Arg, FunctionResult, TypeEvaluator } from './typeEvaluatorTypes';
 import {
     ClassType,
     FunctionParam,
@@ -29,7 +29,7 @@ import { ClassMember, lookUpObjectMember, MemberAccessFlags, synthesizeTypeVarFo
 export function applyFunctionTransform(
     evaluator: TypeEvaluator,
     errorNode: ExpressionNode,
-    argList: FunctionArgument[],
+    argList: Arg[],
     functionType: FunctionType | OverloadedFunctionType,
     result: FunctionResult
 ): FunctionResult {
@@ -46,7 +46,7 @@ export function applyFunctionTransform(
 function applyTotalOrderingTransform(
     evaluator: TypeEvaluator,
     errorNode: ExpressionNode,
-    argList: FunctionArgument[],
+    argList: Arg[],
     result: FunctionResult
 ) {
     if (argList.length !== 1) {
@@ -109,14 +109,14 @@ function applyTotalOrderingTransform(
     }
 
     const selfParam = FunctionParam.create(
-        ParameterCategory.Simple,
+        ParamCategory.Simple,
         synthesizeTypeVarForSelfCls(classType, /* isClsParam */ false),
         FunctionParamFlags.TypeDeclared,
         'self'
     );
 
     const objParam = FunctionParam.create(
-        ParameterCategory.Simple,
+        ParamCategory.Simple,
         operandType,
         FunctionParamFlags.TypeDeclared,
         '__value'
@@ -125,8 +125,8 @@ function applyTotalOrderingTransform(
     // Add the missing members to the class's symbol table.
     missingMethods.forEach((methodName) => {
         const methodToAdd = FunctionType.createSynthesizedInstance(methodName);
-        FunctionType.addParameter(methodToAdd, selfParam);
-        FunctionType.addParameter(methodToAdd, objParam);
+        FunctionType.addParam(methodToAdd, selfParam);
+        FunctionType.addParam(methodToAdd, objParam);
         methodToAdd.shared.declaredReturnType = boolType;
 
         ClassType.getSymbolTable(classType).set(
