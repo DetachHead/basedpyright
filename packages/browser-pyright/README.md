@@ -8,4 +8,4 @@ this build was adapted from the abandoned [microbit-foundation pyright fork](htt
 
 ## disclaimer
 
-this version of pyright was in an unfinished state when i found it. i've done my best to merge  last 2 years of pyright updates into it, but i can't promise it will work anywhere outside of [the basedpyright playground](https://basedpyright.com). if you have a use case for running basedpyright in the browser and run into issues with this package, please [raise an issue](https://github.com/DetachHead/basedpyright/issues/new)
+this version of pyright was in an unfinished state when i found it. i've done my best to merge the last 2 years of pyright updates into it, but i can't promise it will work anywhere outside of [the basedpyright playground](https://basedpyright.com). if you have a use case for running basedpyright in the browser and run into issues with this package, please [raise an issue](https://github.com/DetachHead/basedpyright/issues/new)
