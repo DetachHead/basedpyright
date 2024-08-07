@@ -175,7 +175,7 @@ import {
     ClassMember,
     MemberAccessFlags,
     applySolvedTypeVars,
-    buildConstraintsFromSpecializedClass,
+    buildSolutionFromSpecializedClass,
     convertToInstance,
     derivesFromAnyOrUnknown,
     derivesFromClassRecursive,
@@ -199,7 +199,6 @@ import {
     mapSubtypes,
     partiallySpecializeType,
     selfSpecializeClass,
-    setTypeVarType,
     transformPossibleRecursiveTypeAlias,
 } from './typeUtils';
 
@@ -457,12 +456,13 @@ export class Checker extends ParseTreeWalker {
 
                 // Allow unknown and missing param types if the param is named '_'.
                 if (param.d.name && param.d.name.d.value !== '_') {
-                    const functionTypeParam = functionTypeResult.functionType.shared.parameters.find(
+                    const paramIndex = functionTypeResult.functionType.shared.parameters.findIndex(
                         (p) => p.name === param.d.name?.d.value
                     );
 
-                    if (functionTypeParam) {
-                        const paramType = functionTypeParam.type;
+                    if (paramIndex >= 0) {
+                        const functionTypeParam = functionTypeResult.functionType.shared.parameters[paramIndex];
+                        const paramType = FunctionType.getParamType(functionTypeResult.functionType, paramIndex);
 
                         if (
                             this._fileInfo.diagnosticRuleSet.reportUnknownParameterType !== 'none' ||
@@ -527,7 +527,7 @@ export class Checker extends ParseTreeWalker {
             // Verify that an unpacked TypedDict doesn't overlap any keyword parameters.
             if (paramDetails.hasUnpackedTypedDict) {
                 const kwargsIndex = functionTypeResult.functionType.shared.parameters.length - 1;
-                const kwargsType = FunctionType.getEffectiveParamType(functionTypeResult.functionType, kwargsIndex);
+                const kwargsType = FunctionType.getParamType(functionTypeResult.functionType, kwargsIndex);
 
                 if (isClass(kwargsType) && kwargsType.shared.typedDictEntries) {
                     const overlappingEntries = new Set<string>();
@@ -550,9 +550,10 @@ export class Checker extends ParseTreeWalker {
             }
 
             // Check for invalid use of ParamSpec P.args and P.kwargs.
-            const paramSpecParams = functionTypeResult.functionType.shared.parameters.filter((param) => {
-                if (FunctionParam.isTypeDeclared(param) && isTypeVar(param.type) && isParamSpec(param.type)) {
-                    if (param.category !== ParamCategory.Simple && param.name && param.type.priv.paramSpecAccess) {
+            const paramSpecParams = functionTypeResult.functionType.shared.parameters.filter((param, index) => {
+                const paramType = FunctionType.getParamType(functionTypeResult.functionType, index);
+                if (FunctionParam.isTypeDeclared(param) && isTypeVar(paramType) && isParamSpec(paramType)) {
+                    if (param.category !== ParamCategory.Simple && param.name && paramType.priv.paramSpecAccess) {
                         return true;
                     }
                 }
@@ -607,12 +608,13 @@ export class Checker extends ParseTreeWalker {
             if (functionTypeResult) {
                 const annotationNode = param.d.annotation || param.d.annotationComment;
                 if (annotationNode && index < functionTypeResult.functionType.shared.parameters.length) {
-                    const paramType = functionTypeResult.functionType.shared.parameters[index].type;
+                    const paramType = FunctionType.getParamType(functionTypeResult.functionType, index);
                     const exemptMethods = ['__init__', '__new__'];
 
                     if (
                         containingClassNode &&
                         isTypeVar(paramType) &&
+                        paramType.priv.scopeType === TypeVarScopeType.Class &&
                         paramType.shared.declaredVariance === Variance.Covariant &&
                         !paramType.shared.isSynthesized &&
                         !exemptMethods.some((name) => name === functionTypeResult.functionType.shared.name)
@@ -1002,13 +1004,16 @@ export class Checker extends ParseTreeWalker {
                                         TypeVarType.cloneAsBound(typeVar)
                                     );
                                     if (narrowedType) {
-                                        setTypeVarType(constraints, typeVar, narrowedType);
+                                        constraints.setBounds(typeVar, narrowedType);
                                     }
                                 }
                             }
 
                             if (!constraints.isEmpty()) {
-                                adjReturnType = applySolvedTypeVars(declaredReturnType, constraints);
+                                adjReturnType = this._evaluator.solveAndApplyConstraints(
+                                    declaredReturnType,
+                                    constraints
+                                );
                                 adjReturnType = makeTypeVarsBound(adjReturnType, liveScopes);
 
                                 if (this._evaluator.assignType(adjReturnType, returnType, diagAddendum)) {
@@ -2165,6 +2170,12 @@ export class Checker extends ParseTreeWalker {
                     }
                 });
 
+                doForEachSubtype(rightType, (rightSubtype) => {
+                    if (this._evaluator.assignType(leftType, rightSubtype)) {
+                        isPossiblyTrue = true;
+                    }
+                });
+
                 if (!isPossiblyTrue) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportUnnecessaryComparison,
@@ -2677,7 +2688,7 @@ export class Checker extends ParseTreeWalker {
         // Now check the return types.
         let overloadReturnType =
             overload.shared.declaredReturnType ?? this._evaluator.getFunctionInferredReturnType(overload);
-        let implementationReturnType = applySolvedTypeVars(
+        let implementationReturnType = this._evaluator.solveAndApplyConstraints(
             implementation.shared.declaredReturnType || this._evaluator.getFunctionInferredReturnType(implementation),
             implConstraints
         );
@@ -4712,7 +4723,7 @@ export class Checker extends ParseTreeWalker {
                 return;
             }
 
-            const paramType = makeTypeVarsBound(FunctionType.getEffectiveParamType(functionType, paramIndex), scopeIds);
+            const paramType = makeTypeVarsBound(FunctionType.getParamType(functionType, paramIndex), scopeIds);
 
             // Verify that the typeGuardType is a narrower type than the paramType.
             if (!this._evaluator.assignType(paramType, typeGuardType)) {
@@ -5147,7 +5158,9 @@ export class Checker extends ParseTreeWalker {
         }
 
         // Verify that the parameter count matches.
-        const nonDefaultParams = paramListDetails.params.filter((paramInfo) => !paramInfo.param.defaultType);
+        const nonDefaultParams = paramListDetails.params.filter(
+            (paramInfo, index) => FunctionType.getParamDefaultType(postInitType, index) === undefined
+        );
 
         // We expect to see one param for "self" plus one for each of the InitVars.
         const expectedParamCount = initOnlySymbolMap.size + 1;
@@ -5175,10 +5188,7 @@ export class Checker extends ParseTreeWalker {
 
             if (FunctionParam.isTypeDeclared(param) && annotationNode) {
                 const fieldType = this._evaluator.getDeclaredTypeOfSymbol(symbol)?.type;
-                const paramType = FunctionType.getEffectiveParamType(
-                    postInitType,
-                    paramListDetails.params[paramIndex].index
-                );
+                const paramType = FunctionType.getParamType(postInitType, paramListDetails.params[paramIndex].index);
                 const assignTypeDiag = new DiagnosticAddendum();
 
                 if (fieldType && !this._evaluator.assignType(paramType, fieldType, assignTypeDiag)) {
@@ -5435,7 +5445,7 @@ export class Checker extends ParseTreeWalker {
         );
 
         classType.shared.typeParams.forEach((param, paramIndex) => {
-            // Skip variadics and ParamSpecs.
+            // Skip TypeVarTuples and ParamSpecs.
             if (isTypeVarTuple(param) || isParamSpec(param)) {
                 return;
             }
@@ -5712,7 +5722,7 @@ export class Checker extends ParseTreeWalker {
         const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
         for (const baseClass of filteredBaseClasses) {
-            const constraints = buildConstraintsFromSpecializedClass(baseClass);
+            const solution = buildSolutionFromSpecializedClass(baseClass);
             // if classType is a TypedDict, we never need to worry about constructors in base classes because the
             // following rules are enforced:
             // - if one base class is a TypedDict, all of them have to be TypedDicts
@@ -5749,10 +5759,7 @@ export class Checker extends ParseTreeWalker {
             for (const baseClassMroClass of baseClass.shared.mro) {
                 // There's no need to check for conflicts if this class isn't generic.
                 if (isClass(baseClassMroClass) && baseClassMroClass.shared.typeParams.length > 0) {
-                    const specializedBaseClassMroClass = applySolvedTypeVars(
-                        baseClassMroClass,
-                        constraints
-                    ) as ClassType;
+                    const specializedBaseClassMroClass = applySolvedTypeVars(baseClassMroClass, solution) as ClassType;
 
                     // Find the corresponding class in the derived class's MRO list.
                     const matchingMroClass = classType.shared.mro.find(
@@ -6353,10 +6360,10 @@ export class Checker extends ParseTreeWalker {
                 /* allowNarrowed */ false
             );
 
-            const constraints = buildConstraintsFromSpecializedClass(baseClass);
+            const solution = buildSolutionFromSpecializedClass(baseClass);
 
             const baseExtraItemsType = baseTypedDictEntries.extraItems
-                ? applySolvedTypeVars(baseTypedDictEntries.extraItems.valueType, constraints)
+                ? applySolvedTypeVars(baseTypedDictEntries.extraItems.valueType, solution)
                 : UnknownType.create();
 
             for (const [name, entry] of typedDictEntries.knownItems) {
@@ -7322,6 +7329,7 @@ export class Checker extends ParseTreeWalker {
         // If there is no type annotation, there's nothing to check because
         // the type will be inferred.d.typeAnnotation
         const paramInfo = functionType.shared.parameters[0];
+        const paramType = FunctionType.getParamType(functionType, 0);
         const paramAnnotation = node.d.params[0].d.annotation ?? node.d.params[0].d.annotationComment;
         if (!paramAnnotation || !paramInfo.name) {
             return;
@@ -7331,7 +7339,7 @@ export class Checker extends ParseTreeWalker {
         // use of class-scoped TypeVars, which are not allowed in this context
         // according to the typing spec.
         if (functionType.shared.name === '__init__' && functionType.shared.methodClass) {
-            const typeVars = getTypeVarArgsRecursive(paramInfo.type);
+            const typeVars = getTypeVarArgsRecursive(paramType);
 
             if (
                 typeVars.some(
@@ -7354,23 +7362,23 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const paramType = this._evaluator.makeTopLevelTypeVarsConcrete(paramInfo.type);
+        const concreteParamType = this._evaluator.makeTopLevelTypeVarsConcrete(paramType);
         const expectedType = isCls ? classType : convertToInstance(classType);
 
         // If the declared type is a protocol class or instance, skip
         // the check. This has legitimate uses for mix-in classes.
-        if (isInstantiableClass(paramType) && ClassType.isProtocolClass(paramType)) {
+        if (isInstantiableClass(concreteParamType) && ClassType.isProtocolClass(concreteParamType)) {
             return;
         }
-        if (isClassInstance(paramType) && ClassType.isProtocolClass(paramType)) {
+        if (isClassInstance(concreteParamType) && ClassType.isProtocolClass(concreteParamType)) {
             return;
         }
 
         // If the method starts with a `*args: P.args`, skip the check.
         if (
             paramInfo.category === ParamCategory.ArgsList &&
-            isParamSpec(paramInfo.type) &&
-            paramInfo.type.priv.paramSpecAccess === 'args'
+            isParamSpec(paramType) &&
+            paramType.priv.paramSpecAccess === 'args'
         ) {
             return;
         }

@@ -11,6 +11,7 @@
 import { assert } from '../common/debug';
 import { defaultMaxDiagnosticDepth, DiagnosticAddendum } from '../common/diagnostic';
 import { LocAddendum } from '../localization/localize';
+import { ConstraintSolution } from './constraintSolution';
 import { assignTypeVar } from './constraintSolver';
 import { ConstraintTracker } from './constraintTracker';
 import { DeclarationType } from './declaration';
@@ -36,7 +37,7 @@ import {
     Variance,
 } from './types';
 import {
-    addConstraintForSelfType,
+    addSolutionForSelfType,
     applySolvedTypeVars,
     AssignTypeFlags,
     ClassMember,
@@ -45,7 +46,6 @@ import {
     MemberAccessFlags,
     partiallySpecializeType,
     requiresSpecialization,
-    setTypeVarType,
     synthesizeTypeVarForSelfCls,
 } from './typeUtils';
 
@@ -313,7 +313,7 @@ function assignClassToProtocolInternal(
 
     const sourceIsClassObject = isClass(srcType) && TypeBase.isInstantiable(srcType);
     const protocolConstraints = createProtocolConstraints(evaluator, destType, destConstraints);
-    const selfConstraints = new ConstraintTracker();
+    const selfSolution = new ConstraintSolution();
 
     let selfType: ClassType | TypeVarType | undefined;
     if (isClass(srcType)) {
@@ -333,7 +333,7 @@ function assignClassToProtocolInternal(
             selfType = srcType;
         }
 
-        addConstraintForSelfType(selfConstraints, destType, selfType);
+        addSolutionForSelfType(selfSolution, destType, selfType);
     }
 
     // If the source is a TypedDict, use the _TypedDict placeholder class
@@ -517,7 +517,7 @@ function assignClassToProtocolInternal(
             }
 
             // Replace any "Self" TypeVar within the dest with the source type.
-            destMemberType = applySolvedTypeVars(destMemberType, selfConstraints);
+            destMemberType = applySolvedTypeVars(destMemberType, selfSolution);
 
             // If the dest is a method, bind it.
             if (isFunction(destMemberType) || isOverloadedFunction(destMemberType)) {
@@ -575,7 +575,7 @@ function assignClassToProtocolInternal(
                             srcType,
                             subDiag?.createAddendum(),
                             protocolConstraints,
-                            selfConstraints,
+                            selfSolution,
                             recursionCount
                         )
                     ) {
@@ -734,7 +734,10 @@ function assignClassToProtocolInternal(
         // Create a specialized version of the protocol defined by the dest and
         // make sure the resulting type args can be assigned.
         const genericProtocolType = ClassType.specialize(destType, undefined);
-        const specializedProtocolType = applySolvedTypeVars(genericProtocolType, protocolConstraints) as ClassType;
+        const specializedProtocolType = evaluator.solveAndApplyConstraints(
+            genericProtocolType,
+            protocolConstraints
+        ) as ClassType;
 
         if (destType.priv.typeArgs) {
             if (
@@ -755,13 +758,7 @@ function assignClassToProtocolInternal(
                 const typeArgEntry = protocolConstraints.getMainConstraintSet().getTypeVar(typeParam);
 
                 if (typeArgEntry) {
-                    setTypeVarType(
-                        destConstraints,
-                        typeParam,
-                        typeArgEntry?.lowerBound,
-                        typeArgEntry?.lowerBoundNoLiterals,
-                        typeArgEntry?.upperBound
-                    );
+                    destConstraints.copyBounds(typeArgEntry);
                 }
             }
         }
@@ -776,21 +773,15 @@ function assignClassToProtocolInternal(
 function createProtocolConstraints(
     evaluator: TypeEvaluator,
     destType: ClassType,
-    destConstraints: ConstraintTracker | undefined
+    constraints: ConstraintTracker | undefined
 ): ConstraintTracker {
     const protocolConstraints = new ConstraintTracker();
 
     destType.shared.typeParams.forEach((typeParam, index) => {
-        const entry = destConstraints?.getMainConstraintSet().getTypeVar(typeParam);
+        const entry = constraints?.getMainConstraintSet().getTypeVar(typeParam);
 
         if (entry) {
-            setTypeVarType(
-                protocolConstraints,
-                typeParam,
-                entry.lowerBound,
-                entry.lowerBoundNoLiterals,
-                entry.upperBound
-            );
+            protocolConstraints.copyBounds(entry);
         } else if (destType.priv.typeArgs && index < destType.priv.typeArgs.length) {
             let typeArg = destType.priv.typeArgs[index];
             let flags: AssignTypeFlags;
@@ -798,8 +789,10 @@ function createProtocolConstraints(
 
             // If the type argument has unsolved TypeVars, see if they have
             // solved values in the destConstraints.
-            if (hasUnsolvedTypeVars && destConstraints) {
-                typeArg = applySolvedTypeVars(typeArg, destConstraints, { useLowerBoundOnly: true });
+            if (hasUnsolvedTypeVars && constraints) {
+                typeArg = evaluator.solveAndApplyConstraints(typeArg, constraints, /* applyOptions */ undefined, {
+                    useLowerBoundOnly: true,
+                });
                 flags = AssignTypeFlags.Default;
                 hasUnsolvedTypeVars = requiresSpecialization(typeArg);
             } else {

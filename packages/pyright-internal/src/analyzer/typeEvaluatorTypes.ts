@@ -47,6 +47,7 @@ import {
     ParamSpecType,
     Type,
     TypeCondition,
+    TypeVarScopeId,
     TypeVarType,
     UnknownType,
     Variance,
@@ -217,7 +218,7 @@ export interface TypeResult<T extends Type = Type> {
     // that declares the member.
     classType?: ClassType | UnknownType | AnyType;
 
-    // Variadic type arguments allow the shorthand "()" to
+    // Tuple type arguments allow the shorthand "()" to
     // represent an empty tuple (i.e. Tuple[()]).
     isEmptyTupleShorthand?: boolean | undefined;
 
@@ -454,6 +455,21 @@ export interface ClassMemberLookup {
     memberAccessDeprecationInfo?: MemberAccessDeprecationInfo;
 }
 
+export interface SolveConstraintsOptions {
+    useLowerBoundOnly?: boolean;
+}
+
+export interface ApplyTypeVarOptions {
+    typeClassType?: ClassType;
+    replaceUnsolved?: {
+        scopeIds: TypeVarScopeId[];
+        tupleClassType: ClassType | undefined;
+        unsolvedExemptTypeVars?: TypeVarType[];
+        useUnknown?: boolean;
+        eliminateUnsolvedInUnions?: boolean;
+    };
+}
+
 export enum Reachability {
     Reachable,
     UnreachableAlways,
@@ -551,6 +567,13 @@ export interface TypeEvaluator {
     removeTruthinessFromType: (type: Type) => Type;
     removeFalsinessFromType: (type: Type) => Type;
     stripTypeGuard: (type: Type) => Type;
+
+    solveAndApplyConstraints: (
+        type: Type,
+        constraints: ConstraintTracker,
+        applyOptions?: ApplyTypeVarOptions,
+        solveOptions?: SolveConstraintsOptions
+    ) => Type;
 
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
     verifyRaiseExceptionType: (node: RaiseNode) => void;
@@ -751,6 +774,5 @@ export interface TypeEvaluator {
         callName: string,
         logger: ConsoleInterface
     ) => void;
-    printConstraintTracker: (constraints: ConstraintTracker) => void;
     typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
 }

@@ -11,17 +11,7 @@
 
 import { assert } from '../common/debug';
 import { getComplexityScoreForType } from './typeComplexity';
-import {
-    FunctionType,
-    ParamSpecType,
-    Type,
-    TypeVarScopeId,
-    TypeVarType,
-    isAnyOrUnknown,
-    isFunction,
-    isParamSpec,
-    isTypeSame,
-} from './types';
+import { Type, TypeVarScopeId, TypeVarType, isTypeSame } from './types';
 
 // The maximum number of constraint sets that can be associated
 // with a constraint tracker. This equates to the number of overloads
@@ -37,10 +27,12 @@ const maxConstraintSetCount = 1024;
 export interface TypeVarConstraints {
     typeVar: TypeVarType;
 
-    // Running constraints for the solved type variable as constraints are added.
+    // Bounds for solved type variable as constraints are added.
     lowerBound?: Type | undefined;
-    lowerBoundNoLiterals?: Type | undefined;
     upperBound?: Type | undefined;
+
+    // Should the lower bound include literal values?
+    retainLiterals?: boolean;
 }
 
 // Records the constraints information for a set of type variables
@@ -65,7 +57,7 @@ export class ConstraintSet {
         const constraintSet = new ConstraintSet();
 
         this._typeVarMap.forEach((value) => {
-            constraintSet.setTypeVarType(value.typeVar, value.lowerBound, value.lowerBoundNoLiterals, value.upperBound);
+            constraintSet.setBounds(value.typeVar, value.lowerBound, value.upperBound, value.retainLiterals);
         });
 
         if (this._scopeIds) {
@@ -113,76 +105,38 @@ export class ConstraintSet {
         let score = 0;
 
         // Sum the scores for the defined type vars.
-        this._typeVarMap.forEach((value) => {
+        this._typeVarMap.forEach((entry) => {
             // Add 1 to the score for each type variable defined.
             score += 1;
 
             // Add a fractional amount based on the simplicity of the definition.
             // The more complex, the lower the score. In the spirit of Occam's
             // Razor, we always want to favor simple answers.
-            const typeVarType = this.getTypeVarType(value.typeVar)!;
-            score += 1.0 - getComplexityScoreForType(typeVarType);
+            const typeVarType = entry.lowerBound ?? entry.upperBound;
+            if (typeVarType) {
+                score += 1.0 - getComplexityScoreForType(typeVarType);
+            }
         });
 
         return score;
     }
 
-    getTypeVarType(reference: ParamSpecType): FunctionType | undefined;
-    getTypeVarType(reference: TypeVarType, useLowerBoundOnly?: boolean): Type | undefined;
-    getTypeVarType(reference: TypeVarType, useLowerBoundOnly = false): Type | undefined {
-        const entry = this.getTypeVar(reference);
-        if (!entry) {
-            return undefined;
-        }
-
-        if (isParamSpec(reference)) {
-            if (!entry.lowerBound) {
-                return undefined;
-            }
-
-            if (isFunction(entry.lowerBound)) {
-                return entry.lowerBound;
-            }
-
-            if (isAnyOrUnknown(entry.lowerBound)) {
-                return ParamSpecType.getUnknown();
-            }
-        }
-
-        if (useLowerBoundOnly) {
-            return entry.lowerBound;
-        }
-
-        // Prefer the lower bound with no literals. It will be undefined
-        // if the literal type couldn't be widened due to constraints imposed
-        // by the upper bound.
-        return entry.lowerBoundNoLiterals ?? entry.lowerBound ?? entry.upperBound;
-    }
-
-    setTypeVarType(
-        reference: TypeVarType,
-        lowerBound: Type | undefined,
-        lowerBoundNoLiterals?: Type,
-        upperBound?: Type
-    ) {
-        // For param specs, callers should always convert values to function types.
-        if (isParamSpec(reference)) {
-            assert(!lowerBound || isFunction(lowerBound));
-            assert(!lowerBoundNoLiterals || isFunction(lowerBoundNoLiterals));
-            assert(!upperBound || isFunction(upperBound));
-        }
-
-        const key = TypeVarType.getNameWithScope(reference);
+    setBounds(typeVar: TypeVarType, lowerBound: Type | undefined, upperBound?: Type, retainLiterals?: boolean) {
+        const key = TypeVarType.getNameWithScope(typeVar);
         this._typeVarMap.set(key, {
-            typeVar: reference,
+            typeVar,
             lowerBound,
-            lowerBoundNoLiterals,
             upperBound,
+            retainLiterals,
         });
     }
 
-    getTypeVar(reference: TypeVarType): TypeVarConstraints | undefined {
-        const key = TypeVarType.getNameWithScope(reference);
+    doForEachTypeVar(cb: (entry: TypeVarConstraints) => void) {
+        this._typeVarMap.forEach(cb);
+    }
+
+    getTypeVar(typeVar: TypeVarType): TypeVarConstraints | undefined {
+        const key = TypeVarType.getNameWithScope(typeVar);
         return this._typeVarMap.get(key);
     }
 
@@ -210,6 +164,10 @@ export class ConstraintSet {
         }
 
         return this._scopeIds.has(scopeId);
+    }
+
+    getScopeIds() {
+        return new Set(this._scopeIds);
     }
 
     hasUnificationVars() {
@@ -264,6 +222,12 @@ export class ConstraintTracker {
         this._isLocked = clone._isLocked;
     }
 
+    copyBounds(entry: TypeVarConstraints) {
+        this._constraintSets.forEach((set) => {
+            set.setBounds(entry.typeVar, entry.lowerBound, entry.upperBound, entry.retainLiterals);
+        });
+    }
+
     // Copy the specified constraint sets into this type var context.
     addConstraintSets(contexts: ConstraintSet[]) {
         assert(contexts.length > 0);
@@ -302,16 +266,11 @@ export class ConstraintTracker {
         return this._constraintSets.every((set) => set.isEmpty());
     }
 
-    setTypeVarType(
-        reference: TypeVarType,
-        lowerBound: Type | undefined,
-        lowerBoundNoLiterals?: Type,
-        upperBound?: Type
-    ) {
+    setBounds(typeVar: TypeVarType, lowerBound: Type | undefined, upperBound?: Type, retainLiterals?: boolean) {
         assert(!this._isLocked);
 
         return this._constraintSets.forEach((set) => {
-            set.setTypeVarType(reference, lowerBound, lowerBoundNoLiterals, upperBound);
+            set.setBounds(typeVar, lowerBound, upperBound, retainLiterals);
         });
     }
 

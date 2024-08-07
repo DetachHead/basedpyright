@@ -65,7 +65,6 @@ import {
 } from './types';
 import {
     addConditionToType,
-    applySolvedTypeVars,
     containsAnyOrUnknown,
     convertToInstance,
     doForEachSubtype,
@@ -658,39 +657,35 @@ function narrowTypeBasedOnLiteralPattern(
     const literalType = evaluator.getTypeOfExpression(pattern.d.expr).type;
 
     if (!isPositiveTest) {
-        return evaluator.mapSubtypesExpandTypeVars(
-            type,
-            /* options */ undefined,
-            (expandedSubtype, unexpandedSubtype) => {
-                if (
-                    isClassInstance(literalType) &&
-                    isLiteralType(literalType) &&
-                    isClassInstance(expandedSubtype) &&
-                    isLiteralType(expandedSubtype) &&
-                    evaluator.assignType(literalType, expandedSubtype)
-                ) {
-                    return undefined;
-                }
-
-                if (isNoneInstance(expandedSubtype) && isNoneInstance(literalType)) {
-                    return undefined;
-                }
-
-                // Narrow a non-literal bool based on a literal bool pattern.
-                if (
-                    isClassInstance(expandedSubtype) &&
-                    ClassType.isBuiltIn(expandedSubtype, 'bool') &&
-                    expandedSubtype.priv.literalValue === undefined &&
-                    isClassInstance(literalType) &&
-                    ClassType.isBuiltIn(literalType, 'bool') &&
-                    literalType.priv.literalValue !== undefined
-                ) {
-                    return ClassType.cloneWithLiteral(literalType, !(literalType.priv.literalValue as boolean));
-                }
-
-                return expandedSubtype;
+        return evaluator.mapSubtypesExpandTypeVars(type, /* options */ undefined, (expandedSubtype) => {
+            if (
+                isClassInstance(literalType) &&
+                isLiteralType(literalType) &&
+                isClassInstance(expandedSubtype) &&
+                isLiteralType(expandedSubtype) &&
+                evaluator.assignType(literalType, expandedSubtype)
+            ) {
+                return undefined;
             }
-        );
+
+            if (isNoneInstance(expandedSubtype) && isNoneInstance(literalType)) {
+                return undefined;
+            }
+
+            // Narrow a non-literal bool based on a literal bool pattern.
+            if (
+                isClassInstance(expandedSubtype) &&
+                ClassType.isBuiltIn(expandedSubtype, 'bool') &&
+                expandedSubtype.priv.literalValue === undefined &&
+                isClassInstance(literalType) &&
+                ClassType.isBuiltIn(literalType, 'bool') &&
+                literalType.priv.literalValue !== undefined
+            ) {
+                return ClassType.cloneWithLiteral(literalType, !(literalType.priv.literalValue as boolean));
+            }
+
+            return expandedSubtype;
+        });
     }
 
     return evaluator.mapSubtypesExpandTypeVars(type, /* options */ undefined, (expandedSubtype, unexpandedSubtype) => {
@@ -966,12 +961,16 @@ function narrowTypeBasedOnClassPattern(
                                             /* usageOffset */ undefined
                                         )
                                     ) {
-                                        resultType = applySolvedTypeVars(matchTypeInstance, constraints, {
-                                            replaceUnsolved: {
-                                                scopeIds: getTypeVarScopeIds(unexpandedSubtype),
-                                                tupleClassType: evaluator.getTupleClassType(),
-                                            },
-                                        }) as ClassType;
+                                        resultType = evaluator.solveAndApplyConstraints(
+                                            matchTypeInstance,
+                                            constraints,
+                                            {
+                                                replaceUnsolved: {
+                                                    scopeIds: getTypeVarScopeIds(unexpandedSubtype),
+                                                    tupleClassType: evaluator.getTupleClassType(),
+                                                },
+                                            }
+                                        ) as ClassType;
                                     }
                                 }
                             }
@@ -1145,27 +1144,30 @@ function narrowTypeBasedOnValuePattern(
                         if (!isPositiveTest) {
                             if (
                                 isClassInstance(subjectSubtypeExpanded) &&
-                                ClassType.isEnumClass(subjectSubtypeExpanded) &&
-                                !isLiteralType(subjectSubtypeExpanded) &&
                                 isClassInstance(valueSubtypeExpanded) &&
-                                isSameWithoutLiteralValue(subjectSubtypeExpanded, valueSubtypeExpanded) &&
-                                isLiteralType(valueSubtypeExpanded)
+                                isSameWithoutLiteralValue(subjectSubtypeExpanded, valueSubtypeExpanded)
                             ) {
-                                const allEnumTypes = enumerateLiteralsForType(evaluator, subjectSubtypeExpanded);
-                                if (allEnumTypes) {
-                                    return combineTypes(
-                                        allEnumTypes.filter(
-                                            (enumType) => !ClassType.isLiteralValueSame(valueSubtypeExpanded, enumType)
-                                        )
+                                if (!isLiteralType(subjectSubtypeExpanded) && isLiteralType(valueSubtypeExpanded)) {
+                                    const expandedLiterals = enumerateLiteralsForType(
+                                        evaluator,
+                                        subjectSubtypeExpanded
                                     );
+                                    if (expandedLiterals) {
+                                        return combineTypes(
+                                            expandedLiterals.filter(
+                                                (enumType) =>
+                                                    !ClassType.isLiteralValueSame(valueSubtypeExpanded, enumType)
+                                            )
+                                        );
+                                    }
                                 }
-                            } else if (
-                                isClassInstance(subjectSubtypeExpanded) &&
-                                isClassInstance(valueSubtypeExpanded) &&
-                                isLiteralType(subjectSubtypeExpanded) &&
-                                ClassType.isLiteralValueSame(valueSubtypeExpanded, subjectSubtypeExpanded)
-                            ) {
-                                return undefined;
+
+                                if (
+                                    isLiteralType(subjectSubtypeExpanded) &&
+                                    ClassType.isLiteralValueSame(valueSubtypeExpanded, subjectSubtypeExpanded)
+                                ) {
+                                    return undefined;
+                                }
                             }
 
                             return subjectSubtypeExpanded;
@@ -1189,7 +1191,8 @@ function narrowTypeBasedOnValuePattern(
                             isClassInstance(valueSubtypeExpanded) &&
                             isLiteralType(valueSubtypeExpanded)
                         ) {
-                            return ClassType.isLiteralValueSame(valueSubtypeExpanded, subjectSubtypeExpanded)
+                            return isSameWithoutLiteralValue(subjectSubtypeExpanded, valueSubtypeExpanded) &&
+                                ClassType.isLiteralValueSame(valueSubtypeExpanded, subjectSubtypeExpanded)
                                 ? valueSubtypeUnexpanded
                                 : undefined;
                         }
@@ -1260,7 +1263,7 @@ function getMappingPatternInfo(evaluator: TypeEvaluator, type: Type, node: Patte
             // Is it a subtype of Mapping?
             const constraints = new ConstraintTracker();
             if (evaluator.assignType(mappingObject, subtype, /* diag */ undefined, constraints)) {
-                const specializedMapping = applySolvedTypeVars(mappingObject, constraints) as ClassType;
+                const specializedMapping = evaluator.solveAndApplyConstraints(mappingObject, constraints) as ClassType;
 
                 if (specializedMapping.priv.typeArgs && specializedMapping.priv.typeArgs.length >= 2) {
                     mappingInfo.push({
@@ -1516,7 +1519,10 @@ function getSequencePatternInfo(
                 // Is it a subtype of Sequence?
                 const constraints = new ConstraintTracker();
                 if (evaluator.assignType(sequenceObject, subtype, /* diag */ undefined, constraints)) {
-                    const specializedSequence = applySolvedTypeVars(sequenceObject, constraints) as ClassType;
+                    const specializedSequence = evaluator.solveAndApplyConstraints(
+                        sequenceObject,
+                        constraints
+                    ) as ClassType;
 
                     if (specializedSequence.priv.typeArgs && specializedSequence.priv.typeArgs.length > 0) {
                         sequenceInfo.push({
@@ -1542,7 +1548,7 @@ function getSequencePatternInfo(
                         pattern.start
                     )
                 ) {
-                    const specializedSequence = applySolvedTypeVars(
+                    const specializedSequence = evaluator.solveAndApplyConstraints(
                         ClassType.cloneAsInstantiable(sequenceType),
                         sequenceConstraints
                     ) as ClassType;
@@ -1618,11 +1624,11 @@ function getTypeOfPatternSequenceEntry(
         const starEntryTypes = sequenceInfo.entryTypes
             .slice(starEntryIndex, starEntryIndex + sequenceInfo.entryTypes.length - entryCount + 1)
             .map((type) => {
-                // If this is a variadic TypeVar, there's not much we can say about
+                // If this is a TypeVarTuple, there's not much we can say about
                 // its type other than it's "Unknown". We could evaluate it as an
                 // "object", but that will cause problems given that this type will
                 // be wrapped in a "list" below, and lists are invariant.
-                if (isTypeVarTuple(type) && !type.priv.isVariadicInUnion) {
+                if (isTypeVarTuple(type) && !type.priv.isInUnion) {
                     return UnknownType.create();
                 }
 

@@ -66,7 +66,6 @@ import {
 } from './types';
 import {
     addConditionToType,
-    applySolvedTypeVars,
     AssignTypeFlags,
     ClassMember,
     computeMroLinearization,
@@ -90,6 +89,7 @@ import {
     isUnboundedTupleClass,
     lookUpClassMember,
     lookUpObjectMember,
+    makeTypeVarsFree,
     mapSubtypes,
     MemberAccessFlags,
     specializeTupleClass,
@@ -1356,6 +1356,17 @@ function narrowTypeForIsInstanceInternal(
 
     expandedTypes = evaluator.expandPromotionTypes(errorNode, expandedTypes);
 
+    const convertVarTypeToFree = (varType: Type): Type => {
+        // If this is a TypeIs check, type variables should remain bound.
+        if (isTypeIsCheck) {
+            return varType;
+        }
+
+        // If this is an isinstance or issubclass check, the type variables
+        // should be converted to "free" type variables.
+        return makeTypeVarsFree(varType, ParseTreeUtils.getTypeVarScopesForNode(errorNode));
+    };
+
     // Filters the varType by the parameters of the isinstance
     // and returns the list of types the varType could be after
     // applying the filter.
@@ -1444,7 +1455,7 @@ function narrowTypeForIsInstanceInternal(
                     } else if (filterIsSubclass) {
                         if (
                             evaluator.assignType(
-                                convertToInstance(concreteVarType),
+                                convertToInstance(convertVarTypeToFree(concreteVarType)),
                                 convertToInstance(concreteFilterType),
                                 /* diag */ undefined,
                                 /* destConstraints */ undefined,
@@ -1481,7 +1492,7 @@ function narrowTypeForIsInstanceInternal(
                                                 errorNode.start
                                             )
                                         ) {
-                                            specializedFilterType = applySolvedTypeVars(
+                                            specializedFilterType = evaluator.solveAndApplyConstraints(
                                                 unspecializedFilterType,
                                                 constraints,
                                                 {
@@ -1598,7 +1609,7 @@ function narrowTypeForIsInstanceInternal(
                         }
                     } else if (
                         evaluator.assignType(
-                            concreteVarType,
+                            convertVarTypeToFree(concreteVarType),
                             filterType,
                             /* diag */ undefined,
                             /* destConstraints */ undefined,
@@ -1654,7 +1665,7 @@ function narrowTypeForIsInstanceInternal(
 
                 if (filterMetaclass && isInstantiableClass(filterMetaclass)) {
                     let isMetaclassOverlap = evaluator.assignType(
-                        metaclassType,
+                        convertVarTypeToFree(metaclassType),
                         ClassType.cloneAsInstance(filterMetaclass)
                     );
 
@@ -1712,7 +1723,7 @@ function narrowTypeForIsInstanceInternal(
             for (const filterType of filterTypes) {
                 const concreteFilterType = evaluator.makeTopLevelTypeVarsConcrete(filterType);
 
-                if (evaluator.assignType(varType, convertToInstance(concreteFilterType))) {
+                if (evaluator.assignType(convertVarTypeToFree(varType), convertToInstance(concreteFilterType))) {
                     // If the filter type is a Callable, use the original type. If the
                     // filter type is a callback protocol, use the filter type.
                     if (isFunction(filterType)) {
@@ -1731,7 +1742,7 @@ function narrowTypeForIsInstanceInternal(
                     return false;
                 }
 
-                return evaluator.assignType(varType, convertToInstance(concreteFilterType));
+                return evaluator.assignType(convertVarTypeToFree(varType), convertToInstance(concreteFilterType));
             })
         ) {
             filteredTypes.push(unexpandedType);
@@ -1944,7 +1955,7 @@ function narrowTypeForTupleLength(
             return subtype;
         }
 
-        // If the tuple contains a variadic TypeVar, we can't narrow it.
+        // If the tuple contains a TypeVarTuple, we can't narrow it.
         if (concreteSubtype.priv.tupleTypeArgs.some((typeArg) => isUnpackedTypeVarTuple(typeArg.type))) {
             return subtype;
         }

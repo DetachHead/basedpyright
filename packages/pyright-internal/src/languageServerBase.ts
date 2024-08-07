@@ -117,6 +117,8 @@ import { DefinitionFilter, DefinitionProvider, TypeDefinitionProvider } from './
 import { DocumentHighlightProvider } from './languageService/documentHighlightProvider';
 import { CollectionResult } from './languageService/documentSymbolCollector';
 import { DocumentSymbolProvider } from './languageService/documentSymbolProvider';
+import { DynamicFeature, DynamicFeatures } from './languageService/dynamicFeature';
+import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicFeature';
 import { HoverProvider } from './languageService/hoverProvider';
 import { canNavigateToFile } from './languageService/navigationUtils';
 import { ReferencesProvider } from './languageService/referencesProvider';
@@ -126,8 +128,6 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseFileResults } from './parser/parser';
 import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
-import { DynamicFeature, DynamicFeatures } from './languageService/dynamicFeature';
-import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicFeature';
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
@@ -896,8 +896,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
         const workspace = await this.getWorkspaceForFile(uri);
         if (workspace.disableLanguageServices) {
-            return;
+            return undefined;
         }
+
         return workspace.service.run((program) => {
             return new HoverProvider(program, uri, params.position, this.client.hoverContentFormat, token).getHover();
         }, token);

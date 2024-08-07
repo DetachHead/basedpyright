@@ -592,6 +592,12 @@ test('ConstrainedTypeVar19', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('ConstrainedTypeVar20', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constrainedTypeVar20.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('MissingTypeArg1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
@@ -829,6 +835,12 @@ test('Solver37', () => {
 
 test('Solver38', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver38.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Solver39', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver39.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });

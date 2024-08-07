@@ -27,6 +27,7 @@ import {
 } from '../parser/parseNodes';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { getFileInfo } from './analyzerNodeInfo';
+import { ConstraintSolution } from './constraintSolution';
 import { ConstraintTracker } from './constraintTracker';
 import { createFunctionFromConstructor, getBoundInitMethod } from './constructors';
 import { DeclarationType } from './declaration';
@@ -60,9 +61,9 @@ import {
     UnknownType,
 } from './types';
 import {
-    addConstraintForSelfType,
+    addSolutionForSelfType,
     applySolvedTypeVars,
-    buildConstraintsFromSpecializedClass,
+    buildSolutionFromSpecializedClass,
     computeMroLinearization,
     convertNodeToArg,
     convertToInstance,
@@ -500,9 +501,9 @@ export function synthesizeDataClassMethods(
                     // transform it to refer to the Self of this subclass.
                     let effectiveType = entry.type;
                     if (entry.classType !== classType && requiresSpecialization(effectiveType)) {
-                        const constraints = new ConstraintTracker();
-                        addConstraintForSelfType(constraints, entry.classType, classType);
-                        effectiveType = applySolvedTypeVars(effectiveType, constraints);
+                        const solution = new ConstraintSolution();
+                        addSolutionForSelfType(solution, entry.classType, classType);
+                        effectiveType = applySolvedTypeVars(effectiveType, solution);
                     }
 
                     // Is the field type a descriptor object? If so, we need to extract the corresponding
@@ -535,7 +536,7 @@ export function synthesizeDataClassMethods(
                         );
                     }
 
-                    const functionParam = FunctionParam.create(
+                    const param = FunctionParam.create(
                         ParamCategory.Simple,
                         effectiveType,
                         FunctionParamFlags.TypeDeclared,
@@ -544,16 +545,20 @@ export function synthesizeDataClassMethods(
                     );
 
                     if (entry.isKeywordOnly) {
-                        keywordOnlyParams.push(functionParam);
+                        keywordOnlyParams.push(param);
                     } else {
-                        FunctionType.addParam(constructorType, functionParam);
+                        FunctionType.addParam(constructorType, param);
                     }
 
                     if (replaceType) {
-                        const paramWithDefault = {
-                            ...functionParam,
-                            defaultType: AnyType.create(/* isEllipsis */ true),
-                        };
+                        const paramWithDefault = FunctionParam.create(
+                            param.category,
+                            param._type,
+                            param.flags,
+                            param.name,
+                            AnyType.create(/* isEllipsis */ true)
+                        );
+
                         FunctionType.addParam(replaceType, paramWithDefault);
                     }
                 }
@@ -742,24 +747,28 @@ function getDefaultArgValueForFieldSpecifier(
     }
 
     if (callTarget) {
-        const initParam = callTarget.shared.parameters.find((p) => p.name === paramName);
-        if (initParam) {
+        const initParamIndex = callTarget.shared.parameters.findIndex((p) => p.name === paramName);
+        if (initParamIndex >= 0) {
+            const initParam = callTarget.shared.parameters[initParamIndex];
+
             // Is the parameter type a literal bool?
+            const initParamType = FunctionType.getParamType(callTarget, initParamIndex);
             if (
                 FunctionParam.isTypeDeclared(initParam) &&
-                isClass(initParam.type) &&
-                typeof initParam.type.priv.literalValue === 'boolean'
+                isClass(initParamType) &&
+                typeof initParamType.priv.literalValue === 'boolean'
             ) {
-                return initParam.type.priv.literalValue;
+                return initParamType.priv.literalValue;
             }
 
             // Is the default argument value a literal bool?
+            const initParamDefaultType = FunctionType.getParamDefaultType(callTarget, initParamIndex);
             if (
-                initParam.defaultType &&
-                isClass(initParam.defaultType) &&
-                typeof initParam.defaultType.priv.literalValue === 'boolean'
+                initParamDefaultType &&
+                isClass(initParamDefaultType) &&
+                typeof initParamDefaultType.priv.literalValue === 'boolean'
             ) {
-                return initParam.defaultType.priv.literalValue;
+                return initParamDefaultType.priv.literalValue;
             }
         }
     }
@@ -817,13 +826,13 @@ function getConverterInputType(
                     returnConstraints
                 )
             ) {
-                signature = applySolvedTypeVars(signature, returnConstraints) as FunctionType;
+                signature = evaluator.solveAndApplyConstraints(signature, returnConstraints) as FunctionType;
             }
 
             const inputConstraints = new ConstraintTracker();
 
             if (evaluator.assignType(targetFunction, signature, diagAddendum, inputConstraints)) {
-                const overloadSolution = applySolvedTypeVars(typeVar, inputConstraints, {
+                const overloadSolution = evaluator.solveAndApplyConstraints(typeVar, inputConstraints, {
                     replaceUnsolved: {
                         scopeIds: getTypeVarScopeIds(typeVar),
                         tupleClassType: evaluator.getTupleClassType(),
@@ -983,7 +992,7 @@ function transformDescriptorType(evaluator: TypeEvaluator, type: Type): Type {
     }
 
     // The value parameter for a bound __set__ method is parameter index 1.
-    return FunctionType.getEffectiveParamType(setMethodType, 1);
+    return FunctionType.getParamType(setMethodType, 1);
 }
 
 // Builds a sorted list of dataclass entries that are inherited by
@@ -995,7 +1004,7 @@ export function addInheritedDataClassEntries(classType: ClassType, entries: Data
 
     ClassType.getReverseMro(classType).forEach((mroClass) => {
         if (isInstantiableClass(mroClass)) {
-            const constraints = buildConstraintsFromSpecializedClass(mroClass);
+            const solution = buildSolutionFromSpecializedClass(mroClass);
             const dataClassEntries = ClassType.getDataClassEntries(mroClass);
 
             // Add the entries to the end of the list, replacing same-named
@@ -1006,7 +1015,7 @@ export function addInheritedDataClassEntries(classType: ClassType, entries: Data
                 // If the type from the parent class is generic, we need to convert
                 // to the type parameter namespace of child class.
                 const updatedEntry = { ...entry };
-                updatedEntry.type = applySolvedTypeVars(updatedEntry.type, constraints);
+                updatedEntry.type = applySolvedTypeVars(updatedEntry.type, solution);
 
                 if (entry.isClassVar) {
                     // If this entry is a class variable, it overrides an existing

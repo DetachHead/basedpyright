@@ -12,6 +12,7 @@ import { DiagnosticRule } from '../common/diagnosticRules';
 import { LocAddendum, LocMessage } from '../localization/localize';
 import { DecoratorNode, FunctionNode, ParamCategory, ParseNode } from '../parser/parseNodes';
 import { getFileInfo } from './analyzerNodeInfo';
+import { ConstraintSolution } from './constraintSolution';
 import { ConstraintTracker } from './constraintTracker';
 import { getClassFullName, getTypeAnnotationForParam, getTypeSourceId } from './parseTreeUtils';
 import { Symbol, SymbolFlags } from './symbol';
@@ -313,7 +314,7 @@ function addGetMethodToPropertySymbolTable(evaluator: TypeEvaluator, propertyObj
         FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'self')
     );
 
-    const objType = fget.shared.parameters.length > 0 ? FunctionType.getEffectiveParamType(fget, 0) : AnyType.create();
+    const objType = fget.shared.parameters.length > 0 ? FunctionType.getParamType(fget, 0) : AnyType.create();
 
     FunctionType.addParam(
         getFunction2,
@@ -357,7 +358,7 @@ function addSetMethodToPropertySymbolTable(evaluator: TypeEvaluator, propertyObj
         FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'self')
     );
 
-    let objType = fset.shared.parameters.length > 0 ? FunctionType.getEffectiveParamType(fset, 0) : AnyType.create();
+    let objType = fset.shared.parameters.length > 0 ? FunctionType.getParamType(fset, 0) : AnyType.create();
     if (isTypeVar(objType) && TypeVarType.isSelf(objType)) {
         objType = evaluator.makeTopLevelTypeVarsConcrete(objType);
     }
@@ -387,7 +388,7 @@ function addSetMethodToPropertySymbolTable(evaluator: TypeEvaluator, propertyObj
         fset.shared.parameters[1].category === ParamCategory.Simple &&
         fset.shared.parameters[1].name
     ) {
-        setParamType = fset.shared.parameters[1].type;
+        setParamType = FunctionType.getParamType(fset, 1);
     }
     FunctionType.addParam(
         setFunction,
@@ -412,7 +413,7 @@ function addDelMethodToPropertySymbolTable(evaluator: TypeEvaluator, propertyObj
     delFunction.shared.deprecatedMessage = fdel.shared.deprecatedMessage;
     delFunction.shared.methodClass = fdel.shared.methodClass;
 
-    let objType = fdel.shared.parameters.length > 0 ? FunctionType.getEffectiveParamType(fdel, 0) : AnyType.create();
+    let objType = fdel.shared.parameters.length > 0 ? FunctionType.getParamType(fdel, 0) : AnyType.create();
 
     if (isTypeVar(objType) && TypeVarType.isSelf(objType)) {
         objType = evaluator.makeTopLevelTypeVarsConcrete(objType);
@@ -477,7 +478,7 @@ export function assignProperty(
     srcClass: ClassType | ModuleType,
     diag: DiagnosticAddendum | undefined,
     constraints?: ConstraintTracker,
-    selfConstraints?: ConstraintTracker,
+    selfSolution?: ConstraintSolution,
     recursionCount = 0
 ): boolean {
     const srcObjectToBind = isClass(srcClass) ? ClassType.cloneAsInstance(srcClass) : undefined;
@@ -522,8 +523,8 @@ export function assignProperty(
 
             // If the caller provided a "self" TypeVar context, replace any Self types.
             // This is needed during protocol matching.
-            if (selfConstraints) {
-                destAccessType = applySolvedTypeVars(destAccessType, selfConstraints) as FunctionType;
+            if (selfSolution) {
+                destAccessType = applySolvedTypeVars(destAccessType, selfSolution) as FunctionType;
             }
 
             // The access methods of fget, fset and fdel are modeled as static
