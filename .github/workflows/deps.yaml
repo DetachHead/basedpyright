@@ -19,8 +19,9 @@ jobs:
       - name: update pyprojectx
         run: curl -LO https://github.com/pyprojectx/pyprojectx/releases/latest/download/wrappers.zip && unzip -o wrappers.zip && rm -f wrappers.zip
 
-      - name: Update pyprojectx dependencies
-        run: ./pw --lock
+      # https://github.com/pyprojectx/pyprojectx/issues/112
+      # - name: Update pyprojectx dependencies
+      #   run: ./pw --lock
 
       - name: Update pdm dependencies & create PR
         uses: pdm-project/update-deps-action@v1.9
