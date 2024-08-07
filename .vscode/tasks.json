@@ -86,14 +86,15 @@
           },
           "problemMatcher": []
         },
-        {
-          "label": "update pyprojectx lockfile",
-          "type": "shell",
-          "command": "./pw",
-          "args": ["--lock"],
-          "presentation": {
-            "clear": true
-          }
-        }
+        // https://github.com/pyprojectx/pyprojectx/issues/112
+        // {
+        //   "label": "update pyprojectx lockfile",
+        //   "type": "shell",
+        //   "command": "./pw",
+        //   "args": ["--lock"],
+        //   "presentation": {
+        //     "clear": true
+        //   }
+        // }
     ]
 }
