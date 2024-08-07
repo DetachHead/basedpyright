@@ -1,0 +1,17 @@
+[versions]
+# libraries
+annotations = "24.1.0"
+
+# plugins
+kotlin = "2.0.0"
+gradleIntelliJPlugin = "1.17.3"
+kover = "0.8.0"
+
+
+[libraries]
+annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
+
+[plugins]
+gradleIntelliJPlugin = { id = "org.jetbrains.intellij", version.ref = "gradleIntelliJPlugin" }
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

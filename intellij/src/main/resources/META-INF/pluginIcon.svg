@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+    <path
+            fill="#e80"
+            d="M10,10 H40 V20 H20 V100 H40 V110 H10 Z
+               M80,10 H110 V110 H80 V100 H100 V20 H80 Z"
+    />
+</svg>
