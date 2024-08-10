@@ -31,6 +31,11 @@ uv pip install basedpyright
 ```
 pip install basedpyright
 ```
+### **homebrew**
+
+```
+brew install basedpyright
+```
 
 <!-- tabs:end -->
 
