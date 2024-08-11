@@ -12,6 +12,8 @@ import {
     Command,
     Connection,
     ExecuteCommandParams,
+    MessageType,
+    ShowMessageNotification,
     WorkDoneProgressServerReporter,
 } from 'vscode-languageserver';
 
@@ -211,7 +213,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
             }
         } catch (error) {
-            this.console.error(`Error reading settings: ${error}`);
+            this.connection.sendNotification(ShowMessageNotification.type, {
+                message: error,
+                type: MessageType.Error,
+            });
         }
         return serverSettings;
     }

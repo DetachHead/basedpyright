@@ -474,7 +474,15 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     }
 
     protected isOpenFilesOnly(diagnosticMode: string): boolean {
-        return diagnosticMode !== 'workspace';
+        if (diagnosticMode === 'openFilesOnly') {
+            return true;
+        }
+        if (diagnosticMode === 'workspace') {
+            return false;
+        }
+        throw new Error(
+            `invalid diagnosticMode: "${diagnosticMode}". valid options are "workspace" or "openFilesOnly"`
+        );
     }
 
     protected getSeverityOverrides(value: string | boolean): DiagnosticSeverityOverrides | undefined {
