@@ -165,7 +165,6 @@ describe(`Basic language server tests`, () => {
                 },
                 value: {
                     typeCheckingMode: 'strict',
-                    diagnosticMode: 'workspace',
                 },
             },
         ];
