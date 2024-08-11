@@ -46,6 +46,8 @@ import {
     ProgressToken,
     ProgressType,
     ProtocolNotificationType,
+    ShowMessageNotification,
+    ShowMessageParams,
     WorkDoneProgress,
     WorkDoneProgressCancelNotification,
     WorkDoneProgressCreateRequest,
@@ -101,6 +103,7 @@ export interface PyrightServerInfo {
     progressParts: Map<string, TestProgressPart>;
     telemetry: any[];
     diagnostics: PublishDiagnosticsParams[];
+    notifications: ShowMessageParams[];
     diagnosticsEvent: Event<PublishDiagnosticsParams>;
     workspaceEdits: ApplyWorkspaceEditParams[];
     workspaceEditsEvent: Event<ApplyWorkspaceEditParams>;
@@ -388,6 +391,7 @@ export async function runPyrightServer(
         telemetry: [],
         projectRoots: testServerData.projectRoots,
         diagnostics: [],
+        notifications: [],
         diagnosticsEvent: diagnosticsEmitter.event,
         workspaceEdits: [],
         workspaceEditsEvent: workspaceEditsEmitter.event,
@@ -455,6 +459,9 @@ export async function runPyrightServer(
         }),
         info.connection.onNotification(TelemetryEventNotification.type, (p) => {
             info.telemetry.push(p);
+        }),
+        info.connection.onNotification(ShowMessageNotification.type, (notification) => {
+            info.notifications.push(notification);
         })
     );
     info.disposables.push(
