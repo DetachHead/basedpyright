@@ -37,6 +37,7 @@
 
   - [How we keep up-to-date with upstream](upstream.md)
   - [Building & Debugging](build-debug.md)
+  - [Localization](localization.md)
   - [Pyright Internals](internals.md)
 
 
