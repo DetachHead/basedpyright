@@ -538,7 +538,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             requiringAnalysisCount: requiringAnalysisCount,
             checkingOnlyOpenFiles: this.program.isCheckingOnlyOpenFiles(),
             fatalErrorOccurred: false,
-            configParseErrorOccurred: false,
+            configParseErrors: [],
             elapsedTime: 0,
         });
 
@@ -740,7 +740,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 requiringAnalysisCount: requiringAnalysisCount,
                 checkingOnlyOpenFiles: this.program.isCheckingOnlyOpenFiles(),
                 fatalErrorOccurred: false,
-                configParseErrorOccurred: false,
+                configParseErrors: [],
                 elapsedTime,
             });
         }
