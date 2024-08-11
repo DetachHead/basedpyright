@@ -270,7 +270,7 @@ export class BackgroundAnalysisProgram {
                 requiringAnalysisCount: this._program.getFilesToAnalyzeCount(),
                 checkingOnlyOpenFiles: this._program.isCheckingOnlyOpenFiles(),
                 fatalErrorOccurred: false,
-                configParseErrorOccurred: false,
+                configParseErrors: [],
                 elapsedTime: 0,
             });
         }

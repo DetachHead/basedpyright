@@ -407,7 +407,7 @@ test('both pyright and basedpyright in pyproject.toml', () => {
         'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
     );
     assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
-    assert(analysisResult?.configParseErrorOccurred);
+    assert(analysisResult?.configParseErrors.length);
     assert(!analysisResult.fatalErrorOccurred);
 });
 
@@ -415,7 +415,7 @@ test('invalid option value in pyproject.toml', () => {
     const analysisResult = setupPyprojectToml(
         'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
     ).analysisResult;
-    assert(analysisResult?.configParseErrorOccurred);
+    assert(analysisResult?.configParseErrors.length);
     assert(!analysisResult.fatalErrorOccurred);
 });
 
@@ -424,7 +424,7 @@ test('unknown option name in pyproject.toml', () => {
         'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
     );
     assert(!('asdf' in configOptions));
-    assert(analysisResult?.configParseErrorOccurred);
+    assert(analysisResult?.configParseErrors.length);
     assert(!analysisResult.fatalErrorOccurred);
 });
 

@@ -53,12 +53,14 @@ import {
     InitializeResult,
     Location,
     MarkupKind,
+    MessageType,
     PrepareRenameParams,
     PublishDiagnosticsParams,
     ReferenceParams,
     RemoteWindow,
     RenameFilesParams,
     RenameParams,
+    ShowMessageNotification,
     SignatureHelp,
     SignatureHelpParams,
     SymbolInformation,
@@ -1322,6 +1324,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
             this.sendDiagnostics(this.convertDiagnostics(fs, fileDiag));
         });
+
+        results.configParseErrors.forEach((error) =>
+            this.connection.sendNotification(ShowMessageNotification.type, { message: error, type: MessageType.Error })
+        );
 
         if (!this._progressReporter.isEnabled(results)) {
             // Make sure to disable progress bar if it is currently active.

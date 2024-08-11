@@ -703,7 +703,7 @@ export class AnalyzerService {
             for (const error of errors) {
                 this._console.error(error);
             }
-            this._reportConfigParseError();
+            this._reportConfigParseError(errors);
         }
 
         // Override the analyzeUnannotatedFunctions setting based on the command-line setting.
@@ -1038,8 +1038,9 @@ export class AnalyzerService {
             try {
                 fileContents = this.fs.readFileSync(fileUri, 'utf8');
             } catch {
-                this._console.error(`Config file "${fileUri.toUserVisibleString()}" could not be read.`);
-                this._reportConfigParseError();
+                const error = `Config file "${fileUri.toUserVisibleString()}" could not be read.`;
+                this._console.error(error);
+                this._reportConfigParseError([error]);
                 return undefined;
             }
 
@@ -1059,10 +1060,9 @@ export class AnalyzerService {
             // may have been partially written when we read it, resulting in parse
             // errors. We'll give it a little more time and try again.
             if (parseAttemptCount++ >= 5) {
-                this._console.error(
-                    `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`
-                );
-                this._reportConfigParseError();
+                const error = `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`;
+                this._console.error(error);
+                this._reportConfigParseError([error]);
                 return undefined;
             }
         }
@@ -1805,7 +1805,7 @@ export class AnalyzerService {
         }, timeUntilNextAnalysisInMs);
     }
 
-    private _reportConfigParseError() {
+    private _reportConfigParseError(errors: string[]) {
         if (this._onCompletionCallback) {
             this._onCompletionCallback({
                 diagnostics: [],
@@ -1813,7 +1813,7 @@ export class AnalyzerService {
                 requiringAnalysisCount: { files: 0, cells: 0 },
                 checkingOnlyOpenFiles: true,
                 fatalErrorOccurred: false,
-                configParseErrorOccurred: true,
+                configParseErrors: errors,
                 elapsedTime: 0,
             });
         }
