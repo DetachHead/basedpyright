@@ -905,4 +905,38 @@ describe(`Basic language server tests`, () => {
                 'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".'
         );
     });
+
+    test('error on invalid config - lsp settings', async () => {
+        const code = `
+// @filename: test.py
+//// 
+    `;
+        const settings = [
+            {
+                item: {
+                    scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                    section: 'basedpyright.analysis',
+                },
+                value: {
+                    diagnosticMode: 'asdf',
+                },
+            },
+        ];
+
+        const info = await runLanguageServer(
+            DEFAULT_WORKSPACE_ROOT,
+            code,
+            /* callInitialize */ true,
+            settings,
+            undefined,
+            /* supportsBackgroundThread */ true
+        );
+
+        // get the file containing the marker that also contains our task list comments
+        assert(info.notifications.length === 1);
+        assert(
+            info.notifications[0].message ===
+                'invalid diagnosticMode: "asdf". valid options are "workspace" or "openFilesOnly"'
+        );
+    });
 });

@@ -214,7 +214,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             }
         } catch (error) {
             this.connection.sendNotification(ShowMessageNotification.type, {
-                message: error,
+                message: error instanceof Error ? error.message : error,
                 type: MessageType.Error,
             });
         }
