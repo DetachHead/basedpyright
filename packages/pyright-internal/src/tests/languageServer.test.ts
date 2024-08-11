@@ -870,4 +870,39 @@ describe(`Basic language server tests`, () => {
             });
         });
     });
+
+    test('error on invalid config - config file', async () => {
+        const code = `
+// @filename: test.py
+//// 
+// @filename: pyproject.toml
+//// [tool.basedpyright]
+//// typeCheckingMode = 'asdf'
+//// 
+    `;
+        const settings = [
+            {
+                item: {
+                    scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                    section: 'python.analysis',
+                },
+                value: {},
+            },
+        ];
+
+        const info = await runLanguageServer(
+            DEFAULT_WORKSPACE_ROOT,
+            code,
+            /* callInitialize */ true,
+            settings,
+            undefined,
+            /* supportsBackgroundThread */ true
+        );
+
+        assert(info.notifications.length === 1);
+        assert(
+            info.notifications[0].message ===
+                'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".'
+        );
+    });
 });
