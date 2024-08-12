@@ -149,7 +149,7 @@
                 },
                 "basedpyright.analysis.diagnosticMode": {
                     "type": "string",
-                    "default": "workspace",
+                    "default": "openFilesOnly",
                     "enum": [
                         "openFilesOnly",
                         "workspace"
