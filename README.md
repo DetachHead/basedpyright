@@ -345,6 +345,12 @@ basedpyright:
       codequality: report.json
 ```
 
+### improved translations
+
+the translations in pyright come from microsoft's localization team, who are not programmers. this not only results in poor quality translations, but microsoft also doesn't accept contributions to fix them ([more info here](https://github.com/microsoft/pyright/issues/7441#issuecomment-1987027067)).
+
+we accept translation fixes in basedpyright. [see the localization guidelines](https://docs.basedpyright.com/#/localization) for information on how to contribute.
+
 ## basedmypy feature parity
 
 [basedmypy](https://github.com/kotlinisland/basedmypy) is a fork of mypy with a similar goal in mind: to fix some of the serious problems in mypy that do not seem to be a priority for the maintainers. it also adds many new features which may not be standardized but greatly improve the developer experience when working with python's far-from-perfect type system.
