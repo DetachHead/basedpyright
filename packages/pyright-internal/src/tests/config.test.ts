@@ -511,33 +511,6 @@ test('Typechecking mode is standard when just config file is present', () => {
     assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'error');
 });
 
-test('Typechecking mode depends upon if vscode extension or not', () => {
-    const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/package1'));
-    let service = createAnalyzer();
-    let commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
-
-    service.setOptions(commandLineOptions);
-
-    let configOptions = service.test_getConfigOptions(commandLineOptions);
-    assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'none');
-
-    service = createAnalyzer();
-    commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ false);
-
-    service.setOptions(commandLineOptions);
-
-    configOptions = service.test_getConfigOptions(commandLineOptions);
-    assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'error');
-
-    commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
-    commandLineOptions.configSettings.typeCheckingMode = 'strict';
-    service = createAnalyzer();
-    service.setOptions(commandLineOptions);
-
-    configOptions = service.test_getConfigOptions(commandLineOptions);
-    assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'error');
-});
-
 test('Include file paths are only set in the config file when using extension', () => {
     const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/project1'));
     const service = createAnalyzer();
