@@ -18,6 +18,9 @@ export const enum DiagnosticSeverityOverrides {
     Warning = 'warning',
     Information = 'information',
     None = 'none',
+    Unused = 'unused',
+    Unreachable = 'unreachable',
+    Deprecated = 'deprecated',
 }
 
 export function getDiagnosticSeverityOverrides() {
@@ -26,6 +29,9 @@ export function getDiagnosticSeverityOverrides() {
         DiagnosticSeverityOverrides.Warning,
         DiagnosticSeverityOverrides.Information,
         DiagnosticSeverityOverrides.None,
+        DiagnosticSeverityOverrides.Unused,
+        DiagnosticSeverityOverrides.Unreachable,
+        DiagnosticSeverityOverrides.Deprecated,
     ];
 }
 

@@ -1901,6 +1901,15 @@ export function parseDiagLevel(value: string | boolean): DiagnosticSeverityOverr
         case 'information':
             return DiagnosticSeverityOverrides.Information;
 
+        case 'unused':
+            return DiagnosticSeverityOverrides.Unused;
+
+        case 'unreachable':
+            return DiagnosticSeverityOverrides.Unreachable;
+
+        case 'deprecated':
+            return DiagnosticSeverityOverrides.Deprecated;
+
         default:
             return undefined;
     }
