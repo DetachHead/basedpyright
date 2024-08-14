@@ -10338,7 +10338,10 @@ export function createTypeEvaluator(
             return false;
         }
 
-        if (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type'))) {
+        if (
+            checkEq &&
+            (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type')))
+        ) {
             if (
                 isInstantiableClass(rightType) ||
                 (isClassInstance(rightType) && ClassType.isBuiltIn(rightType, 'type'))
@@ -10350,13 +10353,11 @@ export function createTypeEvaluator(
                     return true;
                 }
             }
-            if (checkEq) {
-                // Does the class have an operator overload for eq?
-                const metaclass = leftType.shared.effectiveMetaclass;
-                if (metaclass && isClass(metaclass)) {
-                    if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
-                        return true;
-                    }
+            // Does the class have an operator overload for eq?
+            const metaclass = leftType.shared.effectiveMetaclass;
+            if (metaclass && isClass(metaclass)) {
+                if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
+                    return true;
                 }
             }
 
