@@ -465,6 +465,9 @@ async function runSingleThreaded(
         }
 
         if (results.configParseErrors.length) {
+            for (const error of results.configParseErrors) {
+                output.error(error);
+            }
             exitStatus.resolve(ExitStatus.ConfigFileParseError);
             return;
         }

@@ -1,6 +1,6 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, FunctionType, OverloadedFunctionType, Type, TypeCategory, TypeFlags } from './types';
+import { ClassType, FunctionType, OverloadedType, Type, TypeCategory, TypeFlags } from './types';
 import {
     ClassNode,
     DecoratorNode,
@@ -141,9 +141,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     this._addItem(node.start, node.length, SemanticTokenTypes.type, []);
                 }
                 return;
-            case TypeCategory.OverloadedFunction:
+            case TypeCategory.Overloaded:
                 if (type.flags & TypeFlags.Instance) {
-                    const details = OverloadedFunctionType.getOverloads(type)[0].shared;
+                    const details = OverloadedType.getOverloads(type)[0].shared;
                     if (details.declaration?.isMethod) {
                         this._addItem(node.start, node.length, SemanticTokenTypes.method, []);
                     } else {

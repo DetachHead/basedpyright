@@ -20,7 +20,7 @@ import {
     CommandLineOptions,
 } from '../common/commandLineOptions';
 import { BasedConfigOptions, ConfigErrors, ConfigOptions, matchFileSpecs } from '../common/configOptions';
-import { ConsoleInterface, LogLevel, StandardConsole, log } from '../common/console';
+import { ConsoleInterface, LogLevel, NoErrorConsole, StandardConsole, log } from '../common/console';
 import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
 import { FileEditAction } from '../common/editAction';
@@ -485,7 +485,7 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.restart();
     }
 
-    private get _console() {
+    private get _console(): NoErrorConsole {
         return this._options.console!;
     }
 
@@ -614,7 +614,7 @@ export class AnalyzerService {
         // If we found a config file, load it and apply its settings.
         let configs;
         try {
-            const configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
+            configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
         } catch (e) {
             if (e instanceof ConfigErrors) {
                 errors.push(...e.errors);
@@ -624,7 +624,6 @@ export class AnalyzerService {
         }
         configOptions.initializeTypeCheckingMode('all');
         if (configs && configs.length > 0) {
-
             // Then we apply the config file settings. This can update the
             // the typeCheckingMode.
             for (const config of configs) {
@@ -657,7 +656,11 @@ export class AnalyzerService {
         this._applyLanguageServerOptions(configOptions, commandLineOptions.languageServerSettings);
 
         // Ensure that if no command line or config options were applied, we have some defaults.
-        this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions);
+        errors.push(...this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions));
+
+        if (errors.length > 0) {
+            this._reportConfigParseError(errors);
+        }
 
         return configOptions;
     }
@@ -668,7 +671,8 @@ export class AnalyzerService {
         projectRoot: Uri,
         executionRoot: Uri,
         commandLineOptions: CommandLineOptions
-    ) {
+    ): string[] {
+        const errors = [];
         const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
 
         // If no include paths were provided, assume that all files within
@@ -689,13 +693,6 @@ export class AnalyzerService {
             if (configOptions.autoExcludeVenv === undefined) {
                 configOptions.autoExcludeVenv = true;
             }
-        }
-
-        if (errors.length > 0) {
-            for (const error of errors) {
-                this._console.error(error);
-            }
-            this._reportConfigParseError(errors);
         }
 
         if (!configOptions.defaultExtraPaths) {
@@ -741,7 +738,7 @@ export class AnalyzerService {
         if (configOptions.stubPath) {
             // If there was a stub path specified, validate it.
             if (!this.fs.existsSync(configOptions.stubPath) || !isDirectory(this.fs, configOptions.stubPath)) {
-                this._console.warn(`stubPath ${configOptions.stubPath} is not a valid directory.`);
+                errors.push(`stubPath ${configOptions.stubPath} is not a valid directory.`);
             }
         } else {
             // If no stub path was specified, use a default path.
@@ -752,9 +749,7 @@ export class AnalyzerService {
         // or inconsistent information.
         if (configOptions.venvPath) {
             if (!this.fs.existsSync(configOptions.venvPath) || !isDirectory(this.fs, configOptions.venvPath)) {
-                this._console.error(
-                    `venvPath ${configOptions.venvPath.toUserVisibleString()} is not a valid directory.`
-                );
+                errors.push(`venvPath ${configOptions.venvPath.toUserVisibleString()} is not a valid directory.`);
             }
 
             // venvPath without venv means it won't do anything while resolveImport.
@@ -765,7 +760,7 @@ export class AnalyzerService {
                 const fullVenvPath = configOptions.venvPath.resolvePaths(configOptions.venv);
 
                 if (!this.fs.existsSync(fullVenvPath) || !isDirectory(this.fs, fullVenvPath)) {
-                    this._console.error(
+                    errors.push(
                         `venv ${
                             configOptions.venv
                         } subdirectory not found in venv path ${configOptions.venvPath.toUserVisibleString()}.`
@@ -773,14 +768,14 @@ export class AnalyzerService {
                 } else {
                     const importFailureInfo: string[] = [];
                     if (findPythonSearchPaths(this.fs, configOptions, host, importFailureInfo) === undefined) {
-                        this._console.error(
+                        errors.push(
                             `site-packages directory cannot be located for venvPath ` +
                                 `${configOptions.venvPath.toUserVisibleString()} and venv ${configOptions.venv}.`
                         );
 
                         if (configOptions.verboseOutput) {
                             importFailureInfo.forEach((diag) => {
-                                this._console.error(`  ${diag}`);
+                                errors.push(`  ${diag}`);
                             });
                         }
                     }
@@ -797,7 +792,7 @@ export class AnalyzerService {
 
         if (configOptions.typeshedPath) {
             if (!this.fs.existsSync(configOptions.typeshedPath) || !isDirectory(this.fs, configOptions.typeshedPath)) {
-                this._console.error(
+                errors.push(
                     `typeshedPath ${configOptions.typeshedPath.toUserVisibleString()} is not a valid directory.`
                 );
             }
@@ -808,6 +803,7 @@ export class AnalyzerService {
         if (commandLineOptions.configSettings.verboseOutput !== undefined) {
             configOptions.verboseOutput = commandLineOptions.configSettings.verboseOutput;
         }
+        return errors;
     }
 
     private _applyLanguageServerOptions(
@@ -1043,9 +1039,12 @@ export class AnalyzerService {
             this._configOptions.stubPath ??
             this.fs.realCasePath(this._configOptions.projectRoot.resolvePaths(defaultStubsDirectory));
 
+        // we cast _console to ConsoleInterface because console.error is allowed here since the usages throw errors immediately after
+        // but we still want to know if any upstream changes come in that don't
+
         if (!this._typeStubTargetUri || !this._typeStubTargetImportName) {
             const errMsg = `Import '${this._typeStubTargetImportName}'` + ` could not be resolved`;
-            this._console.error(errMsg);
+            (this._console as ConsoleInterface).error(errMsg);
             throw new Error(errMsg);
         }
 
@@ -1054,7 +1053,7 @@ export class AnalyzerService {
             // We should never get here because the import resolution
             // would have failed.
             const errMsg = `Import '${this._typeStubTargetImportName}'` + ` could not be resolved`;
-            this._console.error(errMsg);
+            (this._console as ConsoleInterface).error(errMsg);
             throw new Error(errMsg);
         }
 
@@ -1065,7 +1064,7 @@ export class AnalyzerService {
             }
         } catch (e: any) {
             const errMsg = `Could not create typings directory '${stubPath.toUserVisibleString()}'`;
-            this._console.error(errMsg);
+            (this._console as ConsoleInterface).error(errMsg);
             throw new Error(errMsg);
         }
 
@@ -1080,7 +1079,7 @@ export class AnalyzerService {
             }
         } catch (e: any) {
             const errMsg = `Could not create typings subdirectory '${typingsSubdirHierarchy.toUserVisibleString()}'`;
-            this._console.error(errMsg);
+            (this._console as ConsoleInterface).error(errMsg);
             throw new Error(errMsg);
         }
 
@@ -1113,7 +1112,7 @@ export class AnalyzerService {
                     return (toml.basedpyright || toml.pyright) as object;
                 }
             } catch (e) {
-                this._console.error(
+                (this._console as ConsoleInterface).error(
                     `Pyproject file parse attempt ${attemptCount} ${
                         e instanceof Error ? e : `error: ${JSON.stringify(e)}`
                     }`
@@ -1141,7 +1140,6 @@ export class AnalyzerService {
                 fileContents = this.fs.readFileSync(fileUri, 'utf8');
             } catch {
                 const error = `Config file "${fileUri.toUserVisibleString()}" could not be read.`;
-                this._console.error(error);
                 this._reportConfigParseError([error]);
                 return undefined;
             }
@@ -1163,7 +1161,6 @@ export class AnalyzerService {
             // errors. We'll give it a little more time and try again.
             if (parseAttemptCount++ >= 5) {
                 const error = `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`;
-                this._console.error(error);
                 this._reportConfigParseError([error]);
                 return undefined;
             }
@@ -1265,7 +1262,8 @@ export class AnalyzerService {
                 this._backgroundAnalysisProgram.setAllowedThirdPartyImports([this._typeStubTargetImportName]);
                 this._backgroundAnalysisProgram.setTrackedFiles(filesToImport);
             } else {
-                this._console.error(`Import '${this._typeStubTargetImportName}' not found`);
+                // TODO: whats this and should the error cause a non-zero exit code?
+                (this._console as ConsoleInterface).error(`Import '${this._typeStubTargetImportName}' not found`);
             }
         } else if (!this._options.skipScanningUserFiles) {
             let fileList: Uri[] = [];
@@ -1317,7 +1315,7 @@ export class AnalyzerService {
                 // If this is taking a long time, log an error to help the user
                 // diagnose and mitigate the problem.
                 if (secondsSinceStart >= longOperationLimitInSec) {
-                    this._console.error(
+                    (this._console as ConsoleInterface).error(
                         `Enumeration of workspace source files is taking longer than ${longOperationLimitInSec} seconds.\n` +
                             'This may be because:\n' +
                             '* You have opened your home directory or entire hard drive as a workspace\n' +
@@ -1401,7 +1399,7 @@ export class AnalyzerService {
                 }
 
                 if (!foundFileSpec) {
-                    this._console.error(
+                    (this._console as ConsoleInterface).error(
                         `File or directory "${includeSpec.wildcardRoot.toUserVisibleString()}" does not exist.`
                     );
                 }
@@ -1489,7 +1487,7 @@ export class AnalyzerService {
                     this._scheduleReanalysis(/* requireTrackedFileUpdate */ true);
                 });
             } catch {
-                this._console.error(
+                (this._console as ConsoleInterface).error(
                     `Exception caught when installing fs watcher for:\n ${fileList
                         .map((f) => f.toUserVisibleString())
                         .join('\n')}`
@@ -1499,7 +1497,7 @@ export class AnalyzerService {
 
         function getEventInfo(
             fs: FileSystem,
-            console: ConsoleInterface,
+            console: NoErrorConsole,
             program: Program,
             event: FileWatcherEventType,
             path: Uri
@@ -1651,7 +1649,7 @@ export class AnalyzerService {
                     this._scheduleLibraryAnalysis(isChange);
                 });
             } catch {
-                this._console.error(
+                (this._console as ConsoleInterface).error(
                     `Exception caught when installing fs watcher for:\n ${watchList
                         .map((w) => w.toUserVisibleString())
                         .join('\n')}`

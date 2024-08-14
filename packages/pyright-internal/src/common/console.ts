@@ -18,11 +18,21 @@ export enum LogLevel {
     Info = 'info',
     Log = 'log',
 }
-export interface ConsoleInterface {
-    error: (message: string) => void;
-    warn: (message: string) => void;
+
+/**
+ * use this type to ban usage of `console.error`. instead, errors should be thrown or returned to make sure
+ * they're handled properly. ie. exiting with a non-zero exit code if running from the cli, or showing as a
+ * notification to the user if running the language server
+ */
+export interface NoErrorConsole {
     info: (message: string) => void;
     log: (message: string) => void;
+    // TODO: should we ban warnings? im leaning towards yes
+    warn: (message: string) => void;
+}
+
+export interface ConsoleInterface extends NoErrorConsole {
+    error: (message: string) => void;
 }
 
 export namespace ConsoleInterface {
@@ -235,8 +245,9 @@ export class ConsoleWithLogLevel implements ConsoleInterface, Chainable, Disposa
         this._chains.forEach((c) => log(c, level, message));
     }
 }
-
-export function log(console: ConsoleInterface, logType: LogLevel, msg: string) {
+export function log(console: NoErrorConsole, logType: Exclude<LogLevel, LogLevel.Error>, msg: string): void;
+export function log(console: ConsoleInterface, logType: LogLevel, msg: string): void;
+export function log(console: NoErrorConsole, logType: LogLevel, msg: string) {
     switch (logType) {
         case LogLevel.Log:
             console.log(msg);
@@ -251,7 +262,8 @@ export function log(console: ConsoleInterface, logType: LogLevel, msg: string) {
             break;
 
         case LogLevel.Error:
-            console.error(msg);
+            // overload moment
+            (console as ConsoleInterface).error(msg);
             break;
 
         default:

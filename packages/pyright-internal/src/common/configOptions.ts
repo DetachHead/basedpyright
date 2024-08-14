@@ -13,7 +13,7 @@ import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
 import { appendArray } from './collectionUtils';
 import { DiagnosticSeverityOverrides, DiagnosticSeverityOverridesMap } from './commandLineOptions';
-import { ConsoleInterface, NullConsole } from './console';
+import { NoErrorConsole, NullConsole } from './console';
 import { TaskListToken } from './diagnostic';
 import { DiagnosticRule } from './diagnosticRules';
 import { FileSystem } from './fileSystem';
@@ -1406,11 +1406,7 @@ export class ConfigOptions {
         // Apply overrides from the config file for the boolean rules.
         const configRuleSet = { ...this.diagnosticRuleSet };
         getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
-            const value = this._convertBoolean(
-                configObj[ruleName],
-                ruleName,
-                configRuleSet[ruleName] as boolean
-            );
+            const value = this._convertBoolean(configObj[ruleName], ruleName, configRuleSet[ruleName] as boolean);
             (configRuleSet as any)[ruleName] = value;
             if (ruleName === DiagnosticRule.enableReachabilityAnalysis && !value) {
                 // backwards compatibility with the worse way of configuring unreachability diagnostics
@@ -1654,7 +1650,7 @@ export class ConfigOptions {
         return undefined;
     }
 
-    ensureDefaultPythonPlatform(host: Host, console: ConsoleInterface) {
+    ensureDefaultPythonPlatform(host: Host, console: NoErrorConsole) {
         // If no default python platform was specified, assume that the
         // user wants to use all mode
         if (this.defaultPythonPlatform !== undefined) {
@@ -1664,7 +1660,7 @@ export class ConfigOptions {
         this.defaultPythonPlatform = 'All';
     }
 
-    ensureDefaultPythonVersion(host: Host, console: ConsoleInterface) {
+    ensureDefaultPythonVersion(host: Host, console: NoErrorConsole) {
         // If no default python version was specified, retrieve the version
         // from the currently-selected python interpreter.
         if (this.defaultPythonVersion !== undefined) {

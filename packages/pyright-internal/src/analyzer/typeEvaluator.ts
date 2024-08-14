@@ -2366,11 +2366,11 @@ export function createTypeEvaluator(
             });
         }
 
-        function addFunctionToSignature(type: FunctionType | OverloadedFunctionType) {
+        function addFunctionToSignature(type: FunctionType | OverloadedType) {
             if (isFunction(type)) {
                 addOneFunctionToSignature(type);
             } else {
-                OverloadedFunctionType.getOverloads(type).forEach((func) => {
+                OverloadedType.getOverloads(type).forEach((func) => {
                     addOneFunctionToSignature(func);
                 });
             }
@@ -2379,14 +2379,14 @@ export function createTypeEvaluator(
         doForEachSubtype(callType, (subtype) => {
             switch (subtype.category) {
                 case TypeCategory.Function:
-                case TypeCategory.OverloadedFunction: {
+                case TypeCategory.Overloaded: {
                     addFunctionToSignature(subtype);
                     break;
                 }
 
                 case TypeCategory.Class: {
                     if (TypeBase.isInstantiable(subtype)) {
-                        let constructorType: FunctionType | OverloadedFunctionType | undefined;
+                        let constructorType: FunctionType | OverloadedType | undefined;
 
                         // Try to get the `__init__` method first because it typically has more
                         // type information than `__new__`.
@@ -2399,7 +2399,7 @@ export function createTypeEvaluator(
                         );
 
                         if (initMethodResult && !initMethodResult.typeErrors) {
-                            if (isFunction(initMethodResult.type) || isOverloadedFunction(initMethodResult.type)) {
+                            if (isFunction(initMethodResult.type) || isOverloaded(initMethodResult.type)) {
                                 constructorType = initMethodResult.type;
                             }
                         }
@@ -2425,7 +2425,7 @@ export function createTypeEvaluator(
                                     newMethodResult.type.shared.fullName !== 'builtins.object.__new__'
                                 ) {
                                     constructorType = newMethodResult.type;
-                                } else if (isOverloadedFunction(newMethodResult.type)) {
+                                } else if (isOverloaded(newMethodResult.type)) {
                                     constructorType = newMethodResult.type;
                                 }
                             }
@@ -10332,8 +10332,8 @@ export function createTypeEvaluator(
             return isTypeSame(leftType, rightType);
         }
 
-        const isLeftCallable = isFunction(leftType) || isOverloadedFunction(leftType);
-        const isRightCallable = isFunction(rightType) || isOverloadedFunction(rightType);
+        const isLeftCallable = isFunction(leftType) || isOverloaded(leftType);
+        const isRightCallable = isFunction(rightType) || isOverloaded(rightType);
         if (isLeftCallable !== isRightCallable) {
             return false;
         }
