@@ -10328,7 +10328,7 @@ export function createTypeEvaluator(
             return isTypeSame(leftType, rightType);
         }
 
-        if (isNoneInstance(leftType) || isNoneInstance(rightType)) {
+        if (checkEq && (isNoneInstance(leftType) || isNoneInstance(rightType))) {
             return isTypeSame(leftType, rightType);
         }
 
