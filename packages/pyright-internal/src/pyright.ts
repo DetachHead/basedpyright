@@ -272,13 +272,15 @@ async function processArgs(): Promise<ExitStatus> {
             }
         }
 
-        options.includeFileSpecsOverride = fileSpecList;
-        options.includeFileSpecsOverride = options.includeFileSpecsOverride.map((f) => combinePaths(process.cwd(), f));
+        options.configSettings.includeFileSpecsOverride = fileSpecList;
+        options.configSettings.includeFileSpecsOverride = options.configSettings.includeFileSpecsOverride.map((f) =>
+            combinePaths(process.cwd(), f)
+        );
 
         // Verify the specified file specs to make sure their wildcard roots exist.
         const tempFileSystem = new PyrightFileSystem(createFromRealFileSystem(tempFile));
 
-        for (const fileDesc of options.includeFileSpecsOverride) {
+        for (const fileDesc of options.configSettings.includeFileSpecsOverride) {
             const includeSpec = getFileSpec(Uri.file(process.cwd(), tempFile), fileDesc);
             try {
                 const stat = tryStat(tempFileSystem, includeSpec.wildcardRoot);
@@ -298,7 +300,7 @@ async function processArgs(): Promise<ExitStatus> {
 
     if (args.pythonplatform) {
         if (!['All', 'Darwin', 'Linux', 'Windows'].includes(args.pythonplatform)) {
-            options.pythonPlatform = args.pythonplatform;
+            options.configSettings.pythonPlatform = args.pythonplatform;
         } else {
             console.error(
                 `'${args.pythonplatform}' is not a supported Python platform; specify All, Darwin, Linux, or Windows`
@@ -310,7 +312,7 @@ async function processArgs(): Promise<ExitStatus> {
     if (args.pythonversion) {
         const version = PythonVersion.fromString(args.pythonversion);
         if (version) {
-            options.pythonVersion = version;
+            options.configSettings.pythonVersion = version;
         } else {
             console.error(`'${args.pythonversion}' is not a supported Python version; specify 3.3, 3.4, etc.`);
             return ExitStatus.ParameterError;
@@ -326,41 +328,41 @@ async function processArgs(): Promise<ExitStatus> {
             }
         }
 
-        options.pythonPath = combinePaths(process.cwd(), normalizePath(args['pythonpath']));
+        options.configSettings.pythonPath = combinePaths(process.cwd(), normalizePath(args['pythonpath']));
     }
 
     if (args['venv-path']) {
         console.warn(`'venv-path' option is deprecated; use 'venvpath' instead`);
-        options.venvPath = combinePaths(process.cwd(), normalizePath(args['venv-path']));
+        options.configSettings.venvPath = combinePaths(process.cwd(), normalizePath(args['venv-path']));
     }
 
     if (args['venvpath']) {
-        options.venvPath = combinePaths(process.cwd(), normalizePath(args['venvpath']));
+        options.configSettings.venvPath = combinePaths(process.cwd(), normalizePath(args['venvpath']));
     }
 
     if (args['typeshed-path']) {
         console.warn(`'typeshed-path' option is deprecated; use 'typeshedpath' instead`);
-        options.typeshedPath = combinePaths(process.cwd(), normalizePath(args['typeshed-path']));
+        options.configSettings.typeshedPath = combinePaths(process.cwd(), normalizePath(args['typeshed-path']));
     }
 
     if (args['typeshedpath']) {
-        options.typeshedPath = combinePaths(process.cwd(), normalizePath(args['typeshedpath']));
+        options.configSettings.typeshedPath = combinePaths(process.cwd(), normalizePath(args['typeshedpath']));
     }
 
     if (args.createstub) {
-        options.typeStubTargetImportName = args.createstub;
+        options.languageServerSettings.typeStubTargetImportName = args.createstub;
     }
 
     if (args.skipunannotated) {
-        options.analyzeUnannotatedFunctions = false;
+        options.configSettings.analyzeUnannotatedFunctions = false;
     }
 
     if (args.verbose) {
-        options.verboseOutput = true;
+        options.configSettings.verboseOutput = true;
     }
 
     // Always enable autoSearchPaths when using the command line.
-    options.autoSearchPaths = true;
+    options.configSettings.autoSearchPaths = true;
 
     if (args.lib) {
         console.warn(`The --lib option is deprecated. Pyright now defaults to using library code to infer types.`);
@@ -377,10 +379,10 @@ async function processArgs(): Promise<ExitStatus> {
         }
     }
 
-    options.checkOnlyOpenFiles = false;
+    options.languageServerSettings.checkOnlyOpenFiles = false;
 
     if (!!args.stats && !!args.verbose) {
-        options.logTypeEvaluationTime = true;
+        options.languageServerSettings.logTypeEvaluationTime = true;
     }
 
     let logLevel = LogLevel.Error;
@@ -413,8 +415,8 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     const watch = args.watch !== undefined;
-    options.watchForSourceChanges = watch;
-    options.watchForConfigChanges = watch;
+    options.languageServerSettings.watchForSourceChanges = watch;
+    options.languageServerSettings.watchForConfigChanges = watch;
 
     const service = new AnalyzerService('<default>', serviceProvider, {
         console: output,
@@ -576,7 +578,7 @@ async function runMultiThreaded(
 
     // Specify that only open files should be checked. This will allow us
     // to control which files are checked by which workers.
-    options.checkOnlyOpenFiles = true;
+    options.languageServerSettings.checkOnlyOpenFiles = true;
 
     // This will trigger discovery of files in the project.
     service.setOptions(options);
@@ -773,7 +775,7 @@ function runWorkerMessageLoop(workerNum: number) {
                 });
 
                 let logLevel = LogLevel.Error;
-                if (options.verboseOutput) {
+                if (options.configSettings.verboseOutput) {
                     logLevel = LogLevel.Info;
                 }
 
@@ -858,7 +860,7 @@ function verifyPackageTypes(
         if (outputJson) {
             console.info(JSON.stringify(jsonReport, /* replacer */ undefined, 4));
         } else {
-            printTypeCompletenessReportText(jsonReport, !!options.verboseOutput);
+            printTypeCompletenessReportText(jsonReport, !!options.configSettings.verboseOutput);
         }
 
         return jsonReport.typeCompleteness!.completenessScore < 1 ? ExitStatus.ErrorsReported : ExitStatus.NoErrors;

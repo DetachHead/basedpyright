@@ -47,14 +47,14 @@ import {
     isInstantiableClass,
     isModule,
     isNever,
-    isOverloadedFunction,
+    isOverloaded,
     isParamSpec,
     isSameWithoutLiteralValue,
     isTypeSame,
     isTypeVar,
     isUnpackedTypeVarTuple,
     maxTypeRecursionCount,
-    OverloadedFunctionType,
+    OverloadedType,
     TupleTypeArg,
     Type,
     TypeBase,
@@ -741,8 +741,8 @@ export function getTypeNarrowingCallback(
                 if (isFunction(callType) && isFunctionReturnTypeGuard(callType)) {
                     isPossiblyTypeGuard = true;
                 } else if (
-                    isOverloadedFunction(callType) &&
-                    OverloadedFunctionType.getOverloads(callType).some((o) => isFunctionReturnTypeGuard(o))
+                    isOverloaded(callType) &&
+                    OverloadedType.getOverloads(callType).some((o) => isFunctionReturnTypeGuard(o))
                 ) {
                     isPossiblyTypeGuard = true;
                 } else if (isClassInstance(callType)) {
@@ -1458,8 +1458,7 @@ function narrowTypeForIsInstanceInternal(
                                 convertToInstance(convertVarTypeToFree(concreteVarType)),
                                 convertToInstance(concreteFilterType),
                                 /* diag */ undefined,
-                                /* destConstraints */ undefined,
-                                /* srcConstraints */ undefined,
+                                /* constraints */ undefined,
                                 AssignTypeFlags.AllowIsinstanceSpecialForms
                             )
                         ) {
@@ -1612,8 +1611,7 @@ function narrowTypeForIsInstanceInternal(
                             convertVarTypeToFree(concreteVarType),
                             filterType,
                             /* diag */ undefined,
-                            /* destConstraints */ undefined,
-                            /* srcConstraints */ undefined,
+                            /* constraints */ undefined,
                             AssignTypeFlags.AllowIsinstanceSpecialForms
                         )
                     ) {
@@ -1716,7 +1714,7 @@ function narrowTypeForIsInstanceInternal(
         return filteredTypes.map((t) => (isInstantiableClass(t) ? convertToInstantiable(convertToInstance(t)) : t));
     };
 
-    const filterFunctionType = (varType: FunctionType | OverloadedFunctionType, unexpandedType: Type): Type[] => {
+    const filterFunctionType = (varType: FunctionType | OverloadedType, unexpandedType: Type): Type[] => {
         const filteredTypes: Type[] = [];
 
         if (isPositiveTest) {
@@ -1834,7 +1832,7 @@ function narrowTypeForIsInstanceInternal(
                     );
                 }
 
-                if ((isFunction(subtype) || isOverloadedFunction(subtype)) && isInstanceCheck) {
+                if ((isFunction(subtype) || isOverloaded(subtype)) && isInstanceCheck) {
                     return combineTypes(filterFunctionType(subtype, convertToInstance(unexpandedSubtype)));
                 }
 
@@ -2480,8 +2478,6 @@ function narrowTypeForTypeIs(evaluator: TypeEvaluator, type: Type, classType: Cl
                     // in which case `type(x) is y` would fail.
                     return subtype;
                 }
-            } else if (isNoneInstance(subtype)) {
-                return isPositiveTest ? undefined : subtype;
             } else if (isAnyOrUnknown(subtype)) {
                 return isPositiveTest ? ClassType.cloneAsInstance(classType) : subtype;
             }
@@ -2503,10 +2499,6 @@ function narrowTypeForClassComparison(
         let concreteSubtype = evaluator.makeTopLevelTypeVarsConcrete(subtype);
 
         if (isPositiveTest) {
-            if (isNoneInstance(concreteSubtype)) {
-                return isNoneTypeClass(classType) ? classType : undefined;
-            }
-
             if (
                 isClassInstance(concreteSubtype) &&
                 TypeBase.isInstance(subtype) &&
@@ -2683,7 +2675,7 @@ function narrowTypeForCallable(
     return evaluator.mapSubtypesExpandTypeVars(type, /* options */ undefined, (subtype) => {
         switch (subtype.category) {
             case TypeCategory.Function:
-            case TypeCategory.OverloadedFunction: {
+            case TypeCategory.Overloaded: {
                 return isPositiveTest ? subtype : undefined;
             }
 

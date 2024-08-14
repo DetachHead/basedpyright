@@ -2,7 +2,7 @@
     "name": "pyright-internal",
     "displayName": "pyright",
     "description": "Type checker for the Python language",
-    "version": "1.1.375",
+    "version": "1.1.376",
     "license": "MIT",
     "private": true,
     "files": [
@@ -51,7 +51,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.1.2",
         "ts-loader": "^9.5.1",
-        "typescript": "~5.5.0-beta",
+        "typescript": "~5.5.4",
         "webpack": "^5.90.1",
         "webpack-cli": "^5.1.4",
         "word-wrap": "1.2.5"

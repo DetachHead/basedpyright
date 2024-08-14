@@ -777,7 +777,7 @@ test('Call1', () => {
 test('Call2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['call2.py']);
 
-    TestUtils.validateResults(analysisResults, 17);
+    TestUtils.validateResults(analysisResults, 18);
 });
 
 test('Call3', () => {
@@ -863,7 +863,7 @@ test('Call14', () => {
 test('Call15', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['call15.py']);
 
-    TestUtils.validateResults(analysisResults, 6);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('Call16', () => {

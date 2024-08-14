@@ -29,10 +29,10 @@ import {
     isClassInstance,
     isFunction,
     isInstantiableClass,
-    isOverloadedFunction,
+    isOverloaded,
     isTypeSame,
     isTypeVar,
-    OverloadedFunctionType,
+    OverloadedType,
     Type,
 } from './types';
 import { convertToInstance, lookUpObjectMember, makeInferenceContext, MemberAccessFlags } from './typeUtils';
@@ -137,12 +137,13 @@ function applyPartialTransform(
         };
     }
 
-    if (isOverloadedFunction(origFunctionType)) {
+    if (isOverloaded(origFunctionType)) {
         const applicableOverloads: FunctionType[] = [];
+        const overloads = OverloadedType.getOverloads(origFunctionType);
         let sawArgErrors = false;
 
         // Apply the partial transform to each of the functions in the overload.
-        OverloadedFunctionType.getOverloads(origFunctionType).forEach((overload) => {
+        overloads.forEach((overload) => {
             // Apply the transform to this overload, but don't report errors.
             const transformResult = applyPartialTransformToFunction(
                 evaluator,
@@ -162,11 +163,11 @@ function applyPartialTransform(
         });
 
         if (applicableOverloads.length === 0) {
-            if (sawArgErrors) {
+            if (sawArgErrors && overloads.length > 0) {
                 evaluator.addDiagnostic(
                     DiagnosticRule.reportCallIssue,
                     LocMessage.noOverload().format({
-                        name: origFunctionType.priv.overloads[0].shared.name,
+                        name: overloads[0].shared.name,
                     }),
                     errorNode
                 );
@@ -182,7 +183,7 @@ function applyPartialTransform(
         if (applicableOverloads.length === 1) {
             synthesizedCallType = applicableOverloads[0];
         } else {
-            synthesizedCallType = OverloadedFunctionType.create(
+            synthesizedCallType = OverloadedType.create(
                 // Set the "overloaded" flag for each of the __call__ overloads.
                 applicableOverloads.map((overload) =>
                     FunctionType.cloneWithNewFlags(overload, overload.shared.flags | FunctionTypeFlags.Overloaded)

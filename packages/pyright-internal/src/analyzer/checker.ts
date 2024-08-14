@@ -142,7 +142,7 @@ import {
     EnumLiteral,
     FunctionParam,
     FunctionType,
-    OverloadedFunctionType,
+    OverloadedType,
     Type,
     TypeBase,
     TypeCategory,
@@ -160,7 +160,7 @@ import {
     isInstantiableClass,
     isModule,
     isNever,
-    isOverloadedFunction,
+    isOverloaded,
     isParamSpec,
     isPossiblyUnbound,
     isTypeSame,
@@ -187,6 +187,7 @@ import {
     getSpecializedTupleType,
     getTypeVarArgsRecursive,
     getTypeVarScopeIds,
+    isInstantiableMetaclass,
     isLiteralType,
     isLiteralTypeOrUnion,
     isNoneInstance,
@@ -717,14 +718,13 @@ export class Checker extends ParseTreeWalker {
 
         this._scopedNodes.push(node);
 
-        if (functionTypeResult && isOverloadedFunction(functionTypeResult.decoratedType)) {
+        if (functionTypeResult && isOverloaded(functionTypeResult.decoratedType)) {
             // If this is the implementation for the overloaded function, skip
             // overload consistency checks.
             if (
-                OverloadedFunctionType.getImplementation(functionTypeResult.decoratedType) !==
-                functionTypeResult.functionType
+                OverloadedType.getImplementation(functionTypeResult.decoratedType) !== functionTypeResult.functionType
             ) {
-                const overloads = OverloadedFunctionType.getOverloads(functionTypeResult.decoratedType);
+                const overloads = OverloadedType.getOverloads(functionTypeResult.decoratedType);
                 if (overloads.length > 1) {
                     const maxOverloadConsistencyCheckLength = 100;
 
@@ -1895,7 +1895,7 @@ export class Checker extends ParseTreeWalker {
         doForEachSubtype(exprTypeResult.type, (subtype) => {
             subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
 
-            if (!isFunction(subtype) && !isOverloadedFunction(subtype)) {
+            if (!isFunction(subtype) && !isOverloaded(subtype)) {
                 isExprFunction = false;
             }
 
@@ -2463,7 +2463,7 @@ export class Checker extends ParseTreeWalker {
             // Skip this check if the function is overloaded because the TypeVar
             // will be solved in terms of the overload signatures.
             const skipUnsolvableTypeVarCheck =
-                isOverloadedFunction(functionTypeResult.decoratedType) &&
+                isOverloaded(functionTypeResult.decoratedType) &&
                 !FunctionType.isOverloaded(functionTypeResult.functionType);
 
             if (
@@ -2510,11 +2510,22 @@ export class Checker extends ParseTreeWalker {
     }
 
     // Validates that overloads use @staticmethod and @classmethod consistently.
-    private _validateOverloadAttributeConsistency(node: FunctionNode, functionType: OverloadedFunctionType) {
+    private _validateOverloadAttributeConsistency(node: FunctionNode, functionType: OverloadedType) {
+        // Don't bother with the check if it's suppressed.
+        if (this._fileInfo.diagnosticRuleSet.reportInconsistentOverload === 'none') {
+            return;
+        }
+
         let staticMethodCount = 0;
         let classMethodCount = 0;
 
-        functionType.priv.overloads.forEach((overload) => {
+        const overloads = OverloadedType.getOverloads(functionType);
+        if (overloads.length === 0) {
+            return;
+        }
+        let totalMethods = overloads.length;
+
+        overloads.forEach((overload) => {
             if (FunctionType.isStaticMethod(overload)) {
                 staticMethodCount++;
             }
@@ -2524,23 +2535,35 @@ export class Checker extends ParseTreeWalker {
             }
         });
 
-        if (staticMethodCount > 0 && staticMethodCount < functionType.priv.overloads.length) {
+        const impl = OverloadedType.getImplementation(functionType);
+        if (impl && isFunction(impl)) {
+            totalMethods += 1;
+            if (FunctionType.isStaticMethod(impl)) {
+                staticMethodCount++;
+            }
+
+            if (FunctionType.isClassMethod(impl)) {
+                classMethodCount++;
+            }
+        }
+
+        if (staticMethodCount > 0 && staticMethodCount < totalMethods) {
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportInconsistentOverload,
                 LocMessage.overloadStaticMethodInconsistent().format({
                     name: node.d.name.d.value,
                 }),
-                functionType.priv.overloads[0]?.shared.declaration?.node.d.name ?? node.d.name
+                overloads[0]?.shared.declaration?.node.d.name ?? node.d.name
             );
         }
 
-        if (classMethodCount > 0 && classMethodCount < functionType.priv.overloads.length) {
+        if (classMethodCount > 0 && classMethodCount < totalMethods) {
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportInconsistentOverload,
                 LocMessage.overloadClassMethodInconsistent().format({
                     name: node.d.name.d.value,
                 }),
-                functionType.priv.overloads[0]?.shared.declaration?.node.d.name ?? node.d.name
+                overloads[0]?.shared.declaration?.node.d.name ?? node.d.name
             );
         }
     }
@@ -2551,6 +2574,11 @@ export class Checker extends ParseTreeWalker {
         functionType: FunctionType,
         prevOverloads: FunctionType[]
     ) {
+        // Skip the check entirely if it's disabled.
+        if (this._fileInfo.diagnosticRuleSet.reportOverlappingOverload === 'none') {
+            return;
+        }
+
         for (let i = 0; i < prevOverloads.length; i++) {
             const prevOverload = prevOverloads[i];
             if (this._isOverlappingOverload(functionType, prevOverload, /* partialOverlap */ false)) {
@@ -2580,8 +2608,7 @@ export class Checker extends ParseTreeWalker {
                         returnType,
                         prevReturnType,
                         /* diag */ undefined,
-                        /* destConstraints */ undefined,
-                        /* srcConstraints */ undefined,
+                        /* constraints */ undefined,
                         AssignTypeFlags.Default
                     )
                 ) {
@@ -2655,8 +2682,7 @@ export class Checker extends ParseTreeWalker {
             functionType,
             prevOverload,
             /* diag */ undefined,
-            /* destConstraints */ undefined,
-            /* srcConstraints */ undefined,
+            /* constraints */ undefined,
             flags
         );
     }
@@ -2670,61 +2696,65 @@ export class Checker extends ParseTreeWalker {
         implementation: FunctionType,
         diag: DiagnosticAddendum | undefined
     ): boolean {
-        const implConstraints = new ConstraintTracker();
-        const overloadConstraints = new ConstraintTracker();
+        const constraints = new ConstraintTracker();
+
+        let implBound = implementation;
+        let overloadBound = overload;
+
+        const implNode = implementation.shared.declaration?.node?.parent;
+        if (implNode) {
+            const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(implNode);
+            implBound = makeTypeVarsBound(implementation, liveScopeIds);
+        }
+
+        const overloadNode = overload.shared.declaration?.node;
+        if (overloadNode) {
+            const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(overloadNode);
+            overloadBound = makeTypeVarsBound(overload, liveScopeIds);
+        }
 
         // First check the parameters to see if they are assignable.
-        let isLegal = this._evaluator.assignType(
-            overload,
-            implementation,
+        let isConsistent = this._evaluator.assignType(
+            overloadBound,
+            implBound,
             diag,
-            overloadConstraints,
-            implConstraints,
-            AssignTypeFlags.SkipReturnTypeCheck |
-                AssignTypeFlags.ReverseTypeVarMatching |
-                AssignTypeFlags.SkipSelfClsTypeCheck
+            constraints,
+            AssignTypeFlags.SkipReturnTypeCheck | AssignTypeFlags.Contravariant | AssignTypeFlags.SkipSelfClsTypeCheck
         );
 
         // Now check the return types.
-        let overloadReturnType =
-            overload.shared.declaredReturnType ?? this._evaluator.getFunctionInferredReturnType(overload);
-        let implementationReturnType = this._evaluator.solveAndApplyConstraints(
-            implementation.shared.declaredReturnType || this._evaluator.getFunctionInferredReturnType(implementation),
-            implConstraints
+        const overloadReturnType = this._evaluator.solveAndApplyConstraints(
+            FunctionType.getEffectiveReturnType(overloadBound) ??
+                this._evaluator.getFunctionInferredReturnType(overloadBound),
+            constraints
         );
-
-        if (implementation.shared.declaration?.node?.parent) {
-            // Use the parent node of the implementation to determine which type variables
-            // are live. This will include any class-scoped type variables if this is an
-            // overloaded method.
-            const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(implementation.shared.declaration.node.parent);
-            implementationReturnType = makeTypeVarsBound(implementationReturnType, liveScopeIds);
-            overloadReturnType = makeTypeVarsBound(overloadReturnType, liveScopeIds);
-        }
+        const implReturnType = this._evaluator.solveAndApplyConstraints(
+            FunctionType.getEffectiveReturnType(implBound) ?? this._evaluator.getFunctionInferredReturnType(implBound),
+            constraints
+        );
 
         const returnDiag = new DiagnosticAddendum();
         if (
             !isNever(overloadReturnType) &&
             !this._evaluator.assignType(
-                implementationReturnType,
+                implReturnType,
                 overloadReturnType,
                 returnDiag.createAddendum(),
-                implConstraints,
-                overloadConstraints,
+                constraints,
                 AssignTypeFlags.Default
             )
         ) {
             returnDiag.addMessage(
                 LocAddendum.functionReturnTypeMismatch().format({
                     sourceType: this._evaluator.printType(overloadReturnType),
-                    destType: this._evaluator.printType(implementationReturnType),
+                    destType: this._evaluator.printType(implReturnType),
                 })
             );
             diag?.addAddendum(returnDiag);
-            isLegal = false;
+            isConsistent = false;
         }
 
-        return isLegal;
+        return isConsistent;
     }
 
     private _walkStatementsAndReportUnreachable(statements: StatementNode[]) {
@@ -3057,8 +3087,8 @@ export class Checker extends ParseTreeWalker {
         }
 
         const type = this._evaluator.getEffectiveTypeOfSymbol(symbol);
-        const overloadedFunctions = isOverloadedFunction(type)
-            ? OverloadedFunctionType.getOverloads(type)
+        const overloads = isOverloaded(type)
+            ? OverloadedType.getOverloads(type)
             : isFunction(type) && FunctionType.isOverloaded(type)
             ? [type]
             : [];
@@ -3066,8 +3096,8 @@ export class Checker extends ParseTreeWalker {
         // If the implementation has no name, it was synthesized probably by a
         // decorator that used a callable with a ParamSpec that captured the
         // overloaded signature. We'll exempt it from this check.
-        if (isOverloadedFunction(type)) {
-            const overloads = OverloadedFunctionType.getOverloads(type);
+        if (isOverloaded(type)) {
+            const overloads = OverloadedType.getOverloads(type);
             if (overloads.length > 0 && overloads[0].shared.name === '') {
                 return;
             }
@@ -3077,7 +3107,7 @@ export class Checker extends ParseTreeWalker {
             }
         }
 
-        if (overloadedFunctions.length === 1) {
+        if (overloads.length === 1) {
             // There should never be a single overload.
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportInconsistentOverload,
@@ -3088,19 +3118,19 @@ export class Checker extends ParseTreeWalker {
 
         // If the file is not a stub and this is the first overload,
         // verify that there is an implementation.
-        if (this._fileInfo.isStubFile || overloadedFunctions.length === 0) {
+        if (this._fileInfo.isStubFile || overloads.length === 0) {
             return;
         }
 
-        let implementationFunction: FunctionType | undefined;
+        let implementation: Type | undefined;
 
-        if (isOverloadedFunction(type)) {
-            implementationFunction = OverloadedFunctionType.getImplementation(type);
+        if (isOverloaded(type)) {
+            implementation = OverloadedType.getImplementation(type);
         } else if (isFunction(type) && !FunctionType.isOverloaded(type)) {
-            implementationFunction = type;
+            implementation = type;
         }
 
-        if (!implementationFunction) {
+        if (!implementation) {
             const containingClassNode = ParseTreeUtils.getEnclosingClassOrFunction(primaryDecl.node);
             if (containingClassNode && containingClassNode.nodeType === ParseNodeType.Class) {
                 const classType = this._evaluator.getTypeOfClass(containingClassNode);
@@ -3111,8 +3141,8 @@ export class Checker extends ParseTreeWalker {
 
                     if (ClassType.supportsAbstractMethods(classType.classType)) {
                         if (
-                            isOverloadedFunction(type) &&
-                            OverloadedFunctionType.getOverloads(type).every((overload) =>
+                            isOverloaded(type) &&
+                            OverloadedType.getOverloads(type).every((overload) =>
                                 FunctionType.isAbstractMethod(overload)
                             )
                         ) {
@@ -3135,22 +3165,30 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        if (!isOverloadedFunction(type)) {
+        if (!isOverloaded(type)) {
+            return;
+        }
+
+        if (this._fileInfo.diagnosticRuleSet.reportInconsistentOverload === 'none') {
             return;
         }
 
         // Verify that all overload signatures are assignable to implementation signature.
-        OverloadedFunctionType.getOverloads(type).forEach((overload, index) => {
+        OverloadedType.getOverloads(type).forEach((overload, index) => {
             const diag = new DiagnosticAddendum();
-            if (!this._validateOverloadImplementation(overload, implementationFunction!, diag)) {
-                if (implementationFunction!.shared.declaration) {
+            if (
+                implementation &&
+                isFunction(implementation) &&
+                !this._validateOverloadImplementation(overload, implementation, diag)
+            ) {
+                if (implementation!.shared.declaration) {
                     const diagnostic = this._evaluator.addDiagnostic(
                         DiagnosticRule.reportInconsistentOverload,
                         LocMessage.overloadImplementationMismatch().format({
                             name,
                             index: index + 1,
                         }) + diag.getString(),
-                        implementationFunction!.shared.declaration.node.d.name
+                        implementation!.shared.declaration.node.d.name
                     );
 
                     if (diagnostic && overload.shared.declaration) {
@@ -4308,7 +4346,7 @@ export class Checker extends ParseTreeWalker {
                         errorMessage = getDeprecatedMessageForFunction(subtype);
                     }
                 }
-            } else if (isOverloadedFunction(subtype)) {
+            } else if (isOverloaded(subtype)) {
                 // Determine if the node is part of a call expression. If so,
                 // we can determine which overload(s) were used to satisfy
                 // the call expression and determine whether any of them
@@ -4317,11 +4355,11 @@ export class Checker extends ParseTreeWalker {
 
                 // If there the implementation itself is deprecated, assume it
                 // is deprecated even if it's outside of a call expression.
-                const overloadImpl = OverloadedFunctionType.getImplementation(subtype);
-                if (overloadImpl?.shared.deprecatedMessage !== undefined) {
-                    if (!overloadImpl.shared.name || node.d.value === overloadImpl.shared.name) {
-                        deprecatedMessage = overloadImpl.shared.deprecatedMessage;
-                        errorMessage = getDeprecatedMessageForFunction(overloadImpl);
+                const impl = OverloadedType.getImplementation(subtype);
+                if (impl && isFunction(impl) && impl.shared.deprecatedMessage !== undefined) {
+                    if (!impl.shared.name || node.d.value === impl.shared.name) {
+                        deprecatedMessage = impl.shared.deprecatedMessage;
+                        errorMessage = getDeprecatedMessageForFunction(impl);
                     }
                 }
             }
@@ -4822,21 +4860,24 @@ export class Checker extends ParseTreeWalker {
                         );
                     }
                 } else if (!FunctionType.isAbstractMethod(functionType)) {
+                    // If the function consists entirely of "...", assume that it's
+                    // an abstract method or a protocol method and don't require that
+                    // the return type matches. This check can also be skipped for an overload.
+                    const isEmptySuite =
+                        ParseTreeUtils.isSuiteEmpty(node.d.suite) || FunctionType.isOverloaded(functionType);
+
                     // Make sure that the function doesn't implicitly return None if the declared
                     // type doesn't allow it. Skip this check for abstract methods.
-                    const diagAddendum = new DiagnosticAddendum();
+                    const diagAddendum = isEmptySuite ? undefined : new DiagnosticAddendum();
 
                     // If the declared type isn't compatible with 'None', flag an error.
                     if (!this._evaluator.assignType(declaredReturnType, this._evaluator.getNoneType(), diagAddendum)) {
-                        // If the function consists entirely of "...", assume that it's
-                        // an abstract method or a protocol method and don't require that
-                        // the return type matches. This check can also be skipped for an overload.
-                        if (!ParseTreeUtils.isSuiteEmpty(node.d.suite) && !FunctionType.isOverloaded(functionType)) {
+                        if (!isEmptySuite) {
                             this._evaluator.addDiagnostic(
                                 DiagnosticRule.reportReturnType,
                                 LocMessage.returnMissing().format({
                                     returnType: this._evaluator.printType(declaredReturnType),
-                                }) + diagAddendum.getString(),
+                                }) + diagAddendum?.getString(),
                                 returnAnnotation
                             );
                         }
@@ -5589,29 +5630,29 @@ export class Checker extends ParseTreeWalker {
         }
 
         let newMemberType: Type | undefined = newMethodResult.type;
-        if (!isFunction(newMemberType) && !isOverloadedFunction(newMemberType)) {
+        if (!isFunction(newMemberType) && !isOverloaded(newMemberType)) {
             return;
         }
 
-        if (isOverloadedFunction(newMemberType)) {
+        if (isOverloaded(newMemberType)) {
             // Find the implementation, not the overloaded signatures.
-            newMemberType = OverloadedFunctionType.getImplementation(newMemberType);
+            newMemberType = OverloadedType.getImplementation(newMemberType);
 
-            if (!newMemberType) {
+            if (!newMemberType || !isFunction(newMemberType)) {
                 return;
             }
         }
 
         let initMemberType: Type | undefined = initMethodResult.type;
-        if (!isFunction(initMemberType) && !isOverloadedFunction(initMemberType)) {
+        if (!isFunction(initMemberType) && !isOverloaded(initMemberType)) {
             return;
         }
 
-        if (isOverloadedFunction(initMemberType)) {
+        if (isOverloaded(initMemberType)) {
             // Find the implementation, not the overloaded signatures.
-            initMemberType = OverloadedFunctionType.getImplementation(initMemberType);
+            initMemberType = OverloadedType.getImplementation(initMemberType);
 
-            if (!initMemberType) {
+            if (!initMemberType || !isFunction(initMemberType)) {
                 return;
             }
         }
@@ -5627,16 +5668,14 @@ export class Checker extends ParseTreeWalker {
                 newMemberType,
                 initMemberType,
                 /* diag */ undefined,
-                /* destConstraints */ undefined,
-                /* srcConstraints */ undefined,
+                /* constraints */ undefined,
                 AssignTypeFlags.SkipReturnTypeCheck
             ) ||
             !this._evaluator.assignType(
                 initMemberType,
                 newMemberType,
                 /* diag */ undefined,
-                /* destConstraints */ undefined,
-                /* srcConstraints */ undefined,
+                /* constraints */ undefined,
                 AssignTypeFlags.SkipReturnTypeCheck
             )
         ) {
@@ -5957,20 +5996,22 @@ export class Checker extends ParseTreeWalker {
         const overrideDecl = getLastTypedDeclarationForSymbol(overrideClassAndSymbol.symbol);
         const overriddenDecl = getLastTypedDeclarationForSymbol(overriddenClassAndSymbol.symbol);
 
-        if (isFunction(overriddenType) || isOverloadedFunction(overriddenType)) {
+        if (isFunction(overriddenType) || isOverloaded(overriddenType)) {
             const diagAddendum = new DiagnosticAddendum();
             let overrideFunction: FunctionType | undefined;
 
             if (isFunction(overrideType)) {
                 overrideFunction = overrideType;
-            } else if (isOverloadedFunction(overrideType)) {
+            } else if (isOverloaded(overrideType)) {
                 // Use the last overload.
-                overrideFunction = OverloadedFunctionType.getImplementation(overrideType);
+                const impl = OverloadedType.getImplementation(overrideType);
 
                 // If the last overload isn't an implementation, skip the check for this symbol.
-                if (!overrideFunction) {
+                if (!impl || !isFunction(impl)) {
                     return;
                 }
+
+                overrideFunction = impl;
             }
 
             if (overrideFunction) {
@@ -6067,9 +6108,8 @@ export class Checker extends ParseTreeWalker {
                         overriddenType,
                         childOverrideType ?? overrideType,
                         /* diag */ undefined,
-                        /* destConstraints */ undefined,
-                        /* srcConstraints */ undefined,
-                        isInvariant ? AssignTypeFlags.EnforceInvariance : AssignTypeFlags.Default
+                        /* constraints */ undefined,
+                        isInvariant ? AssignTypeFlags.Invariant : AssignTypeFlags.Default
                     )
                 ) {
                     diag = this._evaluator.addDiagnostic(
@@ -6287,50 +6327,101 @@ export class Checker extends ParseTreeWalker {
 
             const typeOfSymbol = this._evaluator.getEffectiveTypeOfSymbol(symbol);
 
-            if (!isOverloadedFunction(typeOfSymbol)) {
+            if (!isOverloaded(typeOfSymbol)) {
                 return;
             }
 
-            const overloads = OverloadedFunctionType.getOverloads(typeOfSymbol);
+            const overloads = OverloadedType.getOverloads(typeOfSymbol);
+            const implementation = OverloadedType.getImplementation(typeOfSymbol);
 
-            // If there's an implementation, it will determine whether the
-            // function is @final.
-            const implementation = OverloadedFunctionType.getImplementation(typeOfSymbol);
-            if (implementation) {
-                // If one or more of the overloads is marked @final but the
-                // implementation is not, report an error.
-                if (!FunctionType.isFinal(implementation)) {
-                    overloads.forEach((overload) => {
-                        if (FunctionType.isFinal(overload) && overload.shared.declaration?.node) {
-                            this._evaluator.addDiagnostic(
-                                DiagnosticRule.reportInconsistentOverload,
-                                LocMessage.overloadFinalInconsistencyImpl().format({
-                                    name: overload.shared.name,
-                                }),
-                                getNameNodeForDeclaration(overload.shared.declaration) ??
-                                    overload.shared.declaration.node
-                            );
-                        }
-                    });
+            this._validateOverloadFinalConsistency(overloads, implementation);
+
+            this._validateOverloadAbstractConsistency(overloads, implementation);
+        });
+    }
+
+    private _validateOverloadAbstractConsistency(overloads: FunctionType[], implementation: Type | undefined) {
+        // If there's an implementation, it will determine whether the
+        // function is abstract.
+        if (implementation && isFunction(implementation)) {
+            const isImplAbstract = FunctionType.isAbstractMethod(implementation);
+            if (isImplAbstract) {
+                return;
+            }
+
+            overloads.forEach((overload) => {
+                const decl = overload.shared.declaration;
+
+                if (FunctionType.isAbstractMethod(overload) && decl) {
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportInconsistentOverload,
+                        LocMessage.overloadAbstractImplMismatch().format({
+                            name: overload.shared.name,
+                        }),
+                        getNameNodeForDeclaration(decl) ?? decl.node
+                    );
                 }
-                return;
-            }
+            });
+            return;
+        }
 
-            if (!FunctionType.isFinal(overloads[0])) {
-                overloads.slice(1).forEach((overload, index) => {
+        if (overloads.length < 2) {
+            return;
+        }
+
+        // If there was no implementation, make sure all overloads are either
+        // abstract or not abstract.
+        const isFirstOverloadAbstract = FunctionType.isAbstractMethod(overloads[0]);
+
+        overloads.slice(1).forEach((overload, index) => {
+            if (FunctionType.isAbstractMethod(overload) !== isFirstOverloadAbstract && overload.shared.declaration) {
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportInconsistentOverload,
+                    LocMessage.overloadAbstractMismatch().format({
+                        name: overload.shared.name,
+                    }),
+                    getNameNodeForDeclaration(overload.shared.declaration) ?? overload.shared.declaration.node
+                );
+            }
+        });
+    }
+
+    private _validateOverloadFinalConsistency(overloads: FunctionType[], implementation: Type | undefined) {
+        // If there's an implementation, it will determine whether the
+        // function is @final.
+        if (implementation && isFunction(implementation)) {
+            // If one or more of the overloads is marked @final but the
+            // implementation is not, report an error.
+            if (!FunctionType.isFinal(implementation)) {
+                overloads.forEach((overload) => {
                     if (FunctionType.isFinal(overload) && overload.shared.declaration?.node) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportInconsistentOverload,
-                            LocMessage.overloadFinalInconsistencyNoImpl().format({
+                            LocMessage.overloadFinalInconsistencyImpl().format({
                                 name: overload.shared.name,
-                                index: index + 2,
                             }),
                             getNameNodeForDeclaration(overload.shared.declaration) ?? overload.shared.declaration.node
                         );
                     }
                 });
             }
-        });
+            return;
+        }
+
+        if (overloads.length > 0 && !FunctionType.isFinal(overloads[0])) {
+            overloads.slice(1).forEach((overload, index) => {
+                if (FunctionType.isFinal(overload) && overload.shared.declaration?.node) {
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportInconsistentOverload,
+                        LocMessage.overloadFinalInconsistencyNoImpl().format({
+                            name: overload.shared.name,
+                            index: index + 2,
+                        }),
+                        getNameNodeForDeclaration(overload.shared.declaration) ?? overload.shared.declaration.node
+                    );
+                }
+            });
+        }
     }
 
     // For a TypedDict class that derives from another TypedDict class
@@ -6381,10 +6472,9 @@ export class Checker extends ParseTreeWalker {
                             baseExtraItemsType,
                             entry.valueType,
                             /* diag */ undefined,
-                            /* destConstraints */ undefined,
-                            /* srcConstraints */ undefined,
+                            /* constraints */ undefined,
                             !baseTypedDictEntries.extraItems.isReadOnly
-                                ? AssignTypeFlags.EnforceInvariance
+                                ? AssignTypeFlags.Invariant
                                 : AssignTypeFlags.Default
                         )
                     ) {
@@ -6410,10 +6500,9 @@ export class Checker extends ParseTreeWalker {
                         baseExtraItemsType,
                         typedDictEntries.extraItems.valueType,
                         /* diag */ undefined,
-                        /* destConstraints */ undefined,
-                        /* srcConstraints */ undefined,
+                        /* constraints */ undefined,
                         !baseTypedDictEntries.extraItems.isReadOnly
-                            ? AssignTypeFlags.EnforceInvariance
+                            ? AssignTypeFlags.Invariant
                             : AssignTypeFlags.Default
                     )
                 ) {
@@ -6534,8 +6623,11 @@ export class Checker extends ParseTreeWalker {
 
         if (isFunction(overrideType)) {
             overrideFunction = overrideType;
-        } else if (isOverloadedFunction(overrideType)) {
-            overrideFunction = OverloadedFunctionType.getImplementation(overrideType);
+        } else if (isOverloaded(overrideType)) {
+            const impl = OverloadedType.getImplementation(overrideType);
+            if (impl && isFunction(impl)) {
+                overrideFunction = impl;
+            }
         } else if (isClassInstance(overrideType) && ClassType.isPropertyClass(overrideType)) {
             if (overrideType.priv.fgetInfo) {
                 overrideFunction = overrideType.priv.fgetInfo.methodType;
@@ -6587,8 +6679,11 @@ export class Checker extends ParseTreeWalker {
 
         if (isFunction(overrideType)) {
             overrideFunction = overrideType;
-        } else if (isOverloadedFunction(overrideType)) {
-            overrideFunction = OverloadedFunctionType.getImplementation(overrideType);
+        } else if (isOverloaded(overrideType)) {
+            const impl = OverloadedType.getImplementation(overrideType);
+            if (impl && isFunction(impl)) {
+                overrideFunction = impl;
+            }
         } else if (isClassInstance(overrideType) && ClassType.isPropertyClass(overrideType)) {
             if (overrideType.priv.fgetInfo) {
                 overrideFunction = overrideType.priv.fgetInfo.methodType;
@@ -6644,7 +6739,7 @@ export class Checker extends ParseTreeWalker {
         const baseClass = baseClassAndSymbol.classType;
         const childClassSelf = ClassType.cloneAsInstance(selfSpecializeClass(childClassType));
 
-        const baseType = partiallySpecializeType(
+        let baseType = partiallySpecializeType(
             this._evaluator.getEffectiveTypeOfSymbol(baseClassAndSymbol.symbol),
             baseClass,
             this._evaluator.getTypeClassType(),
@@ -6658,7 +6753,12 @@ export class Checker extends ParseTreeWalker {
             childClassSelf
         );
 
-        if (isFunction(baseType) || isOverloadedFunction(baseType)) {
+        if (childClassType.shared.typeVarScopeId) {
+            baseType = makeTypeVarsBound(baseType, [childClassType.shared.typeVarScopeId]);
+            overrideType = makeTypeVarsBound(overrideType, [childClassType.shared.typeVarScopeId]);
+        }
+
+        if (isFunction(baseType) || isOverloaded(baseType)) {
             const diagAddendum = new DiagnosticAddendum();
 
             // Determine whether this is an attempt to override a method marked @final.
@@ -6668,11 +6768,17 @@ export class Checker extends ParseTreeWalker {
             if (!SymbolNameUtils.isPrivateName(memberName)) {
                 if (isFunction(baseType) && FunctionType.isFinal(baseType)) {
                     reportFinalMethodOverride = true;
-                } else if (
-                    isOverloadedFunction(baseType) &&
-                    baseType.priv.overloads.some((overload) => FunctionType.isFinal(overload))
-                ) {
-                    reportFinalMethodOverride = true;
+                } else if (isOverloaded(baseType)) {
+                    const overloads = OverloadedType.getOverloads(baseType);
+                    const impl = OverloadedType.getImplementation(baseType);
+
+                    if (overloads.some((overload) => FunctionType.isFinal(overload))) {
+                        reportFinalMethodOverride = true;
+                    }
+
+                    if (impl && isFunction(impl) && FunctionType.isFinal(impl)) {
+                        reportFinalMethodOverride = true;
+                    }
                 }
             }
 
@@ -6695,7 +6801,7 @@ export class Checker extends ParseTreeWalker {
                 }
             }
 
-            if (isFunction(overrideType) || isOverloadedFunction(overrideType)) {
+            if (isFunction(overrideType) || isOverloaded(overrideType)) {
                 // Don't enforce parameter names for dundered methods. Many of them
                 // are misnamed in typeshed stubs, so this would result in many
                 // false positives.
@@ -6852,9 +6958,8 @@ export class Checker extends ParseTreeWalker {
                             baseType,
                             overrideType,
                             diagAddendum,
-                            /* destConstraints */ undefined,
-                            /* srcConstraints */ undefined,
-                            isInvariant ? AssignTypeFlags.EnforceInvariance : AssignTypeFlags.Default
+                            /* constraints */ undefined,
+                            isInvariant ? AssignTypeFlags.Invariant : AssignTypeFlags.Default
                         )
                     ) {
                         if (isInvariant) {
@@ -7098,134 +7203,132 @@ export class Checker extends ParseTreeWalker {
     // and has been determined not to be a property accessor.
     private _validateMethod(node: FunctionNode, functionType: FunctionType, classNode: ClassNode) {
         const classTypeInfo = this._evaluator.getTypeOfClass(classNode);
-        const classType = classTypeInfo?.classType;
+        if (!classTypeInfo) {
+            return;
+        }
 
-        if (node.d.name && classType) {
-            const superCheckMethods = ['__init__', '__init_subclass__', '__enter__', '__exit__'];
-            if (superCheckMethods.some((name) => name === node.d.name.d.value)) {
-                if (
-                    !FunctionType.isAbstractMethod(functionType) &&
-                    !FunctionType.isOverloaded(functionType) &&
-                    !this._fileInfo.isStubFile
-                ) {
-                    this._validateSuperCallForMethod(node, functionType, classType);
-                }
+        const classType = classTypeInfo.classType;
+        const methodName = node.d.name.d.value;
+        const isMetaclass = isInstantiableMetaclass(classType);
+
+        const superCheckMethods = ['__init__', '__init_subclass__', '__enter__', '__exit__'];
+        if (superCheckMethods.includes(methodName)) {
+            if (
+                !FunctionType.isAbstractMethod(functionType) &&
+                !FunctionType.isOverloaded(functionType) &&
+                !this._fileInfo.isStubFile
+            ) {
+                this._validateSuperCallForMethod(node, functionType, classType);
             }
         }
 
-        if (node.d.name?.d.value === '__new__') {
+        const selfNames = ['self', '_self', '__self'];
+        const clsNames = ['cls', '_cls', '__cls'];
+        const clsNamesMetaclass = ['__mcls', 'mcls', 'mcs', 'metacls'];
+
+        if (methodName === '_generate_next_value_') {
+            // Skip this check for _generate_next_value_.
+            return;
+        }
+
+        if (methodName === '__new__') {
             // __new__ overrides should have a "cls" parameter.
-            if (
-                node.d.params.length === 0 ||
-                !node.d.params[0].d.name ||
-                !['cls', '_cls', '__cls', '__mcls', 'mcls', 'mcs', 'metacls'].some(
-                    (name) => node.d.params[0].d.name!.d.value === name
-                )
-            ) {
+            if (node.d.params.length === 0 || !node.d.params[0].d.name) {
                 this._evaluator.addDiagnostic(
                     DiagnosticRule.reportSelfClsParameterName,
                     LocMessage.newClsParam(),
-                    node.d.params.length > 0 ? node.d.params[0] : node.d.name
+                    node.d.name
                 );
-            }
-
-            if (classType) {
-                this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
-            }
-        } else if (node.d.name?.d.value === '_generate_next_value_') {
-            // Skip this check for _generate_next_value_.
-        } else if (FunctionType.isStaticMethod(functionType)) {
-            // Static methods should not have "self" or "cls" parameters.
-            if (node.d.params.length > 0 && node.d.params[0].d.name) {
+            } else {
                 const paramName = node.d.params[0].d.name.d.value;
-                if (paramName === 'self' || paramName === 'cls') {
+                if (!clsNames.includes(paramName) && !(isMetaclass && clsNamesMetaclass.includes(paramName))) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportSelfClsParameterName,
-                        LocMessage.staticClsSelfParam(),
-                        node.d.params[0].d.name
+                        LocMessage.newClsParam(),
+                        node.d.params[0]
                     );
                 }
             }
-        } else if (FunctionType.isClassMethod(functionType)) {
+
+            this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
+            return;
+        }
+
+        if (FunctionType.isStaticMethod(functionType)) {
+            if (node.d.params.length === 0 || !node.d.params[0].d.name) {
+                return;
+            }
+
+            // Static methods should not have "self" or "cls" parameters.
+            const paramName = node.d.params[0].d.name.d.value;
+            if (paramName === 'self' || paramName === 'cls') {
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportSelfClsParameterName,
+                    LocMessage.staticClsSelfParam(),
+                    node.d.params[0].d.name
+                );
+            }
+            return;
+        }
+
+        if (FunctionType.isClassMethod(functionType)) {
             let paramName = '';
             if (node.d.params.length > 0 && node.d.params[0].d.name) {
                 paramName = node.d.params[0].d.name.d.value;
             }
-            // Class methods should have a "cls" parameter. We'll exempt parameter
-            // names that start with an underscore since those are used in a few
-            // cases in the stdlib pyi files.
-            if (paramName !== 'cls') {
-                if (!this._fileInfo.isStubFile || (!paramName.startsWith('_') && paramName !== 'metacls')) {
+
+            // Class methods should have a "cls" parameter.
+            if (!clsNames.includes(paramName) && !(isMetaclass && clsNamesMetaclass.includes(paramName))) {
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportSelfClsParameterName,
+                    LocMessage.classMethodClsParam(),
+                    node.d.params.length > 0 ? node.d.params[0] : node.d.name
+                );
+            }
+
+            this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
+            return;
+        }
+
+        const decoratorIsPresent = node.d.decorators.length > 0;
+        const isOverloaded = FunctionType.isOverloaded(functionType);
+
+        // The presence of a decorator can change the behavior, so we need
+        // to back off from this check if a decorator is present. An overload
+        // is a decorator, but we'll ignore that here.
+        if (isOverloaded || !decoratorIsPresent) {
+            let paramName = '';
+            let firstParamIsSimple = true;
+
+            if (node.d.params.length > 0) {
+                if (node.d.params[0].d.name) {
+                    paramName = node.d.params[0].d.name.d.value;
+                }
+
+                if (node.d.params[0].d.category !== ParamCategory.Simple) {
+                    firstParamIsSimple = false;
+                }
+            }
+
+            // Instance methods should have a "self" parameter.
+            if (firstParamIsSimple && !selfNames.includes(paramName)) {
+                const isLegalMetaclassName = isMetaclass && clsNames.includes(paramName);
+
+                // Some typeshed stubs use a name that starts with an underscore to designate
+                // a parameter that cannot be positional.
+                const isPrivateName = SymbolNameUtils.isPrivateOrProtectedName(paramName);
+
+                if (!isLegalMetaclassName && !isPrivateName) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportSelfClsParameterName,
-                        LocMessage.classMethodClsParam(),
+                        LocMessage.instanceMethodSelfParam(),
                         node.d.params.length > 0 ? node.d.params[0] : node.d.name
                     );
                 }
             }
-
-            if (classType) {
-                this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
-            }
-        } else {
-            const decoratorIsPresent = node.d.decorators.length > 0;
-            const isOverloaded = FunctionType.isOverloaded(functionType);
-
-            // The presence of a decorator can change the behavior, so we need
-            // to back off from this check if a decorator is present. An overload
-            // is a decorator, but we'll ignore that here.
-            if (isOverloaded || !decoratorIsPresent) {
-                let paramName = '';
-                let firstParamIsSimple = true;
-                if (node.d.params.length > 0) {
-                    if (node.d.params[0].d.name) {
-                        paramName = node.d.params[0].d.name.d.value;
-                    }
-
-                    if (node.d.params[0].d.category !== ParamCategory.Simple) {
-                        firstParamIsSimple = false;
-                    }
-                }
-
-                // Instance methods should have a "self" parameter.
-                if (firstParamIsSimple && paramName !== 'self') {
-                    // Special-case metaclasses, which can use "cls" or several variants.
-                    let isLegalMetaclassName = false;
-                    if (['cls', 'mcls', 'mcs'].some((name) => name === paramName)) {
-                        const classTypeInfo = this._evaluator.getTypeOfClass(classNode);
-                        const typeType = this._evaluator.getBuiltInType(classNode, 'type');
-                        if (
-                            typeType &&
-                            isInstantiableClass(typeType) &&
-                            classTypeInfo &&
-                            isInstantiableClass(classTypeInfo.classType)
-                        ) {
-                            if (
-                                derivesFromClassRecursive(classTypeInfo.classType, typeType, /* ignoreUnknown */ true)
-                            ) {
-                                isLegalMetaclassName = true;
-                            }
-                        }
-                    }
-
-                    // Some typeshed stubs use a name that starts with an underscore to designate
-                    // a parameter that cannot be positional.
-                    const isPrivateName = SymbolNameUtils.isPrivateOrProtectedName(paramName);
-
-                    if (!isLegalMetaclassName && !isPrivateName) {
-                        this._evaluator.addDiagnostic(
-                            DiagnosticRule.reportSelfClsParameterName,
-                            LocMessage.instanceMethodSelfParam(),
-                            node.d.params.length > 0 ? node.d.params[0] : node.d.name
-                        );
-                    }
-                }
-            }
-
-            if (classType) {
-                this._validateClsSelfParamType(node, functionType, classType, /* isCls */ false);
-            }
         }
+
+        this._validateClsSelfParamType(node, functionType, classType, /* isCls */ false);
     }
 
     // Determines whether the method properly calls through to the same method in all

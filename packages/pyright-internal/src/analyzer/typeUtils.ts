@@ -11,7 +11,6 @@ import { appendArray } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { ArgumentNode, ParamCategory } from '../parser/parseNodes';
 import { ConstraintSolution, ConstraintSolutionSet } from './constraintSolution';
-import { ConstraintTracker } from './constraintTracker';
 import { DeclarationType } from './declaration';
 import { Symbol, SymbolFlags, SymbolTable } from './symbol';
 import { isEffectivelyClassVar, isTypedDictMemberAccessedThroughIndex } from './symbolUtils';
@@ -34,7 +33,7 @@ import {
     isInstantiableClass,
     isKeywordOnlySeparator,
     isNever,
-    isOverloadedFunction,
+    isOverloaded,
     isParamSpec,
     isPositionOnlySeparator,
     isTypeSame,
@@ -48,7 +47,7 @@ import {
     maxTypeRecursionCount,
     ModuleType,
     NeverType,
-    OverloadedFunctionType,
+    OverloadedType,
     ParamSpecAccess,
     ParamSpecType,
     PropertyMethodInfo,
@@ -177,12 +176,12 @@ export const enum AssignTypeFlags {
 
     // Require invariance with respect to class matching? Normally
     // subclasses are allowed.
-    EnforceInvariance = 1 << 0,
+    Invariant = 1 << 0,
 
     // The caller has swapped the source and dest types because
     // the types are contravariant. Perform type var matching
     // on dest type vars rather than source type var.
-    ReverseTypeVarMatching = 1 << 1,
+    Contravariant = 1 << 1,
 
     // We're comparing type compatibility of two distinct recursive types.
     // This has the potential of recursing infinitely. This flag allows us
@@ -220,8 +219,9 @@ export const enum AssignTypeFlags {
 
     // We're initially populating the constraints with an expected type,
     // so TypeVars should match the specified type exactly rather than
-    // employing narrowing or widening, and don't strip literals.
-    PopulatingExpectedType = 1 << 11,
+    // employing narrowing or widening. The variance context determines
+    // whether the upper bound, lower bound, or both are established.
+    PopulateExpectedType = 1 << 11,
 
     // Used with PopulatingExpectedType, this flag indicates that a TypeVar
     // constraint that is Unknown should be ignored.
@@ -299,7 +299,7 @@ export class UniqueSignatureTracker {
         });
     }
 
-    findSignature(signature: FunctionType | OverloadedFunctionType): SignatureWithOffsets | undefined {
+    findSignature(signature: FunctionType | OverloadedType): SignatureWithOffsets | undefined {
         // Use the associated overload type if this is a function associated with an overload.
         let effectiveSignature = signature;
         if (isFunction(signature) && signature.priv.overloaded) {
@@ -311,7 +311,7 @@ export class UniqueSignatureTracker {
         });
     }
 
-    addSignature(signature: FunctionType | OverloadedFunctionType, offset: number) {
+    addSignature(signature: FunctionType | OverloadedType, offset: number) {
         // If this function is part of a broader overload, use the overload instead.
         const effectiveSignature = isFunction(signature) ? signature.priv.overloaded ?? signature : signature;
 
@@ -498,9 +498,9 @@ export function mapSubtypes(
 // Iterates over each signature in a function or overload, allowing the
 // caller to replace one or more signatures with new ones.
 export function mapSignatures(
-    type: FunctionType | OverloadedFunctionType,
+    type: FunctionType | OverloadedType,
     callback: (type: FunctionType) => FunctionType | undefined
-): OverloadedFunctionType | FunctionType | undefined {
+): OverloadedType | FunctionType | undefined {
     if (isFunction(type)) {
         return callback(type);
     }
@@ -508,7 +508,7 @@ export function mapSignatures(
     const newSignatures: FunctionType[] = [];
     let changeMade = false;
 
-    OverloadedFunctionType.getOverloads(type).forEach((overload, index) => {
+    OverloadedType.getOverloads(type).forEach((overload, index) => {
         const newOverload = callback(overload);
         if (newOverload !== overload) {
             changeMade = true;
@@ -524,13 +524,14 @@ export function mapSignatures(
     }
 
     // Add the unmodified implementation if it's present.
-    const implementation = OverloadedFunctionType.getImplementation(type);
-    if (implementation) {
-        const newImplementation = callback(implementation);
+    const implementation = OverloadedType.getImplementation(type);
+    let newImplementation: Type | undefined = implementation;
+
+    if (implementation && isFunction(implementation)) {
+        newImplementation = callback(implementation);
 
         if (newImplementation) {
             changeMade = true;
-            newSignatures.push(newImplementation);
         }
     }
 
@@ -542,7 +543,7 @@ export function mapSignatures(
         return newSignatures[0];
     }
 
-    return OverloadedFunctionType.create(newSignatures);
+    return OverloadedType.create(newSignatures, newImplementation);
 }
 
 // The code flow engine uses a special form of the UnknownType (with the
@@ -684,17 +685,19 @@ function compareTypes(a: Type, b: Type, recursionCount = 0): number {
             return 0;
         }
 
-        case TypeCategory.OverloadedFunction: {
-            const bOver = b as OverloadedFunctionType;
+        case TypeCategory.Overloaded: {
+            const bOver = b as OverloadedType;
 
-            const aOverloadCount = a.priv.overloads.length;
-            const bOverloadCount = bOver.priv.overloads.length;
+            const aOverloads = OverloadedType.getOverloads(a);
+            const bOverloads = OverloadedType.getOverloads(bOver);
+            const aOverloadCount = aOverloads.length;
+            const bOverloadCount = bOverloads.length;
             if (aOverloadCount !== bOverloadCount) {
                 return bOverloadCount - aOverloadCount;
             }
 
             for (let i = 0; i < aOverloadCount; i++) {
-                const typeComparison = compareTypes(a.priv.overloads[i], bOver.priv.overloads[i]);
+                const typeComparison = compareTypes(aOverloads[i], bOverloads[i]);
                 if (typeComparison !== 0) {
                     return typeComparison;
                 }
@@ -821,13 +824,13 @@ export function allSubtypes(type: Type, callback: (type: Type) => boolean): bool
 }
 
 export function doForEachSignature(
-    type: FunctionType | OverloadedFunctionType,
+    type: FunctionType | OverloadedType,
     callback: (type: FunctionType, index: number) => void
 ) {
     if (isFunction(type)) {
         callback(type, 0);
     } else {
-        OverloadedFunctionType.getOverloads(type).forEach((overload, index) => {
+        OverloadedType.getOverloads(type).forEach((overload, index) => {
             callback(overload, index);
         });
     }
@@ -918,8 +921,17 @@ export function getFullNameOfType(type: Type): string | undefined {
         case TypeCategory.Module:
             return type.priv.moduleName;
 
-        case TypeCategory.OverloadedFunction:
-            return type.priv.overloads[0].shared.fullName;
+        case TypeCategory.Overloaded: {
+            const overloads = OverloadedType.getOverloads(type);
+            if (overloads.length > 0) {
+                return overloads[0].shared.fullName;
+            }
+
+            const impl = OverloadedType.getImplementation(type);
+            if (impl && isFunction(impl)) {
+                return impl.shared.fullName;
+            }
+        }
     }
 
     return undefined;
@@ -953,8 +965,10 @@ export function addConditionToType<T extends Type>(
         case TypeCategory.Function:
             return TypeBase.cloneForCondition(type, TypeCondition.combine(type.props?.condition, condition));
 
-        case TypeCategory.OverloadedFunction:
-            return OverloadedFunctionType.create(type.priv.overloads.map((t) => addConditionToType(t, condition))) as T;
+        case TypeCategory.Overloaded:
+            return OverloadedType.create(
+                OverloadedType.getOverloads(type).map((t) => addConditionToType(t, condition))
+            ) as T;
 
         case TypeCategory.Class:
             return TypeBase.cloneForCondition(type, TypeCondition.combine(type.props?.condition, condition));
@@ -972,7 +986,7 @@ export function getTypeCondition(type: Type): TypeCondition[] | undefined {
         case TypeCategory.Never:
         case TypeCategory.Module:
         case TypeCategory.TypeVar:
-        case TypeCategory.OverloadedFunction:
+        case TypeCategory.Overloaded:
         case TypeCategory.Union:
             return undefined;
 
@@ -1144,7 +1158,7 @@ export function getUnknownForTypeVarTuple(tupleClassType: ClassType): Type {
             tupleClassType,
             [{ type: UnknownType.create(), isUnbounded: true }],
             /* isTypeArgExplicit */ true,
-            /* isUnpackedTuple */ true
+            /* isUnpacked */ true
         )
     );
 }
@@ -1310,7 +1324,7 @@ export function isProperty(type: Type) {
 }
 
 export function isCallableType(type: Type): boolean {
-    if (isFunction(type) || isOverloadedFunction(type) || isAnyOrUnknown(type)) {
+    if (isFunction(type) || isOverloaded(type) || isAnyOrUnknown(type)) {
         return true;
     }
 
@@ -1489,6 +1503,18 @@ export function ensureSignaturesAreUnique<T extends Type>(
 ): T {
     const transformer = new UniqueFunctionSignatureTransformer(signatureTracker, expressionOffset);
     return transformer.apply(type, 0) as T;
+}
+
+export function makeFunctionTypeVarsBound(type: FunctionType | OverloadedType): FunctionType | OverloadedType {
+    const scopeIds: TypeVarScopeId[] = [];
+    doForEachSignature(type, (signature) => {
+        const localScopeId = getTypeVarScopeId(signature);
+        if (localScopeId) {
+            scopeIds.push(localScopeId);
+        }
+    });
+
+    return makeTypeVarsBound(type, scopeIds);
 }
 
 export function makeTypeVarsBound<T extends TypeBase<any>>(type: T, scopeIds: TypeVarScopeId[] | undefined): T;
@@ -2006,85 +2032,6 @@ export function specializeClassType(type: ClassType): ClassType {
     return applySolvedTypeVars(type, solution) as ClassType;
 }
 
-// Recursively finds all of the type arguments and sets them
-// to the specified srcType.
-export function setTypeArgsRecursive(
-    destType: Type,
-    srcType: UnknownType | AnyType,
-    constraints: ConstraintTracker,
-    recursionCount = 0
-) {
-    if (recursionCount > maxTypeRecursionCount) {
-        return;
-    }
-    recursionCount++;
-
-    if (constraints.isLocked()) {
-        return;
-    }
-
-    switch (destType.category) {
-        case TypeCategory.Union:
-            doForEachSubtype(destType, (subtype) => {
-                setTypeArgsRecursive(subtype, srcType, constraints, recursionCount);
-            });
-            break;
-
-        case TypeCategory.Class:
-            if (destType.priv.typeArgs) {
-                destType.priv.typeArgs.forEach((typeArg) => {
-                    setTypeArgsRecursive(typeArg, srcType, constraints, recursionCount);
-                });
-            }
-            if (destType.priv.tupleTypeArgs) {
-                destType.priv.tupleTypeArgs.forEach((typeArg) => {
-                    setTypeArgsRecursive(typeArg.type, srcType, constraints, recursionCount);
-                });
-            }
-            break;
-
-        case TypeCategory.Function:
-            if (destType.priv.specializedTypes) {
-                destType.priv.specializedTypes.parameterTypes.forEach((paramType) => {
-                    setTypeArgsRecursive(paramType, srcType, constraints, recursionCount);
-                });
-                if (destType.priv.specializedTypes.returnType) {
-                    setTypeArgsRecursive(
-                        destType.priv.specializedTypes.returnType,
-                        srcType,
-                        constraints,
-                        recursionCount
-                    );
-                }
-            } else {
-                destType.shared.parameters.forEach((_, index) => {
-                    setTypeArgsRecursive(
-                        FunctionType.getParamType(destType, index),
-                        srcType,
-                        constraints,
-                        recursionCount
-                    );
-                });
-                if (destType.shared.declaredReturnType) {
-                    setTypeArgsRecursive(destType.shared.declaredReturnType, srcType, constraints, recursionCount);
-                }
-            }
-            break;
-
-        case TypeCategory.OverloadedFunction:
-            destType.priv.overloads.forEach((subtype) => {
-                setTypeArgsRecursive(subtype, srcType, constraints, recursionCount);
-            });
-            break;
-
-        case TypeCategory.TypeVar:
-            if (!constraints.getMainConstraintSet().getTypeVar(destType)) {
-                constraints.setBounds(destType, srcType);
-            }
-            break;
-    }
-}
-
 // Builds a mapping between type parameters and their specialized
 // types. For example, if the generic type is Dict[_T1, _T2] and the
 // specialized type is Dict[str, int], it returns a map that associates
@@ -2100,7 +2047,7 @@ export function buildSolutionFromSpecializedClass(classType: ClassType): Constra
                     classType,
                     classType.priv.tupleTypeArgs,
                     classType.priv.isTypeArgExplicit,
-                    /* isUnpackedTuple */ true
+                    /* isUnpacked */ true
                 )
             ),
         ];
@@ -2601,8 +2548,8 @@ export function isPartlyUnknown(type: Type, recursionCount = 0): boolean {
     }
 
     // See if a function has an unknown type.
-    if (isOverloadedFunction(type)) {
-        return OverloadedFunctionType.getOverloads(type).some((overload) => {
+    if (isOverloaded(type)) {
+        return OverloadedType.getOverloads(type).some((overload) => {
             return isPartlyUnknown(overload, recursionCount);
         });
     }
@@ -2726,7 +2673,7 @@ export function specializeTupleClass(
     classType: ClassType,
     typeArgs: TupleTypeArg[],
     isTypeArgExplicit = true,
-    isUnpackedTuple = false
+    isUnpacked = false
 ): ClassType {
     const clonedClassType = ClassType.specialize(
         classType,
@@ -2736,7 +2683,7 @@ export function specializeTupleClass(
         typeArgs
     );
 
-    if (isUnpackedTuple) {
+    if (isUnpacked) {
         clonedClassType.priv.isUnpacked = true;
     }
 
@@ -2886,8 +2833,18 @@ function _requiresSpecialization(type: Type, options?: RequiresSpecializationOpt
             return false;
         }
 
-        case TypeCategory.OverloadedFunction: {
-            return type.priv.overloads.some((overload) => requiresSpecialization(overload, options, recursionCount));
+        case TypeCategory.Overloaded: {
+            const overloads = OverloadedType.getOverloads(type);
+            if (overloads.some((overload) => requiresSpecialization(overload, options, recursionCount))) {
+                return true;
+            }
+
+            const impl = OverloadedType.getImplementation(type);
+            if (impl) {
+                return requiresSpecialization(impl, options, recursionCount);
+            }
+
+            return false;
         }
 
         case TypeCategory.Union: {
@@ -3187,10 +3144,15 @@ function addDeclaringModuleNamesForType(type: Type, moduleList: string[], recurs
             break;
         }
 
-        case TypeCategory.OverloadedFunction: {
-            type.priv.overloads.forEach((overload) => {
+        case TypeCategory.Overloaded: {
+            const overloads = OverloadedType.getOverloads(type);
+            overloads.forEach((overload) => {
                 addDeclaringModuleNamesForType(overload, moduleList, recursionCount);
             });
+            const impl = OverloadedType.getImplementation(type);
+            if (impl) {
+                addDeclaringModuleNamesForType(impl, moduleList, recursionCount);
+            }
             break;
         }
 
@@ -3286,7 +3248,7 @@ export function simplifyFunctionToParamSpec(type: FunctionType): FunctionType | 
 // it to be replaced with something else.
 export class TypeVarTransformer {
     private _pendingTypeVarTransformations = new Set<TypeVarScopeId>();
-    private _pendingFunctionTransformations: (FunctionType | OverloadedFunctionType)[] = [];
+    private _pendingFunctionTransformations: (FunctionType | OverloadedType)[] = [];
 
     get pendingTypeVarTransformations() {
         return this._pendingTypeVarTransformations;
@@ -3438,7 +3400,7 @@ export class TypeVarTransformer {
             return result;
         }
 
-        if (isOverloadedFunction(type)) {
+        if (isOverloaded(type)) {
             // Prevent recursion.
             if (this._pendingFunctionTransformations.some((t) => t === type)) {
                 return type;
@@ -3449,14 +3411,16 @@ export class TypeVarTransformer {
             let requiresUpdate = false;
 
             // Specialize each of the functions in the overload.
+            const overloads = OverloadedType.getOverloads(type);
             const newOverloads: FunctionType[] = [];
-            type.priv.overloads.forEach((entry) => {
+
+            overloads.forEach((entry) => {
                 const replacementType = this.transformTypeVarsInFunctionType(entry, recursionCount);
 
                 if (isFunction(replacementType)) {
                     newOverloads.push(replacementType);
                 } else {
-                    appendArray(newOverloads, replacementType.priv.overloads);
+                    appendArray(newOverloads, OverloadedType.getOverloads(replacementType));
                 }
 
                 if (replacementType !== entry) {
@@ -3464,10 +3428,21 @@ export class TypeVarTransformer {
                 }
             });
 
+            const impl = OverloadedType.getImplementation(type);
+            let newImpl: Type | undefined = impl;
+
+            if (impl) {
+                newImpl = this.apply(impl, recursionCount);
+
+                if (newImpl !== impl) {
+                    requiresUpdate = true;
+                }
+            }
+
             this._pendingFunctionTransformations.pop();
 
             // Construct a new overload with the specialized function types.
-            return requiresUpdate ? OverloadedFunctionType.create(newOverloads) : type;
+            return requiresUpdate ? OverloadedType.create(newOverloads, newImpl) : type;
         }
 
         return type;
@@ -3485,7 +3460,7 @@ export class TypeVarTransformer {
         return postTransform;
     }
 
-    doForEachConstraintSet(callback: () => FunctionType): FunctionType | OverloadedFunctionType {
+    doForEachConstraintSet(callback: () => FunctionType): FunctionType | OverloadedType {
         // By default, simply return the result of the callback. Subclasses
         // can override this method as they see fit.
         return callback();
@@ -3617,10 +3592,7 @@ export class TypeVarTransformer {
         );
     }
 
-    transformTypeVarsInFunctionType(
-        sourceType: FunctionType,
-        recursionCount: number
-    ): FunctionType | OverloadedFunctionType {
+    transformTypeVarsInFunctionType(sourceType: FunctionType, recursionCount: number): FunctionType | OverloadedType {
         return this.doForEachConstraintSet(() => {
             let functionType = sourceType;
 
@@ -3847,7 +3819,7 @@ class UniqueFunctionSignatureTransformer extends TypeVarTransformer {
     override transformTypeVarsInFunctionType(
         sourceType: FunctionType,
         recursionCount: number
-    ): FunctionType | OverloadedFunctionType {
+    ): FunctionType | OverloadedType {
         // If this function is not generic, there's no need to check for uniqueness.
         if (sourceType.shared.typeParams.length === 0) {
             return super.transformTypeVarsInFunctionType(sourceType, recursionCount);
@@ -3880,7 +3852,7 @@ class UniqueFunctionSignatureTransformer extends TypeVarTransformer {
                 });
 
                 updatedSourceType = applySolvedTypeVars(sourceType, solution);
-                assert(isFunction(updatedSourceType) || isOverloadedFunction(updatedSourceType));
+                assert(isFunction(updatedSourceType) || isOverloaded(updatedSourceType));
             }
         }
 
@@ -4150,7 +4122,7 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
         return type;
     }
 
-    override doForEachConstraintSet(callback: () => FunctionType): FunctionType | OverloadedFunctionType {
+    override doForEachConstraintSet(callback: () => FunctionType): FunctionType | OverloadedType {
         const solutionSets = this._solution.getSolutionSets();
 
         // Handle the common case where there are not multiple signature contexts.
@@ -4177,7 +4149,7 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
             return filteredOverloads[0];
         }
 
-        return OverloadedFunctionType.create(filteredOverloads);
+        return OverloadedType.create(filteredOverloads);
     }
 
     // Handle the case where we need the default replacement value for a typeVar

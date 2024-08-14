@@ -578,7 +578,7 @@ test('Literals5', () => {
 test('Literals6', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['literals6.py']);
 
-    TestUtils.validateResults(analysisResults, 45);
+    TestUtils.validateResults(analysisResults, 25);
 });
 
 test('Literals7', () => {
@@ -892,7 +892,7 @@ test('MethodOverride1', () => {
 
     configOptions.diagnosticRuleSet.reportIncompatibleMethodOverride = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['methodOverride1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 38);
+    TestUtils.validateResults(analysisResults, 41);
 });
 
 test('MethodOverride2', () => {

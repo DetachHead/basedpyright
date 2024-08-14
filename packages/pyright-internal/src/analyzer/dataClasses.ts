@@ -52,9 +52,9 @@ import {
     isClassInstance,
     isFunction,
     isInstantiableClass,
-    isOverloadedFunction,
+    isOverloaded,
     isUnion,
-    OverloadedFunctionType,
+    OverloadedType,
     TupleTypeArg,
     Type,
     TypeVarType,
@@ -624,9 +624,8 @@ export function synthesizeDataClassMethods(
     }
 
     if (ClassType.isDataClassGenerateOrder(classType)) {
-        const objType = ClassType.cloneAsInstance(classType);
         ['__lt__', '__le__', '__gt__', '__ge__'].forEach((operator) => {
-            synthesizeComparisonMethod(operator, objType);
+            synthesizeComparisonMethod(operator, selfType);
         });
     }
 
@@ -725,7 +724,7 @@ function getDefaultArgValueForFieldSpecifier(
 
     if (isFunction(callType)) {
         callTarget = callType;
-    } else if (isOverloadedFunction(callType)) {
+    } else if (isOverloaded(callType)) {
         callTarget = evaluator.getBestOverloadForArgs(
             callNode,
             { type: callType, isIncomplete: callTypeResult.isIncomplete },
@@ -736,7 +735,7 @@ function getDefaultArgValueForFieldSpecifier(
         if (initMethodResult) {
             if (isFunction(initMethodResult.type)) {
                 callTarget = initMethodResult.type;
-            } else if (isOverloadedFunction(initMethodResult.type)) {
+            } else if (isOverloaded(initMethodResult.type)) {
                 callTarget = evaluator.getBestOverloadForArgs(
                     callNode,
                     { type: initMethodResult.type },
@@ -811,7 +810,7 @@ function getConverterInputType(
     );
     FunctionType.addPositionOnlyParamSeparator(targetFunction);
 
-    if (isFunction(converterType) || isOverloadedFunction(converterType)) {
+    if (isFunction(converterType) || isOverloaded(converterType)) {
         const acceptedTypes: Type[] = [];
         const diagAddendum = new DiagnosticAddendum();
 
@@ -858,10 +857,14 @@ function getConverterInputType(
                 diagAddendum.getEffectiveTextRange() ?? converterNode
             );
         } else {
+            const overloads = OverloadedType.getOverloads(converterType);
             evaluator.addDiagnostic(
                 DiagnosticRule.reportGeneralTypeIssues,
                 LocMessage.dataClassConverterOverloads().format({
-                    funcName: converterType.priv.overloads[0].shared.name || '<anonymous function>',
+                    funcName:
+                        overloads.length > 0 && overloads[0].shared.name
+                            ? overloads[0].shared.name
+                            : '<anonymous function>',
                     fieldType: evaluator.printType(fieldType),
                     fieldName: fieldName,
                 }) + diagAddendum.getString(),
@@ -876,8 +879,8 @@ function getConverterInputType(
 function getConverterAsFunction(
     evaluator: TypeEvaluator,
     converterType: Type
-): FunctionType | OverloadedFunctionType | undefined {
-    if (isFunction(converterType) || isOverloadedFunction(converterType)) {
+): FunctionType | OverloadedType | undefined {
+    if (isFunction(converterType) || isOverloaded(converterType)) {
         return converterType;
     }
 
@@ -895,7 +898,7 @@ function getConverterAsFunction(
                 fromConstructor = fromConstructor.priv.subtypes[0];
             }
 
-            if (isFunction(fromConstructor) || isOverloadedFunction(fromConstructor)) {
+            if (isFunction(fromConstructor) || isOverloaded(fromConstructor)) {
                 return fromConstructor;
             }
         }
@@ -1042,8 +1045,11 @@ function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: string[])
 
     if (isFunction(type)) {
         callName = type.shared.fullName;
-    } else if (isOverloadedFunction(type)) {
-        callName = type.priv.overloads[0].shared.fullName;
+    } else if (isOverloaded(type)) {
+        const overloads = OverloadedType.getOverloads(type);
+        if (overloads.length > 0) {
+            callName = overloads[0].shared.fullName;
+        }
     } else if (isInstantiableClass(type)) {
         callName = type.shared.fullName;
     }
@@ -1179,9 +1185,7 @@ export function validateDataClassTransformDecorator(
                     !valueType.priv.tupleTypeArgs ||
                     valueType.priv.tupleTypeArgs.some(
                         (entry) =>
-                            !isInstantiableClass(entry.type) &&
-                            !isFunction(entry.type) &&
-                            !isOverloadedFunction(entry.type)
+                            !isInstantiableClass(entry.type) && !isFunction(entry.type) && !isOverloaded(entry.type)
                     )
                 ) {
                     evaluator.addDiagnostic(
@@ -1197,8 +1201,11 @@ export function validateDataClassTransformDecorator(
                 valueType.priv.tupleTypeArgs.forEach((arg) => {
                     if (isInstantiableClass(arg.type) || isFunction(arg.type)) {
                         behaviors.fieldDescriptorNames.push(arg.type.shared.fullName);
-                    } else if (isOverloadedFunction(arg.type)) {
-                        behaviors.fieldDescriptorNames.push(arg.type.priv.overloads[0].shared.fullName);
+                    } else if (isOverloaded(arg.type)) {
+                        const overloads = OverloadedType.getOverloads(arg.type);
+                        if (overloads.length > 0) {
+                            behaviors.fieldDescriptorNames.push(overloads[0].shared.fullName);
+                        }
                     }
                 });
                 break;
@@ -1221,13 +1228,22 @@ export function getDataclassDecoratorBehaviors(type: Type): DataClassBehaviors |
     let functionType: FunctionType | undefined;
     if (isFunction(type)) {
         functionType = type;
-    } else if (isOverloadedFunction(type)) {
+    } else if (isOverloaded(type)) {
         // Find the first overload or implementation that contains a
         // dataclass_transform decorator. If more than one have such a decorator,
         // only the first one will be honored, as per PEP 681.
-        functionType =
-            type.priv.overloads.find((overload) => !!overload.shared.decoratorDataClassBehaviors) ??
-            type.priv.overloads[0];
+        const overloads = OverloadedType.getOverloads(type);
+        const impl = OverloadedType.getImplementation(type);
+
+        functionType = overloads.find((overload) => !!overload.shared.decoratorDataClassBehaviors);
+
+        if (!functionType && impl && isFunction(impl) && impl.shared.decoratorDataClassBehaviors) {
+            functionType = impl;
+        }
+
+        if (!functionType && overloads.length > 0) {
+            functionType = overloads[0];
+        }
     }
 
     if (!functionType) {
