@@ -192,8 +192,11 @@ include = ["basedpyright", "based_build", "pdm_build.py"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
 reportImplicitStringConcatenation = false                 # conflicts with ruff formatter
-venvPath = "."
-venv = ".venv"
+
+# currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
+# only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
+# venvPath = "."
+# venv = ".venv"
 
 
 [tool.ruff]
