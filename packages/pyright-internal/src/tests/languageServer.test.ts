@@ -11,6 +11,7 @@ import {
     CancellationToken,
     CompletionRequest,
     ConfigurationItem,
+    DiagnosticSeverity,
     InitializedNotification,
     InitializeRequest,
     MarkupContent,
@@ -197,7 +198,7 @@ describe(`Basic language server tests`, () => {
     test('Diagnostic severity overrides test', async () => {
         const code = `
 // @filename: test.py
-//// def test([|/*marker*/x|]): ...
+//// def _test([|/*marker*/x|]): ...
 //// 
 // @filename: pyproject.toml
 //// 
@@ -211,6 +212,7 @@ describe(`Basic language server tests`, () => {
                 value: {
                     diagnosticSeverityOverrides: {
                         reportUnknownParameterType: 'warning',
+                        reportUnusedFunction: 'unused',
                     },
                 },
             },
@@ -230,11 +232,17 @@ describe(`Basic language server tests`, () => {
 
         // Wait for the diagnostics to publish
         const diagnostics = await waitForDiagnostics(info);
-        const diagnostic = diagnostics.find((d) => d.uri.includes('test.py'));
-        assert(diagnostic);
+        const file = diagnostics.find((d) => d.uri.includes('test.py'));
+        assert(file);
 
         // Make sure the error has a special rule
-        assert.equal(diagnostic.diagnostics[0].code, 'reportUnknownParameterType');
+        assert.equal(file.diagnostics[0].code, 'reportUnknownParameterType');
+
+        // make sure additional diagnostic severities work
+        assert.equal(
+            file.diagnostics.find((diagnostic) => diagnostic.code === 'reportUnusedFunction')?.severity,
+            DiagnosticSeverity.Hint // TODO: hint? how do we differentiate between unused/unreachable/deprecated?
+        );
     });
     describe('module/package renaming', () => {
         describe('import statement', () => {

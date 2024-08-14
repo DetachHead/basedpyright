@@ -489,6 +489,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     protected getSeverityOverrides(value: string | boolean): DiagnosticSeverityOverrides | undefined {
         const enumValue = parseDiagLevel(value);
+        // TODO: this allows additional diagnostic severity levels (unreachable, unused & deprecated) on all rules
+        // in the lsp config. it should use the same logic as ConfigOptions._convertDiagnosticLevel instead
         if (!enumValue) {
             return undefined;
         }
