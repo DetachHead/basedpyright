@@ -29,7 +29,7 @@
         "copy-webpack-plugin": "^11.0.0",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
-        "typescript": "~5.5.0-beta",
+        "typescript": "~5.5.4",
         "webpack": "^5.90.1",
         "webpack-cli": "^5.1.4",
         "webpack-virtual-modules": "^0.6.2"
