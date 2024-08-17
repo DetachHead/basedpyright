@@ -691,3 +691,16 @@ test('reportUnsafeMultipleInheritance', () => {
         ],
     });
 });
+
+test('reportUnusedParameter', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'error';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['reportUnusedParameter.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportUnusedParameter, line: 4 },
+            { code: DiagnosticRule.reportUnusedParameter, line: 10 },
+        ],
+    });
+});

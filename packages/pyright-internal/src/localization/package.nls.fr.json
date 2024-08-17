@@ -567,6 +567,7 @@
         "unaccessedClass": "La classe \"{name}\" n'est pas accessible",
         "unaccessedFunction": "La fonction « {name} » n’est pas accessible",
         "unaccessedImport": "L’importation « {name} » n’est pas accessible",
+        "unaccessedSymbol": "« {name} » n’est pas accessible",
         "unaccessedVariable": "La variable « {name} » n’est pas accessible",
         "unannotatedFunctionSkipped": "L'analyse de la fonction \"{name}\" est ignorée car elle n'est pas annotée",
         "unaryOperationNotAllowed": "Opérateur unaire non autorisé dans l’annotation de type",

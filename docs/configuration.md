@@ -257,6 +257,8 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.
 
+- <a name="reportUnusedParameter"></a> **reportUnusedParameter** [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.
+
 ## Discouraged options
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.
@@ -480,6 +482,7 @@ note that some settings which are enabled by default in pyright are disabled by 
 | reportImplicitRelativeImport             | "none"        | "none"        | "none"        | "none"        | "error" |
 | reportInvalidCast                        | "none"        | "none"        | "none"        | "none"        | "error" |
 | reportUnsafeMultipleInheritance          | "none"        | "none"        | "none"        | "none"        | "error" |
+| reportUnusedParameter                    | "unused"      | "unused"      | "unused"      | "unused"      | "error" |
 
 ## Overriding settings (in VS Code)
 

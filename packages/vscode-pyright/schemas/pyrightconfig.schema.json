@@ -571,6 +571,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of multiple inheritance where a base class's constructor may not get called",
       "default": "none"
+    },
+    "reportUnusedParameter": {
+      "$ref": "#/definitions/unused",
+      "title": "Controls reporting of unused function parameters",
+      "default": "unused"
     }
   },
   "properties": {
@@ -951,6 +956,9 @@
     "reportUnsafeMultipleInheritance": {
       "$ref": "#/definitions/reportUnsafeMultipleInheritance"
     },
+    "reportUnusedParameter": {
+      "$ref": "#/definitions/reportUnusedParameter"
+    },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
     },
@@ -1289,6 +1297,9 @@
           },
           "reportUnsafeMultipleInheritance": {
             "$ref": "#/definitions/reportUnsafeMultipleInheritance"
+          },
+          "reportUnusedParameter": {
+            "$ref": "#/definitions/reportUnusedParameter"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

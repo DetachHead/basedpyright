@@ -567,6 +567,7 @@
         "unaccessedClass": "\"{name}\" sınıfına erişilemiyor",
         "unaccessedFunction": "\"{name}\" işlevine erişilemiyor",
         "unaccessedImport": "\"{name}\" içeri aktarma işlemine erişilemiyor",
+        "unaccessedSymbol": "\"{name}\" öğesine erişilemiyor",
         "unaccessedVariable": "\"{name}\" değişkenine erişilemiyor",
         "unannotatedFunctionSkipped": "\"{name}\" işlevinin analizi, açıklanmadığından atlandı",
         "unaryOperationNotAllowed": "Tür ek açıklamasında birli işleç kullanılamaz",

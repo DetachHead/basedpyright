@@ -404,6 +404,7 @@ export interface DiagnosticRuleSet {
     reportImplicitRelativeImport: DiagnosticLevel;
     reportInvalidCast: DiagnosticLevel;
     reportUnsafeMultipleInheritance: DiagnosticLevel;
+    reportUnusedParameter: UnusedDiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -528,6 +529,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportImplicitRelativeImport,
         DiagnosticRule.reportPrivateLocalImportUsage,
         DiagnosticRule.reportUnsafeMultipleInheritance,
+        DiagnosticRule.reportUnusedParameter,
     ];
 }
 
@@ -549,6 +551,7 @@ const unusedDiagnosticRules: DiagnosticGetter = {
         DiagnosticRule.reportUnusedImport,
         DiagnosticRule.reportUnusedFunction,
         DiagnosticRule.reportUnusedVariable,
+        DiagnosticRule.reportUnusedParameter,
     ],
 };
 const deprecatedDiagnosticRules: DiagnosticGetter = {
@@ -673,6 +676,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
+        reportUnusedParameter: 'unused',
     };
 
     return diagSettings;
@@ -783,6 +787,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
+        reportUnusedParameter: 'unused',
     };
 
     return diagSettings;
@@ -893,6 +898,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
+        reportUnusedParameter: 'unused',
     };
 
     return diagSettings;
@@ -1002,6 +1008,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportImplicitRelativeImport: 'error',
     reportInvalidCast: 'error',
     reportUnsafeMultipleInheritance: 'error',
+    reportUnusedParameter: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1109,6 +1116,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
+        reportUnusedParameter: 'unused',
     };
 
     return diagSettings;
