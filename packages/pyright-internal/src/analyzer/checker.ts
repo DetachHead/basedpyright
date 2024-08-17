@@ -3671,7 +3671,11 @@ export class Checker extends ParseTreeWalker {
                     nameNode = decl.node.d.name;
 
                     // check if it's an overridden method, in which case don't report unused parameters because the user has no choice
-                    if (nameNode && decl.node.parent?.nodeType === ParseNodeType.Function) {
+                    if (
+                        nameNode &&
+                        !nameNode.d.value.startsWith('_') &&
+                        decl.node.parent?.nodeType === ParseNodeType.Function
+                    ) {
                         const methodName = decl.node.parent.d.name;
                         const functionType = this._evaluator.getType(methodName);
                         if (functionType?.category === TypeCategory.Function && functionType.shared.methodClass) {
