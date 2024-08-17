@@ -581,7 +581,7 @@
         "unaccessedClass": "\"{name}\" 类未使用",
         "unaccessedFunction": "\"{name}\" 函数未使用",
         "unaccessedImport": "\"{name}\" 导入项未使用",
-        "unaccessedSymbol": "未存取“{name}”",
+        "unaccessedSymbol": "\"{name}\" 未使用",
         "unaccessedVariable": "变量 \"{name}\" 未使用",
         "unannotatedFunctionSkipped": "已跳过对未标类型的函数 \"{name}\" 的分析",
         "unaryOperationNotAllowed": "类型注解中不允许使用一元运算符",
