@@ -99,7 +99,8 @@ export function printType(
     const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
     uniqueNameMap.build(type);
 
-    return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0);
+    const res = printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0);
+    return res;
 }
 
 export function printFunctionParts(

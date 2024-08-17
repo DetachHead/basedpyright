@@ -1,6 +1,6 @@
-import { InlayHint, InlayHintLabelPart, InlayHintKind } from 'vscode-languageserver-protocol';
+import { InlayHint, InlayHintKind } from 'vscode-languageserver-protocol';
 import { ProgramView } from '../common/extensibility';
-import { convertOffsetToPosition } from '../common/positionUtils';
+import { convertOffsetsToRange, convertOffsetToPosition } from '../common/positionUtils';
 
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Uri } from '../common/uri/uri';
@@ -20,7 +20,10 @@ export class InlayHintsProvider {
         this._walker.walk(this._walker.parseResults.parserOutput.parseTree);
 
         return this._walker.featureItems.map((item) => ({
-            label: [InlayHintLabelPart.create(item.value)],
+            label: item.value,
+            textEdits: [
+                { range: convertOffsetsToRange(item.position, item.position, this._walker.lines), newText: item.value },
+            ],
             position: convertOffsetToPosition(item.position, this._walker.lines),
             paddingLeft: item.inlayHintType === 'functionReturn',
             kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,

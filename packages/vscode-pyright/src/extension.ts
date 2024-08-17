@@ -30,18 +30,24 @@ import {
     workspace,
     WorkspaceConfiguration,
     env,
+    DecorationOptions,
+    SymbolKind,
 } from 'vscode';
 import {
     CancellationToken,
     ConfigurationParams,
     ConfigurationRequest,
     DidChangeConfigurationNotification,
+    DocumentSymbolRequest,
     LanguageClient,
     LanguageClientOptions,
     ResponseError,
     ServerOptions,
     TextEdit,
     TransportKind,
+    TypeHierarchyPrepareRequest,
+    TypeHierarchySubtypesRequest,
+    TypeHierarchySupertypesRequest,
 } from 'vscode-languageclient/node';
 import { FileBasedCancellationStrategy } from './cancellationUtils';
 import { githubRepo, toolName } from 'pyright-internal/constants';
@@ -373,7 +379,66 @@ export async function activate(context: ExtensionContext) {
             })
         );
     }
+
+    const classDecorationType = window.createTextEditorDecorationType({
+        gutterIconPath: Uri.file(context.asAbsolutePath(path.join('images', 'down.png'))),
+        gutterIconSize: 'contain',
+    });
+
+    const updateGutterIcons = async (editor: TextEditor) => {
+        const document = editor.document;
+        const textDocument = { uri: document.uri.toString() };
+        const symbols = await client.sendRequest(DocumentSymbolRequest.type, {
+            textDocument,
+        });
+        if (symbols) {
+            const decorations: DecorationOptions[] = [];
+            symbols.forEach(async (symbol) => {
+                // TODO: why is the symbol kind off by one?
+                if (symbol.kind === SymbolKind.Class + 1 && 'range' in symbol) {
+                    const startPos = new Position(symbol.range.start.line, symbol.range.start.character);
+                    // const items = await client.sendRequest(TypeHierarchyPrepareRequest.type, {
+                    //     textDocument,
+                    //     position: startPos,
+                    // });
+                    // if (items) {
+                    //     for (const item of items) {
+                    //         const supertypes = await client.sendRequest(TypeHierarchySupertypesRequest.type, {
+                    //             item,
+                    //         });
+                    //         const subtypes = await client.sendRequest(TypeHierarchySubtypesRequest.type, {
+                    //             item,
+                    //         });
+                    //     }
+                    // }
+                    const range = new Range(startPos, startPos);
+                    decorations.push({ range });
+                }
+            });
+            editor.setDecorations(classDecorationType, decorations);
+        }
+    };
+
+    context.subscriptions.push(
+        window.onDidChangeActiveTextEditor((editor) => {
+            if (editor) {
+                updateGutterIcons(editor);
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        workspace.onDidChangeTextDocument((event) => {
+            const editor = window.activeTextEditor;
+            if (editor && editor.document === event.document) {
+                updateGutterIcons(editor);
+            }
+        })
+    );
     await client.start();
+    if (window.activeTextEditor) {
+        updateGutterIcons(window.activeTextEditor);
+    }
 }
 
 export function deactivate() {
