@@ -3673,24 +3673,35 @@ export class Checker extends ParseTreeWalker {
                     // check if it's an overridden method, in which case don't report unused parameters because the user has no choice
                     if (
                         nameNode &&
-                        !nameNode.d.value.startsWith('_') &&
+                        // parameters preficed with a single underscore mean intentionally unused, but parameters prefixed with a
+                        // double underscore are the old way of defining positional-only parameters, in which case we still want to
+                        // report an error if it's unused
+                        !SymbolNameUtils.isProtectedName(nameNode.d.value) &&
                         decl.node.parent?.nodeType === ParseNodeType.Function
                     ) {
                         const methodName = decl.node.parent.d.name;
-                        const functionType = this._evaluator.getType(methodName);
-                        if (functionType?.category === TypeCategory.Function && functionType.shared.methodClass) {
-                            const classType = functionType.shared.methodClass;
-                            if (
-                                !classType.shared.baseClasses
-                                    .filter(isClass)
-                                    .some((mroBaseClass) =>
-                                        lookUpClassMember(mroBaseClass, methodName.d.value, MemberAccessFlags.Default)
-                                    )
-                            ) {
+                        // dunders typically need to be treated the same as overridden methods, which is unsafe and cringe, ideally
+                        // they would always be overrides of an abstract method or something but whatever
+                        if (!SymbolNameUtils.isDunderName(methodName.d.value)) {
+                            const functionType = this._evaluator.getType(methodName);
+                            if (functionType?.category === TypeCategory.Function && functionType.shared.methodClass) {
+                                const classType = functionType.shared.methodClass;
+                                if (
+                                    !classType.shared.baseClasses
+                                        .filter(isClass)
+                                        .some((mroBaseClass) =>
+                                            lookUpClassMember(
+                                                mroBaseClass,
+                                                methodName.d.value,
+                                                MemberAccessFlags.Default
+                                            )
+                                        )
+                                ) {
+                                    rule = DiagnosticRule.reportUnusedParameter;
+                                }
+                            } else {
                                 rule = DiagnosticRule.reportUnusedParameter;
                             }
-                        } else {
-                            rule = DiagnosticRule.reportUnusedParameter;
                         }
                     }
                 } else {

@@ -701,6 +701,7 @@ test('reportUnusedParameter', () => {
         errors: [
             { code: DiagnosticRule.reportUnusedParameter, line: 4 },
             { code: DiagnosticRule.reportUnusedParameter, line: 10 },
+            { code: DiagnosticRule.reportUnusedParameter, line: 22 },
         ],
     });
 });
