@@ -567,6 +567,7 @@
         "unaccessedClass": "クラス \"{name}\" にアクセスできません",
         "unaccessedFunction": "関数 \"{name}\" にアクセスできません",
         "unaccessedImport": "インポート \"{name}\" にアクセスできません",
+        "unaccessedSymbol": "\"{name}\" にアクセスできません",
         "unaccessedVariable": "変数 \"{name}\" にアクセスできません",
         "unannotatedFunctionSkipped": "関数 \"{name}\" の分析は、表示されないためスキップされます",
         "unaryOperationNotAllowed": "型の注釈で単項演算子は使用できません",

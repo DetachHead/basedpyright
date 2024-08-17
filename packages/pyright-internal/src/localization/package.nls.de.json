@@ -567,6 +567,7 @@
         "unaccessedClass": "Auf die Klasse \"{name}\" kann nicht zugegriffen werden.",
         "unaccessedFunction": "Auf die Funktion \"{name}\" kann nicht zugegriffen werden.",
         "unaccessedImport": "Auf den Import \"{name}\" kann nicht zugegriffen werden.",
+        "unaccessedSymbol": "Auf \"{name}\" kann nicht zugegriffen werden.",
         "unaccessedVariable": "Auf die Variable \"{name}\" kann nicht zugegriffen werden.",
         "unannotatedFunctionSkipped": "Die Analyse der Funktion \"{name}\" wird übersprungen, da sie nicht kommentiert wurde.",
         "unaryOperationNotAllowed": "Unärer Operator in Typanmerkung nicht zulässig",

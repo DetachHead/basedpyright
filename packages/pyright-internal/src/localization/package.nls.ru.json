@@ -567,6 +567,7 @@
         "unaccessedClass": "Нет доступа к классу \"{name}\"",
         "unaccessedFunction": "Доступ к функции \"{name}\" не производится",
         "unaccessedImport": "Доступ к импорту \"{name}\" не производится",
+        "unaccessedSymbol": "Доступ к \"{name}\" не осуществляется",
         "unaccessedVariable": "Доступ к переменной \"{name}\" не производится",
         "unannotatedFunctionSkipped": "Анализ функции \"{name}\" пропущен, так как она не аннотирована.",
         "unaryOperationNotAllowed": "Унарный оператор нельзя использовать в аннотации типа",

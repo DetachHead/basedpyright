@@ -180,6 +180,17 @@ pyright has the `reportMissingSuperCall` rule which, for this reason, complains 
 
 `reportUnsafeMultipleInheritance` bans multiple inheritance when there are multiple base classes with an `__init__` or `__new__` method, as there's no way to guarantee that all of them will get called with the correct arguments (or at all). this allows `reportMissingSuperCall` to be more lenient. ie. when `reportUnsafeMultipleInheritance` is enabled, missing `super()` calls will only be reported on classes that actually have a base class.
 
+#### `reportUnusedParameter` - report errors on unused function parameters
+
+pyright will report an unused diagnostic on unused function parameters:
+
+```py
+def print_value(value: str): # "value" is not accessed
+  print("something else")
+```
+
+but like with [unreachable code](#reportunreachable---report-errors-on-code-that-would-otherwise-be-completely-unchecked), this is greys out code instead of actually reporting it as an error. basedpyright introduces a new `reportUnusedParameter` diagnostic rule which supports all the severity options (`"error"`, `"warning"` and `"none"`) as well as `"unused"`, which is the default behavior in pyright.
+
 ### re-implementing pylance-exclusive features
 
 basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality ([see the pylance FAQ for more information](https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly)).

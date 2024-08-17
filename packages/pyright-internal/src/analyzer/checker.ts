@@ -16,7 +16,6 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { Commands } from '../commands/commands';
 import { appendArray } from '../common/collectionUtils';
-import { LspDiagnosticLevel } from '../common/configOptions';
 import { assert, assertNever } from '../common/debug';
 import { ActionKind, Diagnostic, DiagnosticAddendum, RenameShadowedFileAction } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -3592,14 +3591,12 @@ export class Checker extends ParseTreeWalker {
     }
 
     private _conditionallyReportUnusedDeclaration(decl: Declaration, isPrivate: boolean) {
-        let diagnosticLevel: LspDiagnosticLevel;
         let nameNode: NameNode | undefined;
         let message: string | undefined;
         let rule: DiagnosticRule | undefined;
 
         switch (decl.type) {
             case DeclarationType.Alias:
-                diagnosticLevel = this._fileInfo.diagnosticRuleSet.reportUnusedImport;
                 rule = DiagnosticRule.reportUnusedImport;
                 if (decl.node.nodeType === ParseNodeType.ImportAs) {
                     if (decl.node.d.alias) {
@@ -3662,26 +3659,46 @@ export class Checker extends ParseTreeWalker {
                     return;
                 }
 
-                diagnosticLevel = this._fileInfo.diagnosticRuleSet.reportUnusedVariable;
-
                 if (decl.node.nodeType === ParseNodeType.Name) {
                     nameNode = decl.node;
 
                     // Don't emit a diagnostic if the name starts with an underscore.
                     // This indicates that the variable is unused.
-                    if (nameNode.d.value.startsWith('_')) {
-                        diagnosticLevel = 'none';
+                    if (!nameNode.d.value.startsWith('_')) {
+                        rule = DiagnosticRule.reportUnusedVariable;
                     }
                 } else if (decl.node.nodeType === ParseNodeType.Parameter) {
                     nameNode = decl.node.d.name;
 
-                    // Don't emit a diagnostic for unused parameters or type parameters.
-                    diagnosticLevel = 'none';
+                    // check if it's an overridden method, in which case don't report unused parameters because the user has no choice
+                    if (nameNode && decl.node.parent?.nodeType === ParseNodeType.Function) {
+                        const methodName = decl.node.parent.d.name;
+                        const functionType = this._evaluator.getType(methodName);
+                        if (functionType?.category === TypeCategory.Function && functionType.shared.methodClass) {
+                            const classType = functionType.shared.methodClass;
+                            if (
+                                !classType.shared.baseClasses
+                                    .filter(isClass)
+                                    .some((mroBaseClass) =>
+                                        lookUpClassMember(mroBaseClass, methodName.d.value, MemberAccessFlags.Default)
+                                    )
+                            ) {
+                                rule = DiagnosticRule.reportUnusedParameter;
+                            }
+                        } else {
+                            rule = DiagnosticRule.reportUnusedParameter;
+                        }
+                    }
+                } else {
+                    rule = DiagnosticRule.reportUnusedVariable;
                 }
 
                 if (nameNode) {
-                    rule = DiagnosticRule.reportUnusedVariable;
-                    message = LocMessage.unaccessedVariable().format({ name: nameNode.d.value });
+                    message = (
+                        rule === DiagnosticRule.reportUnusedParameter
+                            ? LocMessage.unaccessedSymbol()
+                            : LocMessage.unaccessedVariable()
+                    ).format({ name: nameNode.d.value });
                 }
                 break;
 
@@ -3696,7 +3713,6 @@ export class Checker extends ParseTreeWalker {
                     return;
                 }
 
-                diagnosticLevel = this._fileInfo.diagnosticRuleSet.reportUnusedClass;
                 nameNode = decl.node.d.name;
                 rule = DiagnosticRule.reportUnusedClass;
                 message = LocMessage.unaccessedClass().format({ name: nameNode.d.value });
@@ -3713,7 +3729,6 @@ export class Checker extends ParseTreeWalker {
                     return;
                 }
 
-                diagnosticLevel = this._fileInfo.diagnosticRuleSet.reportUnusedFunction;
                 nameNode = decl.node.d.name;
                 rule = DiagnosticRule.reportUnusedFunction;
                 message = LocMessage.unaccessedFunction().format({ name: nameNode.d.value });
@@ -3721,7 +3736,6 @@ export class Checker extends ParseTreeWalker {
 
             case DeclarationType.TypeParam:
                 // Never report a diagnostic for an unused TypeParam.
-                diagnosticLevel = 'none';
                 nameNode = decl.node.d.name;
                 break;
 
@@ -3734,7 +3748,7 @@ export class Checker extends ParseTreeWalker {
         }
 
         const action = rule === DiagnosticRule.reportUnusedImport ? { action: Commands.unusedImport } : undefined;
-        if (nameNode && rule !== undefined && message && diagnosticLevel !== 'none') {
+        if (nameNode && rule !== undefined && message) {
             const diagnostic = this._evaluator.addDiagnostic(rule, message, nameNode);
             if (action) {
                 diagnostic?.addAction(action);

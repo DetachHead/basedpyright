@@ -567,6 +567,7 @@
         "unaccessedClass": "‘{name}’ 클래스에 액세스할 수 없습니다.",
         "unaccessedFunction": "함수 \"{name}\"에 액세스할 수 없습니다.",
         "unaccessedImport": "가져오기 \"{name}\"에 액세스할 수 없습니다.",
+        "unaccessedSymbol": "\"{name}\"에 액세스할 수 없습니다.",
         "unaccessedVariable": "변수 \"{name}\"에 액세스할 수 없습니다.",
         "unannotatedFunctionSkipped": "주석이 없으므로 ‘{name}’ 함수 분석을 건너뜁니다.",
         "unaryOperationNotAllowed": "형식 주석에는 단항 연산자를 사용할 수 없습니다.",

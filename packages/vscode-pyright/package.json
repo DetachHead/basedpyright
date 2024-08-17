@@ -1607,6 +1607,23 @@
                                 true,
                                 false
                             ]
+                        },
+                        "reportUnusedParameter": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for unused function parameters",
+                            "default": "unused",
+                            "enum": [
+                                "none",
+                                "unused",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
                         }
                     }
                 },
