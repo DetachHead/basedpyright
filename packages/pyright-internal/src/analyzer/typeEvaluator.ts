@@ -19437,7 +19437,7 @@ export function createTypeEvaluator(
             if (caseStatement === node) {
                 if (fileInfo.diagnosticRuleSet.reportUnnecessaryComparison !== 'none') {
                     if (!subjectTypeResult.isIncomplete) {
-                        checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType);
+                        checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType, node.parent.d.expr);
                     }
                 }
                 break;
