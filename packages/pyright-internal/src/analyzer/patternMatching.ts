@@ -48,6 +48,7 @@ import {
     NeverType,
     Type,
     TypeBase,
+    TypeCategory,
     TypedDictEntry,
     UnknownType,
     combineTypes,
@@ -169,9 +170,43 @@ export function narrowTypeBasedOnPattern(
 
 // Determines whether this pattern (or part of the pattern) in
 // this case statement will never be matched.
-export function checkForUnusedPattern(evaluator: TypeEvaluator, pattern: PatternAtomNode, subjectType: Type): void {
+export function checkForUnusedPattern(
+    evaluator: TypeEvaluator,
+    pattern: PatternAtomNode,
+    subjectType: Type,
+    subjectExpression: ExpressionNode
+): void {
     if (isNever(subjectType)) {
-        reportUnnecessaryPattern(evaluator, pattern, subjectType);
+        // don't report unnecessary pattern if the suite contains an assert_never, because that means it's intentional
+        const parentNode = pattern.parent;
+        if (
+            !parentNode ||
+            parentNode.nodeType !== ParseNodeType.Case ||
+            !parentNode.d.suite.d.statements.some(
+                (statement) =>
+                    statement.nodeType === ParseNodeType.StatementList &&
+                    // this check is probably overkill and we could instead just special-case `typing.assert_never`, but we want to support
+                    // user-defined "assert never" functions to be more flexible. note that there is a very similar check for the same thing
+                    // in _walkStatementsAndReportUnreachable, but this one doesn't check the type of the argument, but rather whether or not
+                    // it's the same variable that was being matched against.
+                    statement.d.statements.some(
+                        (statement) =>
+                            statement.nodeType === ParseNodeType.Call &&
+                            evaluator.matchCallArgsToParams(statement)?.find((result) =>
+                                result.match.argParams.some(
+                                    (param) =>
+                                        //check the function parameter type:
+                                        param.paramType.category === TypeCategory.Never &&
+                                        // check that the argument is the same symbol being matched against
+                                        param.argument.valueExpression &&
+                                        isMatchingExpression(param.argument.valueExpression, subjectExpression)
+                                )
+                            )
+                    )
+            )
+        ) {
+            reportUnnecessaryPattern(evaluator, pattern, subjectType);
+        }
     } else if (pattern.nodeType === ParseNodeType.PatternAs && pattern.d.orPatterns.length > 1) {
         // Check each of the or patterns separately.
         pattern.d.orPatterns.forEach((orPattern) => {
