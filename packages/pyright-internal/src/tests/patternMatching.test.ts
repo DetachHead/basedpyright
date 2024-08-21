@@ -13,5 +13,6 @@ test('assert_never', () => {
             { code: DiagnosticRule.reportUnnecessaryComparison, line: 16 },
             { code: DiagnosticRule.reportUnnecessaryComparison, line: 24 },
         ],
+        unreachableCodes: [{ code: DiagnosticRule.reportUnreachable, line: 25 }],
     });
 });
