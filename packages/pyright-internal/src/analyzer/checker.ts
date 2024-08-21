@@ -4416,7 +4416,7 @@ export class Checker extends ParseTreeWalker {
                             this._evaluator.addDiagnostic(
                                 DiagnosticRule.reportDeprecated,
                                 LocMessage.deprecatedType().format({
-                                    version: deprecatedForm.version.toString(),
+                                    version: PythonVersion.toString(deprecatedForm.version),
                                     replacement: deprecatedForm.replacementText,
                                 }),
                                 node
