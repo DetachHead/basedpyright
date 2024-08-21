@@ -85,7 +85,7 @@ import {
     YieldNode,
     isExpressionNode,
 } from '../parser/parseNodes';
-import { ParseOptions, Parser } from '../parser/parser';
+import { ParseOptions, ParseTextMode, Parser } from '../parser/parser';
 import { KeywordType, OperatorType, StringTokenFlags } from '../parser/tokenizerTypes';
 import { AnalyzerFileInfo, ImportLookup, isAnnotationEvaluationPostponed } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
@@ -388,6 +388,7 @@ interface ScopedTypeVarResult {
 interface AliasMapEntry {
     alias: string;
     module: 'builtins' | 'collections' | 'contextlib' | 'self';
+    implicitBaseClass?: string;
     isSpecialForm?: boolean;
     isIllegalInIsinstance?: boolean;
     typeParamVariance?: Variance;
@@ -1184,15 +1185,13 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.StringList: {
-                const isExpectingType = (flags & EvalFlags.StrLiteralAsType) !== 0 && !isAnnotationLiteralValue(node);
-
-                if (isExpectingType) {
+                if ((flags & EvalFlags.StrLiteralAsType) !== 0) {
                     // Don't report expecting type errors again. We will have already
                     // reported them when analyzing the contents of the string.
                     expectingInstantiable = false;
                 }
 
-                typeResult = getTypeOfStringList(node, flags, isExpectingType);
+                typeResult = getTypeOfStringList(node, flags);
                 break;
             }
 
@@ -1528,10 +1527,10 @@ export function createTypeEvaluator(
         return typeResult;
     }
 
-    function getTypeOfStringList(node: StringListNode, flags: EvalFlags, isExpectingType: boolean) {
+    function getTypeOfStringList(node: StringListNode, flags: EvalFlags) {
         let typeResult: TypeResult | undefined;
 
-        if (isExpectingType) {
+        if ((flags & EvalFlags.StrLiteralAsType) !== 0) {
             let updatedFlags = flags | EvalFlags.ForwardRefs | EvalFlags.InstantiableType;
 
             // In most cases, annotations within a string are not parsed by the interpreter.
@@ -1542,7 +1541,7 @@ export function createTypeEvaluator(
 
             if (node.d.annotation) {
                 typeResult = getTypeOfExpression(node.d.annotation, updatedFlags);
-            } else if (!node.d.annotation && node.d.strings.length === 1) {
+            } else if (node.d.strings.length === 1) {
                 const tokenFlags = node.d.strings[0].d.token.flags;
 
                 if (tokenFlags & StringTokenFlags.Bytes) {
@@ -3255,22 +3254,6 @@ export function createTypeEvaluator(
             codeFlowEngine.getFlowNodeReachability(sinkFlowNode, sourceFlowNode, /* ignoreNoReturn */ true) ===
             Reachability.Reachable
         );
-    }
-
-    // Determines whether the specified string literal is part
-    // of a Literal['xxx'] statement. If so, we will not treat
-    // the string as a normal forward-declared type annotation.
-    function isAnnotationLiteralValue(node: StringListNode): boolean {
-        if (node.parent && node.parent.nodeType === ParseNodeType.Index) {
-            const baseType = getTypeOfExpression(node.parent.d.leftExpr).type;
-            if (baseType && isInstantiableClass(baseType)) {
-                if (ClassType.isSpecialBuiltIn(baseType, 'Literal')) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     function addInformation(message: string, node: ParseNode, range?: TextRange) {
@@ -5653,8 +5636,10 @@ export function createTypeEvaluator(
                         const getAttrSymbol = ModuleType.getField(baseType, '__getattr__');
                         if (getAttrSymbol) {
                             const isModuleGetAttrSupported =
-                                fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_7) ||
-                                getAttrSymbol.getDeclarations().some((decl) => decl.uri.hasExtension('.pyi'));
+                                PythonVersion.isGreaterOrEqualTo(
+                                    fileInfo.executionEnvironment.pythonVersion,
+                                    pythonVersion3_7
+                                ) || getAttrSymbol.getDeclarations().some((decl) => decl.uri.hasExtension('.pyi'));
 
                             if (isModuleGetAttrSupported) {
                                 const getAttrTypeResult = getEffectiveTypeOfSymbolForUsage(getAttrSymbol);
@@ -6679,7 +6664,7 @@ export function createTypeEvaluator(
                     const minPythonVersion = nonSubscriptableTypes.get(baseTypeResult.type.shared.fullName);
                     if (
                         minPythonVersion !== undefined &&
-                        fileInfo.executionEnvironment.pythonVersion.isLessThan(minPythonVersion) &&
+                        PythonVersion.isLessThan(fileInfo.executionEnvironment.pythonVersion, minPythonVersion) &&
                         !fileInfo.isStubFile
                     ) {
                         addDiagnostic(
@@ -10537,7 +10522,7 @@ export function createTypeEvaluator(
                     paramSpecTarget = TypeVarType.cloneForParamSpecAccess(varArgListParamType, /* access */ undefined);
                 } else {
                     positionalOnlyLimitIndex = varArgListParamIndex;
-                    positionalArgCount = varArgListParamIndex;
+                    positionalArgCount = Math.min(varArgListParamIndex, positionalArgCount);
                     positionParamLimitIndex = varArgListParamIndex;
                 }
             }
@@ -11990,6 +11975,8 @@ export function createTypeEvaluator(
             return returnType;
         }
 
+        inferReturnTypeIfNecessary(returnType);
+
         // Create a new scope ID based on the caller's position. This
         // will guarantee uniqueness. If another caller uses the same
         // call and arguments, the type vars will not conflict.
@@ -12616,7 +12603,7 @@ export function createTypeEvaluator(
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
+                        PythonVersion.isLessThan(fileInfo.executionEnvironment.pythonVersion, pythonVersion3_13) &&
                         classType.shared.moduleName !== 'typing_extensions'
                     ) {
                         addDiagnostic(
@@ -12775,7 +12762,7 @@ export function createTypeEvaluator(
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
+                        PythonVersion.isLessThan(fileInfo.executionEnvironment.pythonVersion, pythonVersion3_13) &&
                         classType.shared.moduleName !== 'typing_extensions'
                     ) {
                         addDiagnostic(
@@ -12865,7 +12852,7 @@ export function createTypeEvaluator(
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
                     if (
                         !fileInfo.isStubFile &&
-                        fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_13) &&
+                        PythonVersion.isLessThan(fileInfo.executionEnvironment.pythonVersion, pythonVersion3_13) &&
                         classType.shared.moduleName !== 'typing_extensions'
                     ) {
                         addDiagnostic(
@@ -14615,7 +14602,8 @@ export function createTypeEvaluator(
                     paramType ?? UnknownType.create(),
                     FunctionParamFlags.TypeDeclared,
                     param.d.name ? param.d.name.d.value : undefined,
-                    param.d.defaultValue ? AnyType.create(/* isEllipsis */ true) : undefined
+                    param.d.defaultValue ? AnyType.create(/* isEllipsis */ true) : undefined,
+                    param.d.defaultValue
                 );
 
                 FunctionType.addParam(functionType, functionParam);
@@ -15343,10 +15331,7 @@ export function createTypeEvaluator(
         return type;
     }
 
-    // Creates a "TypeGuard" and "TypeIs" type. This is an alias for 'bool', which
-    // isn't a generic type and therefore doesn't have a typeParam.
-    // We'll abuse our internal types a bit by specializing it with
-    // a type argument anyway.
+    // Creates a "TypeGuard" and "TypeIs" type.
     function createTypeGuardType(
         classType: ClassType,
         errorNode: ParseNode,
@@ -15688,15 +15673,19 @@ export function createTypeEvaluator(
             return { type: classType };
         }
 
-        if (typeArgs) {
+        let type: Type | undefined;
+
+        if (typeArgs && typeArgs.length > 0) {
+            type = typeArgs[0].type;
+
             if (typeArgs.length < 2) {
                 addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.annotatedTypeArgMissing(), errorNode);
             } else {
-                validateAnnotatedMetadata(errorNode, typeArgs[0].type, typeArgs.slice(1));
+                type = validateAnnotatedMetadata(errorNode, typeArgs[0].type, typeArgs.slice(1));
             }
         }
 
-        if (!typeArgs || typeArgs.length === 0) {
+        if (!type || !typeArgs || typeArgs.length === 0) {
             return { type: AnyType.create() };
         }
 
@@ -15705,69 +15694,87 @@ export function createTypeEvaluator(
         }
 
         return {
-            type: TypeBase.cloneAsSpecialForm(typeArgs[0].type, classType),
+            type: TypeBase.cloneAsSpecialForm(type, classType),
             isReadOnly: typeArgs[0].isReadOnly,
             isRequired: typeArgs[0].isRequired,
             isNotRequired: typeArgs[0].isNotRequired,
         };
     }
 
-    // Enforces metadata consistency as specified in PEP 746.
-    function validateAnnotatedMetadata(errorNode: ExpressionNode, annotatedType: Type, metaArgs: TypeResultWithNode[]) {
+    // Enforces metadata consistency as specified in PEP 746 and associates
+    // refinement type predicates with the base type.
+    function validateAnnotatedMetadata(
+        errorNode: ExpressionNode,
+        baseType: Type,
+        metaArgs: TypeResultWithNode[]
+    ): Type {
+        for (const metaArg of metaArgs) {
+            validateTypeMetadata(errorNode, baseType, metaArg);
+        }
+
+        return baseType;
+    }
+
+    // Determines whether the metadata object is compatible with the base type.
+    function validateTypeMetadata(errorNode: ExpressionNode, baseType: Type, metaArg: TypeResultWithNode): boolean {
         // This is an experimental feature because PEP 746 hasn't been accepted.
         if (!AnalyzerNodeInfo.getFileInfo(errorNode).diagnosticRuleSet.enableExperimentalFeatures) {
-            return;
+            return true;
         }
 
-        for (const metaArg of metaArgs) {
-            if (isClass(metaArg.type)) {
-                const supportsTypeMethod = getTypeOfBoundMember(
-                    /* errorNode */ undefined,
-                    metaArg.type,
-                    '__supports_type__'
-                )?.type;
-
-                if (!supportsTypeMethod) {
-                    continue;
-                }
-
-                // "Call" the __supports_type__ method to determine if the type is supported.
-                const callResult = useSpeculativeMode(errorNode, () =>
-                    validateCallArgs(
-                        errorNode,
-                        [
-                            {
-                                argCategory: ArgCategory.Simple,
-                                typeResult: { type: convertToInstance(annotatedType) },
-                            },
-                        ],
-                        { type: supportsTypeMethod },
-                        /* constraints */ undefined,
-                        /* skipUnknownArgCheck */ true,
-                        /* inferenceContext */ undefined
-                    )
-                );
-
-                if (callResult.isTypeIncomplete || !callResult.returnType) {
-                    continue;
-                }
-
-                // If there are no errors and the return type is potentially truthy,
-                // we know that the type is supported by this metadata object.
-                if (!callResult.argumentErrors && canBeTruthy(callResult.returnType)) {
-                    continue;
-                }
-
-                addDiagnostic(
-                    DiagnosticRule.reportInvalidTypeArguments,
-                    LocMessage.annotatedMetadataInconsistent().format({
-                        metadataType: printType(metaArg.type),
-                        type: printType(convertToInstance(annotatedType)),
-                    }),
-                    metaArg.node
-                );
-            }
+        if (!isClass(metaArg.type)) {
+            return true;
         }
+
+        const supportsTypeMethod = getTypeOfBoundMember(
+            /* errorNode */ undefined,
+            metaArg.type,
+            '__supports_type__'
+        )?.type;
+
+        if (!supportsTypeMethod) {
+            return true;
+        }
+
+        // "Call" the __supports_type__ method to determine if the type is supported.
+        const callResult = useSpeculativeMode(errorNode, () =>
+            validateCallArgs(
+                errorNode,
+                [
+                    {
+                        argCategory: ArgCategory.Simple,
+                        typeResult: { type: convertToInstance(baseType) },
+                    },
+                ],
+                { type: supportsTypeMethod },
+                /* constraints */ undefined,
+                /* skipUnknownArgCheck */ true,
+                /* inferenceContext */ undefined
+            )
+        );
+
+        if (!callResult.returnType) {
+            return true;
+        }
+
+        // If there are no errors and the return type is potentially truthy,
+        // we know that the type is supported by this metadata object.
+        if (!callResult.argumentErrors && canBeTruthy(callResult.returnType)) {
+            return true;
+        }
+
+        if (!callResult.isTypeIncomplete) {
+            addDiagnostic(
+                DiagnosticRule.reportInvalidTypeArguments,
+                LocMessage.annotatedMetadataInconsistent().format({
+                    metadataType: printType(metaArg.type),
+                    type: printType(convertToInstance(baseType)),
+                }),
+                metaArg.node
+            );
+        }
+
+        return false;
     }
 
     // Creates one of several "special" types that are defined in typing.pyi
@@ -16208,7 +16215,7 @@ export function createTypeEvaluator(
             specialClassType.shared.flags |= ClassTypeFlags.TypingExtensionClass;
         }
 
-        const baseClassName = aliasMapEntry.alias || 'object';
+        const baseClassName = aliasMapEntry.implicitBaseClass || aliasMapEntry.alias || 'object';
 
         let baseClass: Type | undefined;
         if (aliasMapEntry.module === 'builtins') {
@@ -16283,7 +16290,13 @@ export function createTypeEvaluator(
             ['Concatenate', { alias: '', module: 'builtins', isSpecialForm: true }],
             [
                 'TypeGuard',
-                { alias: '', module: 'builtins', isSpecialForm: true, typeParamVariance: Variance.Covariant },
+                {
+                    alias: '',
+                    module: 'builtins',
+                    implicitBaseClass: 'bool',
+                    isSpecialForm: true,
+                    typeParamVariance: Variance.Covariant,
+                },
             ],
             ['Unpack', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['Required', { alias: '', module: 'builtins', isSpecialForm: true }],
@@ -16293,7 +16306,16 @@ export function createTypeEvaluator(
             ['Never', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['LiteralString', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['ReadOnly', { alias: '', module: 'builtins', isSpecialForm: true }],
-            ['TypeIs', { alias: '', module: 'builtins', isSpecialForm: true, typeParamVariance: Variance.Invariant }],
+            [
+                'TypeIs',
+                {
+                    alias: '',
+                    module: 'builtins',
+                    implicitBaseClass: 'bool',
+                    isSpecialForm: true,
+                    typeParamVariance: Variance.Invariant,
+                },
+            ],
         ]);
 
         const aliasMapEntry = specialTypes.get(assignedName);
@@ -16886,7 +16908,10 @@ export function createTypeEvaluator(
                                 if (
                                     !fileInfo.isStubFile &&
                                     !ClassType.isTypingExtensionClass(argType) &&
-                                    fileInfo.executionEnvironment.pythonVersion.isLessThan(pythonVersion3_7)
+                                    PythonVersion.isLessThan(
+                                        fileInfo.executionEnvironment.pythonVersion,
+                                        pythonVersion3_7
+                                    )
                                 ) {
                                     addDiagnostic(
                                         DiagnosticRule.reportInvalidTypeForm,
@@ -16903,7 +16928,12 @@ export function createTypeEvaluator(
 
                             // If the class directly derives from NamedTuple (in Python 3.6 or
                             // newer), it's considered a (read-only) dataclass.
-                            if (fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_6)) {
+                            if (
+                                PythonVersion.isGreaterOrEqualTo(
+                                    fileInfo.executionEnvironment.pythonVersion,
+                                    pythonVersion3_6
+                                )
+                            ) {
                                 if (ClassType.isBuiltIn(argType, 'NamedTuple')) {
                                     isNamedTupleSubclass = true;
                                     classType.shared.flags |= ClassTypeFlags.ReadOnlyInstanceVariables;
@@ -18401,7 +18431,8 @@ export function createTypeEvaluator(
                     (isTypeInferred ? FunctionParamFlags.TypeInferred : FunctionParamFlags.None) |
                         (paramTypeNode ? FunctionParamFlags.TypeDeclared : FunctionParamFlags.None),
                     param.d.name ? param.d.name.d.value : undefined,
-                    defaultValueType
+                    defaultValueType,
+                    param.d.defaultValue
                 );
 
                 FunctionType.addParam(functionType, functionParam);
@@ -19359,7 +19390,10 @@ export function createTypeEvaluator(
                     // Handle PEP 562 support for module-level __getattr__ function,
                     // introduced in Python 3.7.
                     if (
-                        fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_7) ||
+                        PythonVersion.isGreaterOrEqualTo(
+                            fileInfo.executionEnvironment.pythonVersion,
+                            pythonVersion3_7
+                        ) ||
                         fileInfo.isStubFile
                     ) {
                         const getAttrSymbol = importLookupInfo.symbolTable.get('__getattr__');
@@ -20442,7 +20476,7 @@ export function createTypeEvaluator(
         const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
         if (
             fileInfo.isStubFile ||
-            fileInfo.executionEnvironment.pythonVersion.isGreaterOrEqualTo(pythonVersion3_9) ||
+            PythonVersion.isGreaterOrEqualTo(fileInfo.executionEnvironment.pythonVersion, pythonVersion3_9) ||
             isAnnotationEvaluationPostponed(AnalyzerNodeInfo.getFileInfo(errorNode)) ||
             (flags & EvalFlags.ForwardRefs) !== 0
         ) {
@@ -23017,14 +23051,6 @@ export function createTypeEvaluator(
             }
 
             return true;
-        }
-
-        // If the type is a bool created with a `TypeGuard` or `TypeIs`, it is
-        // considered a subtype of `bool`.
-        if (isInstantiableClass(srcType) && ClassType.isBuiltIn(srcType, ['TypeGuard', 'TypeIs'])) {
-            if (isInstantiableClass(destType) && ClassType.isBuiltIn(destType, 'bool')) {
-                return (flags & AssignTypeFlags.Invariant) === 0;
-            }
         }
 
         if ((flags & AssignTypeFlags.Invariant) === 0 || ClassType.isSameGenericClass(srcType, destType)) {
@@ -25786,7 +25812,8 @@ export function createTypeEvaluator(
                                 p.name,
                                 FunctionType.getParamDefaultType(effectiveSrcType, index)
                                     ? AnyType.create(/* isEllipsis */ true)
-                                    : undefined
+                                    : undefined,
+                                p.defaultExpr
                             )
                         );
                     }
@@ -27225,12 +27252,12 @@ export function createTypeEvaluator(
             valueOffset,
             textValue.length,
             parseOptions,
-            /* parseTextMode */ undefined,
+            ParseTextMode.Expression,
             /* initialParenDepth */ undefined,
             fileInfo.typingSymbolAliases
         );
 
-        if (parseResults.parseTree && parseResults.parseTree.nodeType !== ParseNodeType.FunctionAnnotation) {
+        if (parseResults.parseTree) {
             parseResults.diagnostics.forEach((diag) => {
                 addDiagnosticWithSuppressionCheck('error', diag.message, node);
             });
