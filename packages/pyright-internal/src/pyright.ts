@@ -48,6 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
+import { writeBaseline } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -159,6 +160,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'level', type: String },
         { name: 'outputjson', type: Boolean },
         { name: 'gitlabcodequality', type: String },
+        { name: 'writebaseline', type: Boolean },
         { name: 'project', alias: 'p', type: String },
         { name: 'pythonpath', type: String },
         { name: 'pythonplatform', type: String },
@@ -505,6 +507,13 @@ async function runSingleThreaded(
                         )
                     )
                 );
+            }
+            if (args.writebaseline) {
+                const rootDir =
+                    typeof options.executionRoot === 'string' || options.executionRoot === undefined
+                        ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
+                        : options.executionRoot;
+                writeBaseline(rootDir, '.basedpyright/baseline.json', results.diagnostics);
             }
             errorCount += report.errorCount;
             if (treatWarningsAsErrors) {
@@ -1129,6 +1138,7 @@ function printUsage() {
             '  --level <LEVEL>                    Minimum diagnostic level (error or warning)\n' +
             '  --outputjson                       Output results in JSON format\n' +
             '  --gitlabcodequality <FILE>         Output results to a gitlab code quality report\n' +
+            '  --writebaseline <FILE>             Write new errors to the baseline file\n' +
             '  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location\n' +
             '  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)\n' +
             '  --pythonpath <FILE>                Path to the Python interpreter\n' +
