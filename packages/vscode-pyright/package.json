@@ -1719,6 +1719,9 @@
             }
         ]
     },
+    "extensionDependencies": [
+        "ms-python.python"
+    ],
     "scripts": {
         "clean": "shx rm -rf ./dist ./out README.md",
         "prepack": "npm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && npm run build",
