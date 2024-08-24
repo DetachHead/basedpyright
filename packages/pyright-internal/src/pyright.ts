@@ -48,7 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { writeBaseline } from './baseline';
+import { filterOutBaselinedDiagnostics, writeBaseline } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -474,6 +474,14 @@ async function runSingleThreaded(
             return;
         }
 
+        const rootDir =
+            typeof options.executionRoot === 'string' || options.executionRoot === undefined
+                ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
+                : options.executionRoot;
+        if (args.writebaseline) {
+            writeBaseline(rootDir, results.diagnostics);
+        }
+        filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;
@@ -507,13 +515,6 @@ async function runSingleThreaded(
                         )
                     )
                 );
-            }
-            if (args.writebaseline) {
-                const rootDir =
-                    typeof options.executionRoot === 'string' || options.executionRoot === undefined
-                        ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
-                        : options.executionRoot;
-                writeBaseline(rootDir, '.basedpyright/baseline.json', results.diagnostics);
             }
             errorCount += report.errorCount;
             if (treatWarningsAsErrors) {
