@@ -140,6 +140,10 @@ export async function activate(context: ExtensionContext) {
                 command: copiedExecutablePath,
                 transport: TransportKind.stdio,
                 args: cancellationStrategy.getCommandLineArguments(),
+                options: {
+                    // workaround for https://github.com/astral-sh/uv/issues/6399, no idea why this works
+                    shell: true,
+                },
             };
         } else {
             console.warn('failed to find pyright executable, falling back to bundled:', executablePath);
