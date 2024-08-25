@@ -19,6 +19,7 @@ import { FileSystem } from './fileSystem';
 import { FileWatcherHandler } from './fileWatcher';
 import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
+import { FileDiagnostics } from './diagnosticSink';
 
 export interface ServerSettings {
     venvPath?: Uri | undefined;
@@ -136,6 +137,7 @@ export interface LanguageServerBaseInterface {
 
 export interface LanguageServerInterface extends LanguageServerBaseInterface {
     getWorkspaceForFile(fileUri: Uri, pythonPath?: Uri): Promise<Workspace>;
+    readonly documentsWithDiagnostics: Record<string, FileDiagnostics>;
 }
 
 export interface WindowService extends WindowInterface {

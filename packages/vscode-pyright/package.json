@@ -82,6 +82,11 @@
                 "title": "Dump code flow graph for node ...",
                 "category": "Pyright",
                 "enablement": "editorLangId == python && pyright.development"
+            },
+            {
+                "command": "basedpyright.writeBaseline",
+                "title": "Write new errors to baseline",
+                "category": "Pyright"
             }
         ],
         "menus": {

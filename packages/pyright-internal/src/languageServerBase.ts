@@ -67,6 +67,7 @@ import {
     TextDocumentEdit,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
+    WillSaveTextDocumentParams,
     WorkDoneProgressReporter,
     WorkspaceEdit,
     WorkspaceFoldersChangeEvent,
@@ -133,6 +134,7 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
+import { diagnosticsToBaseline, filterOutBaselinedDiagnostics, getBaselinedErrors } from './baseline';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -180,7 +182,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected readonly caseSensitiveDetector: CaseSensitivityDetector;
 
     // The URIs for which diagnostics are reported
-    protected readonly documentsWithDiagnostics = new Set<string>();
+    readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
 
     protected readonly dynamicFeatures = new DynamicFeatures();
 
@@ -505,6 +507,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.connection.onDidCloseTextDocument(async (params) => this.onDidCloseTextDocument(params));
         this.connection.onDidChangeWatchedFiles((params) => this.onDidChangeWatchedFiles(params));
         this.connection.workspace.onWillRenameFiles(this.onRenameFiles);
+        this.connection.onWillSaveTextDocument(this.onSaveTextDocument);
         this.connection.onExecuteCommand(async (params, token, reporter) =>
             this.onExecuteCommand(params, token, reporter)
         );
@@ -1152,6 +1155,17 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return result;
     };
 
+    protected onSaveTextDocument = (params: WillSaveTextDocumentParams) => {
+        const baselineFile = getBaselinedErrors(this.serverOptions.rootDirectory);
+        const fileKey = this.serverOptions.rootDirectory
+            .getRelativePath(Uri.file(params.textDocument.uri, this.serviceProvider))!
+            .toString();
+        //cringe
+        baselineFile.files[fileKey] = diagnosticsToBaseline(this.serverOptions.rootDirectory, [
+            this.documentsWithDiagnostics[params.textDocument.uri.toString()],
+        ]).files[fileKey];
+    };
+
     protected async onExecuteCommand(
         params: ExecuteCommandParams,
         token: CancellationToken,
@@ -1218,14 +1232,17 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return Promise.resolve();
     }
 
-    protected convertDiagnostics(fs: FileSystem, fileDiagnostics: FileDiagnostics): PublishDiagnosticsParams[] {
-        return [
-            {
-                uri: convertUriToLspUriString(fs, fileDiagnostics.fileUri),
-                version: fileDiagnostics.version,
-                diagnostics: this._convertDiagnostics(fs, fileDiagnostics.diagnostics),
-            },
-        ];
+    protected async convertDiagnostics(
+        fs: FileSystem,
+        fileDiagnostics: FileDiagnostics
+    ): Promise<PublishDiagnosticsParams> {
+        const workspace = await this.getWorkspaceForFile(fileDiagnostics.fileUri);
+        filterOutBaselinedDiagnostics(workspace.rootUri!, [fileDiagnostics]);
+        return {
+            uri: convertUriToLspUriString(fs, fileDiagnostics.fileUri),
+            version: fileDiagnostics.version,
+            diagnostics: this._convertDiagnostics(fs, fileDiagnostics.diagnostics),
+        };
     }
 
     protected getDiagCode(_diag: AnalyzerDiagnostic, rule: string | undefined): string | undefined {
@@ -1239,7 +1256,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 return;
             }
 
-            this.sendDiagnostics(this.convertDiagnostics(fs, fileDiag));
+            this.sendDiagnostics(fs, fileDiag);
         });
 
         results.configParseErrors.forEach((error) =>
@@ -1291,23 +1308,19 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     }
 
     protected onWorkspaceRemoved(workspace: Workspace) {
-        const documentsWithDiagnosticsList = [...this.documentsWithDiagnostics];
         const otherWorkspaces = this.workspaceFactory.items().filter((w) => w !== workspace);
 
-        for (const uri of documentsWithDiagnosticsList) {
-            const fileUri = this.convertLspUriStringToUri(uri);
-
-            if (workspace.service.isTracked(fileUri)) {
+        for (const fileWithDiagnostics of Object.values(this.documentsWithDiagnostics)) {
+            if (workspace.service.isTracked(fileWithDiagnostics.fileUri)) {
                 // Do not clean up diagnostics for files tracked by multiple workspaces
-                if (otherWorkspaces.some((w) => w.service.isTracked(fileUri))) {
+                if (otherWorkspaces.some((w) => w.service.isTracked(fileWithDiagnostics.fileUri))) {
                     continue;
                 }
-                this.sendDiagnostics([
-                    {
-                        uri: uri,
-                        diagnostics: [],
-                    },
-                ]);
+                this.sendDiagnostics(this.fs, {
+                    fileUri: fileWithDiagnostics.fileUri,
+                    diagnostics: fileWithDiagnostics.diagnostics,
+                    version: undefined,
+                });
             }
         }
     }
@@ -1371,15 +1384,14 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         };
     }
 
-    protected sendDiagnostics(params: PublishDiagnosticsParams[]) {
-        for (const param of params) {
-            if (param.diagnostics.length === 0) {
-                this.documentsWithDiagnostics.delete(param.uri);
-            } else {
-                this.documentsWithDiagnostics.add(param.uri);
-            }
-            this.connection.sendDiagnostics(param);
+    protected async sendDiagnostics(fs: FileSystem, fileWithDiagnostics: FileDiagnostics) {
+        const key = fileWithDiagnostics.fileUri.toString();
+        if (fileWithDiagnostics.diagnostics.length === 0) {
+            delete this.documentsWithDiagnostics[key];
+        } else {
+            this.documentsWithDiagnostics[key] = fileWithDiagnostics;
         }
+        this.connection.sendDiagnostics(await this.convertDiagnostics(fs, fileWithDiagnostics));
     }
 
     protected convertLspUriStringToUri(uri: string) {

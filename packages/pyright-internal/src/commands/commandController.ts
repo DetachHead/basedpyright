@@ -14,6 +14,7 @@ import { CreateTypeStubCommand } from './createTypeStub';
 import { DumpFileDebugInfoCommand } from './dumpFileDebugInfoCommand';
 import { QuickActionCommand } from './quickActionCommand';
 import { RestartServerCommand } from './restartServer';
+import { WriteBaselineCommand } from './writeBaseline';
 
 export interface ServerCommand {
     execute(cmdParams: ExecuteCommandParams, token: CancellationToken): Promise<any>;
@@ -24,12 +25,14 @@ export class CommandController implements ServerCommand {
     private _restartServer: RestartServerCommand;
     private _quickAction: QuickActionCommand;
     private _dumpFileDebugInfo: DumpFileDebugInfoCommand;
+    private _writeBaseline: WriteBaselineCommand;
 
     constructor(ls: LanguageServerInterface) {
         this._createStub = new CreateTypeStubCommand(ls);
         this._restartServer = new RestartServerCommand(ls);
         this._quickAction = new QuickActionCommand(ls);
         this._dumpFileDebugInfo = new DumpFileDebugInfoCommand(ls);
+        this._writeBaseline = new WriteBaselineCommand(ls);
     }
 
     async execute(cmdParams: ExecuteCommandParams, token: CancellationToken): Promise<any> {
@@ -50,6 +53,9 @@ export class CommandController implements ServerCommand {
                 return this._dumpFileDebugInfo.execute(cmdParams, token);
             }
 
+            case Commands.writeBaseline: {
+                return this._writeBaseline.execute();
+            }
             default: {
                 return new ResponseError<string>(1, 'Unsupported command');
             }

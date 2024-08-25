@@ -3,7 +3,6 @@ import { FileDiagnostics } from './common/diagnosticSink';
 import { Range } from './common/textRange';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { Uri } from './common/uri/uri';
-// import { Diagnostic } from './common/diagnostic';
 
 interface BaselineFile {
     files: {
@@ -17,7 +16,7 @@ interface BaselineFile {
 
 const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
 
-const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): BaselineFile => {
+export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): BaselineFile => {
     const baselineData: BaselineFile = {
         files: {},
     };
@@ -47,8 +46,16 @@ export const writeBaseline = async (rootDir: Uri, filesWithDiagnostics: FileDiag
     writeFileSync(baselineFile.getPath(), JSON.stringify(baselineData, undefined, 4));
 };
 
-export const getBaselinedErrors = (rootDir: Uri): BaselineFile =>
-    JSON.parse(readFileSync(baselineFilePath(rootDir).getPath(), 'utf8'));
+export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
+    const path = baselineFilePath(rootDir).getPath();
+    let baselineFileContents;
+    try {
+        baselineFileContents = readFileSync(path, 'utf8');
+    } catch (e) {
+        return { files: {} };
+    }
+    return JSON.parse(baselineFileContents);
+};
 
 export const filterOutBaselinedDiagnostics = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): void => {
     const baselineFile = getBaselinedErrors(rootDir);
@@ -56,6 +63,9 @@ export const filterOutBaselinedDiagnostics = (rootDir: Uri, filesWithDiagnostics
         const newDiagnostics = [];
         const baselinedErrorsForFile =
             baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
+        if (!baselinedErrorsForFile) {
+            continue;
+        }
         for (const diagnostic of fileWithDiagnostics.diagnostics) {
             const matchedIndex = baselinedErrorsForFile.findIndex(
                 (baselinedError) =>
