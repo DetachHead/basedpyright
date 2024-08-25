@@ -34,6 +34,7 @@ import { CodeActionProvider } from '../../../languageService/codeActionProvider'
 import { WellKnownWorkspaceKinds, Workspace, createInitStatus } from '../../../workspaceFactory';
 import { TestAccessHost } from '../testAccessHost';
 import { HostSpecificFeatures } from './testState';
+import { FileDiagnostics } from '../../../common/diagnosticSink';
 
 export class TestFeatures implements HostSpecificFeatures {
     importResolverFactory: ImportResolverFactory = AnalyzerService.createImportResolver;
@@ -77,6 +78,7 @@ export class TestLanguageService implements LanguageServerInterface {
     readonly window = new TestWindow();
     readonly supportAdvancedEdits = true;
     readonly serviceProvider: ServiceProvider;
+    readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
 
     private readonly _workspace: Workspace;
     private readonly _defaultWorkspace: Workspace;

@@ -294,7 +294,7 @@ export async function activate(context: ExtensionContext) {
         );
     });
 
-    const genericCommands = [Commands.createTypeStub, Commands.restartServer];
+    const genericCommands = [Commands.createTypeStub, Commands.restartServer, Commands.writeBaseline];
     genericCommands.forEach((command) => {
         context.subscriptions.push(
             commands.registerCommand(command, (...args: any[]) => {
