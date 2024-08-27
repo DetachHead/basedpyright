@@ -134,7 +134,12 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
-import { diagnosticsToBaseline, filterOutBaselinedDiagnostics, getBaselinedErrors } from './baseline';
+import {
+    diagnosticsToBaseline,
+    filterOutBaselinedDiagnostics,
+    getBaselinedErrors,
+    writeBaselineFile,
+} from './baseline';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -583,7 +588,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
         const result: InitializeResult = {
             capabilities: {
-                textDocumentSync: TextDocumentSyncKind.Incremental,
+                textDocumentSync: { willSave: true, change: TextDocumentSyncKind.Incremental, openClose: true },
                 definitionProvider: { workDoneProgress: true },
                 declarationProvider: { workDoneProgress: true },
                 typeDefinitionProvider: { workDoneProgress: true },
@@ -1155,15 +1160,26 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return result;
     };
 
-    protected onSaveTextDocument = (params: WillSaveTextDocumentParams) => {
-        const baselineFile = getBaselinedErrors(this.serverOptions.rootDirectory);
-        const fileKey = this.serverOptions.rootDirectory
-            .getRelativePath(Uri.file(params.textDocument.uri, this.serviceProvider))!
-            .toString();
-        //cringe
-        baselineFile.files[fileKey] = diagnosticsToBaseline(this.serverOptions.rootDirectory, [
-            this.documentsWithDiagnostics[params.textDocument.uri.toString()],
-        ]).files[fileKey];
+    protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
+        const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
+        const rootUri = (await this.getWorkspaceForFile(fileUri)).rootUri!;
+        const baselineFile = getBaselinedErrors(rootUri);
+        const fileKey = rootUri.getRelativePath(fileUri)!;
+        const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
+        const newDiagnostics = filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0];
+        if (newDiagnostics.diagnostics.length) {
+            // there are new diagnostics that haven't been baselined, so we don't want to write them
+            // because the user will have to either fix the diagnostics or explicitly write them to the
+            // baseline themselves
+            return;
+        }
+        if (diagnosticsForFile) {
+            //cringe
+            baselineFile.files[fileKey] = diagnosticsToBaseline(rootUri, [diagnosticsForFile]).files[fileKey];
+        } else {
+            baselineFile.files[fileKey] = [];
+        }
+        writeBaselineFile(rootUri, baselineFile);
     };
 
     protected async onExecuteCommand(
@@ -1237,11 +1253,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         fileDiagnostics: FileDiagnostics
     ): Promise<PublishDiagnosticsParams> {
         const workspace = await this.getWorkspaceForFile(fileDiagnostics.fileUri);
-        filterOutBaselinedDiagnostics(workspace.rootUri!, [fileDiagnostics]);
+        const filteredDiagnostics = filterOutBaselinedDiagnostics(workspace.rootUri!, [fileDiagnostics])[0];
         return {
-            uri: convertUriToLspUriString(fs, fileDiagnostics.fileUri),
-            version: fileDiagnostics.version,
-            diagnostics: this._convertDiagnostics(fs, fileDiagnostics.diagnostics),
+            uri: convertUriToLspUriString(fs, filteredDiagnostics.fileUri),
+            version: filteredDiagnostics.version,
+            diagnostics: this._convertDiagnostics(fs, filteredDiagnostics.diagnostics),
         };
     }
 

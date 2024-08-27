@@ -14,7 +14,7 @@ interface BaselineFile {
     };
 }
 
-const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
+export const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
 
 export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): BaselineFile => {
     const baselineData: BaselineFile = {
@@ -39,11 +39,15 @@ export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDi
     return baselineData;
 };
 
-export const writeBaseline = async (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]) => {
-    const baselineData = diagnosticsToBaseline(rootDir, filesWithDiagnostics);
+export const writeBaselineFile = (rootDir: Uri, baselineData: BaselineFile) => {
     const baselineFile = baselineFilePath(rootDir);
     mkdirSync(baselineFile.getDirectory().getPath(), { recursive: true });
     writeFileSync(baselineFile.getPath(), JSON.stringify(baselineData, undefined, 4));
+};
+
+export const writeDiagnosticsToBaselineFile = async (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]) => {
+    const baselineData = diagnosticsToBaseline(rootDir, filesWithDiagnostics);
+    writeBaselineFile(rootDir, baselineData);
 };
 
 export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
@@ -57,29 +61,34 @@ export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
     return JSON.parse(baselineFileContents);
 };
 
-export const filterOutBaselinedDiagnostics = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): void => {
+export const filterOutBaselinedDiagnostics = (
+    rootDir: Uri,
+    filesWithDiagnostics: readonly FileDiagnostics[]
+): FileDiagnostics[] => {
     const baselineFile = getBaselinedErrors(rootDir);
-    for (const fileWithDiagnostics of filesWithDiagnostics) {
-        const newDiagnostics = [];
+    return filesWithDiagnostics.map((fileWithDiagnostics) => {
         const baselinedErrorsForFile =
             baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
         if (!baselinedErrorsForFile) {
-            continue;
+            return fileWithDiagnostics;
         }
-        for (const diagnostic of fileWithDiagnostics.diagnostics) {
-            const matchedIndex = baselinedErrorsForFile.findIndex(
-                (baselinedError) =>
-                    baselinedError.message === diagnostic.message &&
-                    baselinedError.code === diagnostic.getRule() &&
-                    baselinedError.range.start.character === diagnostic.range.start.character &&
-                    baselinedError.range.end.character === diagnostic.range.end.character
-            );
-            if (matchedIndex >= 0) {
-                baselinedErrorsForFile.splice(matchedIndex, 1);
-            } else {
-                newDiagnostics.push(diagnostic);
-            }
-        }
-        fileWithDiagnostics.diagnostics = newDiagnostics;
-    }
+        return {
+            ...fileWithDiagnostics,
+            diagnostics: fileWithDiagnostics.diagnostics.filter((diagnostic) => {
+                const matchedIndex = baselinedErrorsForFile.findIndex(
+                    (baselinedError) =>
+                        baselinedError.message === diagnostic.message &&
+                        baselinedError.code === diagnostic.getRule() &&
+                        baselinedError.range.start.character === diagnostic.range.start.character &&
+                        baselinedError.range.end.character === diagnostic.range.end.character
+                );
+                if (matchedIndex >= 0) {
+                    baselinedErrorsForFile.splice(matchedIndex, 1);
+                    return false;
+                } else {
+                    return true;
+                }
+            }),
+        };
+    });
 };

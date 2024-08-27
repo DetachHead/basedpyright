@@ -48,7 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { filterOutBaselinedDiagnostics, writeBaseline } from './baseline';
+import { filterOutBaselinedDiagnostics, writeDiagnosticsToBaselineFile } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -479,9 +479,9 @@ async function runSingleThreaded(
                 ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
                 : options.executionRoot;
         if (args.writebaseline) {
-            writeBaseline(rootDir, results.diagnostics);
+            writeDiagnosticsToBaselineFile(rootDir, results.diagnostics);
         }
-        filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
+        results.diagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;
