@@ -14,7 +14,6 @@ export class WriteBaselineCommand implements ServerCommand {
                 this._ls.documentsWithDiagnostics[Object.keys(this._ls.documentsWithDiagnostics)[0]].fileUri
             )
         ).rootUri!;
-        // TODO: this very likely will delete any baselined errors from files that aren't open. FIX BEFORE MERGE!!!!!
-        return writeDiagnosticsToBaselineFile(workspaceRoot, Object.values(this._ls.documentsWithDiagnostics));
+        return writeDiagnosticsToBaselineFile(workspaceRoot, Object.values(this._ls.documentsWithDiagnostics), true);
     }
 }

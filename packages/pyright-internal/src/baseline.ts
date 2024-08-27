@@ -45,8 +45,19 @@ export const writeBaselineFile = (rootDir: Uri, baselineData: BaselineFile) => {
     writeFileSync(baselineFile.getPath(), JSON.stringify(baselineData, undefined, 4));
 };
 
-export const writeDiagnosticsToBaselineFile = async (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]) => {
-    const baselineData = diagnosticsToBaseline(rootDir, filesWithDiagnostics);
+/**
+ * @param openFilesOnly whether or not the diagnostics were only reported on the open files. setting this to `true` prevents
+ * it from deleting baselined errors from files that weren't opened
+ */
+export const writeDiagnosticsToBaselineFile = async (
+    rootDir: Uri,
+    filesWithDiagnostics: FileDiagnostics[],
+    openFilesOnly: boolean
+) => {
+    let baselineData = diagnosticsToBaseline(rootDir, filesWithDiagnostics);
+    if (openFilesOnly) {
+        baselineData = { files: { ...getBaselinedErrors(rootDir).files, ...baselineData.files } };
+    }
     writeBaselineFile(rootDir, baselineData);
 };
 
