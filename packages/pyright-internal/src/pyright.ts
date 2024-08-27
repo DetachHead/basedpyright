@@ -479,7 +479,7 @@ async function runSingleThreaded(
                 ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
                 : options.executionRoot;
         if (args.writebaseline) {
-            writeDiagnosticsToBaselineFile(rootDir, results.diagnostics);
+            writeDiagnosticsToBaselineFile(rootDir, results.diagnostics, false);
         }
         results.diagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
         let errorCount = 0;
