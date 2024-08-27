@@ -1,5 +1,5 @@
 import { ServerCommand } from './commandController';
-import { writeBaseline } from '../baseline';
+import { writeDiagnosticsToBaselineFile } from '../baseline';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export class WriteBaselineCommand implements ServerCommand {
@@ -14,6 +14,7 @@ export class WriteBaselineCommand implements ServerCommand {
                 this._ls.documentsWithDiagnostics[Object.keys(this._ls.documentsWithDiagnostics)[0]].fileUri
             )
         ).rootUri!;
-        return writeBaseline(workspaceRoot, Object.values(this._ls.documentsWithDiagnostics));
+        // TODO: this very likely will delete any baselined errors from files that aren't open. FIX BEFORE MERGE!!!!!
+        return writeDiagnosticsToBaselineFile(workspaceRoot, Object.values(this._ls.documentsWithDiagnostics));
     }
 }
