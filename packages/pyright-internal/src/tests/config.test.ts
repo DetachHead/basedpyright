@@ -215,7 +215,7 @@ test('PythonPlatform', () => {
 
     const configOptions = service.test_getConfigOptions(commandLineOptions);
     assert.ok(configOptions.executionEnvironments[0]);
-    assert.equal(configOptions.executionEnvironments[0].pythonPlatform, 'platform');
+    assert.equal(configOptions.executionEnvironments[0].pythonPlatform, 'Linux');
 });
 
 describe('invalid config', () => {
@@ -251,27 +251,13 @@ describe('invalid config', () => {
             'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".',
         ]);
     });
-    test('unknown value for top-level option', () => {
-        const cwd = UriEx.file(normalizePath(process.cwd()));
-
-        const configOptions = new ConfigOptions(cwd);
-
-        const json = {
-            executionEnvironments: [
-                {
-                    root: 'foo',
-                    asdf: true,
-                },
-            ],
-        };
-
-        const fs = new TestFileSystem(/* ignoreCase */ false);
-        const nullConsole = new NullConsole();
-
-        const sp = createServiceProvider(fs, nullConsole);
-        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-
-        assert.deepStrictEqual(errors, [`unknown config option in execution environment "foo": asdf`]);
+    test('unknown value in execution environments', () => {
+        const { analysisResult } = setupPyprojectToml(
+            'src/tests/samples/project_with_invalid_option_in_execution_environments'
+        );
+        assert.deepStrictEqual(analysisResult?.configParseErrors, [
+            `unknown config option in execution environment "foo": asdf`,
+        ]);
     });
 });
 

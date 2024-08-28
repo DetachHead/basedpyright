@@ -1380,7 +1380,11 @@ export class ConfigOptions {
         const errors: string[] = [];
 
         // we initialize it with `extends` because this option gets read before this function gets called
-        const unusedConfigDetector = new UnusedConfigDetector<Record<string, object>>(configObj, ['extends']);
+        // 'executionEnvironments' also gets read elsewhere
+        const unusedConfigDetector = new UnusedConfigDetector<Record<string, object>>(configObj, [
+            'extends',
+            'executionEnvironments',
+        ]);
         configObj = unusedConfigDetector.proxy;
 
         // Read the entries that should be an array of relative file paths

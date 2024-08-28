@@ -1,0 +1,2 @@
+[tool.pyright]
+executionEnvironments = [{ root = 'foo', asdf = true }]
