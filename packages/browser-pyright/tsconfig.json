@@ -15,7 +15,8 @@
     },
     "include": [
         "src/**/*",
-        "**/*.js"
+        "**/*.js",
+        "../pyright-internal/typings/**/*.d.ts"
     ],
     "exclude": [
         "node_modules",

@@ -25,6 +25,7 @@ import { TestAccessHost } from './harness/testAccessHost';
 import { TestFileSystem } from './harness/vfs/filesystem';
 import { AnalysisResults } from '../analyzer/analysis';
 import { existsSync } from 'fs';
+import { NoAccessHost } from '../common/host';
 
 function createAnalyzer(console?: ConsoleInterface) {
     const tempFile = new RealTempFile();

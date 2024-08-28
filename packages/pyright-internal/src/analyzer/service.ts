@@ -684,20 +684,18 @@ export class AnalyzerService {
         // Ensure that if no command line or config options were applied, we have some defaults.
         errors.push(...this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions));
 
-        if (errors.length > 0) {
-            this._reportConfigParseError(errors);
-        }
-
         // Once we have defaults, we can then setup the execution environments. Execution enviroments
         // inherit from the defaults.
         if (configs) {
             for (const config of configs) {
-                configOptions.setupExecutionEnvironments(
-                    config.configFileJsonObj,
-                    config.configFileDirUri,
-                    this.serviceProvider.console()
+                errors.push(
+                    ...configOptions.setupExecutionEnvironments(config.configFileJsonObj, config.configFileDirUri)
                 );
             }
+        }
+
+        if (errors.length > 0) {
+            this._reportConfigParseError(errors);
         }
 
         return configOptions;
