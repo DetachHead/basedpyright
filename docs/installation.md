@@ -109,10 +109,11 @@ add the following to your emacs config:
 
 #### [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
 
-with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright)
+with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: `0c0d72a`, update the package if you encounter errors), add the following to your emacs config:
 
-> [!WARNING]  
-> this has not been tested with basedpyright. i think it's hardcoded to use pyright so it might not work
+```emacs-lisp
+(setq lsp-pyright-langserver-command "basedpyright")
+```
 
 ### PyCharm
 
