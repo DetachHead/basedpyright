@@ -2,7 +2,7 @@
     "name": "basedpyright",
     "displayName": "basedpyright",
     "description": "a pyright fork with various type checking improvements, improved vscode support and pylance features built into the language server",
-    "version": "1.1.377",
+    "version": "1.1.378",
     "license": "MIT",
     "author": {
         "name": "detachhead"

@@ -236,8 +236,9 @@ export function solveConstraintSet(
     constraintSet: ConstraintSet,
     options?: SolveConstraintsOptions
 ): ConstraintSolutionSet {
-    const solutionSet = new ConstraintSolutionSet(constraintSet.getScopeIds());
+    const solutionSet = new ConstraintSolutionSet();
 
+    // Solve the type variables.
     constraintSet.doForEachTypeVar((entry) => {
         solveTypeVarRecursive(evaluator, constraintSet, options, solutionSet, entry);
     });

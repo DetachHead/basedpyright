@@ -23,7 +23,7 @@ import { ConsoleInterface } from '../common/console';
 import { assert, assertNever, fail } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { convertOffsetToPosition, convertOffsetsToRange } from '../common/positionUtils';
+import { convertOffsetsToRange, convertOffsetToPosition } from '../common/positionUtils';
 import {
     PythonVersion,
     pythonVersion3_13,
@@ -50,13 +50,14 @@ import {
     ErrorExpressionCategory,
     ExceptNode,
     ExpressionNode,
-    ForNode,
     FormatStringNode,
+    ForNode,
     FunctionNode,
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
     IndexNode,
+    isExpressionNode,
     LambdaNode,
     ListNode,
     MatchNode,
@@ -75,27 +76,26 @@ import {
     TupleNode,
     TypeAliasNode,
     TypeAnnotationNode,
-    TypeParamKind,
     TypeParameterListNode,
     TypeParameterNode,
     TypeParameterScopeNode,
+    TypeParamKind,
     UnpackNode,
     WithItemNode,
     YieldFromNode,
     YieldNode,
-    isExpressionNode,
 } from '../parser/parseNodes';
-import { ParseOptions, ParseTextMode, Parser } from '../parser/parser';
+import { ParseOptions, Parser, ParseTextMode } from '../parser/parser';
 import { KeywordType, OperatorType, StringTokenFlags } from '../parser/tokenizerTypes';
 import { AnalyzerFileInfo, ImportLookup, isAnnotationEvaluationPostponed } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { CodeFlowAnalyzer, FlowNodeTypeOptions, FlowNodeTypeResult, getCodeFlowEngine } from './codeFlowEngine';
 import {
     CodeFlowReferenceExpressionNode,
+    createKeyForReference,
     FlowFlags,
     FlowNode,
     FlowWildcardImport,
-    createKeyForReference,
     isCodeFlowSupportedForReference,
     wildcardImportReferenceKey,
 } from './codeFlowTypes';
@@ -104,8 +104,8 @@ import {
     addConstraintsForExpectedType,
     applySourceSolutionToConstraints,
     assignTypeVar,
-    solveConstraintSet,
     solveConstraints,
+    solveConstraintSet,
 } from './constraintSolver';
 import { ConstraintSet, ConstraintTracker } from './constraintTracker';
 import {
@@ -125,17 +125,17 @@ import {
     VariableDeclaration,
 } from './declaration';
 import {
-    ResolvedAliasInfo,
-    createSynthesizedAliasDeclaration,
     getDeclarationsWithUsesLocalNameRemoved,
     getNameNodeForDeclaration,
     resolveAliasDeclaration as resolveAliasDeclarationUtil,
+    ResolvedAliasInfo,
+    synthesizeAliasDeclaration,
 } from './declarationUtils';
 import {
-    FunctionDecoratorInfo,
     addOverloadsToFunctionType,
     applyClassDecorator,
     applyFunctionDecorator,
+    FunctionDecoratorInfo,
     getDeprecatedMessageFromCall,
     getFunctionInfoFromDecorators,
 } from './decorators';
@@ -156,12 +156,12 @@ import {
     getTypeOfUnaryOperation,
 } from './operations';
 import {
-    ParamKind,
-    ParamListDetails,
-    VirtualParamDetails,
     getParamListDetails,
     isParamSpecArgs,
     isParamSpecKwargs,
+    ParamKind,
+    ParamListDetails,
+    VirtualParamDetails,
 } from './parameterUtils';
 import * as ParseTreeUtils from './parseTreeUtils';
 import { assignTypeToPatternTargets, checkForUnusedPattern, narrowTypeBasedOnPattern } from './patternMatching';
@@ -170,7 +170,7 @@ import { assignClassToProtocol, assignModuleToProtocol } from './protocols';
 import { Scope, ScopeType, SymbolWithScope } from './scope';
 import * as ScopeUtils from './scopeUtils';
 import { evaluateStaticBoolExpression } from './staticExpressions';
-import { Symbol, SymbolFlags, indeterminateSymbolId } from './symbol';
+import { indeterminateSymbolId, Symbol, SymbolFlags } from './symbol';
 import { isConstantName, isPrivateName, isPrivateOrProtectedName } from './symbolNameUtils';
 import { getLastTypedDeclarationForSymbol, isEffectivelyClassVar } from './symbolUtils';
 import { assignTupleTypeArgs, getSlicedTupleType } from './tuples';
@@ -180,10 +180,10 @@ import {
     assignTypedDictToTypedDict,
     createTypedDictType,
     createTypedDictTypeInlined,
-    getTypeOfIndexedTypedDict,
     getTypedDictDictEquivalent,
     getTypedDictMappingEquivalent,
     getTypedDictMembersForClass,
+    getTypeOfIndexedTypedDict,
     synthesizeTypedDictClassMethods,
 } from './typedDicts';
 import {
@@ -206,6 +206,7 @@ import {
     FunctionTypeResult,
     MagicMethodDeprecationInfo,
     MapSubtypesOptions,
+    maxSubtypesForInferredType,
     MemberAccessDeprecationInfo,
     MatchArgsToParamsResult,
     MatchCallArgsToParams,
@@ -218,42 +219,21 @@ import {
     TypeResultWithNode,
     ValidateArgTypeParams,
     ValidateTypeArgsOptions,
-    maxSubtypesForInferredType,
 } from './typeEvaluatorTypes';
 import * as TypePrinter from './typePrinter';
 import {
     AnyType,
     ClassType,
     ClassTypeFlags,
+    combineTypes,
     DataClassBehaviors,
     EnumLiteral,
+    findSubtype,
     FunctionParam,
     FunctionParamFlags,
     FunctionType,
     FunctionTypeFlags,
     InheritanceChain,
-    LiteralValue,
-    ModuleType,
-    NeverType,
-    OverloadedType,
-    ParamSpecType,
-    TupleTypeArg,
-    Type,
-    TypeBase,
-    TypeCategory,
-    TypeCondition,
-    TypeVarKind,
-    TypeVarScopeId,
-    TypeVarScopeType,
-    TypeVarTupleType,
-    TypeVarType,
-    TypedDictEntries,
-    UnboundType,
-    UnionType,
-    UnknownType,
-    Variance,
-    combineTypes,
-    findSubtype,
     isAny,
     isAnyOrUnknown,
     isClass,
@@ -274,21 +254,38 @@ import {
     isUnpacked,
     isUnpackedClass,
     isUnpackedTypeVarTuple,
+    LiteralValue,
     maxTypeRecursionCount,
+    ModuleType,
+    NeverType,
+    OverloadedType,
+    ParamSpecType,
     removeFromUnion,
     removeUnbound,
+    TupleTypeArg,
+    Type,
+    TypeBase,
+    TypeCategory,
+    TypeCondition,
+    TypedDictEntries,
+    TypeVarKind,
+    TypeVarScopeId,
+    TypeVarScopeType,
+    TypeVarTupleType,
+    TypeVarType,
+    UnboundType,
+    UnionType,
+    UnknownType,
+    Variance,
 } from './types';
 import {
-    AssignTypeFlags,
-    ClassMember,
-    InferenceContext,
-    MemberAccessFlags,
-    UniqueSignatureTracker,
     addConditionToType,
     addTypeVarsToListIfUnique,
     applySolvedTypeVars,
     areTypesSame,
+    AssignTypeFlags,
     buildSolutionFromSpecializedClass,
+    ClassMember,
     combineSameSizedTuples,
     combineVariances,
     computeMroLinearization,
@@ -316,11 +313,13 @@ import {
     getTypeVarScopeIds,
     getUnknownForTypeVar,
     getUnknownTypeForCallable,
+    InferenceContext,
     isDescriptorInstance,
     isEffectivelyInstantiable,
     isEllipsisType,
     isIncompleteUnknown,
     isInstantiableMetaclass,
+    isLiteralLikeType,
     isLiteralType,
     isMaybeDescriptorInstance,
     isMetaclassInstance,
@@ -344,6 +343,7 @@ import {
     makeTypeVarsFree,
     mapSignatures,
     mapSubtypes,
+    MemberAccessFlags,
     partiallySpecializeType,
     preserveUnknown,
     removeNoneFromUnion,
@@ -359,6 +359,7 @@ import {
     synthesizeTypeVarForSelfCls,
     transformExpectedType,
     transformPossibleRecursiveTypeAlias,
+    UniqueSignatureTracker,
     validateTypeVarDefault,
 } from './typeUtils';
 import { Commands } from '../commands/commands';
@@ -1709,7 +1710,7 @@ export function createTypeEvaluator(
         return mapSubtypes(type, (subtype) => {
             if (isClass(subtype)) {
                 if (subtype.priv.literalValue !== undefined) {
-                    return ClassType.cloneWithLiteral(subtype, /* value */ undefined);
+                    subtype = ClassType.cloneWithLiteral(subtype, /* value */ undefined);
                 }
 
                 if (ClassType.isBuiltIn(subtype, 'LiteralString')) {
@@ -15701,8 +15702,7 @@ export function createTypeEvaluator(
         };
     }
 
-    // Enforces metadata consistency as specified in PEP 746 and associates
-    // refinement type predicates with the base type.
+    // Enforces metadata consistency as specified in PEP 746.
     function validateAnnotatedMetadata(
         errorNode: ExpressionNode,
         baseType: Type,
@@ -21370,7 +21370,7 @@ export function createTypeEvaluator(
                     // Synthesize an alias declaration for this name part. The only
                     // time this case is used is for IDE services such as
                     // the find all references, hover provider and etc.
-                    declarations.push(createSynthesizedAliasDeclaration(importInfo.resolvedUris[namePartIndex]));
+                    declarations.push(synthesizeAliasDeclaration(importInfo.resolvedUris[namePartIndex]));
                 }
             }
         } else if (node.parent && node.parent.nodeType === ParseNodeType.Argument && node === node.parent.d.name) {
@@ -23295,15 +23295,11 @@ export function createTypeEvaluator(
 
         // If we're enforcing invariance, literal types must match.
         if ((flags & AssignTypeFlags.Invariant) !== 0) {
-            const srcIsLiteral = srcType.priv.literalValue !== undefined;
-            const destIsLiteral = destType.priv.literalValue !== undefined;
+            const srcIsLiteral = isLiteralLikeType(srcType);
+            const destIsLiteral = isLiteralLikeType(destType);
+
             if (srcIsLiteral !== destIsLiteral) {
                 return false;
-            }
-        } else {
-            // If the dest is an 'object', it's assignable.
-            if (ClassType.isBuiltIn(destType, 'object')) {
-                return true;
             }
         }
 
@@ -23350,15 +23346,6 @@ export function createTypeEvaluator(
             }
 
             prevSrcType = curSrcType;
-        }
-
-        // If we're enforcing invariance, literal types must match as well.
-        if ((flags & AssignTypeFlags.Invariant) !== 0) {
-            const srcIsLiteral = srcType.priv.literalValue !== undefined;
-            const destIsLiteral = destType.priv.literalValue !== undefined;
-            if (srcIsLiteral !== destIsLiteral) {
-                return false;
-            }
         }
 
         // Handle tuple, which supports a variable number of type arguments.
@@ -24042,7 +24029,10 @@ export function createTypeEvaluator(
                     return true;
                 }
 
-                if (destType.priv.literalValue !== undefined) {
+                if (
+                    destType.priv.literalValue !== undefined &&
+                    ClassType.isSameGenericClass(destType, concreteSrcType)
+                ) {
                     const srcLiteral = concreteSrcType.priv.literalValue;
                     if (srcLiteral === undefined || !ClassType.isLiteralValueSame(concreteSrcType, destType)) {
                         diag?.addMessage(
@@ -25305,13 +25295,24 @@ export function createTypeEvaluator(
                 }
             }
 
-            if (destParam.defaultType && !srcParam.defaultType && paramIndex !== srcParamDetails.argsIndex) {
-                diag?.createAddendum().addMessage(
-                    LocAddendum.functionParamDefaultMissing().format({
-                        name: srcParamName,
-                    })
-                );
-                canAssign = false;
+            if (destParam.defaultType) {
+                if (!srcParam.defaultType && paramIndex !== srcParamDetails.argsIndex) {
+                    diag?.createAddendum().addMessage(
+                        LocAddendum.functionParamDefaultMissing().format({
+                            name: srcParamName,
+                        })
+                    );
+                    canAssign = false;
+                }
+
+                // If we're performing a partial overload match and both the source
+                // and dest parameters provide defaults, assume that there could
+                // be a match.
+                if ((flags & AssignTypeFlags.PartialOverloadOverlap) !== 0) {
+                    if (srcParam.defaultType) {
+                        continue;
+                    }
+                }
             }
 
             // Handle the special case of an overloaded __init__ method whose self
@@ -25432,7 +25433,9 @@ export function createTypeEvaluator(
                             recursionCount
                         )
                     ) {
-                        canAssign = false;
+                        if ((flags & AssignTypeFlags.PartialOverloadOverlap) === 0) {
+                            canAssign = false;
+                        }
                     }
 
                     continue;
@@ -25511,6 +25514,17 @@ export function createTypeEvaluator(
                 let adjDestPositionalCount = destPositionalCount;
                 if (destParamDetails.argsIndex !== undefined && destParamDetails.argsIndex < destPositionalCount) {
                     adjDestPositionalCount--;
+                }
+
+                // If we're doing a partial overload overlap check, ignore dest positional
+                // params with default values.
+                if ((flags & AssignTypeFlags.PartialOverloadOverlap) !== 0) {
+                    while (
+                        adjDestPositionalCount > 0 &&
+                        destParamDetails.params[adjDestPositionalCount - 1].defaultType
+                    ) {
+                        adjDestPositionalCount--;
+                    }
                 }
 
                 if (srcPositionalCount < adjDestPositionalCount) {
@@ -25653,7 +25667,9 @@ export function createTypeEvaluator(
                                             recursionCount
                                         )
                                     ) {
-                                        canAssign = false;
+                                        if ((flags & AssignTypeFlags.PartialOverloadOverlap) === 0) {
+                                            canAssign = false;
+                                        }
                                     }
                                 }
                             } else {
@@ -27009,9 +27025,18 @@ export function createTypeEvaluator(
         // evaluating (and caching) the inferred return type if there is no defined return type.
         getEffectiveReturnType(memberType);
 
-        const specializedFunction = solveAndApplyConstraints(memberType, constraints) as FunctionType;
+        const specializedFunction = solveAndApplyConstraints(memberType, constraints);
+        if (isFunction(specializedFunction)) {
+            return FunctionType.clone(specializedFunction, stripFirstParam, baseType);
+        }
 
-        return FunctionType.clone(specializedFunction, stripFirstParam, baseType);
+        if (isOverloaded(specializedFunction)) {
+            // For overloaded functions, use the first overload. This isn't
+            // strictly correct, but this is an extreme edge case.
+            return FunctionType.clone(OverloadedType.getOverloads(specializedFunction)[0], stripFirstParam, baseType);
+        }
+
+        return undefined;
     }
 
     function isFinalVariable(symbol: Symbol): boolean {
@@ -27258,11 +27283,16 @@ export function createTypeEvaluator(
         );
 
         if (parseResults.parseTree) {
+            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
             parseResults.diagnostics.forEach((diag) => {
-                addDiagnosticWithSuppressionCheck('error', diag.message, node);
+                fileInfo.diagnosticSink.addDiagnosticWithTextRange('error', diag.message, node);
             });
 
             parseResults.parseTree.parent = node;
+
+            // Add the new subtree to the parse tree so it can participate in
+            // language server operations like find and replace.
+            node.d.annotation = parseResults.parseTree;
             return parseResults.parseTree;
         }
 

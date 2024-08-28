@@ -62,7 +62,7 @@ The following settings determine how different types should be evaluated.
 
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
 
-- <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior. The default value for this setting is `false`.
+- <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior. The default value for this setting is `true`.
 
 ## Type Check Diagnostics Settings
 The following settings control pyright’s diagnostic output (warnings or errors).
@@ -385,10 +385,10 @@ note that some settings which are enabled by default in pyright are disabled by 
 | Diagnostic Rule                          | Off           | Basic         | Standard      | Strict        | All     |
 |:-----------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|
 | analyzeUnannotatedFunctions              | true          | true          | true          | true          | true    |
+| disableBytesTypePromotions               | true          | true          | true          | true          | true    |
 | strictParameterNoneValue                 | false         | true          | true          | true          | true    |
 | enableTypeIgnoreComments                 | true          | true          | true          | true          | false   |
 | enableReachabilityAnalysis               | false         | true          | true          | true          | true    |
-| disableBytesTypePromotions               | false         | false         | false         | true          | true    |
 | strictListInference                      | false         | false         | false         | true          | true    |
 | strictDictionaryInference                | false         | false         | false         | true          | true    |
 | strictSetInference                       | false         | false         | false         | true          | true    |
