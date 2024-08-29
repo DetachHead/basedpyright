@@ -3,7 +3,8 @@ import { FileDiagnostics } from './common/diagnosticSink';
 import { Range } from './common/textRange';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { Uri } from './common/uri/uri';
-import { DiagnosticCategory } from './common/diagnostic';
+import { convertLevelToCategory, Diagnostic, DiagnosticCategory } from './common/diagnostic';
+import { extraOptionDiagnosticRules } from './common/configOptions';
 
 interface BaselineFile {
     files: {
@@ -79,33 +80,55 @@ export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
     return JSON.parse(baselineFileContents);
 };
 
+interface FileDiagnosticsWithBaselineInfo extends FileDiagnostics {
+    containsNewErrors: boolean;
+}
+
 export const filterOutBaselinedDiagnostics = (
     rootDir: Uri,
     filesWithDiagnostics: readonly FileDiagnostics[]
-): FileDiagnostics[] => {
+): FileDiagnosticsWithBaselineInfo[] => {
     const baselineFile = getBaselinedErrors(rootDir);
     return filesWithDiagnostics.map((fileWithDiagnostics) => {
         const baselinedErrorsForFile =
             baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
         if (!baselinedErrorsForFile) {
-            return fileWithDiagnostics;
+            return { ...fileWithDiagnostics, containsNewErrors: true };
         }
-        return {
-            ...fileWithDiagnostics,
-            diagnostics: fileWithDiagnostics.diagnostics.filter((diagnostic) => {
-                const matchedIndex = baselinedErrorsForFile.findIndex(
-                    (baselinedError) =>
-                        baselinedError.code === diagnostic.getRule() &&
-                        baselinedError.range.start.character === diagnostic.range.start.character &&
-                        baselinedError.range.end.character === diagnostic.range.end.character
-                );
-                if (matchedIndex >= 0) {
-                    baselinedErrorsForFile.splice(matchedIndex, 1);
-                    return false;
-                } else {
-                    return true;
+        const filteredDiagnostics = [];
+        let containsNewErrors = false;
+        for (let diagnostic of fileWithDiagnostics.diagnostics) {
+            const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
+            const matchedIndex = baselinedErrorsForFile.findIndex(
+                (baselinedError) =>
+                    baselinedError.code === diagnosticRule &&
+                    baselinedError.range.start.character === diagnostic.range.start.character &&
+                    baselinedError.range.end.character === diagnostic.range.end.character
+            );
+            if (matchedIndex >= 0) {
+                baselinedErrorsForFile.splice(matchedIndex, 1);
+                // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic level to that instead
+                // TODO: should we only baseline errors and not warnings/notes?
+                if (diagnosticRule) {
+                    for (const { name, get } of extraOptionDiagnosticRules) {
+                        if (get().includes(diagnosticRule)) {
+                            diagnostic = new Diagnostic(
+                                convertLevelToCategory(name),
+                                diagnostic.message,
+                                diagnostic.range,
+                                diagnostic.priority
+                            );
+                            filteredDiagnostics.push(diagnostic);
+                            // none of these rules should have multiple extra diagnostic levels so we break after the first match
+                            break;
+                        }
+                    }
                 }
-            }),
-        };
+            } else {
+                containsNewErrors = true;
+                filteredDiagnostics.push(diagnostic);
+            }
+        }
+        return { ...fileWithDiagnostics, diagnostics: filteredDiagnostics, containsNewErrors };
     });
 };
