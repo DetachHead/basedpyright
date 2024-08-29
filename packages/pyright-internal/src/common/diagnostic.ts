@@ -9,7 +9,7 @@
 
 import { Commands } from '../commands/commands';
 import { appendArray } from './collectionUtils';
-import { DiagnosticLevel } from './configOptions';
+import { LspDiagnosticLevel } from './configOptions';
 import { Range, TextRange } from './textRange';
 import { Uri } from './uri/uri';
 
@@ -43,7 +43,7 @@ export const enum DiagnosticCategory {
     TaskItem,
 }
 
-export function convertLevelToCategory(level: DiagnosticLevel) {
+export function convertLevelToCategory(level: LspDiagnosticLevel) {
     switch (level) {
         case 'error':
             return DiagnosticCategory.Error;
@@ -54,7 +54,17 @@ export function convertLevelToCategory(level: DiagnosticLevel) {
         case 'information':
             return DiagnosticCategory.Information;
 
+        case 'unreachable':
+            return DiagnosticCategory.UnreachableCode;
+
+        case 'unused':
+            return DiagnosticCategory.UnusedCode;
+
+        case 'deprecated':
+            return DiagnosticCategory.Deprecated;
+
         default:
+            level satisfies 'none';
             throw new Error(`${level} is not expected`);
     }
 }
