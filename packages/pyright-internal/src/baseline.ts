@@ -8,7 +8,6 @@ interface BaselineFile {
     files: {
         [filePath: string]: {
             code: DiagnosticRule | undefined;
-            message: string;
             range: Range;
         }[];
     };
@@ -31,7 +30,6 @@ export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDi
         baselineData.files[filePath].push(
             ...fileWithDiagnostics.diagnostics.map((diagnostic) => ({
                 code: diagnostic.getRule() as DiagnosticRule | undefined,
-                message: diagnostic.message,
                 range: diagnostic.range,
             }))
         );
@@ -88,7 +86,6 @@ export const filterOutBaselinedDiagnostics = (
             diagnostics: fileWithDiagnostics.diagnostics.filter((diagnostic) => {
                 const matchedIndex = baselinedErrorsForFile.findIndex(
                     (baselinedError) =>
-                        baselinedError.message === diagnostic.message &&
                         baselinedError.code === diagnostic.getRule() &&
                         baselinedError.range.start.character === diagnostic.range.start.character &&
                         baselinedError.range.end.character === diagnostic.range.end.character
