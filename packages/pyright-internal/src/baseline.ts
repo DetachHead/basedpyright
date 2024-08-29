@@ -3,6 +3,7 @@ import { FileDiagnostics } from './common/diagnosticSink';
 import { Range } from './common/textRange';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { Uri } from './common/uri/uri';
+import { DiagnosticCategory } from './common/diagnostic';
 
 interface BaselineFile {
     files: {
@@ -21,14 +22,22 @@ export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDi
     };
     for (const fileWithDiagnostics of filesWithDiagnostics) {
         const filePath = rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString();
-        if (!fileWithDiagnostics.diagnostics.length) {
+        const errorDiagnostics = fileWithDiagnostics.diagnostics.filter(
+            (diagnostic) =>
+                ![
+                    DiagnosticCategory.Deprecated,
+                    DiagnosticCategory.UnreachableCode,
+                    DiagnosticCategory.UnusedCode,
+                ].includes(diagnostic.category)
+        );
+        if (!errorDiagnostics.length) {
             continue;
         }
         if (!(filePath in baselineData.files)) {
             baselineData.files[filePath] = [];
         }
         baselineData.files[filePath].push(
-            ...fileWithDiagnostics.diagnostics.map((diagnostic) => ({
+            ...errorDiagnostics.map((diagnostic) => ({
                 code: diagnostic.getRule() as DiagnosticRule | undefined,
                 range: diagnostic.range,
             }))
