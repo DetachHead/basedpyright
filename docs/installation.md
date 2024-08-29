@@ -2,28 +2,30 @@
 
 ## Command-line & language server
 
+### pipi package (recommended)
+
 unlike pyright, the basedpyright CLI & LSP are available as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package.
 
 this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:
 
 <!-- tabs:start -->
 
+### **uv**
+
+add it to your project's dev dependencies (recommended):
+```
+uv add --dev basedpyright
+```
+
+or just install it:
+```
+uv pip install basedpyright
+```
+
 ### **pdm**
 
 ```
-pdm add basedpyright
-```
-
-### **rye**
-
-```
-rye add basedpyright
-```
-
-### **uv**
-
-```
-uv pip install basedpyright
+pdm add --dev basedpyright
 ```
 
 ### **pip**
@@ -31,13 +33,28 @@ uv pip install basedpyright
 ```
 pip install basedpyright
 ```
+
+<!-- tabs:end -->
+
+### other installation methods
+
+the basedpyright CLI & language server is also available outside of pypi:
+
+<!-- tabs:start -->
+
 ### **homebrew**
 
 ```
 brew install basedpyright
 ```
 
+### **nixOS**
+
+[see here](https://search.nixos.org/packages?channel=unstable&show=basedpyright)
+
 <!-- tabs:end -->
+
+### usage
 
 once installed, the `basedpyright` and `basedpyright-langserver` scripts will be available in your python environment. when running basedpyright via the command line, use the `basedpyright` command:
 
@@ -52,7 +69,12 @@ for instructions on how to use `basedpyright-langserver`, see the [IDE-specific 
 most of these IDE plugins require [the pypi package to be installed](#command-line--language-server).
 
 ### VS Code
-install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright) or [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
+
+install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+
+### VSCodium
+
+install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
 ### Neovim
 You need to install the LSP client addapter plugin,

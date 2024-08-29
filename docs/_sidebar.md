@@ -1,6 +1,8 @@
 - Getting Started
 
   - [Installation](installation.md)
+    - [Command-line & language server](installation.md#command-line--language-server)
+    - [IDEs](installation.md#ides)
   - [Getting Started](getting-started.md)
   - [Static Typing](type-concepts.md)
   - [Features](features.md)
