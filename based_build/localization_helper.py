@@ -1,5 +1,3 @@
-# pyright: reportImplicitOverride=false, reportUninitializedInstanceVariable=false
-
 from __future__ import annotations
 
 import json
@@ -60,7 +58,7 @@ def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
 class LocDataTree(Tree[str]):
     _locnode: ClassVar[dict[str, TreeNode[str]]] = {}
     temp_comp = None
-    lang: str
+    lang: str = "en-us"
 
     def compose(self) -> ComposeResult:
         self.show_root = False
@@ -121,24 +119,24 @@ class MsgDiffReport(Screen[None]):
 
     def compose(self) -> ComposeResult:
         self.styles.align = "center", "middle"
-        self.report = Label()
-        self.report.styles.width = "70%"
-        self.report.styles.height = "70%"
-        self.report.styles.border = "solid", Color.parse("gray")
-        self.report.border_title = "Message Keys Difference Report"
-        self.compare()
-        yield self.report
+        self.styles.background = Color(0, 0, 0, 0)
+        yield (report := Label())
+        report.styles.width = "70%"
+        report.styles.height = "70%"
+        report.styles.border = "solid", Color.parse("gray")
+        report.border_title = "Message Keys Difference Report (Press 'c' to close this report)"
+        self.compare(report)
 
-    def compare(self):
+    def compare(self, report: Label):
         if self.lang == "en-us":
-            self.report.renderable = "'en-us' is already the original file."
+            report.renderable = "'en-us' is already the original file."
             return
         with get_locfile(self.lang).open() as f:
             data: dict[str, LocMessages] = json.load(f)
         msgs: list[str] = []
         for origdom, origmsgs in LOCDATA_EN_US.items():
             msgs += ["", f"[{origdom}]", diff_keys(origmsgs, data.get(origdom, {}))]
-        self.report.renderable = "\n".join(msgs)
+        report.renderable = "\n".join(msgs)
 
 
 class HelperTUI(App[None]):
@@ -153,11 +151,9 @@ class HelperTUI(App[None]):
         """Create child widgets for the app."""
         yield Header()
         yield Footer()
-        self.tabs = Tabs(*ALL_LANGUAGES)
-        yield self.tabs
-        self.loctree: LocDataTree = LocDataTree("loctree")
-        self.loctree.load_data(self.tabs.active_tab.label_text if self.tabs.active_tab else "en-us")
-        yield self.loctree
+        yield (tabs := Tabs(*ALL_LANGUAGES))
+        yield (loctree := LocDataTree("loctree"))
+        loctree.load_data(tabs.active_tab.label_text if tabs.active_tab else "en-us")
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
@@ -165,17 +161,20 @@ class HelperTUI(App[None]):
 
     @work
     async def action_popup_keydiff(self) -> None:
-        self.keydiff = MsgDiffReport()
-        self.keydiff.lang = self.tabs.active_tab.label_text if self.tabs.active_tab else "en-us"
-        self.install_screen(self.keydiff, "keydiff")  # pyright: ignore[reportUnknownMemberType]
-        await self.push_screen_wait(self.keydiff)
-        _ = self.uninstall_screen(self.keydiff)  # pyright: ignore[reportUnknownMemberType]
+        keydiff = MsgDiffReport()
+        tabs = self.query_one(Tabs)
+        keydiff.lang = tabs.active_tab.label_text if tabs.active_tab else "en-us"
+        self.install_screen(keydiff, "keydiff")  # pyright: ignore[reportUnknownMemberType]
+        await self.push_screen_wait(keydiff)
+        _ = self.uninstall_screen(keydiff)  # pyright: ignore[reportUnknownMemberType]
 
     def on_tabs_tab_activated(self) -> None:
-        if self.loctree.temp_comp:
-            self.loctree.temp_comp.remove()
-            self.loctree.temp_comp = None
-        self.loctree.load_data(self.tabs.active_tab.label_text if self.tabs.active_tab else "en-us")
+        tree = self.query_one(LocDataTree)
+        if tree.temp_comp:
+            tree.temp_comp.remove()
+            tree.temp_comp = None
+        tabs = self.query_one(Tabs)
+        tree.load_data(tabs.active_tab.label_text if tabs.active_tab else "en-us")
 
 
 if __name__ == "__main__":
