@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 from rich.highlighter import ReprHighlighter
 from rich.text import Text
@@ -31,7 +31,7 @@ class _LocMsgComment(TypedDict):
     comment: str
 
 
-LocMessages = Dict[str, "str | _LocMsgComment"]
+LocMessages = dict[str, "str | _LocMsgComment"]
 
 
 def get_locfile(language: str = "en-us"):
@@ -39,7 +39,7 @@ def get_locfile(language: str = "en-us"):
 
 
 with get_locfile().open(encoding="utf8") as f:
-    LOCDATA_EN_US: Dict[str, LocMessages] = json.load(f)  # noqa: UP006
+    LOCDATA_EN_US: dict[str, LocMessages] = json.load(f)
 
 
 def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
@@ -58,7 +58,7 @@ def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
 
 
 class LocDataTree(Tree[str]):
-    _locnode: ClassVar[Dict[str, TreeNode[str]]] = {}  # noqa: UP006
+    _locnode: ClassVar[dict[str, TreeNode[str]]] = {}
     temp_comp = None
     lang: str
 
@@ -73,14 +73,6 @@ class LocDataTree(Tree[str]):
         node.set_label(label)
 
     def add_node(self, name: str, data: LocMessages, node: TreeNode[str] | None = None) -> None:
-        """Adds a node to the tree.
-
-        Args:
-        ----
-            name: Name of the node.
-            node: Parent node.f"{{}} {name}"
-            data: Data associated with the node.
-        """
         if name in self._locnode:
             node = self._locnode[name]
             node.remove_children()
