@@ -38,7 +38,7 @@ def get_locfile(language: str = "en-us"):
     return LOCFILES_BASE / f"package.nls.{language}.json"
 
 
-with get_locfile().open() as f:
+with get_locfile().open(encoding="utf8") as f:
     LOCDATA_EN_US: Dict[str, LocMessages] = json.load(f)  # noqa: UP006
 
 
@@ -77,10 +77,9 @@ class LocDataTree(Tree[str]):
 
         Args:
         ----
-            name (str): Name of the node.
-            node (TreeNode): Parent node.f"{{}} {name}"
-            data (object): Data associated with the node.
-
+            name: Name of the node.
+            node: Parent node.f"{{}} {name}"
+            data: Data associated with the node.
         """
         if name in self._locnode:
             node = self._locnode[name]
@@ -98,7 +97,7 @@ class LocDataTree(Tree[str]):
 
     def load_data(self, lang: str = "en-us"):
         self.lang = lang
-        with get_locfile(lang).open() as f:
+        with get_locfile(lang).open(encoding="utf8") as f:
             data: dict[str, LocMessages] = json.load(f)
             for dom, dat in data.items():
                 self.add_node(dom, dat)

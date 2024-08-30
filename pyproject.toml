@@ -16,8 +16,10 @@ dev = [
     "pytest-github-actions-annotate-failures>=0.2.0",
     "basedtyping>=0.1.4",
 ]
-# these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
-docstubs = ["docify>=1.0.0"]
+docstubs = [
+    # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
+    "docify>=1.0.0"
+]
 lochelper = ["textual>=0.78.0"]
 
 [tool.pdm.version]
