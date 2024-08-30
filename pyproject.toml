@@ -18,9 +18,9 @@ dev = [
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
-    "docify>=1.0.0"
+    "docify>=1.0.0",
 ]
-lochelper = ["textual>=0.78.0"]
+lochelper = ["rich>=13.8.0", "textual>=0.78.0"]
 
 [tool.pdm.version]
 source = "call"
