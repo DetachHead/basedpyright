@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union, cast
 
 from rich.highlighter import ReprHighlighter
 from rich.text import Text
@@ -33,12 +33,12 @@ class _LocMsgComment(TypedDict):
 LocMessages = Dict[str, Union[str, _LocMsgComment]]
 
 
-def get_locfile(language: str = "en-us"):
-    return LOCFILES_BASE / f"package.nls.{language}.json"
+def read_locfile(language: str = "en-us") -> dict[str, LocMessages]:
+    with (LOCFILES_BASE / f"package.nls.{language}.json").open(encoding="utf8") as f:
+        return cast(dict[str, LocMessages], json.load(f))
 
 
-with get_locfile().open(encoding="utf8") as compare_base:
-    LOCDATA_EN_US: dict[str, LocMessages] = json.load(compare_base)
+LOCDATA_EN_US = read_locfile()
 
 
 def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
@@ -89,10 +89,9 @@ class LocDataTree(Tree[str]):
 
     def load_data(self, lang: str = "en-us"):
         self.lang = lang
-        with get_locfile(lang).open(encoding="utf8") as f:
-            data: dict[str, LocMessages] = json.load(f)
-            for dom, dat in data.items():
-                self.add_node(dom, dat)
+        data = read_locfile(lang)
+        for dom, dat in data.items():
+            self.add_node(dom, dat)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected[str]) -> None:
         if self.lang == "en-us":
@@ -134,8 +133,7 @@ class MsgDiffReport(Screen[None]):
         if self.lang == "en-us":
             report.renderable = "'en-us' is already the original file."
             return
-        with get_locfile(self.lang).open() as f:
-            data: dict[str, LocMessages] = json.load(f)
+        data = read_locfile(self.lang)
         msgs: list[str] = []
         for origdom, origmsgs in LOCDATA_EN_US.items():
             msgs += ["", f"[{origdom}]", diff_keys(origmsgs, data.get(origdom, {}))]
