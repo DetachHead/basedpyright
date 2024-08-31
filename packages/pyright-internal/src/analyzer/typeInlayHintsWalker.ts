@@ -16,7 +16,6 @@ import {
 import { isLiteralType } from './typeUtils';
 import { TextRange } from '../common/textRange';
 import { convertRangeToTextRange } from '../common/positionUtils';
-import { TextRangeCollection } from '../common/textRangeCollection';
 import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
 
@@ -82,16 +81,17 @@ function isLeftSideOfAssignment(node: ParseNode): boolean {
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
-    parseResults: ParseFileResults | undefined;
-    lines: TextRangeCollection<TextRange>;
+    parseResults?: ParseFileResults;
     private _range: TextRange | undefined;
 
     constructor(private readonly _program: ProgramView, fileUri: Uri, range?: Range) {
         super();
         this.parseResults = this._program.getParseResults(fileUri);
-        this.lines = this.parseResults!.tokenizerOutput.lines;
-        if (range) {
-            this._range = convertRangeToTextRange(range, this.lines);
+        if (this.parseResults) {
+            const lines = this.parseResults.tokenizerOutput.lines;
+            if (range && lines) {
+                this._range = convertRangeToTextRange(range, lines);
+            }
         }
     }
 
