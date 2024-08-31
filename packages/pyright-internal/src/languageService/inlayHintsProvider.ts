@@ -14,14 +14,15 @@ export class InlayHintsProvider {
     }
 
     async onInlayHints(): Promise<InlayHint[] | null> {
-        if (!this._walker.parseResults) {
+        const parseResults = this._walker.parseResults;
+        if (!parseResults) {
             return null;
         }
-        this._walker.walk(this._walker.parseResults.parserOutput.parseTree);
+        this._walker.walk(parseResults.parserOutput.parseTree);
 
         return this._walker.featureItems.map((item) => ({
             label: [InlayHintLabelPart.create(item.value)],
-            position: convertOffsetToPosition(item.position, this._walker.lines),
+            position: convertOffsetToPosition(item.position, parseResults.tokenizerOutput.lines),
             paddingLeft: item.inlayHintType === 'functionReturn',
             kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
         }));
