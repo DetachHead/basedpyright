@@ -37,8 +37,8 @@ def get_locfile(language: str = "en-us"):
     return LOCFILES_BASE / f"package.nls.{language}.json"
 
 
-with get_locfile().open(encoding="utf8") as f:
-    LOCDATA_EN_US: dict[str, LocMessages] = json.load(f)
+with get_locfile().open(encoding="utf8") as compare_base:
+    LOCDATA_EN_US: dict[str, LocMessages] = json.load(compare_base)
 
 
 def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
