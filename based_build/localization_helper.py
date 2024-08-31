@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union
 
 from rich.highlighter import ReprHighlighter
 from rich.text import Text
@@ -30,7 +30,7 @@ class _LocMsgComment(TypedDict):
     comment: str
 
 
-LocMessages = dict[str, "str | _LocMsgComment"]
+LocMessages = Dict[str, Union[str, _LocMsgComment]]
 
 
 def get_locfile(language: str = "en-us"):
