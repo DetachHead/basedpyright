@@ -11,6 +11,7 @@ from textual.app import App, ComposeResult
 from textual.color import Color
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Label, Tabs, Tree
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from textual.widgets.tree import TreeNode
@@ -60,6 +61,7 @@ class LocDataTree(Tree[str]):
     temp_comp = None
     lang: str = "en-us"
 
+    @override
     def compose(self) -> ComposeResult:
         self.show_root = False
         yield from super().compose()
@@ -117,6 +119,7 @@ class MsgDiffReport(Screen[None]):
     BINDINGS: ClassVar = [("c", "dismiss()")]
     lang = "en-us"
 
+    @override
     def compose(self) -> ComposeResult:
         self.styles.align = "center", "middle"
         self.styles.background = Color(0, 0, 0, 0)
@@ -147,6 +150,7 @@ class HelperTUI(App[None]):
     ]
     TITLE = "BasedPyright Localization Helper"
 
+    @override
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Header()
@@ -155,6 +159,7 @@ class HelperTUI(App[None]):
         yield (loctree := LocDataTree("loctree"))
         loctree.load_data(tabs.active_tab.label_text if tabs.active_tab else "en-us")
 
+    @override
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
         self.dark = not self.dark
