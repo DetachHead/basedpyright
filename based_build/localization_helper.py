@@ -147,6 +147,7 @@ class HelperTUI(App[None]):
         ("q", "quit()", "Quit program"),
         ("d", "toggle_dark", "Toggle dark mode"),
         ("c", "popup_keydiff", "Compare message keys differences"),
+        ("r", "reload_tree", "Reload messages"),
     ]
     TITLE = "BasedPyright Localization Helper"
 
@@ -173,13 +174,16 @@ class HelperTUI(App[None]):
         await self.push_screen_wait(keydiff)
         _ = self.uninstall_screen(keydiff)  # pyright: ignore[reportUnknownMemberType]
 
-    def on_tabs_tab_activated(self) -> None:
+    def action_reload_tree(self) -> None:
         tree = self.query_one(LocDataTree)
         if tree.temp_comp:
             tree.temp_comp.remove()
             tree.temp_comp = None
         tabs = self.query_one(Tabs)
         tree.load_data(tabs.active_tab.label_text if tabs.active_tab else "en-us")
+
+    def on_tabs_tab_activated(self) -> None:
+        self.action_reload_tree()
 
 
 if __name__ == "__main__":
