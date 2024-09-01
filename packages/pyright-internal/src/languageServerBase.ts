@@ -579,8 +579,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         // Create a service instance for each of the workspace folders.
         this.workspaceFactory.handleInitialize(params);
-        // Bug? Or do we need to send another event always?
-        this.updateSettingsForAllWorkspaces();
 
         if (this.client.hasWatchFileCapability) {
             this.addDynamicFeature(
