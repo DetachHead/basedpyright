@@ -214,15 +214,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : error;
-            // workaround for https://github.com/DetachHead/basedpyright/issues/573
-            if (errorMessage === 'Unhandled method workspace/configuration') {
-                this.console.error(`Error reading settings: ${error}`);
-            } else {
-                this.connection.sendNotification(ShowMessageNotification.type, {
-                    message: errorMessage,
-                    type: MessageType.Error,
-                });
-            }
+            this.connection.sendNotification(ShowMessageNotification.type, {
+                message: errorMessage,
+                type: MessageType.Error,
+            });
         }
         return serverSettings;
     }
