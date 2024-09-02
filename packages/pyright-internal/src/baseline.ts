@@ -6,12 +6,14 @@ import { Uri } from './common/uri/uri';
 import { convertLevelToCategory, Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { extraOptionDiagnosticRules } from './common/configOptions';
 
+interface BaselinedDiagnostic {
+    code: DiagnosticRule | undefined;
+    range: Range;
+}
+
 interface BaselineFile {
     files: {
-        [filePath: string]: {
-            code: DiagnosticRule | undefined;
-            range: Range;
-        }[];
+        [filePath: string]: BaselinedDiagnostic[];
     };
 }
 
@@ -81,7 +83,7 @@ export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
 };
 
 interface FileDiagnosticsWithBaselineInfo extends FileDiagnostics {
-    containsNewErrors: boolean;
+    alreadyBaselinedDiagnostics: BaselinedDiagnostic[];
 }
 
 export const filterOutBaselinedDiagnostics = (
@@ -93,10 +95,10 @@ export const filterOutBaselinedDiagnostics = (
         const baselinedErrorsForFile =
             baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
         if (!baselinedErrorsForFile) {
-            return { ...fileWithDiagnostics, containsNewErrors: true };
+            return { ...fileWithDiagnostics, alreadyBaselinedDiagnostics: [] };
         }
+        const originalBaselinedErrorsForFile = [...baselinedErrorsForFile];
         const filteredDiagnostics = [];
-        let containsNewErrors = false;
         for (let diagnostic of fileWithDiagnostics.diagnostics) {
             const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
             const matchedIndex = baselinedErrorsForFile.findIndex(
@@ -125,10 +127,13 @@ export const filterOutBaselinedDiagnostics = (
                     }
                 }
             } else {
-                containsNewErrors = true;
                 filteredDiagnostics.push(diagnostic);
             }
         }
-        return { ...fileWithDiagnostics, diagnostics: filteredDiagnostics, containsNewErrors };
+        return {
+            ...fileWithDiagnostics,
+            diagnostics: filteredDiagnostics,
+            alreadyBaselinedDiagnostics: originalBaselinedErrorsForFile,
+        };
     });
 };

@@ -1166,7 +1166,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const baselineFile = getBaselinedErrors(rootUri);
         const fileKey = rootUri.getRelativePath(fileUri)!;
         const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
-        if (diagnosticsForFile && filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0].containsNewErrors) {
+        if (
+            diagnosticsForFile &&
+            diagnosticsForFile.diagnostics.length >
+                filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0].alreadyBaselinedDiagnostics.length
+        ) {
             // there are new diagnostics that haven't been baselined, so we don't want to write them
             // because the user will have to either fix the diagnostics or explicitly write them to the
             // baseline themselves
