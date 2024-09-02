@@ -48,7 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { filterOutBaselinedDiagnostics, writeDiagnosticsToBaselineFile } from './baseline';
+import { baselineFilePath, filterOutBaselinedDiagnostics, writeDiagnosticsToBaselineFile } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -478,10 +478,36 @@ async function runSingleThreaded(
             typeof options.executionRoot === 'string' || options.executionRoot === undefined
                 ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
                 : options.executionRoot;
-        if (args.writebaseline) {
-            writeDiagnosticsToBaselineFile(rootDir, results.diagnostics, false);
+        const allDiagnostics = results.diagnostics;
+        const filteredDiagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
+        if (args.writebaseline || !filteredDiagnostics.length) {
+            writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
+            const previousErrorCount = filteredDiagnostics
+                .flatMap((file) => file.alreadyBaselinedDiagnostics.length)
+                .reduce((prev, next) => prev + next);
+            const newErrorCount = allDiagnostics
+                .flatMap((file) => file.diagnostics.length)
+                .reduce((prev, next) => prev + next);
+            const diff = newErrorCount - previousErrorCount;
+            let message = '';
+            if (diff === 0) {
+                message += "error count didn't change";
+            } else if (diff > 0) {
+                message += `went up by ${diff}`;
+            } else {
+                message += `went down by ${diff * -1}`;
+            }
+            const totalErrorCount = allDiagnostics
+                .map((file) => file.diagnostics.length)
+                .reduce((prev, count) => prev + count);
+            console.info(
+                `updated ${rootDir.getRelativePath(baselineFilePath(rootDir))} with ${pluralize(
+                    totalErrorCount,
+                    'error'
+                )} (${message})`
+            );
         }
-        results.diagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
+        results.diagnostics = filteredDiagnostics; // TODO: is this needed?
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;
@@ -1266,15 +1292,17 @@ function convertDiagnosticToJson(filePath: string, diag: Diagnostic): PyrightJso
         rule: diag.getRule(),
     };
 }
-const pluralize = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
+
+const pluralize = (n: number, singular: string, plural: string = `${singular}s`) =>
+    `${n} ${n === 1 ? singular : plural}`;
 
 const printDiagnosticSummary = (result: DiagnosticResult) => {
     console.info(
         [
-            pluralize(result.errorCount, 'error', 'errors'),
-            pluralize(result.warningCount, 'warning', 'warnings'),
+            pluralize(result.errorCount, 'error'),
+            pluralize(result.warningCount, 'warning'),
             // we use the word "notes" instead because "informations" sounds dumb
-            pluralize(result.informationCount, 'note', 'notes'),
+            pluralize(result.informationCount, 'note'),
         ].join(', ')
     );
 };
