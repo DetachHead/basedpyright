@@ -220,7 +220,17 @@ extend-exclude = [
 [tool.ruff.lint]
 extend-select = ["ALL"]
 ignore = [
-    "ANN",     # flake8-annotations (covered by pyright)
+    # conflicts with or covered by another tool:
+    "ANN",     # flake8-annotations (covered by basedpyright)
+    "PLE0605", # Invalid format for `__all__`, must be `tuple` or `list` (covered by basedpyright)
+    "RUF013",  # PEP 484 prohibits implicit Optional (covered by basedpyright)
+    "RUF016",  # Slice in indexed access to type (covered by basedpyright)
+    "D418",    # Function/Method decorated with @overload shouldn't contain a docstring (basedpyright supports it)
+    "ISC001",  # single-line-implicit-string-concatenation (conflicts with formatter)
+    "COM812",  # missing-trailing-comma (conflicts with formatter)
+    "PLC0414", # Import alias does not rename original package (used by basedpyright for explicit re-export)
+
+    # rules i disabled because i don't like them:
     "EM",      # flake8-errmsg
     "FIX",     # flake8-fixme
     "PLR0913", # Too many arguments to function call
@@ -229,13 +239,9 @@ ignore = [
     "PLR2004", # Magic value used in comparison
     "PLR1722", # Use `sys.exit()` instead of `exit`
     "PLW2901", # `for` loop variable overwritten by assignment target
-    "PLE0605", # Invalid format for `__all__`, must be `tuple` or `list` (covered by pyright)
     "PLR0911", # Too many return statements
     "PLW0603", # Using the global statement is discouraged
     "PLC0105", # `TypeVar` name does not reflect its covariance
-    "PLC0414", # Import alias does not rename original package (used by pyright for explicit re-export)
-    "RUF013",  # PEP 484 prohibits implicit Optional (covered by pyright)
-    "RUF016",  # Slice in indexed access to type (covered by pyright)
     "TRY002",  # Create your own exception
     "TRY003",  # Avoid specifying long messages outside the exception class
     "D10",     # Missing docstring
@@ -251,13 +257,11 @@ ignore = [
     "D405",    # Section name should be properly capitalized
     "D406",    # Section name should end with a newline
     "D415",    # First line should end with a period, question mark, or exclamation point
-    "D418",    # Function/Method decorated with @overload shouldn't contain a docstring (vscode supports it)
     "PT013",   # Found incorrect import of pytest, use simple import pytest instead (only for bad linters that can't check the qualname)
     "TD002",   # Missing author in TODO
     "CPY001",  # missing-copyright-notice
     "C901",    # max-complexity
-    "ISC001",  # single-line-implicit-string-concatenation (conflicts with formatter)
-    "COM812",  # missing-trailing-comma (conflicts with formatter)
+    "DOC402",  # docstring-missing-yields
 ]
 
 [tool.ruff.lint.pycodestyle]
