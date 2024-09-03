@@ -480,13 +480,20 @@ async function runSingleThreaded(
                 : options.executionRoot;
         const allDiagnostics = results.diagnostics;
         const filteredDiagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
-        if (args.writebaseline || !filteredDiagnostics.length) {
+        const newErrorCount = allDiagnostics
+            .flatMap(
+                (file) =>
+                    file.diagnostics.filter((diagnostic) =>
+                        [DiagnosticCategory.Error, DiagnosticCategory.Warning, DiagnosticCategory.Information].includes(
+                            diagnostic.category
+                        )
+                    ).length
+            )
+            .reduce((prev, next) => prev + next);
+        if (args.writebaseline || !newErrorCount) {
             writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
             const previousErrorCount = filteredDiagnostics
                 .flatMap((file) => file.alreadyBaselinedDiagnostics.length)
-                .reduce((prev, next) => prev + next);
-            const newErrorCount = allDiagnostics
-                .flatMap((file) => file.diagnostics.length)
                 .reduce((prev, next) => prev + next);
             const diff = newErrorCount - previousErrorCount;
             let message = '';
@@ -497,12 +504,9 @@ async function runSingleThreaded(
             } else {
                 message += `went down by ${diff * -1}`;
             }
-            const totalErrorCount = allDiagnostics
-                .map((file) => file.diagnostics.length)
-                .reduce((prev, count) => prev + count);
             console.info(
                 `updated ${rootDir.getRelativePath(baselineFilePath(rootDir))} with ${pluralize(
-                    totalErrorCount,
+                    newErrorCount,
                     'error'
                 )} (${message})`
             );
