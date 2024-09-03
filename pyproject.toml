@@ -192,10 +192,10 @@ max-line-length = 200
 
 [tool.basedpyright]
 pythonVersion = "3.8"
-include = ["basedpyright", "based_build", "pdm_build.py"]
+include = ["basedpyright", "based_build", "pdm_build.py", "tests"]
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 typeCheckingMode = "all"
-reportImplicitStringConcatenation = false                 # conflicts with ruff formatter
+reportImplicitStringConcatenation = false                          # conflicts with ruff formatter
 
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
 # only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
