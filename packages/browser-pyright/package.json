@@ -47,6 +47,6 @@
         "stream-browserify": "^3.0.0",
         "util": "^0.12.5",
         "vm-browserify": "^1.1.2",
-        "vscode-languageserver": "10.0.0-next.2"
+        "vscode-languageserver": "10.0.0-next.10"
     }
 }
