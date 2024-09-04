@@ -145,3 +145,15 @@ configure it to use basedpyright by specifying the path to the `basedpyright-lan
 
 ![](https://github.com/user-attachments/assets/accfc498-825c-4c39-9e2c-35195c41fd67)
 
+### Helix
+
+Install the LSP server itself, using the [pypi package installation method](#command-line--language-server) (as mentioned previously in this section).
+Then add the following to your [languages file](https://docs.helix-editor.com/languages.html):
+
+```toml
+[[language]]
+name = "python"
+language-servers = [ "basedpyright" ]
+```
+
+You can verify the active configuration by running `hx --health python`
