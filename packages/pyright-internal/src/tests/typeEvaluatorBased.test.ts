@@ -108,7 +108,7 @@ test('subscript context manager types on 3.8', () => {
     configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults = typeAnalyzeSampleFiles(['subscript_check.py'], configOptions);
     const message =
-        'Subscript for class "AbstractContextManager" will generate runtime exception; enclose type annotation in quotes';
+        'Subscript for class "AbstractContextManager" will generate runtime exception; enclose type expression in quotes';
     validateResultsButBased(analysisResults, {
         errors: [
             { code: DiagnosticRule.reportIndexIssue, line: 7, message },
