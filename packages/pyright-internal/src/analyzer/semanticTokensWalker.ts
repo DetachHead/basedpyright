@@ -185,7 +185,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
-                    const declarations = this._evaluator?.getDeclarationsForNameNode(node);
+                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
                     const isPEP613TypeAlias =
                         declarations &&
                         declarations.some((declaration) =>
@@ -227,7 +227,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
         }
-        const declarations = this._evaluator?.getDeclarationsForNameNode(node);
+        const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         if (declarations?.some(isParamDeclaration)) {
             const parent = declarations[0].node.parent as FunctionNode | LambdaNode;
             // Avoid duplicates for parameters visited by `visitParameter`
