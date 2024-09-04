@@ -654,6 +654,7 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.methodReturnsNonObject'));
         export const missingSuperCall = () =>
             new ParameterizedString<{ methodName: string }>(getRawString('Diagnostic.missingSuperCall'));
+        export const mixingBytesAndStr = () => getRawString('Diagnostic.mixingBytesAndStr');
         export const moduleAsType = () => getRawString('Diagnostic.moduleAsType');
         export const moduleNotCallable = () => getRawString('Diagnostic.moduleNotCallable');
         export const moduleUnknownMember = () =>
@@ -1008,6 +1009,7 @@ export namespace Localizer {
         export const typedDictSet = () => getRawString('Diagnostic.typedDictSet');
         export const typeExpectedClass = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.typeExpectedClass'));
+        export const typeFormArgs = () => getRawString('Diagnostic.typeFormArgs');
         export const typeGuardArgCount = () => getRawString('Diagnostic.typeGuardArgCount');
         export const typeGuardParamCount = () => getRawString('Diagnostic.typeGuardParamCount');
         export const typeIsReturnType = () =>

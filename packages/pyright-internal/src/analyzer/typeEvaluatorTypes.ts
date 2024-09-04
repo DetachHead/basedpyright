@@ -164,9 +164,13 @@ export const enum EvalFlags {
     // with the second argument to isinstance and issubclass calls.
     IsinstanceArg = 1 << 29,
 
+    // Interpret the expression using the behaviors associated with the first
+    // argument to a TypeForm call.
+    TypeFormArg = 1 << 30,
+
     // Enforce that any type variables referenced in this type are associated
     // with the enclosing class or an outer scope.
-    EnforceClassTypeVarScope = 1 << 30,
+    EnforceClassTypeVarScope = 1 << 31,
 
     /** don't report an error if the type is `Any` or "Unknown" */
     AllowAnyOrUnknown = 1 << 31,
@@ -366,6 +370,7 @@ export interface ExpectedTypeOptions {
     parsesStringLiteral?: boolean;
     notParsed?: boolean;
     noNonTypeSpecialForms?: boolean;
+    typeFormArg?: boolean;
     forwardRefs?: boolean;
     typeExpression?: boolean;
     convertEllipsisToAny?: boolean;
@@ -514,6 +519,11 @@ export interface CallSiteEvaluationInfo {
     args: ValidateArgTypeParams[];
 }
 
+export interface SymbolDeclInfo {
+    decls: Declaration[];
+    synthesizedTypes: Type[];
+}
+
 export interface MatchArgsToParamsResult {
     overload: FunctionType;
     overloadIndex: number;
@@ -597,8 +607,8 @@ export interface TypeEvaluator {
     suppressDiagnostics: (node: ParseNode, callback: () => void) => void;
     isSpecialFormClass: (classType: ClassType, flags: AssignTypeFlags) => boolean;
 
-    getDeclarationsForStringNode: (node: StringNode) => Declaration[] | undefined;
-    getDeclarationsForNameNode: (node: NameNode, skipUnreachableCode?: boolean) => Declaration[] | undefined;
+    getDeclInfoForStringNode: (node: StringNode) => SymbolDeclInfo | undefined;
+    getDeclInfoForNameNode: (node: NameNode, skipUnreachableCode?: boolean) => SymbolDeclInfo | undefined;
     getTypeForDeclaration: (declaration: Declaration) => DeclaredSymbolTypeInfo;
     resolveAliasDeclaration: (
         declaration: Declaration,

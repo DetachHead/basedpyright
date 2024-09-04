@@ -214,6 +214,7 @@ import {
     Reachability,
     ResolveAliasOptions,
     SolveConstraintsOptions,
+    SymbolDeclInfo,
     TypeEvaluator,
     TypeResult,
     TypeResultWithNode,
@@ -352,10 +353,11 @@ import {
     selfSpecializeClass,
     simplifyFunctionToParamSpec,
     sortTypes,
-    specializeClassType,
     specializeForBaseClass,
     specializeTupleClass,
     specializeWithDefaultTypeArgs,
+    stripTypeForm,
+    stripTypeFormRecursive,
     synthesizeTypeVarForSelfCls,
     transformExpectedType,
     transformPossibleRecursiveTypeAlias,
@@ -918,6 +920,11 @@ export function createTypeEvaluator(
     // context. For example, if it's a subexpression of an argument expression,
     // the associated parameter type might inform the expected type.
     function getExpectedType(node: ExpressionNode): ExpectedTypeResult | undefined {
+        // This is a primary entry point called by language server providers,
+        // and it might be called before any other type evaluation has occurred.
+        // Use this opportunity to do some initialization.
+        initializePrefetchedTypes(node);
+
         // Scan up the parse tree to find the top-most expression node
         // so we can evaluate the entire expression.
         let topExpression = node;
@@ -1009,6 +1016,10 @@ export function createTypeEvaluator(
 
                 if (isAny(anySpecialForm)) {
                     TypeBase.setSpecialForm(anySpecialForm, anyClass);
+
+                    if (isTypeFormSupported(node)) {
+                        TypeBase.setTypeForm(anySpecialForm, convertToInstance(anySpecialForm));
+                    }
                 }
             }
         }
@@ -1349,7 +1360,7 @@ export function createTypeEvaluator(
 
         // If this is a PEP 695 type alias, remove the special form so the type
         // printer prints it as its aliased type rather than TypeAliasType.
-        if ((flags & EvalFlags.TypeExpression) !== 0) {
+        if ((flags & EvalFlags.TypeExpression) !== 0 && typeResult.type.props?.typeForm === undefined) {
             const specialForm = typeResult.type.props?.specialForm;
             if (specialForm && ClassType.isBuiltIn(specialForm, 'TypeAliasType')) {
                 typeResult.type = TypeBase.cloneAsSpecialForm(typeResult.type, undefined);
@@ -1528,103 +1539,169 @@ export function createTypeEvaluator(
         return typeResult;
     }
 
-    function getTypeOfStringList(node: StringListNode, flags: EvalFlags) {
+    function getTypeOfStringList(node: StringListNode, flags: EvalFlags): TypeResult {
         let typeResult: TypeResult | undefined;
 
-        if ((flags & EvalFlags.StrLiteralAsType) !== 0) {
-            let updatedFlags = flags | EvalFlags.ForwardRefs | EvalFlags.InstantiableType;
+        if ((flags & EvalFlags.StrLiteralAsType) !== 0 && (flags & EvalFlags.TypeFormArg) === 0) {
+            return getTypeOfStringListAsType(node, flags);
+        }
 
-            // In most cases, annotations within a string are not parsed by the interpreter.
-            // There are a few exceptions (e.g. the "bound" value for a TypeVar constructor).
-            if ((flags & EvalFlags.ParsesStringLiteral) === 0) {
-                updatedFlags |= EvalFlags.NotParsed;
+        const isBytesNode = (node: StringNode | FormatStringNode) =>
+            (node.d.token.flags & StringTokenFlags.Bytes) !== 0;
+
+        // Check for mixing of bytes and str, which is not allowed.
+        const firstStrIndex = node.d.strings.findIndex((str) => !isBytesNode(str));
+        const firstBytesIndex = node.d.strings.findIndex((str) => isBytesNode(str));
+        if (firstStrIndex >= 0 && firstBytesIndex >= 0) {
+            addDiagnostic(
+                DiagnosticRule.reportGeneralTypeIssues,
+                LocMessage.mixingBytesAndStr(),
+                node.d.strings[Math.max(firstBytesIndex, firstStrIndex)]
+            );
+
+            return { type: UnknownType.create() };
+        }
+
+        const isBytes = firstBytesIndex >= 0;
+        let isLiteralString = true;
+        let isIncomplete = false;
+
+        node.d.strings.forEach((expr) => {
+            const typeResult = getTypeOfString(expr);
+
+            if (typeResult.isIncomplete) {
+                isIncomplete = true;
             }
 
-            if (node.d.annotation) {
-                typeResult = getTypeOfExpression(node.d.annotation, updatedFlags);
-            } else if (node.d.strings.length === 1) {
-                const tokenFlags = node.d.strings[0].d.token.flags;
+            let isExprLiteralString = false;
+            if (isClassInstance(typeResult.type)) {
+                if (ClassType.isBuiltIn(typeResult.type, 'str') && typeResult.type.priv.literalValue !== undefined) {
+                    isExprLiteralString = true;
+                } else if (ClassType.isBuiltIn(typeResult?.type, 'LiteralString')) {
+                    isExprLiteralString = true;
+                }
+            }
 
-                if (tokenFlags & StringTokenFlags.Bytes) {
-                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationBytesString(), node);
-                    typeResult = { type: UnknownType.create() };
-                } else if (tokenFlags & StringTokenFlags.Raw) {
-                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationRawString(), node);
-                    typeResult = { type: UnknownType.create() };
-                } else if (tokenFlags & StringTokenFlags.Format) {
-                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationFormatString(), node);
-                    typeResult = { type: UnknownType.create() };
-                } else {
-                    // We didn't know at parse time that this string node was going
-                    // to be evaluated as a forward-referenced type. We need
-                    // to re-invoke the parser at this stage.
-                    const expr = parseStringAsTypeAnnotation(node);
-                    if (expr) {
-                        typeResult = getTypeOfExpression(expr, updatedFlags);
-                    }
+            if (!isExprLiteralString) {
+                isLiteralString = false;
+            }
+        });
+
+        // Don't create a literal type if it's an f-string.
+        if (node.d.strings.some((str) => str.nodeType === ParseNodeType.FormatString)) {
+            if (isLiteralString) {
+                const literalStringType = getTypingType(node, 'LiteralString');
+                if (literalStringType && isInstantiableClass(literalStringType)) {
+                    typeResult = { type: ClassType.cloneAsInstance(literalStringType) };
                 }
             }
 
             if (!typeResult) {
-                addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.expectedTypeNotString(), node);
-                typeResult = { type: UnknownType.create() };
-            }
-        } else {
-            // Evaluate the format string expressions in this context.
-            let isLiteralString = true;
-            let isIncomplete = false;
-
-            node.d.strings.forEach((expr) => {
-                const typeResult = getTypeOfString(expr);
-
-                if (typeResult.isIncomplete) {
-                    isIncomplete = true;
-                }
-
-                let isExprLiteralString = false;
-                if (isClassInstance(typeResult.type)) {
-                    if (
-                        ClassType.isBuiltIn(typeResult.type, 'str') &&
-                        typeResult.type.priv.literalValue !== undefined
-                    ) {
-                        isExprLiteralString = true;
-                    } else if (ClassType.isBuiltIn(typeResult?.type, 'LiteralString')) {
-                        isExprLiteralString = true;
-                    }
-                }
-
-                if (!isExprLiteralString) {
-                    isLiteralString = false;
-                }
-            });
-
-            const isBytes = (node.d.strings[0].d.token.flags & StringTokenFlags.Bytes) !== 0;
-
-            // Don't create a literal type if it's an f-string.
-            if (node.d.strings.some((str) => str.nodeType === ParseNodeType.FormatString)) {
-                if (isLiteralString) {
-                    const literalStringType = getTypingType(node, 'LiteralString');
-                    if (literalStringType && isInstantiableClass(literalStringType)) {
-                        typeResult = { type: ClassType.cloneAsInstance(literalStringType) };
-                    }
-                }
-
-                if (!typeResult) {
-                    typeResult = {
-                        type: getBuiltInObject(node, isBytes ? 'bytes' : 'str'),
-                        isIncomplete,
-                    };
-                }
-            } else {
                 typeResult = {
-                    type: cloneBuiltinObjectWithLiteral(
-                        node,
-                        isBytes ? 'bytes' : 'str',
-                        node.d.strings.map((s) => s.d.value).join('')
-                    ),
+                    type: getBuiltInObject(node, isBytes ? 'bytes' : 'str'),
                     isIncomplete,
                 };
             }
+        } else {
+            typeResult = {
+                type: cloneBuiltinObjectWithLiteral(
+                    node,
+                    isBytes ? 'bytes' : 'str',
+                    node.d.strings.map((s) => s.d.value).join('')
+                ),
+                isIncomplete,
+            };
+        }
+
+        if (
+            node.d.strings.length !== 1 ||
+            node.d.strings[0].nodeType !== ParseNodeType.String ||
+            !isTypeFormSupported(node)
+        ) {
+            return typeResult;
+        }
+
+        // For performance reasons, do not attempt to treat the string literal
+        // as a TypeForm if it's going to fail anyway or is unlikely to be a
+        // TypeForm (really long, triple-quoted, etc.).
+        const stringNode = node.d.strings[0];
+        const tokenFlags = stringNode.d.token.flags;
+        const disallowedTokenFlags =
+            StringTokenFlags.Bytes | StringTokenFlags.Raw | StringTokenFlags.Format | StringTokenFlags.Triplicate;
+        const maxTypeFormStringLength = 256;
+
+        if (
+            (tokenFlags & disallowedTokenFlags) !== 0 ||
+            stringNode.d.token.escapedValue.length >= maxTypeFormStringLength
+        ) {
+            return typeResult;
+        }
+
+        const typeFormResult = getTypeOfStringListAsType(node, flags);
+        if (typeFormResult.type.props?.typeForm) {
+            typeResult.type = TypeBase.cloneWithTypeForm(typeResult.type, typeFormResult.type.props.typeForm);
+        }
+
+        return typeResult;
+    }
+
+    function getTypeOfStringListAsType(node: StringListNode, flags: EvalFlags): TypeResult {
+        const reportTypeErrors = (flags & EvalFlags.StrLiteralAsType) !== 0;
+        let updatedFlags = flags | EvalFlags.ForwardRefs | EvalFlags.InstantiableType;
+        let typeResult: TypeResult | undefined;
+
+        // In most cases, annotations within a string are not parsed by the interpreter.
+        // There are a few exceptions (e.g. the "bound" value for a TypeVar constructor).
+        if ((flags & EvalFlags.ParsesStringLiteral) === 0) {
+            updatedFlags |= EvalFlags.NotParsed;
+        }
+
+        updatedFlags &= ~EvalFlags.TypeFormArg;
+
+        if (node.d.annotation) {
+            return getTypeOfExpression(node.d.annotation, updatedFlags);
+        }
+
+        if (node.d.strings.length === 1) {
+            const tokenFlags = node.d.strings[0].d.token.flags;
+
+            if (tokenFlags & StringTokenFlags.Bytes) {
+                if (reportTypeErrors) {
+                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationBytesString(), node);
+                }
+                return { type: UnknownType.create() };
+            }
+
+            if (tokenFlags & StringTokenFlags.Raw) {
+                if (reportTypeErrors) {
+                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationRawString(), node);
+                }
+                return { type: UnknownType.create() };
+            }
+
+            if (tokenFlags & StringTokenFlags.Format) {
+                if (reportTypeErrors) {
+                    addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.annotationFormatString(), node);
+                }
+                return { type: UnknownType.create() };
+            }
+
+            // We didn't know at parse time that this string node was going
+            // to be evaluated as a forward-referenced type. We need
+            // to re-invoke the parser at this stage.
+            const expr = parseStringAsTypeAnnotation(node, reportTypeErrors);
+            if (expr) {
+                typeResult = useSpeculativeMode(reportTypeErrors ? undefined : node, () => {
+                    return getTypeOfExpression(expr, updatedFlags);
+                });
+            }
+        }
+
+        if (!typeResult) {
+            if (reportTypeErrors) {
+                addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.expectedTypeNotString(), node);
+            }
+            typeResult = { type: UnknownType.create() };
         }
 
         return typeResult;
@@ -3460,7 +3537,7 @@ export function createTypeEvaluator(
             // If this is a member name (within a class scope) and the member name
             // appears to be a constant, use the strict source type. If it's a member
             // variable that can be overridden by a child class, use the more general
-            // version by stripping off the literal.
+            // version by stripping off the literal and TypeForm.
             const scope = ScopeUtils.getScopeForNode(nameNode);
             if (scope?.type === ScopeType.Class) {
                 if (
@@ -3468,7 +3545,7 @@ export function createTypeEvaluator(
                     !isConstantName(nameValue) &&
                     !isFinalVariable(symbolWithScope.symbol)
                 ) {
-                    destType = stripLiteralValue(destType);
+                    destType = stripTypeForm(stripLiteralValue(destType));
                 }
             }
         }
@@ -3913,6 +3990,8 @@ export function createTypeEvaluator(
         makeParamSpecsConcrete = false,
         conditionFilter?: TypeCondition[]
     ): Type {
+        type = transformPossibleRecursiveTypeAlias(type);
+
         return mapSubtypes(type, (subtype) => {
             if (isParamSpec(subtype)) {
                 if (subtype.priv.paramSpecAccess === 'args') {
@@ -4638,6 +4717,9 @@ export function createTypeEvaluator(
             if ((flags & EvalFlags.TypeExpression) !== 0) {
                 type = validateSymbolIsTypeExpression(node, type, !!effectiveTypeInfo.includesVariableDecl);
             }
+
+            // Add TypeForm details if appropriate.
+            type = addTypeFormForSymbol(node, type, flags, !!effectiveTypeInfo.includesVariableDecl);
         } else {
             // Handle the special case of "reveal_type" and "reveal_locals".
             if (name === 'reveal_type' || name === 'reveal_locals') {
@@ -4680,20 +4762,78 @@ export function createTypeEvaluator(
         return { type, isIncomplete };
     }
 
-    // Reports diagnostics if type isn't valid within a type expression.
-    function validateSymbolIsTypeExpression(node: ExpressionNode, type: Type, includesVariableDecl: boolean): Type {
+    function addTypeFormForSymbol(node: ExpressionNode, type: Type, flags: EvalFlags, includesVarDecl: boolean): Type {
+        if (!isTypeFormSupported(node)) {
+            return type;
+        }
+
+        const isValid = isSymbolValidTypeExpression(type, includesVarDecl);
+
+        // If the type already has type information associated with it, don't replace.
+        if (type.props?.typeForm) {
+            // If the NoConvertSpecialForm flag is set, we are evaluating in
+            // the interior of a type expression, so variables are not allowed.
+            // Clear any existing type form type for this symbol in this case.
+            if ((flags & EvalFlags.NoConvertSpecialForm) !== 0 && !isValid) {
+                type = TypeBase.cloneWithTypeForm(type, undefined);
+            }
+            return type;
+        }
+
+        // If the symbol is not valid for a type expression (e.g. it's a variable),
+        // don't add TypeForm info.
+        if (!isValid) {
+            return type;
+        }
+
+        if (isTypeVar(type) && type.priv.scopeId && !type.shared.isSynthesized) {
+            if (!isTypeVarTuple(type) || !type.priv.isInUnion) {
+                const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(node);
+                type = TypeBase.cloneWithTypeForm(type, convertToInstance(makeTypeVarsBound(type, liveScopeIds)));
+            }
+        } else if (isInstantiableClass(type) && !type.priv.includeSubclasses && !ClassType.isSpecialBuiltIn(type)) {
+            if (ClassType.isBuiltIn(type, 'Any')) {
+                type = TypeBase.cloneWithTypeForm(type, AnyType.create());
+            } else {
+                type = TypeBase.cloneWithTypeForm(type, ClassType.cloneAsInstance(specializeWithDefaultTypeArgs(type)));
+            }
+        }
+
+        if (type.props?.typeAliasInfo && TypeBase.isInstantiable(type)) {
+            type = TypeBase.cloneWithTypeForm(
+                type,
+                convertToInstance(specializeTypeAliasWithDefaults(type, /* errorNode */ undefined))
+            );
+        }
+
+        return type;
+    }
+
+    function isSymbolValidTypeExpression(type: Type, includesVarDecl: boolean): boolean {
         // Verify that the name does not refer to a (non type alias) variable.
-        if (!includesVariableDecl || type.props?.typeAliasInfo) {
-            return type;
+        if (!includesVarDecl || type.props?.typeAliasInfo) {
+            return true;
         }
 
-        if (isTypeVar(type) || isTypeAliasPlaceholder(type)) {
-            return type;
+        if (isTypeAliasPlaceholder(type)) {
+            return true;
         }
 
-        // Exempts class types that are created by calling
-        // NewType, NamedTuple, etc.
+        if (isTypeVar(type) && !type.priv.scopeId) {
+            return true;
+        }
+
+        // Exempts class types that are created by calling NewType, NamedTuple, etc.
         if (isClass(type) && !type.priv.includeSubclasses && ClassType.isValidTypeAliasClass(type)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Reports diagnostics if type isn't valid within a type expression.
+    function validateSymbolIsTypeExpression(node: ExpressionNode, type: Type, includesVarDecl: boolean): Type {
+        if (isSymbolValidTypeExpression(type, includesVarDecl)) {
             return type;
         }
 
@@ -4725,7 +4865,15 @@ export function createTypeEvaluator(
             }
         }
 
-        return type.props?.specialForm ?? type;
+        if (!type.props?.specialForm) {
+            return type;
+        }
+
+        if (type.props?.typeForm) {
+            return TypeBase.cloneWithTypeForm(type.props.specialForm, type.props.typeForm);
+        }
+
+        return type.props.specialForm;
     }
 
     // Handles the case where a variable or parameter is defined in an outer
@@ -5061,63 +5209,8 @@ export function createTypeEvaluator(
         }
 
         // Is this a generic type alias that needs to be specialized?
-        const aliasInfo = type.props?.typeAliasInfo;
-        if (
-            (flags & EvalFlags.InstantiableType) !== 0 &&
-            aliasInfo &&
-            aliasInfo.typeParams &&
-            aliasInfo.typeParams.length > 0 &&
-            !aliasInfo.typeArgs
-        ) {
-            let reportMissingTypeArgs = false;
-            const defaultTypeArgs: Type[] = [];
-            const constraints = new ConstraintTracker();
-
-            aliasInfo.typeParams.forEach((param) => {
-                if (!param.shared.isDefaultExplicit) {
-                    reportMissingTypeArgs = true;
-                }
-
-                let defaultType: Type;
-                if (param.shared.isDefaultExplicit || isParamSpec(param)) {
-                    defaultType = solveAndApplyConstraints(param, constraints, {
-                        replaceUnsolved: {
-                            scopeIds: [aliasInfo.typeVarScopeId],
-                            tupleClassType: getTupleClassType(),
-                        },
-                    });
-                } else if (isTypeVarTuple(param) && tupleClass && isInstantiableClass(tupleClass)) {
-                    defaultType = makeTupleObject(
-                        [{ type: UnknownType.create(), isUnbounded: true }],
-                        /* isUnpacked */ true
-                    );
-                } else {
-                    defaultType = UnknownType.create();
-                }
-
-                defaultTypeArgs.push(defaultType);
-                constraints.setBounds(param, defaultType);
-            });
-
-            if (reportMissingTypeArgs) {
-                addDiagnostic(
-                    DiagnosticRule.reportMissingTypeArgument,
-                    LocMessage.typeArgsMissingForAlias().format({
-                        name: aliasInfo.name,
-                    }),
-                    node
-                );
-            }
-
-            type = TypeBase.cloneForTypeAlias(
-                solveAndApplyConstraints(type, constraints, {
-                    replaceUnsolved: {
-                        scopeIds: [aliasInfo.typeVarScopeId],
-                        tupleClassType: getTupleClassType(),
-                    },
-                }),
-                { ...aliasInfo, typeArgs: defaultTypeArgs }
-            );
+        if ((flags & EvalFlags.InstantiableType) !== 0) {
+            type = specializeTypeAliasWithDefaults(type, node);
         }
 
         return type;
@@ -5589,6 +5682,9 @@ export function createTypeEvaluator(
                     if ((flags & EvalFlags.TypeExpression) !== 0) {
                         type = validateSymbolIsTypeExpression(node, type, !!typeResult.includesVariableDecl);
                     }
+
+                    // Add TypeForm details if appropriate.
+                    type = addTypeFormForSymbol(node, type, flags, !!typeResult.includesVariableDecl);
 
                     if (isTypeVar(type)) {
                         type = validateTypeVarUsage(node, type, flags);
@@ -6873,6 +6969,74 @@ export function createTypeEvaluator(
         return true;
     }
 
+    // If the type is a generic type alias that is not specialized, provides
+    // default type arguments for the type alias. It optionally logs diagnostics
+    // for missing type arguments.
+    function specializeTypeAliasWithDefaults(type: Type, errorNode: ExpressionNode | undefined) {
+        // Is this a type alias?
+        const aliasInfo = type.props?.typeAliasInfo;
+        if (!aliasInfo) {
+            return type;
+        }
+
+        // Is this a generic type alias that needs specializing?
+        if (!aliasInfo.typeParams || aliasInfo.typeParams.length === 0 || aliasInfo.typeArgs) {
+            return type;
+        }
+
+        let reportDiag = false;
+        const defaultTypeArgs: Type[] = [];
+        const constraints = new ConstraintTracker();
+
+        aliasInfo.typeParams.forEach((param) => {
+            if (!param.shared.isDefaultExplicit) {
+                reportDiag = true;
+            }
+
+            let defaultType: Type;
+            if (param.shared.isDefaultExplicit || isParamSpec(param)) {
+                defaultType = solveAndApplyConstraints(param, constraints, {
+                    replaceUnsolved: {
+                        scopeIds: [aliasInfo.typeVarScopeId],
+                        tupleClassType: getTupleClassType(),
+                    },
+                });
+            } else if (isTypeVarTuple(param) && tupleClass && isInstantiableClass(tupleClass)) {
+                defaultType = makeTupleObject(
+                    [{ type: UnknownType.create(), isUnbounded: true }],
+                    /* isUnpacked */ true
+                );
+            } else {
+                defaultType = UnknownType.create();
+            }
+
+            defaultTypeArgs.push(defaultType);
+            constraints.setBounds(param, defaultType);
+        });
+
+        if (reportDiag && errorNode) {
+            addDiagnostic(
+                DiagnosticRule.reportMissingTypeArgument,
+                LocMessage.typeArgsMissingForAlias().format({
+                    name: aliasInfo.name,
+                }),
+                errorNode
+            );
+        }
+
+        type = TypeBase.cloneForTypeAlias(
+            solveAndApplyConstraints(type, constraints, {
+                replaceUnsolved: {
+                    scopeIds: [aliasInfo.typeVarScopeId],
+                    tupleClassType: getTupleClassType(),
+                },
+            }),
+            { ...aliasInfo, typeArgs: defaultTypeArgs }
+        );
+
+        return type;
+    }
+
     // Handles index expressions that are providing type arguments for a
     // generic type alias.
     function createSpecializedTypeAlias(
@@ -6897,6 +7061,7 @@ export function createTypeEvaluator(
 
         const typeParams = aliasInfo.typeParams;
         let typeArgs = adjustTypeArgsForTypeVarTuple(getTypeArgs(node, flags), typeParams, node);
+        let reportedError = false;
 
         // PEP 612 says that if the class has only one type parameter consisting
         // of a ParamSpec, the list of arguments does not need to be enclosed in
@@ -6934,6 +7099,7 @@ export function createTypeEvaluator(
                 }),
                 typeArgs[typeParams.length].node
             );
+            reportedError = true;
         } else if (typeArgs.length < minTypeArgCount) {
             addDiagnostic(
                 DiagnosticRule.reportInvalidTypeForm,
@@ -6944,6 +7110,7 @@ export function createTypeEvaluator(
                 }),
                 node.d.items[node.d.items.length - 1]
             );
+            reportedError = true;
         }
 
         // Handle the mypy_extensions.FlexibleAlias type specially.
@@ -7048,6 +7215,7 @@ export function createTypeEvaluator(
                         LocMessage.typeArgListExpected(),
                         typeArgs[index].node
                     );
+                    reportedError = true;
                 }
             } else {
                 if (index < typeArgs.length && typeArgs[index].typeList) {
@@ -7056,6 +7224,7 @@ export function createTypeEvaluator(
                         LocMessage.typeArgListNotAllowed(),
                         typeArgs[index].node
                     );
+                    reportedError = true;
                 }
 
                 let typeArgType: Type;
@@ -7115,6 +7284,7 @@ export function createTypeEvaluator(
                 node,
                 diag.getEffectiveTextRange() ?? node
             );
+            reportedError = true;
         }
 
         const solutionSet = solveConstraints(evaluatorInterface, constraints).getMainSolutionSet();
@@ -7132,10 +7302,14 @@ export function createTypeEvaluator(
             aliasTypeArgs.push(typeVarType);
         });
 
-        const type = TypeBase.cloneForTypeAlias(solveAndApplyConstraints(baseType, constraints), {
+        let type = TypeBase.cloneForTypeAlias(solveAndApplyConstraints(baseType, constraints), {
             ...aliasInfo,
             typeArgs: aliasTypeArgs,
         });
+
+        if (isTypeFormSupported(node)) {
+            type = TypeBase.cloneWithTypeForm(type, reportedError ? undefined : convertToInstance(type));
+        }
 
         return { type, node };
     }
@@ -7150,6 +7324,34 @@ export function createTypeEvaluator(
         const typeAliasResult = createSpecializedTypeAlias(node, baseTypeResult.type, flags);
         if (typeAliasResult) {
             return typeAliasResult;
+        }
+
+        // Handle the case where Never or NoReturn are being specialized.
+        if (isNever(baseTypeResult.type) && baseTypeResult.type.props?.specialForm) {
+            // Swap in the special form type, which is the Never or NoReturn class.
+            baseTypeResult = { ...baseTypeResult, type: baseTypeResult.type.props.specialForm };
+        }
+
+        // Handle the case where a TypeAliasType symbol is being specialized
+        // in a value expression.
+        if (
+            isClassInstance(baseTypeResult.type) &&
+            ClassType.isBuiltIn(baseTypeResult.type, 'TypeAliasType') &&
+            baseTypeResult.type.props?.typeForm
+        ) {
+            const typeAliasInfo = baseTypeResult.type.props.typeForm.props?.typeAliasInfo;
+            if (typeAliasInfo && typeAliasInfo.typeParams) {
+                const origTypeAlias = TypeBase.cloneForTypeAlias(
+                    convertToInstantiable(baseTypeResult.type.props.typeForm),
+                    { ...typeAliasInfo, typeArgs: undefined }
+                );
+                const typeFormType = createSpecializedTypeAlias(node, origTypeAlias, flags);
+                if (typeFormType) {
+                    return {
+                        type: TypeBase.cloneWithTypeForm(baseTypeResult.type, convertToInstance(typeFormType.type)),
+                    };
+                }
+            }
         }
 
         if (isTypeVar(baseTypeResult.type) && isTypeAliasPlaceholder(baseTypeResult.type)) {
@@ -7718,6 +7920,7 @@ export function createTypeEvaluator(
     function getTypeArgs(node: IndexNode, flags: EvalFlags, options?: GetTypeArgsOptions): TypeResultWithNode[] {
         const typeArgs: TypeResultWithNode[] = [];
         let adjFlags = flags | EvalFlags.NoConvertSpecialForm;
+        adjFlags &= ~EvalFlags.TypeFormArg;
 
         const allowFinalClassVar = () => {
             // If the annotation is a variable within the body of a dataclass, a
@@ -8117,7 +8320,8 @@ export function createTypeEvaluator(
             } else if (isNever(typeResult.type) && typeResult.isIncomplete && !typeResult.unpackedType) {
                 entryTypes.push({ type: UnknownType.create(/* isIncomplete */ true), isUnbounded: false });
             } else {
-                const entryType = stripLiterals ? stripLiteralValue(typeResult.type) : typeResult.type;
+                let entryType = convertSpecialFormToRuntimeValue(typeResult.type, EvalFlags.None);
+                entryType = stripLiterals ? stripTypeForm(stripLiteralValue(entryType)) : entryType;
                 entryTypes.push({ type: entryType, isUnbounded: !!typeResult.unpackedType });
             }
         }
@@ -8199,6 +8403,9 @@ export function createTypeEvaluator(
             } else if (isFunction(baseTypeResult.type) && FunctionType.isBuiltIn(baseTypeResult.type, 'assert_type')) {
                 // Handle the "typing.assert_type" call.
                 typeResult = getTypeOfAssertType(node, inferenceContext);
+            } else if (isClass(baseTypeResult.type) && ClassType.isBuiltIn(baseTypeResult.type, 'TypeForm')) {
+                // Handle the "typing.TypeForm" call.
+                typeResult = getTypeOfTypeForm(node);
             } else if (
                 isAnyOrUnknown(baseTypeResult.type) &&
                 node.d.leftExpr.nodeType === ParseNodeType.Name &&
@@ -8336,6 +8543,23 @@ export function createTypeEvaluator(
         return typeResult;
     }
 
+    function getTypeOfTypeForm(node: CallNode): TypeResult {
+        if (
+            node.d.args.length !== 1 ||
+            node.d.args[0].d.argCategory !== ArgCategory.Simple ||
+            node.d.args[0].d.name !== undefined
+        ) {
+            addDiagnostic(DiagnosticRule.reportCallIssue, LocMessage.typeFormArgs(), node);
+            return { type: UnknownType.create() };
+        }
+
+        return getTypeOfArgExpectingType(convertNodeToArg(node.d.args[0]), {
+            typeFormArg: isTypeFormSupported(node),
+            noNonTypeSpecialForms: true,
+            typeExpression: true,
+        });
+    }
+
     function getTypeOfAssertType(node: CallNode, inferenceContext: InferenceContext | undefined): TypeResult {
         if (
             node.d.args.length !== 2 ||
@@ -8364,7 +8588,29 @@ export function createTypeEvaluator(
         // what mypy does -- and what various library authors expect.
         const arg0Type = stripTypeGuard(arg0TypeResult.type);
 
-        if (!isTypeSame(assertedType, arg0Type, { treatAnySameAsUnknown: true, ignorePseudoGeneric: true })) {
+        let assertSuccess = isTypeSame(assertedType, arg0Type, {
+            treatAnySameAsUnknown: true,
+            ignorePseudoGeneric: true,
+        });
+
+        // Handle TypeForm types specially.
+        if (
+            !assertSuccess &&
+            arg0Type.props?.typeForm &&
+            isClassInstance(assertedType) &&
+            ClassType.isBuiltIn(assertedType, 'TypeForm')
+        ) {
+            const typeFormType =
+                assertedType.priv.typeArgs && assertedType.priv.typeArgs.length >= 1
+                    ? assertedType.priv.typeArgs[0]
+                    : UnknownType.create();
+            assertSuccess = isTypeSame(arg0Type.props.typeForm, typeFormType, {
+                treatAnySameAsUnknown: true,
+                ignorePseudoGeneric: true,
+            });
+        }
+
+        if (!assertSuccess) {
             const srcDestTypes = printSrcDestTypes(arg0TypeResult.type, assertedType, { expandTypeAlias: true });
 
             addDiagnostic(
@@ -13160,7 +13406,7 @@ export function createTypeEvaluator(
         // Specifically disallow Annotated.
         if (
             baseClass.props?.specialForm &&
-            isInstantiableClass(baseClass.props.specialForm) &&
+            isClassInstance(baseClass.props.specialForm) &&
             ClassType.isBuiltIn(baseClass.props.specialForm, 'Annotated')
         ) {
             addDiagnostic(
@@ -13302,6 +13548,10 @@ export function createTypeEvaluator(
         if (node.d.constType === KeywordType.None) {
             if (noneTypeClass) {
                 type = (flags & EvalFlags.InstantiableType) !== 0 ? noneTypeClass : convertToInstance(noneTypeClass);
+
+                if (isTypeFormSupported(node)) {
+                    type = TypeBase.cloneWithTypeForm(type, convertToInstance(type));
+                }
             }
         } else if (
             node.d.constType === KeywordType.True ||
@@ -13700,9 +13950,13 @@ export function createTypeEvaluator(
             typeErrors = true;
         }
 
-        // Strip any literal values.
-        const keyTypes = keyTypeResults.map((t) => stripLiteralValue(t.type));
-        const valueTypes = valueTypeResults.map((t) => stripLiteralValue(t.type));
+        // Strip any literal values and TypeForm types.
+        const keyTypes = keyTypeResults.map((t) =>
+            stripTypeForm(convertSpecialFormToRuntimeValue(stripLiteralValue(t.type), flags))
+        );
+        const valueTypes = valueTypeResults.map((t) =>
+            stripTypeForm(convertSpecialFormToRuntimeValue(stripLiteralValue(t.type), flags))
+        );
 
         keyType = keyTypes.length > 0 ? combineTypes(keyTypes) : fallbackType;
 
@@ -14241,6 +14495,8 @@ export function createTypeEvaluator(
             } else {
                 entryTypeResult = getTypeOfExpression(entry, flags | EvalFlags.StripTupleLiterals);
             }
+
+            entryTypeResult.type = stripTypeForm(convertSpecialFormToRuntimeValue(entryTypeResult.type, flags));
 
             if (entryTypeResult.isIncomplete) {
                 isIncomplete = true;
@@ -14977,10 +15233,11 @@ export function createTypeEvaluator(
         typeArgs: TypeResultWithNode[] | undefined,
         errorNode: ParseNode
     ): FunctionType {
-        const functionType = FunctionType.createInstantiable(FunctionTypeFlags.None);
+        let functionType = FunctionType.createInstantiable(FunctionTypeFlags.None);
         let paramSpec: ParamSpecType | undefined;
+        let isValidTypeForm = true;
 
-        TypeBase.setSpecialForm(functionType, classType);
+        TypeBase.setSpecialForm(functionType, ClassType.cloneAsInstance(classType));
         functionType.shared.declaredReturnType = UnknownType.create();
         functionType.shared.typeVarScopeId = ParseTreeUtils.getScopeIdForNode(errorNode);
 
@@ -15001,6 +15258,7 @@ export function createTypeEvaluator(
                                 entry.node
                             );
                             reportedUnpackedError = true;
+                            isValidTypeForm = false;
                         }
                     }
                     sawUnpacked = true;
@@ -15083,6 +15341,7 @@ export function createTypeEvaluator(
                         LocMessage.callableFirstArg(),
                         typeArgs[0].node
                     );
+                    isValidTypeForm = false;
                 }
             }
 
@@ -15096,18 +15355,28 @@ export function createTypeEvaluator(
                 addDiagnostic(DiagnosticRule.reportMissingTypeArgument, LocMessage.callableSecondArg(), errorNode);
 
                 functionType.shared.declaredReturnType = UnknownType.create();
+                isValidTypeForm = false;
             }
 
             if (typeArgs.length > 2) {
                 addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.callableExtraArgs(), typeArgs[2].node);
+                isValidTypeForm = false;
             }
         } else {
             FunctionType.addDefaultParams(functionType, /* useUnknown */ true);
             functionType.shared.flags |= FunctionTypeFlags.GradualCallableForm;
+
+            if (typeArgs && typeArgs.length === 0) {
+                isValidTypeForm = false;
+            }
         }
 
         if (paramSpec) {
             FunctionType.addParamSpecVariadics(functionType, convertToInstance(paramSpec));
+        }
+
+        if (isTypeFormSupported(errorNode) && isValidTypeForm) {
+            functionType = TypeBase.cloneWithTypeForm(functionType, convertToInstance(functionType));
         }
 
         return functionType;
@@ -15145,6 +15414,14 @@ export function createTypeEvaluator(
         let optionalType = combineTypes([typeArg0Type, noneTypeClass ?? UnknownType.create()]);
         if (unionTypeClass && isInstantiableClass(unionTypeClass)) {
             optionalType = TypeBase.cloneAsSpecialForm(optionalType, ClassType.cloneAsInstance(unionTypeClass));
+        }
+
+        if (typeArg0Type.props?.typeForm) {
+            const typeFormType = combineTypes([
+                typeArg0Type.props.typeForm,
+                convertToInstance(noneTypeClass ?? UnknownType.create()),
+            ]);
+            optionalType = TypeBase.cloneWithTypeForm(optionalType, typeFormType);
         }
 
         return optionalType;
@@ -15292,6 +15569,10 @@ export function createTypeEvaluator(
             result = TypeBase.cloneAsSpecialForm(result, ClassType.cloneAsInstance(unionTypeClass));
         }
 
+        if (isTypeFormSupported(node)) {
+            result = TypeBase.cloneWithTypeForm(result, convertToInstance(result));
+        }
+
         return result;
     }
 
@@ -15332,6 +15613,40 @@ export function createTypeEvaluator(
         return type;
     }
 
+    function createTypeFormType(
+        classType: ClassType,
+        errorNode: ExpressionNode,
+        typeArgs: TypeResultWithNode[] | undefined
+    ): Type {
+        if (!typeArgs || typeArgs.length === 0) {
+            return ClassType.specialize(classType, [UnknownType.create()]);
+        }
+
+        if (typeArgs.length > 1) {
+            addDiagnostic(
+                DiagnosticRule.reportInvalidTypeForm,
+                LocMessage.typeArgsTooMany().format({
+                    name: classType.priv.aliasName || classType.shared.name,
+                    expected: 1,
+                    received: typeArgs.length,
+                }),
+                typeArgs[1].node
+            );
+            return UnknownType.create();
+        }
+
+        const convertedTypeArgs = typeArgs.map((typeArg) => {
+            return convertToInstance(validateTypeArg(typeArg) ? typeArg.type : UnknownType.create());
+        });
+        let resultType = ClassType.specialize(classType, convertedTypeArgs);
+
+        if (isTypeFormSupported(errorNode)) {
+            resultType = TypeBase.cloneWithTypeForm(resultType, convertToInstance(resultType));
+        }
+
+        return resultType;
+    }
+
     // Creates a "TypeGuard" and "TypeIs" type.
     function createTypeGuardType(
         classType: ClassType,
@@ -15357,7 +15672,13 @@ export function createTypeEvaluator(
             return convertToInstance(validateTypeArg(typeArg) ? typeArg.type : UnknownType.create());
         });
 
-        return ClassType.specialize(classType, convertedTypeArgs);
+        let resultType = ClassType.specialize(classType, convertedTypeArgs);
+
+        if (isTypeFormSupported(errorNode)) {
+            resultType = TypeBase.cloneWithTypeForm(resultType, convertToInstance(resultType));
+        }
+
+        return resultType;
     }
 
     function createSelfType(
@@ -15469,15 +15790,18 @@ export function createTypeEvaluator(
         }
 
         if (!typeArgs || typeArgs.length !== 1) {
-            addDiagnostic(
-                DiagnosticRule.reportInvalidTypeForm,
-                classType.shared.name === 'ReadOnly'
-                    ? LocMessage.readOnlyArgCount()
-                    : classType.shared.name === 'Required'
-                    ? LocMessage.requiredArgCount()
-                    : LocMessage.notRequiredArgCount(),
-                errorNode
-            );
+            if ((flags & EvalFlags.TypeExpression) !== 0) {
+                addDiagnostic(
+                    DiagnosticRule.reportInvalidTypeForm,
+                    classType.shared.name === 'ReadOnly'
+                        ? LocMessage.readOnlyArgCount()
+                        : classType.shared.name === 'Required'
+                        ? LocMessage.requiredArgCount()
+                        : LocMessage.notRequiredArgCount(),
+                    errorNode
+                );
+            }
+
             return { type: classType };
         }
 
@@ -15526,16 +15850,19 @@ export function createTypeEvaluator(
         }
 
         if (!isUsageLegal) {
-            addDiagnostic(
-                DiagnosticRule.reportInvalidTypeForm,
-                classType.shared.name === 'ReadOnly'
-                    ? LocMessage.readOnlyNotInTypedDict()
-                    : classType.shared.name === 'Required'
-                    ? LocMessage.requiredNotInTypedDict()
-                    : LocMessage.notRequiredNotInTypedDict(),
-                errorNode
-            );
-            return { type: ClassType.specialize(classType, [convertToInstance(typeArgType)], !!typeArgs) };
+            if ((flags & EvalFlags.TypeExpression) !== 0) {
+                addDiagnostic(
+                    DiagnosticRule.reportInvalidTypeForm,
+                    classType.shared.name === 'ReadOnly'
+                        ? LocMessage.readOnlyNotInTypedDict()
+                        : classType.shared.name === 'Required'
+                        ? LocMessage.requiredNotInTypedDict()
+                        : LocMessage.notRequiredNotInTypedDict(),
+                    errorNode
+                );
+            }
+
+            return { type: classType };
         }
 
         return { type: typeArgType, isReadOnly, isRequired, isNotRequired };
@@ -15547,16 +15874,11 @@ export function createTypeEvaluator(
         typeArgs: TypeResultWithNode[] | undefined,
         flags: EvalFlags
     ): Type {
-        // If no type arguments are provided, the resulting type
-        // depends on whether we're evaluating a type annotation or
-        // we're in some other context.
-        if (!typeArgs && (flags & EvalFlags.TypeExpression) === 0) {
-            return classType;
-        }
-
         if (!typeArgs || typeArgs.length !== 1) {
-            addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.unpackArgCount(), errorNode);
-            return UnknownType.create();
+            if ((flags & EvalFlags.TypeExpression) !== 0) {
+                addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.unpackArgCount(), errorNode);
+            }
+            return classType;
         }
 
         let typeArgType = typeArgs[0].type;
@@ -15573,6 +15895,9 @@ export function createTypeEvaluator(
                 return TypeVarType.cloneForUnpacked(typeArgType);
             }
 
+            if ((flags & EvalFlags.TypeExpression) === 0) {
+                return classType;
+            }
             addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.unpackExpectedTypeVarTuple(), errorNode);
             return UnknownType.create();
         }
@@ -15582,10 +15907,16 @@ export function createTypeEvaluator(
                 return ClassType.cloneForUnpacked(typeArgType);
             }
 
+            if ((flags & EvalFlags.TypeExpression) === 0) {
+                return classType;
+            }
             addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.unpackExpectedTypedDict(), errorNode);
             return UnknownType.create();
         }
 
+        if ((flags & EvalFlags.TypeExpression) === 0) {
+            return classType;
+        }
         addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.unpackNotAllowed(), errorNode);
         return UnknownType.create();
     }
@@ -15598,11 +15929,13 @@ export function createTypeEvaluator(
         flags: EvalFlags
     ): Type {
         if (flags & EvalFlags.NoFinal) {
-            addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.finalContext(), errorNode);
+            if ((flags & EvalFlags.TypeExpression) !== 0) {
+                addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.finalContext(), errorNode);
+            }
             return classType;
         }
 
-        if (!typeArgs || typeArgs.length === 0) {
+        if ((flags & EvalFlags.TypeExpression) === 0 || !typeArgs || typeArgs.length === 0) {
             return classType;
         }
 
@@ -15620,8 +15953,10 @@ export function createTypeEvaluator(
         flags: EvalFlags
     ): Type {
         if ((flags & EvalFlags.AllowConcatenate) === 0) {
-            addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.concatenateContext(), errorNode);
-            return AnyType.create();
+            if ((flags & EvalFlags.TypeExpression) !== 0) {
+                addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.concatenateContext(), errorNode);
+            }
+            return classType;
         }
 
         if (!typeArgs || typeArgs.length === 0) {
@@ -15669,12 +16004,18 @@ export function createTypeEvaluator(
         typeArgs: TypeResultWithNode[] | undefined,
         flags: EvalFlags
     ): TypeResult {
+        let type: Type | undefined;
+
         const typeExprFlags = EvalFlags.TypeExpression | EvalFlags.NoConvertSpecialForm;
         if ((flags & typeExprFlags) === 0) {
-            return { type: classType };
-        }
+            type = ClassType.cloneAsInstance(classType);
 
-        let type: Type | undefined;
+            if (typeArgs && typeArgs.length >= 1 && typeArgs[0].type.props?.typeForm) {
+                type = TypeBase.cloneWithTypeForm(type, typeArgs[0].type.props.typeForm);
+            }
+
+            return { type };
+        }
 
         if (typeArgs && typeArgs.length > 0) {
             type = typeArgs[0].type;
@@ -15695,7 +16036,7 @@ export function createTypeEvaluator(
         }
 
         return {
-            type: TypeBase.cloneAsSpecialForm(type, classType),
+            type: TypeBase.cloneAsSpecialForm(type, ClassType.cloneAsInstance(classType)),
             isReadOnly: typeArgs[0].isReadOnly,
             isRequired: typeArgs[0].isRequired,
             isNotRequired: typeArgs[0].isNotRequired,
@@ -15932,6 +16273,7 @@ export function createTypeEvaluator(
         const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
         const types: Type[] = [];
         let allowSingleTypeArg = false;
+        let isValidTypeForm = true;
 
         if (!typeArgs) {
             // If no type arguments are provided, the resulting type
@@ -15972,6 +16314,7 @@ export function createTypeEvaluator(
                     );
 
                     typeArgType = UnknownType.create();
+                    isValidTypeForm = false;
                 }
             }
 
@@ -15983,11 +16326,21 @@ export function createTypeEvaluator(
         // since it is used to define NoReturn in typeshed stubs).
         if (types.length === 1 && !allowSingleTypeArg && !isNoneInstance(types[0])) {
             addDiagnostic(DiagnosticRule.reportInvalidTypeArguments, LocMessage.unionTypeArgCount(), errorNode);
+            isValidTypeForm = false;
         }
 
         let unionType = combineTypes(types, { skipElideRedundantLiterals: true });
         if (unionTypeClass && isInstantiableClass(unionTypeClass)) {
             unionType = TypeBase.cloneAsSpecialForm(unionType, ClassType.cloneAsInstance(unionTypeClass));
+        }
+
+        if (!isValidTypeForm || types.some((t) => !t.props?.typeForm)) {
+            if (unionType.props?.typeForm) {
+                unionType = TypeBase.cloneWithTypeForm(unionType, undefined);
+            }
+        } else if (isTypeFormSupported(errorNode)) {
+            const typeFormType = combineTypes(types.map((t) => t.props!.typeForm!));
+            unionType = TypeBase.cloneWithTypeForm(unionType, typeFormType);
         }
 
         return unionType;
@@ -16166,6 +16519,11 @@ export function createTypeEvaluator(
             }
         }
 
+        // Delete the TypeForm info. The type alias serves as its own TypeForm info.
+        if (typeAlias.props?.typeForm) {
+            typeAlias = TypeBase.cloneWithTypeForm(typeAlias, undefined);
+        }
+
         return typeAlias;
     }
 
@@ -16261,7 +16619,7 @@ export function createTypeEvaluator(
 
     // Handles some special-case type annotations that are found
     // within the typings.pyi file.
-    function handleTypingStubTypeAnnotation(node: ExpressionNode): ClassType | undefined {
+    function handleTypingStubTypeAnnotation(node: ExpressionNode): Type | undefined {
         if (!node.parent || node.parent.nodeType !== ParseNodeType.TypeAnnotation) {
             return undefined;
         }
@@ -16316,6 +16674,7 @@ export function createTypeEvaluator(
                     typeParamVariance: Variance.Invariant,
                 },
             ],
+            ['TypeForm', { alias: '', module: 'builtins', isSpecialForm: true, typeParamVariance: Variance.Covariant }],
         ]);
 
         const aliasMapEntry = specialTypes.get(assignedName);
@@ -16323,17 +16682,32 @@ export function createTypeEvaluator(
         if (aliasMapEntry) {
             const cachedType = readTypeCache(node, EvalFlags.None);
             if (cachedType) {
-                assert(isInstantiableClass(cachedType));
-                return cachedType as ClassType;
+                return cachedType;
             }
 
-            const specialType = createSpecialBuiltInClass(node, assignedName, aliasMapEntry);
+            let specialType: Type = createSpecialBuiltInClass(node, assignedName, aliasMapEntry);
 
             // Handle 'LiteralString' specially because we want it to act as
             // though it derives from 'str'.
             if (assignedName === 'LiteralString') {
                 specialType.shared.baseClasses.push(strClass ?? AnyType.create());
                 computeMroLinearization(specialType);
+
+                if (isTypeFormSupported(node)) {
+                    specialType = TypeBase.cloneWithTypeForm(specialType, convertToInstance(specialType));
+                }
+            }
+
+            // Handle 'Never' and 'NoReturn' specially.
+            if (assignedName === 'Never' || assignedName === 'NoReturn') {
+                specialType = TypeBase.cloneAsSpecialForm(
+                    assignedName === 'Never' ? NeverType.createNever() : NeverType.createNoReturn(),
+                    specialType
+                );
+
+                if (isTypeFormSupported(node)) {
+                    specialType = TypeBase.cloneWithTypeForm(specialType, convertToInstance(specialType));
+                }
             }
 
             writeTypeCache(node, { type: specialType }, EvalFlags.None);
@@ -16447,7 +16821,7 @@ export function createTypeEvaluator(
 
                 typeAliasNameNode = (node.d.leftExpr as TypeAnnotationNode).d.valueExpr as NameNode;
 
-                if (!isLegalTypeAliasExpressionForm(node.d.rightExpr)) {
+                if (!isLegalTypeAliasExpressionForm(node.d.rightExpr, /* allowStrLiteral */ true)) {
                     addDiagnostic(
                         DiagnosticRule.reportInvalidTypeForm,
                         LocMessage.typeAliasIllegalExpressionForm(),
@@ -16882,6 +17256,8 @@ export function createTypeEvaluator(
                     if (isAny(argType) && argType.props?.specialForm) {
                         argType = AnyType.create();
                     }
+
+                    argType = stripTypeFormRecursive(argType);
 
                     if (!isAnyOrUnknown(argType) && !isUnbound(argType)) {
                         if (isMetaclassInstance(argType)) {
@@ -18733,7 +19109,9 @@ export function createTypeEvaluator(
             }
 
             if (!skipInference) {
-                inferredParamType = stripLiteralValue(defaultValueType);
+                inferredParamType = convertSpecialFormToRuntimeValue(defaultValueType, EvalFlags.None);
+                inferredParamType = stripTypeForm(inferredParamType);
+                inferredParamType = stripLiteralValue(inferredParamType);
             }
         }
 
@@ -18958,6 +19336,9 @@ export function createTypeEvaluator(
                                             }
                                             return subtype;
                                         });
+
+                                        // Do not retain TypeForm types in inferred return types.
+                                        returnType = stripTypeForm(returnType);
 
                                         inferredReturnTypes.push(returnType);
                                     } else {
@@ -20317,6 +20698,8 @@ export function createTypeEvaluator(
         flags: EvalFlags,
         errorNode: ExpressionNode
     ): TypeResult {
+        let isValidTypeForm = true;
+
         // Handle the special-case classes that are not defined
         // in the type stubs.
         if (ClassType.isSpecialBuiltIn(classType)) {
@@ -20326,26 +20709,23 @@ export function createTypeEvaluator(
                     return { type: createCallableType(classType, typeArgs, errorNode) };
                 }
 
-                case 'Never': {
-                    if (typeArgs && typeArgs.length > 0) {
-                        addDiagnostic(
-                            DiagnosticRule.reportInvalidTypeForm,
-                            LocMessage.typeArgsExpectingNone().format({ name: 'Never' }),
-                            typeArgs[0].node
-                        );
-                    }
-                    return { type: NeverType.createNever() };
-                }
-
+                case 'Never':
                 case 'NoReturn': {
                     if (typeArgs && typeArgs.length > 0) {
                         addDiagnostic(
                             DiagnosticRule.reportInvalidTypeForm,
-                            LocMessage.typeArgsExpectingNone().format({ name: 'NoReturn' }),
+                            LocMessage.typeArgsExpectingNone().format({ name: aliasedName }),
                             typeArgs[0].node
                         );
                     }
-                    return { type: NeverType.createNoReturn() };
+
+                    let resultType = aliasedName === 'Never' ? NeverType.createNever() : NeverType.createNoReturn();
+                    resultType = TypeBase.cloneAsSpecialForm(resultType, classType);
+                    if (isTypeFormSupported(errorNode)) {
+                        resultType = TypeBase.cloneWithTypeForm(resultType, convertToInstance(resultType));
+                    }
+
+                    return { type: resultType };
                 }
 
                 case 'Optional': {
@@ -20360,9 +20740,15 @@ export function createTypeEvaluator(
                         /* allowParamSpec */ undefined,
                         /* isSpecialForm */ false
                     );
+
                     if (isInstantiableClass(typeType)) {
                         typeType = explodeGenericClass(typeType);
                     }
+
+                    if (isTypeFormSupported(errorNode)) {
+                        typeType = TypeBase.cloneWithTypeForm(typeType, convertToInstance(typeType));
+                    }
+
                     return { type: typeType };
                 }
 
@@ -20403,6 +20789,7 @@ export function createTypeEvaluator(
                             errorNode
                         );
                     }
+                    isValidTypeForm = false;
                     break;
                 }
 
@@ -20410,6 +20797,7 @@ export function createTypeEvaluator(
                     if ((flags & (EvalFlags.NoNonTypeSpecialForms | EvalFlags.TypeExpression)) !== 0) {
                         addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.literalNotAllowed(), errorNode);
                     }
+                    isValidTypeForm = false;
                     break;
                 }
 
@@ -20470,6 +20858,10 @@ export function createTypeEvaluator(
                 case 'LiteralString': {
                     return { type: createSpecialType(classType, typeArgs, 0) };
                 }
+
+                case 'TypeForm': {
+                    return { type: createTypeFormType(classType, errorNode, typeArgs) };
+                }
             }
         }
 
@@ -20509,6 +20901,10 @@ export function createTypeEvaluator(
                         typeType = explodeGenericClass(typeType);
                     }
 
+                    if (isTypeFormSupported(errorNode)) {
+                        typeType = TypeBase.cloneWithTypeForm(typeType, convertToInstance(typeType));
+                    }
+
                     return { type: typeType };
                 }
             }
@@ -20516,15 +20912,22 @@ export function createTypeEvaluator(
             // Handle "tuple" specially, since it needs to act like "Tuple"
             // in Python 3.9 and newer.
             if (isTupleClass(classType)) {
-                return {
-                    type: createSpecialType(
-                        classType,
-                        typeArgs,
-                        /* paramLimit */ undefined,
-                        /* allowParamSpec */ undefined,
-                        /* isSpecialForm */ false
-                    ),
-                };
+                let specializedClass = createSpecialType(
+                    classType,
+                    typeArgs,
+                    /* paramLimit */ undefined,
+                    /* allowParamSpec */ undefined,
+                    /* isSpecialForm */ false
+                );
+
+                if (isTypeFormSupported(errorNode)) {
+                    specializedClass = TypeBase.cloneWithTypeForm(
+                        specializedClass,
+                        convertToInstance(specializedClass)
+                    );
+                }
+
+                return { type: specializedClass };
             }
         }
 
@@ -20567,6 +20970,7 @@ export function createTypeEvaluator(
             } else if (typeArgCount > typeParams.length) {
                 if (!ClassType.isPartiallyEvaluated(classType) && !ClassType.isTupleClass(classType)) {
                     if (typeParams.length === 0) {
+                        isValidTypeForm = false;
                         addDiagnostic(
                             DiagnosticRule.reportInvalidTypeArguments,
                             LocMessage.typeArgsExpectingNone().format({
@@ -20575,6 +20979,7 @@ export function createTypeEvaluator(
                             typeArgs[typeParams.length].node
                         );
                     } else if (typeParams.length !== 1 || !isParamSpec(typeParams[0])) {
+                        isValidTypeForm = false;
                         addDiagnostic(
                             DiagnosticRule.reportInvalidTypeArguments,
                             LocMessage.typeArgsTooMany().format({
@@ -20589,6 +20994,7 @@ export function createTypeEvaluator(
                     typeArgCount = typeParams.length;
                 }
             } else if (typeArgCount < minTypeArgCount) {
+                isValidTypeForm = false;
                 addDiagnostic(
                     DiagnosticRule.reportInvalidTypeArguments,
                     LocMessage.typeArgsTooFew().format({
@@ -20601,6 +21007,10 @@ export function createTypeEvaluator(
             }
 
             typeArgs.forEach((typeArg, index) => {
+                if (!typeArg.type.props?.typeForm) {
+                    isValidTypeForm = false;
+                }
+
                 if (index === variadicTypeParamIndex) {
                     // The types that make up the tuple that maps to the
                     // TypeVarTuple have already been validated when the tuple
@@ -20610,7 +21020,9 @@ export function createTypeEvaluator(
                     }
 
                     if (isTypeVarTuple(typeArg.type)) {
-                        validateTypeVarTupleIsUnpacked(typeArg.type, typeArg.node);
+                        if (!validateTypeVarTupleIsUnpacked(typeArg.type, typeArg.node)) {
+                            isValidTypeForm = false;
+                        }
                         return;
                     }
                 }
@@ -20618,10 +21030,14 @@ export function createTypeEvaluator(
                 const typeParam = index < typeParams.length ? typeParams[index] : undefined;
                 const isParamSpecTarget = typeParam && isParamSpec(typeParam);
 
-                validateTypeArg(typeArg, {
-                    allowParamSpec: true,
-                    allowTypeArgList: isParamSpecTarget,
-                });
+                if (
+                    !validateTypeArg(typeArg, {
+                        allowParamSpec: true,
+                        allowTypeArgList: isParamSpecTarget,
+                    })
+                ) {
+                    isValidTypeForm = false;
+                }
             });
         }
 
@@ -20658,6 +21074,7 @@ export function createTypeEvaluator(
             } else if (typeArgs.length > 1) {
                 const paramSpecTypeArg = typeArgs.find((typeArg) => isParamSpec(typeArg.type));
                 if (paramSpecTypeArg) {
+                    isValidTypeForm = false;
                     addDiagnostic(
                         DiagnosticRule.reportInvalidTypeForm,
                         LocMessage.paramSpecContext(),
@@ -20667,6 +21084,7 @@ export function createTypeEvaluator(
 
                 const listTypeArg = typeArgs.find((typeArg) => !!typeArg.typeList);
                 if (listTypeArg) {
+                    isValidTypeForm = false;
                     addDiagnostic(
                         DiagnosticRule.reportInvalidTypeForm,
                         LocMessage.typeArgListNotAllowed(),
@@ -20787,6 +21205,7 @@ export function createTypeEvaluator(
                     // Avoid emitting this error for a partially-constructed class.
                     if (!isClassInstance(typeArgType) || !ClassType.isPartiallyEvaluated(typeArgType)) {
                         assert(typeArgs !== undefined);
+                        isValidTypeForm = false;
                         addDiagnostic(
                             DiagnosticRule.reportInvalidTypeArguments,
                             LocMessage.typeVarAssignmentMismatch().format({
@@ -20809,7 +21228,14 @@ export function createTypeEvaluator(
             typeArgTypes = typeArgs.map((t) => convertToInstance(t.type));
         }
 
-        const specializedClass = ClassType.specialize(classType, typeArgTypes, typeArgs !== undefined);
+        let specializedClass = ClassType.specialize(classType, typeArgTypes, typeArgs !== undefined);
+
+        if (isTypeFormSupported(errorNode)) {
+            specializedClass = TypeBase.cloneWithTypeForm(
+                specializedClass,
+                isValidTypeForm ? convertToInstance(specializedClass) : undefined
+            );
+        }
 
         return { type: specializedClass };
     }
@@ -20915,6 +21341,10 @@ export function createTypeEvaluator(
 
         if (options?.notParsed) {
             flags |= EvalFlags.NotParsed;
+        }
+
+        if (options?.typeFormArg) {
+            flags |= EvalFlags.TypeFormArg;
         }
 
         return getTypeOfExpression(node, flags);
@@ -21232,7 +21662,7 @@ export function createTypeEvaluator(
     // In general, string nodes don't have any declarations associated with them, but
     // we need to handle the special case of string literals used as keys within a
     // dictionary expression where those keys are associated with a known TypedDict.
-    function getDeclarationsForStringNode(node: StringNode): Declaration[] | undefined {
+    function getDeclInfoForStringNode(node: StringNode): SymbolDeclInfo | undefined {
         const declarations: Declaration[] = [];
         const expectedType = getExpectedType(node)?.type;
 
@@ -21255,7 +21685,7 @@ export function createTypeEvaluator(
             });
         }
 
-        return declarations.length === 0 ? undefined : declarations;
+        return declarations.length === 0 ? undefined : { decls: declarations, synthesizedTypes: [] };
     }
 
     function getAliasFromImport(node: NameNode): NameNode | undefined {
@@ -21270,12 +21700,13 @@ export function createTypeEvaluator(
         return undefined;
     }
 
-    function getDeclarationsForNameNode(node: NameNode, skipUnreachableCode = true): Declaration[] | undefined {
+    function getDeclInfoForNameNode(node: NameNode, skipUnreachableCode = true): SymbolDeclInfo | undefined {
         if (skipUnreachableCode && AnalyzerNodeInfo.isCodeUnreachable(node)) {
             return undefined;
         }
 
         const declarations: Declaration[] = [];
+        const synthesizedTypes: Type[] = [];
 
         // If the node is part of a "from X import Y as Z" statement and the node
         // is the "Y" (non-aliased) name, we need to look up the alias symbol
@@ -21350,7 +21781,12 @@ export function createTypeEvaluator(
                         if (typedDecls.length > 0) {
                             appendArray(declarations, typedDecls);
                         } else {
-                            appendArray(declarations, symbol.getDeclarations());
+                            const synthesizedType = symbol.getSynthesizedType();
+                            if (synthesizedType) {
+                                synthesizedTypes.push(synthesizedType);
+                            } else {
+                                appendArray(declarations, symbol.getDeclarations());
+                            }
                         }
                     }
                 });
@@ -21448,7 +21884,7 @@ export function createTypeEvaluator(
             }
         }
 
-        return declarations;
+        return { decls: declarations, synthesizedTypes };
     }
 
     function getTypeForDeclaration(declaration: Declaration): DeclaredSymbolTypeInfo {
@@ -22133,6 +22569,10 @@ export function createTypeEvaluator(
                 }
             }
 
+            if (decl.type === DeclarationType.Param) {
+                return true;
+            }
+
             return false;
         });
     }
@@ -22327,9 +22767,10 @@ export function createTypeEvaluator(
                             }
 
                             // If the symbol is constant, we can retain the literal
-                            // value. Otherwise, strip literal values to widen the type.
+                            // value and TypeForm types. Otherwise, strip literal values
+                            // and TypeForm types to widen.
                             if (TypeBase.isInstance(type) && !isConstant && !isExplicitTypeAliasDeclaration(decl)) {
-                                type = stripLiteralValue(type);
+                                type = stripTypeForm(stripLiteralValue(type));
                             }
                         }
 
@@ -22744,7 +23185,9 @@ export function createTypeEvaluator(
                         }
 
                         if (stripLiteralArgTypes) {
-                            paramType = stripLiteralValue(paramType);
+                            paramType = stripTypeForm(
+                                convertSpecialFormToRuntimeValue(stripLiteralValue(paramType), EvalFlags.None)
+                            );
                         }
 
                         paramTypes.push(paramType);
@@ -23572,7 +24015,11 @@ export function createTypeEvaluator(
             }
 
             if (!isSpecialFormExempt) {
-                srcType = specialForm;
+                if (srcType.props?.typeForm && !specialForm.props?.typeForm) {
+                    srcType = TypeBase.cloneWithTypeForm(specialForm, srcType.props.typeForm);
+                } else {
+                    srcType = specialForm;
+                }
             }
         }
 
@@ -23653,8 +24100,11 @@ export function createTypeEvaluator(
             return true;
         }
 
-        // Before performing any other checks, see if the dest type is a
-        // TypeVar that we are attempting to match.
+        // Handle TypeForm assignments.
+        if (assignToTypeFormType(destType, srcType, constraints, flags, recursionCount)) {
+            return true;
+        }
+
         if (isTypeVar(destType)) {
             if (isTypeVarSame(destType, srcType)) {
                 return true;
@@ -23928,15 +24378,11 @@ export function createTypeEvaluator(
                 }
 
                 if (isSpecialFormClass(expandedSrcType, flags)) {
-                    if (destType.props?.specialForm) {
-                        return assignType(
-                            destType.props.specialForm,
-                            expandedSrcType,
-                            diag,
-                            constraints,
-                            flags,
-                            recursionCount
-                        );
+                    // Special form classes are compatible only with other special form
+                    // classes, not with 'object' or 'type'.
+                    const destSpecialForm = destType.props?.specialForm ?? destType;
+                    if (isSpecialFormClass(destSpecialForm, flags)) {
+                        return assignType(destSpecialForm, expandedSrcType, diag, constraints, flags, recursionCount);
                     }
                 } else if (
                     assignClass(
@@ -24348,6 +24794,54 @@ export function createTypeEvaluator(
         diag?.addMessage(LocAddendum.typeAssignmentMismatch().format(printSrcDestTypes(srcType, destType)));
 
         return false;
+    }
+
+    // If the destination type is an explicit TypeForm type, see if the source
+    // type has an implicit TypeForm type that can be assigned to it. Also see
+    // of the source is a type[T] type that is assignable.
+    function assignToTypeFormType(
+        destType: Type,
+        srcType: Type,
+        constraints: ConstraintTracker | undefined,
+        flags: AssignTypeFlags,
+        recursionCount: number
+    ): boolean {
+        if (!isClassInstance(destType) || !ClassType.isBuiltIn(destType, 'TypeForm')) {
+            return false;
+        }
+
+        const destTypeFormType =
+            destType.priv.typeArgs && destType.priv.typeArgs.length > 0
+                ? destType.priv.typeArgs[0]
+                : UnknownType.create();
+
+        let srcTypeFormType: Type | undefined;
+
+        // Is the source is a TypeForm type?
+        if (srcType.props?.typeForm) {
+            srcTypeFormType = srcType.props.typeForm;
+        } else if (isClass(srcType)) {
+            if (TypeBase.isInstantiable(srcType)) {
+                if (!ClassType.isSpecialBuiltIn(srcType)) {
+                    srcTypeFormType = ClassType.cloneAsInstance(srcType);
+                }
+            } else if (ClassType.isBuiltIn(srcType, 'type')) {
+                srcTypeFormType =
+                    srcType.priv.typeArgs?.length && srcType.priv.typeArgs.length > 0
+                        ? srcType.priv.typeArgs[0]
+                        : UnknownType.create();
+            }
+        } else if (isTypeVar(srcType) && TypeBase.isInstantiable(srcType)) {
+            if (!isTypeVarTuple(srcType) || !srcType.priv.isInUnion) {
+                srcTypeFormType = convertToInstance(srcType);
+            }
+        }
+
+        if (!srcTypeFormType) {
+            return false;
+        }
+
+        return assignType(destTypeFormType, srcTypeFormType, /* diag */ undefined, constraints, flags, recursionCount);
     }
 
     function assignFromUnionType(
@@ -24801,7 +25295,13 @@ export function createTypeEvaluator(
                 if (
                     isClassInstance(srcType) &&
                     isLiteralType(srcType) &&
-                    UnionType.containsType(destType, srcType, /* exclusionSet */ undefined, recursionCount)
+                    UnionType.containsType(
+                        destType,
+                        srcType,
+                        /* options */ undefined,
+                        /* exclusionSet */ undefined,
+                        recursionCount
+                    )
                 ) {
                     return true;
                 }
@@ -26899,7 +27399,7 @@ export function createTypeEvaluator(
 
                 const baseObj: ClassType = isClassInstance(baseType)
                     ? baseType
-                    : ClassType.cloneAsInstance(specializeClassType(baseType));
+                    : ClassType.cloneAsInstance(specializeWithDefaultTypeArgs(baseType));
 
                 let stripFirstParam = false;
                 if (isClassInstance(baseType)) {
@@ -27075,10 +27575,10 @@ export function createTypeEvaluator(
 
         // Perform a sanity check on the RHS expression. Some expression
         // forms should never be considered legitimate for type aliases.
-        return isLegalTypeAliasExpressionForm(decl.node.parent.d.rightExpr);
+        return isLegalTypeAliasExpressionForm(decl.node.parent.d.rightExpr, /* allowStrLiteral */ false);
     }
 
-    function isLegalTypeAliasExpressionForm(node: ExpressionNode): boolean {
+    function isLegalTypeAliasExpressionForm(node: ExpressionNode, allowStrLiteral: boolean): boolean {
         switch (node.nodeType) {
             case ParseNodeType.Error:
             case ParseNodeType.UnaryOperation:
@@ -27100,18 +27600,25 @@ export function createTypeEvaluator(
             case ParseNodeType.Set:
                 return false;
 
+            case ParseNodeType.StringList:
+            case ParseNodeType.String:
+                return allowStrLiteral;
+
+            case ParseNodeType.Constant:
+                return node.d.constType === KeywordType.None;
+
             case ParseNodeType.BinaryOperation:
                 return (
                     node.d.operator === OperatorType.BitwiseOr &&
-                    isLegalTypeAliasExpressionForm(node.d.leftExpr) &&
-                    isLegalTypeAliasExpressionForm(node.d.rightExpr)
+                    isLegalTypeAliasExpressionForm(node.d.leftExpr, /* allowStrLiteral */ true) &&
+                    isLegalTypeAliasExpressionForm(node.d.rightExpr, /* allowStrLiteral */ true)
                 );
 
             case ParseNodeType.Index:
-                return isLegalTypeAliasExpressionForm(node.d.leftExpr);
+                return isLegalTypeAliasExpressionForm(node.d.leftExpr, allowStrLiteral);
 
             case ParseNodeType.MemberAccess:
-                return isLegalTypeAliasExpressionForm(node.d.leftExpr);
+                return isLegalTypeAliasExpressionForm(node.d.leftExpr, allowStrLiteral);
         }
 
         return true;
@@ -27215,6 +27722,13 @@ export function createTypeEvaluator(
         return { sourceType: simpleSrcType, destType: simpleDestType };
     }
 
+    function isTypeFormSupported(node: ParseNode) {
+        const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+
+        // For now, enable only if enableExperimentalFeatures is true.
+        return fileInfo.diagnosticRuleSet.enableExperimentalFeatures;
+    }
+
     function printType(type: Type, options?: PrintTypeOptions): string {
         let flags = evaluatorOptions.printTypeFlags;
 
@@ -27250,7 +27764,7 @@ export function createTypeEvaluator(
     // call produces an expression tree that is not attached to the main parse
     // expression tree because we don't want to mutate the latter; the
     // expression tree created by this function is therefore used only temporarily.
-    function parseStringAsTypeAnnotation(node: StringListNode): ExpressionNode | undefined {
+    function parseStringAsTypeAnnotation(node: StringListNode, reportErrors: boolean): ExpressionNode | undefined {
         const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
         const parser = new Parser();
         const textValue = node.d.strings[0].d.value;
@@ -27283,6 +27797,12 @@ export function createTypeEvaluator(
         );
 
         if (parseResults.parseTree) {
+            // If there are errors but we are not reporting them, return
+            // undefined to indicate that the parse failed.
+            if (!reportErrors && parseResults.diagnostics.length > 0) {
+                return undefined;
+            }
+
             const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
             parseResults.diagnostics.forEach((diag) => {
                 fileInfo.diagnosticSink.addDiagnosticWithTextRange('error', diag.message, node);
@@ -27290,9 +27810,12 @@ export function createTypeEvaluator(
 
             parseResults.parseTree.parent = node;
 
-            // Add the new subtree to the parse tree so it can participate in
-            // language server operations like find and replace.
-            node.d.annotation = parseResults.parseTree;
+            // Optionally add the new subtree to the parse tree so it can
+            // participate in language server operations like find and replace.
+            if (reportErrors) {
+                node.d.annotation = parseResults.parseTree;
+            }
+
             return parseResults.parseTree;
         }
 
@@ -27371,8 +27894,8 @@ export function createTypeEvaluator(
         isAsymmetricAccessorAssignment,
         suppressDiagnostics,
         isSpecialFormClass,
-        getDeclarationsForStringNode,
-        getDeclarationsForNameNode,
+        getDeclInfoForStringNode,
+        getDeclInfoForNameNode,
         getTypeForDeclaration,
         resolveAliasDeclaration,
         resolveAliasDeclarationWithInfo,

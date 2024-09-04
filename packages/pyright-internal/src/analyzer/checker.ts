@@ -1608,7 +1608,7 @@ export class Checker extends ParseTreeWalker {
             return false;
         }
 
-        const decls = this._evaluator.getDeclarationsForNameNode(node.d.name);
+        const decls = this._evaluator.getDeclInfoForNameNode(node.d.name)?.decls;
         if (!decls) {
             return false;
         }
@@ -2631,7 +2631,7 @@ export class Checker extends ParseTreeWalker {
     // earlier overload. Typeshed stubs contain type: ignore comments on these
     // lines, so it is important for us to report them in the same manner.
     private _findNodeForOverload(functionNode: FunctionNode, overloadType: FunctionType): FunctionNode | undefined {
-        const decls = this._evaluator.getDeclarationsForNameNode(functionNode.d.name);
+        const decls = this._evaluator.getDeclInfoForNameNode(functionNode.d.name)?.decls;
         if (!decls) {
             return undefined;
         }
@@ -4162,7 +4162,7 @@ export class Checker extends ParseTreeWalker {
                         isSupported = false;
                     } else if (
                         subtype.props?.specialForm &&
-                        isInstantiableClass(subtype.props.specialForm) &&
+                        isClassInstance(subtype.props.specialForm) &&
                         ClassType.isBuiltIn(subtype.props.specialForm, 'Annotated')
                     ) {
                         diag.addMessage(LocAddendum.annotatedNotAllowed());
@@ -4602,8 +4602,8 @@ export class Checker extends ParseTreeWalker {
         // any variable declarations that are bound using nonlocal
         // or global explicit bindings.
         const declarations = this._evaluator
-            .getDeclarationsForNameNode(node)
-            ?.filter((decl) => decl.type !== DeclarationType.Variable || !decl.isExplicitBinding);
+            .getDeclInfoForNameNode(node)
+            ?.decls?.filter((decl) => decl.type !== DeclarationType.Variable || !decl.isExplicitBinding);
 
         let primaryDeclaration =
             declarations && declarations.length > 0 ? declarations[declarations.length - 1] : undefined;
@@ -4787,7 +4787,9 @@ export class Checker extends ParseTreeWalker {
 
         if (isTypeIs) {
             const scopeIds = getTypeVarScopeIds(functionType);
-            const typeGuardType = makeTypeVarsBound(returnType.priv.typeArgs[0], scopeIds);
+            const narrowedType = returnType.priv.typeArgs[0];
+            let typeGuardType = makeTypeVarsBound(narrowedType, scopeIds);
+            typeGuardType = TypeBase.cloneWithTypeForm(typeGuardType, typeGuardType);
 
             // Determine the type of the first parameter.
             const paramIndex = isMethod && !FunctionType.isStaticMethod(functionType) ? 1 : 0;
@@ -4805,7 +4807,7 @@ export class Checker extends ParseTreeWalker {
                         DiagnosticRule.reportGeneralTypeIssues,
                         LocMessage.typeIsReturnType().format({
                             type: this._evaluator.printType(paramType),
-                            returnType: this._evaluator.printType(typeGuardType),
+                            returnType: this._evaluator.printType(narrowedType),
                         }),
                         returnAnnotation
                     );
