@@ -121,6 +121,20 @@ describe(`Basic language server tests`, () => {
         assert(MarkupContent.is(hoverResult.contents));
         assert.strictEqual(hoverResult.contents.value, '```python\n(module) os\n```');
     });
+    test('language server works when no workspace is open', async () => {
+        const code = `
+// @filename: test.py
+//// import [|/*marker*/os|]
+        `;
+        const info = await runLanguageServer([], code, true);
+
+        // Do simple hover request
+        openFile(info, 'marker');
+        const hoverResult = await hover(info, 'marker');
+        assert(hoverResult);
+        assert(MarkupContent.is(hoverResult.contents));
+        assert.strictEqual(hoverResult.contents.value, '```python\n(module) os\n```');
+    });
     test('Completions', async () => {
         const code = `
 // @filename: test.py
