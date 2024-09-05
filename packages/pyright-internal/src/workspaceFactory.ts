@@ -355,7 +355,7 @@ export class WorkspaceFactory implements IWorkspaceFactory {
     }
 
     private _getDefaultWorkspaceKey(pythonPath: Uri | undefined) {
-        return `${this._defaultWorkspacePath}:${!Uri.isEmpty(pythonPath) ? pythonPath : '$Empty$'}`;
+        return `${this._defaultWorkspacePath}${!Uri.isEmpty(pythonPath) ? `:${pythonPath}` : ''}`;
     }
 
     private _getWorkspaceKey(value: Workspace) {
