@@ -73,9 +73,9 @@ export function isPatternInSymbol(typedValue: string, symbolName: string): boole
         if (typedLower[typedPos] === symbolLower[symbolPos]) {
             typedPos += 1;
             inSkip = false;
-        }
-        else {  // character doesn't match
-            if (! inSkip) {
+        } else {
+            // character doesn't match
+            if (!inSkip) {
                 if (countSkips >= skipLimit) {
                     return false;
                 }
