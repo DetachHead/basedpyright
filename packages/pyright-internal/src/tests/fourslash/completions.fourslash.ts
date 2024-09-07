@@ -22,14 +22,6 @@ await helper.verifyCompletion('exact', 'markdown', {
                 label: 'gmtime',
                 kind: Consts.CompletionItemKind.Function,
             },
-            {
-                label: 'clock_gettime',
-                kind: Consts.CompletionItemKind.Function,
-            },
-            {
-                label: 'clock_gettime_ns',
-                kind: Consts.CompletionItemKind.Function,
-            },
         ],
     },
     marker2: { completions: [{ label: 'aaaaaa', kind: Consts.CompletionItemKind.Variable }] },

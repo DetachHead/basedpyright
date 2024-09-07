@@ -62,11 +62,26 @@ export function isPatternInSymbol(typedValue: string, symbolName: string): boole
     const symbolLower = symbolName.toLocaleLowerCase();
     const typedLength = typedLower.length;
     const symbolLength = symbolLower.length;
+    /** how many times we're allowed to skip a section of characters in symbolName
+    to find the next character in typedValue */
+    const skipLimit = Math.floor(typedLength / 4) + 1;
+    let countSkips = 0;
+    let inSkip = false;
     let typedPos = 0;
     let symbolPos = 0;
     while (typedPos < typedLength && symbolPos < symbolLength) {
         if (typedLower[typedPos] === symbolLower[symbolPos]) {
             typedPos += 1;
+            inSkip = false;
+        }
+        else {  // character doesn't match
+            if (! inSkip) {
+                if (countSkips >= skipLimit) {
+                    return false;
+                }
+                ++countSkips;
+                inSkip = true;
+            }
         }
         symbolPos += 1;
     }

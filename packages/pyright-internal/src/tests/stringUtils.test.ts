@@ -30,6 +30,22 @@ test('stringUtils isPatternInSymbol', () => {
 
     assert.equal(utils.isPatternInSymbol('abcd', 'abcd'), true);
     assert.equal(utils.isPatternInSymbol('abc', 'abcd'), true);
+    assert.equal(utils.isPatternInSymbol('abc', 'xyzabcd'), true);
+    assert.equal(utils.isPatternInSymbol('abc', 'axbcd'), true);
+
+    // 2 skips is too many skips for a short typedValue.
+    assert.equal(utils.isPatternInSymbol('abc', 'xyzabxcd'), false);
+    assert.equal(utils.isPatternInSymbol('abc', 'axbxc'), false);
+
+    // Longer typedValues allow more skips.
+    assert.equal(utils.isPatternInSymbol('abcd', 'xyzabcxd'), true);
+    assert.equal(utils.isPatternInSymbol('abcd', 'axbxcd'), true);
+    assert.equal(utils.isPatternInSymbol('abcd', 'xabxcxd'), false);
+    assert.equal(utils.isPatternInSymbol('abcd', 'abxcxd'), true);
+    assert.equal(utils.isPatternInSymbol('abcd', 'axbcxdxyz'), true);
+    assert.equal(utils.isPatternInSymbol('abcdefgh', 'abcdxyzefxghxyz'), true);
+    assert.equal(utils.isPatternInSymbol('abcdefgh', 'xabcdxefxghxyz'), true);
+    assert.equal(utils.isPatternInSymbol('abcdefgh', 'xabcxdxefxghxyz'), false);
 
     assert.equal(utils.isPatternInSymbol('ABCD', 'abcd'), true);
     assert.equal(utils.isPatternInSymbol('ABC', 'abcd'), true);
