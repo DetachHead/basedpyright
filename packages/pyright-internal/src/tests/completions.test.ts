@@ -369,12 +369,12 @@ test('include literals in expression completion', async () => {
 //// from typing import TypedDict
 //// 
 //// class TestType(TypedDict):
-////     A: str
-////     B: int
+////     key_a: str
+////     key_b: int
 //// 
 //// var: TestType = {}
 //// 
-//// var[[|A/*marker*/|]]
+//// var[[|key_a/*marker*/|]]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -386,8 +386,8 @@ test('include literals in expression completion', async () => {
             completions: [
                 {
                     kind: CompletionItemKind.Constant,
-                    label: "'A'",
-                    textEdit: { range: state.getPositionRange('marker'), newText: "'A'" },
+                    label: "'key_a'",
+                    textEdit: { range: state.getPositionRange('marker'), newText: "'key_a'" },
                 },
             ],
         },
@@ -400,10 +400,10 @@ test('include literals in set key', async () => {
 //// from typing import TypedDict
 //// 
 //// class TestType(TypedDict):
-////     A: str
-////     B: int
+////     key_a: str
+////     key_b: int
 //// 
-//// var: TestType = { [|A/*marker*/|] }
+//// var: TestType = { [|key_a/*marker*/|] }
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -415,8 +415,8 @@ test('include literals in set key', async () => {
             completions: [
                 {
                     kind: CompletionItemKind.Constant,
-                    label: "'A'",
-                    textEdit: { range: state.getPositionRange('marker'), newText: "'A'" },
+                    label: "'key_a'",
+                    textEdit: { range: state.getPositionRange('marker'), newText: "'key_a'" },
                 },
             ],
         },
@@ -429,10 +429,10 @@ test('include literals in dict key', async () => {
 //// from typing import TypedDict
 //// 
 //// class TestType(TypedDict):
-////     A: str
-////     B: int
+////     key_a: str
+////     key_b: int
 //// 
-//// var: TestType = { [|A/*marker*/|] : "hello" }
+//// var: TestType = { [|key_a/*marker*/|] : "hello" }
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -444,8 +444,8 @@ test('include literals in dict key', async () => {
             completions: [
                 {
                     kind: CompletionItemKind.Constant,
-                    label: '"A"',
-                    textEdit: { range: state.getPositionRange('marker'), newText: '"A"' },
+                    label: '"key_a"',
+                    textEdit: { range: state.getPositionRange('marker'), newText: '"key_a"' },
                 },
             ],
         },
