@@ -983,14 +983,16 @@ export class Program {
     }
 
     loadStdlibModules = (sourceFileUri: Uri) => {
-        this._importResolver?.stdlibModules?.forEach((module) => {
-            if (!module.includes('.')) {
-                this._lookUpImport({
-                    importingFileUri: sourceFileUri,
-                    nameParts: [module],
-                });
-            }
-        });
+        this._importResolver
+            ?.getStdlibModules(this._configOptions.findExecEnvironment(sourceFileUri))
+            .forEach((module) => {
+                if (!module.includes('.')) {
+                    this._lookUpImport({
+                        importingFileUri: sourceFileUri,
+                        nameParts: [module],
+                    });
+                }
+            });
     };
 
     // Returns a value from 0 to 1 (or more) indicating how "full" the cache is
