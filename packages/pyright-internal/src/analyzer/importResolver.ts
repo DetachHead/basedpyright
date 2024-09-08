@@ -108,7 +108,7 @@ export class ImportResolver {
     private _cachedEntriesForPath = new Map<string, Dirent[]>();
     private _cachedFilesForPath = new Map<string, Uri[]>();
     private _cachedDirExistenceForRoot = new Map<string, boolean>();
-    stdlibModules: Set<string> | undefined;
+    private _stdlibModules: Set<string> | undefined;
 
     protected readonly cachedParentImportResults: ParentDirectoryCache;
 
@@ -142,7 +142,7 @@ export class ImportResolver {
         this._cachedImportResults = new Map<string | undefined, CachedImportResults>();
         this._cachedModuleNameResults = new Map<string, Map<string, ModuleImportInfo>>();
         this.cachedParentImportResults.reset();
-        this.stdlibModules = undefined;
+        this._stdlibModules = undefined;
 
         this._invalidateFileSystemCache();
 
@@ -337,12 +337,19 @@ export class ImportResolver {
         return this._getThirdPartyTypeshedPath(this._configOptions.typeshedPath, unused);
     }
 
+    getStdlibModules = (execEnv: ExecutionEnvironment) => {
+        if (!this._stdlibModules) {
+            this._stdlibModules = this._buildStdlibCache(this.getTypeshedStdLibPath(execEnv), execEnv);
+        }
+        return this._stdlibModules;
+    };
+
     isStdlibModule(module: ImportedModuleDescriptor, execEnv: ExecutionEnvironment): boolean {
-        if (!this.stdlibModules) {
-            this.stdlibModules = this._buildStdlibCache(this.getTypeshedStdLibPath(execEnv), execEnv);
+        if (!this._stdlibModules) {
+            this._stdlibModules = this._buildStdlibCache(this.getTypeshedStdLibPath(execEnv), execEnv);
         }
 
-        return this.stdlibModules.has(module.nameParts.join('.'));
+        return this.getStdlibModules(execEnv).has(module.nameParts.join('.'));
     }
 
     getImportRoots(execEnv: ExecutionEnvironment, forLogging = false) {
