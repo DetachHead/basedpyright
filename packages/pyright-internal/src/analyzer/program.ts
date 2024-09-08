@@ -982,6 +982,17 @@ export class Program {
         return program;
     }
 
+    loadStdlibModules = (sourceFileUri: Uri) => {
+        this._importResolver?.stdlibModules?.forEach((module) => {
+            if (!module.includes('.')) {
+                this._lookUpImport({
+                    importingFileUri: sourceFileUri,
+                    nameParts: [module],
+                });
+            }
+        });
+    };
+
     // Returns a value from 0 to 1 (or more) indicating how "full" the cache is
     // relative to some predetermined high-water mark. We'll compute this value
     // based on two easy-to-compute metrics: the number of entries in the type
