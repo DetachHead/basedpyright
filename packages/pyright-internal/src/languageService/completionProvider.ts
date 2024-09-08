@@ -309,6 +309,7 @@ export class CompletionProvider {
             return null;
         }
 
+        this.program.loadStdlibModules(this.fileUri);
         const completionMap = this._getCompletions();
         return CompletionList.create(completionMap?.toArray());
     }

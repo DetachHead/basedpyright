@@ -90,6 +90,9 @@ export interface ProgramView {
     // See whether we can get rid of these methods
     handleMemoryHighUsage(): void;
     clone(): prog.Program;
+
+    // TODO: does this "mutate the program"? if so it should be moved somewhere else
+    loadStdlibModules: (sourceFileUri: Uri) => void;
 }
 
 // This exposes some APIs to mutate program. Unlike ProgramMutator, this will only mutate this program
