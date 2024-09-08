@@ -1,7 +1,7 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: test.py
-//// Cust[|/*marker1*/|]
+//// Custo[|/*marker1*/|]
 //// my_v[|/*marker2*/|]
 
 // @filename: __builtins__.pyi
