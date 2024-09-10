@@ -266,7 +266,7 @@ there are rules in pyright that are discouraged in basedpyright because we provi
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
 
-The following settings can be specified for each execution environment.
+The following settings can be specified for each execution environment. Each source file within a project is associated with at most one execution environment -- the first one whose root directory contains that file.
 
 - **root** [string, required]: Root path for the code that will execute within this execution environment.
 
@@ -482,7 +482,7 @@ note that some settings which are enabled by default in pyright are disabled by 
 
 ## Overriding settings (in VS Code)
 
-If a pyproject.toml (with a pyright section) or a pyrightconfig.json exists, any pyright settings in a VS code setttings.json will be ignored. Pyrightconfig.json is prescribing the environment to be used for a particular project. Changing the environment per user is not supported.
+If a pyproject.toml (with a pyright section) or a pyrightconfig.json exists, any pyright settings in a VS Code setttings.json will be ignored. Pyrightconfig.json is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
 
 If a pyproject.toml (with a pyright section) or a pyrightconfig.json does not exist, then the VS Code settings.json settings apply.
 
@@ -497,4 +497,4 @@ LANG="zh-cn"
 LANGUAGE="fr"
 ```
 
-When running in VS Code, the IDE's locale takes precedence. Setting these environment variables applies only when using pyright outside of VS code.
+When running in VS Code, the editor's locale takes precedence. Setting these environment variables applies only when using pyright outside of VS Code.

@@ -227,6 +227,10 @@ export namespace TypeBase {
         return type.props;
     }
 
+    export function getInstantiableDepth(type: TypeBase<any>) {
+        return type.props?.instantiableDepth ?? 0;
+    }
+
     export function setSpecialForm(type: TypeBase<any>, specialForm: ClassType | undefined) {
         TypeBase.addProps(type).specialForm = specialForm;
     }
@@ -634,10 +638,6 @@ export const enum ClassTypeFlags {
     // Class is declared within a type stub file.
     DefinedInStub = 1 << 18,
 
-    // Class does not allow writing or deleting its instance variables
-    // through a member access. Used with named tuples.
-    ReadOnlyInstanceVariables = 1 << 19,
-
     // Decorated with @type_check_only.
     TypeCheckOnly = 1 << 20,
 
@@ -687,6 +687,7 @@ interface ClassDetailsShared {
     docString?: string | undefined;
     dataClassEntries?: DataClassEntry[] | undefined;
     dataClassBehaviors?: DataClassBehaviors | undefined;
+    namedTupleEntries?: Set<string> | undefined;
     typedDictEntries?: TypedDictEntries | undefined;
     localSlotsNames?: string[];
 
@@ -1252,10 +1253,6 @@ export namespace ClassType {
         return !!(classType.shared.flags & ClassTypeFlags.TupleClass);
     }
 
-    export function isReadOnlyInstanceVariables(classType: ClassType) {
-        return !!(classType.shared.flags & ClassTypeFlags.ReadOnlyInstanceVariables);
-    }
-
     export function getTypeParams(classType: ClassType) {
         return classType.shared.typeParams;
     }
@@ -1288,6 +1285,14 @@ export namespace ClassType {
             ClassType.isPartiallyEvaluated(classType) ||
             classType.shared.mro.some((mroClass) => isClass(mroClass) && ClassType.isPartiallyEvaluated(mroClass))
         );
+    }
+
+    export function hasNamedTupleEntry(classType: ClassType, name: string): boolean {
+        if (!classType.shared.namedTupleEntries) {
+            return false;
+        }
+
+        return classType.shared.namedTupleEntries.has(name);
     }
 
     // Same as isTypeSame except that it doesn't compare type arguments.
@@ -2312,6 +2317,10 @@ export namespace OverloadedType {
             OverloadedType.addOverload(newType, overload);
         });
 
+        if (implementation && isFunction(implementation)) {
+            implementation.priv.overloaded = newType;
+        }
+
         return newType;
     }
 
@@ -2850,7 +2859,11 @@ export namespace TypeVarType {
         newInstance.shared.name = name;
 
         if (newInstance.priv.scopeId) {
-            newInstance.priv.nameWithScope = makeNameWithScope(name, newInstance.priv.scopeId);
+            newInstance.priv.nameWithScope = makeNameWithScope(
+                name,
+                newInstance.priv.scopeId,
+                newInstance.priv.scopeName ?? ''
+            );
         }
 
         return newInstance;
@@ -2863,7 +2876,7 @@ export namespace TypeVarType {
         scopeType: TypeVarScopeType | undefined
     ): TypeVarType {
         const newInstance = TypeBase.cloneType(type);
-        newInstance.priv.nameWithScope = makeNameWithScope(type.shared.name, scopeId);
+        newInstance.priv.nameWithScope = makeNameWithScope(type.shared.name, scopeId, scopeName ?? '');
         newInstance.priv.scopeId = scopeId;
         newInstance.priv.scopeName = scopeName;
         newInstance.priv.scopeType = scopeType;
@@ -2953,8 +2966,12 @@ export namespace TypeVarType {
         return newInstance;
     }
 
-    export function makeNameWithScope(name: string, scopeId: string) {
-        return `${name}.${scopeId}`;
+    export function makeNameWithScope(name: string, scopeId: string, scopeName: string) {
+        // We include the scopeName here even though it's normally already part
+        // of the scopeId. There are cases where it can diverge, specifically
+        // in scenarios involving higher-order functions that return generic
+        // callable types. See adjustCallableReturnType for details.
+        return `${name}.${scopeId}.${scopeName}`;
     }
 
     // When solving the TypeVars for a callable, we need to distinguish between

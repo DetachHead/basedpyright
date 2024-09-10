@@ -92,6 +92,10 @@ export interface ClassMember {
     // a type violation if it is overwritten by an instance variable
     isClassVar: boolean;
 
+    // True if the member is read-only, such as with named tuples
+    // or frozen dataclasses.
+    isReadOnly: boolean;
+
     // True if member has declared type, false if inferred
     isTypeDeclared: boolean;
 
@@ -169,78 +173,6 @@ export const enum ClassIteratorFlags {
 
     // Skip the 'type' base class in particular.
     SkipTypeBaseClass = 1 << 2,
-}
-
-export const enum AssignTypeFlags {
-    Default = 0,
-
-    // Require invariance with respect to class matching? Normally
-    // subclasses are allowed.
-    Invariant = 1 << 0,
-
-    // The caller has swapped the source and dest types because
-    // the types are contravariant. Perform type var matching
-    // on dest type vars rather than source type var.
-    Contravariant = 1 << 1,
-
-    // We're comparing type compatibility of two distinct recursive types.
-    // This has the potential of recursing infinitely. This flag allows us
-    // to detect the recursion after the first level of checking.
-    SkipRecursiveTypeCheck = 1 << 2,
-
-    // During TypeVar solving for a function call, this flag is set if
-    // this is the first of multiple passes. It adjusts certain heuristics
-    // for constraint solving.
-    ArgAssignmentFirstPass = 1 << 3,
-
-    // If the dest is not Any but the src is Any, treat it
-    // as incompatible. Also, treat all source TypeVars as their
-    // concrete counterparts. This option is used for validating
-    // whether overload signatures overlap.
-    OverloadOverlap = 1 << 4,
-
-    // When used in conjunction with OverloadOverlapCheck, look
-    // for partial overlaps. For example, `int | list` overlaps
-    // partially with `int | str`.
-    PartialOverloadOverlap = 1 << 5,
-
-    // For function types, skip the return type check.
-    SkipReturnTypeCheck = 1 << 6,
-
-    // In most cases, literals are stripped when assigning to a
-    // type variable. This overrides the standard behavior.
-    RetainLiteralsForTypeVar = 1 << 8,
-
-    // When validating the type of a self or cls parameter, allow
-    // a type mismatch. This is used in overload consistency validation
-    // because overloads can provide explicit type annotations for self
-    // or cls.
-    SkipSelfClsTypeCheck = 1 << 9,
-
-    // We're initially populating the constraints with an expected type,
-    // so TypeVars should match the specified type exactly rather than
-    // employing narrowing or widening. The variance context determines
-    // whether the upper bound, lower bound, or both are established.
-    PopulateExpectedType = 1 << 11,
-
-    // Used with PopulatingExpectedType, this flag indicates that a TypeVar
-    // constraint that is Unknown should be ignored.
-    SkipPopulateUnknownExpectedType = 1 << 12,
-
-    // Normally, when a class type is assigned to a TypeVar and that class
-    // hasn't previously been specialized, it will be specialized with
-    // default type arguments (typically "Unknown"). This flag skips
-    // this step.
-    AllowUnspecifiedTypeArgs = 1 << 13,
-
-    // Normally all special form classes are incompatible with type[T],
-    // but a few of them are allowed in the context of an isinstance
-    // or issubclass call.
-    AllowIsinstanceSpecialForms = 1 << 14,
-
-    // When comparing two methods, skip the type check for the "self" or "cls"
-    // parameters. This is used for variance inference and validation.
-    SkipSelfClsParamCheck = 1 << 15,
 }
 
 export interface InferenceContext {
@@ -1552,12 +1484,20 @@ export function makeFunctionTypeVarsBound(type: FunctionType | OverloadedType): 
 
 export function makeTypeVarsBound<T extends TypeBase<any>>(type: T, scopeIds: TypeVarScopeId[] | undefined): T;
 export function makeTypeVarsBound(type: Type, scopeIds: TypeVarScopeId[] | undefined): Type {
+    if (scopeIds && scopeIds.length === 0) {
+        return type;
+    }
+
     const transformer = new BoundTypeVarTransform(scopeIds);
     return transformer.apply(type, 0);
 }
 
 export function makeTypeVarsFree<T extends TypeBase<any>>(type: T, scopeIds: TypeVarScopeId[]): T;
 export function makeTypeVarsFree(type: Type, scopeIds: TypeVarScopeId[]): Type {
+    if (scopeIds.length === 0) {
+        return type;
+    }
+
     const transformer = new FreeTypeVarTransform(scopeIds);
     return transformer.apply(type, 0);
 }
@@ -1642,6 +1582,7 @@ export function getProtocolSymbolsRecursive(
                 isInstanceMember: symbol.isInstanceMember(),
                 isClassMember: symbol.isClassMember(),
                 isClassVar: isEffectivelyClassVar(symbol, /* isDataclass */ false),
+                isReadOnly: false,
                 isTypeDeclared: symbol.hasTypedDeclarations(),
                 skippedUndeclaredType: false,
             });
@@ -1782,6 +1723,7 @@ export function* getClassMemberIterator(
                         isClassVar: false,
                         classType,
                         unspecializedClassType: classType,
+                        isReadOnly: false,
                         isTypeDeclared: false,
                         skippedUndeclaredType: false,
                     };
@@ -1809,6 +1751,7 @@ export function* getClassMemberIterator(
                             isClassVar: isEffectivelyClassVar(symbol, ClassType.isDataClass(specializedMroClass)),
                             classType: specializedMroClass,
                             unspecializedClassType: mroClass,
+                            isReadOnly: isMemberReadOnly(specializedMroClass, memberName),
                             isTypeDeclared: hasDeclaredType,
                             skippedUndeclaredType,
                         };
@@ -1850,6 +1793,7 @@ export function* getClassMemberIterator(
                             isClassVar: isEffectivelyClassVar(symbol, isDataclass),
                             classType: specializedMroClass,
                             unspecializedClassType: mroClass,
+                            isReadOnly: false,
                             isTypeDeclared: hasDeclaredType,
                             skippedUndeclaredType,
                         };
@@ -1870,6 +1814,7 @@ export function* getClassMemberIterator(
             isClassVar: false,
             classType,
             unspecializedClassType: classType,
+            isReadOnly: false,
             isTypeDeclared: false,
             skippedUndeclaredType: false,
         };
@@ -1877,6 +1822,23 @@ export function* getClassMemberIterator(
     }
 
     return undefined;
+}
+
+// Checks for whether the member is effectively read only because it
+// belongs to a frozen dataclass or a named tuple.
+export function isMemberReadOnly(classType: ClassType, name: string): boolean {
+    if (ClassType.hasNamedTupleEntry(classType, name)) {
+        return true;
+    }
+
+    if (ClassType.isDataClassFrozen(classType)) {
+        const dcEntries = classType.shared?.dataClassEntries;
+        if (dcEntries?.some((entry) => entry.name === name)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 export function* getClassIterator(classType: Type, flags = ClassIteratorFlags.Default, skipMroClass?: ClassType) {
@@ -1946,6 +1908,7 @@ export function getClassFieldsRecursive(classType: ClassType): Map<string, Class
                         isInstanceMember: symbol.isInstanceMember(),
                         isClassMember: symbol.isClassMember(),
                         isClassVar: isEffectivelyClassVar(symbol, ClassType.isDataClass(specializedMroClass)),
+                        isReadOnly: isMemberReadOnly(specializedMroClass, name),
                         isTypeDeclared: true,
                         skippedUndeclaredType: false,
                     });
@@ -2158,8 +2121,9 @@ export function synthesizeTypeVarForSelfCls(classType: ClassType, isClsParam: bo
     const scopeId = getTypeVarScopeId(classType) ?? '';
     selfType.shared.isSynthesized = true;
     selfType.shared.isSynthesizedSelf = true;
-    selfType.priv.nameWithScope = TypeVarType.makeNameWithScope(selfType.shared.name, scopeId);
     selfType.priv.scopeId = scopeId;
+    selfType.priv.scopeName = '';
+    selfType.priv.nameWithScope = TypeVarType.makeNameWithScope(selfType.shared.name, scopeId, selfType.priv.scopeName);
 
     const boundType = ClassType.specialize(
         classType,
@@ -4166,6 +4130,12 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
 
         // Handle the common case where there are not multiple signature contexts.
         if (solutionSets.length <= 1) {
+            return callback();
+        }
+
+        // Handle the case where we're already processing one of the signature contexts
+        // and are called recursively. Don't loop over all the signature contexts again.
+        if (this._activeConstraintSetIndex !== undefined) {
             return callback();
         }
 

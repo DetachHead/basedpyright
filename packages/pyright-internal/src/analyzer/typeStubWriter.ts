@@ -48,7 +48,15 @@ import { SourceFile } from './sourceFile';
 import { Symbol } from './symbol';
 import * as SymbolNameUtils from './symbolNameUtils';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, isFunction, isInstantiableClass, isNever, isUnknown, removeUnknownFromUnion } from './types';
+import {
+    ClassType,
+    isClassInstance,
+    isFunction,
+    isInstantiableClass,
+    isNever,
+    isUnknown,
+    removeUnknownFromUnion,
+} from './types';
 
 class TrackedImport {
     isAccessed = false;
@@ -427,6 +435,16 @@ export class TypeStubWriter extends ParseTreeWalker {
         } else if (node.d.leftExpr.nodeType === ParseNodeType.TypeAnnotation) {
             const valueExpr = node.d.leftExpr.d.valueExpr;
 
+            const declaredType = this._evaluator.getTypeOfAnnotation(node.d.leftExpr.d.annotation, {
+                varTypeAnnotation: true,
+                allowClassVar: true,
+            });
+
+            // Is this an explicit TypeAlias declaration?
+            if (isClassInstance(declaredType) && ClassType.isBuiltIn(declaredType, 'TypeAlias')) {
+                isTypeAlias = true;
+            }
+
             if (valueExpr.nodeType === ParseNodeType.Name) {
                 if (this._functionNestCount === 0) {
                     line = `${this._printExpression(valueExpr)}: ${this._printExpression(
@@ -752,7 +770,10 @@ export class TypeStubWriter extends ParseTreeWalker {
                     return 0;
                 });
 
-            if (sortedSymbols.length > 0) {
+            // Don't emit a "from __future__" import. Just ignore these
+            // because they have no meaning in stubs, and they must appear
+            // at the top of a file.
+            if (sortedSymbols.length > 0 && imp.importName !== '__future__') {
                 importStr += `from ${imp.importName} import `;
 
                 importStr += sortedSymbols

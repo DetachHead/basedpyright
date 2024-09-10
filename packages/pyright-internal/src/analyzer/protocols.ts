@@ -18,7 +18,7 @@ import { DeclarationType } from './declaration';
 import { assignProperty } from './properties';
 import { Symbol } from './symbol';
 import { getLastTypedDeclarationForSymbol, isEffectivelyClassVar } from './symbolUtils';
-import { TypeEvaluator } from './typeEvaluatorTypes';
+import { AssignTypeFlags, TypeEvaluator } from './typeEvaluatorTypes';
 import {
     ClassType,
     FunctionType,
@@ -39,7 +39,6 @@ import {
 import {
     addSolutionForSelfType,
     applySolvedTypeVars,
-    AssignTypeFlags,
     ClassMember,
     containsLiteralType,
     lookUpClassMember,
@@ -124,15 +123,7 @@ export function assignClassToProtocol(
     const clonedConstraints = constraints?.clone();
 
     try {
-        isCompatible = assignClassToProtocolInternal(
-            evaluator,
-            destType,
-            srcType,
-            diag,
-            constraints,
-            flags,
-            recursionCount
-        );
+        isCompatible = assignToProtocolInternal(evaluator, destType, srcType, diag, constraints, flags, recursionCount);
     } catch (e) {
         // We'd normally use "finally" here, but the TS debugger does such
         // a poor job dealing with finally, we'll use a catch instead.
@@ -157,7 +148,7 @@ export function assignModuleToProtocol(
     flags: AssignTypeFlags,
     recursionCount: number
 ): boolean {
-    return assignClassToProtocolInternal(evaluator, destType, srcType, diag, constraints, flags, recursionCount);
+    return assignToProtocolInternal(evaluator, destType, srcType, diag, constraints, flags, recursionCount);
 }
 
 // Determines whether the specified class is a protocol class that has
@@ -285,7 +276,7 @@ function isConstraintTrackerSame(context1: ConstraintTracker | undefined, contex
     return context1.isSame(context2);
 }
 
-function assignClassToProtocolInternal(
+function assignToProtocolInternal(
     evaluator: TypeEvaluator,
     destType: ClassType,
     srcType: ClassType | ModuleType,
@@ -490,11 +481,7 @@ function assignClassToProtocolInternal(
                     }
                 }
 
-                // Frozen dataclasses and named tuples should be treated as read-only.
-                if (
-                    (ClassType.isDataClassFrozen(srcType) && srcMemberInfo.isInstanceMember) ||
-                    ClassType.isReadOnlyInstanceVariables(srcType)
-                ) {
+                if (srcMemberInfo.isReadOnly) {
                     isSrcReadOnly = true;
                 }
             } else {
@@ -718,10 +705,7 @@ function assignClassToProtocolInternal(
                 const isDestReadOnly = !!destPrimaryDecl.isConstant;
                 let isSrcReadOnly = !!srcPrimaryDecl.isConstant;
                 if (srcMemberInfo && isClass(srcMemberInfo.classType)) {
-                    if (
-                        ClassType.isReadOnlyInstanceVariables(srcMemberInfo.classType) ||
-                        (ClassType.isDataClassFrozen(srcMemberInfo.classType) && srcMemberInfo.isInstanceMember)
-                    ) {
+                    if (srcMemberInfo.isReadOnly) {
                         isSrcReadOnly = true;
                     }
                 }
