@@ -2,7 +2,7 @@
 
 ## Command-line & language server
 
-### pipi package (recommended)
+### pypi package (recommended)
 
 unlike pyright, the basedpyright CLI & LSP are available as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package.
 
