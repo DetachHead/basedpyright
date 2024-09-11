@@ -83,19 +83,22 @@ export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
 };
 
 interface FileDiagnosticsWithBaselineInfo extends FileDiagnostics {
-    alreadyBaselinedDiagnostics: BaselinedDiagnostic[];
+    alreadyBaselinedDiagnostics?: BaselinedDiagnostic[];
 }
 
 export const filterOutBaselinedDiagnostics = (
-    rootDir: Uri,
+    rootDir: Uri | undefined,
     filesWithDiagnostics: readonly FileDiagnostics[]
-): FileDiagnosticsWithBaselineInfo[] => {
+): readonly FileDiagnosticsWithBaselineInfo[] => {
+    if (!rootDir) {
+        return filesWithDiagnostics;
+    }
     const baselineFile = getBaselinedErrors(rootDir);
     return filesWithDiagnostics.map((fileWithDiagnostics) => {
         const baselinedErrorsForFile =
             baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
         if (!baselinedErrorsForFile) {
-            return { ...fileWithDiagnostics, alreadyBaselinedDiagnostics: [] };
+            return fileWithDiagnostics;
         }
         const originalBaselinedErrorsForFile = [...baselinedErrorsForFile];
         const filteredDiagnostics = [];
