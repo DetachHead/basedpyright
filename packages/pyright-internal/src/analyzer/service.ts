@@ -479,6 +479,11 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.restart();
     }
 
+    baselineUpdated = () => {
+        this.invalidateAndForceReanalysis(InvalidatedReason.BaselineFileUpdated);
+        this._scheduleReanalysis(false);
+    };
+
     protected runAnalysis(token: CancellationToken) {
         // This creates a cancellation source only if it actually gets used.
         const moreToAnalyze = this._backgroundAnalysisProgram.startAnalysis(token);

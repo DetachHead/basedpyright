@@ -1162,19 +1162,23 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
         const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
-        const rootUri = (await this.getWorkspaceForFile(fileUri)).rootUri!;
+        const workspace = await this.getWorkspaceForFile(fileUri);
+        const rootUri = workspace.rootUri!;
         const baselineFile = getBaselinedErrors(rootUri);
         const fileKey = rootUri.getRelativePath(fileUri)!;
         const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
-        if (
-            diagnosticsForFile &&
-            diagnosticsForFile.diagnostics.length >
-                filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0].alreadyBaselinedDiagnostics.length
-        ) {
-            // there are new diagnostics that haven't been baselined, so we don't want to write them
-            // because the user will have to either fix the diagnostics or explicitly write them to the
-            // baseline themselves
-            return;
+        if (diagnosticsForFile) {
+            const filteredDiagnostics = filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0];
+            if (
+                // no baseline file exists
+                !filteredDiagnostics.alreadyBaselinedDiagnostics ||
+                // there are new diagnostics that haven't been baselined, so we don't want to write them
+                // because the user will have to either fix the diagnostics or explicitly write them to the
+                // baseline themselves
+                diagnosticsForFile.diagnostics.length > filteredDiagnostics.alreadyBaselinedDiagnostics.length
+            ) {
+                return;
+            }
         }
         if (diagnosticsForFile) {
             //cringe

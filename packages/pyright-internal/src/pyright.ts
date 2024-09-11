@@ -493,7 +493,7 @@ async function runSingleThreaded(
         if (args.writebaseline || !newErrorCount) {
             writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
             const previousErrorCount = filteredDiagnostics
-                .flatMap((file) => file.alreadyBaselinedDiagnostics.length)
+                .flatMap((file) => file.alreadyBaselinedDiagnostics?.length ?? 0)
                 .reduce((prev, next) => prev + next);
             const diff = newErrorCount - previousErrorCount;
             let message = '';
@@ -511,7 +511,7 @@ async function runSingleThreaded(
                 )} (${message})`
             );
         }
-        results.diagnostics = filteredDiagnostics; // TODO: is this needed?
+        results.diagnostics = [...filteredDiagnostics]; // TODO: is this needed?
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;

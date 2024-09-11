@@ -9,11 +9,20 @@ export class WriteBaselineCommand implements ServerCommand {
 
     async execute(): Promise<any> {
         // TODO: figure out a better way to get workspace root
-        const workspaceRoot = (
-            await this._ls.getWorkspaceForFile(
-                this._ls.documentsWithDiagnostics[Object.keys(this._ls.documentsWithDiagnostics)[0]].fileUri
-            )
-        ).rootUri!;
-        return writeDiagnosticsToBaselineFile(workspaceRoot, Object.values(this._ls.documentsWithDiagnostics), true);
+        const firstFile = this._ls.documentsWithDiagnostics[Object.keys(this._ls.documentsWithDiagnostics)[0]]?.fileUri;
+        if (firstFile) {
+            const workspace = await this._ls.getWorkspaceForFile(firstFile);
+            const workspaceRoot = workspace.rootUri;
+            if (workspaceRoot) {
+                await writeDiagnosticsToBaselineFile(
+                    workspaceRoot,
+                    Object.values(this._ls.documentsWithDiagnostics),
+                    true
+                );
+                workspace.service.baselineUpdated();
+                return;
+            }
+        }
+        this._ls.window.showErrorMessage('cannot write to the baseline file because no workspace is open');
     }
 }

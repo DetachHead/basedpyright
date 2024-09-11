@@ -26,7 +26,8 @@ export enum InvalidatedReason {
     SourceWatcherChanged,
     LibraryWatcherChanged,
     LibraryWatcherContentOnlyChanged,
-    Nunya, // TODO: whats the actual reason
+    BaselineFileUpdated,
+    Nunya, // TODO: whats the actual reason? this is used by the browser package
 }
 
 export class BackgroundAnalysisProgram {
