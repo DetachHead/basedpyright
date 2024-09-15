@@ -122,6 +122,7 @@ export namespace DiagnosticRelatedInfo {
 
 // Represents a single error or warning.
 export class Diagnostic {
+    baselineStatus: 'not baselined' | 'baselined' | 'baselined with hint' = 'not baselined';
     private _actions: DiagnosticAction[] | undefined;
     private _rule: string | undefined;
     private _relatedInfo: DiagnosticRelatedInfo[] = [];

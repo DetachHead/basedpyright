@@ -1,0 +1,19 @@
+{
+    "files": {
+        "./foo.py": [
+            {
+                "code": "reportAssignmentType",
+                "range": {
+                    "start": {
+                        "line": 0,
+                        "character": 11
+                    },
+                    "end": {
+                        "line": 0,
+                        "character": 13
+                    }
+                }
+            }
+        ]
+    }
+}

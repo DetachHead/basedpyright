@@ -881,7 +881,7 @@ export class Program {
         });
     }
 
-    getDiagnostics(options: ConfigOptions, reportDeltasOnly = true): FileDiagnostics[] {
+    getDiagnostics(options: ConfigOptions, reportDeltasOnly = true): readonly FileDiagnostics[] {
         const fileDiagnostics: FileDiagnostics[] = this._removeUnneededFiles();
 
         this._sourceFileList.forEach((sourceFileInfo) => {

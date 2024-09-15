@@ -12,16 +12,16 @@ import { OperationCanceledException, throwIfCancellationRequested } from '../com
 import { ConfigOptions } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import * as debug from '../common/debug';
-import { FileDiagnostics } from '../common/diagnosticSink';
 import { Duration } from '../common/timing';
 import { MaxAnalysisTime, Program } from './program';
+import { FileDiagnostics } from '../common/diagnosticSink';
 
 export const nullCallback: AnalysisCompleteCallback = () => {
     /* empty */
 };
 
 export interface AnalysisResults {
-    diagnostics: FileDiagnostics[];
+    diagnostics: readonly FileDiagnostics[];
     filesInProgram: number;
     checkingOnlyOpenFiles: boolean;
     requiringAnalysisCount: RequiringAnalysisCount;
