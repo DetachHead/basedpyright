@@ -19,7 +19,7 @@ interface BaselineFile {
 
 export const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
 
-export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDiagnostics[]): BaselineFile => {
+const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: readonly FileDiagnostics[]): BaselineFile => {
     const baselineData: BaselineFile = {
         files: {},
     };
@@ -31,13 +31,13 @@ export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDi
                     DiagnosticCategory.Deprecated,
                     DiagnosticCategory.UnreachableCode,
                     DiagnosticCategory.UnusedCode,
-                ].includes(diagnostic.category)
+                ].includes(diagnostic.category) || diagnostic.baselineStatus === 'baselined with hint'
         );
-        if (!errorDiagnostics.length) {
-            continue;
-        }
         if (!(filePath in baselineData.files)) {
             baselineData.files[filePath] = [];
+        }
+        if (!errorDiagnostics.length) {
+            continue;
         }
         baselineData.files[filePath].push(
             ...errorDiagnostics.map((diagnostic) => ({
@@ -49,7 +49,7 @@ export const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: FileDi
     return baselineData;
 };
 
-export const writeBaselineFile = (rootDir: Uri, baselineData: BaselineFile) => {
+const writeBaselineFile = (rootDir: Uri, baselineData: BaselineFile) => {
     const baselineFile = baselineFilePath(rootDir);
     mkdirSync(baselineFile.getDirectory().getPath(), { recursive: true });
     writeFileSync(baselineFile.getPath(), JSON.stringify(baselineData, undefined, 4));
@@ -61,12 +61,18 @@ export const writeBaselineFile = (rootDir: Uri, baselineData: BaselineFile) => {
  */
 export const writeDiagnosticsToBaselineFile = async (
     rootDir: Uri,
-    filesWithDiagnostics: FileDiagnostics[],
+    filesWithDiagnostics: readonly FileDiagnostics[],
     openFilesOnly: boolean
 ) => {
     let baselineData = diagnosticsToBaseline(rootDir, filesWithDiagnostics);
     if (openFilesOnly) {
         baselineData = { files: { ...getBaselinedErrors(rootDir).files, ...baselineData.files } };
+    }
+    // remove files where there are no errors
+    for (const file in baselineData.files) {
+        if (!baselineData.files[file].length) {
+            delete baselineData.files[file];
+        }
     }
     writeBaselineFile(rootDir, baselineData);
 };
@@ -82,61 +88,52 @@ export const getBaselinedErrors = (rootDir: Uri): BaselineFile => {
     return JSON.parse(baselineFileContents);
 };
 
-interface FileDiagnosticsWithBaselineInfo extends FileDiagnostics {
-    alreadyBaselinedDiagnostics?: BaselinedDiagnostic[];
-}
-
-export const filterOutBaselinedDiagnostics = (
-    rootDir: Uri | undefined,
-    filesWithDiagnostics: readonly FileDiagnostics[]
-): readonly FileDiagnosticsWithBaselineInfo[] => {
-    if (!rootDir) {
-        return filesWithDiagnostics;
+export const getBaselinedErrorsForFile = (rootDir: Uri, file: Uri): BaselinedDiagnostic[] => {
+    const relativePath = rootDir.getRelativePath(file);
+    let result;
+    // if this is undefined it means the file isn't in the workspace
+    if (relativePath) {
+        result = getBaselinedErrors(rootDir).files[rootDir.getRelativePath(file)!.toString()];
     }
-    const baselineFile = getBaselinedErrors(rootDir);
-    return filesWithDiagnostics.map((fileWithDiagnostics) => {
-        const baselinedErrorsForFile =
-            baselineFile.files[rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString()];
-        if (!baselinedErrorsForFile) {
-            return fileWithDiagnostics;
-        }
-        const originalBaselinedErrorsForFile = [...baselinedErrorsForFile];
-        const filteredDiagnostics = [];
-        for (let diagnostic of fileWithDiagnostics.diagnostics) {
-            const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
-            const matchedIndex = baselinedErrorsForFile.findIndex(
-                (baselinedError) =>
-                    baselinedError.code === diagnosticRule &&
-                    baselinedError.range.start.character === diagnostic.range.start.character &&
-                    baselinedError.range.end.character === diagnostic.range.end.character
-            );
-            if (matchedIndex >= 0) {
-                baselinedErrorsForFile.splice(matchedIndex, 1);
-                // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic level to that instead
-                // TODO: should we only baseline errors and not warnings/notes?
-                if (diagnosticRule) {
-                    for (const { name, get } of extraOptionDiagnosticRules) {
-                        if (get().includes(diagnosticRule)) {
-                            diagnostic = new Diagnostic(
-                                convertLevelToCategory(name),
-                                diagnostic.message,
-                                diagnostic.range,
-                                diagnostic.priority
-                            );
-                            filteredDiagnostics.push(diagnostic);
-                            // none of these rules should have multiple extra diagnostic levels so we break after the first match
-                            break;
+    return result ?? [];
+};
+
+export const filterOutBaselinedDiagnostics = (rootDir: Uri, file: Uri, diagnostics: Diagnostic[]) => {
+    const baselinedErrorsForFile = getBaselinedErrorsForFile(rootDir, file);
+    for (const index in diagnostics) {
+        const diagnostic = diagnostics[index];
+        const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
+        const matchedIndex = baselinedErrorsForFile.findIndex(
+            (baselinedError) =>
+                baselinedError.code === diagnosticRule &&
+                baselinedError.range.start.character === diagnostic.range.start.character &&
+                baselinedError.range.end.character === diagnostic.range.end.character
+        );
+        if (matchedIndex >= 0) {
+            baselinedErrorsForFile.splice(matchedIndex, 1);
+            // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic level to that instead
+            // TODO: should we only baseline errors and not warnings/notes?
+            if (diagnosticRule) {
+                for (const { name, get } of extraOptionDiagnosticRules) {
+                    if (get().includes(diagnosticRule)) {
+                        const newDiagnostic = new Diagnostic(
+                            convertLevelToCategory(name),
+                            diagnostic.message,
+                            diagnostic.range,
+                            diagnostic.priority
+                        );
+                        newDiagnostic.baselineStatus = 'baselined with hint';
+                        const rule = diagnostic.getRule();
+                        if (rule) {
+                            newDiagnostic.setRule(rule);
                         }
+                        diagnostics[index] = newDiagnostic;
+                        // none of these rules should have multiple extra diagnostic levels so we break after the first match
+                        break;
                     }
                 }
-            } else {
-                filteredDiagnostics.push(diagnostic);
             }
+            diagnostic.baselineStatus = 'baselined';
         }
-        return {
-            ...fileWithDiagnostics,
-            diagnostics: filteredDiagnostics,
-            alreadyBaselinedDiagnostics: originalBaselinedErrorsForFile,
-        };
-    });
+    }
 };

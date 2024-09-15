@@ -134,12 +134,7 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
-import {
-    diagnosticsToBaseline,
-    filterOutBaselinedDiagnostics,
-    getBaselinedErrors,
-    writeBaselineFile,
-} from './baseline';
+import { getBaselinedErrorsForFile, writeDiagnosticsToBaselineFile } from './baseline';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -1164,29 +1159,25 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(fileUri);
         const rootUri = workspace.rootUri!;
-        const baselineFile = getBaselinedErrors(rootUri);
-        const fileKey = rootUri.getRelativePath(fileUri)!;
+        const previouslyBaselinedErrors = getBaselinedErrorsForFile(rootUri, fileUri);
         const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
+        let filesWithDiagnostics: FileDiagnostics[];
         if (diagnosticsForFile) {
-            const filteredDiagnostics = filterOutBaselinedDiagnostics(rootUri, [diagnosticsForFile])[0];
+            filesWithDiagnostics = [diagnosticsForFile];
             if (
-                // no baseline file exists
-                !filteredDiagnostics.alreadyBaselinedDiagnostics ||
+                // no baseline file exists or no baselined errors exist for this file
+                !previouslyBaselinedErrors.length ||
                 // there are new diagnostics that haven't been baselined, so we don't want to write them
                 // because the user will have to either fix the diagnostics or explicitly write them to the
                 // baseline themselves
-                diagnosticsForFile.diagnostics.length > filteredDiagnostics.alreadyBaselinedDiagnostics.length
+                diagnosticsForFile.diagnostics.length > previouslyBaselinedErrors.length
             ) {
                 return;
             }
-        }
-        if (diagnosticsForFile) {
-            //cringe
-            baselineFile.files[fileKey] = diagnosticsToBaseline(rootUri, [diagnosticsForFile]).files[fileKey];
         } else {
-            baselineFile.files[fileKey] = [];
+            filesWithDiagnostics = [{ diagnostics: [], fileUri, version: undefined }];
         }
-        writeBaselineFile(rootUri, baselineFile);
+        writeDiagnosticsToBaselineFile(rootUri, filesWithDiagnostics, true);
     };
 
     protected async onExecuteCommand(
@@ -1259,12 +1250,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         fs: FileSystem,
         fileDiagnostics: FileDiagnostics
     ): Promise<PublishDiagnosticsParams> {
-        const workspace = await this.getWorkspaceForFile(fileDiagnostics.fileUri);
-        const filteredDiagnostics = filterOutBaselinedDiagnostics(workspace.rootUri!, [fileDiagnostics])[0];
         return {
-            uri: convertUriToLspUriString(fs, filteredDiagnostics.fileUri),
-            version: filteredDiagnostics.version,
-            diagnostics: this._convertDiagnostics(fs, filteredDiagnostics.diagnostics),
+            uri: convertUriToLspUriString(fs, fileDiagnostics.fileUri),
+            version: fileDiagnostics.version,
+            diagnostics: this._convertDiagnostics(fs, fileDiagnostics.diagnostics),
         };
     }
 
@@ -1439,60 +1428,67 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     private _convertDiagnostics(fs: FileSystem, diags: AnalyzerDiagnostic[]): Diagnostic[] {
         const convertedDiags: Diagnostic[] = [];
+        diags
+            .filter((diag) => diag.baselineStatus !== 'baselined')
+            .forEach((diag) => {
+                const severity = convertCategoryToSeverity(diag.category);
+                const rule = diag.getRule();
+                const code = this.getDiagCode(diag, rule);
+                const vsDiag = Diagnostic.create(
+                    diag.range,
+                    diag.message,
+                    severity,
+                    code,
+                    this.serverOptions.productName
+                );
 
-        diags.forEach((diag) => {
-            const severity = convertCategoryToSeverity(diag.category);
-            const rule = diag.getRule();
-            const code = this.getDiagCode(diag, rule);
-            const vsDiag = Diagnostic.create(diag.range, diag.message, severity, code, this.serverOptions.productName);
+                if (
+                    diag.category === DiagnosticCategory.UnusedCode ||
+                    diag.category === DiagnosticCategory.UnreachableCode
+                ) {
+                    vsDiag.tags = [DiagnosticTag.Unnecessary];
+                    vsDiag.severity = DiagnosticSeverity.Hint;
 
-            if (
-                diag.category === DiagnosticCategory.UnusedCode ||
-                diag.category === DiagnosticCategory.UnreachableCode
-            ) {
-                vsDiag.tags = [DiagnosticTag.Unnecessary];
-                vsDiag.severity = DiagnosticSeverity.Hint;
+                    // If the client doesn't support "unnecessary" tags, don't report unused code.
+                    if (!this.client.supportsUnnecessaryDiagnosticTag) {
+                        return;
+                    }
+                } else if (diag.category === DiagnosticCategory.Deprecated) {
+                    vsDiag.tags = [DiagnosticTag.Deprecated];
+                    vsDiag.severity = DiagnosticSeverity.Hint;
 
-                // If the client doesn't support "unnecessary" tags, don't report unused code.
-                if (!this.client.supportsUnnecessaryDiagnosticTag) {
+                    // If the client doesn't support "deprecated" tags, don't report.
+                    if (!this.client.supportsDeprecatedDiagnosticTag) {
+                        return;
+                    }
+                } else if (diag.category === DiagnosticCategory.TaskItem) {
+                    // TaskItem is not supported.
                     return;
                 }
-            } else if (diag.category === DiagnosticCategory.Deprecated) {
-                vsDiag.tags = [DiagnosticTag.Deprecated];
-                vsDiag.severity = DiagnosticSeverity.Hint;
 
-                // If the client doesn't support "deprecated" tags, don't report.
-                if (!this.client.supportsDeprecatedDiagnosticTag) {
-                    return;
+                if (rule) {
+                    const ruleDocUrl = this.getDocumentationUrlForDiagnostic(diag);
+                    if (ruleDocUrl) {
+                        vsDiag.codeDescription = {
+                            href: ruleDocUrl,
+                        };
+                    }
                 }
-            } else if (diag.category === DiagnosticCategory.TaskItem) {
-                // TaskItem is not supported.
-                return;
-            }
 
-            if (rule) {
-                const ruleDocUrl = this.getDocumentationUrlForDiagnostic(diag);
-                if (ruleDocUrl) {
-                    vsDiag.codeDescription = {
-                        href: ruleDocUrl,
-                    };
+                const relatedInfo = diag.getRelatedInfo();
+                if (relatedInfo.length > 0) {
+                    vsDiag.relatedInformation = relatedInfo
+                        .filter((info) => this.canNavigateToFile(info.uri, fs))
+                        .map((info) =>
+                            DiagnosticRelatedInformation.create(
+                                Location.create(convertUriToLspUriString(fs, info.uri), info.range),
+                                info.message
+                            )
+                        );
                 }
-            }
 
-            const relatedInfo = diag.getRelatedInfo();
-            if (relatedInfo.length > 0) {
-                vsDiag.relatedInformation = relatedInfo
-                    .filter((info) => this.canNavigateToFile(info.uri, fs))
-                    .map((info) =>
-                        DiagnosticRelatedInformation.create(
-                            Location.create(convertUriToLspUriString(fs, info.uri), info.range),
-                            info.message
-                        )
-                    );
-            }
-
-            convertedDiags.push(vsDiag);
-        });
+                convertedDiags.push(vsDiag);
+            });
 
         function convertCategoryToSeverity(category: DiagnosticCategory) {
             switch (category) {

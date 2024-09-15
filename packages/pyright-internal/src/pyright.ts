@@ -48,7 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { baselineFilePath, filterOutBaselinedDiagnostics, writeDiagnosticsToBaselineFile } from './baseline';
+import { baselineFilePath, getBaselinedErrors, writeDiagnosticsToBaselineFile } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -479,23 +479,19 @@ async function runSingleThreaded(
                 ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
                 : options.executionRoot;
         const allDiagnostics = results.diagnostics;
-        const filteredDiagnostics = filterOutBaselinedDiagnostics(rootDir, results.diagnostics);
+        const baselinedErrorCount = Object.values(getBaselinedErrors(rootDir).files).flatMap((file) => file).length;
         const newErrorCount = allDiagnostics
             .flatMap(
                 (file) =>
-                    file.diagnostics.filter((diagnostic) =>
-                        [DiagnosticCategory.Error, DiagnosticCategory.Warning, DiagnosticCategory.Information].includes(
-                            diagnostic.category
-                        )
+                    file.diagnostics.filter(
+                        (diagnostic) =>
+                            !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
                     ).length
             )
             .reduce((prev, next) => prev + next);
-        if (args.writebaseline || !newErrorCount) {
+        const diff = newErrorCount - baselinedErrorCount;
+        if (args.writebaseline || diff < 0) {
             writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
-            const previousErrorCount = filteredDiagnostics
-                .flatMap((file) => file.alreadyBaselinedDiagnostics?.length ?? 0)
-                .reduce((prev, next) => prev + next);
-            const diff = newErrorCount - previousErrorCount;
             let message = '';
             if (diff === 0) {
                 message += "error count didn't change";
@@ -511,34 +507,37 @@ async function runSingleThreaded(
                 )} (${message})`
             );
         }
-        results.diagnostics = [...filteredDiagnostics]; // TODO: is this needed?
+        const filteredDiagnostics = results.diagnostics.map((file) => ({
+            ...file,
+            diagnostics: file.diagnostics.filter((diagnostic) => diagnostic.baselineStatus === 'not baselined'),
+        }));
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;
             if (args.outputjson) {
                 report = reportDiagnosticsAsJson(
-                    results.diagnostics,
+                    filteredDiagnostics,
                     minSeverityLevel,
                     results.filesInProgram,
                     results.elapsedTime
                 );
             } else if (process.env['GITHUB_ACTIONS'] && !process.env['PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT']) {
                 report = reportDiagnosticsAsGithubActionsCommands(
-                    results.diagnostics,
+                    filteredDiagnostics,
                     minSeverityLevel,
                     results.filesInProgram,
                     results.elapsedTime
                 );
             } else {
                 printVersion(output);
-                report = reportDiagnosticsAsText(results.diagnostics, minSeverityLevel);
+                report = reportDiagnosticsAsText(filteredDiagnostics, minSeverityLevel);
             }
             if (args.gitlabcodequality) {
                 fs.writeFileSync(
                     args.gitlabcodequality,
                     JSON.stringify(
                         createGitlabCodeQualityReport(
-                            results.diagnostics,
+                            filteredDiagnostics,
                             minSeverityLevel,
                             results.filesInProgram,
                             results.elapsedTime
@@ -1195,7 +1194,7 @@ function printVersion(console: ConsoleInterface) {
 }
 
 function reportDiagnosticsAsJsonWithoutLogging(
-    fileDiagnostics: FileDiagnostics[],
+    fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
     filesInProgram: number,
     timeInSec: number
@@ -1241,7 +1240,7 @@ const pyrightJsonResultsToDiagnosticResult = (report: PyrightJsonResults): Diagn
 });
 
 const reportDiagnosticsAsJson = (
-    fileDiagnostics: FileDiagnostics[],
+    fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
     filesInProgram: number,
     timeInSec: number
@@ -1311,8 +1310,13 @@ const printDiagnosticSummary = (result: DiagnosticResult) => {
     );
 };
 
+const isHintDiagnostic = (diagnostic: Diagnostic) =>
+    diagnostic.category === DiagnosticCategory.UnusedCode ||
+    diagnostic.category === DiagnosticCategory.UnreachableCode ||
+    diagnostic.category === DiagnosticCategory.Deprecated;
+
 function reportDiagnosticsAsText(
-    fileDiagnostics: FileDiagnostics[],
+    fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel
 ): DiagnosticResult {
     let errorCount = 0;
@@ -1324,9 +1328,7 @@ function reportDiagnosticsAsText(
         const fileErrorsAndWarnings = fileDiagnostics.diagnostics
             .filter(
                 (diag) =>
-                    diag.category !== DiagnosticCategory.UnusedCode &&
-                    diag.category !== DiagnosticCategory.UnreachableCode &&
-                    diag.category !== DiagnosticCategory.Deprecated &&
+                    !isHintDiagnostic(diag) &&
                     isDiagnosticIncluded(convertDiagnosticCategoryToSeverity(diag.category), minSeverityLevel)
             )
             .sort(compareDiagnostics);
@@ -1384,7 +1386,7 @@ const diagnosticToString = (diagnostic: PyrightJsonDiagnostic, forCommand: boole
 };
 
 const reportDiagnosticsAsGithubActionsCommands = (
-    fileDiagnostics: FileDiagnostics[],
+    fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
     filesInProgram: number,
     timeInSec: number
@@ -1427,7 +1429,7 @@ const reportDiagnosticsAsGithubActionsCommands = (
 };
 
 const createGitlabCodeQualityReport = (
-    fileDiagnostics: FileDiagnostics[],
+    fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
     filesInProgram: number,
     timeInSec: number
