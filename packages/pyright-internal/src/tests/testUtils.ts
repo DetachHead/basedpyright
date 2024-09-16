@@ -18,7 +18,7 @@ import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
 import { ConsoleWithLogLevel, NullConsole } from '../common/console';
 import { fail } from '../common/debug';
-import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
+import { BaselineStatus, Diagnostic, DiagnosticCategory } from '../common/diagnostic';
 import { DiagnosticSink } from '../common/diagnosticSink';
 import { FullAccessHost } from '../common/fullAccessHost';
 import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem';
@@ -31,6 +31,7 @@ import { DiagnosticRule } from '../common/diagnosticRules';
 import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTokensWalker';
 import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range } from 'vscode-languageserver-types';
+import { ServiceProvider } from '../common/serviceProvider';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -94,13 +95,20 @@ export function parseSampleFile(
     return parseText(text, diagSink);
 }
 
-const createProgram = (configOptions = new ConfigOptions(Uri.empty()), console?: ConsoleWithLogLevel) => {
-    // Always enable "test mode".
-    configOptions.internalTestMode = true;
+type ConfigOptionsArg = ConfigOptions | ((serviceProvider: ServiceProvider) => ConfigOptions);
 
+const createProgram = (
+    configOptions: ConfigOptionsArg = new ConfigOptions(Uri.empty()),
+    console?: ConsoleWithLogLevel
+) => {
     const tempFile = new RealTempFile();
     const fs = createFromRealFileSystem(tempFile);
     const serviceProvider = createServiceProvider(fs, console || new NullConsole(), tempFile);
+    if (typeof configOptions === 'function') {
+        configOptions = configOptions(serviceProvider);
+    }
+    // Always enable "test mode".
+    configOptions.internalTestMode = true;
     const importResolver = new ImportResolver(serviceProvider, configOptions, new FullAccessHost(serviceProvider));
 
     return new Program(importResolver, configOptions, serviceProvider);
@@ -108,7 +116,7 @@ const createProgram = (configOptions = new ConfigOptions(Uri.empty()), console?:
 
 export function typeAnalyzeSampleFiles(
     fileNames: string[],
-    configOptions = new ConfigOptions(Uri.empty()),
+    configOptions: ConfigOptionsArg = new ConfigOptions(Uri.empty()),
     console?: ConsoleWithLogLevel
 ): FileAnalysisResult[] {
     const program = createProgram(configOptions, console);
@@ -123,7 +131,7 @@ export function typeAnalyzeSampleFiles(
         nameTypeWalker.walk(parserOutput.parseTree);
     });
 
-    const results = getAnalysisResults(program, fileUris, configOptions);
+    const results = getAnalysisResults(program, fileUris, program.configOptions);
 
     program.dispose();
     return results;
@@ -246,6 +254,7 @@ interface ExpectedResult {
     message?: string;
     line: number;
     code?: DiagnosticRule;
+    baselineStatus?: BaselineStatus;
 }
 
 export type ExpectedResults = {
@@ -264,6 +273,7 @@ export const validateResultsButBased = (allResults: FileAnalysisResult[], expect
                 message: result.message,
                 line: result.range.start.line,
                 code: result.getRule() as DiagnosticRule | undefined,
+                baselineStatus: result.baselineStatus,
             })
         );
         const expectedResult = expectedResults[diagnosticType] ?? [];
