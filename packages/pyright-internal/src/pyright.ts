@@ -509,7 +509,7 @@ async function runSingleThreaded(
         }
         const filteredDiagnostics = results.diagnostics.map((file) => ({
             ...file,
-            diagnostics: file.diagnostics.filter((diagnostic) => diagnostic.baselineStatus === 'not baselined'),
+            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
         }));
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
