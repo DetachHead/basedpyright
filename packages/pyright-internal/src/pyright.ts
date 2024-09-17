@@ -49,6 +49,7 @@ import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
 import { baselineFilePath, getBaselinedErrors, writeDiagnosticsToBaselineFile } from './baseline';
+import { add } from 'lodash';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -481,16 +482,26 @@ async function runSingleThreaded(
         const allDiagnostics = results.diagnostics;
         const baselinedErrorCount = Object.values(getBaselinedErrors(rootDir).files).flatMap((file) => file).length;
         const newErrorCount = allDiagnostics
-            .flatMap(
+            .map(
                 (file) =>
                     file.diagnostics.filter(
                         (diagnostic) =>
                             !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
                     ).length
             )
-            .reduce((prev, next) => prev + next);
-        const diff = newErrorCount - baselinedErrorCount;
-        if (args.writebaseline || diff < 0) {
+            .reduce(add);
+        const filteredDiagnostics = results.diagnostics.map((file) => ({
+            ...file,
+            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
+        }));
+
+        // if there are any unbaselined errors, don't write to the baseline unless the user explicitly passed
+        // --writebaseline
+        if (
+            args.writebaseline ||
+            !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add)
+        ) {
+            const diff = newErrorCount - baselinedErrorCount;
             writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
             let message = '';
             if (diff === 0) {
@@ -507,10 +518,6 @@ async function runSingleThreaded(
                 )} (${message})`
             );
         }
-        const filteredDiagnostics = results.diagnostics.map((file) => ({
-            ...file,
-            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
-        }));
         let errorCount = 0;
         if (!args.createstub && !args.verifytypes) {
             let report: DiagnosticResult;
