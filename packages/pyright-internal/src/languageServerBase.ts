@@ -1167,10 +1167,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (
                 // no baseline file exists or no baselined errors exist for this file
                 !previouslyBaselinedErrors.length ||
-                // there are new diagnostics that haven't been baselined, so we don't want to write them
+                // there are diagnostics that haven't been baselined, so we don't want to write them
                 // because the user will have to either fix the diagnostics or explicitly write them to the
                 // baseline themselves
-                diagnosticsForFile.diagnostics.length > previouslyBaselinedErrors.length
+                diagnosticsForFile.diagnostics.some((diagnostic) => diagnostic.baselineStatus !== 'baselined')
             ) {
                 return;
             }
