@@ -61,6 +61,10 @@ export class BackgroundAnalysisBase {
         // The other side of this channel will be sent to the BG thread for sending responses.
         this._messageChannel = createMessageChannel();
         this._messageChannel.port1.on('message', (msg: BackgroundResponse) => this.handleBackgroundResponse(msg));
+
+        // required for browser-basedpyright:
+        this._messageChannel.port1.start();
+        this._messageChannel.port2.start();
     }
 
     dispose() {
