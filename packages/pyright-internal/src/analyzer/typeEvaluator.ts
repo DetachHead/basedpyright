@@ -1110,6 +1110,11 @@ export function createTypeEvaluator(
             }
         }
 
+        if (inferenceContext) {
+            // Handle TypeForm assignments.
+            typeResult.type = convertToTypeFormType(inferenceContext.expectedType, typeResult.type);
+        }
+
         // Don't allow speculative caching for assignment expressions because
         // the target name node won't have a corresponding type cached speculatively.
         const allowSpeculativeCaching = node.nodeType !== ParseNodeType.AssignmentExpression;
@@ -2746,6 +2751,7 @@ export function createTypeEvaluator(
     // Determines whether the specified expression is a symbol with a declared type.
     function getDeclaredTypeForExpression(expression: ExpressionNode, usage?: EvaluatorUsage): Type | undefined {
         let symbol: Symbol | undefined;
+        let selfType: ClassType | TypeVarType | undefined;
         let classOrObjectBase: ClassType | undefined;
         let memberAccessClass: Type | undefined;
         let bindFunction = true;
@@ -2788,18 +2794,17 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.MemberAccess: {
-                const baseType = makeTopLevelTypeVarsConcrete(
-                    getTypeOfExpression(expression.d.leftExpr, EvalFlags.MemberAccessBaseDefaults).type
-                );
+                const baseType = getTypeOfExpression(expression.d.leftExpr, EvalFlags.MemberAccessBaseDefaults).type;
+                const baseTypeConcrete = makeTopLevelTypeVarsConcrete(baseType);
                 let classMemberInfo: ClassMember | undefined;
 
-                if (isClassInstance(baseType)) {
+                if (isClassInstance(baseTypeConcrete)) {
                     classMemberInfo = lookUpObjectMember(
-                        baseType,
+                        baseTypeConcrete,
                         expression.d.member.d.value,
                         MemberAccessFlags.DeclaredTypesOnly
                     );
-                    classOrObjectBase = baseType;
+                    classOrObjectBase = baseTypeConcrete;
                     memberAccessClass = classMemberInfo?.classType;
 
                     // If this is an instance member (e.g. a dataclass field), don't
@@ -2809,14 +2814,18 @@ export function createTypeEvaluator(
                     }
 
                     useDescriptorSetterType = true;
-                } else if (isInstantiableClass(baseType)) {
+                } else if (isInstantiableClass(baseTypeConcrete)) {
                     classMemberInfo = lookUpClassMember(
-                        baseType,
+                        baseTypeConcrete,
                         expression.d.member.d.value,
                         MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.DeclaredTypesOnly
                     );
-                    classOrObjectBase = baseType;
+                    classOrObjectBase = baseTypeConcrete;
                     memberAccessClass = classMemberInfo?.classType;
+                }
+
+                if (isTypeVar(baseType)) {
+                    selfType = baseType;
                 }
 
                 if (classMemberInfo) {
@@ -2870,12 +2879,23 @@ export function createTypeEvaluator(
 
                 if (classOrObjectBase) {
                     if (memberAccessClass && isInstantiableClass(memberAccessClass)) {
-                        declaredType = partiallySpecializeType(declaredType, memberAccessClass, getTypeClassType());
+                        declaredType = partiallySpecializeType(
+                            declaredType,
+                            memberAccessClass,
+                            getTypeClassType(),
+                            selfType
+                        );
                     }
 
                     if (isFunction(declaredType) || isOverloaded(declaredType)) {
                         if (bindFunction) {
-                            declaredType = bindFunctionToClassOrObject(classOrObjectBase, declaredType);
+                            declaredType = bindFunctionToClassOrObject(
+                                classOrObjectBase,
+                                declaredType,
+                                /* memberClass */ undefined,
+                                /* treatConstructorAsClassMethod */ undefined,
+                                selfType
+                            );
                         }
                     }
                 }
@@ -4807,10 +4827,12 @@ export function createTypeEvaluator(
         }
 
         if (type.props?.typeAliasInfo && TypeBase.isInstantiable(type)) {
-            type = TypeBase.cloneWithTypeForm(
-                type,
-                convertToInstance(specializeTypeAliasWithDefaults(type, /* errorNode */ undefined))
-            );
+            let typeFormType = type;
+            if ((flags & EvalFlags.NoSpecialize) === 0) {
+                typeFormType = specializeTypeAliasWithDefaults(typeFormType, /* errorNode */ undefined);
+            }
+
+            type = TypeBase.cloneWithTypeForm(type, convertToInstance(typeFormType));
         }
 
         return type;
@@ -5443,6 +5465,9 @@ export function createTypeEvaluator(
 
             // Detect, report, and fill in missing type arguments if appropriate.
             typeResult.type = reportMissingTypeArgs(node, typeResult.type, flags);
+
+            // Add TypeForm details if appropriate.
+            typeResult.type = addTypeFormForSymbol(node, typeResult.type, flags, /* includesVarDecl */ false);
         }
 
         if (baseTypeResult.isIncomplete) {
@@ -5502,6 +5527,10 @@ export function createTypeEvaluator(
         const isRequired = false;
         const isNotRequired = false;
         let memberAccessDeprecationInfo: MemberAccessDeprecationInfo | undefined;
+
+        if (usage?.setType?.isIncomplete) {
+            isIncomplete = true;
+        }
 
         // If the base type was incomplete and unbound, don't proceed
         // because false positive errors will be generated.
@@ -6304,12 +6333,14 @@ export function createTypeEvaluator(
             accessMethodName = '__delete__';
         }
 
+        const subDiag = diag ? new DiagnosticAddendum() : undefined;
+
         const methodTypeResult = getTypeOfBoundMember(
             errorNode,
             concreteMemberType,
             accessMethodName,
             /* usage */ undefined,
-            diag?.createAddendum(),
+            subDiag,
             MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipAttributeAccessOverride
         );
 
@@ -6333,6 +6364,9 @@ export function createTypeEvaluator(
         let methodType = methodTypeResult.type;
 
         if (methodTypeResult.typeErrors || !methodClassType) {
+            if (diag && subDiag) {
+                diag.addAddendum(subDiag);
+            }
             return { type: UnknownType.create(), typeErrors: true };
         }
 
@@ -7055,13 +7089,20 @@ export function createTypeEvaluator(
         baseType: Type,
         flags: EvalFlags
     ): TypeResultWithNode | undefined {
-        const aliasInfo = baseType.props?.typeAliasInfo;
+        let aliasInfo = baseType.props?.typeAliasInfo;
+        let aliasBaseType = baseType;
+
+        if (!aliasInfo && baseType.props?.typeForm) {
+            aliasInfo = baseType.props.typeForm?.props?.typeAliasInfo;
+            aliasBaseType = convertToInstantiable(baseType.props.typeForm);
+        }
+
         if (!aliasInfo?.typeParams || (aliasInfo.typeParams.length === 0 && aliasInfo.typeArgs)) {
             return undefined;
         }
 
         // If this is not instantiable, then the index expression isn't a specialization.
-        if (!TypeBase.isInstantiable(baseType)) {
+        if (!TypeBase.isInstantiable(aliasBaseType)) {
             return undefined;
         }
 
@@ -7104,7 +7145,7 @@ export function createTypeEvaluator(
             addDiagnostic(
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.typeArgsTooMany().format({
-                    name: printType(baseType),
+                    name: printType(aliasBaseType),
                     expected: typeParams.length,
                     received: typeArgs.length,
                 }),
@@ -7115,7 +7156,7 @@ export function createTypeEvaluator(
             addDiagnostic(
                 DiagnosticRule.reportInvalidTypeForm,
                 LocMessage.typeArgsTooFew().format({
-                    name: printType(baseType),
+                    name: printType(aliasBaseType),
                     expected: typeParams.length,
                     received: typeArgs.length,
                 }),
@@ -7126,8 +7167,8 @@ export function createTypeEvaluator(
 
         // Handle the mypy_extensions.FlexibleAlias type specially.
         if (
-            isInstantiableClass(baseType) &&
-            baseType.shared.fullName === 'mypy_extensions.FlexibleAlias' &&
+            isInstantiableClass(aliasBaseType) &&
+            aliasBaseType.shared.fullName === 'mypy_extensions.FlexibleAlias' &&
             typeArgs.length >= 1
         ) {
             return { node, type: typeArgs[0].type };
@@ -7253,7 +7294,7 @@ export function createTypeEvaluator(
                 }
 
                 if ((flags & EvalFlags.EnforceVarianceConsistency) !== 0) {
-                    const usageVariances = inferVarianceForTypeAlias(baseType);
+                    const usageVariances = inferVarianceForTypeAlias(aliasBaseType);
                     if (usageVariances && index < usageVariances.length) {
                         const usageVariance = usageVariances[index];
 
@@ -7291,7 +7332,7 @@ export function createTypeEvaluator(
         if (!diag.isEmpty()) {
             addDiagnostic(
                 DiagnosticRule.reportInvalidTypeForm,
-                LocMessage.typeNotSpecializable().format({ type: printType(baseType) }) + diag.getString(),
+                LocMessage.typeNotSpecializable().format({ type: printType(aliasBaseType) }) + diag.getString(),
                 node,
                 diag.getEffectiveTextRange() ?? node
             );
@@ -7313,7 +7354,7 @@ export function createTypeEvaluator(
             aliasTypeArgs.push(typeVarType);
         });
 
-        let type = TypeBase.cloneForTypeAlias(solveAndApplyConstraints(baseType, constraints), {
+        let type = TypeBase.cloneForTypeAlias(solveAndApplyConstraints(aliasBaseType, constraints), {
             ...aliasInfo,
             typeArgs: aliasTypeArgs,
         });
@@ -7322,7 +7363,11 @@ export function createTypeEvaluator(
             type = TypeBase.cloneWithTypeForm(type, reportedError ? undefined : convertToInstance(type));
         }
 
-        return { type, node };
+        if (baseType.props?.typeAliasInfo) {
+            return { type, node };
+        }
+
+        return { type: TypeBase.cloneWithTypeForm(baseType, convertToInstance(type)), node };
     }
 
     function getTypeOfIndexWithBaseType(
@@ -8432,7 +8477,7 @@ export function createTypeEvaluator(
                 typeResult = getTypeOfAssertType(node, inferenceContext);
             } else if (isClass(baseTypeResult.type) && ClassType.isBuiltIn(baseTypeResult.type, 'TypeForm')) {
                 // Handle the "typing.TypeForm" call.
-                typeResult = getTypeOfTypeForm(node);
+                typeResult = getTypeOfTypeForm(node, baseTypeResult.type);
             } else if (
                 isAnyOrUnknown(baseTypeResult.type) &&
                 node.d.leftExpr.nodeType === ParseNodeType.Name &&
@@ -8570,7 +8615,7 @@ export function createTypeEvaluator(
         return typeResult;
     }
 
-    function getTypeOfTypeForm(node: CallNode): TypeResult {
+    function getTypeOfTypeForm(node: CallNode, typeFormClass: ClassType): TypeResult {
         if (
             node.d.args.length !== 1 ||
             node.d.args[0].d.argCategory !== ArgCategory.Simple ||
@@ -8580,11 +8625,19 @@ export function createTypeEvaluator(
             return { type: UnknownType.create() };
         }
 
-        return getTypeOfArgExpectingType(convertNodeToArg(node.d.args[0]), {
+        const typeFormResult = getTypeOfArgExpectingType(convertNodeToArg(node.d.args[0]), {
             typeFormArg: isTypeFormSupported(node),
             noNonTypeSpecialForms: true,
             typeExpression: true,
         });
+
+        if (!typeFormResult.typeErrors && typeFormResult.type.props?.typeForm) {
+            typeFormResult.type = convertToInstance(
+                ClassType.specialize(typeFormClass, [convertToInstance(typeFormResult.type.props.typeForm)])
+            );
+        }
+
+        return typeFormResult;
     }
 
     function getTypeOfAssertType(node: CallNode, inferenceContext: InferenceContext | undefined): TypeResult {
@@ -8615,29 +8668,12 @@ export function createTypeEvaluator(
         // what mypy does -- and what various library authors expect.
         const arg0Type = stripTypeGuard(arg0TypeResult.type);
 
-        let assertSuccess = isTypeSame(assertedType, arg0Type, {
-            treatAnySameAsUnknown: true,
-            ignorePseudoGeneric: true,
-        });
-
-        // Handle TypeForm types specially.
         if (
-            !assertSuccess &&
-            arg0Type.props?.typeForm &&
-            isClassInstance(assertedType) &&
-            ClassType.isBuiltIn(assertedType, 'TypeForm')
-        ) {
-            const typeFormType =
-                assertedType.priv.typeArgs && assertedType.priv.typeArgs.length >= 1
-                    ? assertedType.priv.typeArgs[0]
-                    : UnknownType.create();
-            assertSuccess = isTypeSame(arg0Type.props.typeForm, typeFormType, {
+            !isTypeSame(assertedType, arg0Type, {
                 treatAnySameAsUnknown: true,
                 ignorePseudoGeneric: true,
-            });
-        }
-
-        if (!assertSuccess) {
+            })
+        ) {
             const srcDestTypes = printSrcDestTypes(arg0TypeResult.type, assertedType, { expandTypeAlias: true });
 
             addDiagnostic(
@@ -17118,6 +17154,16 @@ export function createTypeEvaluator(
     // Creates a new class type that is a subclass of two other specified classes.
     function createSubclass(errorNode: ExpressionNode, type1: ClassType, type2: ClassType): ClassType {
         assert(isInstantiableClass(type1) && isInstantiableClass(type2));
+
+        // If both classes are class objects (type[A] and type[B]), create a new
+        // class object (type[A & B]) rather than "type[A] & type[B]".
+        let createClassObject = false;
+        if (TypeBase.getInstantiableDepth(type1) > 0 && TypeBase.getInstantiableDepth(type2) > 0) {
+            type1 = ClassType.cloneAsInstance(type1);
+            type2 = ClassType.cloneAsInstance(type2);
+            createClassObject = true;
+        }
+
         const className = `<subclass of ${printType(convertToInstance(type1), {
             omitTypeArgsIfUnknown: true,
         })} and ${printType(convertToInstance(type2), { omitTypeArgsIfUnknown: true })}>`;
@@ -17142,11 +17188,16 @@ export function createTypeEvaluator(
             effectiveMetaclass,
             type1.shared.docString
         );
+
         newClassType.shared.baseClasses = [type1, type2];
         computeMroLinearization(newClassType);
 
         newClassType = addConditionToType(newClassType, type1.props?.condition);
         newClassType = addConditionToType(newClassType, type2.props?.condition);
+
+        if (createClassObject) {
+            newClassType = ClassType.cloneAsInstantiable(newClassType);
+        }
 
         return newClassType;
     }
@@ -20446,10 +20497,10 @@ export function createTypeEvaluator(
 
         if (typeAnnotation) {
             const param = functionNode.d.params[paramIndex];
-            const annotatedType = getTypeOfParamAnnotation(
-                typeAnnotation,
-                functionNode.d.params[paramIndex].d.category
-            );
+            let annotatedType = getTypeOfParamAnnotation(typeAnnotation, functionNode.d.params[paramIndex].d.category);
+
+            const liveTypeVarScopes = ParseTreeUtils.getTypeVarScopesForNode(param);
+            annotatedType = makeTypeVarsBound(annotatedType, liveTypeVarScopes);
 
             const adjType = transformVariadicParamType(
                 node,
@@ -22012,7 +22063,7 @@ export function createTypeEvaluator(
             }
 
             case DeclarationType.Param: {
-                let typeAnnotationNode = declaration.node.d.annotation || declaration.node.d.annotationComment;
+                let typeAnnotationNode = declaration.node.d.annotation ?? declaration.node.d.annotationComment;
 
                 // If there wasn't an annotation, see if the parent function
                 // has a function-level annotation comment that provides
@@ -22034,7 +22085,6 @@ export function createTypeEvaluator(
                     let declaredType = getTypeOfParamAnnotation(typeAnnotationNode, declaration.node.d.category);
 
                     const liveTypeVarScopes = ParseTreeUtils.getTypeVarScopesForNode(declaration.node);
-
                     declaredType = makeTypeVarsBound(declaredType, liveTypeVarScopes);
 
                     return {
@@ -22595,7 +22645,7 @@ export function createTypeEvaluator(
                     includesVariableDecl: includesVariableTypeDecl(typedDecls),
                     includesIllegalTypeAliasDecl: !typedDecls.every((decl) => isPossibleTypeAliasDeclaration(decl)),
                     includesSpeculativeResult: false,
-                    isRecursiveDefinition: !declaredType,
+                    isRecursiveDefinition: !declaredType && !speculativeTypeTracker.isSpeculative(/* node */ undefined),
                 };
 
                 return result;
@@ -23978,6 +24028,11 @@ export function createTypeEvaluator(
                 includeDiagAddendum = false;
             }
 
+            // Special-case TypeForm to retain literals when solving TypeVars.
+            if (ClassType.isBuiltIn(destType, 'TypeForm')) {
+                effectiveFlags |= AssignTypeFlags.RetainLiteralsForTypeVar;
+            }
+
             if (
                 !assignType(
                     variance === Variance.Contravariant ? srcTypeArg : destTypeArg,
@@ -24161,11 +24216,6 @@ export function createTypeEvaluator(
         // If the source or dest is unbound, allow the assignment. The
         // error will be reported elsewhere.
         if (isUnbound(destType) || isUnbound(srcType)) {
-            return true;
-        }
-
-        // Handle TypeForm assignments.
-        if (assignToTypeFormType(destType, srcType, constraints, flags, recursionCount)) {
             return true;
         }
 
@@ -24362,7 +24412,7 @@ export function createTypeEvaluator(
             // If both the source and dest are unions, use assignFromUnionType which has
             // special-case logic to handle this case.
             if (isUnion(srcType)) {
-                return assignFromUnionType(destType, srcType, /* diag */ undefined, constraints, flags, recursionCount);
+                return assignFromUnionType(destType, srcType, diag, constraints, flags, recursionCount);
             }
 
             const clonedConstraints = constraints?.clone();
@@ -24493,7 +24543,11 @@ export function createTypeEvaluator(
 
         if (isClassInstance(destType)) {
             if (ClassType.isBuiltIn(destType, 'type')) {
-                if (isInstantiableClass(srcType) && isSpecialFormClass(srcType, flags)) {
+                if (
+                    isInstantiableClass(srcType) &&
+                    isSpecialFormClass(srcType, flags) &&
+                    TypeBase.getInstantiableDepth(srcType) === 0
+                ) {
                     return false;
                 }
 
@@ -24861,24 +24915,14 @@ export function createTypeEvaluator(
         return false;
     }
 
-    // If the destination type is an explicit TypeForm type, see if the source
-    // type has an implicit TypeForm type that can be assigned to it. Also see
-    // of the source is a type[T] type that is assignable.
-    function assignToTypeFormType(
-        destType: Type,
-        srcType: Type,
-        constraints: ConstraintTracker | undefined,
-        flags: AssignTypeFlags,
-        recursionCount: number
-    ): boolean {
-        if (!isClassInstance(destType) || !ClassType.isBuiltIn(destType, 'TypeForm')) {
-            return false;
+    // If the expected type is an explicit TypeForm type, see if the source
+    // type has an implicit TypeForm type that can be assigned to it. If so,
+    // convert to an explicit TypeForm type.
+    function convertToTypeFormType(expectedType: Type, srcType: Type): Type {
+        // Is the source is a TypeForm type?
+        if (!srcType.props?.typeForm) {
+            return srcType;
         }
-
-        const destTypeFormType =
-            destType.priv.typeArgs && destType.priv.typeArgs.length > 0
-                ? destType.priv.typeArgs[0]
-                : UnknownType.create();
 
         let srcTypeFormType: Type | undefined;
 
@@ -24903,10 +24947,27 @@ export function createTypeEvaluator(
         }
 
         if (!srcTypeFormType) {
-            return false;
+            return srcType;
         }
 
-        return assignType(destTypeFormType, srcTypeFormType, /* diag */ undefined, constraints, flags, recursionCount);
+        let resultType: Type | undefined;
+
+        doForEachSubtype(expectedType, (subtype) => {
+            if (resultType || !isClassInstance(subtype) || !ClassType.isBuiltIn(subtype, 'TypeForm')) {
+                return;
+            }
+
+            const destTypeFormType =
+                subtype.priv.typeArgs && subtype.priv.typeArgs.length > 0
+                    ? subtype.priv.typeArgs[0]
+                    : UnknownType.create();
+
+            if (assignType(destTypeFormType, srcTypeFormType)) {
+                resultType = ClassType.specialize(subtype, [srcTypeFormType]);
+            }
+        });
+
+        return resultType ?? srcType;
     }
 
     function assignFromUnionType(

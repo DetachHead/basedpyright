@@ -15,7 +15,7 @@ import {
     analyzeProgram,
     nullCallback,
 } from './analyzer/analysis';
-import { BackgroundAnalysisProgram, InvalidatedReason } from './analyzer/backgroundAnalysisProgram';
+import { InvalidatedReason } from './analyzer/backgroundAnalysisProgram';
 import { ImportResolver } from './analyzer/importResolver';
 import { OpenFileOptions, Program } from './analyzer/program';
 import {
@@ -44,14 +44,37 @@ import { ServiceProvider } from './common/serviceProvider';
 import { Range } from './common/textRange';
 import { createMessageChannel, MessagePort, MessageSourceSink, threadId } from './common/workersHost';
 import { Uri } from './common/uri/uri';
+import { ProgramView } from './common/extensibility';
 import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
 export class BackgroundAnalysisBase {
     private _worker: MessageSourceSink | undefined;
     private _onAnalysisCompletion: AnalysisCompleteCallback = nullCallback;
+    private _analysisCancellationToken: CancellationToken | undefined = undefined;
+    private _messageChannel: MessageChannel;
+    protected program: ProgramView | undefined;
 
     protected constructor(protected console: ConsoleInterface) {
         // Don't allow instantiation of this type directly.
+
+        // Create a message channel for handling 'analysis' or 'background' type results.
+        // The other side of this channel will be sent to the BG thread for sending responses.
+        this._messageChannel = new MessageChannel();
+        this._messageChannel.port1.on('message', (msg: BackgroundResponse) => this.handleBackgroundResponse(msg));
+    }
+
+    dispose() {
+        if (this._messageChannel) {
+            this._messageChannel.port1.close();
+            this._messageChannel.port2.close();
+        }
+        if (this._worker) {
+            this._worker.terminate();
+        }
+    }
+
+    setProgramView(programView: Program) {
+        this.program = programView;
     }
 
     setCompletionCallback(callback?: AnalysisCompleteCallback) {
@@ -126,8 +149,12 @@ export class BackgroundAnalysisBase {
         });
     }
 
-    startAnalysis(program: BackgroundAnalysisProgram, token: CancellationToken) {
-        this._startOrResumeAnalysis('analyze', program, token);
+    startAnalysis(token: CancellationToken) {
+        this._analysisCancellationToken = token;
+        this.enqueueRequest({
+            requestType: 'analyze',
+            data: serialize(token),
+        });
     }
 
     async analyzeFile(fileUri: Uri, token: CancellationToken): Promise<boolean> {
@@ -212,23 +239,29 @@ export class BackgroundAnalysisBase {
     }
 
     shutdown(): void {
-        this.enqueueRequest({ requestType: 'shutdown', data: null });
+        if (this._worker) {
+            this.enqueueRequest({ requestType: 'shutdown', data: null });
+        }
     }
 
     protected setup(worker: MessageSourceSink) {
         this._worker = worker;
 
         // global channel to communicate from BG channel to main thread.
-        worker.on('message', (msg: AnalysisResponse) => this.onMessage(msg));
+        worker.on('message', (msg: BackgroundResponse) => this.onMessage(msg));
 
         // this will catch any exception thrown from background thread,
         // print log and ignore exception
         worker.on('error', (msg) => {
             this.log(LogLevel.Error, `Error occurred on background thread: ${JSON.stringify(msg)}`);
         });
+
+        // Send the port to the other side for use in sending responses. It can only be sent once cause after it's transferred
+        // it's not usable anymore.
+        this.enqueueRequest({ requestType: 'start', data: '', port: this._messageChannel.port2 });
     }
 
-    protected onMessage(msg: AnalysisResponse) {
+    protected onMessage(msg: BackgroundResponse) {
         switch (msg.requestType) {
             case 'log': {
                 const logData = deserialize<LogData>(msg.data);
@@ -248,7 +281,7 @@ export class BackgroundAnalysisBase {
         }
     }
 
-    protected enqueueRequest(request: AnalysisRequest) {
+    protected enqueueRequest(request: BackgroundRequest) {
         if (this._worker) {
             this._worker.postMessage(request, request.port ? [request.port] : undefined);
         }
@@ -258,13 +291,7 @@ export class BackgroundAnalysisBase {
         log(this.console, level, msg);
     }
 
-    protected handleAnalysisResponse(
-        msg: AnalysisResponse,
-        program: BackgroundAnalysisProgram,
-        port1: MessagePort,
-        port2: MessagePort,
-        token: CancellationToken
-    ) {
+    protected handleBackgroundResponse(msg: BackgroundResponse) {
         switch (msg.requestType) {
             case 'analysisResult': {
                 this._onAnalysisCompletion(convertAnalysisResults(deserialize(msg.data)));
@@ -272,19 +299,20 @@ export class BackgroundAnalysisBase {
             }
 
             case 'analysisPaused': {
-                port2.close();
-                port1.close();
-
                 // Analysis request has completed, but there is more to
                 // analyze, so queue another message to resume later.
-                this._startOrResumeAnalysis('resumeAnalysis', program, token);
+                this.enqueueRequest({
+                    requestType: 'resumeAnalysis',
+                    data: serialize(this._analysisCancellationToken),
+                });
                 break;
             }
 
             case 'analysisDone': {
-                disposeCancellationToken(token);
-                port2.close();
-                port1.close();
+                if (this._analysisCancellationToken) {
+                    disposeCancellationToken(this._analysisCancellationToken);
+                }
+                this._analysisCancellationToken = undefined;
                 break;
             }
 
@@ -292,28 +320,12 @@ export class BackgroundAnalysisBase {
                 debug.fail(`${msg.requestType} is not expected. Message structure: ${JSON.stringify(msg)}`);
         }
     }
-
-    private _startOrResumeAnalysis(
-        requestType: 'analyze' | 'resumeAnalysis',
-        program: BackgroundAnalysisProgram,
-        token: CancellationToken
-    ) {
-        const { port1, port2 } = createMessageChannel();
-
-        // Handle response from background thread to main thread.
-        port1.on('message', (msg: AnalysisResponse) => this.handleAnalysisResponse(msg, program, port1, port2, token));
-
-        port1.start();
-        port2.start();
-        const cancellationId = getCancellationTokenId(token);
-        this.enqueueRequest({ requestType, data: serialize(cancellationId), port: port2 });
-    }
 }
 
 export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase {
     private _configOptions: ConfigOptions;
     private _program: Program;
-
+    private _responsePort: MessagePort | undefined;
     protected importResolver: ImportResolver;
     protected logTracker: LogTracker;
     protected isCaseSensitive = true;
@@ -348,6 +360,11 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         return this._program;
     }
 
+    get responsePort(): MessagePort {
+        debug.assert(this._responsePort !== undefined, 'BG thread was not started properly. No response port');
+        return this._responsePort!;
+    }
+
     start() {
         this.log(LogLevel.Info, `Background analysis(${threadId()}) started`);
 
@@ -363,7 +380,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.parentPort?.start();
     }
 
-    protected onMessage(msg: AnalysisRequest) {
+    protected onMessage(msg: BackgroundRequest) {
         switch (msg.requestType) {
             // FS mutation support for browser usecase.
             case 'initializeFileSystem': {
@@ -383,25 +400,26 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 break;
             }
 
+            case 'start': {
+                // Take ownership of the port for sending responses. This should
+                // have been provided in the 'start' message.
+                this._responsePort = msg.port!;
+                break;
+            }
             case 'cacheUsageBuffer': {
                 this.serviceProvider.cacheManager()?.handleCachedUsageBufferMessage(msg);
                 break;
             }
-            case 'analyze': {
-                const port = msg.port!;
-                const data = deserialize(msg.data);
-                const token = getCancellationTokenFromId(data);
 
-                this.handleAnalyze(port, data, token);
+            case 'analyze': {
+                const token = deserialize(msg.data);
+                this.handleAnalyze(this.responsePort, token);
                 break;
             }
 
             case 'resumeAnalysis': {
-                const port = msg.port!;
-                const data = deserialize(msg.data);
-                const token = getCancellationTokenFromId(data);
-
-                this.handleResumeAnalysis(port, data, token);
+                const token = deserialize(msg.data);
+                this.handleResumeAnalysis(this.responsePort, token);
                 break;
             }
 
@@ -528,7 +546,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         host: Host
     ): ImportResolver;
 
-    protected handleAnalyze(port: MessagePort, cancellationId: string, token: CancellationToken) {
+    protected handleAnalyze(port: MessagePort, token: CancellationToken) {
         // Report files to analyze first.
         const requiringAnalysisCount = this.program.getFilesToAnalyzeCount();
 
@@ -540,12 +558,13 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             fatalErrorOccurred: false,
             configParseErrors: [],
             elapsedTime: 0,
+            reason: 'analysis',
         });
 
-        this.handleResumeAnalysis(port, cancellationId, token);
+        this.handleResumeAnalysis(port, token);
     }
 
-    protected handleResumeAnalysis(port: MessagePort, cancellationId: string, token: CancellationToken) {
+    protected handleResumeAnalysis(port: MessagePort, token: CancellationToken) {
         // Report results at the interval of the max analysis time.
         const maxTime = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
         const moreToAnalyze = analyzeProgram(
@@ -561,9 +580,9 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             // There's more to analyze after we exceeded max time,
             // so report that we are paused. The foreground thread will
             // then queue up a message to resume the analysis.
-            this._analysisPaused(port, cancellationId);
+            this._analysisPaused(port, token);
         } else {
-            this.analysisDone(port, cancellationId);
+            this.analysisDone(port, token);
         }
     }
 
@@ -697,8 +716,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         super.handleShutdown();
     }
 
-    protected analysisDone(port: MessagePort, cancellationId: string) {
-        port.postMessage({ requestType: 'analysisDone', data: cancellationId });
+    protected analysisDone(port: MessagePort, token: CancellationToken) {
+        port.postMessage({ requestType: 'analysisDone', data: serialize(token) });
     }
 
     protected onAnalysisCompletion(port: MessagePort, result: AnalysisResults) {
@@ -709,7 +728,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         port.postMessage({ requestType: 'analysisResult', data: serialize(result) });
     }
 
-    private _onMessageWrapper(msg: AnalysisRequest) {
+    private _onMessageWrapper(msg: BackgroundRequest) {
         try {
             return this.onMessage(msg);
         } catch (e: any) {
@@ -742,12 +761,13 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 fatalErrorOccurred: false,
                 configParseErrors: [],
                 elapsedTime,
+                reason: 'tracking',
             });
         }
     }
 
-    private _analysisPaused(port: MessagePort, cancellationId: string) {
-        port.postMessage({ requestType: 'analysisPaused', data: cancellationId });
+    private _analysisPaused(port: MessagePort, token: CancellationToken) {
+        port.postMessage({ requestType: 'analysisPaused', data: serialize(token) });
     }
 }
 
@@ -794,6 +814,7 @@ export type AnalysisRequestKind =
     | 'createFile'
     | 'deleteFile'
     // Others
+    | 'start'
     | 'analyze'
     | 'resumeAnalysis'
     | 'setConfigOptions'
@@ -815,17 +836,17 @@ export type AnalysisRequestKind =
     | 'analyzeFile'
     | 'cacheUsageBuffer';
 
-export interface AnalysisRequest {
-    requestType: AnalysisRequestKind;
+export interface BackgroundRequest {
+    requestType: BackgroundRequestKind;
     data: string | null;
     port?: MessagePort | undefined;
     sharedUsageBuffer?: SharedArrayBuffer;
 }
 
-export type AnalysisResponseKind = 'log' | 'analysisResult' | 'analysisPaused' | 'analysisDone';
+export type BackgroundResponseKind = 'log' | 'analysisResult' | 'analysisPaused' | 'analysisDone';
 
-export interface AnalysisResponse {
-    requestType: AnalysisResponseKind;
+export interface BackgroundResponse {
+    requestType: BackgroundResponseKind;
     data: string | null;
 }
 
