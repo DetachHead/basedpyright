@@ -19,6 +19,7 @@
     },
     "scripts": {
         "build": "webpack --mode production --progress",
+        "build:dev": "webpack --mode development --progress",
         "clean": "shx rm -rf ./dist ./out LICENSE.txt",
         "prepack": "npm run clean && shx cp ../../LICENSE.txt . && npm run build",
         "webpack": "webpack --mode development --progress"

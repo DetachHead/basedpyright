@@ -21,6 +21,9 @@ module.exports = async (_, { mode }) => {
         entry: {
             pyright: './src/worker.ts',
         },
+        optimization: {
+            minimize: mode === 'production',
+        },
         output: {
             filename: '[name].worker.js',
             path: outPath,
