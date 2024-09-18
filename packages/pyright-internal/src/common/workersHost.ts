@@ -13,6 +13,10 @@ export interface MessageSourceSink {
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void;
 }
 
+export interface Worker extends MessageSourceSink {
+    terminate(): Promise<number>;
+}
+
 export interface MessagePort extends MessageSourceSink {
     start(): void;
     close(): void;
@@ -25,7 +29,7 @@ export interface MessageChannel {
 
 export interface WorkersHost {
     parentPort(): MessagePort | null;
-    createWorker(initialData?: any): MessageSourceSink;
+    createWorker(initialData?: any): Worker;
     createMessageChannel(): MessageChannel;
     threadId(): string;
 }
@@ -48,7 +52,7 @@ export function createMessageChannel(): MessageChannel {
     return host().createMessageChannel();
 }
 
-export function createWorker(initialData?: any): MessageSourceSink {
+export function createWorker(initialData?: any): Worker {
     return host().createWorker(initialData);
 }
 

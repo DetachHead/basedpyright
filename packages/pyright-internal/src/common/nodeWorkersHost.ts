@@ -5,14 +5,7 @@ import {
     MessageChannel as WorkerThreadsMessageChannel,
     threadId,
 } from 'worker_threads';
-import {
-    MessageChannel,
-    MessagePort,
-    MessageSourceSink,
-    shallowReplace,
-    Transferable,
-    WorkersHost,
-} from './workersHost';
+import { MessageChannel, MessagePort, shallowReplace, Transferable, Worker, WorkersHost } from './workersHost';
 
 export class NodeWorkersHost implements WorkersHost {
     threadId(): string {
@@ -23,7 +16,7 @@ export class NodeWorkersHost implements WorkersHost {
         return parentPort ? new NodeMessagePort(parentPort) : null;
     }
 
-    createWorker(initialData?: any): MessageSourceSink {
+    createWorker(initialData?: any): Worker {
         // this will load this same file in BG thread and start listener
         const worker = new WorkerThreadsWorker(__filename, { workerData: initialData });
         return new NodeWorker(worker);
@@ -61,7 +54,7 @@ class NodeMessagePort implements MessagePort {
     }
 }
 
-class NodeWorker implements MessageSourceSink {
+class NodeWorker implements Worker {
     constructor(private _delegate: WorkerThreadsWorker) {}
     postMessage(value: any, transferList?: Transferable[]): void {
         if (transferList) {
@@ -73,6 +66,7 @@ class NodeWorker implements MessageSourceSink {
     on(type: 'message' | 'error' | 'exit', listener: (data: any) => void): void {
         this._delegate.on(type, (data) => listener(wrapOnReceive(data)));
     }
+    terminate = () => this._delegate.terminate();
 }
 
 function unwrapForSend(value: any): any {

@@ -1,7 +1,7 @@
 import {
     Transferable,
     WorkersHost,
-    MessageSourceSink,
+    Worker,
     MessagePort,
     MessageChannel,
     shallowReplace,
@@ -22,7 +22,7 @@ export class BrowserWorkersHost implements WorkersHost {
         return this._parentPort ? new BrowserMessagePort(this._parentPort) : null;
     }
 
-    createWorker(initialData?: any): MessageSourceSink {
+    createWorker(initialData?: any): Worker {
         const channel = new globalThis.MessageChannel();
         self.postMessage(
             {
@@ -46,7 +46,7 @@ export class BrowserWorkersHost implements WorkersHost {
     }
 }
 
-class BrowserMessagePort implements MessagePort {
+class BrowserMessagePort implements MessagePort, Worker {
     constructor(private _delegate: globalThis.MessagePort) {}
     unwrap() {
         return this._delegate;
@@ -73,6 +73,11 @@ class BrowserMessagePort implements MessagePort {
     close() {
         this._delegate.close();
     }
+    terminate = () => {
+        console.warn('Worker.terminate was called. TODO: figure out what to do');
+        this._delegate.close(); // this?
+        return Promise.resolve(0);
+    };
 }
 
 function unwrapForSend(value: any): any {

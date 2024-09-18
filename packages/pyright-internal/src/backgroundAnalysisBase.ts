@@ -42,13 +42,13 @@ import { Host, HostKind } from './common/host';
 import { LogTracker } from './common/logTracker';
 import { ServiceProvider } from './common/serviceProvider';
 import { Range } from './common/textRange';
-import { createMessageChannel, MessagePort, MessageSourceSink, threadId } from './common/workersHost';
+import { createMessageChannel, MessagePort, threadId, MessageChannel, Worker } from './common/workersHost';
 import { Uri } from './common/uri/uri';
 import { ProgramView } from './common/extensibility';
 import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
 export class BackgroundAnalysisBase {
-    private _worker: MessageSourceSink | undefined;
+    private _worker: Worker | undefined;
     private _onAnalysisCompletion: AnalysisCompleteCallback = nullCallback;
     private _analysisCancellationToken: CancellationToken | undefined = undefined;
     private _messageChannel: MessageChannel;
@@ -59,7 +59,7 @@ export class BackgroundAnalysisBase {
 
         // Create a message channel for handling 'analysis' or 'background' type results.
         // The other side of this channel will be sent to the BG thread for sending responses.
-        this._messageChannel = new MessageChannel();
+        this._messageChannel = createMessageChannel();
         this._messageChannel.port1.on('message', (msg: BackgroundResponse) => this.handleBackgroundResponse(msg));
     }
 
@@ -244,7 +244,7 @@ export class BackgroundAnalysisBase {
         }
     }
 
-    protected setup(worker: MessageSourceSink) {
+    protected setup(worker: Worker) {
         this._worker = worker;
 
         // global channel to communicate from BG channel to main thread.
@@ -808,7 +808,7 @@ function convertDiagnostics(diagnostics: Diagnostic[]) {
     });
 }
 
-export type AnalysisRequestKind =
+export type BackgroundRequestKind =
     // Browser usecase
     | 'initializeFileSystem'
     | 'createFile'
