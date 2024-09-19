@@ -4,14 +4,8 @@
             {
                 "code": "reportAssignmentType",
                 "range": {
-                    "start": {
-                        "line": 0,
-                        "character": 11
-                    },
-                    "end": {
-                        "line": 0,
-                        "character": 13
-                    }
+                    "startColumn": 11,
+                    "endColumn": 13
                 }
             }
         ]
