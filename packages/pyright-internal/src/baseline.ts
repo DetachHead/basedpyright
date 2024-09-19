@@ -1,6 +1,5 @@
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
-import { Range } from './common/textRange';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { Uri } from './common/uri/uri';
 import { convertLevelToCategory, Diagnostic, DiagnosticCategory } from './common/diagnostic';
@@ -8,7 +7,7 @@ import { extraOptionDiagnosticRules } from './common/configOptions';
 
 interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
-    range: Range;
+    range: { startColumn: number; endColumn: number };
 }
 
 interface BaselineFile {
@@ -42,7 +41,7 @@ const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: readonly File
         baselineData.files[filePath].push(
             ...errorDiagnostics.map((diagnostic) => ({
                 code: diagnostic.getRule() as DiagnosticRule | undefined,
-                range: diagnostic.range,
+                range: { startColumn: diagnostic.range.start.character, endColumn: diagnostic.range.end.character },
             }))
         );
     }
@@ -106,8 +105,8 @@ export const filterOutBaselinedDiagnostics = (rootDir: Uri, file: Uri, diagnosti
         const matchedIndex = baselinedErrorsForFile.findIndex(
             (baselinedError) =>
                 baselinedError.code === diagnosticRule &&
-                baselinedError.range.start.character === diagnostic.range.start.character &&
-                baselinedError.range.end.character === diagnostic.range.end.character
+                baselinedError.range.startColumn === diagnostic.range.start.character &&
+                baselinedError.range.endColumn === diagnostic.range.end.character
         );
         if (matchedIndex >= 0) {
             baselinedErrorsForFile.splice(matchedIndex, 1);
