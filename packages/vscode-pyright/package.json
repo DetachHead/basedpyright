@@ -46,47 +46,47 @@
             {
                 "command": "basedpyright.organizeimports",
                 "title": "Organize Imports",
-                "category": "Pyright"
+                "category": "basedpyright"
             },
             {
                 "command": "basedpyright.restartserver",
                 "title": "Restart Server",
-                "category": "Pyright"
+                "category": "basedpyright"
             },
             {
                 "command": "basedpyright.dumpTokens",
                 "title": "Dump token streams ...",
-                "category": "Pyright",
+                "category": "basedpyright",
                 "enablement": "editorLangId == python && pyright.development"
             },
             {
                 "command": "basedpyright.dumpNodes",
                 "title": "Dump parse tree ...",
-                "category": "Pyright",
+                "category": "basedpyright",
                 "enablement": "editorLangId == python && pyright.development"
             },
             {
                 "command": "basedpyright.dumpTypes",
                 "title": "Dump type info ...",
-                "category": "Pyright",
+                "category": "basedpyright",
                 "enablement": "editorLangId == python && pyright.development"
             },
             {
                 "command": "basedpyright.dumpCachedTypes",
                 "title": "Dump cached type info ...",
-                "category": "Pyright",
+                "category": "basedpyright",
                 "enablement": "editorLangId == python && pyright.development"
             },
             {
                 "command": "basedpyright.dumpCodeFlowGraph",
                 "title": "Dump code flow graph for node ...",
-                "category": "Pyright",
+                "category": "basedpyright",
                 "enablement": "editorLangId == python && pyright.development"
             },
             {
                 "command": "basedpyright.writeBaseline",
                 "title": "Write new errors to baseline",
-                "category": "Pyright"
+                "category": "basedpyright"
             }
         ],
         "menus": {
