@@ -449,6 +449,97 @@ async function processArgs(): Promise<ExitStatus> {
     return runSingleThreaded(args, options, service, minSeverityLevel, output);
 }
 
+const outputResults = (
+    args: CommandLineOptions,
+    options: PyrightCommandLineOptions,
+    results: Pick<AnalysisResults, 'filesInProgram' | 'elapsedTime' | 'diagnostics'>,
+    service: AnalyzerService,
+    minSeverityLevel: SeverityLevel,
+    output: ConsoleInterface
+) => {
+    const rootDir =
+        typeof options.executionRoot === 'string' || options.executionRoot === undefined
+            ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
+            : options.executionRoot;
+    const baselinedErrorCount = Object.values(getBaselinedErrors(rootDir).files).flatMap((file) => file).length;
+    const newErrorCount = results.diagnostics
+        .map(
+            (file) =>
+                file.diagnostics.filter(
+                    (diagnostic) => !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
+                ).length
+        )
+        .reduce(add);
+    const filteredDiagnostics = results.diagnostics.map((file) => ({
+        ...file,
+        diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
+    }));
+
+    // if there are any unbaselined errors, don't write to the baseline unless the user explicitly passed
+    // --writebaseline
+    if (
+        args.writebaseline ||
+        !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add)
+    ) {
+        const diff = newErrorCount - baselinedErrorCount;
+        writeDiagnosticsToBaselineFile(rootDir, results.diagnostics, false);
+        let message = '';
+        if (diff === 0) {
+            message += "error count didn't change";
+        } else if (diff > 0) {
+            message += `went up by ${diff}`;
+        } else {
+            message += `went down by ${diff * -1}`;
+        }
+        console.info(
+            `updated ${rootDir.getRelativePath(baselineFilePath(rootDir))} with ${pluralize(
+                newErrorCount,
+                'error'
+            )} (${message})`
+        );
+    }
+
+    const treatWarningsAsErrors = !!args.warnings;
+    let errorCount = 0;
+    let report: DiagnosticResult;
+    if (args.outputjson) {
+        report = reportDiagnosticsAsJson(
+            filteredDiagnostics,
+            minSeverityLevel,
+            results.filesInProgram,
+            results.elapsedTime
+        );
+    } else if (process.env['GITHUB_ACTIONS'] && !process.env['PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT']) {
+        report = reportDiagnosticsAsGithubActionsCommands(
+            filteredDiagnostics,
+            minSeverityLevel,
+            results.filesInProgram,
+            results.elapsedTime
+        );
+    } else {
+        printVersion(output);
+        report = reportDiagnosticsAsText(filteredDiagnostics, minSeverityLevel);
+    }
+    if (args.gitlabcodequality) {
+        fs.writeFileSync(
+            args.gitlabcodequality,
+            JSON.stringify(
+                createGitlabCodeQualityReport(
+                    filteredDiagnostics,
+                    minSeverityLevel,
+                    results.filesInProgram,
+                    results.elapsedTime
+                )
+            )
+        );
+    }
+    errorCount += report.errorCount;
+    if (treatWarningsAsErrors) {
+        errorCount += report.warningCount;
+    }
+    return errorCount;
+};
+
 async function runSingleThreaded(
     args: CommandLineOptions,
     options: PyrightCommandLineOptions,
@@ -457,7 +548,6 @@ async function runSingleThreaded(
     output: ConsoleInterface
 ) {
     const watch = args.watch !== undefined;
-    const treatWarningsAsErrors = !!args.warnings;
 
     const exitStatus = createDeferred<ExitStatus>();
 
@@ -475,88 +565,10 @@ async function runSingleThreaded(
             return;
         }
 
-        const rootDir =
-            typeof options.executionRoot === 'string' || options.executionRoot === undefined
-                ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
-                : options.executionRoot;
-        const allDiagnostics = results.diagnostics;
-        const baselinedErrorCount = Object.values(getBaselinedErrors(rootDir).files).flatMap((file) => file).length;
-        const newErrorCount = allDiagnostics
-            .map(
-                (file) =>
-                    file.diagnostics.filter(
-                        (diagnostic) =>
-                            !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
-                    ).length
-            )
-            .reduce(add);
-        const filteredDiagnostics = results.diagnostics.map((file) => ({
-            ...file,
-            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
-        }));
-
-        // if there are any unbaselined errors, don't write to the baseline unless the user explicitly passed
-        // --writebaseline
-        if (
-            args.writebaseline ||
-            !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add)
-        ) {
-            const diff = newErrorCount - baselinedErrorCount;
-            writeDiagnosticsToBaselineFile(rootDir, allDiagnostics, false);
-            let message = '';
-            if (diff === 0) {
-                message += "error count didn't change";
-            } else if (diff > 0) {
-                message += `went up by ${diff}`;
-            } else {
-                message += `went down by ${diff * -1}`;
-            }
-            console.info(
-                `updated ${rootDir.getRelativePath(baselineFilePath(rootDir))} with ${pluralize(
-                    newErrorCount,
-                    'error'
-                )} (${message})`
-            );
-        }
-        let errorCount = 0;
-        if (!args.createstub && !args.verifytypes) {
-            let report: DiagnosticResult;
-            if (args.outputjson) {
-                report = reportDiagnosticsAsJson(
-                    filteredDiagnostics,
-                    minSeverityLevel,
-                    results.filesInProgram,
-                    results.elapsedTime
-                );
-            } else if (process.env['GITHUB_ACTIONS'] && !process.env['PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT']) {
-                report = reportDiagnosticsAsGithubActionsCommands(
-                    filteredDiagnostics,
-                    minSeverityLevel,
-                    results.filesInProgram,
-                    results.elapsedTime
-                );
-            } else {
-                printVersion(output);
-                report = reportDiagnosticsAsText(filteredDiagnostics, minSeverityLevel);
-            }
-            if (args.gitlabcodequality) {
-                fs.writeFileSync(
-                    args.gitlabcodequality,
-                    JSON.stringify(
-                        createGitlabCodeQualityReport(
-                            filteredDiagnostics,
-                            minSeverityLevel,
-                            results.filesInProgram,
-                            results.elapsedTime
-                        )
-                    )
-                );
-            }
-            errorCount += report.errorCount;
-            if (treatWarningsAsErrors) {
-                errorCount += report.warningCount;
-            }
-        }
+        const errorCount =
+            args.createstub || args.verifytypes
+                ? 0
+                : outputResults(args, options, results, service, minSeverityLevel, output);
 
         if (args.createstub && results.requiringAnalysisCount.files === 0) {
             try {
@@ -622,7 +634,6 @@ async function runMultiThreaded(
 ) {
     const workers: ChildProcess[] = [];
     const startTime = Date.now();
-    const treatWarningsAsErrors = !!args.warnings;
     const exitStatus = createDeferred<ExitStatus>();
 
     // Specify that only open files should be checked. This will allow us
@@ -694,27 +705,15 @@ async function runMultiThreaded(
                 // is complete, report the results and exit.
                 if (!exitStatus.resolved) {
                     const elapsedTime = (Date.now() - startTime) / 1000;
-                    let errorCount = 0;
-
-                    if (args.outputjson) {
-                        const report = reportDiagnosticsAsJson(
-                            fileDiagnostics,
-                            minSeverityLevel,
-                            sourceFilesToAnalyze.length,
-                            elapsedTime
-                        );
-                        errorCount += report.errorCount;
-                        if (treatWarningsAsErrors) {
-                            errorCount += report.warningCount;
-                        }
-                    } else {
-                        printVersion(output);
-                        const report = reportDiagnosticsAsText(fileDiagnostics, minSeverityLevel);
-                        errorCount += report.errorCount;
-                        if (treatWarningsAsErrors) {
-                            errorCount += report.warningCount;
-                        }
-
+                    const errorCount = outputResults(
+                        args,
+                        options,
+                        { diagnostics: fileDiagnostics, filesInProgram: sourceFilesToAnalyze.length, elapsedTime },
+                        service,
+                        minSeverityLevel,
+                        output
+                    );
+                    if (!args.outputjson) {
                         // Print the total time.
                         output.info(`Completed in ${elapsedTime}sec`);
                     }
