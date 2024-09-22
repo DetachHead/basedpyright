@@ -1,8 +1,7 @@
 <h1><img src="https://github.com/DetachHead/basedpyright/assets/57028336/c7342c31-bf23-413c-af6d-bc430898b3dd"> basedpyright</h1>
 
 [![pypi](https://img.shields.io/pypi/dm/basedpyright?logo=pypi&color=3775A9)](https://pypi.org/project/basedpyright/)
-[![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC
-)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+[![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright)
 [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
 [![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](https://plugins.jetbrains.com/plugin/24145)
@@ -100,21 +99,25 @@ from foo import b
 #### `reportImplicitRelativeImport` - reporting errors on invalid "relative" imports
 
 pyright allows invalid imports such as this:
+
 ```py
 # ./module_name/foo.py:
 ```
+
 ```py
 # ./module_name/bar.py:
 import foo # wrong! should be `import module_name.foo` or `from module_name import foo`
 ```
 
 this may look correct at first glance, and will work when running `bar.py` directly as a script, but when it's imported as a module, it will crash:
+
 ```py
 # ./main.py:
 import module_name.bar  # ModuleNotFoundError: No module named 'foo'
 ```
 
 the new `reportImplicitRelativeImport` rule bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from `.` (the current package):
+
 ```py
 # ./module_name/bar.py:
 from . import foo
@@ -169,6 +172,7 @@ class Baz(Foo, Bar):
 
 Baz()
 ```
+
 in this example, `Baz()` calls `Foo.__init__`, and the `super().__init__()` in `Foo` now calls to `Bar.__init__` even though `Foo` does not extend `Bar`.
 
 this is complete nonsense and very unsafe, because there's no way to statically know what the super class will be.
@@ -195,6 +199,7 @@ basedpyright re-implements some of the features that microsoft made exclusive to
 the following features have been re-implemented in basedpyright's language server, meaning they are no longer exclusive to vscode. you can use any editor that supports the [language server protocol](https://microsoft.github.io/language-server-protocol/). for more information on installing pyright in your editor of choice, see [the installation instructions](https://detachhead.github.io/basedpyright/#/installation).
 
 #### import suggestion code actions
+
 pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see [this issue](https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645)).
 
 basedpyright re-implements pylance's import suggestion code actions:
@@ -203,15 +208,15 @@ basedpyright re-implements pylance's import suggestion code actions:
 
 #### semantic highlighting
 
-|before|after|
-|-|-|
-|![image](https://github.com/DetachHead/basedpyright/assets/57028336/f2977463-b828-470e-8094-ca437a312350)|![image](https://github.com/DetachHead/basedpyright/assets/57028336/e2c7999e-28c0-4a4c-b975-f63575ec3404)|
+| before                                                                                                    | after                                                                                                     |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| ![image](https://github.com/DetachHead/basedpyright/assets/57028336/f2977463-b828-470e-8094-ca437a312350) | ![image](https://github.com/DetachHead/basedpyright/assets/57028336/e2c7999e-28c0-4a4c-b975-f63575ec3404) |
 
 basedpyright re-implements pylance's semantic highlighting along with some additional improvements:
 
-- variables marked as `Final` have the correct "read-only" colour
-- supports [the new `type` keyword in python 3.12](https://peps.python.org/pep-0695/)
-- `Final` variables are coloured as read-only
+-   variables marked as `Final` have the correct "read-only" colour
+-   supports [the new `type` keyword in python 3.12](https://peps.python.org/pep-0695/)
+-   `Final` variables are coloured as read-only
 
 initial implementation of the semantic highlighting provider was adapted from the [pyright-inlay-hints](https://github.com/jbradaric/pyright-inlay-hints) project.
 
@@ -227,9 +232,9 @@ many of the builtin modules are written in c, meaning the pyright language serve
 
 pylance works around this problem by running a "docstring scraper" script on the user's machine, which imports compiled builtin modules, scrapes all the docstrings from them at runtime, then saves them so that the language server can read them. however this isn't ideal for a few reasons:
 
-- only docstrings for modules and functions available on the user's current OS and python version will be generated. so if you're working on a cross-platform project, or code that's intended to be run on multiple versions of python, you won't be able to see docstrings for compiled builtin modules that are not available in your current python installation.
-- the check to determine whether a builtin object is compiled is done at the module level, meaning modules like `re` and `os` which have python source files but contain re-exports of compiled functions, are treated as if they are entirely written in python. this means many of their docstrings are still missing in pylance.
-- it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
+-   only docstrings for modules and functions available on the user's current OS and python version will be generated. so if you're working on a cross-platform project, or code that's intended to be run on multiple versions of python, you won't be able to see docstrings for compiled builtin modules that are not available in your current python installation.
+-   the check to determine whether a builtin object is compiled is done at the module level, meaning modules like `re` and `os` which have python source files but contain re-exports of compiled functions, are treated as if they are entirely written in python. this means many of their docstrings are still missing in pylance.
+-   it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
 
 basedpyright solves all of these problems by using [docify](https://github.com/AThePeanut4/docify) to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.
 
@@ -281,11 +286,14 @@ to solve this problem, basedpyright will exit with code 3 on any invalid config.
 ### fixes for the `reportRedeclaration` and `reportDuplicateImport` rules
 
 pyright does not report redeclarations if the redeclaration has the same type:
+
 ```py
 foo: int = 1
 foo: int = 2  # no error
 ```
+
 nor does it care if you have a duplicated import in multiple different `import` statements, or in aliases:
+
 ```py
 from foo import bar
 from bar import bar  # no error
@@ -295,12 +303,15 @@ from baz import foo as baz, bar as baz  # no error
 basedpyright solves both of these problems by always reporting an error on a redeclaration or an import with the same name as an existing import.
 
 ### better defaults
+
 we believe that type checkers and linters should be as strict as possible by default, making the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright
 
 #### `typeCheckingMode`
+
 used to be `basic`, but now defaults to `all`. in the future we intend to add [baseline](https://kotlinisland.github.io/basedmypy/baseline.html) to allow for easy adoption of more strict rules in existing codebases.
 
 #### `pythonPlatform`
+
 used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
 
 ### inline `TypedDict` support
@@ -331,10 +342,10 @@ this is an improvement to regular pyright, which requires you to use a [third pa
 # .github/workflows/your_workflow.yaml
 
 jobs:
-  check:
-    steps:
-      - run: ...  # checkout repo, install dependencies, etc
-      - run: basedpyright  # no additional arguments required. it automatically detects if it's running in a github action 
+    check:
+        steps:
+            - run: ... # checkout repo, install dependencies, etc
+            - run: basedpyright # no additional arguments required. it automatically detects if it's running in a github action
 ```
 
 #### gitlab code quality reports
@@ -347,10 +358,10 @@ to enable this in your gitlab CI, just specify a file path to output the report 
 
 ```yaml
 basedpyright:
-  script: basedpyright --gitlabcodequality report.json
-  artifacts:
-    reports:
-      codequality: report.json
+    script: basedpyright --gitlabcodequality report.json
+    artifacts:
+        reports:
+            codequality: report.json
 ```
 
 ### improved translations
@@ -389,7 +400,7 @@ if you're adding basedpyright as a development dependency in your project, we re
 // .vscode/extensions.json
 
 {
-  "recommendations": ["detachhead.basedpyright"]
+    "recommendations": ["detachhead.basedpyright"]
 }
 ```
 
@@ -398,14 +409,15 @@ in `.vscode/settings.json`, remove any settings starting with `python.analysis`,
 you should also disable the built in language server support from the python extension, as it conflicts with basedpyright's language server. the basedpyright extension will detect this problem and suggest fixing it automatically.
 
 <!-- if changing this section title, make sure you also change the url in the pylance notification in the vscode extension -->
+
 ## using basedpyright with pylance (not recommended)
 
 unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
 
 if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension, and the restriction that prevents both extensions from being enabled at the same time has been removed. for an optimal experience you should change the following settings in your `.vscode/settings.json` file:
 
-- disable pylance's type-checking by setting `"python.analysis.typeCheckingMode"` to `"off"`. this will prevent pylance from displaying duplicated errors from its bundled pyright version alongside the errors already displayed by the basedpyright extension.
-- disable basedpyright's LSP features by setting `"basedpyright.disableLanguageServices"` to `true`. this will prevent duplicated hover text and other potential issues with pylance's LSP. keep in mind that this may result in some inconsistent behavior since pylance uses its own version of the pyright LSP.
+-   disable pylance's type-checking by setting `"python.analysis.typeCheckingMode"` to `"off"`. this will prevent pylance from displaying duplicated errors from its bundled pyright version alongside the errors already displayed by the basedpyright extension.
+-   disable basedpyright's LSP features by setting `"basedpyright.disableLanguageServices"` to `true`. this will prevent duplicated hover text and other potential issues with pylance's LSP. keep in mind that this may result in some inconsistent behavior since pylance uses its own version of the pyright LSP.
 
 ```json
 {
@@ -413,7 +425,8 @@ if you do want to continue using pylance, all of the options and commands in bas
     "basedpyright.disableLanguageServices": true
 }
 ```
-*(the basedpyright extension will detect this problem and suggest fixing it automatically)*
+
+_(the basedpyright extension will detect this problem and suggest fixing it automatically)_
 
 # playground
 
@@ -427,10 +440,10 @@ integration with [pre-commit](https://pre-commit.com) is also supported.
 # .pre-commit-config.yaml
 
 repos:
-  - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
-    rev: v1.13.0  # or whatever the latest version is at the time
-    hooks:
-    - id: basedpyright
+    - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
+      rev: v1.13.0 # or whatever the latest version is at the time
+      hooks:
+          - id: basedpyright
 ```
 
 for more information, see the documentation [here](https://github.com/DetachHead/basedpyright-pre-commit-mirror/blob/main/README.md)

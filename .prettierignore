@@ -5,8 +5,16 @@
 docstubs
 
 *.json
-*.md
 **/.github/ISSUE_TEMPLATE/**
+
+# ignore most markdown files to avoid unnecessary upstream conflicts, but whitelist files
+# that either don't exist upstream or that we've completely rewritten
+*.md
+!/README.md
+!/packages/browser-pyright/**/*.md
+!/docs/installation.md
+!/docs/upstream.md
+!/docs/localization.md
 
 **/.venv/**
 .pyprojectx
