@@ -472,7 +472,7 @@ const outputResults = (
     // --writebaseline
     if (
         args.writebaseline ||
-        !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add)
+        !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add, 0)
     ) {
         const previousBaseline = getBaselinedErrors(service.fs, rootDir);
         const newBaseline = writeDiagnosticsToBaselineFile(service.fs, rootDir, results.diagnostics, false);
