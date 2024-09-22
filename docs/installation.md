@@ -13,11 +13,13 @@ this makes it far more convenient for python developers to use, since there's no
 ### **uv**
 
 add it to your project's dev dependencies (recommended):
+
 ```
 uv add --dev basedpyright
 ```
 
 or just install it:
+
 ```
 uv pip install basedpyright
 ```
@@ -77,29 +79,33 @@ install the extension from [the vscode extension marketplace](https://marketplac
 install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
 ### Neovim
+
 You need to install the LSP client addapter plugin,
 [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig), for setting up the
-LSP for the editor.  These configurations are for launching the LSP server,
+LSP for the editor. These configurations are for launching the LSP server,
 as well as for being able to give launching parameters at the same time.
 
 To install the **necessary sever command**, for the LSP server itself, use the
 [pypi package installation method](#command-line--language-server) (as
-mentioned previously in this section).  Or if already using
+mentioned previously in this section). Or if already using
 [Mason.nvim](https://github.com/williamboman/mason.nvim), follow their
-instructions for installing their packages.  The latter approach allows you to
+instructions for installing their packages. The latter approach allows you to
 have the version of BasedPyright maintained and upgraded by Mason project.
 
 #### Setting-up Neovim
+
 BasedPyright is available through the
 [`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
 adapter for native Neovim's LSP support.
 
 After having both, the client-side plugin and the LSP server command installed,
 simply add this settings to your Neovim's settings:
+
 ```lua
 local lspconfig = require("lspconfig")
 lspconfig.basedpyright.setup{}
 ```
+
 Further info for this LSP server options for `nvim-lspconfig` are available on
 their docs, linked above.
 
