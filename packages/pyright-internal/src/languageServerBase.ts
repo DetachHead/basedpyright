@@ -1159,7 +1159,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(fileUri);
         const rootUri = workspace.rootUri!;
-        const previouslyBaselinedErrors = getBaselinedErrorsForFile(rootUri, fileUri);
+        const previouslyBaselinedErrors = getBaselinedErrorsForFile(this.fs, rootUri, fileUri);
         const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
         let filesWithDiagnostics: FileDiagnostics[];
         if (diagnosticsForFile) {
@@ -1177,7 +1177,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         } else {
             filesWithDiagnostics = [{ diagnostics: [], fileUri, version: undefined }];
         }
-        writeDiagnosticsToBaselineFile(rootUri, filesWithDiagnostics, true);
+        writeDiagnosticsToBaselineFile(this.fs, rootUri, filesWithDiagnostics, true);
     };
 
     protected async onExecuteCommand(

@@ -48,8 +48,9 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { baselineFilePath, getBaselinedErrors, writeDiagnosticsToBaselineFile } from './baseline';
+import { getBaselinedErrors, getBaselineSummaryMessage, writeDiagnosticsToBaselineFile } from './baseline';
 import { add } from 'lodash';
+import { pluralize } from './common/stringUtils';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -461,15 +462,7 @@ const outputResults = (
         typeof options.executionRoot === 'string' || options.executionRoot === undefined
             ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
             : options.executionRoot;
-    const baselinedErrorCount = Object.values(getBaselinedErrors(rootDir).files).flatMap((file) => file).length;
-    const newErrorCount = results.diagnostics
-        .map(
-            (file) =>
-                file.diagnostics.filter(
-                    (diagnostic) => !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
-                ).length
-        )
-        .reduce(add);
+
     const filteredDiagnostics = results.diagnostics.map((file) => ({
         ...file,
         diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
@@ -481,22 +474,9 @@ const outputResults = (
         args.writebaseline ||
         !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add)
     ) {
-        const diff = newErrorCount - baselinedErrorCount;
-        writeDiagnosticsToBaselineFile(rootDir, results.diagnostics, false);
-        let message = '';
-        if (diff === 0) {
-            message += "error count didn't change";
-        } else if (diff > 0) {
-            message += `went up by ${diff}`;
-        } else {
-            message += `went down by ${diff * -1}`;
-        }
-        console.info(
-            `updated ${rootDir.getRelativePath(baselineFilePath(rootDir))} with ${pluralize(
-                newErrorCount,
-                'error'
-            )} (${message})`
-        );
+        const previousBaseline = getBaselinedErrors(service.fs, rootDir);
+        const newBaseline = writeDiagnosticsToBaselineFile(service.fs, rootDir, results.diagnostics, false);
+        console.info(getBaselineSummaryMessage(rootDir, previousBaseline, newBaseline));
     }
 
     const treatWarningsAsErrors = !!args.warnings;
@@ -1301,9 +1281,6 @@ function convertDiagnosticToJson(filePath: string, diag: Diagnostic): PyrightJso
         rule: diag.getRule(),
     };
 }
-
-const pluralize = (n: number, singular: string, plural: string = `${singular}s`) =>
-    `${n} ${n === 1 ? singular : plural}`;
 
 const printDiagnosticSummary = (result: DiagnosticResult) => {
     console.info(

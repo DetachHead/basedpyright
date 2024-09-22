@@ -1247,7 +1247,7 @@ export class SourceFile {
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
-        filterOutBaselinedDiagnostics(configOptions.projectRoot, this._uri, diagList);
+        filterOutBaselinedDiagnostics(this.fileSystem, configOptions.projectRoot, this._uri, diagList);
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
