@@ -1,5 +1,10 @@
 import { ServerCommand } from './commandController';
-import { writeDiagnosticsToBaselineFile } from '../baseline';
+import {
+    baselineFilePath,
+    getBaselinedErrors,
+    getBaselineSummaryMessage,
+    writeDiagnosticsToBaselineFile,
+} from '../baseline';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export class WriteBaselineCommand implements ServerCommand {
@@ -9,20 +14,43 @@ export class WriteBaselineCommand implements ServerCommand {
 
     async execute(): Promise<any> {
         // TODO: figure out a better way to get workspace root
-        const firstFile = this._ls.documentsWithDiagnostics[Object.keys(this._ls.documentsWithDiagnostics)[0]]?.fileUri;
-        if (firstFile) {
-            const workspace = await this._ls.getWorkspaceForFile(firstFile);
+        // first we try and find the first workspace that has a baseline file and assume that's the right one
+        const workspaces = await this._ls.getWorkspaces();
+        if (!workspaces.length) {
+            this._ls.window.showErrorMessage('cannot write to the baseline file because no workspace is open');
+            return;
+        }
+        let workspace = workspaces.find((workspace) =>
+            workspace.rootUri ? workspace.service.fs.existsSync(baselineFilePath(workspace.rootUri)) : false
+        );
+        if (!workspace) {
+            // if there's no baseline file yet, we do it in an even hackier way, by getting the workspace from
+            // any open file that has diagnostics in it.
+            const firstFile = Object.values(this._ls.documentsWithDiagnostics)[0]?.fileUri;
+            if (firstFile) {
+                workspace = await this._ls.getWorkspaceForFile(firstFile);
+            }
+        }
+        if (workspace) {
             const workspaceRoot = workspace.rootUri;
             if (workspaceRoot) {
-                await writeDiagnosticsToBaselineFile(
+                const previousBaseline = getBaselinedErrors(workspace.service.fs, workspaceRoot);
+                const newBaseline = writeDiagnosticsToBaselineFile(
+                    workspace.service.fs,
                     workspaceRoot,
                     Object.values(this._ls.documentsWithDiagnostics),
                     true
                 );
                 workspace.service.baselineUpdated();
+                this._ls.window.showInformationMessage(
+                    getBaselineSummaryMessage(workspaceRoot, previousBaseline, newBaseline)
+                );
                 return;
             }
         }
-        this._ls.window.showErrorMessage('cannot write to the baseline file because no workspace is open');
+        // the only time the rootUri would not be found if there was no baseline file and no files with any
+        // diagnostics in them. this is because of the hacky method we use above to get the workspace.
+        // but we disguise this as an information message because it means we don't need to write anything anyway
+        this._ls.window.showInformationMessage('no baseline file was found and there are no diagnostics to baseline');
     }
 }

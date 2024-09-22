@@ -192,3 +192,6 @@ export function escapeRegExp(text: string) {
  */
 export const userFacingOptionsList = (values: string[]) =>
     values.map((mode, index) => (index < values.length - 1 ? `"${mode}", ` : `or "${mode}"`)).join('');
+
+export const pluralize = (n: number, singular: string, plural: string = `${singular}s`) =>
+    `${n} ${n === 1 ? singular : plural}`;
