@@ -6,6 +6,8 @@ import {
     writeDiagnosticsToBaselineFile,
 } from '../baseline';
 import { LanguageServerInterface } from '../common/languageServerInterface';
+import { matchFileSpecs } from '../common/configOptions';
+import { Uri } from '../common/uri/uri';
 
 export class WriteBaselineCommand implements ServerCommand {
     constructor(private _ls: LanguageServerInterface) {
@@ -35,10 +37,16 @@ export class WriteBaselineCommand implements ServerCommand {
             const workspaceRoot = workspace.rootUri;
             if (workspaceRoot) {
                 const previousBaseline = getBaselinedErrors(workspace.service.fs, workspaceRoot);
+                const configOptions = workspace.service.getConfigOptions();
+                // filter out excluded files. ideally they shouldn't be present at all. see
+                // https://github.com/DetachHead/basedpyright/issues/31
+                const filteredFiles = Object.entries(this._ls.documentsWithDiagnostics)
+                    .filter(([filePath]) => matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider)))
+                    .map(([_, diagnostics]) => diagnostics);
                 const newBaseline = writeDiagnosticsToBaselineFile(
                     workspace.service.fs,
                     workspaceRoot,
-                    Object.values(this._ls.documentsWithDiagnostics),
+                    filteredFiles,
                     true
                 );
                 workspace.service.baselineUpdated();
