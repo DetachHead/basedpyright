@@ -1330,7 +1330,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 }
                 this.sendDiagnostics(this.fs, {
                     fileUri: fileWithDiagnostics.fileUri,
-                    diagnostics: fileWithDiagnostics.diagnostics,
+                    diagnostics: [],
                     version: undefined,
                 });
             }
