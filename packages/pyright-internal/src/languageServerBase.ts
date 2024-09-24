@@ -67,14 +67,19 @@ import {
     TextDocumentEdit,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
-    WillSaveTextDocumentParams,
     WorkDoneProgressReporter,
     WorkspaceEdit,
     WorkspaceFoldersChangeEvent,
     WorkspaceSymbol,
     WorkspaceSymbolParams,
 } from 'vscode-languageserver';
-import { InlayHint, InlayHintParams, SemanticTokens, SemanticTokensParams } from 'vscode-languageserver-protocol';
+import {
+    InlayHint,
+    InlayHintParams,
+    SemanticTokens,
+    SemanticTokensParams,
+    WillSaveTextDocumentParams,
+} from 'vscode-languageserver-protocol';
 import { ResultProgressReporter } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -134,7 +139,7 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { githubRepo } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
-import { getBaselinedErrorsForFile, writeDiagnosticsToBaselineFile } from './baseline';
+import { BaselinedDiagnostic, getBaselinedErrorsForFile, writeDiagnosticsToBaselineFile } from './baseline';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -181,8 +186,13 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected readonly fs: FileSystem;
     protected readonly caseSensitiveDetector: CaseSensitivityDetector;
 
+    protected readonly savedFilesForBaselineUpdate = new Map<
+        Uri,
+        { workspace: Workspace; baseline: readonly BaselinedDiagnostic[] }
+    >();
+
     // The URIs for which diagnostics are reported
-    readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
+    readonly documentsWithDiagnostics: Record<string, FileDiagnostics & { reason: 'analysis' | 'tracking' }> = {};
 
     protected readonly dynamicFeatures = new DynamicFeatures();
 
@@ -1155,29 +1165,19 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return result;
     };
 
+    /**
+     * get the baselined errors for the file we just saved and tell the analysis complete handler
+     * that it may need to update the baseline for it
+     */
     protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
         const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(fileUri);
-        const rootUri = workspace.rootUri!;
-        const previouslyBaselinedErrors = getBaselinedErrorsForFile(this.fs, rootUri, fileUri);
-        const diagnosticsForFile = this.documentsWithDiagnostics[params.textDocument.uri];
-        let filesWithDiagnostics: FileDiagnostics[];
-        if (diagnosticsForFile) {
-            filesWithDiagnostics = [diagnosticsForFile];
-            if (
-                // no baseline file exists or no baselined errors exist for this file
-                !previouslyBaselinedErrors.length ||
-                // there are diagnostics that haven't been baselined, so we don't want to write them
-                // because the user will have to either fix the diagnostics or explicitly write them to the
-                // baseline themselves
-                diagnosticsForFile.diagnostics.some((diagnostic) => diagnostic.baselineStatus !== 'baselined')
-            ) {
-                return;
-            }
-        } else {
-            filesWithDiagnostics = [{ diagnostics: [], fileUri, version: undefined }];
+        if (workspace.rootUri) {
+            this.savedFilesForBaselineUpdate.set(fileUri, {
+                workspace,
+                baseline: getBaselinedErrorsForFile(this.fs, workspace.rootUri, fileUri),
+            });
         }
-        writeDiagnosticsToBaselineFile(this.fs, rootUri, filesWithDiagnostics, true);
     };
 
     protected async onExecuteCommand(
@@ -1261,19 +1261,54 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return rule;
     }
 
-    protected onAnalysisCompletedHandler(fs: FileSystem, results: AnalysisResults): void {
+    protected async onAnalysisCompletedHandler(fs: FileSystem, results: AnalysisResults): Promise<void> {
         // Send the computed diagnostics to the client.
         results.diagnostics.forEach((fileDiag) => {
             if (!this.canNavigateToFile(fileDiag.fileUri, fs)) {
                 return;
             }
 
-            this.sendDiagnostics(fs, fileDiag);
+            this.sendDiagnostics(fs, { ...fileDiag, reason: results.reason });
         });
 
         results.configParseErrors.forEach((error) =>
             this.connection.sendNotification(ShowMessageNotification.type, { message: error, type: MessageType.Error })
         );
+
+        // if any baselined diagnostics disappeared, update the baseline for the effected files
+        if (results.reason === 'analysis') {
+            const filesRequiringBaselineUpdate = new Map<Workspace, FileDiagnostics[]>();
+            for (const [fileUri, savedFileInfo] of this.savedFilesForBaselineUpdate.entries()) {
+                // can't use result.diagnostics because we need the diagnostics from the previous analysis since
+                // saves don't trigger checking (i think)
+                const fileDiagnostics = this.documentsWithDiagnostics[fileUri.toString()];
+                if (!fileDiagnostics || fileDiagnostics.reason !== 'analysis') {
+                    continue;
+                }
+                const sourceFile = savedFileInfo.workspace.service.getSourceFile(fileUri);
+                if (sourceFile && !sourceFile.isCheckingRequired()) {
+                    const baselineInfo = getBaselinedErrorsForFile(this.fs, savedFileInfo.workspace.rootUri!, fileUri);
+                    if (
+                        // no baseline file exists or no baselined errors exist for this file
+                        !baselineInfo.length ||
+                        // there are diagnostics that haven't been baselined, so we don't want to write them
+                        // because the user will have to either fix the diagnostics or explicitly write them to the
+                        // baseline themselves
+                        fileDiagnostics.diagnostics.some((diagnostic) => !diagnostic.baselineStatus)
+                    ) {
+                        continue;
+                    }
+                    if (!filesRequiringBaselineUpdate.has(savedFileInfo.workspace)) {
+                        filesRequiringBaselineUpdate.set(savedFileInfo.workspace, []);
+                    }
+                    filesRequiringBaselineUpdate.get(savedFileInfo.workspace)!.push(fileDiagnostics);
+                }
+            }
+            for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
+                writeDiagnosticsToBaselineFile(this.fs, workspace.rootUri!, files, true);
+            }
+            this.savedFilesForBaselineUpdate.clear();
+        }
 
         if (!this._progressReporter.isEnabled(results)) {
             // Make sure to disable progress bar if it is currently active.
@@ -1332,6 +1367,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     fileUri: fileWithDiagnostics.fileUri,
                     diagnostics: [],
                     version: undefined,
+                    reason: 'tracking',
                 });
             }
         }
@@ -1396,13 +1432,12 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         };
     }
 
-    protected async sendDiagnostics(fs: FileSystem, fileWithDiagnostics: FileDiagnostics) {
+    protected async sendDiagnostics(
+        fs: FileSystem,
+        fileWithDiagnostics: FileDiagnostics & { reason: 'analysis' | 'tracking' }
+    ) {
         const key = fileWithDiagnostics.fileUri.toString();
-        if (fileWithDiagnostics.diagnostics.length === 0) {
-            delete this.documentsWithDiagnostics[key];
-        } else {
-            this.documentsWithDiagnostics[key] = fileWithDiagnostics;
-        }
+        this.documentsWithDiagnostics[key] = fileWithDiagnostics;
         this.connection.sendDiagnostics(await this.convertDiagnostics(fs, fileWithDiagnostics));
     }
 
