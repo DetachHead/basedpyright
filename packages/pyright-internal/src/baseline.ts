@@ -7,7 +7,7 @@ import { fileExists } from './common/uri/uriUtils';
 import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
 import { pluralize } from './common/stringUtils';
 
-interface BaselinedDiagnostic {
+export interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
     range: { startColumn: number; endColumn: number };
 }
