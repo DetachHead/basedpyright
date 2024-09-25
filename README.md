@@ -272,7 +272,7 @@ when renaming a package or module, basedpyright will update all usages to the ne
 
 ### baseline (beta)
 
-have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly eritten or modified code get reported.
+have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly written or modified code get reported.
 
 to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in vscode. this will generate a `./basedpyright/baseline.json` for your project. you should commit this file so others working on your project can benefit from it too.
 
