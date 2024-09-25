@@ -270,6 +270,44 @@ when renaming a package or module, basedpyright will update all usages to the ne
 
 ![](https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c)
 
+### baseline (beta)
+
+have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly eritten or modified code get reported.
+
+to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in vscode. this will generate a `./basedpyright/baseline.json` for your project. you should commit this file so others working on your project can benefit from it too.
+
+this file gets automatically updated as errors are removed over time in both the CLI and the language server. if you ever need to baseline new errors or an error that resurfaced because you've modified the same line of code it was on, just run that command again.
+
+#### how does it work?
+
+each baselined error is stored and matched by the following details:
+
+-   the path of the file it's in (relative to the project root)
+-   its diagnostic rule name (eg. `reportGeneralTypeIssues`)
+-   the position of the error in the file (column only, which prevents errors from resurfacing when you add or remove lines in a file)
+
+no baseline matching strategy is perfect, so this is subject to change. baseline is in beta so if you have any feedback please [raise an issue](https://github.com/DetachHead/basedpyright/issues/new/choose).
+
+#### how is this different to `# pyright: ignore` comments?
+
+ignore comments are typically used to suppress a false positive or workaround some limitation in the type checker. baselining is a way to suppress many valid instances of an error across your whole project, to avoid the burden of having to update thousands of lines of old code just to adopt stricter checks on your new code.
+
+#### credit
+
+this is heavily inspired by [basedmypy](https://kotlinisland.github.io/basedmypy/baseline).
+
+### better defaults
+
+we believe that type checkers and linters should be as strict as possible by default, making the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright
+
+#### `typeCheckingMode`
+
+used to be `basic`, but now defaults to `all`. while this may seem daunting at first, we support [baselining](#baseline-beta) to allow for easy adoption of more strict rules in existing codebases.
+
+#### `pythonPlatform`
+
+used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
+
 ### errors on invalid configuration
 
 in pyright, if you have any invalid config, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
@@ -301,18 +339,6 @@ from baz import foo as baz, bar as baz  # no error
 ```
 
 basedpyright solves both of these problems by always reporting an error on a redeclaration or an import with the same name as an existing import.
-
-### better defaults
-
-we believe that type checkers and linters should be as strict as possible by default, making the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright
-
-#### `typeCheckingMode`
-
-used to be `basic`, but now defaults to `all`. in the future we intend to add [baseline](https://kotlinisland.github.io/basedmypy/baseline.html) to allow for easy adoption of more strict rules in existing codebases.
-
-#### `pythonPlatform`
-
-used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, `pythonPlatform` defaults to `All`, which assumes your code can run on any operating system.
 
 ### inline `TypedDict` support
 
@@ -374,9 +400,11 @@ we accept translation fixes in basedpyright. [see the localization guidelines](h
 
 [basedmypy](https://github.com/kotlinisland/basedmypy) is a fork of mypy with a similar goal in mind: to fix some of the serious problems in mypy that do not seem to be a priority for the maintainers. it also adds many new features which may not be standardized but greatly improve the developer experience when working with python's far-from-perfect type system.
 
-we aim to [port most of basedmypy's features to basedpyright](https://github.com/DetachHead/basedpyright/issues?q=is%3Aissue+is%3Aopen+label%3A%22basedmypy+feature+parity%22), however as mentioned above our priority is to first fix the critical problems with pyright.
+while the two projects have similar goals, there are some differences:
 
-note that any non-standard features we add will be optional, as we intend to support library developers who can't control what type checker their library is used with.
+-   basedmypy makes breaking changes to improve the typing system and its syntax. for example, it supports intersections, `(int) -> str` function type syntax and `foo is int` syntax for type guards. [more info here](https://kotlinisland.github.io/basedmypy/based_features.html)
+-   basedpyright intends to be fully backwards compatible with all standard typing functionality. non-standard features will be fully optional and can be disabled, as we intend to support library developers who can't control what type checker their library is used with.
+-   basedpyright's two main goals are to improve the type checker's accuracy and reliability with existing syntax, and to bridge the gap between pylance and pyright
 
 # pypi package
 
