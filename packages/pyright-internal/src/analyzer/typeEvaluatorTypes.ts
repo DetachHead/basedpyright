@@ -518,9 +518,14 @@ export interface CallSiteEvaluationInfo {
     args: ValidateArgTypeParams[];
 }
 
+export interface SynthesizedTypeInfo {
+    type: Type;
+    node: NameNode;
+}
+
 export interface SymbolDeclInfo {
     decls: Declaration[];
-    synthesizedTypes: Type[];
+    synthesizedTypes: SynthesizedTypeInfo[];
 }
 
 export const enum AssignTypeFlags {

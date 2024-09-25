@@ -702,7 +702,7 @@ function assignToProtocolInternal(
                 destPrimaryDecl?.type === DeclarationType.Variable &&
                 srcPrimaryDecl?.type === DeclarationType.Variable
             ) {
-                const isDestReadOnly = !!destPrimaryDecl.isConstant;
+                const isDestReadOnly = !!destPrimaryDecl.isConstant || !!destPrimaryDecl.isFinal;
                 let isSrcReadOnly = !!srcPrimaryDecl.isConstant;
                 if (srcMemberInfo && isClass(srcMemberInfo.classType)) {
                     if (srcMemberInfo.isReadOnly) {
@@ -736,7 +736,7 @@ function assignToProtocolInternal(
             ) {
                 typesAreConsistent = false;
             }
-        } else if (constraints && !constraints.isLocked()) {
+        } else if (constraints) {
             for (const typeParam of destType.shared.typeParams) {
                 const typeArgEntry = protocolConstraints.getMainConstraintSet().getTypeVar(typeParam);
 

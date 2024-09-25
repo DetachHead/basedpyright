@@ -590,7 +590,7 @@ test('Comparison2', () => {
 
     configOptions.diagnosticRuleSet.reportUnnecessaryComparison = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['comparison2.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 11);
+    TestUtils.validateResults(analysisResults2, 15);
 });
 
 test('EmptyContainers1', () => {
@@ -810,6 +810,12 @@ test('Constructor30', () => {
 
 test('Constructor31', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor31.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Constructor32', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constructor32.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });

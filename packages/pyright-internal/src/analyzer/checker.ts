@@ -1301,7 +1301,7 @@ export class Checker extends ParseTreeWalker {
         } else if (node.d.operator === OperatorType.Is || node.d.operator === OperatorType.IsNot) {
             // Don't apply this rule if it's within an assert.
             if (!ParseTreeUtils.isWithinAssertExpression(node)) {
-                this._validateComparisonTypesForIsOperator(node);
+                this._validateComparisonTypes(node);
             }
         } else if (node.d.operator === OperatorType.In || node.d.operator === OperatorType.NotIn) {
             // Don't apply this rule if it's within an assert.
@@ -2052,47 +2052,6 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
-    // Determines whether the types of the two operands for an "is" or "is not"
-    // operation have overlapping types.
-    private _validateComparisonTypesForIsOperator(node: BinaryOperationNode) {
-        const rightType = this._evaluator.getType(node.d.rightExpr);
-
-        if (!rightType || !isNoneInstance(rightType)) {
-            return;
-        }
-
-        const leftType = this._evaluator.getType(node.d.leftExpr);
-        if (!leftType) {
-            return;
-        }
-
-        let foundMatchForNone = false;
-        doForEachSubtype(leftType, (subtype) => {
-            subtype = this._evaluator.makeTopLevelTypeVarsConcrete(subtype);
-
-            if (this._evaluator.assignType(subtype, this._evaluator.getNoneType())) {
-                foundMatchForNone = true;
-            }
-        });
-
-        const getMessage = () => {
-            return node.d.operator === OperatorType.Is
-                ? LocMessage.comparisonAlwaysFalse()
-                : LocMessage.comparisonAlwaysTrue();
-        };
-
-        if (!foundMatchForNone) {
-            this._evaluator.addDiagnostic(
-                DiagnosticRule.reportUnnecessaryComparison,
-                getMessage().format({
-                    leftType: this._evaluator.printType(leftType, { expandTypeAlias: true }),
-                    rightType: this._evaluator.printType(rightType),
-                }),
-                node
-            );
-        }
-    }
-
     // Determines whether the types of the two operands for an == or != operation
     // have overlapping types.
     private _validateComparisonTypes(node: BinaryOperationNode) {
@@ -2116,7 +2075,7 @@ export class Checker extends ParseTreeWalker {
         }
 
         const getMessage = () => {
-            return node.d.operator === OperatorType.Equals
+            return node.d.operator === OperatorType.Equals || node.d.operator === OperatorType.Is
                 ? LocMessage.comparisonAlwaysFalse()
                 : LocMessage.comparisonAlwaysTrue();
         };
@@ -3832,12 +3791,8 @@ export class Checker extends ParseTreeWalker {
 
         // If this call is within an assert statement, we won't check whether
         // it's unnecessary.
-        let curNode: ParseNode | undefined = node;
-        while (curNode) {
-            if (curNode.nodeType === ParseNodeType.Assert) {
-                return;
-            }
-            curNode = curNode.parent;
+        if (ParseTreeUtils.isWithinAssertExpression(node)) {
+            return;
         }
 
         const classTypeList = getIsInstanceClassTypes(this._evaluator, arg1Type);
@@ -6988,78 +6943,103 @@ export class Checker extends ParseTreeWalker {
                     this._evaluator.getTypeClassType()
                 );
 
-                if (isFunction(baseClassMethodType)) {
-                    if (!subclassPropMethod) {
-                        // The method is missing.
-                        diagAddendum.addMessage(
-                            LocAddendum.propertyMethodMissing().format({
-                                name: methodName,
-                            })
+                if (!isFunction(baseClassMethodType)) {
+                    return;
+                }
+
+                if (!subclassPropMethod) {
+                    // The method is missing.
+                    diagAddendum.addMessage(
+                        LocAddendum.propertyMethodMissing().format({
+                            name: methodName,
+                        })
+                    );
+
+                    const decls = overrideSymbol.getDeclarations();
+
+                    if (decls.length > 0) {
+                        const lastDecl = decls[decls.length - 1];
+                        const diag = this._evaluator.addDiagnostic(
+                            DiagnosticRule.reportIncompatibleMethodOverride,
+                            LocMessage.propertyOverridden().format({
+                                name: memberName,
+                                className: baseClassType.shared.name,
+                            }) + diagAddendum.getString(),
+                            getNameNodeForDeclaration(lastDecl) ?? lastDecl.node
                         );
 
-                        const decls = overrideSymbol.getDeclarations();
-
-                        if (decls.length > 0) {
-                            const lastDecl = decls[decls.length - 1];
-                            const diag = this._evaluator.addDiagnostic(
-                                DiagnosticRule.reportIncompatibleMethodOverride,
-                                LocMessage.propertyOverridden().format({
-                                    name: memberName,
-                                    className: baseClassType.shared.name,
-                                }) + diagAddendum.getString(),
-                                getNameNodeForDeclaration(lastDecl) ?? lastDecl.node
-                            );
-
-                            const origDecl = baseClassMethodType.shared.declaration;
-                            if (diag && origDecl) {
-                                diag.addRelatedInfo(LocAddendum.overriddenMethod(), origDecl.uri, origDecl.range);
-                            }
-                        }
-                    } else {
-                        const subclassMethodType = partiallySpecializeType(
-                            subclassPropMethod,
-                            childClassType,
-                            this._evaluator.getTypeClassType()
-                        );
-
-                        if (isFunction(subclassMethodType)) {
-                            if (
-                                !this._evaluator.validateOverrideMethod(
-                                    baseClassMethodType,
-                                    subclassMethodType,
-                                    childClassType,
-                                    diagAddendum.createAddendum()
-                                )
-                            ) {
-                                diagAddendum.addMessage(
-                                    LocAddendum.propertyMethodIncompatible().format({
-                                        name: methodName,
-                                    })
-                                );
-                                const decl = subclassMethodType.shared.declaration;
-
-                                if (decl && decl.type === DeclarationType.Function) {
-                                    const diag = this._evaluator.addDiagnostic(
-                                        DiagnosticRule.reportIncompatibleMethodOverride,
-                                        LocMessage.propertyOverridden().format({
-                                            name: memberName,
-                                            className: baseClassType.shared.name,
-                                        }) + diagAddendum.getString(),
-                                        decl.node.d.name
-                                    );
-
-                                    const origDecl = baseClassMethodType.shared.declaration;
-                                    if (diag && origDecl) {
-                                        diag.addRelatedInfo(
-                                            LocAddendum.overriddenMethod(),
-                                            origDecl.uri,
-                                            origDecl.range
-                                        );
-                                    }
-                                }
-                            }
+                        const origDecl = baseClassMethodType.shared.declaration;
+                        if (diag && origDecl) {
+                            diag.addRelatedInfo(LocAddendum.overriddenMethod(), origDecl.uri, origDecl.range);
                         }
                     }
+
+                    return;
+                }
+
+                const subclassMethodType = partiallySpecializeType(
+                    subclassPropMethod,
+                    childClassType,
+                    this._evaluator.getTypeClassType()
+                );
+
+                if (!isFunction(subclassMethodType)) {
+                    return;
+                }
+
+                if (
+                    this._evaluator.validateOverrideMethod(
+                        baseClassMethodType,
+                        subclassMethodType,
+                        childClassType,
+                        diagAddendum.createAddendum()
+                    )
+                ) {
+                    return;
+                }
+
+                diagAddendum.addMessage(
+                    LocAddendum.propertyMethodIncompatible().format({
+                        name: methodName,
+                    })
+                );
+                const decl = subclassMethodType.shared.declaration;
+                if (!decl || decl.type !== DeclarationType.Function) {
+                    return;
+                }
+
+                let diagLocation: ParseNode = decl.node.d.name;
+
+                // Make sure the method decl is contained within the
+                // class suite. If not, it probably comes from a decorator
+                // in another class. We don't want to report the error
+                // in the wrong location.
+                const childClassDecl = childClassType.shared.declaration;
+                if (
+                    !childClassDecl ||
+                    childClassDecl.node.nodeType !== ParseNodeType.Class ||
+                    !ParseTreeUtils.isNodeContainedWithin(decl.node, childClassDecl.node.d.suite)
+                ) {
+                    const symbolDecls = overrideSymbol.getDeclarations();
+                    if (symbolDecls.length === 0) {
+                        return;
+                    }
+                    const lastSymbolDecl = symbolDecls[symbolDecls.length - 1];
+                    diagLocation = getNameNodeForDeclaration(lastSymbolDecl) ?? lastSymbolDecl.node;
+                }
+
+                const diag = this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportIncompatibleMethodOverride,
+                    LocMessage.propertyOverridden().format({
+                        name: memberName,
+                        className: baseClassType.shared.name,
+                    }) + diagAddendum.getString(),
+                    diagLocation
+                );
+
+                const origDecl = baseClassMethodType.shared.declaration;
+                if (diag && origDecl) {
+                    diag.addRelatedInfo(LocAddendum.overriddenMethod(), origDecl.uri, origDecl.range);
                 }
             }
         });
