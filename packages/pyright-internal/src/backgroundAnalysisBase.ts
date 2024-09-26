@@ -781,6 +781,7 @@ function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
             fileUri: Uri.fromJsonObj(f.fileUri),
             version: f.version,
             diagnostics: convertDiagnostics(f.diagnostics),
+            reason: f.reason,
         };
     });
 

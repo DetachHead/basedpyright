@@ -192,7 +192,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     >();
 
     // The URIs for which diagnostics are reported
-    readonly documentsWithDiagnostics: Record<string, FileDiagnostics & { reason: 'analysis' | 'tracking' }> = {};
+    readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
 
     protected readonly dynamicFeatures = new DynamicFeatures();
 

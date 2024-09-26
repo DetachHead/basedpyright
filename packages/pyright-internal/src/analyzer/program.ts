@@ -906,6 +906,7 @@ export class Program {
                         fileUri: sourceFileInfo.sourceFile.getUri(),
                         version: sourceFileInfo.sourceFile.getClientVersion(),
                         diagnostics,
+                        reason: 'analysis',
                     });
 
                     // Update the cached diagnosticsVersion so we can determine
@@ -923,6 +924,7 @@ export class Program {
                     fileUri: sourceFileInfo.sourceFile.getUri(),
                     version: sourceFileInfo.sourceFile.getClientVersion(),
                     diagnostics: [],
+                    reason: 'tracking',
                 });
                 sourceFileInfo.diagnosticsVersion = undefined;
             }
@@ -1087,6 +1089,7 @@ export class Program {
                         fileUri: fileInfo.sourceFile.getUri(),
                         version: fileInfo.sourceFile.getClientVersion(),
                         diagnostics: [],
+                        reason: 'tracking',
                     });
                 }
 
@@ -1115,6 +1118,7 @@ export class Program {
                                     fileUri: importedFile.sourceFile.getUri(),
                                     version: importedFile.sourceFile.getClientVersion(),
                                     diagnostics: [],
+                                    reason: 'tracking',
                                 });
                             }
 
@@ -1138,6 +1142,7 @@ export class Program {
                         fileUri: fileInfo.sourceFile.getUri(),
                         version: fileInfo.sourceFile.getClientVersion(),
                         diagnostics: [],
+                        reason: 'tracking',
                     });
                     fileInfo.diagnosticsVersion = undefined;
                 }

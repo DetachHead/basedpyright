@@ -22,6 +22,7 @@ export interface FileDiagnostics {
     fileUri: Uri;
     version: number | undefined;
     diagnostics: Diagnostic[];
+    reason: 'analysis' | 'tracking';
 }
 
 export namespace FileDiagnostics {
@@ -30,6 +31,7 @@ export namespace FileDiagnostics {
             fileUri: fileDiag.fileUri.toJsonObj(),
             version: fileDiag.version,
             diagnostics: fileDiag.diagnostics.map((d) => d.toJsonObj()),
+            reason: fileDiag.reason,
         };
     }
 
@@ -38,6 +40,7 @@ export namespace FileDiagnostics {
             fileUri: Uri.fromJsonObj(fileDiagObj.fileUri),
             version: fileDiagObj.version,
             diagnostics: fileDiagObj.diagnostics.map((d: any) => Diagnostic.fromJsonObj(d)),
+            reason: fileDiagObj.reason,
         };
     }
 }
