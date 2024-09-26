@@ -1286,7 +1286,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     continue;
                 }
                 const sourceFile = savedFileInfo.workspace.service.getSourceFile(fileUri);
-                if (sourceFile && !sourceFile.isCheckingRequired()) {
+                if (
+                    sourceFile &&
+                    // if checking is still required, we shouldn't write the baseline because there may be errors that are still
+                    // present but haven't appeared yet. we don't want to remove anything from the baseline file until we're
+                    // certain there are no unbaselined diagnostics left
+                    (!sourceFile.isCheckingRequired() ||
+                        // when using background analysis isCheckingRequired is always true for some reason so we can't rely on
+                        // that.
+                        savedFileInfo.workspace.service.backgroundAnalysisProgram.backgroundAnalysis)
+                ) {
                     const baselineInfo = getBaselinedErrorsForFile(this.fs, savedFileInfo.workspace.rootUri!, fileUri);
                     if (
                         // no baseline file exists or no baselined errors exist for this file
