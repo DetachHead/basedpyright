@@ -124,7 +124,6 @@ export type BaselineStatus = 'baselined' | 'baselined with hint';
 
 // Represents a single error or warning.
 export class Diagnostic {
-    baselineStatus?: BaselineStatus;
     private _actions: DiagnosticAction[] | undefined;
     private _rule: string | undefined;
     private _relatedInfo: DiagnosticRelatedInfo[] = [];
@@ -133,7 +132,8 @@ export class Diagnostic {
         readonly category: DiagnosticCategory,
         readonly message: string,
         readonly range: Range,
-        readonly priority: TaskListPriority = TaskListPriority.Normal
+        readonly priority: TaskListPriority = TaskListPriority.Normal,
+        public baselineStatus: BaselineStatus | undefined = undefined
     ) {}
 
     toJsonObj() {
@@ -142,6 +142,7 @@ export class Diagnostic {
             message: this.message,
             range: this.range,
             priority: this.priority,
+            baselineStatus: this.baselineStatus,
             actions: this._actions,
             rule: this._rule,
             relatedInfo: this._relatedInfo.map((info) => DiagnosticRelatedInfo.toJsonObj(info)),
@@ -149,7 +150,7 @@ export class Diagnostic {
     }
 
     static fromJsonObj(obj: any) {
-        const diag = new Diagnostic(obj.category, obj.message, obj.range, obj.priority);
+        const diag = new Diagnostic(obj.category, obj.message, obj.range, obj.priority, obj.baselineStatus);
         diag._actions = obj.actions;
         diag._rule = obj.rule;
         diag._relatedInfo = obj.relatedInfo.map((info: any) => DiagnosticRelatedInfo.fromJsonObj(info));

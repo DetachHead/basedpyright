@@ -157,9 +157,9 @@ export const filterOutBaselinedDiagnostics = (
                             convertLevelToCategory(name),
                             diagnostic.message,
                             diagnostic.range,
-                            diagnostic.priority
+                            diagnostic.priority,
+                            'baselined with hint'
                         );
-                        newDiagnostic.baselineStatus = 'baselined with hint';
                         const rule = diagnostic.getRule();
                         if (rule) {
                             newDiagnostic.setRule(rule);

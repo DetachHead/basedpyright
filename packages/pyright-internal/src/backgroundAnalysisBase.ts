@@ -791,7 +791,7 @@ function convertDiagnostics(diagnostics: Diagnostic[]) {
     // Elements are typed as "any" since data crossing the process
     // boundary loses type info.
     return diagnostics.map<Diagnostic>((d: any) => {
-        const diag = new Diagnostic(d.category, d.message, d.range, d.priority);
+        const diag = new Diagnostic(d.category, d.message, d.range, d.priority, d.baselineStatus);
         if (d._actions) {
             for (const action of d._actions) {
                 diag.addAction(action);
