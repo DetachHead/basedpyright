@@ -1276,7 +1276,13 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         );
 
         // if any baselined diagnostics disappeared, update the baseline for the effected files
-        if (results.reason === 'analysis') {
+        if (
+            results.reason === 'analysis' &&
+            // if there are still any files requirign analysis, don't update the baseline file as it could
+            // incorrectly delete diagnostics that are still present
+            !results.requiringAnalysisCount.files &&
+            !results.requiringAnalysisCount.cells
+        ) {
             const filesRequiringBaselineUpdate = new Map<Workspace, FileDiagnostics[]>();
             for (const [fileUri, savedFileInfo] of this.savedFilesForBaselineUpdate.entries()) {
                 // can't use result.diagnostics because we need the diagnostics from the previous analysis since
@@ -1285,33 +1291,21 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 if (!fileDiagnostics || fileDiagnostics.reason !== 'analysis') {
                     continue;
                 }
-                const sourceFile = savedFileInfo.workspace.service.getSourceFile(fileUri);
+                const baselineInfo = getBaselinedErrorsForFile(this.fs, savedFileInfo.workspace.rootUri!, fileUri);
                 if (
-                    sourceFile &&
-                    // if checking is still required, we shouldn't write the baseline because there may be errors that are still
-                    // present but haven't appeared yet. we don't want to remove anything from the baseline file until we're
-                    // certain there are no unbaselined diagnostics left
-                    (!sourceFile.isCheckingRequired() ||
-                        // when using background analysis isCheckingRequired is always true for some reason so we can't rely on
-                        // that.
-                        savedFileInfo.workspace.service.backgroundAnalysisProgram.backgroundAnalysis)
+                    // no baseline file exists or no baselined errors exist for this file
+                    !baselineInfo.length ||
+                    // there are diagnostics that haven't been baselined, so we don't want to write them
+                    // because the user will have to either fix the diagnostics or explicitly write them to the
+                    // baseline themselves
+                    fileDiagnostics.diagnostics.some((diagnostic) => !diagnostic.baselineStatus)
                 ) {
-                    const baselineInfo = getBaselinedErrorsForFile(this.fs, savedFileInfo.workspace.rootUri!, fileUri);
-                    if (
-                        // no baseline file exists or no baselined errors exist for this file
-                        !baselineInfo.length ||
-                        // there are diagnostics that haven't been baselined, so we don't want to write them
-                        // because the user will have to either fix the diagnostics or explicitly write them to the
-                        // baseline themselves
-                        fileDiagnostics.diagnostics.some((diagnostic) => !diagnostic.baselineStatus)
-                    ) {
-                        continue;
-                    }
-                    if (!filesRequiringBaselineUpdate.has(savedFileInfo.workspace)) {
-                        filesRequiringBaselineUpdate.set(savedFileInfo.workspace, []);
-                    }
-                    filesRequiringBaselineUpdate.get(savedFileInfo.workspace)!.push(fileDiagnostics);
+                    continue;
                 }
+                if (!filesRequiringBaselineUpdate.has(savedFileInfo.workspace)) {
+                    filesRequiringBaselineUpdate.set(savedFileInfo.workspace, []);
+                }
+                filesRequiringBaselineUpdate.get(savedFileInfo.workspace)!.push(fileDiagnostics);
             }
             for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
                 writeDiagnosticsToBaselineFile(this.fs, workspace.rootUri!, files, true);
