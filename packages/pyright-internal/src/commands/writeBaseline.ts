@@ -41,7 +41,13 @@ export class WriteBaselineCommand implements ServerCommand {
                 // filter out excluded files. ideally they shouldn't be present at all. see
                 // https://github.com/DetachHead/basedpyright/issues/31
                 const filteredFiles = Object.entries(this._ls.documentsWithDiagnostics)
-                    .filter(([filePath]) => matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider)))
+                    .filter(
+                        ([filePath, fileDiagnostics]) =>
+                            // filter out files whose diagnostics were cleared due to the file being closed
+                            fileDiagnostics.reason === 'analysis' &&
+                            // filter out files that aren't included in the project
+                            matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider))
+                    )
                     .map(([_, diagnostics]) => diagnostics);
                 const newBaseline = writeDiagnosticsToBaselineFile(
                     workspace.service.fs,
