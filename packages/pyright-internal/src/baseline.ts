@@ -12,7 +12,7 @@ export interface BaselinedDiagnostic {
     range: { startColumn: number; endColumn: number };
 }
 
-interface BaselineFile {
+export interface BaselineFile {
     files: {
         [filePath: string]: BaselinedDiagnostic[];
     };
