@@ -1,15 +1,27 @@
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { Uri } from './common/uri/uri';
-import { convertLevelToCategory, Diagnostic, DiagnosticCategory } from './common/diagnostic';
+import { compareDiagnostics, convertLevelToCategory, Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { extraOptionDiagnosticRules } from './common/configOptions';
 import { fileExists } from './common/uri/uriUtils';
 import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
 import { pluralize } from './common/stringUtils';
+import { diffArrays } from 'diff';
+import { assert } from './common/debug';
+import { Range } from './common/textRange';
 
 export interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
-    range: { startColumn: number; endColumn: number };
+    range: {
+        startColumn: number;
+        endColumn: number;
+        /**
+         * only in baseline files generated with version 1.18.1 or above. we don't store line numbers
+         * to reduce the diff when the baseline is regenerated and to prevent baselined errors from
+         * incorredtly resurfacing when lines of code are added or removed.
+         */
+        lineCount?: number;
+    };
 }
 
 interface BaselineFile {
@@ -17,6 +29,8 @@ interface BaselineFile {
         [filePath: string]: BaselinedDiagnostic[];
     };
 }
+
+const lineCount = (range: Range) => range.end.line - range.start.line + 1;
 
 export const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
 
@@ -43,7 +57,11 @@ const diagnosticsToBaseline = (rootDir: Uri, filesWithDiagnostics: readonly File
         baselineData.files[filePath].push(
             ...errorDiagnostics.map((diagnostic) => ({
                 code: diagnostic.getRule() as DiagnosticRule | undefined,
-                range: { startColumn: diagnostic.range.start.character, endColumn: diagnostic.range.end.character },
+                range: {
+                    startColumn: diagnostic.range.start.character,
+                    endColumn: diagnostic.range.end.character,
+                    lineCount: lineCount(diagnostic.range),
+                },
             }))
         );
     }
@@ -130,47 +148,61 @@ export const getBaselinedErrorsForFile = (fs: ReadOnlyFileSystem, rootDir: Uri, 
     return result ?? [];
 };
 
-export const filterOutBaselinedDiagnostics = (
+export const sortDiagnosticsAndMatchBaseline = (
     fs: ReadOnlyFileSystem,
     rootDir: Uri,
     file: Uri,
     diagnostics: Diagnostic[]
-) => {
-    const baselinedErrorsForFile = getBaselinedErrorsForFile(fs, rootDir, file);
-    for (const index in diagnostics) {
-        const diagnostic = diagnostics[index];
-        const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
-        const matchedIndex = baselinedErrorsForFile.findIndex(
-            (baselinedError) =>
-                baselinedError.code === diagnosticRule &&
-                baselinedError.range.startColumn === diagnostic.range.start.character &&
-                baselinedError.range.endColumn === diagnostic.range.end.character
-        );
-        if (matchedIndex >= 0) {
-            baselinedErrorsForFile.splice(matchedIndex, 1);
-            // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic level to that instead
+): Diagnostic[] => {
+    diagnostics.sort(compareDiagnostics);
+    const diff = diffArrays(getBaselinedErrorsForFile(fs, rootDir, file), diagnostics, {
+        comparator: (baselinedDiagnostic, diagnostic) =>
+            baselinedDiagnostic.code === diagnostic.getRule() &&
+            baselinedDiagnostic.range.startColumn === diagnostic.range.start.character &&
+            baselinedDiagnostic.range.endColumn === diagnostic.range.end.character &&
+            //for backwards compatibility with old baseline files, only check this if it's present
+            (baselinedDiagnostic.range.lineCount === undefined ||
+                baselinedDiagnostic.range.lineCount === lineCount(diagnostic.range)),
+    });
+    const result = [];
+    for (const change of diff) {
+        if (change.removed) {
+            continue;
+        }
+        if (change.added) {
+            assert(change.value[0] instanceof Diagnostic, "change object wasn't a Diagnostic");
+            result.push(...(change.value as Diagnostic[]));
+        } else {
+            // if not added and not removed
+            // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic
+            // level to that instead
             // TODO: should we only baseline errors and not warnings/notes?
-            if (diagnosticRule) {
-                for (const { name, get } of extraOptionDiagnosticRules) {
-                    if (get().includes(diagnosticRule)) {
-                        const newDiagnostic = new Diagnostic(
-                            convertLevelToCategory(name),
-                            diagnostic.message,
-                            diagnostic.range,
-                            diagnostic.priority,
-                            'baselined with hint'
-                        );
-                        const rule = diagnostic.getRule();
-                        if (rule) {
-                            newDiagnostic.setRule(rule);
+            for (const diagnostic of change.value) {
+                assert(
+                    diagnostic instanceof Diagnostic,
+                    'diff thingy returned the old value instead of the new one???'
+                );
+                let newDiagnostic;
+                const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
+                if (diagnosticRule) {
+                    for (const { name, get } of extraOptionDiagnosticRules) {
+                        if (get().includes(diagnosticRule)) {
+                            newDiagnostic = diagnostic.copy({
+                                category: convertLevelToCategory(name),
+                                baselineStatus: 'baselined with hint',
+                            });
+                            newDiagnostic.setRule(diagnosticRule);
+                            // none of these rules should have multiple extra diagnostic levels so we break after the first match
+                            break;
                         }
-                        diagnostics[index] = newDiagnostic;
-                        // none of these rules should have multiple extra diagnostic levels so we break after the first match
-                        break;
                     }
                 }
+                if (!newDiagnostic) {
+                    newDiagnostic = diagnostic.copy({ baselineStatus: 'baselined' });
+                }
+                result.push(newDiagnostic);
             }
-            diagnostic.baselineStatus = 'baselined';
         }
     }
+    return result;
 };
