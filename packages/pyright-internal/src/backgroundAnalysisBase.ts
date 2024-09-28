@@ -789,28 +789,7 @@ function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
 }
 
 function convertDiagnostics(diagnostics: Diagnostic[]) {
-    // Elements are typed as "any" since data crossing the process
-    // boundary loses type info.
-    return diagnostics.map<Diagnostic>((d: any) => {
-        const diag = new Diagnostic(d.category, d.message, d.range, d.priority, d.baselineStatus);
-        if (d._actions) {
-            for (const action of d._actions) {
-                diag.addAction(action);
-            }
-        }
-
-        if (d._rule) {
-            diag.setRule(d._rule);
-        }
-
-        if (d._relatedInfo) {
-            for (const info of d._relatedInfo) {
-                diag.addRelatedInfo(info.message, info.uri, info.range);
-            }
-        }
-
-        return diag;
-    });
+    return diagnostics.map((d) => d.copy());
 }
 
 export type BackgroundRequestKind =

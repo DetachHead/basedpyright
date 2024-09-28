@@ -133,8 +133,46 @@ export class Diagnostic {
         readonly message: string,
         readonly range: Range,
         readonly priority: TaskListPriority = TaskListPriority.Normal,
-        public baselineStatus: BaselineStatus | undefined = undefined
+        readonly baselineStatus: BaselineStatus | undefined = undefined
     ) {}
+
+    /**
+     * creates a copy of the diagnostic, optionally with different values for the readonly properties
+     */
+    copy = (
+        args: {
+            category?: DiagnosticCategory;
+            message?: string;
+            range?: Range;
+            priority?: TaskListPriority;
+            baselineStatus?: BaselineStatus | undefined;
+        } = {}
+    ) => {
+        const diag = new Diagnostic(
+            args.category ?? this.category,
+            args.message ?? this.message,
+            args.range ?? this.range,
+            args.priority ?? this.priority,
+            args.baselineStatus ?? this.baselineStatus
+        );
+        if (this._actions) {
+            for (const action of this._actions) {
+                diag.addAction(action);
+            }
+        }
+
+        if (this._rule) {
+            diag.setRule(this._rule);
+        }
+
+        if (this._relatedInfo) {
+            for (const info of this._relatedInfo) {
+                diag.addRelatedInfo(info.message, info.uri, info.range);
+            }
+        }
+
+        return diag;
+    };
 
     toJsonObj() {
         return {
