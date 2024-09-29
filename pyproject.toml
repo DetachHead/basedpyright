@@ -17,7 +17,6 @@ dev = [
     "basedtyping>=0.1.4",
     "mkdocs-material>=9.5.37",
     "mkdocs-awesome-pages-plugin>=2.9.2",
-    "mkdocs-unused-files>=0.2.0",
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947

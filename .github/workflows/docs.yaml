@@ -34,7 +34,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: build docs
-        run: ./pw pdm run mkdocs build --strict
+        run: |
+          ./pw pdm install
+          ./pw pdm run mkdocs build --strict
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

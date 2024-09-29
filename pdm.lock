@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docstubs", "lochelper"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:d336af62bcd5b71099405eb8439aa3e2a469d51db8d980fb15fc332668c91021"
+content_hash = "sha256:c45ca4ff40431cc26c2f12859c44c215254fa7bcd18105e769b54cefda142fcb"
 
 [[metadata.targets]]
 requires_python = ">=3.8"
@@ -50,20 +50,6 @@ dependencies = [
 files = [
     {file = "basedtyping-0.1.4-py3-none-any.whl", hash = "sha256:d4832ab7af178e6a5394199725dc55f26e36e1ad5fae68db41b956c1cb99a0d2"},
     {file = "basedtyping-0.1.4.tar.gz", hash = "sha256:8a3ba80d4628eb2f6a205759a8151e6df7341ceba03e5daf6b395fcc873a7967"},
-]
-
-[[package]]
-name = "beautifulsoup4"
-version = "4.12.3"
-requires_python = ">=3.6.0"
-summary = "Screen-scraping library"
-groups = ["dev"]
-dependencies = [
-    "soupsieve>1.2",
-]
-files = [
-    {file = "beautifulsoup4-4.12.3-py3-none-any.whl", hash = "sha256:b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed"},
-    {file = "beautifulsoup4-4.12.3.tar.gz", hash = "sha256:74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051"},
 ]
 
 [[package]]
@@ -621,20 +607,6 @@ files = [
 ]
 
 [[package]]
-name = "mkdocs-unused-files"
-version = "0.2.0"
-requires_python = ">=2.7"
-summary = "An MkDocs plugin to find unused (orphaned) files in your project."
-groups = ["dev"]
-dependencies = [
-    "beautifulsoup4>=4.12.0",
-    "mkdocs>=1.0.4",
-]
-files = [
-    {file = "mkdocs_unused_files-0.2.0-py3-none-any.whl", hash = "sha256:64cdd014a194ac3c40c42b55443fca3574555e96d61c55d09b9f0b73c481aefe"},
-]
-
-[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 requires_python = ">=3.5"
@@ -1110,17 +1082,6 @@ groups = ["dev"]
 files = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
-]
-
-[[package]]
-name = "soupsieve"
-version = "2.6"
-requires_python = ">=3.8"
-summary = "A modern CSS selector implementation for Beautiful Soup."
-groups = ["dev"]
-files = [
-    {file = "soupsieve-2.6-py3-none-any.whl", hash = "sha256:e72c4ff06e4fb6e4b5a9f0f55fe6e81514581fca1515028625d0f299c602ccc9"},
-    {file = "soupsieve-2.6.tar.gz", hash = "sha256:e2e68417777af359ec65daac1057404a3c8a5455bb8abc36f1a9866ab1a51abb"},
 ]
 
 [[package]]

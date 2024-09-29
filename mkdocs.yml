@@ -35,7 +35,8 @@ markdown_extensions:
 plugins:
   - search
   - awesome-pages
-  - unused_files
+  # https://github.com/wilhelmer/mkdocs-unused-files/issues/12
+  # - unused_files
 nav:
   - index.md
   - ... | benefits-over-pyright/**/*.md
