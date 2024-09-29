@@ -6,7 +6,7 @@ Here is a typical progression:
 
 ### 1. Initial Type Checking
 * Install pyright (either the language server or command-line tool).
-* Write a minimal `pyrightconfig.json` that defines `include` entries. Place the config file in your project’s top-level directory and commit it to your repo. Alternatively, you can add a pyright section to a `pyproject.toml` file. For additional details and a sample config file, refer to [this documentation](configuration.md).
+* Write a minimal `pyrightconfig.json` that defines `include` entries. Place the config file in your project’s top-level directory and commit it to your repo. Alternatively, you can add a pyright section to a `pyproject.toml` file. For additional details and a sample config file, refer to [this documentation](../configuration/config-files.md).
 * Run pyright over your source base with the default settings. Fix any errors and warnings that it emits. Optionally disable specific diagnostic rules if they are generating too many errors. They can be re-enabled at a later time.
 
 ### 2. Types For Imported Libraries

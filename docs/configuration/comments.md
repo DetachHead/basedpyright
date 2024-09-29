@@ -1,8 +1,8 @@
-## Comments
+# Comments
 
 Some behaviors of pyright can be controlled through the use of comments within the source file.
 
-### File-level Type Controls
+## File-level Type Controls
 Strict type checking, where most supported type-checking switches generate errors, can be enabled for a file through the use of a special comment. Typically this comment is placed at or near the top of a code file on its own line.
 
 ```python
@@ -28,7 +28,7 @@ Diagnostic levels are also supported.
 ```
 
 
-### Line-level Diagnostic Suppression
+## Line-level Diagnostic Suppression
 
 PEP 484 defines a special comment `# type: ignore` that can be used at the end of a line to suppress all diagnostics emitted by a type checker on that line. Pyright supports this mechanism.
 

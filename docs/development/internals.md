@@ -12,7 +12,7 @@
 * `packages/pyright-internal/src/tests`: Tests for the parser and analyzer
 * `packages/pyright`: basedpyright npm package (used internally by [the playground](http://basedpyright.com))
 * `basedpyright`: pypi package wrapper for the npm package, so that users don't need to install nodejs themselves
-* `docstubs`: stubs with [docstrings on compiled modules](https://docs.basedpyright.com/#/?id=docstrings-for-compiled-builtin-modules) (generated from `packages/pyright-internal/typeshed-fallback/` when building the pypi package)
+* `docstubs`: stubs with [docstrings on compiled modules](../benefits-over-pyright/pylance-features.md#docstrings-for-compiled-builtin-modules) (generated from `packages/pyright-internal/typeshed-fallback/` when building the pypi package)
 
 ## Core Concepts
 
