@@ -1,4 +1,4 @@
-<h1><img src="img/favicon.png"> basedpyright</h1>
+<h1><img src="img/readme_logo.png"> basedpyright</h1>
 
 --8<-- "README.md:header"
 

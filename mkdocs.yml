@@ -22,7 +22,7 @@ theme:
         icon: material/brightness-4
       name: Switch to light mode
   favicon: img/favicon.ico
-  logo: img/favicon.ico
+  logo: img/logo_black.png
   icon:
     repo: fontawesome/brands/github
 markdown_extensions:
