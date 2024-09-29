@@ -1,0 +1,14 @@
+{
+    "files": {
+        "./foo.py": [
+            {
+                "code": "reportUnreachable",
+                "range": {
+                    "startColumn": 4,
+                    "endColumn": 7,
+                    "lineCount": 1
+                }
+            }
+        ]
+    }
+}
