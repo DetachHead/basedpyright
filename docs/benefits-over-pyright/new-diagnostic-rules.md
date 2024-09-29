@@ -60,7 +60,7 @@ from foo import a
 from foo import b
 ```
 
-## `reportImplicitRelativeImport` 
+## `reportImplicitRelativeImport`
 
 pyright allows invalid imports such as this:
 
