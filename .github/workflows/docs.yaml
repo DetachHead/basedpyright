@@ -5,6 +5,8 @@ name: docs
 on:
   push:
     branches: ['main']
+  pull_request:
+    branches: ['main']
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -42,5 +44,6 @@ jobs:
         with:
           path: 'site'
       - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v4
