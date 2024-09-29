@@ -11,6 +11,8 @@ docstubs
 docs/configuration/*.md
 docs/development/internals.md
 docs/getting_started/**/*.md
+docs/usage/**/*.md
+SECURITY.md
 
 **/.venv/**
 .pyprojectx

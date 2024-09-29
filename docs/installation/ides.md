@@ -48,7 +48,6 @@ if you're adding basedpyright as a development dependency in your project, we re
 }
 ```
 
-
 ## Neovim
 
 You need to install the LSP client addapter plugin,
