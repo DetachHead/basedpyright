@@ -65,7 +65,7 @@ import {
     findPyprojectTomlFileHereOrUp,
 } from './serviceUtils';
 import { IPythonMode } from './sourceFile';
-import { githubRepo } from '../constants';
+import { website } from '../constants';
 
 // How long since the last user activity should we wait until running
 // the analyzer on any files that have not yet been analyzed?
@@ -1373,7 +1373,7 @@ export class AnalyzerService {
                             'To reduce this time, open a workspace directory with fewer files ' +
                             'or add a pyrightconfig.json configuration file with an "exclude" section to exclude ' +
                             'subdirectories from your workspace. For more details, refer to ' +
-                            `${githubRepo}/blob/main/docs/configuration.md.`
+                            `${website}/configuration/config-files`
                     );
 
                     // Show it in messagebox if it is supported.

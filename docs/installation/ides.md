@@ -1,84 +1,55 @@
-# Installation
+# IDEs
 
-## Command-line & language server
+!!! info
 
-### pypi package (recommended)
+    note that most of these editor plugins require [the language server to be installed](./command-line-and-language-server.md).
 
-unlike pyright, the basedpyright CLI & LSP are available as a [pypi package](https://pypi.org/project/basedpyright/) instead of an npm package.
+## VSCode / VSCodium
 
-this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:
-
-<!-- tabs:start -->
-
-### **uv**
-
-add it to your project's dev dependencies (recommended):
-
-```
-uv add --dev basedpyright
-```
-
-or just install it:
-
-```
-uv pip install basedpyright
-```
-
-### **pdm**
-
-```
-pdm add --dev basedpyright
-```
-
-### **pip**
-
-```
-pip install basedpyright
-```
-
-<!-- tabs:end -->
-
-### other installation methods
-
-the basedpyright CLI & language server is also available outside of pypi:
-
-<!-- tabs:start -->
-
-### **homebrew**
-
-```
-brew install basedpyright
-```
-
-### **nixOS**
-
-[see here](https://search.nixos.org/packages?channel=unstable&show=basedpyright)
-
-<!-- tabs:end -->
-
-### usage
-
-once installed, the `basedpyright` and `basedpyright-langserver` scripts will be available in your python environment. when running basedpyright via the command line, use the `basedpyright` command:
-
-```shell
-basedpyright --help
-```
-
-for instructions on how to use `basedpyright-langserver`, see the [IDE-specific instructions below](#ides).
-
-## IDEs
-
-most of these IDE plugins require [the pypi package to be installed](#command-line--language-server).
-
-### VS Code
+### VSCode
 
 install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+
+??? "using basedpyright with pylance (not recommended)"
+
+    unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
+
+    if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension, and the restriction that prevents both extensions from being enabled at the same time has been removed.
+
+    if basedpyright detects that pylance is installed, you will see a popup prompting you to choose whether to uninstall pylance or fix your settings to allow both extensions to work without overlapping functionality:
+
+    ![](pylance.png)
+
+    clicking "Fix settings & keep both extensions" will set the following settings for you automatically:
+
+    ```jsonc
+    // .vscode/settings.json
+    {
+        "python.analysis.typeCheckingMode": "off",
+        "basedpyright.disableLanguageServices": true
+    }
+    ```
 
 ### VSCodium
 
 install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
-### Neovim
+### usage
+
+the basedpyright extension will automatically look for the pypi package in your python environment.
+
+if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
+
+```jsonc
+// .vscode/extensions.json
+
+{
+    "recommendations": ["detachhead.basedpyright"]
+}
+```
+
+
+## Neovim
 
 You need to install the LSP client addapter plugin,
 [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig), for setting up the
@@ -92,7 +63,7 @@ mentioned previously in this section). Or if already using
 instructions for installing their packages. The latter approach allows you to
 have the version of BasedPyright maintained and upgraded by Mason project.
 
-#### Setting-up Neovim
+### Setting-up Neovim
 
 BasedPyright is available through the
 [`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
@@ -109,23 +80,23 @@ lspconfig.basedpyright.setup{}
 Further info for this LSP server options for `nvim-lspconfig` are available on
 their docs, linked above.
 
-### Vim
+## Vim
 
 Vim users can install [coc-basedpyright](https://github.com/fannheyward/coc-basedpyright), the BasedPyright extension for coc.nvim.
 
-### Sublime Text
+## Sublime Text
 
 Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP) and [LSP-basedpyright](https://packagecontrol.io/packages/LSP-basedpyright) via [Package Control](https://packagecontrol.io).
 
-### Emacs
+## Emacs
 
 Emacs users have 3 options:
 
-#### [lsp-bridge](https://github.com/manateelazycat/lsp-bridge)
+### [lsp-bridge](https://github.com/manateelazycat/lsp-bridge)
 
 basedpyright is the default language server for python in lsp-bridge, so no additional configuration is required.
 
-#### [eglot](https://github.com/joaotavora/eglot)
+### [eglot](https://github.com/joaotavora/eglot)
 
 add the following to your emacs config:
 
@@ -135,7 +106,7 @@ add the following to your emacs config:
                "basedpyright-langserver" "--stdio"))
 ```
 
-#### [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
+### [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
 
 with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: `0c0d72a`, update the package if you encounter errors), add the following to your emacs config:
 
@@ -143,7 +114,7 @@ with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: 
 (setq lsp-pyright-langserver-command "basedpyright")
 ```
 
-### PyCharm
+## PyCharm
 
 install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
 
@@ -151,7 +122,7 @@ configure it to use basedpyright by specifying the path to the `basedpyright-lan
 
 ![](https://github.com/user-attachments/assets/accfc498-825c-4c39-9e2c-35195c41fd67)
 
-### Helix
+## Helix
 
 Install the LSP server itself, using the [pypi package installation method](#command-line--language-server) (as mentioned previously in this section).
 Then add the following to your [languages file](https://docs.helix-editor.com/languages.html):

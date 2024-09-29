@@ -1,20 +1,21 @@
-## Building basedpyright
+# building & debugging
+
+## Building
 
 although pyright is written in typescript, in basedpyright we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a [pypi package](https://pypi.org/project/nodejs-wheel/) and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)
 
 we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).
 
 1. hit `F1` > `Tasks: Run task` > `install dependencies`, or run the following command:
-   ```
-   ./pw pdm install
-   ```
-   this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules` 
+    ```
+    ./pw pdm install
+    ```
+    this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules`
 2. press "Yes" when prompted by vscode to use the newly created virtualenv
 
 you can now run any node/npm commands from inside the venv.
 
-
-## Debugging Pyright
+## Debugging
 
 To debug pyright, open the root source directory within VS Code. Open the debug sub-panel and choose “Pyright CLI” from the debug target menu. Click on the green “run” icon or press F5 to build and launch the command-line version in the VS Code debugger. There's also a similar option that provides a slightly faster build/debug loop: make sure you've built the pyright-internal project e.g. with Terminal > Run Build Task > tsc: watch, then choose “Pyright CLI (pyright-internal)”.
 

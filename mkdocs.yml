@@ -1,0 +1,49 @@
+site_name: basedpyright
+site_url: https://docs.basedpyright.com
+theme:
+  name: material
+  features:
+    - navigation.indexes
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      media: '(prefers-color-scheme: light)'
+      primary: amber
+      toggle:
+        icon: material/brightness-7
+
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      media: '(prefers-color-scheme: dark)'
+      primary: amber
+      toggle:
+        icon: material/brightness-4
+      name: Switch to light mode
+  favicon: img/favicon.ico
+  logo: img/favicon.ico
+  icon:
+    repo: fontawesome/brands/github
+markdown_extensions:
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+plugins:
+  - search
+  - awesome-pages
+  - unused_files
+nav:
+  - index.md
+  - ... | benefits-over-pyright/**/*.md
+  - ... | installation/**/*.md
+  - ...
+  - ... | Development/**/*.md
+  - ... | shoutouts.md
+repo_url: https://github.com/detachhead/basedpyright
+repo_name: detachhead/basedpyright
+extra_css:
+  - stylesheets/extra.css

@@ -44,7 +44,7 @@ import {
     TransportKind,
 } from 'vscode-languageclient/node';
 import { FileBasedCancellationStrategy } from './cancellationUtils';
-import { githubRepo, toolName } from 'pyright-internal/constants';
+import { website, toolName } from 'pyright-internal/constants';
 import { cp } from 'fs/promises';
 
 let cancellationStrategy: FileBasedCancellationStrategy | undefined;
@@ -77,7 +77,7 @@ export async function activate(context: ExtensionContext) {
         } else if (result === keepUsingExistingLanguageServer) {
             disableBasedPyrightLsp();
         } else if (result === moreInfo) {
-            env.openExternal(Uri.parse(`${githubRepo}/#usage`));
+            env.openExternal(Uri.parse(`${website}/installation/ides/#vscode`));
         }
     }
     // See if Pylance is installed. If so, make sure its config doesn't conflict with basedpyright's
@@ -109,7 +109,7 @@ export async function activate(context: ExtensionContext) {
                         // can't use await  because this uses sussy `Thenable` type which doesn't work with it
                         .then(() => commands.executeCommand('workbench.action.reloadWindow'));
                 } else if (result === moreInfo) {
-                    env.openExternal(Uri.parse(`${githubRepo}/#using-basedpyright-with-pylance-not-recommended`));
+                    env.openExternal(Uri.parse(`${website}/installation/ides/#vscode`));
                 } else if (result !== undefined) {
                     problems.forEach((problem) => problem());
                 }

@@ -136,7 +136,7 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseFileResults } from './parser/parser';
 import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
-import { githubRepo } from './constants';
+import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { BaselinedDiagnostic, getBaselinedErrorsForFile, writeDiagnosticsToBaselineFile } from './baseline';
@@ -1400,8 +1400,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected getDocumentationUrlForDiagnostic(diag: AnalyzerDiagnostic): string | undefined {
         const rule = diag.getRule();
         if (rule) {
-            // Configuration.md is configured to have a link for every rule name.
-            return `${githubRepo}/blob/main/docs/configuration.md#${rule}`;
+            // config-files.md is configured to have a link for every rule name.
+            return `${website}/configuration/config-files/#${rule}`;
         }
         return undefined;
     }

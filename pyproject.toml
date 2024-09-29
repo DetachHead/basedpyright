@@ -15,6 +15,9 @@ dev = [
     "pytest>=8.2.2",
     "pytest-github-actions-annotate-failures>=0.2.0",
     "basedtyping>=0.1.4",
+    "mkdocs-material>=9.5.37",
+    "mkdocs-awesome-pages-plugin>=2.9.2",
+    "mkdocs-unused-files>=0.2.0",
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
@@ -36,6 +39,7 @@ pylint = 'pylint basedpyright based_build pdm_build.py'
 test_python = 'pytest tests'
 generate_docstubs = { call = "based_build.generate_docstubs:main" }
 localization_helper = 'python based_build/localization_helper.py'
+docs = "mkdocs serve"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]
