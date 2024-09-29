@@ -250,7 +250,7 @@ describe(`Basic language server tests`, () => {
         assert(file);
 
         // Make sure the error has a special rule
-        assert.equal(file.diagnostics[0].code, 'reportUnknownParameterType');
+        assert.equal(file.diagnostics[1].code, 'reportUnknownParameterType');
 
         // make sure additional diagnostic severities work
         assert.equal(
