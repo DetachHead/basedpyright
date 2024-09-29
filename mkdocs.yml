@@ -42,7 +42,7 @@ nav:
   - ... | benefits-over-pyright/**/*.md
   - ... | installation/**/*.md
   - ...
-  - ... | Development/**/*.md
+  - ... | development/**/*.md
   - ... | shoutouts.md
 repo_url: https://github.com/detachhead/basedpyright
 repo_name: detachhead/basedpyright
