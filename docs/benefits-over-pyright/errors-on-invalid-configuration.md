@@ -2,7 +2,7 @@
 
 in pyright, if you have any invalid configuration, it may or may not print a warning to the console, then it will continue type-checking and the exit code will be 0 as long as there were no type errors:
 
-```toml
+```toml title="pyproject.toml"
 [tool.pyright]
 mode = "strict"  # wrong! the setting you're looking for is called `typeCheckingMode`
 ```

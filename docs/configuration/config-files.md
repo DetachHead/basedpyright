@@ -284,7 +284,7 @@ In addition, any of the [type check diagnostics settings](config-files.md#type-c
 
 ## Sample Config File
 The following is an example of a pyright config file:
-```json
+```json title="pyrightconfig.json"
 {
   "include": [
     "src"
@@ -346,7 +346,7 @@ The following is an example of a pyright config file:
 ```
 
 ## Sample pyproject.toml File
-```toml
+```toml title="pyproject.toml"
 [tool.basedpyright]
 include = ["src"]
 exclude = ["**/node_modules",

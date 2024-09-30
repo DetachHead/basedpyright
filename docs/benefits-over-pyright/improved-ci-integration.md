@@ -10,9 +10,7 @@ basedpyright automatically detects when it's running in a github action, and mod
 
 this is an improvement to regular pyright, which requires you to use a [third party action](https://github.com/jakebailey/pyright-action) that [requires boilerplate to get working](https://github.com/jakebailey/pyright-action?tab=readme-ov-file#use-with-a-virtualenv). basedpyright just does it automatically without you having to do anything special:
 
-```yaml
-# .github/workflows/your_workflow.yaml
-
+```yaml title=".github/workflows/your_workflow.yaml"
 jobs:
     check:
         steps:
@@ -28,7 +26,7 @@ the `--gitlabcodequality` argument will output a [gitlab code quality report](ht
 
 to enable this in your gitlab CI, just specify a file path to output the report to, and in the `artifacts.reports.codequality` section of your `.gitlab-ci.yml` file:
 
-```yaml
+```yaml title=".gitlab-ci.yml"
 basedpyright:
     script: basedpyright --gitlabcodequality report.json
     artifacts:
