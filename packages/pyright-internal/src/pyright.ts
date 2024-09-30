@@ -475,8 +475,11 @@ const outputResults = (
         !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add, 0)
     ) {
         const previousBaseline = getBaselinedErrors(service.fs, rootDir);
-        const newBaseline = writeDiagnosticsToBaselineFile(service.fs, rootDir, results.diagnostics, false);
-        console.info(getBaselineSummaryMessage(rootDir, previousBaseline, newBaseline));
+        // don't write the baseline file if there wasn't one there already unless the user explicitly asked for it
+        if (args.writebaseline || Object.keys(previousBaseline.files).length) {
+            const newBaseline = writeDiagnosticsToBaselineFile(service.fs, rootDir, results.diagnostics, false);
+            console.info(getBaselineSummaryMessage(rootDir, previousBaseline, newBaseline));
+        }
     }
 
     const treatWarningsAsErrors = !!args.warnings;
