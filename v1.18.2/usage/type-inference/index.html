@@ -1,0 +1,2193 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.basedpyright.com/v1.18.2/usage/type-inference/">
+      
+      
+        <link rel="prev" href="../type-concepts-advanced/">
+      
+      
+        <link rel="next" href="../type-stubs/">
+      
+      
+      <link rel="icon" href="../../img/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.37">
+    
+    
+      
+        <title>Type inference - basedpyright</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8c3ca2c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#understanding-type-inference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="basedpyright" class="md-header__button md-logo" aria-label="basedpyright" data-md-component="logo">
+      
+  <img src="../../img/logo_black.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            basedpyright
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Type inference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="amber"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/detachhead/basedpyright" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    detachhead/basedpyright
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="basedpyright" class="md-nav__button md-logo" aria-label="basedpyright" data-md-component="logo">
+      
+  <img src="../../img/logo_black.png" alt="logo">
+
+    </a>
+    basedpyright
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/detachhead/basedpyright" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    detachhead/basedpyright
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Benefits over pyright
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Benefits over pyright
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/baseline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    baseline (beta)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/better-defaults/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    better defaults
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    errors on invalid configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    fixes for the reportRedeclaration and reportDuplicateImport rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    improved integration with CI platforms
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/improved-translations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    improved translations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/inline-typed-dict/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    inline TypedDict support
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    new diagnostic rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/pylance-features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pylance features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pypi package and version pinning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/command-line-and-language-server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Command-line &amp; language server
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/ides/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IDEs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/pre-commit%20hook/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pre-commit hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Configuration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/command-line/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Command line
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/comments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Comments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/config-files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/language-server-settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Language Server Settings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Getting started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/getting-started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/type-concepts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Usage
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Usage
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Builtins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    VS Code Commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../import-resolution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import resolution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../import-statements/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import statements
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mypy-comparison/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mypy comparison
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../type-concepts-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type concepts advanced
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Type inference
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Type inference
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understanding Type Inference
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding Type Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symbols-and-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Symbols and Scopes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Declarations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unknown-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      “Unknown” Type
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="“Unknown” Type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-assignment-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-Assignment Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-assignment-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Assignment Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ambiguous-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ambiguous Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bidirectional-type-inference-expected-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bidirectional Type Inference (Expected Types)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#empty-list-and-dictionary-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Empty List and Dictionary Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#return-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Return Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#noreturn-return-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      NoReturn return type
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generator-return-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generator return types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#call-site-return-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Call-site Return Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameter Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Literals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuple-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tuple Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      List Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dictionary-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dictionary Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambdas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lambdas
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../type-stubs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type stubs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../typed-libraries/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Typed libraries
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/build-debug/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    building &amp; debugging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/internals/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pyright Internals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/localization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Localization notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/upstream/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    how we keep up-to-date with upstream
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../shoutouts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shoutouts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understanding Type Inference
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understanding Type Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symbols-and-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Symbols and Scopes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Declarations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unknown-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      “Unknown” Type
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="“Unknown” Type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-assignment-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-Assignment Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-assignment-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Assignment Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ambiguous-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ambiguous Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bidirectional-type-inference-expected-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bidirectional Type Inference (Expected Types)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#empty-list-and-dictionary-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Empty List and Dictionary Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#return-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Return Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#noreturn-return-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      NoReturn return type
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generator-return-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generator return types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#call-site-return-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Call-site Return Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameter Type Inference
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Literals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuple-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tuple Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      List Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dictionary-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dictionary Expressions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambdas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lambdas
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>Type inference</h1>
+
+<h2 id="understanding-type-inference">Understanding Type Inference</h2>
+<h3 id="symbols-and-scopes">Symbols and Scopes</h3>
+<p>In Python, a <em>symbol</em> is any name that is not a keyword. Symbols can represent classes, functions, methods, variables, parameters, modules, type aliases, type variables, etc.</p>
+<p>Symbols are defined within <em>scopes</em>. A scope is associated with a block of code and defines which symbols are visible to that code block. Scopes can be “nested” allowing code to see symbols within its immediate scope and all “outer” scopes.</p>
+<p>The following constructs within Python define a scope:
+1. The “builtins” scope is always present and is always the outermost scope. It is pre-populated by the Python interpreter with symbols like “int” and “list”.
+2. The module scope (sometimes called the “global” scope) is defined by the current source code file.
+3. Each class defines its own scope. Symbols that represent methods, class variables, or instance variables appear within a class scope.
+4. Each function and lambda defines its own scope. The function’s parameters are symbols within its scope, as are any variables defined within the function.
+5. List comprehensions define their own scope.</p>
+<h3 id="type-declarations">Type Declarations</h3>
+<p>A symbol can be declared with an explicit type. The “def” and “class” keywords, for example, declare a symbol as a function or a class. Other symbols in Python can be introduced into a scope with no declared type. Newer versions of Python have introduced syntax for declaring the types of input parameters, return parameters, and variables.</p>
+<p>When a parameter or variable is annotated with a type, the type checker verifies that all values assigned to that parameter or variable conform to that type.</p>
+<p>Consider the following example:
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p3</span><span class="p">,</span> <span class="o">**</span><span class="n">p4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">var1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">p1</span>    <span class="c1"># This is a type violation</span>
+    <span class="n">var2</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">p2</span>    <span class="c1"># This is allowed because the types match</span>
+    <span class="n">var2</span><span class="p">:</span> <span class="nb">int</span>         <span class="c1"># This is an error because it redeclares var2</span>
+    <span class="n">var3</span> <span class="o">=</span> <span class="n">p1</span>         <span class="c1"># var3 does not have a declared type</span>
+    <span class="k">return</span> <span class="n">var1</span>       <span class="c1"># This is a type violation</span>
+</code></pre></div></p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Symbol Category</th>
+<th>Scope</th>
+<th>Declared Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>func1</td>
+<td>Function</td>
+<td>Module</td>
+<td>(float, str, Any, dict[str, Any]) -&gt; None</td>
+</tr>
+<tr>
+<td>p1</td>
+<td>Parameter</td>
+<td>func1</td>
+<td>float</td>
+</tr>
+<tr>
+<td>p2</td>
+<td>Parameter</td>
+<td>func1</td>
+<td>str</td>
+</tr>
+<tr>
+<td>p3</td>
+<td>Parameter</td>
+<td>func1</td>
+<td><none></td>
+</tr>
+<tr>
+<td>p4</td>
+<td>Parameter</td>
+<td>func1</td>
+<td><none></td>
+</tr>
+<tr>
+<td>var1</td>
+<td>Variable</td>
+<td>func1</td>
+<td>int</td>
+</tr>
+<tr>
+<td>var2</td>
+<td>Variable</td>
+<td>func1</td>
+<td>str</td>
+</tr>
+<tr>
+<td>var3</td>
+<td>Variable</td>
+<td>func1</td>
+<td><none></td>
+</tr>
+</tbody>
+</table>
+<p>Note that once a symbol’s type is declared, it cannot be redeclared to a different type.</p>
+<h3 id="type-inference">Type Inference</h3>
+<p>Some languages require every symbol to be explicitly typed. Python allows a symbol to be bound to different values at runtime, so its type can change over time. A symbol’s type doesn’t need to be declared statically.</p>
+<p>When Pyright encounters a symbol with no type declaration, it attempts to <em>infer</em> the type based on the values assigned to it. As we will see below, type inference cannot always determine the correct (intended) type, so type annotations are still required in some cases. Furthermore, type inference can require significant computation, so it is much less efficient than when type annotations are provided.</p>
+<h3 id="unknown-type">“Unknown” Type</h3>
+<p>If a symbol’s type cannot be inferred, Pyright sets its type to “Unknown”, which is a special form of “Any”. The “Unknown” type allows Pyright to optionally warn when types are not declared and cannot be inferred, thus leaving potential “blind spots” in type checking. </p>
+<h4 id="single-assignment-type-inference">Single-Assignment Type Inference</h4>
+<p>The simplest form of type inference is one that involves a single assignment to a symbol. The inferred type comes from the type of the source expression. Examples include:</p>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="mi">3</span>                        <span class="c1"># Inferred type is int</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span>                     <span class="c1"># Inferred type is str</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>                   <span class="c1"># Inferred type is list[Unknown]</span>
+<span class="n">var4</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>                   <span class="c1"># Inferred type is list[int]</span>
+<span class="k">for</span> <span class="n">var5</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span> <span class="o">...</span>         <span class="c1"># Inferred type is int</span>
+<span class="n">var6</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>   <span class="c1"># Inferred type is list[int]</span>
+</code></pre></div>
+<h4 id="multi-assignment-type-inference">Multi-Assignment Type Inference</h4>
+<p>When a symbol is assigned values in multiple places within the code, those values may have different types. The inferred type of the variable is the union of all such types.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># In this example, symbol var1 has an inferred type of `str | int`.</span>
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var1</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">do_something</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var1</span> <span class="o">=</span> <span class="n">val</span>
+
+<span class="c1"># In this example, symbol var2 has an inferred type of `Foo | None`.</span>
+<span class="k">if</span> <span class="n">__debug__</span><span class="p">:</span>
+    <span class="n">var2</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">var2</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="ambiguous-type-inference">Ambiguous Type Inference</h4>
+<p>In some cases, an expression’s type is ambiguous. For example, what is the type of the expression <code>[]</code>? Is it <code>list[None]</code>, <code>list[int]</code>, <code>list[Any]</code>, <code>Sequence[Any]</code>, <code>Iterable[Any]</code>? These ambiguities can lead to unintended type violations. Pyright uses several techniques for reducing these ambiguities based on contextual information. In the absence of contextual information, heuristics are used.</p>
+<h4 id="bidirectional-type-inference-expected-types">Bidirectional Type Inference (Expected Types)</h4>
+<p>One powerful technique Pyright uses to eliminate type inference ambiguities is <em>bidirectional inference</em>. This technique makes use of an “expected type”.</p>
+<p>As we saw above, the type of the expression <code>[]</code> is ambiguous, but if this expression is passed as an argument to a function, and the corresponding parameter is annotated with the type <code>list[int]</code>, Pyright can now assume that the type of <code>[]</code> in this context must be <code>list[int]</code>. Ambiguity eliminated!</p>
+<p>This technique is called “bidirectional inference” because type inference for an assignment normally proceeds by first determining the type of the right-hand side (RHS) of the assignment, which then informs the type of the left-hand side (LHS) of the assignment. With bidirectional inference, if the LHS of an assignment has a declared type, it can influence the inferred type of the RHS.</p>
+<p>Let’s look at a few examples:</p>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>                       <span class="c1"># Type of RHS is ambiguous</span>
+<span class="n">var2</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>            <span class="c1"># Type of LHS now makes type of RHS unambiguous</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>                      <span class="c1"># Type is assumed to be list[int] </span>
+<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>         <span class="c1"># Type of RHS is now list[float]</span>
+<span class="n">var5</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)</span>                     <span class="c1"># Type is assumed to be tuple[Literal[3]]</span>
+<span class="n">var6</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)</span>  <span class="c1"># Type of RHS is now tuple[float, ...]</span>
+</code></pre></div>
+<h4 id="empty-list-and-dictionary-type-inference">Empty List and Dictionary Type Inference</h4>
+<p>It is common to initialize a local variable or instance variable to an empty list (<code>[]</code>) or empty dictionary (<code>{}</code>) on one code path but initialize it to a non-empty list or dictionary on other code paths. In such cases, Pyright will infer the type based on the non-empty list or dictionary and suppress errors about a “partially unknown type”.</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">some_condition</span><span class="p">:</span>
+    <span class="n">my_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">my_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]</span>
+
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">my_list</span><span class="p">)</span> <span class="c1"># list[str]</span>
+</code></pre></div>
+<h4 id="return-type-inference">Return Type Inference</h4>
+<p>As with variable assignments, function return types can be inferred from the <code>return</code> statements found within that function. The returned type is assumed to be the union of all types returned from all <code>return</code> statements. If a <code>return</code> statement is not followed by an expression, it is assumed to return <code>None</code>. Likewise, if the function does not end in a <code>return</code> statement, and the end of the function is reachable, an implicit <code>return None</code> is assumed.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># This function has two explicit return statements and one implicit</span>
+<span class="c1"># return (at the end). It does not have a declared return type,</span>
+<span class="c1"># so Pyright infers its return type based on the return expressions.</span>
+<span class="c1"># In this case, the inferred return type is `str | bool | None`.</span>
+
+<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">elif</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<h4 id="noreturn-return-type">NoReturn return type</h4>
+<p>If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of <code>NoReturn</code>. As an exception to this rule, if the function is decorated with <code>@abstractmethod</code>, the return type is not inferred as <code>NoReturn</code> even if there is no return. This accommodates a common practice where an abstract method is implemented with a <code>raise</code> statement that raises an exception of type <code>NotImplementedError</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="c1"># The inferred return type is NoReturn.</span>
+    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+
+    <span class="c1"># The inferred return type is Unknown.</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">method2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="generator-return-types">Generator return types</h4>
+<p>Pyright can infer the return type for a generator function from the <code>yield</code> statements contained within that function.</p>
+<h4 id="call-site-return-type-inference">Call-site Return Type Inference</h4>
+<p>It is common for input parameters to be unannotated. This can make it difficult for Pyright to infer the correct return type for a function. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># The return type of this function cannot be fully inferred based</span>
+<span class="c1"># on the information provided because the types of parameters</span>
+<span class="c1"># a and b are unknown. In this case, the inferred return</span>
+<span class="c1"># type is `Unknown | None`.</span>
+
+<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">c</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span>
+    <span class="k">elif</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">b</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<p>In cases where all parameters are unannotated, Pyright uses a technique called <em>call-site return type inference</em>. It performs type inference using the the types of arguments passed to the function in a call expression. If the unannotated function calls other functions, call-site return type inference can be used recursively. Pyright limits this recursion to a small number for practical performance reasons.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func2</span><span class="p">(</span><span class="n">p_int</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p_flt</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="c1"># The type of var1 is inferred to be `int | None` based</span>
+    <span class="c1"># on call-site return type inference.</span>
+    <span class="n">var1</span> <span class="o">=</span> <span class="n">func1</span><span class="p">(</span><span class="n">p_int</span><span class="p">,</span> <span class="n">p_int</span><span class="p">,</span> <span class="n">p_int</span><span class="p">)</span>
+
+    <span class="c1"># The type of var2 is inferred to be `str | float | None`.</span>
+    <span class="n">var2</span> <span class="o">=</span> <span class="n">func1</span><span class="p">(</span><span class="n">p_str</span><span class="p">,</span> <span class="n">p_flt</span><span class="p">,</span> <span class="n">p_int</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="parameter-type-inference">Parameter Type Inference</h4>
+<p>Input parameters for functions and methods typically require type annotations. There are several cases where Pyright may be able to infer a parameter’s type if it is unannotated.</p>
+<p>For instance methods, the first parameter (named <code>self</code> by convention) is inferred to be type <code>Self</code>.</p>
+<p>For class methods, the first parameter (named <code>cls</code> by convention) is inferred to be type <code>type[Self]</code>.</p>
+<p>For other unannotated parameters within a method, Pyright looks for a method of the same name implemented in a base class. If the corresponding method in the base class has the same signature (the same number of parameters with the same names), no overloads, and annotated parameter types, the type annotation from this method is “inherited” for the corresponding parameter in the child class method.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Parent</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="o">...</span>
+
+
+<span class="k">class</span> <span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">a</span>
+
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">method1</span><span class="p">)</span>  <span class="c1"># (self: Child, a: int, b: str) -&gt; int</span>
+</code></pre></div>
+<p>When parameter types are inherited from a base class method, the return type is not inherited. Instead, normal return type inference techniques are used.</p>
+<p>If the type of an unannotated parameter cannot be inferred using any of the above techniques and the parameter has a default argument expression associated with it, the parameter type is inferred from the default argument type. If the default argument is <code>None</code>, the inferred type is <code>Unknown | None</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>  <span class="c1"># (a: Unknown, b: int, c: Unknown | None) -&gt; None</span>
+</code></pre></div>
+<p>This inference technique also applies to lambdas whose input parameters include default arguments.</p>
+<div class="highlight"><pre><span></span><code><span class="n">cb</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="n">x</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>  <span class="c1"># (x: str = &quot;&quot; -&gt; str)</span>
+</code></pre></div>
+<h4 id="literals">Literals</h4>
+<p>Python 3.8 introduced support for <em>literal types</em>. This allows a type checker like Pyright to track specific literal values of str, bytes, int, bool, and enum values. As with other types, literal types can be declared.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># This function is allowed to return only values 1, 2 or 3.</span>
+<span class="k">def</span> <span class="nf">func1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+<span class="c1"># This function must be passed one of three specific string values.</span>
+<span class="k">def</span> <span class="nf">func2</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;rw&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>When Pyright is performing type inference, it generally does not infer literal types. Consider the following example:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># If Pyright inferred the type of var1 to be list[Literal[4]],</span>
+<span class="c1"># any attempt to append a value other than 4 to this list would</span>
+<span class="c1"># generate an error. Pyright therefore infers the broader</span>
+<span class="c1"># type list[int].</span>
+<span class="n">var1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+</code></pre></div>
+<h4 id="tuple-expressions">Tuple Expressions</h4>
+<p>When inferring the type of a tuple expression (in the absence of bidirectional inference hints), Pyright assumes that the tuple has a fixed length, and each tuple element is typed as specifically as possible.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># The inferred type is tuple[Literal[1], Literal[&quot;a&quot;], Literal[True]].</span>
+<span class="n">var1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="c1"># The inferred type is tuple[int, int].</span>
+    <span class="n">var2</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+
+    <span class="c1"># If you want the type to be tuple[int, ...]</span>
+    <span class="c1"># (i.e. a homogeneous tuple of indeterminate length),</span>
+    <span class="c1"># use a type annotation.</span>
+    <span class="n">var3</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>Because tuples are typed as specifically as possible, literal types are normally retained. However, as an exception to this inference rule, if the tuple expression is nested within another tuple, set, list or dictionary expression, literal types are not retained. This is done to avoid the inference of complex types (e.g. unions with many subtypes) when evaluating tuple statements with many entries.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># The inferred type is list[tuple[int, str, bool]].</span>
+<span class="n">var4</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)]</span>
+</code></pre></div>
+<h4 id="list-expressions">List Expressions</h4>
+<p>When inferring the type of a list expression (in the absence of bidirectional inference hints), Pyright uses the following heuristics:</p>
+<ol>
+<li>If the list is empty (<code>[]</code>), assume <code>list[Unknown]</code> (unless a known list type is assigned to the same variable along another code path).</li>
+<li>If the list contains at least one element and all elements are the same type T, infer the type <code>list[T]</code>.</li>
+<li>
+<p>If the list contains multiple elements that are of different types, the behavior depends on the <code>strictListInference</code> configuration setting. By default this setting is off.</p>
+<ul>
+<li>If <code>strictListInference</code> is off, infer <code>list[Unknown]</code>.</li>
+<li>Otherwise use the union of all element types and infer <code>list[Union[(elements)]]</code>.</li>
+</ul>
+</li>
+</ol>
+<p>These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).</p>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>                       <span class="c1"># Infer list[Unknown]</span>
+
+<span class="n">var2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>                   <span class="c1"># Infer list[int]</span>
+
+<span class="c1"># Type depends on strictListInference config setting</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>                 <span class="c1"># Infer list[Unknown] (off)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>                 <span class="c1"># Infer list[int | float] (on)</span>
+
+<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>    <span class="c1"># Infer list[float]</span>
+</code></pre></div>
+<h4 id="set-expressions">Set Expressions</h4>
+<p>When inferring the type of a set expression (in the absence of bidirectional inference hints), Pyright uses the following heuristics:</p>
+<ol>
+<li>If the set contains at least one element and all elements are the same type T, infer the type <code>set[T]</code>.</li>
+<li>
+<p>If the set contains multiple elements that are of different types, the behavior depends on the <code>strictSetInference</code> configuration setting. By default this setting is off.</p>
+<ul>
+<li>If <code>strictSetInference</code> is off, infer <code>set[Unknown]</code>.</li>
+<li>Otherwise use the union of all element types and infer <code>set[Union[(elements)]]</code>.</li>
+</ul>
+</li>
+</ol>
+<p>These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).</p>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}</span>                   <span class="c1"># Infer set[int]</span>
+
+<span class="c1"># Type depends on strictSetInference config setting</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>                 <span class="c1"># Infer set[Unknown] (off)</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>                 <span class="c1"># Infer set[int | float] (on)</span>
+
+<span class="n">var3</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>    <span class="c1"># Infer set[float]</span>
+</code></pre></div>
+<h4 id="dictionary-expressions">Dictionary Expressions</h4>
+<p>When inferring the type of a dictionary expression (in the absence of bidirectional inference hints), Pyright uses the following heuristics:</p>
+<ol>
+<li>If the dict is empty (<code>{}</code>), assume <code>dict[Unknown, Unknown]</code>.</li>
+<li>If the dict contains at least one element and all keys are the same type K and all values are the same type V, infer the type <code>dict[K, V]</code>.</li>
+<li>
+<p>If the dict contains multiple elements where the keys or values differ in type, the behavior depends on the <code>strictDictionaryInference</code> configuration setting. By default this setting is off.</p>
+<ul>
+<li>If <code>strictDictionaryInference</code> is off, infer <code>dict[Unknown, Unknown]</code>.</li>
+<li>Otherwise use the union of all key and value types <code>dict[Union[(keys)], Union[(values)]]</code>.</li>
+</ul>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{}</span>                       <span class="c1"># Infer dict[Unknown, Unknown]</span>
+
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>                  <span class="c1"># Infer dict[int, str]</span>
+
+<span class="c1"># Type depends on strictDictionaryInference config setting</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>       <span class="c1"># Infer dict[str, Unknown] (off)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>       <span class="c1"># Infer dict[str, int | float] (on)</span>
+
+<span class="n">var4</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>
+</code></pre></div>
+<h4 id="lambdas">Lambdas</h4>
+<p>Lambdas present a particular challenge for a Python type checker because there is no provision in the Python syntax for annotating the types of a lambda’s input parameters. The types of these parameters must therefore be inferred based on context using bidirectional type inference. Absent this context, a lambda’s input parameters (and often its return type) will be unknown.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># The type of var1 is (a: Unknown, b: Unknown) -&gt; Unknown.</span>
+<span class="n">var1</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="c1"># This function takes a comparison function callback.</span>
+<span class="k">def</span> <span class="nf">float_sort</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">comp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span> <span class="o">...</span>
+
+<span class="c1"># In this example, the types of the lambda’s input parameters</span>
+<span class="c1"># a and b can be inferred to be float because the float_sort</span>
+<span class="c1"># function expects a callback that accepts two floats as</span>
+<span class="c1"># inputs.</span>
+<span class="n">float_sort</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d6f25eb3.min.js"></script>
+      
+    
+  </body>
+</html>
