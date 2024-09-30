@@ -22,10 +22,8 @@ concurrency:
 
 jobs:
   docs:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    if:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,15 +33,15 @@ jobs:
           python-version: 3.12
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: build docs
-        run: |
-          ./pw pdm install
-          ./pw pdm run mkdocs build --strict
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'site'
-      - name: Deploy to GitHub Pages
+      - name: install dependencies
+        run: ./pw pdm install --no-self
+      - name: validate docs
+        run: ./pw pdm run mkdocs build --strict
+      - name: deploy dev docs
         if: github.ref == 'refs/heads/main'
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: ./pw pdm run mike deploy --push --update-aliases dev
+      - name: deploy release docs
+        if: github.ref_type == 'tag'
+        run: |
+          ./pw pdm run mike deploy --push --update-aliases ${{ github.ref_name }} latest
+          ./pw pdm run mike set-default --push latest

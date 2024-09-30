@@ -64,3 +64,6 @@ validation:
     anchors: warn
     absolute_links: warn
     unrecognized_links: warn
+extra:
+  version:
+    provider: mike
