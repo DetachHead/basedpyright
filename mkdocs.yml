@@ -5,22 +5,26 @@ theme:
   features:
     - navigation.indexes
   palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
     # Palette toggle for light mode
-    - scheme: default
-      media: '(prefers-color-scheme: light)'
-      primary: amber
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+
       toggle:
         icon: material/brightness-7
-
         name: Switch to dark mode
 
     # Palette toggle for dark mode
-    - scheme: slate
-      media: '(prefers-color-scheme: dark)'
-      primary: amber
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       toggle:
         icon: material/brightness-4
-      name: Switch to light mode
+        name: Switch to system preference
   favicon: img/favicon.ico
   logo: img/logo_black.png
   icon:
