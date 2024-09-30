@@ -6,13 +6,15 @@ theme:
     - navigation.indexes
   palette:
     # Palette toggle for automatic mode
-    - media: "(prefers-color-scheme)"
+    - media: '(prefers-color-scheme)'
+      primary: amber
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
 
     # Palette toggle for light mode
-    - media: "(prefers-color-scheme: light)"
+    - media: '(prefers-color-scheme: light)'
+      primary: amber
       scheme: default
 
       toggle:
@@ -20,7 +22,8 @@ theme:
         name: Switch to dark mode
 
     # Palette toggle for dark mode
-    - media: "(prefers-color-scheme: dark)"
+    - media: '(prefers-color-scheme: dark)'
+      primary: amber
       scheme: slate
       toggle:
         icon: material/brightness-4
