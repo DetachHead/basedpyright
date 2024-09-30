@@ -1,19 +1,29 @@
 # new diagnostic rules
 
+this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivationbehind them. for a complete list of all diagnostic rules, [see here](../configuration/config-files.md#type-check-rule-overrides).
+
 ## `reportUnreachable`
 
-pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code. in fact, unreachable code is not even type-checked at all:
+pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code as an error, only as agreyed-out hint in your IDE:
 
 ```py
 if sys.platform == "win32":
-  1 + "" # no error
+  do_thing() # no error
 ```
+
+![](unreachable-hint.png)
+
+this is very easy to miss, especially since it doesn't cause the CLI to fail so such a mistake could easily pass your CI.
 
 by default, pyright will treat the body in the code above as unreachable if pyright itself was run on an operating system other than windows. this is bad of course, because chances are if you write such a check, you intend for your code to be executed on multiple platforms.
 
-to make things worse, unreachable code is not even type-checked, so the obviously invalid `1 + ""` above will go completely unnoticed by the type checker.
+to make things worse, unreachable code is not even type-checked at all! so if the code is reached, and the `do_thing` function isn't being called with the correct arguments, pyright will not complain!
 
-basedpyright solves this issue with a `reportUnreachable` option, which will report an error on such unchecked code. in this example, you can [update your pyright config to specify more platforms using the `pythonPlatform` option](https://github.com/detachhead/basedpyright/blob/main/docs/configuration.md#main-configuration-options) if you intend for the code to be reachable.
+`reportUnreachable` solves this problem by reporting unreachable code as an error by default.
+
+!!! note
+
+    the above example with `sys.platform` won't happen by default in basedpyright anyway, because [we've changed the default `pythonPlatform` to `"All"`](./better-defaults.md#pythonplatform). but other cases such as python version checks will still benefit from this rule.
 
 ## `reportAny`
 
@@ -37,7 +47,9 @@ it's good practice to specify an error code in your `pyright: ignore` comments:
 
 this way, if the error changes or a new error appears on the same line in the future, you'll get a new error because the comment doesn't account for the other error.
 
-note that `type: ignore` comments (`enableTypeIgnoreComments`) are unsafe and are disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
+!!! note
+
+    `type: ignore` comments ([`enableTypeIgnoreComments`](../configuration/config-files.md#enableTypeIgnoreComments)) are unsafe and are disabled by default (see [#330](https://github.com/DetachHead/basedpyright/issues/330) and [#55](https://github.com/DetachHead/basedpyright/issues/55)). we recommend using `pyright: ignore` comments instead.
 
 ## `reportPrivateLocalImportUsage`
 
@@ -106,18 +118,18 @@ cast(str, foo)
 
 in this example, it's impossible to be `foo` to be a `str` if it's also an `int`, because the `int` and `str` types do not overlap. the `reportInvalidCast` rule will report invalid casts like these.
 
-### note about casting with `TypedDict`s
+!!! note "note about casting with `TypedDict`s"
 
-a common use case of `cast` is to convert a regular `dict` into a `TypedDict`:
+    a common use case of `cast` is to convert a regular `dict` into a `TypedDict`:
 
-```py
-foo: dict[str, int | str]
-bar = cast(dict[{"foo": int, "bar": str}], foo)
-```
+    ```py
+    foo: dict[str, int | str]
+    bar = cast(dict[{"foo": int, "bar": str}], foo)
+    ```
 
-unfortunately, this will cause a `reportInvalidCast` error when this rule is enabled, because although at runtime `TypedDict` is a `dict`, type checkers treat it as an unrelated subtype of `Mapping` that doesn't have a `clear` method, which would break its type-safety if it were to be called on a `TypedDict`.
+    unfortunately, this will cause a `reportInvalidCast` error when this rule is enabled, because although at runtime `TypedDict` is a `dict`, type checkers treat it as an unrelated subtype of `Mapping` that doesn't have a `clear` method, which would break its type-safety if it were to be called on a `TypedDict`.
 
-this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
+    this means that although casting between them is a common use case, `TypedDict`s and `dict`s technically do not overlap.
 
 ## `reportUnsafeMultipleInheritance`
 
