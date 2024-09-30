@@ -484,11 +484,13 @@ note that some settings which are enabled by default in pyright are disabled by 
 | reportUnsafeMultipleInheritance          | "none"        | "none"        | "none"        | "none"        | "error" |
 | reportUnusedParameter                    | "unused"      | "unused"      | "unused"      | "unused"      | "error" |
 
-## Overriding settings (in VS Code)
+## Overriding language server settings
 
-If a pyproject.toml (with a pyright section) or a pyrightconfig.json exists, any pyright settings in a VS Code setttings.json will be ignored. Pyrightconfig.json is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
+If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [dicouraged language server settings](./language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
 
-If a pyproject.toml (with a pyright section) or a pyrightconfig.json does not exist, then the VS Code settings.json settings apply.
+If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` does not exist, then the language server settings apply.
+
+for more information about why this is the case, [see here](./language-server-settings.md#discouraged-settings).
 
 ## Locale Configuration
 
