@@ -55,3 +55,11 @@ repo_url: https://github.com/detachhead/basedpyright
 repo_name: detachhead/basedpyright
 extra_css:
   - stylesheets/extra.css
+validation:
+  nav:
+    omitted_files: warn
+    absolute_links: info # using awesome-pages plugin so it doesn't recognize them
+  links:
+    anchors: warn
+    absolute_links: warn
+    unrecognized_links: warn

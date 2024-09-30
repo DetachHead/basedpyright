@@ -56,7 +56,7 @@ LSP for the editor. These configurations are for launching the LSP server,
 as well as for being able to give launching parameters at the same time.
 
 To install the **necessary sever command**, for the LSP server itself, use the
-[pypi package installation method](#command-line--language-server) (as
+[pypi package installation method](./command-line-and-language-server.md) (as
 mentioned previously in this section). Or if already using
 [Mason.nvim](https://github.com/williamboman/mason.nvim), follow their
 instructions for installing their packages. The latter approach allows you to
@@ -123,7 +123,7 @@ configure it to use basedpyright by specifying the path to the `basedpyright-lan
 
 ## Helix
 
-Install the LSP server itself, using the [pypi package installation method](#command-line--language-server) (as mentioned previously in this section).
+Install the LSP server itself, using the [pypi package installation method](./command-line-and-language-server.md) (as mentioned previously in this section).
 Then add the following to your [languages file](https://docs.helix-editor.com/languages.html):
 
 ```toml
