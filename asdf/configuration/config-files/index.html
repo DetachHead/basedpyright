@@ -1,0 +1,3016 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.basedpyright.com/asdf/configuration/config-files/">
+      
+      
+        <link rel="prev" href="../comments/">
+      
+      
+        <link rel="next" href="../language-server-settings/">
+      
+      
+      <link rel="icon" href="../../img/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.37">
+    
+    
+      
+        <title>Config files - basedpyright</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8c3ca2c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pyright-configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="basedpyright" class="md-header__button md-logo" aria-label="basedpyright" data-md-component="logo">
+      
+  <img src="../../img/logo_black.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            basedpyright
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Config files
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="amber" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="amber" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/detachhead/basedpyright" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    detachhead/basedpyright
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="basedpyright" class="md-nav__button md-logo" aria-label="basedpyright" data-md-component="logo">
+      
+  <img src="../../img/logo_black.png" alt="logo">
+
+    </a>
+    basedpyright
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/detachhead/basedpyright" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    detachhead/basedpyright
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Benefits over pyright
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Benefits over pyright
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/baseline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    baseline (beta)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/better-defaults/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    better defaults
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    errors on invalid configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    fixes for the reportRedeclaration and reportDuplicateImport rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    improved integration with CI platforms
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/improved-translations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    improved translations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/inline-typed-dict/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    inline TypedDict support
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    new diagnostic rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/pylance-features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pylance features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pypi package and version pinning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/command-line-and-language-server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Command-line &amp; language server
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/ides/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IDEs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/pre-commit%20hook/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    pre-commit hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Configuration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../command-line/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Command line
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Comments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Config files
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Config files
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pyright-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyright Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-evaluation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Evaluation Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-check-diagnostics-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Check Diagnostics Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Check Diagnostics Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-check-rule-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Check Rule Overrides
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#based-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Based options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discouraged-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execution-environment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execution Environment Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Config File
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-pyprojecttoml-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample pyproject.toml File
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostic-settings-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Settings Defaults
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overriding-settings-in-vs-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overriding settings (in VS Code)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#locale-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Locale Configuration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../language-server-settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Language Server Settings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Getting started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/getting-started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/type-concepts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Usage
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Usage
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/builtins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Builtins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    VS Code Commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/import-resolution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import resolution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/import-statements/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import statements
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/mypy-comparison/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mypy comparison
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/type-concepts-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type concepts advanced
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/type-inference/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type inference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/type-stubs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Type stubs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/typed-libraries/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Typed libraries
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/build-debug/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    building &amp; debugging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/internals/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pyright Internals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/localization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Localization notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/upstream/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    how we keep up-to-date with upstream
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../shoutouts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Shoutouts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pyright-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyright Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-evaluation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Evaluation Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-check-diagnostics-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Check Diagnostics Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Check Diagnostics Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-check-rule-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type Check Rule Overrides
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#based-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Based options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discouraged-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execution-environment-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execution Environment Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Config File
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-pyprojecttoml-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample pyproject.toml File
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostic-settings-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Settings Defaults
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overriding-settings-in-vs-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overriding settings (in VS Code)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#locale-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Locale Configuration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>Config files</h1>
+
+<h2 id="pyright-configuration">Pyright Configuration</h2>
+<p>basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see <a href="./#sample-config-file">below</a>.</p>
+<p>basedpyright settings can also be specified in a <code>[tool.basedpyright]</code> section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see <a href="./#sample-pyprojecttoml-file">below</a>.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>the <code>[tool.pyright]</code> section in <code>pyproject.toml</code> is also supported for backwards compatibility with existing pyright configs.</p>
+</div>
+<p>Relative paths specified within the config file are relative to the config file’s location. Paths with shell variables (including <code>~</code>) are not supported. Paths within a config file should generally be relative paths so the config file can be shared by other developers who contribute to the project.</p>
+<h2 id="environment-options">Environment Options</h2>
+<p>The following settings control the <em>environment</em> in which basedpyright will check for diagnostics. These settings determine how Pyright finds source files, imports, and what Python version specific rules are applied.</p>
+<ul>
+<li>
+<p><strong>include</strong> [array of paths, optional]: Paths of directories or files that should be considered part of the project. If no paths are specified, pyright defaults to the directory that contains the config file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no include paths are specified, the root path for the workspace is assumed.</p>
+</li>
+<li>
+<p><strong>exclude</strong> [array of paths, optional]: Paths of directories or files that should not be considered part of the project. These override the directories and files that <code>include</code> matched, allowing specific subdirectories to be excluded. Note that files in the exclude paths may still be included in the analysis if they are referenced (imported) by source files that are not excluded. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no exclude paths are specified, Pyright automatically excludes the following: <code>**/node_modules</code>, <code>**/__pycache__</code>, <code>**/.*</code>. Pylance also excludes any virtual environment directories regardless of the exclude paths specified. For more detail on Python environment specification and discovery, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
+</li>
+<li>
+<p><strong>strict</strong> [array of paths, optional]: Paths of directories or files that should use “strict” analysis if they are included. This is the same as manually adding a “# pyright: strict” comment. In strict mode, most type-checking rules are enabled. Refer to <a href="#diagnostic-settings-defaults">this table</a> for details about which rules are enabled in strict mode. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character).</p>
+</li>
+<li>
+<p><strong>extends</strong> [path, optional]: Path to another <code>.json</code> or <code>.toml</code> file that is used as a “base configuration”, allowing this configuration to inherit configuration settings. Top-level keys within this configuration overwrite top-level keys in the base configuration. Multiple levels of inheritance are supported. Relative paths specified in a configuration file are resolved relative to the location of that configuration file.</p>
+</li>
+<li>
+<p><strong>defineConstant</strong> [map of constants to values (boolean or string), optional]: Set of identifiers that should be assumed to contain a constant value wherever used within this program. For example, <code>{ "DEBUG": true }</code> indicates that pyright should assume that the identifier <code>DEBUG</code> will always be equal to <code>True</code>. If this identifier is used within a conditional expression (such as <code>if not DEBUG:</code>) pyright will use the indicated value to determine whether the guarded block is reachable or not. Member expressions that reference one of these constants (e.g. <code>my_module.DEBUG</code>) are also supported.</p>
+</li>
+<li>
+<p><strong>typeshedPath</strong> [path, optional]: Path to a directory that contains typeshed type stub files. Pyright ships with a bundled copy of typeshed type stubs. If you want to use a different version of typeshed stubs, you can clone the <a href="https://github.com/python/typeshed">typeshed github repo</a> to a local directory and reference the location with this path. This option is useful if you’re actively contributing updates to typeshed.</p>
+</li>
+<li>
+<p><strong>stubPath</strong> [path, optional]: Path to a directory that contains custom type stubs. Each package's type stub file(s) are expected to be in its own subdirectory. The default value of this setting is "./typings". (typingsPath is now deprecated)</p>
+</li>
+<li>
+<p><strong>venvPath</strong> [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a <strong>venv</strong> setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. If you are working on a project with other developers, it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a per-user setting. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.</p>
+</li>
+<li>
+<p><strong>venv</strong> [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This setting is ignored when using Pylance.</p>
+</li>
+<li>
+<p><strong>verboseOutput</strong> [boolean]: Specifies whether output logs should be verbose. This is useful when diagnosing certain problems like import resolution issues.</p>
+</li>
+<li>
+<p><strong>extraPaths</strong> [array of strings, optional]: Additional search paths that will be used when searching for modules imported by files.</p>
+</li>
+<li>
+<p><strong>pythonVersion</strong> [string, optional]: Specifies the version of Python that will be used to execute the source code. The version should be specified as a string in the format "M.m" where M is the major version and m is the minor (e.g. <code>"3.0"</code> or <code>"3.6"</code>). If a version is provided, pyright will generate errors if the source code makes use of language features that are not supported in that version. It will also tailor its use of type stub files, which conditionalizes type definitions based on the version. If no version is specified, pyright will use the version of the current python interpreter, if one is present.</p>
+</li>
+<li>
+<p><strong>pythonPlatform</strong> [string, optional]: Specifies the target platform that will be used to execute the source code. Should be one of <code>"Windows"</code>, <code>"Darwin"</code>, <code>"Linux"</code>, or <code>"All"</code>. If specified, pyright will tailor its use of type stub files, which conditionalize type definitions based on the platform. If no platform is specified, pyright will use the current platform.</p>
+</li>
+<li>
+<p><strong>executionEnvironments</strong> [array of objects, optional]: Specifies a list of execution environments (see <a href="./#execution-environment-options">below</a>). Execution environments are searched from start to finish by comparing the path of a source file with the root path specified in the execution environment.</p>
+</li>
+<li>
+<p><strong>useLibraryCodeForTypes</strong> [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.</p>
+</li>
+</ul>
+<h2 id="type-evaluation-settings">Type Evaluation Settings</h2>
+<p>The following settings determine how different types should be evaluated.</p>
+<ul>
+<li>
+<p><a name="strictListInference"></a> <strong>strictListInference</strong> [boolean]: When inferring the type of a list, use strict type assumptions. For example, the expression <code>[1, 'a', 3.4]</code> could be inferred to be of type <code>list[Any]</code> or <code>list[int | str | float]</code>. If this setting is true, it will use the latter (stricter) type. The default value for this setting is <code>false</code>.</p>
+</li>
+<li>
+<p><a name="strictListInference"></a> <strong>strictListInference</strong> [boolean]: When inferring the type of a list, use strict type assumptions. For example, the expression <code>[1, 'a', 3.4]</code> could be inferred to be of type <code>list[Any]</code> or <code>list[int | str | float]</code>. If this setting is true, it will use the latter (stricter) type.</p>
+</li>
+<li>
+<p><a name="strictDictionaryInference"></a> <strong>strictDictionaryInference</strong> [boolean]: When inferring the type of a dictionary’s keys and values, use strict type assumptions. For example, the expression <code>{'a': 1, 'b': 'a'}</code> could be inferred to be of type <code>dict[str, Any]</code> or <code>dict[str, int | str]</code>. If this setting is true, it will use the latter (stricter) type.</p>
+</li>
+<li>
+<p><a name="strictSetInference"></a> <strong>strictSetInference</strong> [boolean]: When inferring the type of a set, use strict type assumptions. For example, the expression <code>{1, 'a', 3.4}</code> could be inferred to be of type <code>set[Any]</code> or <code>set[int | str | float]</code>. If this setting is true, it will use the latter (stricter) type.</p>
+</li>
+<li>
+<p><a name="analyzeUnannotatedFunctions"></a> <strong>analyzeUnannotatedFunctions</strong> [boolean]: Analyze and report errors for functions and methods that have no type annotations for input parameters or return types.</p>
+</li>
+<li>
+<p><a name="strictParameterNoneValue"></a> <strong>strictParameterNoneValue</strong> [boolean]: PEP 484 indicates that when a function parameter is assigned a default value of None, its type should implicitly be Optional even if the explicit type is not. When enabled, this rule requires that parameter type annotations use Optional explicitly in this case.</p>
+</li>
+<li>
+<p><a name="deprecateTypingAliases"></a> <strong>deprecateTypingAliases</strong> [boolean]: PEP 585 indicates that aliases to types in standard collections that were introduced solely to support generics are deprecated as of Python 3.9. This switch controls whether these are treated as deprecated. This applies only when pythonVersion is 3.9 or newer.</p>
+</li>
+<li>
+<p><a name="enableExperimentalFeatures"></a> <strong>enableExperimentalFeatures</strong> [boolean]: Enables a set of experimental (mostly undocumented) features that correspond to proposed or exploratory changes to the Python typing standard. These features will likely change or be removed, so they should not be used except for experimentation purposes.</p>
+</li>
+<li>
+<p><a name="disableBytesTypePromotions"></a> <strong>disableBytesTypePromotions</strong> [boolean]: Disables legacy behavior where <code>bytearray</code> and <code>memoryview</code> are considered subtypes of <code>bytes</code>. <a href="https://peps.python.org/pep-0688/#no-special-meaning-for-bytes">PEP 688</a> deprecates this behavior, but this switch is provided to restore the older behavior.</p>
+</li>
+</ul>
+<h2 id="type-check-diagnostics-settings">Type Check Diagnostics Settings</h2>
+<p>The following settings control pyright’s diagnostic output (warnings or errors).</p>
+<ul>
+<li>
+<p><strong>typeCheckingMode</strong> ["off", "basic", "standard", "strict", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "all". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.</p>
+</li>
+<li>
+<p><strong>ignore</strong> [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden in VS code in your settings.json.</p>
+</li>
+</ul>
+<h3 id="type-check-rule-overrides">Type Check Rule Overrides</h3>
+<p>The following settings allow more fine grained control over the <strong>typeCheckingMode</strong>. Unless otherwise specified, each diagnostic setting can specify a boolean value (<code>false</code> indicating that no error is generated and <code>true</code> indicating that an error is generated). Alternatively, a string value of <code>"none"</code>, <code>"warning"</code>, <code>"information"</code>, or <code>"error"</code> can be used to specify the diagnostic level.</p>
+<ul>
+<li>
+<p><a name="reportGeneralTypeIssues"></a> <strong>reportGeneralTypeIssues</strong> [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.</p>
+</li>
+<li>
+<p><a name="reportPropertyTypeMismatch"></a> <strong>reportPropertyTypeMismatch</strong> [boolean or string, optional]: Generate or suppress diagnostics for properties where the type of the value passed to the setter is not assignable to the value returned by the getter. Such mismatches violate the intended use of properties, which are meant to act like variables.</p>
+</li>
+<li>
+<p><a name="reportFunctionMemberAccess"></a> <strong>reportFunctionMemberAccess</strong> [boolean or string, optional]: Generate or suppress diagnostics for non-standard member accesses for functions.</p>
+</li>
+<li>
+<p><a name="reportMissingImports"></a> <strong>reportMissingImports</strong> [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding imported python file or type stub file.</p>
+</li>
+<li>
+<p><a name="reportMissingModuleSource"></a> <strong>reportMissingModuleSource</strong> [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding source file. This happens when a type stub is found, but the module source file was not found, indicating that the code may fail at runtime when using this execution environment. Type checking will be done using the type stub.</p>
+</li>
+<li>
+<p><a name="reportInvalidTypeForm"></a> <strong>reportInvalidTypeForm</strong> [boolean or string, optional]: Generate or suppress diagnostics for type annotations that use invalid type expression forms or are semantically invalid.</p>
+</li>
+<li>
+<p><a name="reportMissingTypeStubs"></a> <strong>reportMissingTypeStubs</strong> [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding type stub file (either a typeshed file or a custom type stub). The type checker requires type stubs to do its best job at analysis.</p>
+</li>
+<li>
+<p><a name="reportImportCycles"></a> <strong>reportImportCycles</strong> [boolean or string, optional]: Generate or suppress diagnostics for cyclical import chains. These are not errors in Python, but they do slow down type analysis and often hint at architectural layering issues. Generally, they should be avoided.</p>
+</li>
+<li>
+<p><a name="reportUnusedImport"></a> <strong>reportUnusedImport</strong> [boolean or string, optional]: Generate or suppress diagnostics for an imported symbol that is not referenced within that file.</p>
+</li>
+<li>
+<p><a name="reportUnusedClass"></a> <strong>reportUnusedClass</strong> [boolean or string, optional]: Generate or suppress diagnostics for a class with a private name (starting with an underscore) that is not accessed.</p>
+</li>
+<li>
+<p><a name="reportUnusedFunction"></a> <strong>reportUnusedFunction</strong> [boolean or string, optional]: Generate or suppress diagnostics for a function or method with a private name (starting with an underscore) that is not accessed.</p>
+</li>
+<li>
+<p><a name="reportUnusedVariable"></a> <strong>reportUnusedVariable</strong> [boolean or string, optional]: Generate or suppress diagnostics for a variable that is not accessed.</p>
+</li>
+<li>
+<p><a name="reportDuplicateImport"></a> <strong>reportDuplicateImport</strong> [boolean or string, optional]: Generate or suppress diagnostics for an imported symbol or module that is imported more than once.</p>
+</li>
+<li>
+<p><a name="reportWildcardImportFromLibrary"></a> <strong>reportWildcardImportFromLibrary</strong> [boolean or string, optional]: Generate or suppress diagnostics for a wildcard import from an external library. The use of this language feature is highly discouraged and can result in bugs when the library is updated.</p>
+</li>
+<li>
+<p><a name="reportAbstractUsage"></a> <strong>reportAbstractUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for the attempted instantiate an abstract or protocol class or use of an abstract method.</p>
+</li>
+<li>
+<p><a name="reportArgumentType"></a> <strong>reportArgumentType</strong> [boolean or string, optional]: Generate or suppress diagnostics for argument type incompatibilities when evaluating a call expression.</p>
+</li>
+<li>
+<p><a name="reportAssertTypeFailure"></a> <strong>reportAssertTypeFailure</strong> [boolean or string, optional]: Generate or suppress diagnostics for a type mismatch detected by the <code>typing.assert_type</code> call.</p>
+</li>
+<li>
+<p><a name="reportAssignmentType"></a> <strong>reportAssignmentType</strong> [boolean or string, optional]: Generate or suppress diagnostics for assignment type incompatibility.</p>
+</li>
+<li>
+<p><a name="reportAttributeAccessIssue"></a> <strong>reportAttributeAccessIssue</strong> [boolean or string, optional]: Generate or suppress diagnostics related to attribute accesses.</p>
+</li>
+<li>
+<p><a name="reportCallIssue"></a> <strong>reportCallIssue</strong> [boolean or string, optional]: Generate or suppress diagnostics related to call expressions and arguments passed to a call target.</p>
+</li>
+<li>
+<p><a name="reportInconsistentOverload"></a> <strong>reportInconsistentOverload</strong> [boolean or string, optional]: Generate or suppress diagnostics for an overloaded function that has overload signatures that are inconsistent with each other or with the implementation.</p>
+</li>
+<li>
+<p><a name="reportIndexIssue"></a> <strong>reportIndexIssue</strong> [boolean or string, optional]: Generate or suppress diagnostics related to index operations and expressions.</p>
+</li>
+<li>
+<p><a name="reportInvalidTypeArguments"></a> <strong>reportInvalidTypeArguments</strong> [boolean or string, optional]: Generate or suppress diagnostics for invalid type argument usage.</p>
+</li>
+<li>
+<p><a name="reportNoOverloadImplementation"></a> <strong>reportNoOverloadImplementation</strong> [boolean or string, optional]: Generate or suppress diagnostics for an overloaded function or method if the implementation is not provided.</p>
+</li>
+<li>
+<p><a name="reportOperatorIssue"></a> <strong>reportOperatorIssue</strong> [boolean or string, optional]: Generate or suppress diagnostics related to the use of unary or binary operators (like <code>*</code> or <code>not</code>).</p>
+</li>
+<li>
+<p><a name="reportOptionalSubscript"></a> <strong>reportOptionalSubscript</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to subscript (index) a variable with an Optional type.</p>
+</li>
+<li>
+<p><a name="reportOptionalMemberAccess"></a> <strong>reportOptionalMemberAccess</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to access a member of a variable with an Optional type.</p>
+</li>
+<li>
+<p><a name="reportOptionalCall"></a> <strong>reportOptionalCall</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to call a variable with an Optional type.</p>
+</li>
+<li>
+<p><a name="reportOptionalIterable"></a> <strong>reportOptionalIterable</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an iterable value (e.g. within a <code>for</code> statement).</p>
+</li>
+<li>
+<p><a name="reportOptionalContextManager"></a> <strong>reportOptionalContextManager</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as a context manager (as a parameter to a <code>with</code> statement).</p>
+</li>
+<li>
+<p><a name="reportOptionalOperand"></a> <strong>reportOptionalOperand</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an operand to a unary operator (like <code>~</code> or <code>not</code>) or the left-hand operator of a binary operator (like <code>*</code>, <code>==</code>, <code>or</code>).</p>
+</li>
+<li>
+<p><a name="reportRedeclaration"></a> <strong>reportRedeclaration</strong> [boolean or string, optional]: Generate or suppress diagnostics for a symbol that has more than one type declaration.</p>
+</li>
+<li>
+<p><a name="reportReturnType"></a> <strong>reportReturnType</strong> [boolean or string, optional]: Generate or suppress diagnostics related to function return type compatibility.</p>
+</li>
+<li>
+<p><a name="reportTypedDictNotRequiredAccess"></a> <strong>reportTypedDictNotRequiredAccess</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to access a non-required field within a TypedDict without first checking whether it is present.</p>
+</li>
+<li>
+<p><a name="reportUntypedFunctionDecorator"></a> <strong>reportUntypedFunctionDecorator</strong> [boolean or string, optional]: Generate or suppress diagnostics for function decorators that have no type annotations. These obscure the function type, defeating many type analysis features.</p>
+</li>
+<li>
+<p><a name="reportUntypedClassDecorator"></a> <strong>reportUntypedClassDecorator</strong> [boolean or string, optional]: Generate or suppress diagnostics for class decorators that have no type annotations. These obscure the class type, defeating many type analysis features.</p>
+</li>
+<li>
+<p><a name="reportUntypedBaseClass"></a> <strong>reportUntypedBaseClass</strong> [boolean or string, optional]: Generate or suppress diagnostics for base classes whose type cannot be determined statically. These obscure the class type, defeating many type analysis features.</p>
+</li>
+<li>
+<p><a name="reportUntypedNamedTuple"></a> <strong>reportUntypedNamedTuple</strong> [boolean or string, optional]: Generate or suppress diagnostics when “namedtuple” is used rather than “NamedTuple”. The former contains no type information, whereas the latter does.</p>
+</li>
+<li>
+<p><a name="reportPrivateUsage"></a> <strong>reportPrivateUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for incorrect usage of private or protected variables or functions. Protected class members begin with a single underscore (“_”) and can be accessed only by subclasses. Private class members begin with a double underscore but do not end in a double underscore and can be accessed only within the declaring class. Variables and functions declared outside of a class are considered private if their names start with either a single or double underscore, and they cannot be accessed outside of the declaring module.</p>
+</li>
+<li>
+<p><a name="reportTypeCommentUsage"></a> <strong>reportTypeCommentUsage</strong> [boolean or string, optional]: Prior to Python 3.5, the grammar did not support type annotations, so types needed to be specified using “type comments”. Python 3.5 eliminated the need for function type comments, and Python 3.6 eliminated the need for variable type comments. Future versions of Python will likely deprecate all support for type comments. If enabled, this check will flag any type comment usage unless it is required for compatibility with the specified language version.</p>
+</li>
+<li>
+<p><a name="reportPrivateImportUsage"></a> <strong>reportPrivateImportUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a third party "py.typed" module that is not meant to be exported from that module.</p>
+</li>
+<li>
+<p><a name="reportConstantRedefinition"></a> <strong>reportConstantRedefinition</strong> [boolean or string, optional]: Generate or suppress diagnostics for attempts to redefine variables whose names are all-caps with underscores and numerals.</p>
+</li>
+<li>
+<p><a name="reportDeprecated"></a> <strong>reportDeprecated</strong> [boolean or string, optional]: Generate or suppress diagnostics for use of a class or function that has been marked as deprecated.</p>
+</li>
+<li>
+<p><a name="reportIncompatibleMethodOverride"></a> <strong>reportIncompatibleMethodOverride</strong> [boolean or string, optional]: Generate or suppress diagnostics for methods that override a method of the same name in a base class in an incompatible manner (wrong number of parameters, incompatible parameter types, or incompatible return type).</p>
+</li>
+<li>
+<p><a name="reportIncompatibleVariableOverride"></a> <strong>reportIncompatibleVariableOverride</strong> [boolean or string, optional]: Generate or suppress diagnostics for class variable declarations that override a symbol of the same name in a base class with a type that is incompatible with the base class symbol type.</p>
+</li>
+<li>
+<p><a name="reportInconsistentConstructor"></a> <strong>reportInconsistentConstructor</strong> [boolean or string, optional]: Generate or suppress diagnostics when an <code>__init__</code> method signature is inconsistent with a <code>__new__</code> signature.</p>
+</li>
+<li>
+<p><a name="reportOverlappingOverload"></a> <strong>reportOverlappingOverload</strong> [boolean or string, optional]: Generate or suppress diagnostics for function overloads that overlap in signature and obscure each other or have incompatible return types.</p>
+</li>
+<li>
+<p><a name="reportPossiblyUnboundVariable"></a> <strong>reportPossiblyUnboundVariable</strong> [boolean or string, optional]: Generate or suppress diagnostics for variables that are possibly unbound on some code paths.</p>
+</li>
+<li>
+<p><a name="reportMissingSuperCall"></a> <strong>reportMissingSuperCall</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>__init__</code>, <code>__init_subclass__</code>, <code>__enter__</code> and <code>__exit__</code> methods in a subclass that fail to call through to the same-named method on a base class.</p>
+</li>
+<li>
+<p><a name="reportUninitializedInstanceVariable"></a> <strong>reportUninitializedInstanceVariable</strong> [boolean or string, optional]: Generate or suppress diagnostics for instance variables within a class that are not initialized or declared within the class body or the <code>__init__</code> method.</p>
+</li>
+<li>
+<p><a name="reportInvalidStringEscapeSequence"></a> <strong>reportInvalidStringEscapeSequence</strong> [boolean or string, optional]: Generate or suppress diagnostics for invalid escape sequences used within string literals. The Python specification indicates that such sequences will generate a syntax error in future versions.</p>
+</li>
+<li>
+<p><a name="reportUnknownParameterType"></a> <strong>reportUnknownParameterType</strong> [boolean or string, optional]: Generate or suppress diagnostics for input or return parameters for functions or methods that have an unknown type.</p>
+</li>
+<li>
+<p><a name="reportUnknownArgumentType"></a> <strong>reportUnknownArgumentType</strong> [boolean or string, optional]: Generate or suppress diagnostics for call arguments for functions or methods that have an unknown type.</p>
+</li>
+<li>
+<p><a name="reportUnknownLambdaType"></a> <strong>reportUnknownLambdaType</strong> [boolean or string, optional]: Generate or suppress diagnostics for input or return parameters for lambdas that have an unknown type.</p>
+</li>
+<li>
+<p><a name="reportUnknownVariableType"></a> <strong>reportUnknownVariableType</strong> [boolean or string, optional]: Generate or suppress diagnostics for variables that have an unknown type.</p>
+</li>
+<li>
+<p><a name="reportUnknownMemberType"></a> <strong>reportUnknownMemberType</strong> [boolean or string, optional]: Generate or suppress diagnostics for class or instance variables that have an unknown type.</p>
+</li>
+<li>
+<p><a name="reportMissingParameterType"></a> <strong>reportMissingParameterType</strong> [boolean or string, optional]: Generate or suppress diagnostics for input parameters for functions or methods that are missing a type annotation. The <code>self</code> and <code>cls</code> parameters used within methods are exempt from this check.</p>
+</li>
+<li>
+<p><a name="reportMissingTypeArgument"></a> <strong>reportMissingTypeArgument</strong> [boolean or string, optional]: Generate or suppress diagnostics when a generic class is used without providing explicit or implicit type arguments.</p>
+</li>
+<li>
+<p><a name="reportInvalidTypeVarUse"></a> <strong>reportInvalidTypeVarUse</strong> [boolean or string, optional]: Generate or suppress diagnostics when a TypeVar is used inappropriately (e.g. if a TypeVar appears only once) within a generic function signature.</p>
+</li>
+<li>
+<p><a name="reportCallInDefaultInitializer"></a> <strong>reportCallInDefaultInitializer</strong> [boolean or string, optional]: Generate or suppress diagnostics for function calls, list expressions, set expressions, or dictionary expressions within a default value initialization expression. Such calls can mask expensive operations that are performed at module initialization time.</p>
+</li>
+<li>
+<p><a name="reportUnnecessaryIsInstance"></a> <strong>reportUnnecessaryIsInstance</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>isinstance</code> or <code>issubclass</code> calls where the result is statically determined to be always true or always false. Such calls are often indicative of a programming error.</p>
+</li>
+<li>
+<p><a name="reportUnnecessaryCast"></a> <strong>reportUnnecessaryCast</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>cast</code> calls that are statically determined to be unnecessary. Such calls are sometimes indicative of a programming error.</p>
+</li>
+<li>
+<p><a name="reportUnnecessaryComparison"></a> <strong>reportUnnecessaryComparison</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>==</code> or <code>!=</code> comparisons or other conditional expressions that are statically determined to always evaluate to False or True. Such comparisons are sometimes indicative of a programming error.</p>
+</li>
+<li>
+<p><a name="reportUnnecessaryContains"></a> <strong>reportUnnecessaryContains</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>in</code> operations that are statically determined to always evaluate to False or True. Such operations are sometimes indicative of a programming error.</p>
+</li>
+<li>
+<p><a name="reportAssertAlwaysTrue"></a> <strong>reportAssertAlwaysTrue</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>assert</code> statement that will provably always assert because its first argument is a parenthesized tuple (for example, <code>assert (v &gt; 0, "Bad value")</code> when the intent was probably <code>assert v &gt; 0, "Bad value"</code>). This is a common programming error.</p>
+</li>
+<li>
+<p><a name="reportSelfClsParameterName"></a> <strong>reportSelfClsParameterName</strong> [boolean or string, optional]: Generate or suppress diagnostics for a missing or misnamed “self” parameter in instance methods and “cls” parameter in class methods. Instance methods in metaclasses (classes that derive from “type”) are allowed to use “cls” for instance methods.</p>
+</li>
+<li>
+<p><a name="reportImplicitStringConcatenation"></a> <strong>reportImplicitStringConcatenation</strong> [boolean or string, optional]: Generate or suppress diagnostics for two or more string literals that follow each other, indicating an implicit concatenation. This is considered a bad practice and often masks bugs such as missing commas.</p>
+</li>
+<li>
+<p><a name="reportUndefinedVariable"></a> <strong>reportUndefinedVariable</strong> [boolean or string, optional]: Generate or suppress diagnostics for undefined variables.</p>
+</li>
+<li>
+<p><a name="reportUnboundVariable"></a> <strong>reportUnboundVariable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unbound variables.</p>
+</li>
+<li>
+<p><a name="reportUnhashable"></a> <strong>reportUnhashable</strong> [boolean or string, optional]: Generate or suppress diagnostics for the use of an unhashable object in a container that requires hashability. The default value for this setting is <code>"error"</code>.</p>
+</li>
+<li>
+<p><a name="reportInvalidStubStatement"></a> <strong>reportInvalidStubStatement</strong> [boolean or string, optional]: Generate or suppress diagnostics for statements that are syntactically correct but have no purpose within a type stub file.</p>
+</li>
+<li>
+<p><a name="reportIncompleteStub"></a> <strong>reportIncompleteStub</strong> [boolean or string, optional]: Generate or suppress diagnostics for a module-level <code>__getattr__</code> call in a type stub file, indicating that it is incomplete.</p>
+</li>
+<li>
+<p><a name="reportUnsupportedDunderAll"></a> <strong>reportUnsupportedDunderAll</strong> [boolean or string, optional]: Generate or suppress diagnostics for statements that define or manipulate <code>__all__</code> in a way that is not allowed by a static type checker, thus rendering the contents of <code>__all__</code> to be unknown or incorrect. Also reports names within the <code>__all__</code> list that are not present in the module namespace.</p>
+</li>
+<li>
+<p><a name="reportUnusedCallResult"></a> <strong>reportUnusedCallResult</strong> [boolean or string, optional]: Generate or suppress diagnostics for call statements whose return value is not used in any way and is not None.</p>
+</li>
+<li>
+<p><a name="reportUnusedCoroutine"></a> <strong>reportUnusedCoroutine</strong> [boolean or string, optional]: Generate or suppress diagnostics for call statements whose return value is not used in any way and is a Coroutine. This identifies a common error where an <code>await</code> keyword is mistakenly omitted.</p>
+</li>
+<li>
+<p><a name="reportUnusedExcept"></a> <strong>reportUnusedExcept</strong> [boolean or string, optional]: Generate or suppress diagnostics for an <code>except</code> clause that will never be reached.</p>
+</li>
+<li>
+<p><a name="reportUnusedExpression"></a> <strong>reportUnusedExpression</strong> [boolean or string, optional]: Generate or suppress diagnostics for simple expressions whose results are not used in any way.</p>
+</li>
+<li>
+<p><a name="reportUnnecessaryTypeIgnoreComment"></a> <strong>reportUnnecessaryTypeIgnoreComment</strong> [boolean or string, optional]: Generate or suppress diagnostics for a <code># type: ignore</code> or <code># pyright: ignore</code> comment that would have no effect if removed.</p>
+</li>
+<li>
+<p><a name="reportMatchNotExhaustive"></a> <strong>reportMatchNotExhaustive</strong> [boolean or string, optional]: Generate or suppress diagnostics for a <code>match</code> statement that does not provide cases that exhaustively match against all potential types of the target expression.</p>
+</li>
+<li>
+<p><a name="reportImplicitOverride"></a> <strong>reportImplicitOverride</strong> [boolean or string, optional]: Generate or suppress diagnostics for overridden methods in a class that are missing an explicit <code>@override</code> decorator.</p>
+</li>
+<li>
+<p><a name="reportShadowedImports"></a> <strong>reportShadowedImports</strong> [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.</p>
+</li>
+</ul>
+<h2 id="based-options">Based options</h2>
+<p>the following additional options are not available in regular pyright:</p>
+<ul>
+<li>
+<p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.</p>
+</li>
+<li>
+<p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Ban all usages of the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances).</p>
+</li>
+<li>
+<p><a name="reportIgnoreCommentWithoutRule"></a> <strong>reportIgnoreCommentWithoutRule</strong> [boolean or string, optional]: Enforce that all <code># type:ignore</code>/<code># pyright:ignore</code> comments specify a rule in brackets (eg. <code># pyright:ignore[reportAny]</code>)</p>
+</li>
+<li>
+<p><a name="reportPrivateLocalImportUsage"></a> <strong>reportPrivateLocalImportUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like <code>reportPrivateImportUsage</code> but also checks imports from your own code.</p>
+</li>
+<li>
+<p><a name="reportImplicitRelativeImport"></a> <strong>reportImplicitRelativeImport</strong> [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module.</p>
+</li>
+<li>
+<p><a name="reportInvalidCast"></a> <strong>reportInvalidCast</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>cast</code>s to non-overlapping types.</p>
+</li>
+<li>
+<p><a name="reportUnsafeMultipleInheritance"></a> <strong>reportUnsafeMultipleInheritance</strong> [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an <code>__init__</code> or <code>__new__</code> method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.</p>
+</li>
+<li>
+<p><a name="reportUnusedParameter"></a> <strong>reportUnusedParameter</strong> [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.</p>
+</li>
+</ul>
+<h2 id="discouraged-options">Discouraged options</h2>
+<p>there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
+<ul>
+<li>
+<p><a name="enableTypeIgnoreComments"></a> <strong>enableTypeIgnoreComments</strong> [boolean]: PEP 484 defines support for <code># type: ignore</code> comments. This switch enables or disables support for these comments. This option is discouraged in favor of <code># pyright: ignore</code> comments in basedpyright, as they are safer. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportignorecommentwithoutrule">See here</a> for more information.</p>
+</li>
+<li>
+<p><a name="enableReachabilityAnalysis"></a> <strong>enableReachabilityAnalysis</strong> [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable"><code>reportUnreachable</code></a>.</p>
+</li>
+</ul>
+<h2 id="execution-environment-options">Execution Environment Options</h2>
+<p>Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.</p>
+<p>The following settings can be specified for each execution environment. Each source file within a project is associated with at most one execution environment -- the first one whose root directory contains that file.</p>
+<ul>
+<li>
+<p><strong>root</strong> [string, required]: Root path for the code that will execute within this execution environment.</p>
+</li>
+<li>
+<p><strong>extraPaths</strong> [array of strings, optional]: Additional search paths (in addition to the root path) that will be used when searching for modules imported by files within this execution environment. If specified, this overrides the default extraPaths setting when resolving imports for files within this execution environment. Note that each file’s execution environment mapping is independent, so if file A is in one execution environment and imports a second file B within a second execution environment, any imports from B will use the extraPaths in the second execution environment.</p>
+</li>
+<li>
+<p><strong>pythonVersion</strong> [string, optional]: The version of Python used for this execution environment. If not specified, the global <code>pythonVersion</code> setting is used instead.</p>
+</li>
+<li>
+<p><strong>pythonPlatform</strong> [string, optional]: Specifies the target platform that will be used for this execution environment. If not specified, the global <code>pythonPlatform</code> setting is used instead.</p>
+</li>
+</ul>
+<p>In addition, any of the <a href="./#type-check-diagnostics-settings">type check diagnostics settings</a> listed above can be specified. These settings act as overrides for the files in this execution environment.</p>
+<h2 id="sample-config-file">Sample Config File</h2>
+<p>The following is an example of a pyright config file:
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;src&quot;</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;exclude&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;**/node_modules&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;**/__pycache__&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;src/experimental&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;src/typestubs&quot;</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;ignore&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;src/oldstuff&quot;</span>
+<span class="w">  </span><span class="p">],</span>
+
+<span class="w">  </span><span class="nt">&quot;defineConstant&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;DEBUG&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nt">&quot;stubPath&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/stubs&quot;</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;reportMissingImports&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reportMissingTypeStubs&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;pythonVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.6&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;pythonPlatform&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Linux&quot;</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nt">&quot;executionEnvironments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/web&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;pythonVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.5&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;pythonPlatform&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Windows&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;extraPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;src/service_libs&quot;</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;reportMissingImports&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;warning&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/sdk&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;pythonVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.0&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;extraPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;src/backend&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/tests&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;reportPrivateUsage&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;extraPaths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;src/tests/e2e&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;src/sdk&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h2 id="sample-pyprojecttoml-file">Sample pyproject.toml File</h2>
+<div class="highlight"><pre><span></span><code><span class="k">[tool.basedpyright]</span>
+<span class="n">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span>
+<span class="n">exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;**/node_modules&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;**/__pycache__&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;src/experimental&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;src/typestubs&quot;</span>
+<span class="p">]</span>
+<span class="n">ignore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/oldstuff&quot;</span><span class="p">]</span>
+<span class="n">defineConstant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<span class="n">stubPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;src/stubs&quot;</span>
+
+<span class="n">reportMissingImports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;error&quot;</span>
+<span class="n">reportMissingTypeStubs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="n">pythonVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;3.6&quot;</span>
+<span class="n">pythonPlatform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Linux&quot;</span>
+
+<span class="n">executionEnvironments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;src/web&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pythonVersion</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;3.5&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pythonPlatform</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;Windows&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">extraPaths</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&quot;src/service_libs&quot;</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">reportMissingImports</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;warning&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;src/sdk&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pythonVersion</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;3.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">extraPaths</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&quot;src/backend&quot;</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;src/tests&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">reportPrivateUsage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">extraPaths</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/tests/e2e&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;src/sdk&quot;</span><span class="w"> </span><span class="p">]},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;src&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<h2 id="diagnostic-settings-defaults">Diagnostic Settings Defaults</h2>
+<p>Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings. In strict type checking mode, overrides may only increase the strictness (e.g. increase the severity level from <code>"warning"</code> to <code>"error"</code>).</p>
+<p>Some rules have an additional severity level such as <code>"unused"</code>, <code>"deprecated"</code> or <code>"unreachable"</code>. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to <code>"off"</code>. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as <code>"off"</code>.</p>
+<p>The following table lists the default severity levels for each diagnostic rule within each type checking mode (<code>"off"</code>, <code>"basic"</code>, <code>"standard"</code>, <code>"strict"</code> and <code>"all"</code>).</p>
+<p>note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default <code>typeCheckingMode</code> is <code>"all"</code>). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Diagnostic Rule</th>
+<th style="text-align: left;">Off</th>
+<th style="text-align: left;">Basic</th>
+<th style="text-align: left;">Standard</th>
+<th style="text-align: left;">Strict</th>
+<th style="text-align: left;">All</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">analyzeUnannotatedFunctions</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">disableBytesTypePromotions</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictParameterNoneValue</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableTypeIgnoreComments</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">false</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableReachabilityAnalysis</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictListInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictDictionaryInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictSetInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">deprecateTypingAliases</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableExperimentalFeatures</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingModuleSource</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidTypeForm</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingImports</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUndefinedVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAssertAlwaysTrue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidStringEscapeSequence</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidTypeVarUse</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingTypeStubs</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportSelfClsParameterName</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnsupportedDunderAll</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedExpression</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportWildcardImportFromLibrary</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAbstractUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportArgumentType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAssertTypeFailure</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAssignmentType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAttributeAccessIssue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportCallIssue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportGeneralTypeIssues</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInconsistentOverload</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIndexIssue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidTypeArguments</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportNoOverloadImplementation</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOperatorIssue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalSubscript</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalMemberAccess</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalCall</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalIterable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalContextManager</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOptionalOperand</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportRedeclaration</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportReturnType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportTypedDictNotRequiredAccess</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPrivateImportUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnboundVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnhashable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedCoroutine</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedExcept</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportFunctionMemberAccess</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIncompatibleMethodOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIncompatibleVariableOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportOverlappingOverload</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPossiblyUnboundVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportConstantRedefinition</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportDeprecated</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportDuplicateImport</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIncompleteStub</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInconsistentConstructor</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidStubStatement</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMatchNotExhaustive</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingParameterType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingTypeArgument</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPrivateUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportTypeCommentUsage</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownArgumentType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownLambdaType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownMemberType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownParameterType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownVariableType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryCast</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryComparison</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryContains</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryIsInstance</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedClass</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedImport</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedFunction</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedVariable</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedBaseClass</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedClassDecorator</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedFunctionDecorator</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedNamedTuple</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportCallInDefaultInitializer</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitStringConcatenation</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImportCycles</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingSuperCall</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPropertyTypeMismatch</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportShadowedImports</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUninitializedInstanceVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryTypeIgnoreComment</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedCallResult</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnreachable</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAny</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIgnoreCommentWithoutRule</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPrivateLocalImportUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitRelativeImport</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidCast</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnsafeMultipleInheritance</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedParameter</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+</tbody>
+</table>
+<h2 id="overriding-settings-in-vs-code">Overriding settings (in VS Code)</h2>
+<p>If a pyproject.toml (with a pyright section) or a pyrightconfig.json exists, any pyright settings in a VS Code setttings.json will be ignored. Pyrightconfig.json is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.</p>
+<p>If a pyproject.toml (with a pyright section) or a pyrightconfig.json does not exist, then the VS Code settings.json settings apply.</p>
+<h2 id="locale-configuration">Locale Configuration</h2>
+<p>Pyright provides diagnostic messages that are translated to multiple languages. By default, pyright uses the default locale of the operating system. You can override the desired locale through the use of one of the following environment variables, listed in priority order.</p>
+<div class="highlight"><pre><span></span><code>LC_ALL=&quot;de&quot;
+LC_MESSAGES=&quot;en-us&quot;
+LANG=&quot;zh-cn&quot;
+LANGUAGE=&quot;fr&quot;
+</code></pre></div>
+<p>When running in VS Code, the editor's locale takes precedence. Setting these environment variables applies only when using pyright outside of VS Code.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d6f25eb3.min.js"></script>
+      
+    
+  </body>
+</html>
