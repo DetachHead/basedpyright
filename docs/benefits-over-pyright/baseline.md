@@ -4,7 +4,14 @@ have you ever wanted to adopt a new tool or enable new checks in an existing pro
 
 to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in vscode. this will generate a `./basedpyright/baseline.json` for your project. you should commit this file so others working on your project can benefit from it too.
 
-this file gets automatically updated as errors are removed over time in both the CLI and the language server. if you ever need to baseline new errors or an error that resurfaced because you've modified the same line of code it was on, just run that command again.
+## how often do i need to update the baseline file?
+
+this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:
+
+-   a baselined error incorrectly resurfaces when updating unrelated code
+-   you're enabling a new diagnostic rule and want to baseline all the new errors it reported
+
+if you need to suppress a diagnostic for another reason, consider using [a `# pyright: ignore` comment](../configuration/comments.md#prefer-pyrightignore-comments) instead.
 
 ## how does it work?
 

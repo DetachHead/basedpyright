@@ -54,4 +54,4 @@ once installed, the `basedpyright` and `basedpyright-langserver` scripts will be
 basedpyright --help
 ```
 
-for instructions on how to use `basedpyright-langserver`, see the [IDE-specific instructions below](./ides.md).
+for instructions on how to use `basedpyright-langserver`, see the [IDE-specific instructions](./ides.md).

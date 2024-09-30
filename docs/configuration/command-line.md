@@ -1,8 +1,8 @@
-# Command-Line
+## Command-Line
 
 Usage: basedpyright [options] [files...] (1)
 
-Pyright can be run as either a VS Code extension or as a command-line tool. The command-line version allows for the following options:
+basedpyright can be run as either a VS Code extension or as a command-line tool. The command-line version allows for the following options:
 
 | Flag                               | Description                                           |
 | :--------------------------------- | :---------------------------------------------------  |
@@ -43,7 +43,7 @@ Pyright can be run as either a VS Code extension or as a command-line tool. The 
 (6) When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.
 
 
-# Pyright Exit Codes
+## Pyright Exit Codes
 
 | Exit Code   | Meaning                                                           |
 | :---------- | :---------------------------------------------------------------  |
@@ -54,7 +54,7 @@ Pyright can be run as either a VS Code extension or as a command-line tool. The 
 | 4           | Illegal command-line parameters specified                         |
 
 
-# JSON Output
+## JSON Output
 
 If the “--outputjson” option is specified on the command line, diagnostics are output in JSON format. The JSON structure is as follows:
 ```javascript
@@ -97,7 +97,7 @@ Diagnostic line and character numbers are zero-based.
 
 Not all diagnostics have an associated diagnostic rule. Diagnostic rules are used only for diagnostics that can be disabled or enabled. If a rule is associated with the diagnostic, it is included in the output. If it’s not, the rule field is omitted from the JSON output.
 
-# Gitlab code quality report
+## Gitlab code quality report
 
 the `--gitlabcodequality` argument will output a [gitlab code quality report](https://docs.gitlab.com/ee/ci/testing/code_quality.html).
 
@@ -110,3 +110,15 @@ basedpyright:
     reports:
       codequality: report.json
 ```
+
+## Regenerating the baseline file
+
+if you're using [baseline](../benefits-over-pyright/baseline.md), as baselined errors are removed from your code, the CLI will automatically update the `./.basedpyright/baseline.json` file to remove them:
+
+```
+>basedpyright
+updated ./.basedpyright/baseline.json with 200 errors (went down by 5)
+0 errors, 0 warnings, 0 notes
+```
+
+the `--writebaseline` argument is only required if you are intentionally writing new errors to the baseline file. for more information about when to use this argument, [see here](../benefits-over-pyright/baseline.md#how-often-do-i-need-to-update-the-baseline-file).

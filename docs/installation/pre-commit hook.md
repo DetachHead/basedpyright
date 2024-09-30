@@ -1,8 +1,6 @@
 # pre-commit hook
 
-```yaml
-# .pre-commit-config.yaml
-
+```yaml title=".pre-commit-config.yaml"
 repos:
     - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
       rev: v1.13.0 # or whatever the latest version is at the time

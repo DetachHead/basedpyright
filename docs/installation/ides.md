@@ -22,10 +22,12 @@ install the extension from [the vscode extension marketplace](https://marketplac
 
     clicking "Fix settings & keep both extensions" will set the following settings for you automatically:
 
-    ```jsonc
-    // .vscode/settings.json
+    ```json title=".vscode/settings.json"
     {
+        // disable pylance's type checking and only use its language server
         "python.analysis.typeCheckingMode": "off",
+
+        // disable basedpyright's language server and only use its type checking
         "basedpyright.disableLanguageServices": true
     }
     ```
@@ -40,9 +42,7 @@ the basedpyright extension will automatically look for the pypi package in your 
 
 if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
 
-```jsonc
-// .vscode/extensions.json
-
+```json title=".vscode/extensions.json"
 {
     "recommendations": ["detachhead.basedpyright"]
 }

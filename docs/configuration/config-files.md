@@ -1,14 +1,18 @@
 ## Pyright Configuration
 
-Pyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see [below](../configuration/config-files.md#sample-config-file).
+basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see [below](../configuration/config-files.md#sample-config-file).
 
-Pyright settings can also be specified in a `[tool.basedpyright]` section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see [below](../configuration/config-files.md#sample-pyprojecttoml-file).
+basedpyright settings can also be specified in a `[tool.basedpyright]` section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see [below](../configuration/config-files.md#sample-pyprojecttoml-file).
+
+!!! info
+
+    the `[tool.pyright]` section in `pyproject.toml` is also supported for backwards compatibility with existing pyright configs.
 
 Relative paths specified within the config file are relative to the config file’s location. Paths with shell variables (including `~`) are not supported. Paths within a config file should generally be relative paths so the config file can be shared by other developers who contribute to the project.
 
 ## Environment Options
 
-The following settings control the *environment* in which Pyright will check for diagnostics. These settings determine how Pyright finds source files, imports, and what Python version specific rules are applied.
+The following settings control the *environment* in which basedpyright will check for diagnostics. These settings determine how Pyright finds source files, imports, and what Python version specific rules are applied.
 
 - **include** [array of paths, optional]: Paths of directories or files that should be considered part of the project. If no paths are specified, pyright defaults to the directory that contains the config file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no include paths are specified, the root path for the workspace is assumed.
 
