@@ -1451,9 +1451,7 @@
 <p>basedpyright automatically detects when it's running in a github action, and modifies its output to use <a href="https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions">github workflow commands</a>. this means errors will be displayed on the affected lines of code in your pull requests automatically:</p>
 <p><img alt="image" src="https://github.com/DetachHead/basedpyright/assets/57028336/cc820085-73c2-41f8-ab0b-0333b97e2fea" /></p>
 <p>this is an improvement to regular pyright, which requires you to use a <a href="https://github.com/jakebailey/pyright-action">third party action</a> that <a href="https://github.com/jakebailey/pyright-action?tab=readme-ov-file#use-with-a-virtualenv">requires boilerplate to get working</a>. basedpyright just does it automatically without you having to do anything special:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># .github/workflows/your_workflow.yaml</span>
-
-<span class="nt">jobs</span><span class="p">:</span>
+<div class="highlight"><span class="filename">.github/workflows/your_workflow.yaml</span><pre><span></span><code><span class="nt">jobs</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">check</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"> </span><span class="c1"># checkout repo, install dependencies, etc</span>
@@ -1463,7 +1461,7 @@
 <p>the <code>--gitlabcodequality</code> argument will output a <a href="https://docs.gitlab.com/ee/ci/testing/code_quality.html">gitlab code quality report</a> which shows up on merge requests:</p>
 <p><img alt="image" src="https://github.com/DetachHead/basedpyright/assets/57028336/407f0e61-15f2-4d04-b235-1946d49fd180" /></p>
 <p>to enable this in your gitlab CI, just specify a file path to output the report to, and in the <code>artifacts.reports.codequality</code> section of your <code>.gitlab-ci.yml</code> file:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">basedpyright</span><span class="p">:</span>
+<div class="highlight"><span class="filename">.gitlab-ci.yml</span><pre><span></span><code><span class="nt">basedpyright</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basedpyright --gitlabcodequality report.json</span>
 <span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">reports</span><span class="p">:</span>

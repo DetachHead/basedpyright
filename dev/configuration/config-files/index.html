@@ -910,9 +910,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#overriding-settings-in-vs-code" class="md-nav__link">
+  <a href="#overriding-language-server-settings" class="md-nav__link">
     <span class="md-ellipsis">
-      Overriding settings (in VS Code)
+      Overriding language server settings
     </span>
   </a>
   
@@ -1614,9 +1614,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#overriding-settings-in-vs-code" class="md-nav__link">
+  <a href="#overriding-language-server-settings" class="md-nav__link">
     <span class="md-ellipsis">
-      Overriding settings (in VS Code)
+      Overriding language server settings
     </span>
   </a>
   
@@ -2054,7 +2054,7 @@
 <p>In addition, any of the <a href="./#type-check-diagnostics-settings">type check diagnostics settings</a> listed above can be specified. These settings act as overrides for the files in this execution environment.</p>
 <h2 id="sample-config-file">Sample Config File</h2>
 <p>The following is an example of a pyright config file:
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><span class="filename">pyrightconfig.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;include&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="s2">&quot;src&quot;</span>
 <span class="w">  </span><span class="p">],</span>
@@ -2114,7 +2114,7 @@
 <span class="p">}</span>
 </code></pre></div></p>
 <h2 id="sample-pyprojecttoml-file">Sample pyproject.toml File</h2>
-<div class="highlight"><pre><span></span><code><span class="k">[tool.basedpyright]</span>
+<div class="highlight"><span class="filename">pyproject.toml</span><pre><span></span><code><span class="k">[tool.basedpyright]</span>
 <span class="n">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span>
 <span class="n">exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;**/node_modules&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">&quot;**/__pycache__&quot;</span><span class="p">,</span>
@@ -2949,9 +2949,10 @@
 </tr>
 </tbody>
 </table>
-<h2 id="overriding-settings-in-vs-code">Overriding settings (in VS Code)</h2>
-<p>If a pyproject.toml (with a pyright section) or a pyrightconfig.json exists, any pyright settings in a VS Code setttings.json will be ignored. Pyrightconfig.json is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.</p>
-<p>If a pyproject.toml (with a pyright section) or a pyrightconfig.json does not exist, then the VS Code settings.json settings apply.</p>
+<h2 id="overriding-language-server-settings">Overriding language server settings</h2>
+<p>If a <code>pyproject.toml</code> (with a <code>basedpyright</code> or <code>pyright</code> section) or a <code>pyrightconfig.json</code> exists, any <a href="../language-server-settings/#discouraged-settings">dicouraged language server settings</a> (eg. in a VS Code <code>settings.json</code>) will be ignored. <code>pyrightconfig.json</code> is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.</p>
+<p>If a <code>pyproject.toml</code> (with a <code>basedpyright</code> or <code>pyright</code> section) or a <code>pyrightconfig.json</code> does not exist, then the language server settings apply.</p>
+<p>for more information about why this is the case, <a href="../language-server-settings/#discouraged-settings">see here</a>.</p>
 <h2 id="locale-configuration">Locale Configuration</h2>
 <p>Pyright provides diagnostic messages that are translated to multiple languages. By default, pyright uses the default locale of the operating system. You can override the desired locale through the use of one of the following environment variables, listed in priority order.</p>
 <div class="highlight"><pre><span></span><code>LC_ALL=&quot;de&quot;
