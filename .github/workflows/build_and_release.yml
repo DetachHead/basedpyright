@@ -205,7 +205,7 @@ jobs:
         with:
           title: v${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
           draft: true # so i can write the release notes manually before publishing it
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.GH_TOKEN }}
           prerelease: false
           files: |
             dist/*
