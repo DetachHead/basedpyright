@@ -10,4 +10,4 @@ python developers should not be expected to have to install nodejs in order to t
 
 in pyright, if the vscode extension gets updated, you may see errors in your project that don't appear in the CI, or vice-versa. see [this issue](https://github.com/microsoft/pylance-release/issues/5207).
 
-basedpyright fixes this problem by adding an `importStrategy` option to the extension, which defaults to looking in your project for the [basedpyright pypi package](#published-as-a-pypi-package---no-nodejs-required).
+basedpyright fixes this problem by adding an `importStrategy` option to the extension, which defaults to looking in your project for the [basedpyright pypi package](#pypi-package-no-nodejs-required).
