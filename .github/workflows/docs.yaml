@@ -24,6 +24,9 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     if:
+    env:
+      REPO_KEY: ${{ secrets.GH_TOKEN }}
+      USERNAME: github-actions[bot]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,8 +34,10 @@ jobs:
         id: install_python
         with:
           python-version: 3.12
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Configure Git user
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
       - name: install dependencies
         run: ./pw pdm install --no-self
       - name: validate docs
