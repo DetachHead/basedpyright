@@ -139,7 +139,7 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
-import { BaselinedDiagnostic, getBaselinedErrorsForFile, writeDiagnosticsToBaselineFile } from './baseline';
+import { BaselineHandler } from './baseline';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -186,10 +186,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected readonly fs: FileSystem;
     protected readonly caseSensitiveDetector: CaseSensitivityDetector;
 
-    protected readonly savedFilesForBaselineUpdate = new Map<
-        Uri,
-        { workspace: Workspace; baseline: readonly BaselinedDiagnostic[] }
-    >();
+    protected readonly savedFilesForBaselineUpdate = new Set<string>();
 
     // The URIs for which diagnostics are reported
     readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
@@ -1170,14 +1167,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
      * that it may need to update the baseline for it
      */
     protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
-        const fileUri = Uri.file(params.textDocument.uri, this.serviceProvider);
-        const workspace = await this.getWorkspaceForFile(fileUri);
-        if (workspace.rootUri) {
-            this.savedFilesForBaselineUpdate.set(fileUri, {
-                workspace,
-                baseline: getBaselinedErrorsForFile(this.fs, workspace.rootUri, fileUri),
-            });
-        }
+        this.savedFilesForBaselineUpdate.add(params.textDocument.uri);
     };
 
     protected async onExecuteCommand(
@@ -1284,31 +1274,31 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             !results.requiringAnalysisCount.cells
         ) {
             const filesRequiringBaselineUpdate = new Map<Workspace, FileDiagnostics[]>();
-            for (const [fileUri, savedFileInfo] of this.savedFilesForBaselineUpdate.entries()) {
+            for (const textDocumentUri of this.savedFilesForBaselineUpdate) {
+                const fileUri = Uri.file(textDocumentUri, this.serviceProvider);
                 // can't use result.diagnostics because we need the diagnostics from the previous analysis since
                 // saves don't trigger checking (i think)
                 const fileDiagnostics = this.documentsWithDiagnostics[fileUri.toString()];
                 if (!fileDiagnostics || fileDiagnostics.reason !== 'analysis') {
                     continue;
                 }
-                const baselineInfo = getBaselinedErrorsForFile(this.fs, savedFileInfo.workspace.rootUri!, fileUri);
-                if (
-                    // no baseline file exists or no baselined errors exist for this file
-                    !baselineInfo.length ||
-                    // there are diagnostics that haven't been baselined, so we don't want to write them
-                    // because the user will have to either fix the diagnostics or explicitly write them to the
-                    // baseline themselves
-                    fileDiagnostics.diagnostics.some((diagnostic) => !diagnostic.baselineStatus)
-                ) {
-                    continue;
+                const workspace = await this.getWorkspaceForFile(fileUri);
+                if (!filesRequiringBaselineUpdate.has(workspace)) {
+                    filesRequiringBaselineUpdate.set(workspace, []);
                 }
-                if (!filesRequiringBaselineUpdate.has(savedFileInfo.workspace)) {
-                    filesRequiringBaselineUpdate.set(savedFileInfo.workspace, []);
-                }
-                filesRequiringBaselineUpdate.get(savedFileInfo.workspace)!.push(fileDiagnostics);
+                filesRequiringBaselineUpdate.get(workspace)!.push(fileDiagnostics);
             }
             for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
-                writeDiagnosticsToBaselineFile(this.fs, workspace.rootUri!, files, true);
+                if (!workspace.rootUri) {
+                    continue;
+                }
+                const baseline = new BaselineHandler(this.fs, workspace.rootUri);
+                const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
+                if (baselineDiffSummary) {
+                    this.console.info(
+                        `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`
+                    );
+                }
             }
             this.savedFilesForBaselineUpdate.clear();
         }

@@ -69,6 +69,11 @@ export function convertLevelToCategory(level: LspDiagnosticLevel) {
     }
 }
 
+export const isHintDiagnostic = (diagnostic: Diagnostic) =>
+    diagnostic.category === DiagnosticCategory.UnusedCode ||
+    diagnostic.category === DiagnosticCategory.UnreachableCode ||
+    diagnostic.category === DiagnosticCategory.Deprecated;
+
 export interface DiagnosticAction {
     action: string;
 }
