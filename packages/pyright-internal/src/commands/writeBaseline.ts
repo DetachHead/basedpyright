@@ -1,10 +1,5 @@
 import { ServerCommand } from './commandController';
-import {
-    baselineFilePath,
-    getBaselinedErrors,
-    getBaselineSummaryMessage,
-    writeDiagnosticsToBaselineFile,
-} from '../baseline';
+import { baselineFilePath, BaselineHandler } from '../baseline';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { matchFileSpecs } from '../common/configOptions';
 import { Uri } from '../common/uri/uri';
@@ -36,7 +31,7 @@ export class WriteBaselineCommand implements ServerCommand {
         if (workspace) {
             const workspaceRoot = workspace.rootUri;
             if (workspaceRoot) {
-                const previousBaseline = getBaselinedErrors(workspace.service.fs, workspaceRoot);
+                const baselineHandler = new BaselineHandler(workspace.service.fs, workspaceRoot);
                 const configOptions = workspace.service.getConfigOptions();
                 // filter out excluded files. ideally they shouldn't be present at all. see
                 // https://github.com/DetachHead/basedpyright/issues/31
@@ -49,16 +44,9 @@ export class WriteBaselineCommand implements ServerCommand {
                             matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider))
                     )
                     .map(([_, diagnostics]) => diagnostics);
-                const newBaseline = writeDiagnosticsToBaselineFile(
-                    workspace.service.fs,
-                    workspaceRoot,
-                    filteredFiles,
-                    true
-                );
+                const newBaseline = baselineHandler.write(true, true, filteredFiles);
                 workspace.service.baselineUpdated();
-                this._ls.window.showInformationMessage(
-                    getBaselineSummaryMessage(workspaceRoot, previousBaseline, newBaseline)
-                );
+                this._ls.window.showInformationMessage(newBaseline.getSummaryMessage());
                 return;
             }
         }

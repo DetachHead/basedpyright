@@ -30,7 +30,7 @@ import { CommandLineOptions as PyrightCommandLineOptions } from './common/comman
 import { ConsoleInterface, LogLevel, StandardConsole, StderrConsole } from './common/console';
 import { fail } from './common/debug';
 import { createDeferred } from './common/deferred';
-import { Diagnostic, DiagnosticCategory } from './common/diagnostic';
+import { Diagnostic, DiagnosticCategory, isHintDiagnostic } from './common/diagnostic';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { FullAccessHost } from './common/fullAccessHost';
 import { combinePaths, normalizePath } from './common/pathUtils';
@@ -48,8 +48,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { getBaselinedErrors, getBaselineSummaryMessage, writeDiagnosticsToBaselineFile } from './baseline';
-import { add } from 'lodash';
+import { BaselineHandler } from './baseline';
 import { pluralize } from './common/stringUtils';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
@@ -463,24 +462,12 @@ const outputResults = (
             ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
             : options.executionRoot;
 
-    const filteredDiagnostics = results.diagnostics.map((file) => ({
-        ...file,
-        diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselineStatus),
-    }));
-
-    // if there are any unbaselined errors, don't write to the baseline unless the user explicitly passed
-    // --writebaseline
-    if (
-        args.writebaseline ||
-        !filteredDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add, 0)
-    ) {
-        const previousBaseline = getBaselinedErrors(service.fs, rootDir);
-        // don't write the baseline file if there wasn't one there already unless the user explicitly asked for it
-        if (args.writebaseline || Object.keys(previousBaseline.files).length) {
-            const newBaseline = writeDiagnosticsToBaselineFile(service.fs, rootDir, results.diagnostics, false);
-            console.info(getBaselineSummaryMessage(rootDir, previousBaseline, newBaseline));
-        }
+    const baselineFile = new BaselineHandler(service.fs, rootDir);
+    const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
+    if (baselineDiffMessage) {
+        console.info(baselineDiffMessage);
     }
+    const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(results.diagnostics);
 
     const treatWarningsAsErrors = !!args.warnings;
     let errorCount = 0;
@@ -1295,11 +1282,6 @@ const printDiagnosticSummary = (result: DiagnosticResult) => {
         ].join(', ')
     );
 };
-
-const isHintDiagnostic = (diagnostic: Diagnostic) =>
-    diagnostic.category === DiagnosticCategory.UnusedCode ||
-    diagnostic.category === DiagnosticCategory.UnreachableCode ||
-    diagnostic.category === DiagnosticCategory.Deprecated;
 
 function reportDiagnosticsAsText(
     fileDiagnostics: readonly FileDiagnostics[],
