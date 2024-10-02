@@ -34,6 +34,8 @@ import {
     runPyrightServer,
     waitForDiagnostics,
 } from './lsp/languageServerTestUtils';
+import { BaselineFile } from '../baseline';
+import { DiagnosticRule } from '../common/diagnosticRules';
 
 /** objects from `sendRequest` don't work with assertions and i cant figure out why */
 const assertEqual = <T>(actual: T, expected: T) => expect(JSON.parse(JSON.stringify(actual))).toStrictEqual(expected);
@@ -961,5 +963,71 @@ describe(`Basic language server tests`, () => {
             info.notifications[0].message ===
                 'invalid diagnosticMode: "asdf". valid options are "workspace" or "openFilesOnly"'
         );
+    });
+    describe('baseline', () => {
+        test('baselined error not shown', async () => {
+            const baseline: BaselineFile = {
+                files: {
+                    './foo.py': [
+                        {
+                            code: DiagnosticRule.reportAssignmentType,
+                            range: {
+                                startColumn: 11,
+                                endColumn: 13,
+                            },
+                        },
+                    ],
+                },
+            };
+            const code = `
+// @filename: .basedpyright/baseline.json
+//// ${JSON.stringify(baseline)}
+//// 
+// @filename: foo.py
+//// foo: int = ""
+//// asdf
+//// [|/*marker*/|]
+`;
+            const settings = [
+                {
+                    item: {
+                        scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                        section: 'basedpyright.analysis',
+                    },
+                    value: {
+                        diagnosticSeverityOverrides: {
+                            reportAssignmentType: 'error',
+                            reportUndefinedVariable: 'error',
+                        },
+                    },
+                },
+            ];
+
+            const info = await runLanguageServer(
+                DEFAULT_WORKSPACE_ROOT,
+                code,
+                /* callInitialize */ true,
+                settings,
+                undefined,
+                /* supportsBackgroundThread */ false
+            );
+
+            // get the file containing the marker that also contains our task list comments
+            await openFile(info, 'marker');
+
+            // Wait for the diagnostics to publish
+            const diagnostics = await waitForDiagnostics(info);
+            const file = diagnostics.find((d) => d.uri.includes('test.py'));
+            assert(file);
+
+            // Make sure the error has a special rule
+            assert.equal(file.diagnostics[0].code, 'reportUnknownParameterType');
+
+            // make sure additional diagnostic severities work
+            assert.equal(
+                file.diagnostics.find((diagnostic) => diagnostic.code === 'reportUnusedFunction')?.severity,
+                DiagnosticSeverity.Hint // TODO: hint? how do we differentiate between unused/unreachable/deprecated?
+            );
+        });
     });
 });

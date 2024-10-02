@@ -4,7 +4,8 @@
  * Configuration for jest tests.
  */
 
-module.exports = {
+/** @type {import('ts-jest/dist/types').JestConfigWithTsJest} */
+const config = {
     testEnvironment: 'node',
     roots: ['<rootDir>/src/tests'],
     transform: {
@@ -19,3 +20,5 @@ module.exports = {
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
     setupFiles: ['./src/tests/setupTests.ts'],
 };
+
+module.exports = config;

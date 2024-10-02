@@ -24,7 +24,7 @@ export interface BaselinedDiagnostic {
     };
 }
 
-interface BaselineFile {
+export interface BaselineFile {
     files: {
         [filePath: string]: BaselinedDiagnostic[];
     };
