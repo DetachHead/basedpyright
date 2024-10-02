@@ -32,6 +32,7 @@ import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTok
 import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
+import { BaselineDiff, BaselineHandler } from '../baseline';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -48,6 +49,7 @@ export interface FileAnalysisResult {
     unusedCodes: Diagnostic[];
     unreachableCodes: Diagnostic[];
     deprecateds: Diagnostic[];
+    baselineDiff: BaselineDiff<boolean> | undefined;
 }
 
 export function resolveSampleFilePath(fileName: string): string {
@@ -171,6 +173,7 @@ export function getAnalysisResults(
     }
 
     const sourceFiles = fileUris.map((filePath) => program.getSourceFile(filePath));
+    const baseline = new BaselineHandler(program.fileSystem, program.rootPath);
     return sourceFiles.map((sourceFile, index) => {
         if (sourceFile) {
             const diagnostics = sourceFile.getDiagnostics(configOptions) || [];
@@ -183,6 +186,9 @@ export function getAnalysisResults(
                 unusedCodes: diagnostics.filter((diag) => diag.category === DiagnosticCategory.UnusedCode),
                 unreachableCodes: diagnostics.filter((diag) => diag.category === DiagnosticCategory.UnreachableCode),
                 deprecateds: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Deprecated),
+                baselineDiff: baseline.write(false, true, [
+                    { diagnostics, fileUri: sourceFile.getUri(), version: 1, reason: 'analysis' },
+                ]),
             };
             return analysisResult;
         } else {
@@ -197,6 +203,7 @@ export function getAnalysisResults(
                 unusedCodes: [],
                 unreachableCodes: [],
                 deprecateds: [],
+                baselineDiff: undefined,
             };
             return analysisResult;
         }
@@ -265,7 +272,7 @@ export const validateResultsButBased = (allResults: FileAnalysisResult[], expect
     assert.strictEqual(allResults.length, 1);
     const result = allResults[0];
     for (const [diagnosticType] of entries(result)) {
-        if (diagnosticType === 'fileUri' || diagnosticType === 'parseResults') {
+        if (diagnosticType === 'fileUri' || diagnosticType === 'parseResults' || diagnosticType === 'baselineDiff') {
             continue;
         }
         const actualResult = result[diagnosticType].map(
