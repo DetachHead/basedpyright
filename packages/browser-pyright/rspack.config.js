@@ -4,7 +4,7 @@
  */
 
 const path = require('path');
-const { DefinePlugin, ProvidePlugin } = require('webpack');
+const { DefinePlugin, ProvidePlugin } = require('@rspack/core');
 const VirtualModulesPlugin = require('webpack-virtual-modules');
 const fs = require('fs/promises');
 const { readFileSync } = require('fs');
@@ -14,7 +14,7 @@ const outPath = path.resolve(__dirname, 'dist');
 
 const typeshedFallback = path.resolve(__dirname, '..', '..', 'docstubs');
 
-/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => Promise<import('webpack').Configuration>}*/
+/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => Promise<import('@rspack/core').Configuration>}*/
 module.exports = async (_, { mode }) => {
     return {
         context: __dirname,

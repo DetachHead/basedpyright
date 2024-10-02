@@ -37,7 +37,7 @@
                         "regexp": "PublicPath: .*?"
                     },
                     "endsPattern": {
-                        "regexp": "webpack compiled in .*? ms"
+                        "regexp": "Rspack compiled in .*? s"
                     }
                 }
             }
@@ -71,7 +71,7 @@
                         "regexp": "PublicPath: .*?"
                     },
                     "endsPattern": {
-                        "regexp": "webpack compiled in .*? ms"
+                        "regexp": "Rspack compiled in .*? s"
                     }
                 }
             }

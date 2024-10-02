@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const glob = require('glob');
 const JSONC = require('jsonc-parser');
 const assert = require('assert');
 
@@ -38,27 +37,28 @@ function monorepoResourceNameMapper(packageName) {
  *
  * @param {string} workspaceRoot
  */
-function managedPaths(workspaceRoot) {
-    const contents = fs.readFileSync(path.join(workspaceRoot, 'lerna.json'), 'utf-8');
-    /** @type {{ packages: string[] }} */
-    const data = JSON.parse(contents);
-    const patterns = data.packages;
+// function managedPaths(workspaceRoot) {
+//     const contents = fs.readFileSync(path.join(workspaceRoot, 'lerna.json'), 'utf-8');
+//     /** @type {{ packages: string[] }} */
+//     const data = JSON.parse(contents);
+//     const patterns = data.packages;
 
-    const paths = [path.resolve(workspaceRoot, 'node_modules')];
-    paths.push(
-        ...patterns
-            .flatMap((p) => glob.sync(p, { cwd: workspaceRoot }))
-            .map((p) => path.resolve(workspaceRoot, p, 'node_modules'))
-    );
+//     const paths = [path.resolve(workspaceRoot, 'node_modules')];
+//     paths.push(
+//         ...patterns
+//             .flatMap((p) => glob.sync(p, { cwd: workspaceRoot }))
+//             .map((p) => path.resolve(workspaceRoot, p, 'node_modules'))
+//     );
 
-    return paths;
-}
+//     return paths;
+// }
 
 /**
  * Builds a webpack caching config, given the calling module's __dirname and __filename.
  * @param {string} dirname __dirname
  * @param {string} filename __filename
  * @param {string | undefined} name name of the webpack instance, if using multiple configs
+ * @returns {undefined}
  */
 function cacheConfig(dirname, filename, name = undefined) {
     // Temporarily disabled: caching breaks when switching branches,
@@ -66,15 +66,15 @@ function cacheConfig(dirname, filename, name = undefined) {
     if (true) {
         return undefined;
     }
-    return {
-        type: /** @type {'filesystem'} */ ('filesystem'),
-        cacheDirectory: path.resolve(dirname, '.webpack_cache'),
-        buildDependencies: {
-            config: [filename],
-        },
-        managedPaths: managedPaths(path.resolve(dirname, '..', '..')),
-        name,
-    };
+    // return {
+    //     type: /** @type {'filesystem'} */ ('filesystem'),
+    //     cacheDirectory: path.resolve(dirname, '.webpack_cache'),
+    //     buildDependencies: {
+    //         config: [filename],
+    //     },
+    //     managedPaths: managedPaths(path.resolve(dirname, '..', '..')),
+    //     name,
+    // };
 }
 
 /**
