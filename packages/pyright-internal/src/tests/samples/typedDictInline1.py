@@ -9,7 +9,7 @@ td2: dict[{"a": dict[{"b": int}]}] = {"a": {"b": 0}}
 
 td3: dict[{"a": "list[float]"}] = {"a": [3]}
 
-# This should generate three errors because dictionary literals can be used
+# This should generate two errors because dictionary literals can be used
 # only with dict or Dict.
 err1: list[{"a": 1}]
 
@@ -21,7 +21,7 @@ err2: dict[{"a": int for _ in range(1)}]
 # entries are not allowed.
 err3: dict[{**{"a": int}}]
 
-# This should generate four errors because Dict doesn't support inlined
+# This should generate three errors because Dict doesn't support inlined
 # TypedDict. It generates an exception at runtime.
 err4: Dict[{"c": int}]
 
