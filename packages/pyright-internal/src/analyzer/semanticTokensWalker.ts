@@ -191,14 +191,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         declarations.some((declaration) =>
                             this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
                         );
-                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.isPep695Syntax;
+                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isPep695Syntax;
 
                     const isBuiltIn =
                         (!isTypeAlias &&
                             this.builtinModules.has(type.shared.moduleName) &&
                             type.priv.aliasName === undefined) ||
-                        (type.props?.typeAliasInfo?.moduleName &&
-                            this.builtinModules.has(type.props.typeAliasInfo.moduleName));
+                        (type.props?.typeAliasInfo?.shared.moduleName &&
+                            this.builtinModules.has(type.props.typeAliasInfo.shared.moduleName));
 
                     const modifiers = isBuiltIn
                         ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]

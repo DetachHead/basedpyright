@@ -115,13 +115,6 @@ export class VirtualDirent implements fs.Dirent {
         return this.parentPath;
     }
 
-    get parentPath(): never {
-        throw new Error('TODO');
-    }
-    get path(): never {
-        return this.parentPath;
-    }
-
     isFile(): boolean {
         return this._file;
     }

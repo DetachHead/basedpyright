@@ -118,7 +118,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                         type.props?.typeAliasInfo &&
                         node.nodeType === ParseNodeType.Name &&
                         // prevent variables whose type comes from a type alias from being incorrectly treated as a TypeAlias.
-                        getTypeAliasInfo(type)?.name === node.d.value
+                        getTypeAliasInfo(type)?.shared.name === node.d.value
                             ? 'TypeAlias'
                             : this._printType(type)
                     }`,
@@ -140,7 +140,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             const evaluator = this._program.evaluator;
             const functionType = evaluator?.getTypeOfFunction(node)?.functionType;
             if (functionType !== undefined && !functionType.shared.declaredReturnType) {
-                const inferredReturnType = evaluator?.getFunctionInferredReturnType(functionType);
+                const inferredReturnType = evaluator?.getInferredReturnType(functionType);
                 if (inferredReturnType) {
                     this.featureItems.push({
                         inlayHintType: 'functionReturn',
