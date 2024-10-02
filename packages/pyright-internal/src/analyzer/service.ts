@@ -30,6 +30,7 @@ import { FileWatcher, FileWatcherEventType, ignoredWatchEventFunction } from '..
 import { Host, HostFactory, NoAccessHost } from '../common/host';
 import { defaultStubsDirectory } from '../common/pathConsts';
 import { getFileName, isRootedDiskPath, normalizeSlashes } from '../common/pathUtils';
+import { PythonVersion } from '../common/pythonVersion';
 import { ServiceKeys } from '../common/serviceKeys';
 import { ServiceProvider } from '../common/serviceProvider';
 import { Range } from '../common/textRange';
@@ -127,7 +128,7 @@ export class AnalyzerService {
     private _commandLineOptions: CommandLineOptions | undefined;
     private _analyzeTimer: any;
     private _requireTrackedFileUpdate = true;
-    private _lastUserInteractionTime = Date.now();
+    private _lastUserInteractionTime = 0;
     private _backgroundAnalysisCancellationSource: AbstractCancellationTokenSource | undefined;
 
     private _disposed = false;
@@ -505,11 +506,25 @@ export class AnalyzerService {
 
         if (this._commandLineOptions?.fromLanguageServer || this._configOptions.verboseOutput) {
             const logLevel = this._configOptions.verboseOutput ? LogLevel.Info : LogLevel.Log;
-            for (const execEnv of this._configOptions.getExecutionEnvironments()) {
-                log(this._console, logLevel, `Search paths for ${execEnv.root || '<default>'}`);
+
+            const execEnvs = this._configOptions.getExecutionEnvironments();
+
+            for (const execEnv of execEnvs) {
+                log(this._console, logLevel, `Execution environment: ${execEnv.name}`);
+                log(this._console, logLevel, `  Extra paths:`);
+                if (execEnv.extraPaths.length > 0) {
+                    execEnv.extraPaths.forEach((path) => {
+                        log(this._console, logLevel, `    ${path.toUserVisibleString()}`);
+                    });
+                } else {
+                    log(this._console, logLevel, `    (none)`);
+                }
+                log(this._console, logLevel, `  Python version: ${PythonVersion.toString(execEnv.pythonVersion)}`);
+                log(this._console, logLevel, `  Python platform: ${execEnv.pythonPlatform ?? 'All'}`);
+                log(this._console, logLevel, `  Search paths:`);
                 const roots = importResolver.getImportRoots(execEnv, /* forLogging */ true);
                 roots.forEach((path) => {
-                    log(this._console, logLevel, `  ${path.toUserVisibleString()}`);
+                    log(this._console, logLevel, `    ${path.toUserVisibleString()}`);
                 });
             }
         }
@@ -1354,7 +1369,10 @@ export class AnalyzerService {
         const results: Uri[] = [];
         const startTime = Date.now();
         const longOperationLimitInSec = 10;
+        const nFilesToSuggestSubfolder = 50;
+
         let loggedLongOperationError = false;
+        let nFilesVisited = 0;
 
         const visitDirectoryUnchecked = (absolutePath: Uri, includeRegExp: RegExp, hasDirectoryWildcard: boolean) => {
             if (!loggedLongOperationError) {
@@ -1362,7 +1380,7 @@ export class AnalyzerService {
 
                 // If this is taking a long time, log an error to help the user
                 // diagnose and mitigate the problem.
-                if (secondsSinceStart >= longOperationLimitInSec) {
+                if (secondsSinceStart >= longOperationLimitInSec && nFilesVisited >= nFilesToSuggestSubfolder) {
                     (this._console as ConsoleInterface).error(
                         `Enumeration of workspace source files is taking longer than ${longOperationLimitInSec} seconds.\n` +
                             'This may be because:\n' +
@@ -1399,6 +1417,7 @@ export class AnalyzerService {
 
             for (const filePath of files) {
                 if (FileSpec.matchIncludeFileSpec(includeRegExp, exclude, filePath)) {
+                    nFilesVisited++;
                     results.push(filePath);
                 }
             }
@@ -1528,9 +1547,6 @@ export class AnalyzerService {
                     // this can affect how we resolve imports. This requires us to reset caches and reanalyze everything.
                     //
                     // However, we don't need to rebuild any indexes in this situation. Changes to workspace files don't affect library indices.
-                    // As for user files, their indices don't contain import alias symbols, so adding or removing user files won't affect the existing indices.
-                    // We only rebuild the indices for a user file when the symbols within the file are changed, like when a user edits the file.
-                    // The index scanner will index any new files during its next background run.
                     this.invalidateAndForceReanalysis(InvalidatedReason.SourceWatcherChanged);
                     this._scheduleReanalysis(/* requireTrackedFileUpdate */ true);
                 });
@@ -1904,7 +1920,7 @@ export class AnalyzerService {
         // is too small (like zero), the VS Code extension becomes
         // unresponsive during heavy analysis. If this number is too
         // large, analysis takes longer.
-        const minTimeBetweenAnalysisPassesInMs = 20;
+        const minTimeBetweenAnalysisPassesInMs = 5;
 
         const timeUntilNextAnalysisInMs = Math.max(
             minBackoffTimeInMs - timeSinceLastUserInteractionInMs,

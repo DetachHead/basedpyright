@@ -2,7 +2,7 @@
     "name": "vscode-pyright",
     "displayName": "BasedPyright",
     "description": "VS Code static type checking for Python (but based)",
-    "version": "1.1.382",
+    "version": "1.1.383",
     "private": true,
     "license": "MIT",
     "author": {
@@ -1745,16 +1745,16 @@
         "vscode-languageserver-protocol": "^3.17.6-next.10"
     },
     "devDependencies": {
-        "@types/node": "^20",
+        "@types/node": "^22.7.0",
         "@types/vscode": "^1.82.0",
-        "@vscode/vsce": "^2.31.1",
+        "@vscode/vsce": "^2.32.0",
         "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",
         "ovsx": "^0.8.3",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
         "typescript": "~5.5.4",
-        "webpack": "^5.90.1",
+        "webpack": "^5.94.0",
         "webpack-cli": "^5.1.4"
     }
 }
