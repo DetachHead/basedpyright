@@ -72,3 +72,10 @@ validation:
 extra:
   version:
     provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/detachhead/basedpyright
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/basedpyright/
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/7y9upqPrk2
