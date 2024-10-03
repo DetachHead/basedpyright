@@ -830,6 +830,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#based-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      based settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#discouraged-settings" class="md-nav__link">
     <span class="md-ellipsis">
       discouraged settings
@@ -1401,6 +1410,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#based-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      based settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#discouraged-settings" class="md-nav__link">
     <span class="md-ellipsis">
       discouraged settings
@@ -1448,6 +1466,14 @@
 <p class="admonition-title">a note about <code>python.venvPath</code></p>
 <p>if your venv path is the same for all users working on your project (which should be the case if you're using <a href="https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default">uv</a> or <a href="https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation">pdm</a>), we recommend configuring <code>venvPath</code> in <a href="../config-files/">a config file</a> instead. see <a href="#discouraged-settings">discouraged settings</a> below for more information.</p>
 </div>
+<h2 id="based-settings">based settings</h2>
+<p>the following settings are exclusive to basedpyright</p>
+<p><strong>basedpyright.inlayHints.variableTypes</strong> [boolean]: Whether to show inlay hints on assignments to variables. Defaults to <code>true</code>:</p>
+<p><img alt="" src="../inlayHints.variableTypes.png" /></p>
+<p><strong>basedpyright.inlayHints.callArgumentNames</strong> [boolean]: Whether to show inlay hints on function arguments. Defaults to <code>true</code>:</p>
+<p><img alt="" src="../inlayHints.callArgumentNames.png" /></p>
+<p><strong>basedpyright.inlayHints.functionReturnTypes</strong> [boolean]: Whether to show inlay hints on function return types. Defaults to <code>true</code>:</p>
+<p><img alt="" src="../inlayHints.functionReturnTypes.png" /></p>
 <h2 id="discouraged-settings">discouraged settings</h2>
 <p>these options can also be configured <a href="../config-files/">using a config file</a>. it's recommended to use either a <code>pyproject.toml</code> or <code>pyrightconfig.json</code> file instead of the language server to configure type checking for the following reasons:</p>
 <ul>
