@@ -21,6 +21,17 @@ import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
 import { FileDiagnostics } from './diagnosticSink';
 
+// if adding a new inlay hint type here, make sure you update onInlayHints where it checks if all of them are false
+export interface InlayHintSettings {
+    /**
+     * pylance's version of this option supports 3 settings: `"all" | "partial" | "off"`. `"all"` shows inlay hints
+     * for positional only arguments which i think is dumb so we don't support it
+     */
+    callArgumentNames: boolean;
+    functionReturnTypes: boolean;
+    variableTypes: boolean;
+}
+
 export interface ServerSettings {
     venvPath?: Uri | undefined;
     pythonPath?: Uri | undefined;
@@ -49,6 +60,7 @@ export interface ServerSettings {
     ignoreFileSpecs?: string[];
     taskListTokens?: TaskListToken[];
     functionSignatureDisplay?: SignatureDisplayType | undefined;
+    inlayHints?: InlayHintSettings;
 }
 
 export interface MessageAction {

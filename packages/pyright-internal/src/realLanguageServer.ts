@@ -102,6 +102,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             logLevel: LogLevel.Info,
             autoImportCompletions: true,
             functionSignatureDisplay: SignatureDisplayType.formatted,
+            inlayHints: { callArgumentNames: true, functionReturnTypes: true, variableTypes: true },
         };
 
         try {
@@ -191,6 +192,11 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
             } else {
                 serverSettings.autoSearchPaths = true;
+            }
+
+            const inlayHintSection = await this.getConfiguration(workspace.rootUri, 'basedpyright.inlayHints');
+            if (inlayHintSection) {
+                serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };
             }
 
             const pyrightSection = await this.getConfiguration(workspace.rootUri, 'basedpyright');

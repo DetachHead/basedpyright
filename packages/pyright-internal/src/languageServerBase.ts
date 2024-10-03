@@ -998,11 +998,23 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const uri = Uri.parse(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
 
-        if (workspace.disableLanguageServices) {
+        const inlayHintSettings = (await this.getSettings(workspace)).inlayHints;
+        if (
+            workspace.disableLanguageServices ||
+            // don't bother creating the inlay hint provider if all the inlay hint settings are off
+            (inlayHintSettings &&
+                !inlayHintSettings.callArgumentNames &&
+                !inlayHintSettings.functionReturnTypes &&
+                !inlayHintSettings.variableTypes)
+        ) {
             return null;
         }
         return workspace.service.run((program) => {
-            return new InlayHintsProvider(program, uri, params.range).onInlayHints();
+            return new InlayHintsProvider(program, uri, params.range, {
+                callArgumentNames: inlayHintSettings?.callArgumentNames ?? true,
+                functionReturnTypes: inlayHintSettings?.functionReturnTypes ?? true,
+                variableTypes: inlayHintSettings?.variableTypes ?? true,
+            }).onInlayHints();
         }, token);
     }
 

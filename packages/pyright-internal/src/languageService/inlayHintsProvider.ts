@@ -5,12 +5,13 @@ import { convertOffsetToPosition } from '../common/positionUtils';
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Uri } from '../common/uri/uri';
 import { Range } from 'vscode-languageserver-types';
+import { InlayHintSettings } from '../common/languageServerInterface';
 
 export class InlayHintsProvider {
     private readonly _walker: TypeInlayHintsWalker;
 
-    constructor(private _program: ProgramView, fileUri: Uri, range: Range) {
-        this._walker = new TypeInlayHintsWalker(this._program, fileUri, range);
+    constructor(private _program: ProgramView, fileUri: Uri, range: Range, inlayHintSettings: InlayHintSettings) {
+        this._walker = new TypeInlayHintsWalker(this._program, inlayHintSettings, fileUri, range);
     }
 
     async onInlayHints(): Promise<InlayHint[] | null> {

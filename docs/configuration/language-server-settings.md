@@ -30,6 +30,22 @@ The basedpyright language server honors the following settings.
 !!! note "a note about `python.venvPath`"
     if your venv path is the same for all users working on your project (which should be the case if you're using [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation)), we recommend configuring `venvPath` in [a config file](./config-files.md) instead. see [discouraged settings](#discouraged-settings) below for more information.
 
+## based settings
+
+the following settings are exclusive to basedpyright
+
+**basedpyright.inlayHints.variableTypes** [boolean]: Whether to show inlay hints on assignments to variables. Defaults to `true`:
+
+![](inlayHints.variableTypes.png)
+
+**basedpyright.inlayHints.callArgumentNames** [boolean]: Whether to show inlay hints on function arguments. Defaults to `true`:
+
+![](inlayHints.callArgumentNames.png)
+
+**basedpyright.inlayHints.functionReturnTypes** [boolean]: Whether to show inlay hints on function return types. Defaults to `true`:
+
+![](inlayHints.functionReturnTypes.png)
+
 ## discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
