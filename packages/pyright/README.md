@@ -1,4 +1,4 @@
-<h1><img src="https://github.com/DetachHead/basedpyright/assets/57028336/c7342c31-bf23-413c-af6d-bc430898b3dd"> basedpyright</h1>
+<h1><img src="https://docs.basedpyright.com/latest/img/readme_logo.png"> basedpyright</h1>
 
 basedpyright is a pyright fork with various type checking improvements, improved vscode support and pylance features built into the language server.
 

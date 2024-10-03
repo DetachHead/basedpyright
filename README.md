@@ -1,4 +1,4 @@
-<h1><img src="docs/img/readme_logo.png"> basedpyright</h1>
+<h1><img src="https://docs.basedpyright.com/latest/img/readme_logo.png"> basedpyright</h1>
 
 <!-- --8<-- [start:header] -->
 
