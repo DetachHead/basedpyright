@@ -5,6 +5,8 @@ theme:
   features:
     - navigation.indexes
     - content.code.copy
+    - navigation.top
+    - navigation.instant
   palette:
     # Palette toggle for automatic mode
     - media: '(prefers-color-scheme)'
