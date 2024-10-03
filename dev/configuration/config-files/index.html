@@ -1651,6 +1651,11 @@
 
   <h1>Config files</h1>
 
+<!--
+this file is defined elsewhere and imported here because previous versions of basedpyright contain links to documentation for each diagnostic rule,
+eg. "https://github.com/microsoft/pyright/blob/main/docs/configuration.md#reportGeneralTypeIssues and we don't want to break those links for users
+who haven't yet updated to >=1.18.1
+-->
 <h2 id="pyright-configuration">Pyright Configuration</h2>
 <p>basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see <a href="./#sample-config-file">below</a>.</p>
 <p>basedpyright settings can also be specified in a <code>[tool.basedpyright]</code> section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see <a href="./#sample-pyprojecttoml-file">below</a>.</p>
