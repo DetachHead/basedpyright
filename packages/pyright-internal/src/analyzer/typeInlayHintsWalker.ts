@@ -18,6 +18,7 @@ import { TextRange } from '../common/textRange';
 import { convertRangeToTextRange } from '../common/positionUtils';
 import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
+import { InlayHintSettings } from '../common/languageServerInterface';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter';
@@ -84,7 +85,12 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     parseResults?: ParseFileResults;
     private _range: TextRange | undefined;
 
-    constructor(private readonly _program: ProgramView, fileUri: Uri, range?: Range) {
+    constructor(
+        private readonly _program: ProgramView,
+        private _settings: InlayHintSettings,
+        fileUri: Uri,
+        range?: Range
+    ) {
         super();
         this.parseResults = this._program.getParseResults(fileUri);
         if (this.parseResults) {
@@ -97,6 +103,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
 
     override visitName(node: NameNode): boolean {
         if (
+            this._settings.variableTypes &&
             this._checkInRange(node) &&
             isLeftSideOfAssignment(node) &&
             !isDunderName(node.d.value) &&
@@ -129,14 +136,14 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     }
 
     override visitCall(node: CallNode): boolean {
-        if (this._checkInRange(node)) {
+        if (this._settings.callArgumentNames && this._checkInRange(node)) {
             this._generateHintsForCallNode(node);
         }
         return super.visitCall(node);
     }
 
     override visitFunction(node: FunctionNode): boolean {
-        if (this._checkInRange(node)) {
+        if (this._settings.functionReturnTypes && this._checkInRange(node)) {
             const evaluator = this._program.evaluator;
             const functionType = evaluator?.getTypeOfFunction(node)?.functionType;
             if (functionType !== undefined && !functionType.shared.declaredReturnType) {
