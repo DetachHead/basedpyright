@@ -55,6 +55,8 @@ nav:
   - ...
   - ... | development/**/*.md
   - ... | shoutouts.md
+exclude_docs: |
+  /configuration.md
 repo_url: https://github.com/detachhead/basedpyright
 repo_name: detachhead/basedpyright
 extra_css:
