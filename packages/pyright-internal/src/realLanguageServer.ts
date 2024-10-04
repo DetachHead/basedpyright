@@ -190,13 +190,13 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 if (pythonAnalysisSection.typeEvaluationTimeThreshold !== undefined) {
                     serverSettings.typeEvaluationTimeThreshold = pythonAnalysisSection.typeEvaluationTimeThreshold;
                 }
+
+                const inlayHintSection = pythonAnalysisSection.inlayHints;
+                if (inlayHintSection) {
+                    serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };
+                }
             } else {
                 serverSettings.autoSearchPaths = true;
-            }
-
-            const inlayHintSection = await this.getConfiguration(workspace.rootUri, 'basedpyright.inlayHints');
-            if (inlayHintSection) {
-                serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };
             }
 
             const pyrightSection = await this.getConfiguration(workspace.rootUri, 'basedpyright');
