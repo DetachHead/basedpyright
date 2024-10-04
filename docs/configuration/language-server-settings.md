@@ -34,15 +34,15 @@ The basedpyright language server honors the following settings.
 
 the following settings are exclusive to basedpyright
 
-**basedpyright.inlayHints.variableTypes** [boolean]: Whether to show inlay hints on assignments to variables. Defaults to `true`:
+**basedpyright.analysis.inlayHints.variableTypes** [boolean]: Whether to show inlay hints on assignments to variables. Defaults to `true`:
 
 ![](inlayHints.variableTypes.png)
 
-**basedpyright.inlayHints.callArgumentNames** [boolean]: Whether to show inlay hints on function arguments. Defaults to `true`:
+**basedpyright.analysis.inlayHints.callArgumentNames** [boolean]: Whether to show inlay hints on function arguments. Defaults to `true`:
 
 ![](inlayHints.callArgumentNames.png)
 
-**basedpyright.inlayHints.functionReturnTypes** [boolean]: Whether to show inlay hints on function return types. Defaults to `true`:
+**basedpyright.analysis.inlayHints.functionReturnTypes** [boolean]: Whether to show inlay hints on function return types. Defaults to `true`:
 
 ![](inlayHints.functionReturnTypes.png)
 

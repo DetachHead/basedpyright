@@ -1711,19 +1711,19 @@
                     "description": "Whether to use the version of pyright installed in the project (recommended) or the one bundled with the extension (not recommended).",
                     "scope": "resource"
                 },
-                "basedpyright.inlayHints.variableTypes": {
+                "basedpyright.analysis.inlayHints.variableTypes": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to show inlay hints on assignments to variables.",
                     "scope": "resource"
                 },
-                "basedpyright.inlayHints.callArgumentNames": {
+                "basedpyright.analysis.inlayHints.callArgumentNames": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to show inlay hints on function arguments.",
                     "scope": "resource"
                 },
-                "basedpyright.inlayHints.functionReturnTypes": {
+                "basedpyright.analysis.inlayHints.functionReturnTypes": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to show inlay hints on function return types.",
