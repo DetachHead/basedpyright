@@ -129,7 +129,9 @@ export class CodeActionProvider {
                 },
                 token
             );
-            for (const suggestedImport of completer.getCompletions()?.items ?? []) {
+            // i think code actions show up as the most recently added one first, so to prevent the least relevant results
+            // from appearing at the top, we reverse the list
+            for (const suggestedImport of completer.getCompletions()?.items.reverse() ?? []) {
                 if (!suggestedImport.data) {
                     continue;
                 }
