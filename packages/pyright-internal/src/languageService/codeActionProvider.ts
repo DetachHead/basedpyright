@@ -133,16 +133,12 @@ export class CodeActionProvider {
                 if (!suggestedImport.data) {
                     continue;
                 }
-                completer.resolveCompletionItem(suggestedImport);
-                if (!completer.itemToResolve) {
-                    continue;
-                }
                 let textEdits: TextEdit[] = [];
-                if (completer.itemToResolve.textEdit && 'range' in completer.itemToResolve.textEdit) {
-                    textEdits.push(completer.itemToResolve.textEdit);
+                if (suggestedImport.textEdit && 'range' in suggestedImport.textEdit) {
+                    textEdits.push(suggestedImport.textEdit);
                 }
-                if (completer.itemToResolve.additionalTextEdits) {
-                    textEdits = textEdits.concat(completer.itemToResolve.additionalTextEdits);
+                if (suggestedImport.additionalTextEdits) {
+                    textEdits = textEdits.concat(suggestedImport.additionalTextEdits);
                 }
                 if (textEdits.length === 0) {
                     continue;
