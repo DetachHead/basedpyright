@@ -1,7 +1,16 @@
 import { Range } from 'vscode-languageserver-types';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 import { isDunderName, isUnderscoreOnlyName } from '../analyzer/symbolNameUtils';
-import { FunctionType, Type, getTypeAliasInfo, isAny, isClass, isParamSpec, isTypeVar } from '../analyzer/types';
+import {
+    FunctionType,
+    Type,
+    getTypeAliasInfo,
+    isAny,
+    isClass,
+    isParamSpec,
+    isPositionOnlySeparator,
+    isTypeVar,
+} from '../analyzer/types';
 import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
@@ -190,7 +199,14 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             return;
         }
 
-        for (const p of result.match.argParams) {
+        const positionalOnlySeparatorIndex = result.type.shared.parameters.findIndex(isPositionOnlySeparator);
+
+        for (const index in result.match.argParams) {
+            const p = result.match.argParams[index];
+            if (Number(index) < positionalOnlySeparatorIndex) {
+                // don't show inlay hints for positional only arguments
+                continue;
+            }
             // If the argument is specified as a keyword argument, there is no need to generate a hint
             if (p.argument.name) {
                 continue;

@@ -23,3 +23,6 @@ bar([])  # no inlay hint because no matching overload
 
 def baz(*args: object) -> None: ...
 baz(1)  # no inlay hint because the arg doesn't have a name
+
+def qux(a: int, /, b: str) -> int: ...
+qux(1, "") # only inlay hint on the second arg because the first is positional only
