@@ -60,6 +60,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { inlayHintType: 'parameter', position: 219, value: 'bar=' },
             { inlayHintType: 'parameter', position: 418, value: 'a=' },
             { inlayHintType: 'parameter', position: 446, value: 'b=' },
+            { inlayHintType: 'parameter', position: 669, value: 'b=' },
         ]);
     });
 
