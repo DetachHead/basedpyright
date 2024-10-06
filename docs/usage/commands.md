@@ -1,6 +1,6 @@
-# VS Code Commands
+# Language Server Commands
 
-basedyright offers the following commands, which can be invoked from VS Code’s “Command Palette”, which can be accessed from the View menu or by pressing Cmd-Shift-P.
+basedyright offers the following language server commands, which can be invoked from, for example, VS Code’s “Command Palette”, which can be accessed from the View menu or by pressing Cmd-Shift-P.
 
 ## Organize Imports
 This command reorders all imports found in the global (module-level) scope of the source file. As recommended in PEP8, imports are grouped into three groups, each separated by an empty line. The first group includes all built-in modules, the second group includes all third-party modules, and the third group includes all local modules.
