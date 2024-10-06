@@ -21,7 +21,7 @@ If you use only a few classes, methods or functions within a library, writing a 
 
 To generate a type stub file from within VS Code, enable the reportMissingTypeStubs” setting in your pyrightconfig.json file or by adding a comment `# pyright: reportMissingTypeStubs=true` to individual source files. Make sure you have the target library installed in the python environment that pyright is configured to use for import resolution. Optionally specify a “stubPath” in your pyrightconfig.json file. This is where pyright will generate your type stub files. By default, the stubPath is set to "./typings".
 
-#### Generating Type Stubs in VS Code
+#### Generating Type Stubs in your IDE
 If “reportMissingTypeStubs” is enabled, pyright will highlight any imports that have no type stub. Hover over the error message, and you will see a “Quick Fix” link. Clicking on this link will reveal a popup menu item titled “Create Type Stub For XXX”. The example below shows a missing typestub for the `django` library.
 
 ![Pyright](CreateTypeStub1.png)
@@ -30,8 +30,13 @@ Click on the menu item to create the type stub. Depending on the size of the lib
 
 ![Pyright](CreateTypeStub2.png)
 
+!!! note
+
+    these instructions are specific to VScode, but this functionality is also available in [other supported editors](../installation/ides.md) as well, since this functionality is built into [the language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction).
+
+
 #### Generating Type Stubs from Command Line
-The command-line version of pyright can also be used to generate type stubs. As with the VS Code version, it must be run within the context of your configured project. Then type `pyright --createstub [import-name]`.
+The command-line version of pyright can also be used to generate type stubs. As with the IDE version, it must be run within the context of your configured project. Then type `pyright --createstub [import-name]`.
 
 For example:
 `pyright --createstub django`

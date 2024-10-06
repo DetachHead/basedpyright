@@ -2,7 +2,7 @@
 
 Usage: basedpyright [options] [files...] (1)
 
-basedpyright can be run as either a VS Code extension or as a command-line tool. The command-line version allows for the following options:
+basedpyright can be run as either a language server or as a command-line tool. The command-line version allows for the following options:
 
 | Flag                               | Description                                           |
 | :--------------------------------- | :---------------------------------------------------  |
