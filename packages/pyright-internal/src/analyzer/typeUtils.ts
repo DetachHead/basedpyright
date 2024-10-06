@@ -1053,9 +1053,24 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
     return scopeIds;
 }
 
-// Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs
-// or TypeVarTuples).
-export function specializeWithUnknownTypeArgs(type: ClassType, tupleClassType?: ClassType): ClassType {
+/**
+ * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its
+ * widest possible type if its variance is known and {@link objectTypeForVarianceCheck} is provided (`object` if
+ * the bound if covariant, `Never` if contravariant). see docstring on {@link getUnknownForTypeVar} for more info
+ *
+ * @param tupleClassType the builtin `tuple` type for special-casing tuples. needs to be passed so that this
+ * module doesn't depend on `typeEvaluator.ts`
+ * @param objectTypeForVarianceCheck the builtin `object` type to be returned if the type var is covariant.
+ * passing this parameter enables the variance check which allows it to return a better result than just "Unknown"
+ * in cases where the variance is known (ie. `object` or its bound if it's covariant, and `Never` if it's
+ * contravariant). needs to be passed so that this module doesn't depend on `typeEvaluator.ts`. note that
+ * `evaluator.inferVarianceForClass` needs to be called on {@link type} first if passing this parameter
+ */
+export function specializeWithUnknownTypeArgs(
+    type: ClassType,
+    tupleClassType?: ClassType,
+    objectTypeForVarianceCheck?: Type
+): ClassType {
     if (type.shared.typeParams.length === 0) {
         return type;
     }
@@ -1073,14 +1088,32 @@ export function specializeWithUnknownTypeArgs(type: ClassType, tupleClassType?: 
 
     return ClassType.specialize(
         type,
-        type.shared.typeParams.map((param) => getUnknownForTypeVar(param, tupleClassType)),
+        type.shared.typeParams.map((param) => getUnknownForTypeVar(param, tupleClassType, objectTypeForVarianceCheck)),
         /* isTypeArgExplicit */ false,
         /* includeSubclasses */ type.priv.includeSubclasses
     );
 }
 
-// Returns "Unknown" for simple TypeVars or the equivalent for a ParamSpec.
-export function getUnknownForTypeVar(typeVar: TypeVarType, tupleClassType?: ClassType): Type {
+/**
+ * Returns "Unknown" for simple TypeVars or the equivalent for a ParamSpec, or the widest allowed type if
+ * {@link objectTypeForVarianceCheck} is provided.
+ *
+ * ideally it would always do the variance check, but doing so interferes with bidirectional type inference
+ * in some edge cases. see https://github.com/microsoft/pyright/issues/5404#issuecomment-1639667443
+ *
+ * @param tupleClassType the builtin `tuple` type for special-casing tuples. needs to be passed so that this
+ * module doesn't depend on `typeEvaluator.ts`
+ * @param objectTypeForVarianceCheck the builtin `object` type to be returned if the type var is covariant.
+ * passing this parameter enables the variance check which allows it to return a better result than just "Unknown"
+ * in cases where the variance is known (ie. `object` or its bound if it's covariant, and `Never` if it's
+ * contravariant). needs to be passed so that this module doesn't depend on `typeEvaluator.ts`. note that
+ * `evaluator.inferVarianceForClass` needs to be called on {@link type} first if passing this parameter
+ */
+export function getUnknownForTypeVar(
+    typeVar: TypeVarType,
+    tupleClassType?: ClassType,
+    objectTypeForVarianceCheck?: Type
+): Type {
     if (isParamSpec(typeVar)) {
         return ParamSpecType.getUnknown();
     }
@@ -1088,7 +1121,17 @@ export function getUnknownForTypeVar(typeVar: TypeVarType, tupleClassType?: Clas
     if (isTypeVarTuple(typeVar) && tupleClassType) {
         return getUnknownForTypeVarTuple(tupleClassType);
     }
-
+    if (objectTypeForVarianceCheck) {
+        // if there are no usages of the TypeVar on the class and its variance isn't explicitly specified, it won't be
+        // known yet. https://github.com/DetachHead/basedpyright/issues/744
+        const variance = TypeVarType.getVariance(typeVar);
+        if (variance === Variance.Covariant) {
+            return typeVar.shared.boundType ?? objectTypeForVarianceCheck;
+        }
+        if (variance === Variance.Contravariant) {
+            return NeverType.createNever();
+        }
+    }
     return UnknownType.create();
 }
 

@@ -757,7 +757,7 @@ function narrowTypeBasedOnClassPattern(
     // specialize it with Unknown type arguments.
     if (isClass(exprType) && !exprType.props?.typeAliasInfo) {
         exprType = ClassType.cloneRemoveTypePromotions(exprType);
-        exprType = specializeWithUnknownTypeArgs(exprType, evaluator.getTupleClassType());
+        exprType = specializeWithUnknownTypeArgs(exprType, evaluator.getTupleClassType(), evaluator.getObjectType());
     }
 
     // Are there any positional arguments? If so, try to get the mappings for
