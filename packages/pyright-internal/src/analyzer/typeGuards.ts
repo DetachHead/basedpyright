@@ -1135,7 +1135,12 @@ export function getIsInstanceClassTypes(
     const addClassTypesToList = (types: Type[]) => {
         types.forEach((subtype) => {
             if (isClass(subtype)) {
-                subtype = specializeWithUnknownTypeArgs(subtype, evaluator.getTupleClassType());
+                evaluator.inferVarianceForClass(subtype);
+                subtype = specializeWithUnknownTypeArgs(
+                    subtype,
+                    evaluator.getTupleClassType(),
+                    evaluator.getObjectType()
+                );
 
                 if (isInstantiableClass(subtype) && ClassType.isBuiltIn(subtype, 'Callable')) {
                     subtype = convertToInstantiable(getUnknownTypeForCallable());
