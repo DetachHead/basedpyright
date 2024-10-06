@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/development/build-debug/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/development/contributing/">
       
       
         <link rel="prev" href="../../usage/typed-libraries/">
@@ -22,7 +22,7 @@
     
     
       
-        <title>building & debugging - basedpyright</title>
+        <title>Contributing - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#building-debugging" class="md-skip">
+        <a href="#contributing" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              building &amp; debugging
+              Contributing
             
           </span>
         </div>
@@ -1003,7 +1003,7 @@
         
   
   <span class="md-ellipsis">
-    VS Code Commands
+    Language Server Commands
   </span>
   
 
@@ -1234,7 +1234,7 @@
           
   
   <span class="md-ellipsis">
-    building &amp; debugging
+    Contributing
   </span>
   
 
@@ -1245,7 +1245,7 @@
         
   
   <span class="md-ellipsis">
-    building &amp; debugging
+    Contributing
   </span>
   
 
@@ -1265,6 +1265,15 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#github-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Github Issues
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#building" class="md-nav__link">
@@ -1304,7 +1313,7 @@
         
   
   <span class="md-ellipsis">
-    Pyright Internals
+    basedpyright Internals
   </span>
   
 
@@ -1410,6 +1419,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#github-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Github Issues
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#building" class="md-nav__link">
     <span class="md-ellipsis">
       Building
@@ -1445,7 +1463,10 @@
   
 
 
-<h1 id="building-debugging">building &amp; debugging</h1>
+<h1 id="contributing">Contributing</h1>
+<h2 id="github-issues">Github Issues</h2>
+<p>unlike the upstream pyright repo, we are very open to ideas for improvements and bug reports. if you've raised an issue on the upstream pyright repo that was closed without a solution, feel free to <a href="https://github.com/DetachHead/basedpyright/issues/new">raise it again here</a>.</p>
+<p>please upvote issues you find important using the 👍 react. we don't close issues that don't get enough upvotes or anything like that. this is just to help us prioritize which issues to address first.</p>
 <h2 id="building">Building</h2>
 <p>although pyright is written in typescript, in basedpyright we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a <a href="https://pypi.org/project/nodejs-wheel/">pypi package</a> and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.8 to 3.12 should work)</p>
 <p>we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).</p>

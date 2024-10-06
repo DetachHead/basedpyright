@@ -1005,7 +1005,7 @@
         
   
   <span class="md-ellipsis">
-    VS Code Commands
+    Language Server Commands
   </span>
   
 
@@ -1198,9 +1198,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#generating-type-stubs-in-vs-code" class="md-nav__link">
+  <a href="#generating-type-stubs-in-your-ide" class="md-nav__link">
     <span class="md-ellipsis">
-      Generating Type Stubs in VS Code
+      Generating Type Stubs in your IDE
     </span>
   </a>
   
@@ -1323,11 +1323,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/build-debug/" class="md-nav__link">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    building &amp; debugging
+    Contributing
   </span>
   
 
@@ -1348,7 +1348,7 @@
         
   
   <span class="md-ellipsis">
-    Pyright Internals
+    basedpyright Internals
   </span>
   
 
@@ -1481,9 +1481,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#generating-type-stubs-in-vs-code" class="md-nav__link">
+  <a href="#generating-type-stubs-in-your-ide" class="md-nav__link">
     <span class="md-ellipsis">
-      Generating Type Stubs in VS Code
+      Generating Type Stubs in your IDE
     </span>
   </a>
   
@@ -1553,13 +1553,17 @@
 <h3 id="generating-type-stubs">Generating Type Stubs</h3>
 <p>If you use only a few classes, methods or functions within a library, writing a type stub file by hand is feasible. For large libraries, this can become tedious and error-prone. Pyright can generate “draft” versions of type stub files for you.</p>
 <p>To generate a type stub file from within VS Code, enable the reportMissingTypeStubs” setting in your pyrightconfig.json file or by adding a comment <code># pyright: reportMissingTypeStubs=true</code> to individual source files. Make sure you have the target library installed in the python environment that pyright is configured to use for import resolution. Optionally specify a “stubPath” in your pyrightconfig.json file. This is where pyright will generate your type stub files. By default, the stubPath is set to "./typings".</p>
-<h4 id="generating-type-stubs-in-vs-code">Generating Type Stubs in VS Code</h4>
+<h4 id="generating-type-stubs-in-your-ide">Generating Type Stubs in your IDE</h4>
 <p>If “reportMissingTypeStubs” is enabled, pyright will highlight any imports that have no type stub. Hover over the error message, and you will see a “Quick Fix” link. Clicking on this link will reveal a popup menu item titled “Create Type Stub For XXX”. The example below shows a missing typestub for the <code>django</code> library.</p>
 <p><img alt="Pyright" src="../CreateTypeStub1.png" /></p>
 <p>Click on the menu item to create the type stub. Depending on the size of the library, it may take pyright tens of seconds to analyze the library and generate type stub files. Once complete, you should see a message in VS Code indicating success or failure.</p>
 <p><img alt="Pyright" src="../CreateTypeStub2.png" /></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>these instructions are specific to VScode, but this functionality is also available in <a href="../../installation/ides/">other supported editors</a> as well, since this functionality is built into <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction">the language server</a>.</p>
+</div>
 <h4 id="generating-type-stubs-from-command-line">Generating Type Stubs from Command Line</h4>
-<p>The command-line version of pyright can also be used to generate type stubs. As with the VS Code version, it must be run within the context of your configured project. Then type <code>pyright --createstub [import-name]</code>.</p>
+<p>The command-line version of pyright can also be used to generate type stubs. As with the IDE version, it must be run within the context of your configured project. Then type <code>pyright --createstub [import-name]</code>.</p>
 <p>For example:
 <code>pyright --createstub django</code></p>
 <h4 id="cleaning-up-generated-type-stubs">Cleaning Up Generated Type Stubs</h4>

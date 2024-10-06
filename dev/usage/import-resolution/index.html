@@ -1005,7 +1005,7 @@
         
   
   <span class="md-ellipsis">
-    VS Code Commands
+    Language Server Commands
   </span>
   
 
@@ -1341,11 +1341,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/build-debug/" class="md-nav__link">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    building &amp; debugging
+    Contributing
   </span>
   
 
@@ -1366,7 +1366,7 @@
         
   
   <span class="md-ellipsis">
-    Pyright Internals
+    basedpyright Internals
   </span>
   
 
@@ -1622,7 +1622,7 @@
 <p>If a <code>venv</code> name is specified along with a <code>python.venvPath</code> setting (or a <code>--venvpath</code> command-line argument), it appends the venv name to the specified venv path. This mechanism is not recommended for most users because it is less robust than the next two options because it relies on pyright’s internal logic to determine the import resolution paths based on the virtual environment directories and files. The other two mechanisms (2 and 3 below) use the configured python interpreter to determine the import resolution paths (the value of <code>sys.path</code>).</p>
 </li>
 <li>
-<p>Use the <code>python.pythonPath</code> setting. This setting is defined by the VS Code Python extension and can be configured using the Python extension’s environment picker interface. More recent versions of the Python extension no longer store the selected Python environment in the <code>python.pythonPath</code> setting and instead use a storage mechanism that is private to the extension. Pyright is able to access this through an API exposed by the Python extension.</p>
+<p>Use the <code>python.pythonPath</code> setting. This setting is defined in the language server. if using VS Code, this can be configured using the Python extension’s environment picker interface. More recent versions of the Python extension no longer store the selected Python environment in the <code>python.pythonPath</code> setting and instead use a storage mechanism that is private to the extension. Pyright is able to access this through an API exposed by the Python extension.</p>
 </li>
 <li>
 <p>As a fallback, use the default Python environment (i.e. the one that is invoked when typing <code>python</code> in the shell).</p>

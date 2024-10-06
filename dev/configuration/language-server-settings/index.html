@@ -830,6 +830,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#based-settings" class="md-nav__link">
     <span class="md-ellipsis">
       based settings
@@ -837,13 +847,60 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#discouraged-settings" class="md-nav__link">
     <span class="md-ellipsis">
       discouraged settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-do-i-configure-these-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      where do i configure these settings?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="where do i configure these settings?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vscode-vscodium" class="md-nav__link">
+    <span class="md-ellipsis">
+      vscode / vscodium
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neovim" class="md-nav__link">
+    <span class="md-ellipsis">
+      neovim
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helix" class="md-nav__link">
+    <span class="md-ellipsis">
+      helix
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1063,7 +1120,7 @@
         
   
   <span class="md-ellipsis">
-    VS Code Commands
+    Language Server Commands
   </span>
   
 
@@ -1279,11 +1336,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/build-debug/" class="md-nav__link">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    building &amp; debugging
+    Contributing
   </span>
   
 
@@ -1304,7 +1361,7 @@
         
   
   <span class="md-ellipsis">
-    Pyright Internals
+    basedpyright Internals
   </span>
   
 
@@ -1410,6 +1467,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#based-settings" class="md-nav__link">
     <span class="md-ellipsis">
       based settings
@@ -1417,13 +1484,60 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#discouraged-settings" class="md-nav__link">
     <span class="md-ellipsis">
       discouraged settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-do-i-configure-these-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      where do i configure these settings?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="where do i configure these settings?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vscode-vscodium" class="md-nav__link">
+    <span class="md-ellipsis">
+      vscode / vscodium
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neovim" class="md-nav__link">
+    <span class="md-ellipsis">
+      neovim
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helix" class="md-nav__link">
+    <span class="md-ellipsis">
+      helix
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1446,6 +1560,7 @@
 
 
 <h1 id="language-server-settings">Language Server Settings</h1>
+<h2 id="settings">settings</h2>
 <div class="admonition info">
 <p class="admonition-title">for users migrating from pyright or pylance</p>
 <p>with the exception of <code>python.pythonPath</code> and <code>python.venvPath</code>, settings prefixed with <code>python.*</code> are not supported in basedpyright. use <code>basedpyright.*</code> instead.</p>
@@ -1460,13 +1575,13 @@
 <p><strong>basedpyright.analysis.autoSearchPaths</strong> [boolean]: Determines whether pyright automatically adds common search paths like "src" if there are no execution environments defined in the config file.</p>
 <p><strong>basedpyright.analysis.diagnosticMode</strong> ["openFilesOnly", "workspace"]: Determines whether pyright analyzes (and reports errors for) all files in the workspace, as indicated by the config file. If this option is set to "openFilesOnly", pyright analyzes only open files. Defaults to "openFilesOnly"</p>
 <p><strong>basedpyright.analysis.logLevel</strong> ["Error", "Warning", "Information", or "Trace"]: Level of logging for Output panel. The default value for this option is "Information".</p>
-<p><strong>python.pythonPath</strong> [path]: Path to Python interpreter. This setting is being deprecated by the VS Code Python extension in favor of a setting that is stored in the Python extension’s internal configuration store. Pyright supports both mechanisms but prefers the new one if both settings are present.</p>
+<p><strong>python.pythonPath</strong> [path]: Path to Python interpreter. if you're using vscode, this setting is being deprecated by the VS Code Python extension in favor of a setting that is stored in the Python extension’s internal configuration store. Pyright supports both mechanisms but prefers the new one if both settings are present.</p>
 <p><strong>python.venvPath</strong> [path]: Path to folder with subdirectories that contain virtual environments. The <code>python.pythonPath</code> setting is recommended over this mechanism for most users. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
 <div class="admonition note">
 <p class="admonition-title">a note about <code>python.venvPath</code></p>
 <p>if your venv path is the same for all users working on your project (which should be the case if you're using <a href="https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default">uv</a> or <a href="https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation">pdm</a>), we recommend configuring <code>venvPath</code> in <a href="../config-files/">a config file</a> instead. see <a href="#discouraged-settings">discouraged settings</a> below for more information.</p>
 </div>
-<h2 id="based-settings">based settings</h2>
+<h3 id="based-settings">based settings</h3>
 <p>the following settings are exclusive to basedpyright</p>
 <p><strong>basedpyright.analysis.inlayHints.variableTypes</strong> [boolean]: Whether to show inlay hints on assignments to variables. Defaults to <code>true</code>:</p>
 <p><img alt="" src="../inlayHints.variableTypes.png" /></p>
@@ -1474,7 +1589,7 @@
 <p><img alt="" src="../inlayHints.callArgumentNames.png" /></p>
 <p><strong>basedpyright.analysis.inlayHints.functionReturnTypes</strong> [boolean]: Whether to show inlay hints on function return types. Defaults to <code>true</code>:</p>
 <p><img alt="" src="../inlayHints.functionReturnTypes.png" /></p>
-<h2 id="discouraged-settings">discouraged settings</h2>
+<h3 id="discouraged-settings">discouraged settings</h3>
 <p>these options can also be configured <a href="../config-files/">using a config file</a>. it's recommended to use either a <code>pyproject.toml</code> or <code>pyrightconfig.json</code> file instead of the language server to configure type checking for the following reasons:</p>
 <ul>
 <li>the config should be the same for everybody working on your project. you should commit the config file so that other contributors don't have to manually configure their language server to match yours.</li>
@@ -1490,6 +1605,32 @@
 <p><strong>basedpyright.analysis.typeCheckingMode</strong> ["off", "basic", "standard", "strict", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "pyright.typeCheckingMode". The old name is deprecated but is still currently honored.)</p>
 <p><strong>basedpyright.analysis.typeshedPaths</strong> [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.</p>
 <p><strong>basedpyright.analysis.useLibraryCodeForTypes</strong> [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.</p>
+<h2 id="where-do-i-configure-these-settings">where do i configure these settings?</h2>
+<p>the way you configure the basedpyright language server depends on your IDE. below are some examples for <a href="../../installation/ides/">some of the supported editors</a>. this is not a comprehensive list, so if your editor is missing, consult the documentation for its language server support.</p>
+<h3 id="vscode-vscodium">vscode / vscodium</h3>
+<p>the basedpyright language server settings can be configured using a workspace or global <code>settings.json</code>:</p>
+<div class="highlight"><span class="filename">./.vscode/settings.json</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;basedpyright.analysis.diagnosticMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openFilesOnly&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="neovim">neovim</h3>
+<p>the language server can be configured in your neovim settings:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;lspconfig&quot;</span><span class="p">).</span><span class="n">basedpyright</span><span class="p">.</span><span class="n">setup</span> <span class="p">{</span>
+  <span class="n">basedpyright</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="n">diagnosticMode</span> <span class="o">=</span> <span class="s2">&quot;openFilesOnly&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="helix">helix</h3>
+<div class="highlight"><span class="filename">languages.toml</span><pre><span></span><code><span class="k">[language-server.basedpyright]</span>
+<span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;basedpyright-langserver&quot;</span>
+<span class="n">args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--stdio&quot;</span><span class="p">]</span>
+
+<span class="k">[language-server.basedpyright.config]</span>
+<span class="n">basedpyright</span><span class="p">.</span><span class="n">analysis</span><span class="p">.</span><span class="n">diagnosticMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;openFilesOnly&quot;</span>
+</code></pre></div>
 
 
 
