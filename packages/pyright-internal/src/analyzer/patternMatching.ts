@@ -775,7 +775,13 @@ function narrowTypeBasedOnClassPattern(
     if (isClass(exprType) && !exprType.props?.typeAliasInfo) {
         exprType = ClassType.cloneRemoveTypePromotions(exprType);
         evaluator.inferVarianceForClass(exprType);
-        exprType = specializeWithUnknownTypeArgs(exprType, evaluator.getTupleClassType(), evaluator.getObjectType());
+        exprType = specializeWithUnknownTypeArgs(
+            exprType,
+            evaluator.getTupleClassType(),
+            // for backwards compatibility with bacly typed code, we don't specialize using variance if the type we're
+            // narrowing is Any/Unknown
+            isAnyOrUnknown(type) || isPartlyUnknown(type) ? undefined : evaluator.getObjectType()
+        );
     }
 
     // Are there any positional arguments? If so, try to get the mappings for
