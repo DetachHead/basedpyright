@@ -65,7 +65,7 @@ have the version of BasedPyright maintained and upgraded by Mason project.
 ### Setting-up Neovim
 
 BasedPyright is available through the
-[`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#basedpyright)
+[`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#basedpyright)
 adapter for native Neovim's LSP support.
 
 After having both, the client-side plugin and the LSP server command installed,
