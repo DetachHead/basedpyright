@@ -1,5 +1,7 @@
 # Language Server Settings
 
+## settings
+
 !!! info "for users migrating from pyright or pylance"
     with the exception of `python.pythonPath` and `python.venvPath`, settings prefixed with `python.*` are not supported in basedpyright. use `basedpyright.*` instead.
 
@@ -30,7 +32,7 @@ The basedpyright language server honors the following settings.
 !!! note "a note about `python.venvPath`"
     if your venv path is the same for all users working on your project (which should be the case if you're using [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation)), we recommend configuring `venvPath` in [a config file](./config-files.md) instead. see [discouraged settings](#discouraged-settings) below for more information.
 
-## based settings
+### based settings
 
 the following settings are exclusive to basedpyright
 
@@ -46,7 +48,7 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.functionReturnTypes.png)
 
-## discouraged settings
+### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
 
@@ -72,3 +74,42 @@ however these settings are still suppored to maintain compatibility with pyright
 **basedpyright.analysis.typeshedPaths** [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.
 
 **basedpyright.analysis.useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
+
+## where do i configure these settings?
+
+the way you configure the basedpyright language server depends on your IDE. below are some examples for [some of the supported editors](../installation/ides.md). this is not a comprehensive list, so if your editor is missing, consult the documentation for its language server support.
+
+### vscode / vscodium
+
+the basedpyright language server settings can be configured using a workspace or global `settings.json`:
+
+```json title="./.vscode/settings.json"
+{
+    "basedpyright.analysis.diagnosticMode": "openFilesOnly"
+}
+```
+
+### neovim
+
+the language server can be configured in your neovim settings:
+
+```lua
+require("lspconfig").basedpyright.setup {
+  basedpyright = {
+    analysis = {
+      diagnosticMode = "openFilesOnly",
+    }
+  }
+}
+```
+
+### helix
+
+```toml title="languages.toml"
+[language-server.basedpyright]
+command = "basedpyright-langserver"
+args = ["--stdio"]
+
+[language-server.basedpyright.config]
+basedpyright.analysis.diagnosticMode = "openFilesOnly"
+```
