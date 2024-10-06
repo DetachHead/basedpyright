@@ -1,4 +1,4 @@
-from typing import Never, assert_type, Iterable
+from typing import Any, Never, assert_type, Iterable
 
 
 class Covariant[T]:
@@ -41,3 +41,18 @@ def foo(value: object):
     match value:
         case Iterable():
             assert_type(value, Iterable[object])
+
+class AnyOrUnknown:
+    """for backwards compatibility with badly typed code we keep the old functionality when narrowing `Any`/Unknown"""
+    def foo(self, value: Any):
+        if isinstance(value, Iterable):
+            assert_type(value, Iterable[Any])
+
+    def bar(self, value: Any):
+        match value:
+            case Iterable():
+                assert_type(value, Iterable[Any])
+
+    def partially_unknown(self, value=None):
+        if isinstance(value, Iterable):
+            assert_type(value, Iterable[Any])

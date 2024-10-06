@@ -3794,7 +3794,7 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const classTypeList = getIsInstanceClassTypes(this._evaluator, arg1Type);
+        const classTypeList = getIsInstanceClassTypes(this._evaluator, arg1Type, arg0Type);
         if (!classTypeList) {
             return;
         }

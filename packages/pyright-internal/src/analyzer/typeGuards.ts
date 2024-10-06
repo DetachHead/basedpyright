@@ -82,6 +82,7 @@ import {
     isMetaclassInstance,
     isNoneInstance,
     isNoneTypeClass,
+    isPartlyUnknown,
     isProperty,
     isTupleClass,
     isTupleGradualForm,
@@ -623,7 +624,11 @@ export function getTypeNarrowingCallback(
                     const arg1TypeResult = evaluator.getTypeOfExpression(arg1Expr, EvalFlags.IsInstanceArgDefaults);
                     const arg1Type = arg1TypeResult.type;
 
-                    const classTypeList = getIsInstanceClassTypes(evaluator, arg1Type);
+                    const classTypeList = getIsInstanceClassTypes(
+                        evaluator,
+                        arg1Type,
+                        evaluator.getTypeOfExpression(arg0Expr).type
+                    );
                     const isIncomplete = !!callTypeResult.isIncomplete || !!arg1TypeResult.isIncomplete;
 
                     if (classTypeList) {
@@ -1125,11 +1130,16 @@ function narrowTypeForIsEllipsis(evaluator: TypeEvaluator, node: ExpressionNode,
 // which form and returns a list of classes or undefined.
 export function getIsInstanceClassTypes(
     evaluator: TypeEvaluator,
-    argType: Type
+    argType: Type,
+    typeToNarrow: Type
 ): (ClassType | TypeVarType | FunctionType)[] | undefined {
     let foundNonClassType = false;
     const classTypeList: (ClassType | TypeVarType | FunctionType)[] = [];
-
+    /**
+     * if the type we're narrowing is Any or Unknown, we don't want to specialize using the
+     * variance/bound for compatibility with less strictly typed code (cringe)
+     */
+    const useVarianceForSpecialization = !isAnyOrUnknown(typeToNarrow) && !isPartlyUnknown(typeToNarrow);
     // Create a helper function that returns a list of class types or
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {
@@ -1139,7 +1149,7 @@ export function getIsInstanceClassTypes(
                 subtype = specializeWithUnknownTypeArgs(
                     subtype,
                     evaluator.getTupleClassType(),
-                    evaluator.getObjectType()
+                    useVarianceForSpecialization ? evaluator.getObjectType() : undefined
                 );
 
                 if (isInstantiableClass(subtype) && ClassType.isBuiltIn(subtype, 'Callable')) {
