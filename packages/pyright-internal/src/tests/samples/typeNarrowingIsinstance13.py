@@ -8,8 +8,8 @@ from typing import Any, Iterable, Sized
 
 def func1(v: Any) -> bool:
     if isinstance(v, Iterable):
-        reveal_type(v, expected_text="Iterable[Unknown]")
+        reveal_type(v, expected_text="Iterable[object]")
         if isinstance(v, Sized):
-            reveal_type(v, expected_text="<subclass of Iterable and Sized>")
+            reveal_type(v, expected_text="<subclass of Iterable[object] and Sized>")
             return True
     return False

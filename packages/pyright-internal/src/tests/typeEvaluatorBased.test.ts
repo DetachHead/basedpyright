@@ -116,3 +116,12 @@ test('subscript context manager types on 3.8', () => {
         ],
     });
 });
+
+test('narrowing type vars using their bounds', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+    const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [],
+    });
+});
