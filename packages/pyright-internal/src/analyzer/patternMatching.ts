@@ -774,6 +774,7 @@ function narrowTypeBasedOnClassPattern(
     // specialize it with Unknown type arguments.
     if (isClass(exprType) && !exprType.props?.typeAliasInfo) {
         exprType = ClassType.cloneRemoveTypePromotions(exprType);
+        evaluator.inferVarianceForClass(exprType);
         exprType = specializeWithUnknownTypeArgs(exprType, evaluator.getTupleClassType(), evaluator.getObjectType());
     }
 
