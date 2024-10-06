@@ -9,7 +9,7 @@
 [![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](https://plugins.jetbrains.com/plugin/24145)
 [![homebrew](https://img.shields.io/homebrew/installs/dm/basedpyright?logo=homebrew&color=fbb040)](https://formulae.brew.sh/formula/basedpyright)
 [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
-[![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://detachhead.github.io/basedpyright)
+[![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://docs.basedpyright.com)
 
 Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, improved vscode support and pylance features built into the language server.
 
