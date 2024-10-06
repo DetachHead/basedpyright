@@ -21,6 +21,8 @@ import { Workspace } from '../workspaceFactory';
 import { CompletionProvider } from './completionProvider';
 import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
 import { findNodeByOffset } from '../analyzer/parseTreeUtils';
+import { ParseNodeType } from '../parser/parseNodes';
+import { sorter } from '../common/collectionUtils';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -129,9 +131,25 @@ export class CodeActionProvider {
                 },
                 token
             );
-            // i think code actions show up as the most recently added one first, so to prevent the least relevant results
-            // from appearing at the top, we reverse the list
-            for (const suggestedImport of completer.getCompletions()?.items.reverse() ?? []) {
+
+            const word = node.nodeType === ParseNodeType.Name ? node.d.value : undefined;
+            const completions = completer.getCompletions()?.items ?? [];
+            const sortedCompletions = completions
+                // code actions don't get sorted by sortText unlike completions, so we have to do it ourselves
+                .sort((prev, next) =>
+                    sorter(
+                        prev,
+                        next,
+                        (prev, next) => (prev.sortText && next.sortText && prev.sortText < next.sortText) || false
+                    )
+                )
+                // we also have to move exact matches to the top, something completions seems to also automatically
+                // do regardless of sortText
+                .sort((prev, next) =>
+                    sorter(prev, next, (prev, next) => (word && word === next.label && word !== prev.label) || false)
+                );
+
+            for (const suggestedImport of sortedCompletions) {
                 if (!suggestedImport.data) {
                     continue;
                 }

@@ -205,6 +205,24 @@ function stableSortIndices<T>(array: readonly T[], indices: number[], comparer: 
     indices.sort((x, y) => comparer(array[x], array[y]) || compareValues(x, y));
 }
 
+/**
+ * used to create sorter functions for {@link Array.sort} where the values can only be compared by
+ * whether they're greater, less than or equal.
+ * @param comparator function to compare two values. return `true` if the next item is greater than
+ * the previous item, or `false` if it's less than or equal to the previous function. gets called twice
+ * with the arguments reversed if it didn't return `true` the first time
+ * @returns a number to be used by {@link Array.sort} to sort items in an array
+ */
+export const sorter = <T>(prev: T, next: T, comparator: (prev: T, next: T) => boolean) => {
+    if (comparator(prev, next)) {
+        return 1;
+    }
+    if (comparator(next, prev)) {
+        return -1;
+    }
+    return 0;
+};
+
 export function map<T, U>(array: readonly T[], f: (x: T, i: number) => U): U[];
 export function map<T, U>(array: readonly T[] | undefined, f: (x: T, i: number) => U): U[] | undefined;
 export function map<T, U>(array: readonly T[] | undefined, f: (x: T, i: number) => U): U[] | undefined {
