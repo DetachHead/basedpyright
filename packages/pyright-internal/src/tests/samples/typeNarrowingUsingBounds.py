@@ -44,14 +44,24 @@ def foo(value: object):
 
 class AnyOrUnknown:
     """for backwards compatibility with badly typed code we keep the old functionality when narrowing `Any`/Unknown"""
-    def foo(self, value: Any):
+    def __init__(self, value):
+        """arguments in `__init__` get turned into fake type vars if they're untyped, so we need to handle this case.
+        see https://github.com/DetachHead/basedpyright/issues/746"""
         if isinstance(value, Iterable):
             assert_type(value, Iterable[Any])
 
-    def bar(self, value: Any):
+    def any(self, value: Any):
+        if isinstance(value, Iterable):
+            assert_type(value, Iterable[Any])
+
+    def match_case(self, value: Any):
         match value:
             case Iterable():
                 assert_type(value, Iterable[Any])
+
+    def unknown(self, value):
+        if isinstance(value, Iterable):
+            assert_type(value, Iterable[Any])
 
     def partially_unknown(self, value=None):
         if isinstance(value, Iterable):
