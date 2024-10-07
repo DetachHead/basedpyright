@@ -1,4 +1,4 @@
-from typing import Any, Never, assert_type, Iterable
+from typing import Any, Never, assert_type, Iterable, Iterator, MutableMapping, Reversible
 
 
 class Covariant[T]:
@@ -66,3 +66,7 @@ class AnyOrUnknown:
     def partially_unknown(self, value=None):
         if isinstance(value, Iterable):
             assert_type(value, Iterable[Any])
+
+def foo[KT,VT](self: MutableMapping[KT, VT]) -> Iterator[KT]:
+    assert isinstance(self, Reversible) # fail
+    return reversed(self)
