@@ -133,23 +133,23 @@ export class CodeActionProvider {
             );
 
             const word = node.nodeType === ParseNodeType.Name ? node.d.value : undefined;
-            const completions = completer.getCompletions()?.items ?? [];
-            const sortedCompletions = completions
-                // code actions don't get sorted by sortText unlike completions, so we have to do it ourselves
+            const sortedCompletions = completer
+                .getCompletions()
+                ?.items.filter(
+                    (completion) =>
+                        // only show exact matches as code actions, which matches pylance's behavior. otherwise it's too noisy
+                        // because code actions don't get sorted like completions do. see https://github.com/DetachHead/basedpyright/issues/747
+                        completion.label === word
+                )
                 .sort((prev, next) =>
                     sorter(
                         prev,
                         next,
                         (prev, next) => (prev.sortText && next.sortText && prev.sortText < next.sortText) || false
                     )
-                )
-                // we also have to move exact matches to the top, something completions seems to also automatically
-                // do regardless of sortText
-                .sort((prev, next) =>
-                    sorter(prev, next, (prev, next) => (word && word === next.label && word !== prev.label) || false)
                 );
 
-            for (const suggestedImport of sortedCompletions) {
+            for (const suggestedImport of sortedCompletions ?? []) {
                 if (!suggestedImport.data) {
                     continue;
                 }
