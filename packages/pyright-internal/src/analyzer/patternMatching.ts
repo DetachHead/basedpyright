@@ -83,6 +83,7 @@ import {
     mapSubtypes,
     partiallySpecializeType,
     preserveUnknown,
+    shouldUseVarianceForSpecialization,
     specializeTupleClass,
     specializeWithUnknownTypeArgs,
     transformPossibleRecursiveTypeAlias,
@@ -761,9 +762,7 @@ function narrowTypeBasedOnClassPattern(
         exprType = specializeWithUnknownTypeArgs(
             exprType,
             evaluator.getTupleClassType(),
-            // for backwards compatibility with bacly typed code, we don't specialize using variance if the type we're
-            // narrowing is Any/Unknown
-            isAnyOrUnknown(type) || isPartlyUnknown(type) ? undefined : evaluator.getObjectType()
+            shouldUseVarianceForSpecialization(type) ? evaluator.getObjectType() : undefined
         );
     }
 

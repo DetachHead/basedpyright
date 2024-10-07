@@ -82,7 +82,6 @@ import {
     isMetaclassInstance,
     isNoneInstance,
     isNoneTypeClass,
-    isPartlyUnknown,
     isProperty,
     isTupleClass,
     isTupleGradualForm,
@@ -92,6 +91,7 @@ import {
     makeTypeVarsFree,
     mapSubtypes,
     MemberAccessFlags,
+    shouldUseVarianceForSpecialization,
     specializeTupleClass,
     specializeWithUnknownTypeArgs,
     stripTypeForm,
@@ -1135,11 +1135,7 @@ export function getIsInstanceClassTypes(
 ): (ClassType | TypeVarType | FunctionType)[] | undefined {
     let foundNonClassType = false;
     const classTypeList: (ClassType | TypeVarType | FunctionType)[] = [];
-    /**
-     * if the type we're narrowing is Any or Unknown, we don't want to specialize using the
-     * variance/bound for compatibility with less strictly typed code (cringe)
-     */
-    const useVarianceForSpecialization = !isAnyOrUnknown(typeToNarrow) && !isPartlyUnknown(typeToNarrow);
+    const useVarianceForSpecialization = shouldUseVarianceForSpecialization(typeToNarrow);
     // Create a helper function that returns a list of class types or
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {

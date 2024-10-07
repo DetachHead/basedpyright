@@ -1054,6 +1054,17 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
 }
 
 /**
+ * if the type we're narrowing is Any or Unknown, we don't want to specialize using the
+ * variance/bound for compatibility with less strictly typed code (cringe)
+ */
+export const shouldUseVarianceForSpecialization = (type: Type) =>
+    !isAnyOrUnknown(type) &&
+    !isPartlyUnknown(type) &&
+    // TODO: this logic should probably be moved into `isAny`/`isUnknown` or something,
+    // to fix issues like https://github.com/DetachHead/basedpyright/issues/746
+    (type.category !== TypeCategory.TypeVar || !type.shared.isSynthesized);
+
+/**
  * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its
  * widest possible type if its variance is known and {@link objectTypeForVarianceCheck} is provided (`object` if
  * the bound if covariant, `Never` if contravariant). see docstring on {@link getUnknownForTypeVar} for more info
