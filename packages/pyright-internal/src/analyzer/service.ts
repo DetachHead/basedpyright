@@ -674,7 +674,7 @@ export class AnalyzerService {
                 throw e;
             }
         }
-        configOptions.initializeTypeCheckingMode('all');
+        configOptions.initializeTypeCheckingMode('recommended');
         if (configs && configs.length > 0) {
             // Then we apply the config file settings. This can update the
             // the typeCheckingMode.
@@ -694,15 +694,24 @@ export class AnalyzerService {
 
             // When not in language server mode, command line options override config file options.
             if (!commandLineOptions.fromLanguageServer) {
-                this._applyCommandLineOverrides(configOptions, commandLineOptions.configSettings, projectRoot, false);
+                errors.push(
+                    ...this._applyCommandLineOverrides(
+                        configOptions,
+                        commandLineOptions.configSettings,
+                        projectRoot,
+                        false
+                    )
+                );
             }
         } else {
             // If there are no config files, we can then directly apply the command line options.
-            this._applyCommandLineOverrides(
-                configOptions,
-                commandLineOptions.configSettings,
-                projectRoot,
-                commandLineOptions.fromLanguageServer
+            errors.push(
+                ...this._applyCommandLineOverrides(
+                    configOptions,
+                    commandLineOptions.configSettings,
+                    projectRoot,
+                    commandLineOptions.fromLanguageServer
+                )
             );
         }
 
@@ -922,10 +931,8 @@ export class AnalyzerService {
         commandLineOptions: CommandLineConfigOptions,
         projectRoot: Uri,
         fromLanguageServer: boolean
-    ) {
-        if (commandLineOptions.typeCheckingMode) {
-            configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode);
-        }
+    ): string[] {
+        const errors = configOptions.initializeTypeCheckingModeFromString(commandLineOptions.typeCheckingMode);
 
         if (commandLineOptions.extraPaths) {
             configOptions.ensureDefaultExtraPaths(
@@ -1029,6 +1036,7 @@ export class AnalyzerService {
                 reportDuplicateSetting('stubPath', configOptions.stubPath.toUserVisibleString());
             }
         }
+        return errors;
     }
 
     // Loads the config JSON object from the specified config file along with any

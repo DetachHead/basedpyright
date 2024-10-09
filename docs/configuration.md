@@ -73,7 +73,7 @@ The following settings determine how different types should be evaluated.
 ## Type Check Diagnostics Settings
 The following settings control pyright’s diagnostic output (warnings or errors).
 
-- **typeCheckingMode** ["off", "basic", "standard", "strict", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "all". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
+- **typeCheckingMode** ["off", "basic", "standard", "strict", "recommended", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "recommended". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
 
 - **ignore** [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden using the [language server settings](./language-server-settings.md).
 
@@ -247,6 +247,8 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 the following additional options are not available in regular pyright:
 
+- <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
+
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.
 
 - <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Ban all usages of the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances).
@@ -384,9 +386,17 @@ Each diagnostic setting has a default that is dictated by the specified type che
 
 Some rules have an additional severity level such as `"unused"`, `"deprecated"` or `"unreachable"`. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`.
 
-The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"` and `"all"`).
+The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"`, `"recommended"` and `"all"`).
 
-note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default `typeCheckingMode` is `"all"`). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
+
+### `"recommended"` and `"all"`
+
+basedpyright introduces two new diagnostic rulesets in addition to the ones in pyright: `"recommended"` and `"all"`. `"recommended"` enables all diagnostic rules as either `"warning"` or `"error"`, but sets `failOnWarnings` to `true` so that all diagnostics will still cause a non-zero exit code when run in the CLI. this means `"recommended"` is essentially the same as `"all"`, but makes it easier to differentiate errors that are likely to cause a runtime crash like an undefined variable from less serious warnings such as a missing type annotation.
+
+!!! note
+
+    some settings which are enabled by default in pyright are disabled by default in basedpyright (even when `typeCheckingMode` is `"all"`). this is because these rules are [discouraged](#discouraged-options), but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
+
 
 | Diagnostic Rule                          | Off           | Basic         | Standard      | Strict        | All     |
 |:-----------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|

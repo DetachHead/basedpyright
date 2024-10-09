@@ -248,7 +248,7 @@ describe('invalid config', () => {
         const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
 
         assert.deepStrictEqual(errors, [
-            'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".',
+            'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
         ]);
     });
     test('unknown value in execution environments', () => {
@@ -652,7 +652,7 @@ test('Language server specific settings are set whether or not there is a pyproj
     assert.equal(options.venvPath?.pathIncludes('test_venv_path'), false);
 });
 
-test('default typeCheckingMode should be "all"', () => {
+test('default typeCheckingMode should be "recommended"', () => {
     const cwd = normalizePath(process.cwd());
     const service = createAnalyzer();
     const commandLineOptions = new CommandLineOptions(cwd, /* fromVsCodeExtension */ true);
@@ -662,7 +662,7 @@ test('default typeCheckingMode should be "all"', () => {
     service.setOptions(commandLineOptions);
 
     // as far as i can tell the typeCheckingMode value isn't saved anywhere, so we instead just check some options
-    // that are typically disabled by default unless typeCheckingMode is set to `"all"`
+    // that are typically disabled by default unless typeCheckingMode is set to `"recommended"`
     assert(configOptions.diagnosticRuleSet.deprecateTypingAliases);
-    assert.equal(configOptions.diagnosticRuleSet.reportAny, 'error');
+    assert.equal(configOptions.diagnosticRuleSet.reportAny, 'warning');
 });

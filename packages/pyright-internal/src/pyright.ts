@@ -469,7 +469,16 @@ const outputResults = (
     }
     const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(results.diagnostics);
 
-    const treatWarningsAsErrors = !!args.warnings;
+    const treatWarningsAsErrors =
+        !!args.warnings ||
+        filteredDiagnostics.some(
+            (fileWithDiagnostics) =>
+                fileWithDiagnostics.diagnostics.some(
+                    (diagnostic) => diagnostic.category === DiagnosticCategory.Warning
+                ) &&
+                service.backgroundAnalysisProgram.configOptions.findExecEnvironment(fileWithDiagnostics.fileUri)
+                    .diagnosticRuleSet.failOnWarnings
+        );
     let errorCount = 0;
     let report: DiagnosticResult;
     if (args.outputjson) {

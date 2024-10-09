@@ -105,6 +105,7 @@ export enum DiagnosticRule {
     reportImplicitOverride = 'reportImplicitOverride',
 
     // basedpyright options:
+    failOnWarnings = 'failOnWarnings',
     reportUnreachable = 'reportUnreachable',
     reportAny = 'reportAny',
     reportIgnoreCommentWithoutRule = 'reportIgnoreCommentWithoutRule',
