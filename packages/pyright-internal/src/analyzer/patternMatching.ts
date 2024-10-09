@@ -62,6 +62,7 @@ import {
     isTypeSame,
     isTypeVarTuple,
     isUnknown,
+    isUnpackedTypeVar,
     isUnpackedTypeVarTuple,
 } from './types';
 import {
@@ -103,6 +104,14 @@ const classPatternSpecialCases = [
     'builtins.str',
     'builtins.tuple',
 ];
+
+// There are cases where sequence pattern matching of tuples with
+// large unions can blow up and cause hangs. This constant limits
+// the total number of subtypes that can be generated during type
+// narrowing for sequence patterns before the narrowed type is
+// converted to Any. This is tuned empirically to provide a reasonable
+// performance cutoff.
+const maxSequencePatternTupleExpansionSubtypes = 128;
 
 interface SequencePatternInfo {
     subtype: Type;
@@ -239,6 +248,7 @@ function narrowTypeBasedOnSequencePattern(
     pattern: PatternSequenceNode,
     isPositiveTest: boolean
 ): Type {
+    let usingTupleExpansion = false;
     type = transformPossibleRecursiveTypeAlias(type);
     let sequenceInfo = getSequencePatternInfo(evaluator, pattern, type);
 
@@ -395,6 +405,10 @@ function narrowTypeBasedOnSequencePattern(
                             );
                         })
                     );
+
+                    // Note that we're using tuple expansion in case we
+                    // need to limit the number of subtypes generated.
+                    usingTupleExpansion = true;
                 }
             }
 
@@ -437,7 +451,10 @@ function narrowTypeBasedOnSequencePattern(
         return isPlausibleMatch;
     });
 
-    return combineTypes(sequenceInfo.map((entry) => entry.subtype));
+    return combineTypes(
+        sequenceInfo.map((entry) => entry.subtype),
+        { maxSubtypeCount: usingTupleExpansion ? maxSequencePatternTupleExpansionSubtypes : undefined }
+    );
 }
 
 function narrowTypeBasedOnAsPattern(
@@ -1407,7 +1424,7 @@ function getSequencePatternInfo(
                     ];
 
                     const tupleIndeterminateIndex = typeArgs.findIndex(
-                        (t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type)
+                        (t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type) || isUnpackedTypeVar(t.type)
                     );
 
                     let tupleDeterminateEntryCount = typeArgs.length;
@@ -1437,7 +1454,9 @@ function getSequencePatternInfo(
                         const removedEntries = typeArgs.splice(patternStarEntryIndex, entriesToCombine);
                         typeArgs.splice(patternStarEntryIndex, 0, {
                             type: combineTypes(removedEntries.map((t) => t.type)),
-                            isUnbounded: removedEntries.every((t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type)),
+                            isUnbounded: removedEntries.every(
+                                (t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type) || isUnpackedTypeVar(t.type)
+                            ),
                         });
                     }
 
