@@ -925,7 +925,7 @@ describe(`Basic language server tests`, () => {
         assert(info.notifications.length === 1);
         assert(
             info.notifications[0].message ===
-                'Config "typeCheckingMode" entry must contain "off", "basic", "standard", "strict", or "all".'
+                'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"'
         );
     });
 

@@ -19,8 +19,8 @@ test('baselined error not reported', () => {
         errors: [
             { line: 0, code: DiagnosticRule.reportAssignmentType, baselineStatus: 'baselined' },
             { line: 1, code: DiagnosticRule.reportUndefinedVariable },
-            { line: 1, code: DiagnosticRule.reportUnusedExpression },
         ],
+        warnings: [{ line: 1, code: DiagnosticRule.reportUnusedExpression }],
     });
 });
 
@@ -29,6 +29,6 @@ test('baselined error that can be reported as a hint gets converted to a hint', 
 
     validateResultsButBased(analysisResults, {
         unreachableCodes: [{ line: 1, code: DiagnosticRule.reportUnreachable, baselineStatus: 'baselined with hint' }],
-        errors: [{ line: 3, code: DiagnosticRule.reportUnreachable }],
+        warnings: [{ line: 3, code: DiagnosticRule.reportUnreachable }],
     });
 });

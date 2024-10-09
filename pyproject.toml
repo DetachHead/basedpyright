@@ -215,7 +215,6 @@ include = ["basedpyright", "based_build", "pdm_build.py", "tests"]
 # https://github.com/DetachHead/basedpyright/issues/31
 ignore = ["pw", "basedpyright/dist", "packages", "build"]
 exclude = ["pw", "basedpyright/dist", "packages", "build"]
-typeCheckingMode = "all"
 reportImplicitStringConcatenation = false                  # conflicts with ruff formatter
 
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570

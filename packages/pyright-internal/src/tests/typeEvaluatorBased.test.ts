@@ -39,7 +39,7 @@ test('unreachable assert_never', () => {
     });
 });
 
-test('default typeCheckingMode=all', () => {
+test('default typeCheckingMode=recommended', () => {
     // there's a better test for this in `config.test.ts` which tests it in a more complete way.
     // the logic for loading the config seems very convoluted and messy. the default typeCheckingMode
     // seems to be determined multiple times. and there was an upstream change that broke our defaulting
@@ -49,21 +49,23 @@ test('default typeCheckingMode=all', () => {
     const configOptions = new BasedConfigOptions(Uri.empty());
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
-        errors: [
+        warnings: [
             ...[78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
-            { line: 16, code: DiagnosticRule.reportUninitializedInstanceVariable },
             { line: 19, code: DiagnosticRule.reportUnknownParameterType },
             { line: 33, code: DiagnosticRule.reportUnknownParameterType },
             { line: 94, code: DiagnosticRule.reportUnnecessaryComparison },
             { line: 102, code: DiagnosticRule.reportUnusedVariable },
             { line: 113, code: DiagnosticRule.reportUnknownParameterType },
-            { line: 113, code: DiagnosticRule.reportMissingTypeArgument },
             { line: 114, code: DiagnosticRule.reportUnnecessaryIsInstance },
             { line: 115, code: DiagnosticRule.reportUnknownVariableType },
             { line: 121, code: DiagnosticRule.reportUnknownParameterType },
-            { line: 121, code: DiagnosticRule.reportMissingTypeArgument },
             { line: 122, code: DiagnosticRule.reportUnnecessaryIsInstance },
             { line: 123, code: DiagnosticRule.reportUnknownVariableType },
+        ],
+        errors: [
+            { line: 16, code: DiagnosticRule.reportUninitializedInstanceVariable },
+            { line: 113, code: DiagnosticRule.reportMissingTypeArgument },
+            { line: 121, code: DiagnosticRule.reportMissingTypeArgument },
         ],
         infos: [{ line: 95 }, { line: 98 }],
     });

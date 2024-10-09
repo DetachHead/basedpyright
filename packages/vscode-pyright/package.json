@@ -1661,12 +1661,13 @@
                 },
                 "basedpyright.analysis.typeCheckingMode": {
                     "type": "string",
-                    "default": "all",
+                    "default": "recommended",
                     "enum": [
                         "off",
                         "basic",
                         "standard",
                         "strict",
+                        "recommended",
                         "all"
                     ],
                     "description": "Defines the default rule set for type checking.",

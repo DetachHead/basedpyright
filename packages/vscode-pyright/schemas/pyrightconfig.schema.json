@@ -642,10 +642,11 @@
         "basic",
         "standard",
         "strict",
+        "recommended",
         "all"
       ],
       "title": "Specifies the default rule set to use for type checking",
-      "default": "all"
+      "default": "recommended"
     },
     "useLibraryCodeForTypes": {
       "type": "boolean",

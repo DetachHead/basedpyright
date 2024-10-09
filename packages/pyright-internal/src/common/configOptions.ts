@@ -97,6 +97,8 @@ type DeprecatedDiagnosticLevel = DiagnosticLevel | 'deprecated';
 
 export type LspDiagnosticLevel = DiagnosticLevel | 'unreachable' | 'unused' | 'deprecated';
 
+export type TypeCheckingMode = (typeof allTypeCheckingModes)[number];
+
 export enum SignatureDisplayType {
     compact = 'compact',
     formatted = 'formatted',
@@ -410,6 +412,15 @@ export interface DiagnosticRuleSet {
     reportImplicitOverride: DiagnosticLevel;
 
     // basedpyright options:
+
+    /**
+     * this probably doesn't really fit as a diagnostic rule config, but it's here because we want the default
+     * "fail on warnings" behavior to be different depending on the `typeCheckingMode`. this is kinda weird,
+     * but a compromize we're making to enforce the strictest checks by default without bombarding the user
+     * with too many errors.
+     * @see https://github.com/DetachHead/basedpyright/issues/603#issuecomment-2303297625
+     */
+    failOnWarnings: boolean;
     reportUnreachable: UnreachableDiagnosticLevel;
     reportAny: DiagnosticLevel;
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
@@ -446,6 +457,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
         // it within pyright comments.
         boolRules.push(DiagnosticRule.enableTypeIgnoreComments);
         boolRules.push(DiagnosticRule.enableReachabilityAnalysis);
+        boolRules.push(DiagnosticRule.failOnWarnings);
     }
 
     return boolRules;
@@ -684,6 +696,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
+        failOnWarnings: false,
         reportUnreachable: 'unreachable',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
@@ -796,6 +809,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
+        failOnWarnings: false,
         reportUnreachable: 'unreachable',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
@@ -908,6 +922,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
+        failOnWarnings: false,
         reportUnreachable: 'unreachable',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
@@ -921,6 +936,115 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
 
     return diagSettings;
 }
+
+export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
+    printUnknownAsAny: false,
+    omitTypeArgsIfUnknown: false,
+    omitUnannotatedParamType: false,
+    omitConditionalConstraint: false,
+    pep604Printing: true,
+    strictListInference: true,
+    strictSetInference: true,
+    strictDictionaryInference: true,
+    analyzeUnannotatedFunctions: true,
+    strictParameterNoneValue: true,
+    enableExperimentalFeatures: true,
+    enableTypeIgnoreComments: false,
+    enableReachabilityAnalysis: true,
+    deprecateTypingAliases: true,
+    disableBytesTypePromotions: true,
+    reportGeneralTypeIssues: 'error',
+    reportPropertyTypeMismatch: 'warning',
+    reportFunctionMemberAccess: 'error',
+    reportMissingImports: 'error',
+    reportMissingModuleSource: 'error',
+    reportInvalidTypeForm: 'error',
+    reportMissingTypeStubs: 'error',
+    reportImportCycles: 'error',
+    reportUnusedImport: 'warning',
+    reportUnusedClass: 'warning',
+    reportUnusedFunction: 'warning',
+    reportUnusedVariable: 'warning',
+    reportDuplicateImport: 'warning',
+    reportWildcardImportFromLibrary: 'warning',
+    reportAbstractUsage: 'error',
+    reportArgumentType: 'error',
+    reportAssertTypeFailure: 'error',
+    reportAssignmentType: 'error',
+    reportAttributeAccessIssue: 'error',
+    reportCallIssue: 'error',
+    reportInconsistentOverload: 'error',
+    reportIndexIssue: 'error',
+    reportInvalidTypeArguments: 'error',
+    reportNoOverloadImplementation: 'error',
+    reportOperatorIssue: 'error',
+    reportOptionalSubscript: 'error',
+    reportOptionalMemberAccess: 'error',
+    reportOptionalCall: 'error',
+    reportOptionalIterable: 'error',
+    reportOptionalContextManager: 'error',
+    reportOptionalOperand: 'error',
+    reportRedeclaration: 'error',
+    reportReturnType: 'error',
+    reportTypedDictNotRequiredAccess: 'error',
+    reportUntypedFunctionDecorator: 'warning',
+    reportUntypedClassDecorator: 'warning',
+    reportUntypedBaseClass: 'warning',
+    reportUntypedNamedTuple: 'warning',
+    reportPrivateUsage: 'warning',
+    reportTypeCommentUsage: 'warning',
+    reportPrivateImportUsage: 'warning',
+    reportConstantRedefinition: 'error',
+    reportDeprecated: 'warning',
+    reportIncompatibleMethodOverride: 'error',
+    reportIncompatibleVariableOverride: 'error',
+    reportInconsistentConstructor: 'error',
+    reportOverlappingOverload: 'error',
+    reportPossiblyUnboundVariable: 'error',
+    reportMissingSuperCall: 'error',
+    reportUninitializedInstanceVariable: 'error',
+    reportInvalidStringEscapeSequence: 'error',
+    reportUnknownParameterType: 'warning',
+    reportUnknownArgumentType: 'warning',
+    reportUnknownLambdaType: 'warning',
+    reportUnknownVariableType: 'warning',
+    reportUnknownMemberType: 'warning',
+    reportMissingParameterType: 'warning',
+    reportMissingTypeArgument: 'error',
+    reportInvalidTypeVarUse: 'warning',
+    reportCallInDefaultInitializer: 'warning',
+    reportUnnecessaryIsInstance: 'warning',
+    reportUnnecessaryCast: 'warning',
+    reportUnnecessaryComparison: 'warning',
+    reportUnnecessaryContains: 'warning',
+    reportAssertAlwaysTrue: 'warning',
+    reportSelfClsParameterName: 'error',
+    reportImplicitStringConcatenation: 'warning',
+    reportUnboundVariable: 'error',
+    reportUnhashable: 'error',
+    reportUndefinedVariable: 'error',
+    reportInvalidStubStatement: 'warning',
+    reportIncompleteStub: 'warning',
+    reportUnsupportedDunderAll: 'warning',
+    reportUnusedCallResult: 'warning',
+    reportUnusedCoroutine: 'warning',
+    reportUnusedExcept: 'error',
+    reportUnusedExpression: 'warning',
+    reportUnnecessaryTypeIgnoreComment: 'warning',
+    reportMatchNotExhaustive: 'warning',
+    reportShadowedImports: 'warning',
+    reportImplicitOverride: 'warning',
+    failOnWarnings: true,
+    reportUnreachable: 'warning',
+    reportAny: 'warning',
+    reportIgnoreCommentWithoutRule: 'warning',
+    reportPrivateLocalImportUsage: 'warning',
+    reportImplicitRelativeImport: 'error',
+    reportInvalidCast: 'error',
+    reportUnsafeMultipleInheritance: 'error',
+    reportUnusedParameter: 'warning',
+    reportImplicitAbstractClass: 'warning',
+});
 
 export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     printUnknownAsAny: false,
@@ -1019,6 +1143,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportMatchNotExhaustive: 'error',
     reportShadowedImports: 'error',
     reportImplicitOverride: 'error',
+    failOnWarnings: true,
     reportUnreachable: 'error',
     reportAny: 'error',
     reportIgnoreCommentWithoutRule: 'error',
@@ -1128,6 +1253,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'error',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
+        failOnWarnings: false,
         reportUnreachable: 'unreachable',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
@@ -1141,6 +1267,8 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
 
     return diagSettings;
 }
+
+export const allTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'recommended', 'all'] as const;
 
 export function matchFileSpecs(configOptions: ConfigOptions, uri: Uri, isFile = true) {
     for (const includeSpec of configOptions.include) {
@@ -1315,7 +1443,7 @@ export class ConfigOptions {
     configFileSource?: Uri | undefined;
 
     // Determines the effective default type checking mode.
-    effectiveTypeCheckingMode: 'all' | 'strict' | 'basic' | 'off' | 'standard' = 'standard';
+    effectiveTypeCheckingMode: 'all' | 'strict' | 'basic' | 'off' | 'standard' = 'standard'; // TODO: we default to "recommended", wheres this default being used?
 
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;
@@ -1326,7 +1454,11 @@ export class ConfigOptions {
         this.functionSignatureDisplay = SignatureDisplayType.formatted;
     }
 
-    static getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
+    static getDiagnosticRuleSet(typeCheckingMode?: TypeCheckingMode): DiagnosticRuleSet {
+        if (typeCheckingMode === 'recommended') {
+            return getRecommendedDiagnosticRuleSet();
+        }
+
         if (typeCheckingMode === 'all') {
             return getAllDiagnosticRuleSet();
         }
@@ -1342,7 +1474,7 @@ export class ConfigOptions {
         if (typeCheckingMode === 'off') {
             return getOffDiagnosticRuleSet();
         }
-
+        typeCheckingMode satisfies 'standard' | undefined;
         return getStandardDiagnosticRuleSet();
     }
 
@@ -1380,15 +1512,35 @@ export class ConfigOptions {
     }
 
     initializeTypeCheckingMode(
-        typeCheckingMode: string | undefined,
+        typeCheckingMode: TypeCheckingMode | undefined,
         severityOverrides?: DiagnosticSeverityOverridesMap
     ) {
         this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet(typeCheckingMode);
-        this.effectiveTypeCheckingMode = typeCheckingMode as 'all' | 'strict' | 'basic' | 'off' | 'standard';
+        this.effectiveTypeCheckingMode = typeCheckingMode as TypeCheckingMode;
 
         if (severityOverrides) {
             this.applyDiagnosticOverrides(severityOverrides);
         }
+    }
+
+    /**
+     * initializes `typeCheckingMode` from an unknown, potentially invalid value
+     *
+     * @returns any errors that occurred
+     */
+    initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined): string[] {
+        if (typeCheckingMode !== undefined) {
+            if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
+                this.initializeTypeCheckingMode(typeCheckingMode as TypeCheckingMode);
+            } else {
+                return [
+                    `invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(
+                        allTypeCheckingModes
+                    )}`,
+                ];
+            }
+        }
+        return [];
     }
 
     // Initialize the structure from a JSON object.
@@ -1427,16 +1579,7 @@ export class ConfigOptions {
         }
 
         // If there is a "typeCheckingMode", it can override the provided setting.
-        if (configObj.typeCheckingMode !== undefined) {
-            const validTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'all'];
-            if (validTypeCheckingModes.includes(configObj.typeCheckingMode)) {
-                this.initializeTypeCheckingMode(configObj.typeCheckingMode);
-            } else {
-                errors.push(
-                    `Config "typeCheckingMode" entry must contain ${userFacingOptionsList(validTypeCheckingModes)}.`
-                );
-            }
-        }
+        errors.push(...this.initializeTypeCheckingModeFromString(configObj.typeCheckingMode));
 
         if (configObj.useLibraryCodeForTypes !== undefined) {
             if (typeof configObj.useLibraryCodeForTypes === 'boolean') {
@@ -1946,9 +2089,9 @@ export class ConfigOptions {
  * preserve the behavior of the original in tests and anything else that i'm too scared to touch
  */
 export class BasedConfigOptions extends ConfigOptions {
-    static override getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
+    static override getDiagnosticRuleSet(typeCheckingMode?: TypeCheckingMode): DiagnosticRuleSet {
         if (typeCheckingMode === undefined) {
-            return getAllDiagnosticRuleSet();
+            return getRecommendedDiagnosticRuleSet();
         }
         return super.getDiagnosticRuleSet(typeCheckingMode);
     }

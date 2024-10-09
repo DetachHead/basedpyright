@@ -69,7 +69,7 @@ however these settings are still suppored to maintain compatibility with pyright
 
 **basedpyright.analysis.stubPath** [path]: Path to directory containing custom type stub files.
 
-**basedpyright.analysis.typeCheckingMode** ["off", "basic", "standard", "strict", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "pyright.typeCheckingMode". The old name is deprecated but is still currently honored.)
+**basedpyright.analysis.typeCheckingMode** ["off", "basic", "standard", "strict", "recommended", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "basedpyright.typeCheckingMode". The old name is deprecated but is still currently honored.)
 
 **basedpyright.analysis.typeshedPaths** [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.
 
