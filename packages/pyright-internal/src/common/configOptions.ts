@@ -1443,7 +1443,7 @@ export class ConfigOptions {
     configFileSource?: Uri | undefined;
 
     // Determines the effective default type checking mode.
-    effectiveTypeCheckingMode: 'all' | 'strict' | 'basic' | 'off' | 'standard' = 'standard'; // TODO: we default to "recommended", wheres this default being used?
+    effectiveTypeCheckingMode: TypeCheckingMode = 'standard'; // TODO: we default to "recommended", wheres this default being used?
 
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;

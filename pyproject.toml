@@ -18,6 +18,7 @@ dev = [
     "mkdocs-material>=9.5.37",
     "mkdocs-awesome-pages-plugin>=2.9.2",
     "mike>=2.1.3",
+    "mkdocs-macros-plugin>=1.2.0",
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
@@ -282,6 +283,7 @@ ignore = [
     "CPY001",  # missing-copyright-notice
     "C901",    # max-complexity
     "DOC402",  # docstring-missing-yields
+    "DOC201",  # docstring-missing-returns
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -289,8 +291,8 @@ ignore-overlong-task-comments = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = ["A001", "A002", "N"] # we don't control names in 3rd party modules
-"tests/**/*.py" = [
-    "S", # none of these security focused rules are relevant for the tests
+"{tests,based_build}/**/*.py" = [
+    "S", # none of these security focused rules are relevant for tests/build scripts
 ]
 [tool.ruff.lint.isort]
 combine-as-imports = true
