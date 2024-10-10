@@ -2,6 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name":"Python Current File (justMyCode=false)",
+            "type":"debugpy",
+            "request":"launch",
+            "program":"${file}",
+            "console":"integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Pyright current file",
             "type": "node",
             "request": "launch",
