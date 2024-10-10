@@ -190,7 +190,7 @@ export function escapeRegExp(text: string) {
  * @example
  * userFacingOptionsList(['a', 'b', 'c']) // `"a", "b" or "c"`
  */
-export const userFacingOptionsList = (values: string[]) =>
+export const userFacingOptionsList = (values: readonly string[]) =>
     values.map((mode, index) => (index < values.length - 1 ? `"${mode}", ` : `or "${mode}"`)).join('');
 
 export const pluralize = (n: number, singular: string, plural: string = `${singular}s`) =>

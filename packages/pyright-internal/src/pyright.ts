@@ -50,6 +50,12 @@ import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
 import { BaselineHandler } from './baseline';
 import { pluralize } from './common/stringUtils';
+import {
+    allTypeCheckingModes,
+    ConfigOptions,
+    getBooleanDiagnosticRules,
+    getDiagLevelDiagnosticRules,
+} from './common/configOptions';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -178,6 +184,8 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'version', type: Boolean },
         { name: 'warnings', type: Boolean },
         { name: 'watch', alias: 'w', type: Boolean },
+        // undocumented option only used internally for generating docs. pretty cringe but it's the least messy way i could think of to do it
+        { name: 'printdiagnosticrulesets', type: Boolean },
     ];
 
     let args: CommandLineOptions;
@@ -194,7 +202,22 @@ async function processArgs(): Promise<ExitStatus> {
         console.error(`Unexpected error\n${toolName} --help for usage`);
         return ExitStatus.ParameterError;
     }
-
+    if (args.printdiagnosticrulesets) {
+        console.log(
+            JSON.stringify(
+                [...getBooleanDiagnosticRules(true), ...getDiagLevelDiagnosticRules()].map((rule) => ({
+                    'Diagnostic Rule': rule,
+                    ...Object.fromEntries(
+                        allTypeCheckingModes.map((typeCheckingMode) => [
+                            typeCheckingMode,
+                            ConfigOptions.getDiagnosticRuleSet(typeCheckingMode)[rule],
+                        ])
+                    ),
+                }))
+            )
+        );
+        return ExitStatus.NoErrors;
+    }
     if (args.help !== undefined) {
         printUsage();
         return ExitStatus.NoErrors;

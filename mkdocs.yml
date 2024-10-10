@@ -50,6 +50,9 @@ plugins:
   - awesome-pages
   # https://github.com/wilhelmer/mkdocs-unused-files/issues/12
   # - unused_files
+  - macros:
+      module_name: based_build/docs_macros
+      on_undefined: strict
 nav:
   - index.md
   - ... | benefits-over-pyright/**/*.md
