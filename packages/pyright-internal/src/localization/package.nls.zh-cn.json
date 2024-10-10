@@ -420,7 +420,7 @@
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright 注释指令后面必须跟有 `=` 和一个设作 true 或 false 的值",
         "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 注释指令后面必须跟有 `=` 和一个设作 true、false、error、warning、information 或 none 的值",
         "pyrightCommentMissingDirective": "该 Pyright 注释的内容必须是诊断级别（basic 或 strict）或诊断规则",
-        "pyrightCommentNotOnOwnLine": "Pyright 的文件级注释应独立成行。",
+        "pyrightCommentNotOnOwnLine": "Pyright 的文件级注释应独立成行",
         "pyrightCommentUnknownDiagnosticRule": "Pyright 注释引用了一个未知的诊断规则 \"{rule}\"",
         "pyrightCommentUnknownDiagnosticSeverityValue": "无效的 Pyright 注释值 \"{value}\"；应为 true、false、error、warning、information 或 none",
         "pyrightCommentUnknownDirective": "Pyright 注释没有 \"{directive}\" 指令；应为 `strict` 或 `basic`",
@@ -652,7 +652,7 @@
         "pyrightIgnoreCommentWithoutRule": "`pyright: ignore` 注释必须指定具体规则（例如 `# pyright: ignore[ruleName]`）",
         "typeIgnoreCommentWithoutRule": "`type: ignore` 注释必须指定具体规则（例如 `# type: ignore[ruleName]`）",
         "implicitRelativeImport": "从 \"{importName}\" 导入会进行隐式的相对导入，如果此文件作为模块导入则会出错",
-        "invalidCast": "从 \"{fromType}\" 类型到 \"{toType}\" 类型的转换可能有误，这两个类型不完全重叠。如果确有必要，请先将其转换为 `object`。",
+        "invalidCast": "从 \"{fromType}\" 类型到 \"{toType}\" 类型的转换可能有误，这两个类型不完全重叠。如果确有必要，请先将其转换为 `object`",
         "multipleInheritance": "当前的基类无法进行多继承；因为基类 \"{classes}\" 具有的 `__init__` 或 `__new__` 方法可能不会被执行"
     },
     "DiagnosticAddendum": {
