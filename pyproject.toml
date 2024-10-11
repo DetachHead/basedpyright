@@ -22,6 +22,10 @@ dev = [
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
+    # transient dependency of docify, but we need to specify it here explicitly to prevent it from being resolved
+    # to 1.1.0 (the last version compatible with 3.8) because the published package has a different version range
+    # to our dev dependencies
+    "libcst>=1.5.0",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
@@ -31,7 +35,10 @@ getter = "based_build.get_version:get_version"
 
 [tool.pdm.scripts]
 update = "pdm update -G:all"
-refresh_lockfile = "pdm lock --update-reuse -G:all"
+# we specify the python range here because our dev dependencies require at least python 3.9 but we still want to
+# support 3.8 in the published package. ideally we wouldn't because it's EOL but we want to support all versions
+# of python supported by pyright. https://github.com/DetachHead/basedpyright/issues/658
+refresh_lockfile = "pdm lock --update-reuse -G:all --python=\">=3.9\""
 typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
 ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
@@ -87,6 +94,7 @@ requires = [
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
     "docify>=1.0.0",
+    "libcst>=1.5.0",
 ]
 build-backend = "pdm.backend"
 
