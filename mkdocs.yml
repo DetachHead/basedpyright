@@ -65,8 +65,9 @@ extra_css:
   - stylesheets/extra.css
 validation:
   nav:
-    omitted_files: warn
-    absolute_links: info # using awesome-pages plugin so it doesn't recognize them
+    # using awesome-pages plugin so it doesn't recognize these:
+    omitted_files: info
+    absolute_links: info
   links:
     anchors: warn
     absolute_links: warn
