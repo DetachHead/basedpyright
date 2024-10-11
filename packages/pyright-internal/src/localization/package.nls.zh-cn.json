@@ -413,7 +413,7 @@
         "protocolIllegal": "使用 \"Protocol\" 需要 Python 3.7 或更高版本",
         "protocolNotAllowed": "\"Protocol\" 不能用于此上下文",
         "protocolTypeArgMustBeTypeParam": "不能向 \"Protocol\" 传入除 `TypeVar`、`TypeVarTuple`、`ParamSpec` 以外的类型参数",
-        "protocolUnsafeOverlap": "类与 \"{name}\" 不安全的重叠，并且可能在运行时生成匹配项",
+        "protocolUnsafeOverlap": "类与 \"{name}\" 的共有属性/方法声明不完全一致，可能在运行时错误匹配",
         "protocolVarianceContravariant": "Protocol 类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为逆变（`Contravariant`）形式",
         "protocolVarianceCovariant": "Protocol 类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为协变（`Covariant`）形式",
         "protocolVarianceInvariant": "Protocol 类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为不变（`Invariant`）形式",
