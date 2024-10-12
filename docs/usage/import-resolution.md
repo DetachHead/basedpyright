@@ -42,16 +42,16 @@ Pyright uses the following mechanisms (in priority order) to determine which Pyt
 
 ### Editable installs
 
-If you want to use static analysis tools with an editable install, you should configure the editable install to use `.pth` files that contain file paths rather than executable lines (prefixed with `import`) that install import hooks. See your package manager’s documentation for details on how to do this. We have provided some basic information for common package managers below.
+If you want to use static analysis tools with an editable install, you should configure the editable install to use `.pth` files that contain file paths rather than executable lines (prefixed with `import`) that install import hooks. See your build backend’s documentation for details on how to do this. We have provided some basic information for common build backends below.
 
 Import hooks can provide an editable installation that is a more accurate representation of your real installation. However, because resolving module locations using an import hook requires executing Python code, they are not usable by Pyright and other static analysis tools. Therefore, if your editable install is configured to use import hooks, Pyright will be unable to find the corresponding source files.
 
-#### pip / setuptools
-`pip` (`setuptools`) supports two ways to avoid import hooks:
+#### setuptools
+`setuptools` supports two ways to avoid import hooks:
 - [compat mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html#legacy-behavior)
 - [strict mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html#strict-editable-installs)
 
-#### Hatch / Hatchling
+#### Hatchling
 [Hatchling](https://hatch.pypa.io/latest/config/build/#dev-mode) uses path-based `.pth` files by
 default. It will only use import hooks if you set `dev-mode-exact` to `true`.
 
