@@ -46,6 +46,9 @@ If you want to use static analysis tools with an editable install, you should co
 
 Import hooks can provide an editable installation that is a more accurate representation of your real installation. However, because resolving module locations using an import hook requires executing Python code, they are not usable by Pyright and other static analysis tools. Therefore, if your editable install is configured to use import hooks, Pyright will be unable to find the corresponding source files.
 
+#### uv
+[uv](https://docs.astral.sh/uv/concepts/dependencies/#editable-dependencies) always uses path-based `.pth` files.
+
 #### pip / setuptools
 `pip` (`setuptools`) supports two ways to avoid import hooks:
 - [compat mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html#legacy-behavior)
