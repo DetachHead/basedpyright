@@ -1102,18 +1102,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pip-setuptools" class="md-nav__link">
+  <a href="#setuptools" class="md-nav__link">
     <span class="md-ellipsis">
-      pip / setuptools
+      setuptools
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#hatch-hatchling" class="md-nav__link">
+  <a href="#hatchling" class="md-nav__link">
     <span class="md-ellipsis">
-      Hatch / Hatchling
+      Hatchling
     </span>
   </a>
   
@@ -1508,18 +1508,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pip-setuptools" class="md-nav__link">
+  <a href="#setuptools" class="md-nav__link">
     <span class="md-ellipsis">
-      pip / setuptools
+      setuptools
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#hatch-hatchling" class="md-nav__link">
+  <a href="#hatchling" class="md-nav__link">
     <span class="md-ellipsis">
-      Hatch / Hatchling
+      Hatchling
     </span>
   </a>
   
@@ -1629,13 +1629,13 @@
 </li>
 </ol>
 <h3 id="editable-installs">Editable installs</h3>
-<p>If you want to use static analysis tools with an editable install, you should configure the editable install to use <code>.pth</code> files that contain file paths rather than executable lines (prefixed with <code>import</code>) that install import hooks. See your package manager’s documentation for details on how to do this. We have provided some basic information for common package managers below.</p>
+<p>If you want to use static analysis tools with an editable install, you should configure the editable install to use <code>.pth</code> files that contain file paths rather than executable lines (prefixed with <code>import</code>) that install import hooks. See your build backend’s documentation for details on how to do this. We have provided some basic information for common build backends below.</p>
 <p>Import hooks can provide an editable installation that is a more accurate representation of your real installation. However, because resolving module locations using an import hook requires executing Python code, they are not usable by Pyright and other static analysis tools. Therefore, if your editable install is configured to use import hooks, Pyright will be unable to find the corresponding source files.</p>
-<h4 id="pip-setuptools">pip / setuptools</h4>
-<p><code>pip</code> (<code>setuptools</code>) supports two ways to avoid import hooks:
+<h4 id="setuptools">setuptools</h4>
+<p><code>setuptools</code> supports two ways to avoid import hooks:
 - <a href="https://setuptools.pypa.io/en/latest/userguide/development_mode.html#legacy-behavior">compat mode</a>
 - <a href="https://setuptools.pypa.io/en/latest/userguide/development_mode.html#strict-editable-installs">strict mode</a></p>
-<h4 id="hatch-hatchling">Hatch / Hatchling</h4>
+<h4 id="hatchling">Hatchling</h4>
 <p><a href="https://hatch.pypa.io/latest/config/build/#dev-mode">Hatchling</a> uses path-based <code>.pth</code> files by
 default. It will only use import hooks if you set <code>dev-mode-exact</code> to <code>true</code>.</p>
 <h4 id="pdm">PDM</h4>
