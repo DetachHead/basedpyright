@@ -77,5 +77,23 @@
     "editor.unicodeHighlight.nonBasicASCII": true,
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
-    "jest.jestCommandLine": "npm run jest --"
+    "jest.jestCommandLine": "npm run jest --",
+    "files.readonlyInclude": {
+        ".pdm-build/**/*": true,
+        ".pdm-python": true,
+        ".pyprojectx/**/*": true,
+        ".pytest_cache/**/*": true,
+        ".venv/**/*": true,
+        "**/dist/**/*": true,
+        "**/node_modules/**/*": true,
+        "**/out/**/*": true,
+        "basedpyright/index.js": true,
+        "basedpyright/langserver.index.js": true,
+        "docstubs/**/*": true,
+        "package-lock.json": true,
+        "pdm.*.lock": true,
+        "pdm.lock": true,
+        "pw": true,
+        "pw.bat": true
+    }
 }
