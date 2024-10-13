@@ -453,8 +453,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
 
     if (includeNonOverridable) {
         // Do not include these because we don't
-        // want to override it in strict mode or support
-        // it within pyright comments.
+        // want to support it within pyright comments.
         boolRules.push(DiagnosticRule.enableTypeIgnoreComments);
         boolRules.push(DiagnosticRule.enableReachabilityAnalysis);
         boolRules.push(DiagnosticRule.failOnWarnings);
@@ -592,6 +591,9 @@ export const extraOptionDiagnosticRules = [
     deprecatedDiagnosticRules,
 ];
 
+// TODO: should this be removed? there was documentation stating that when typeCheckingMode is "strict"
+// diagnostics can't be overridden with a less strict level. as far as i can tell this isn't the case
+// so i think this function is useless
 export function getStrictModeNotOverriddenRules() {
     // In strict mode, the value in the user config file should be honored and
     // not overwritten by the value from the strict rule set.
