@@ -5,7 +5,7 @@
 groups = ["default", "docstubs_old"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:4d2181df5e4438caa1d57236b091659bf903295d1324b6d57abc99d7eaad00ba"
+content_hash = "sha256:25e93fe07bd10293480fef497999ff1e7996b3fc50c58c505382a902909d6449"
 
 [[metadata.targets]]
 requires_python = ">=3.8"
