@@ -40,7 +40,7 @@ source = "call"
 getter = "based_build.get_version:get_version"
 
 [tool.pdm.scripts]
-update = "pdm update -G dev -G docstubs -d lochelper"
+update = "pdm update -G dev -G docstubs -G lochelper"
 # we specify the python range here because our dev dependencies require at least python 3.9 but we still want to
 # support 3.8 in the published package. ideally we wouldn't because it's EOL but we want to support all versions
 # of python supported by pyright. https://github.com/DetachHead/basedpyright/issues/658
