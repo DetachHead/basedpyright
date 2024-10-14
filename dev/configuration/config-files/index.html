@@ -1954,7 +1954,7 @@ who haven't yet updated to >=1.18.1
 <p><a name="reportUnnecessaryContains"></a> <strong>reportUnnecessaryContains</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>in</code> operations that are statically determined to always evaluate to False or True. Such operations are sometimes indicative of a programming error.</p>
 </li>
 <li>
-<p><a name="reportAssertAlwaysTrue"></a> <strong>reportAssertAlwaysTrue</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>assert</code> statement that will provably always assert because its first argument is a parenthesized tuple (for example, <code>assert (v &gt; 0, "Bad value")</code> when the intent was probably <code>assert v &gt; 0, "Bad value"</code>). This is a common programming error.</p>
+<p><a name="reportAssertAlwaysTrue"></a> <strong>reportAssertAlwaysTrue</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>assert</code> statement that will always succeed because its first argument is a parenthesized tuple (for example, <code>assert (v &gt; 0, "Bad value")</code> when the intent was <code>assert v &gt; 0, "Bad value"</code>). This is a common programming error.</p>
 </li>
 <li>
 <p><a name="reportSelfClsParameterName"></a> <strong>reportSelfClsParameterName</strong> [boolean or string, optional]: Generate or suppress diagnostics for a missing or misnamed “self” parameter in instance methods and “cls” parameter in class methods. Instance methods in metaclasses (classes that derive from “type”) are allowed to use “cls” for instance methods.</p>

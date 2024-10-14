@@ -2,142 +2,142 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.basedpyright.com/dev/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/shoutouts/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/baseline/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/better-defaults/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/errors-on-invalid-configuration/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/fixes-for-rules/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/improved-ci-integration/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/improved-translations/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/inline-typed-dict/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/new-diagnostic-rules/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/pylance-features/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/pypi-package-vscode-pinning/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/configuration/command-line/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/configuration/comments/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/configuration/config-files/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/configuration/language-server-settings/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/development/contributing/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/development/internals/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/development/localization/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/development/upstream/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/getting_started/features/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/getting_started/getting-started/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/getting_started/type-concepts/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/installation/command-line-and-language-server/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/installation/ides/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/installation/pre-commit%20hook/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/builtins/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/commands/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/import-resolution/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/import-statements/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/mypy-comparison/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/type-concepts-advanced/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/type-inference/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/type-stubs/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/usage/typed-libraries/</loc>
-         <lastmod>2024-10-12</lastmod>
+         <lastmod>2024-10-14</lastmod>
     </url>
 </urlset>
