@@ -459,6 +459,7 @@
             "message": "Class \"{type}\" is marked final and must implement all abstract symbols",
             "comment": "{Locked='final'}"
         },
+        "classImplicitlyAbstract": "Class \"{type}\" does not explicitly extend `ABC` or specify `metaclass=ABCMeta` so it must implement all abstract symbols",
         "finalContext": {
             "message": "\"Final\" is not allowed in this context",
             "comment": "{Locked='Final'}"

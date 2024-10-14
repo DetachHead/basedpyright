@@ -418,6 +418,7 @@ export interface DiagnosticRuleSet {
     reportInvalidCast: DiagnosticLevel;
     reportUnsafeMultipleInheritance: DiagnosticLevel;
     reportUnusedParameter: UnusedDiagnosticLevel;
+    reportImplicitAbstractClass: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -543,6 +544,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportPrivateLocalImportUsage,
         DiagnosticRule.reportUnsafeMultipleInheritance,
         DiagnosticRule.reportUnusedParameter,
+        DiagnosticRule.reportImplicitAbstractClass,
     ];
 }
 
@@ -690,6 +692,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
+        reportImplicitAbstractClass: 'none',
     };
 
     return diagSettings;
@@ -801,6 +804,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
+        reportImplicitAbstractClass: 'none',
     };
 
     return diagSettings;
@@ -912,6 +916,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
+        reportImplicitAbstractClass: 'none',
     };
 
     return diagSettings;
@@ -1022,6 +1027,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportInvalidCast: 'error',
     reportUnsafeMultipleInheritance: 'error',
     reportUnusedParameter: 'error',
+    reportImplicitAbstractClass: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1130,6 +1136,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
+        reportImplicitAbstractClass: 'none',
     };
 
     return diagSettings;

@@ -5082,10 +5082,6 @@ export class Checker extends ParseTreeWalker {
     // If a class is marked final, it must implement all abstract methods,
     // otherwise it is of no use.
     private _validateFinalClassNotAbstract(classType: ClassType, errorNode: ClassNode) {
-        if (!ClassType.isFinal(classType)) {
-            return;
-        }
-
         if (!ClassType.supportsAbstractMethods(classType)) {
             return;
         }
@@ -5117,14 +5113,28 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         });
-
-        this._evaluator.addDiagnostic(
-            DiagnosticRule.reportGeneralTypeIssues,
-            LocMessage.finalClassIsAbstract().format({
-                type: classType.shared.name,
-            }) + diagAddendum.getString(),
-            errorNode.d.name
-        );
+        if (ClassType.isFinal(classType)) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportGeneralTypeIssues,
+                LocMessage.finalClassIsAbstract().format({
+                    type: classType.shared.name,
+                }) + diagAddendum.getString(),
+                errorNode.d.name
+            );
+        } else if (
+            !this._getActualBaseClasses(classType).some((baseClass) => baseClass.shared.fullName === 'abc.ABC') &&
+            (!classType.shared.declaredMetaclass?.shared ||
+                !('fullName' in classType.shared.declaredMetaclass.shared) ||
+                classType.shared.declaredMetaclass.shared.fullName !== 'abc.ABCMeta')
+        ) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportImplicitAbstractClass,
+                LocMessage.classImplicitlyAbstract().format({
+                    type: classType.shared.name,
+                }) + diagAddendum.getString(),
+                errorNode.d.name
+            );
+        }
     }
 
     // Reports the case where an instance variable is not declared or initialized

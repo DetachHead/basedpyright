@@ -167,3 +167,35 @@ def print_value(value: str): # "value" is not accessed
 ```
 
 but like with [unreachable code](#reportunreachable), this just greys out code instead of actually reporting it as an error. basedpyright introduces a new `reportUnusedParameter` diagnostic rule which supports all the severity options (`"error"`, `"warning"` and `"none"`) as well as `"unused"`, which is the default behavior in pyright.
+
+## `reportImplicitAbstractClass`
+
+abstract classes in python are declared using a base class called `ABC`, and were designed to be validated at runtime rather than by a static type checker. this means that there's no decent way to ensure on a class's definition that it implements all of the required abstract methods:
+
+```py
+from abc import ABC, abstractmethod
+
+class AbstractFoo(ABC):
+    @abstractmethod
+    def foo(self):
+        ...
+
+# no error here even though you haven't implemented `foo` because pyright assumes you want this class to also be abstract
+class FooImpl(AbstractFoo):
+    def bar(self):
+        print("hi")
+
+foo = FooImpl() # error
+```
+
+this isn't ideal, because you may not necessarily be instantiating the class (eg. if you're developing a library and expect the user to import and instantiate it), meaning this error will go undetected.
+
+the `reportImplicitAbstractClass` rule bans classes like this that are implicitly abstract just because their base class is also abstract. it enforces that the class also explicitly extends `ABC` as well, to indicate that this is intentional:
+
+```py
+# even though Foo also extends ABC and this is technically redundant, it's still required to tell basedpyright that you
+# are intentionally keeping this class abstract
+class FooImpl(AbstractFoo, ABC):
+    def bar(self):
+        print("hi")
+```

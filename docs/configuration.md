@@ -263,6 +263,8 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportUnusedParameter"></a> **reportUnusedParameter** [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.
 
+- <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods.
+
 ## Discouraged options
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.

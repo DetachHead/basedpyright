@@ -723,3 +723,13 @@ test('reportUnusedParameter', () => {
         ],
     });
 });
+
+test('reportImplicitAbstractClass', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportImplicitAbstractClass = 'error';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['implicitAbstractClass.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [{ code: DiagnosticRule.reportImplicitAbstractClass, line: 6 }],
+    });
+});
