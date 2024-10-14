@@ -25,7 +25,8 @@ def run_npm(*args: str):
         raise Exception(f"the following npm command exited with {exit_code=}: {args}")
 
 
-class Hook(BuildHookInterface):
+# https://github.com/pdm-project/pdm-backend/issues/247
+class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
         if context.target not in {"editable", "wheel"}:

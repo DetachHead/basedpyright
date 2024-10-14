@@ -576,6 +576,11 @@
       "$ref": "#/definitions/unused",
       "title": "Controls reporting of unused function parameters",
       "default": "unused"
+    },
+    "reportImplicitAbstractClass": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of abstract classes that do not explicitly extend `ABC`",
+      "default": "none"
     }
   },
   "properties": {
@@ -959,6 +964,9 @@
     "reportUnusedParameter": {
       "$ref": "#/definitions/reportUnusedParameter"
     },
+    "reportImplicitAbstractClass": {
+      "$ref": "#/definitions/reportImplicitAbstractClass"
+    },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
     },
@@ -1300,6 +1308,9 @@
           },
           "reportUnusedParameter": {
             "$ref": "#/definitions/reportUnusedParameter"
+          },
+          "reportImplicitAbstractClass": {
+            "$ref": "#/definitions/reportImplicitAbstractClass"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

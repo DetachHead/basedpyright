@@ -113,4 +113,5 @@ export enum DiagnosticRule {
     reportInvalidCast = 'reportInvalidCast',
     reportUnsafeMultipleInheritance = 'reportUnsafeMultipleInheritance',
     reportUnusedParameter = 'reportUnusedParameter',
+    reportImplicitAbstractClass = 'reportImplicitAbstractClass',
 }
