@@ -1,14 +1,30 @@
 from abc import ABC, abstractmethod, ABCMeta
+from typing import Protocol, override
 
-class Foo(ABC): 
+class A(ABC): 
     @abstractmethod
     def asdf(self) -> int: ...
 
-class Bar(Foo): # error
+class B(A): # error
     pass
 
-class Baz(Foo, metaclass=ABCMeta): 
+class C(A, metaclass=ABCMeta): 
     pass
 
-class Qux(Foo, ABC):
+class D(A, ABC):
+    pass
+
+class E(A):
+    @override
+    def asdf(self) -> int:
+        ...
+
+class F(Protocol):
+    @abstractmethod
+    def asdf(self) -> int: ...
+
+class G(F): # error
+    pass
+
+class H(F, Protocol):
     pass

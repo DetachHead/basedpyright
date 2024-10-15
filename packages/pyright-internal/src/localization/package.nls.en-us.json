@@ -459,7 +459,8 @@
             "message": "Class \"{type}\" is marked final and must implement all abstract symbols",
             "comment": "{Locked='final'}"
         },
-        "classImplicitlyAbstract": "Class \"{type}\" does not explicitly extend `ABC` or specify `metaclass=ABCMeta` so it must implement all abstract symbols",
+        "classImplicitlyAbstract": "Class \"{type}\" is implicitly abstract because it extends an abstract class without implementing all abstract symbols. If this is intentional, add `ABC` to its base classes or use `metaclass=ABCMeta`.",
+        "classImplicitlyProtocol": "Class \"{type}\" is implicitly a `Protocol` because it extends a `Protocol` without implementing all abstract symbols. If this is intentional, add `Protocol` or `ABC` to its base classes, or use `metaclass=ABCMeta`.",
         "finalContext": {
             "message": "\"Final\" is not allowed in this context",
             "comment": "{Locked='Final'}"

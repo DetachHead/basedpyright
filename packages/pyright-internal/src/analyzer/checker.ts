@@ -373,7 +373,7 @@ export class Checker extends ParseTreeWalker {
 
             this._validateInstanceVariableInitialization(node, classTypeResult.classType);
 
-            this._validateFinalClassNotAbstract(classTypeResult.classType, node);
+            this._validateClassNotAbstract(classTypeResult.classType, node);
 
             this._validateDataClassPostInit(classTypeResult.classType);
 
@@ -5079,9 +5079,10 @@ export class Checker extends ParseTreeWalker {
         });
     }
 
-    // If a class is marked final, it must implement all abstract methods,
-    // otherwise it is of no use.
-    private _validateFinalClassNotAbstract(classType: ClassType, errorNode: ClassNode) {
+    /*
+     * If a class is marked final, or if `reportImplicitAbstractClass` is enabled, it must implement all abstract methods
+     */
+    private _validateClassNotAbstract(classType: ClassType, errorNode: ClassNode) {
         if (!ClassType.supportsAbstractMethods(classType)) {
             return;
         }
@@ -5121,19 +5122,28 @@ export class Checker extends ParseTreeWalker {
                 }) + diagAddendum.getString(),
                 errorNode.d.name
             );
-        } else if (
-            !this._getActualBaseClasses(classType).some((baseClass) => baseClass.shared.fullName === 'abc.ABC') &&
-            (!classType.shared.declaredMetaclass?.shared ||
-                !('fullName' in classType.shared.declaredMetaclass.shared) ||
-                classType.shared.declaredMetaclass.shared.fullName !== 'abc.ABCMeta')
-        ) {
-            this._evaluator.addDiagnostic(
-                DiagnosticRule.reportImplicitAbstractClass,
-                LocMessage.classImplicitlyAbstract().format({
-                    type: classType.shared.name,
-                }) + diagAddendum.getString(),
-                errorNode.d.name
-            );
+        } else {
+            const baseClasses = classType.shared.baseClasses.filter(isClass);
+            if (
+                (classType.shared.declaredMetaclass?.category !== TypeCategory.Class ||
+                    !ClassType.isBuiltIn(classType.shared.declaredMetaclass, 'ABCMeta')) &&
+                !baseClasses.some(
+                    (baseClass) => baseClass.shared.fullName === 'abc.ABC' || ClassType.isBuiltIn(baseClass, 'Protocol')
+                )
+            ) {
+                const errorMessage = classType.shared.mro.some(
+                    (baseClass) => isClass(baseClass) && ClassType.isBuiltIn(baseClass, 'Protocol')
+                )
+                    ? LocMessage.classImplicitlyProtocol()
+                    : LocMessage.classImplicitlyAbstract();
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportImplicitAbstractClass,
+                    errorMessage.format({
+                        type: classType.shared.name,
+                    }) + diagAddendum.getString(),
+                    errorNode.d.name
+                );
+            }
         }
     }
 
