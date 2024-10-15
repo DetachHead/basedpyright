@@ -730,6 +730,9 @@ test('reportImplicitAbstractClass', () => {
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['implicitAbstractClass.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
-        errors: [{ code: DiagnosticRule.reportImplicitAbstractClass, line: 6 }],
+        errors: [
+            { code: DiagnosticRule.reportImplicitAbstractClass, line: 7 },
+            { code: DiagnosticRule.reportImplicitAbstractClass, line: 25 },
+        ],
     });
 });

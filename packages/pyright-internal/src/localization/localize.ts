@@ -506,6 +506,8 @@ export namespace Localizer {
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.finalClassIsAbstract'));
         export const classImplicitlyAbstract = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classImplicitlyAbstract'));
+        export const classImplicitlyProtocol = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classImplicitlyProtocol'));
         export const finalContext = () => getRawString('Diagnostic.finalContext');
         export const finalInLoop = () => getRawString('Diagnostic.finalInLoop');
         export const finalMethodOverride = () =>
