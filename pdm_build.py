@@ -38,7 +38,7 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         npm_script_paths = cast(PackageJson, loads((npm_package_dir / package_json).read_text()))[
             "bin"
         ].values()
-        generate_docstubs()
+        generate_docstubs(overwrite=True)
 
         run_npm("ci")
         run_npm("run", "build:cli:dev")
