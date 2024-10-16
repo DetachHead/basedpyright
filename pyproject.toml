@@ -96,7 +96,7 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [build-system]
 requires = [
-    "pdm-backend>=2.3.0",
+    "pdm-backend==2.4.0",
     # required for building the pyright npm package to be bundled in the pypi package.
     # cli is required due to dependencies with install scripts that assume node/npm is in the path
     "nodejs-wheel>=20.13.1",
