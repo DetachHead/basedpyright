@@ -3552,11 +3552,6 @@ export function createTypeEvaluator(
             }
         }
 
-        if (declaredType) {
-            const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(nameNode);
-            declaredType = makeTypeVarsBound(declaredType, liveScopeIds);
-        }
-
         // We found an existing declared type. Make sure the type is assignable.
         let destType = typeResult.type;
         const isTypeAlias =
@@ -3565,7 +3560,11 @@ export function createTypeEvaluator(
         if (declaredType && !isTypeAlias) {
             let diagAddendum = new DiagnosticAddendum();
 
-            if (!assignType(declaredType, typeResult.type, diagAddendum)) {
+            const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(nameNode);
+            const boundDeclaredType = makeTypeVarsBound(declaredType, liveScopeIds);
+            const srcType = makeTypeVarsBound(typeResult.type, liveScopeIds);
+
+            if (!assignType(boundDeclaredType, srcType, diagAddendum)) {
                 // If there was an expected type mismatch, use that diagnostic
                 // addendum because it will be more informative.
                 if (expectedTypeDiagAddendum) {
@@ -3892,7 +3891,7 @@ export function createTypeEvaluator(
             const tupleType = getSpecializedTupleType(subtype);
             if (tupleType && tupleType.priv.tupleTypeArgs) {
                 const sourceEntryTypes = tupleType.priv.tupleTypeArgs.map((t) =>
-                    addConditionToType(t.type, getTypeCondition(subtype), /* skipSelfCondition */ true)
+                    addConditionToType(t.type, getTypeCondition(subtype), { skipSelfCondition: true })
                 );
 
                 const unboundedIndex = tupleType.priv.tupleTypeArgs.findIndex((t) => t.isUnbounded);
@@ -5716,11 +5715,10 @@ export function createTypeEvaluator(
 
                 if (typeResult) {
                     if (!typeResult.typeErrors) {
-                        type = addConditionToType(
-                            typeResult.type,
-                            getTypeCondition(baseType),
-                            /* skipSelfCondition */ true
-                        );
+                        type = addConditionToType(typeResult.type, getTypeCondition(baseType), {
+                            skipSelfCondition: true,
+                            skipBoundTypeVars: true,
+                        });
                     } else {
                         typeErrors = true;
                     }
@@ -5737,7 +5735,7 @@ export function createTypeEvaluator(
                         narrowedTypeForSet = addConditionToType(
                             typeResult.narrowedTypeForSet,
                             getTypeCondition(baseType),
-                            /* skipSelfCondition */ true
+                            { skipSelfCondition: true, skipBoundTypeVars: true }
                         );
                     }
 
@@ -5869,7 +5867,9 @@ export function createTypeEvaluator(
                         const typeResult = getTypeOfBoundMember(node.d.member, subtype, memberName, usage, diag);
 
                         if (typeResult && !typeResult.typeErrors) {
-                            type = addConditionToType(typeResult.type, getTypeCondition(baseType));
+                            type = addConditionToType(typeResult.type, getTypeCondition(baseType), {
+                                skipBoundTypeVars: true,
+                            });
                             if (typeResult.isIncomplete) {
                                 isIncomplete = true;
                             }
@@ -12104,7 +12104,7 @@ export function createTypeEvaluator(
                 eliminateUnsolvedInUnions,
             },
         });
-        specializedReturnType = addConditionToType(specializedReturnType, typeCondition);
+        specializedReturnType = addConditionToType(specializedReturnType, typeCondition, { skipBoundTypeVars: true });
 
         // If the function includes a ParamSpec and the captured signature(s) includes
         // generic types, we may need to apply those solved TypeVars.
@@ -15456,17 +15456,32 @@ export function createTypeEvaluator(
         // As per the specification, we support None, int, bool, str, bytes literals
         // plus enum values.
         const literalTypes: Type[] = [];
+        let isValidTypeForm = true;
 
         for (const item of node.d.items) {
             let type: Type | undefined;
             const itemExpr = item.d.valueExpr;
 
             if (item.d.argCategory !== ArgCategory.Simple) {
-                addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.unpackedArgInTypeArgument(), itemExpr);
-                type = UnknownType.create();
+                if ((flags & EvalFlags.TypeExpression) !== 0) {
+                    addDiagnostic(
+                        DiagnosticRule.reportInvalidTypeForm,
+                        LocMessage.unpackedArgInTypeArgument(),
+                        itemExpr
+                    );
+                    type = UnknownType.create();
+                    isValidTypeForm = false;
+                }
             } else if (item.d.name) {
-                addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.keywordArgInTypeArgument(), itemExpr);
-                type = UnknownType.create();
+                if ((flags & EvalFlags.TypeExpression) !== 0) {
+                    addDiagnostic(
+                        DiagnosticRule.reportInvalidTypeForm,
+                        LocMessage.keywordArgInTypeArgument(),
+                        itemExpr
+                    );
+                    type = UnknownType.create();
+                    isValidTypeForm = false;
+                }
             } else if (itemExpr.nodeType === ParseNodeType.StringList) {
                 const isBytes = (itemExpr.d.strings[0].d.token.flags & StringTokenFlags.Bytes) !== 0;
                 const value = itemExpr.d.strings.map((s) => s.d.value).join('');
@@ -15476,15 +15491,18 @@ export function createTypeEvaluator(
                     type = cloneBuiltinClassWithLiteral(node, classType, 'str', value);
                 }
 
-                itemExpr.d.strings.forEach((stringNode) => {
-                    if ((stringNode.d.token.flags & StringTokenFlags.NamedUnicodeEscape) !== 0) {
-                        addDiagnostic(
-                            DiagnosticRule.reportInvalidTypeForm,
-                            LocMessage.literalNamedUnicodeEscape(),
-                            stringNode
-                        );
-                    }
-                });
+                if ((flags & EvalFlags.TypeExpression) !== 0) {
+                    itemExpr.d.strings.forEach((stringNode) => {
+                        if ((stringNode.d.token.flags & StringTokenFlags.NamedUnicodeEscape) !== 0) {
+                            addDiagnostic(
+                                DiagnosticRule.reportInvalidTypeForm,
+                                LocMessage.literalNamedUnicodeEscape(),
+                                stringNode
+                            );
+                            isValidTypeForm = false;
+                        }
+                    });
+                }
             } else if (itemExpr.nodeType === ParseNodeType.Number) {
                 if (!itemExpr.d.isImaginary && itemExpr.d.isInteger) {
                     type = cloneBuiltinClassWithLiteral(node, classType, 'int', itemExpr.d.value);
@@ -15549,6 +15567,7 @@ export function createTypeEvaluator(
                 if ((flags & EvalFlags.TypeExpression) !== 0) {
                     addDiagnostic(DiagnosticRule.reportInvalidTypeForm, LocMessage.literalUnsupportedType(), item);
                     type = UnknownType.create();
+                    isValidTypeForm = false;
                 } else {
                     return ClassType.cloneAsInstance(classType);
                 }
@@ -15563,7 +15582,7 @@ export function createTypeEvaluator(
             result = TypeBase.cloneAsSpecialForm(result, ClassType.cloneAsInstance(unionTypeClass));
         }
 
-        if (isTypeFormSupported(node)) {
+        if (isTypeFormSupported(node) && isValidTypeForm) {
             result = TypeBase.cloneWithTypeForm(result, convertToInstance(result));
         }
 
@@ -25860,13 +25879,14 @@ export function createTypeEvaluator(
             const destParamName = destParam.param.name ?? '';
             const srcParamName = srcParam.param.name ?? '';
             if (destParamName) {
-                const isDestPositionalOnly = destParam.kind === ParamKind.Positional;
+                const isDestPositionalOnly =
+                    destParam.kind === ParamKind.Positional || destParam.kind === ParamKind.ExpandedArgs;
                 if (
                     !isDestPositionalOnly &&
                     destParam.param.category !== ParamCategory.ArgsList &&
                     srcParam.param.category !== ParamCategory.ArgsList
                 ) {
-                    if (srcParam.kind === ParamKind.Positional) {
+                    if (srcParam.kind === ParamKind.Positional || srcParam.kind === ParamKind.ExpandedArgs) {
                         diag?.createAddendum().addMessage(
                             LocAddendum.functionParamPositionOnly().format({
                                 name: destParamName,
