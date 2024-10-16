@@ -1446,9 +1446,13 @@
 
 
 <h1 id="better-defaults">better defaults</h1>
-<p>we believe that type checkers and linters should be as strict as possible by default, making the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright</p>
+<p>we believe that type checkers and linters should be as strict as possible by default. this ensures that the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright.</p>
 <h2 id="typecheckingmode"><code>typeCheckingMode</code></h2>
-<p>used to be <code>basic</code>, but now defaults to <code>all</code>. while this may seem daunting at first, we support <a href="../baseline/">baselining</a> to allow for easy adoption of more strict rules in existing codebases.</p>
+<p>used to be <code>"basic"</code>, but now defaults to <code>"recommended"</code>, which enables all diagnostic rules by default. this may seem daunting at first, however we have some solutions to address some concerns users may have with this mode:</p>
+<ul>
+<li>less severe diagnostic rules are reported as warnings instead of errors. this reduces <a href="https://en.wikipedia.org/wiki/Alarm_fatigue">alarm fatigue</a> while still ensuring that the user is made aware of all potentential issues that basedpyright can detect. <code>failOnWarnings</code> is also enabled by default in this mode, which causes the CLI to exit with a non-zero exit code if any warnings are detected. you disable this behavior by setting <code>failOnWarnings</code> to <code>false</code>.</li>
+<li>we support <a href="../baseline/">baselining</a> to allow for easy adoption of more strict rules in existing codebases.</li>
+</ul>
 <h2 id="pythonplatform"><code>pythonPlatform</code></h2>
 <p>used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, <code>pythonPlatform</code> defaults to <code>All</code>, which assumes your code can run on any operating system.</p>
 

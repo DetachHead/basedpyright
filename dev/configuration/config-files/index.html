@@ -907,6 +907,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Diagnostic Settings Defaults">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-and-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      "recommended" and "all"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1611,6 +1626,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Diagnostic Settings Defaults">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-and-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      "recommended" and "all"
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1652,7 +1682,7 @@
   <h1>Config files</h1>
 
 <!--
-this file is defined elsewhere and imported here because previous versions of basedpyright contain links to documentation for each diagnostic rule,
+most of this file is defined elsewhere and imported here because previous versions of basedpyright contain links to documentation for each diagnostic rule,
 eg. "https://github.com/microsoft/pyright/blob/main/docs/configuration.md#reportGeneralTypeIssues and we don't want to break those links for users
 who haven't yet updated to >=1.18.1
 -->
@@ -1752,7 +1782,7 @@ who haven't yet updated to >=1.18.1
 <p>The following settings control pyright’s diagnostic output (warnings or errors).</p>
 <ul>
 <li>
-<p><strong>typeCheckingMode</strong> ["off", "basic", "standard", "strict", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "all". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.</p>
+<p><strong>typeCheckingMode</strong> ["off", "basic", "standard", "strict", "recommended", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "recommended". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.</p>
 </li>
 <li>
 <p><strong>ignore</strong> [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden using the <a href="../language-server-settings/">language server settings</a>.</p>
@@ -2009,6 +2039,9 @@ who haven't yet updated to >=1.18.1
 <p>the following additional options are not available in regular pyright:</p>
 <ul>
 <li>
+<p><a name="failOnWarnings"></a> <strong>failOnWarnings</strong> [boolean]: Whether to exit with a non-zero exit code in the CLI if any <code>"warning"</code> diagnostics are reported. Has no effect on the language server. This is equivalent to the <code>--warnings</code> CLI argument.</p>
+</li>
+<li>
 <p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.</p>
 </li>
 <li>
@@ -2151,32 +2184,58 @@ who haven't yet updated to >=1.18.1
 <span class="p">]</span>
 </code></pre></div>
 <h2 id="diagnostic-settings-defaults">Diagnostic Settings Defaults</h2>
-<p>Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings. In strict type checking mode, overrides may only increase the strictness (e.g. increase the severity level from <code>"warning"</code> to <code>"error"</code>).</p>
+<p>Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings.</p>
 <p>Some rules have an additional severity level such as <code>"unused"</code>, <code>"deprecated"</code> or <code>"unreachable"</code>. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to <code>"off"</code>. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as <code>"off"</code>.</p>
-<p>The following table lists the default severity levels for each diagnostic rule within each type checking mode (<code>"off"</code>, <code>"basic"</code>, <code>"standard"</code>, <code>"strict"</code> and <code>"all"</code>).</p>
-<p>note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default <code>typeCheckingMode</code> is <code>"all"</code>). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.</p>
+<p>The following table lists the default severity levels for each diagnostic rule within each type checking mode (<code>"off"</code>, <code>"basic"</code>, <code>"standard"</code>, <code>"strict"</code>, <code>"recommended"</code> and <code>"all"</code>).</p>
+<h3 id="recommended-and-all"><code>"recommended"</code> and <code>"all"</code></h3>
+<p>basedpyright introduces two new diagnostic rulesets in addition to the ones in pyright: <code>"recommended"</code> and <code>"all"</code>. <code>"recommended"</code> enables all diagnostic rules as either <code>"warning"</code> or <code>"error"</code>, but sets <code>failOnWarnings</code> to <code>true</code> so that all diagnostics will still cause a non-zero exit code when run in the CLI. this means <code>"recommended"</code> is essentially the same as <code>"all"</code>, but makes it easier to differentiate errors that are likely to cause a runtime crash like an undefined variable from less serious warnings such as a missing type annotation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>some settings which are enabled by default in pyright are disabled by default in basedpyright (even when <code>typeCheckingMode</code> is <code>"all"</code>). this is because these rules are <a href="#discouraged-options">discouraged</a>, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.</p>
+</div>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Diagnostic Rule</th>
-<th style="text-align: left;">Off</th>
-<th style="text-align: left;">Basic</th>
-<th style="text-align: left;">Standard</th>
-<th style="text-align: left;">Strict</th>
-<th style="text-align: left;">All</th>
+<th style="text-align: left;"><strong>Diagnostic Rule</strong></th>
+<th style="text-align: left;"><strong>off</strong></th>
+<th style="text-align: left;"><strong>basic</strong></th>
+<th style="text-align: left;"><strong>standard</strong></th>
+<th style="text-align: left;"><strong>strict</strong></th>
+<th style="text-align: left;"><strong>recommended</strong></th>
+<th style="text-align: left;"><strong>all</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">analyzeUnannotatedFunctions</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
+<td style="text-align: left;">strictListInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 </tr>
 <tr>
-<td style="text-align: left;">disableBytesTypePromotions</td>
+<td style="text-align: left;">strictSetInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictDictionaryInference</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">analyzeUnannotatedFunctions</td>
+<td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
@@ -2190,41 +2249,11 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
-</tr>
-<tr>
-<td style="text-align: left;">enableTypeIgnoreComments</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">false</td>
-</tr>
-<tr>
-<td style="text-align: left;">enableReachabilityAnalysis</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 </tr>
 <tr>
-<td style="text-align: left;">strictListInference</td>
+<td style="text-align: left;">enableExperimentalFeatures</td>
 <td style="text-align: left;">false</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-</tr>
-<tr>
-<td style="text-align: left;">strictDictionaryInference</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">false</td>
-<td style="text-align: left;">true</td>
-<td style="text-align: left;">true</td>
-</tr>
-<tr>
-<td style="text-align: left;">strictSetInference</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
@@ -2238,25 +2267,65 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
 </tr>
 <tr>
-<td style="text-align: left;">enableExperimentalFeatures</td>
+<td style="text-align: left;">disableBytesTypePromotions</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableTypeIgnoreComments</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableReachabilityAnalysis</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">failOnWarnings</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">false</td>
 <td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportMissingModuleSource</td>
+<td style="text-align: left;">reportGeneralTypeIssues</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPropertyTypeMismatch</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportInvalidTypeForm</td>
+<td style="text-align: left;">reportFunctionMemberAccess</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2270,36 +2339,23 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUndefinedVariable</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportAssertAlwaysTrue</td>
+<td style="text-align: left;">reportMissingModuleSource</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportInvalidStringEscapeSequence</td>
+<td style="text-align: left;">reportInvalidTypeForm</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportInvalidTypeVarUse</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
@@ -2309,30 +2365,61 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportSelfClsParameterName</td>
+<td style="text-align: left;">reportImportCycles</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnsupportedDunderAll</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportUnusedExpression</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">reportUnusedImport</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedClass</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedFunction</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedVariable</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportDuplicateImport</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2341,11 +2428,13 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportAbstractUsage</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2358,10 +2447,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportAssertTypeFailure</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2374,10 +2465,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportAttributeAccessIssue</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2390,18 +2483,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportGeneralTypeIssues</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportInconsistentOverload</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2414,10 +2501,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportInvalidTypeArguments</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2430,10 +2519,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportOperatorIssue</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2446,10 +2537,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportOptionalMemberAccess</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2462,10 +2555,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportOptionalIterable</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2478,10 +2573,12 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportOptionalOperand</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2493,11 +2590,13 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportReturnType</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -2510,6 +2609,61 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedFunctionDecorator</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedClassDecorator</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedBaseClass</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUntypedNamedTuple</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPrivateUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportTypeCommentUsage</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportPrivateImportUsage</td>
@@ -2517,46 +2671,25 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportUnboundVariable</td>
+<td style="text-align: left;">reportConstantRedefinition</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnhashable</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportUnusedCoroutine</td>
-<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">reportDeprecated</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"deprecated"</td>
 <td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnusedExcept</td>
-<td style="text-align: left;">"unreachable"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportFunctionMemberAccess</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2566,9 +2699,20 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportIncompatibleVariableOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInconsistentConstructor</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
@@ -2582,6 +2726,7 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportPossiblyUnboundVariable</td>
@@ -2590,261 +2735,6 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportConstantRedefinition</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportDeprecated</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportDuplicateImport</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportIncompleteStub</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportInconsistentConstructor</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportInvalidStubStatement</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportMatchNotExhaustive</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportMissingParameterType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportMissingTypeArgument</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportPrivateUsage</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportTypeCommentUsage</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnknownArgumentType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnknownLambdaType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnknownMemberType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnknownParameterType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnknownVariableType</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnnecessaryCast</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnnecessaryComparison</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnnecessaryContains</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnnecessaryIsInstance</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnusedClass</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnusedImport</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnusedFunction</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnusedVariable</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUntypedBaseClass</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUntypedClassDecorator</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUntypedFunctionDecorator</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUntypedNamedTuple</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportCallInDefaultInitializer</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportImplicitOverride</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportImplicitStringConcatenation</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportImportCycles</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2854,21 +2744,6 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportPropertyTypeMismatch</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportShadowedImports</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2878,13 +2753,213 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
-<td style="text-align: left;">reportUnnecessaryTypeIgnoreComment</td>
+<td style="text-align: left;">reportInvalidStringEscapeSequence</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownParameterType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownArgumentType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownLambdaType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownVariableType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnknownMemberType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingParameterType</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMissingTypeArgument</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidTypeVarUse</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportCallInDefaultInitializer</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryIsInstance</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryCast</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryComparison</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryContains</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportAssertAlwaysTrue</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportSelfClsParameterName</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitStringConcatenation</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUndefinedVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnhashable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnboundVariable</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidStubStatement</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIncompleteStub</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnsupportedDunderAll</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2893,6 +2968,70 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedCoroutine</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedExcept</td>
+<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnusedExpression</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportUnnecessaryTypeIgnoreComment</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportMatchNotExhaustive</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportShadowedImports</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2901,6 +3040,7 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"unreachable"</td>
 <td style="text-align: left;">"unreachable"</td>
 <td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2909,6 +3049,7 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2917,22 +3058,7 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportPrivateLocalImportUsage</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportImplicitRelativeImport</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
@@ -2942,6 +3068,25 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitRelativeImport</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportPrivateLocalImportUsage</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportUnsafeMultipleInheritance</td>
@@ -2950,6 +3095,7 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
+<td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedParameter</td>
@@ -2957,6 +3103,16 @@ who haven't yet updated to >=1.18.1
 <td style="text-align: left;">"unused"</td>
 <td style="text-align: left;">"unused"</td>
 <td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportImplicitAbstractClass</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 </tbody>
