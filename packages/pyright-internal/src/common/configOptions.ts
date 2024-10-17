@@ -1272,6 +1272,17 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
 
 export const allTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'recommended', 'all'] as const;
 
+export const getDiagnosticRulesets = () =>
+    [...getBooleanDiagnosticRules(true), ...getDiagLevelDiagnosticRules()].map((rule) => ({
+        'Diagnostic Rule': rule,
+        ...Object.fromEntries(
+            allTypeCheckingModes.map((typeCheckingMode) => [
+                typeCheckingMode,
+                ConfigOptions.getDiagnosticRuleSet(typeCheckingMode)[rule],
+            ])
+        ),
+    }));
+
 export function matchFileSpecs(configOptions: ConfigOptions, uri: Uri, isFile = true) {
     for (const includeSpec of configOptions.include) {
         if (FileSpec.matchIncludeFileSpec(includeSpec.regExp, configOptions.exclude, uri, isFile)) {

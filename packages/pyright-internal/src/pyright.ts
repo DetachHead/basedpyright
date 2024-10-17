@@ -50,12 +50,7 @@ import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
 import { BaselineHandler } from './baseline';
 import { pluralize } from './common/stringUtils';
-import {
-    allTypeCheckingModes,
-    ConfigOptions,
-    getBooleanDiagnosticRules,
-    getDiagLevelDiagnosticRules,
-} from './common/configOptions';
+import { getDiagnosticRulesets } from './common/configOptions';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -203,19 +198,7 @@ async function processArgs(): Promise<ExitStatus> {
         return ExitStatus.ParameterError;
     }
     if (args.printdiagnosticrulesets) {
-        console.log(
-            JSON.stringify(
-                [...getBooleanDiagnosticRules(true), ...getDiagLevelDiagnosticRules()].map((rule) => ({
-                    'Diagnostic Rule': rule,
-                    ...Object.fromEntries(
-                        allTypeCheckingModes.map((typeCheckingMode) => [
-                            typeCheckingMode,
-                            ConfigOptions.getDiagnosticRuleSet(typeCheckingMode)[rule],
-                        ])
-                    ),
-                }))
-            )
-        );
+        console.log(JSON.stringify(getDiagnosticRulesets()));
         return ExitStatus.NoErrors;
     }
     if (args.help !== undefined) {
