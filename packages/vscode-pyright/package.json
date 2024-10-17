@@ -1768,9 +1768,9 @@
         "prepackage": "node ./build/renamePackage.js basedpyright",
         "package": "vsce package",
         "postpackage": "node ./build/renamePackage.js vscode-pyright",
-        "vscode:prepublish": "node ./build/checkPackage.js && npm run clean && webpack --mode production --progress && shx cp ../../README.md .",
-        "webpack": "webpack --mode development --progress",
-        "webpack-dev": "npm run clean && webpack --mode development --watch --progress"
+        "vscode:prepublish": "node ./build/checkPackage.js && npm run clean && rspack --mode production && shx cp ../../README.md .",
+        "webpack": "rspack --mode development",
+        "webpack-dev": "npm run clean && rspack --mode development --watch"
     },
     "dependencies": {
         "@vscode/python-extension": "^1.0.5",
@@ -1780,16 +1780,15 @@
         "vscode-languageserver-protocol": "^3.17.6-next.10"
     },
     "devDependencies": {
+        "@rspack/cli": "^1.0.8",
+        "@rspack/core": "^1.0.8",
         "@types/node": "^22.7.0",
         "@types/vscode": "^1.82.0",
         "@vscode/vsce": "^2.32.0",
-        "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",
         "ovsx": "^0.8.3",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
-        "typescript": "~5.5.4",
-        "webpack": "^5.94.0",
-        "webpack-cli": "^5.1.4"
+        "typescript": "~5.5.4"
     }
 }

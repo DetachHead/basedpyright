@@ -4,13 +4,13 @@
  */
 
 const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+const { CopyRspackPlugin } = require('@rspack/core');
 const { tsconfigResolveAliases } = require('../../../../../build/lib/webpack');
 
 const outPath = path.resolve(__dirname, '..', '..', '..', 'out');
 const typeshedFallback = path.resolve(__dirname, '..', '..', '..', '..', '..', 'docstubs');
 
-/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => import('webpack').Configuration}*/
+/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => import('@rspack/core').Configuration}*/
 module.exports = (_, { mode }) => {
     return {
         context: __dirname,
@@ -60,6 +60,6 @@ module.exports = (_, { mode }) => {
                 },
             ],
         },
-        plugins: [new CopyPlugin({ patterns: [{ from: typeshedFallback, to: 'typeshed-fallback' }] })],
+        plugins: [new CopyRspackPlugin({ patterns: [{ from: typeshedFallback, to: 'typeshed-fallback' }] })],
     };
 };
