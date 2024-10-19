@@ -8571,6 +8571,7 @@ export function createTypeEvaluator(
             !isTypeSame(assertedType, arg0Type, {
                 treatAnySameAsUnknown: true,
                 ignorePseudoGeneric: true,
+                ignoreConditions: true,
             })
         ) {
             const srcDestTypes = printSrcDestTypes(arg0TypeResult.type, assertedType, { expandTypeAlias: true });
@@ -19174,9 +19175,9 @@ export function createTypeEvaluator(
                     return type;
                 }
 
-                // Is this an unpacked TypedDict? If so, return it unmodified.
+                // Is this an unpacked TypedDict? If so, return its packed version.
                 if (isClassInstance(type) && ClassType.isTypedDictClass(type) && type.priv.isUnpacked) {
-                    return type;
+                    return ClassType.cloneForPacked(type);
                 }
 
                 // Wrap the type in a dict with str keys.
