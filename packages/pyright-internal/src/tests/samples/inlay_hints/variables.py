@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal
 from typing_extensions import TypeVar, ParamSpec
 
@@ -15,3 +16,6 @@ def asdf(a: Foo, b: type[Foo], c: int | str, d: Literal[1, 2], e: type[int]) -> 
     baz = c # inlay hint
     qux = d # inlay hint
     quxx = e # inlay hint (type, but not TypeAlias)
+
+class Baz(Enum):
+    a = 1 # no inlay hint

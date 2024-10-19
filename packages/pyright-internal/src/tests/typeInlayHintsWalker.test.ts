@@ -7,37 +7,37 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 80,
+                position: 102,
                 value: ': str',
             },
             {
                 inlayHintType: 'variable',
-                position: 386,
+                position: 408,
                 value: ': TypeAlias',
             },
             {
                 inlayHintType: 'variable',
-                position: 547,
+                position: 569,
                 value: ': Foo',
             },
             {
                 inlayHintType: 'variable',
-                position: 572,
+                position: 594,
                 value: ': type[int]',
             },
             {
                 inlayHintType: 'variable',
-                position: 623,
+                position: 645,
                 value: ': int | str',
             },
             {
                 inlayHintType: 'variable',
-                position: 648,
+                position: 670,
                 value: ': Literal[1, 2]',
             },
             {
                 inlayHintType: 'variable',
-                position: 674,
+                position: 696,
                 value: ': type[int]',
             },
         ]);
@@ -72,7 +72,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 80,
+                position: 102,
                 value: ': str',
             },
         ]);
