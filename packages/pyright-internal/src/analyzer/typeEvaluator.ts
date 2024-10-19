@@ -26011,6 +26011,7 @@ export function createTypeEvaluator(
                 }
             } else if (
                 destParam.kind !== ParamKind.Positional &&
+                destParam.kind !== ParamKind.ExpandedArgs &&
                 srcParam.kind === ParamKind.Positional &&
                 srcParamDetails.kwargsIndex === undefined &&
                 !srcParamDetails.params.some(
@@ -26153,8 +26154,10 @@ export function createTypeEvaluator(
                             canAssign = false;
                         }
 
+                        const destParamKind = destParamDetails.params[paramIndex].kind;
                         if (
-                            destParamDetails.params[paramIndex].kind !== ParamKind.Positional &&
+                            destParamKind !== ParamKind.Positional &&
+                            destParamKind !== ParamKind.ExpandedArgs &&
                             srcParamDetails.kwargsIndex === undefined
                         ) {
                             diag?.addMessage(
@@ -26266,7 +26269,8 @@ export function createTypeEvaluator(
                         if (
                             param.param.name &&
                             param.param.category === ParamCategory.Simple &&
-                            param.kind !== ParamKind.Positional
+                            param.kind !== ParamKind.Positional &&
+                            param.kind !== ParamKind.ExpandedArgs
                         ) {
                             destParamMap.set(param.param.name, param);
                         }
@@ -27154,7 +27158,8 @@ export function createTypeEvaluator(
                 ) {
                     if (
                         !FunctionParam.isNameSynthesized(baseParam) &&
-                        baseParamDetails.params[i].kind !== ParamKind.Positional
+                        baseParamDetails.params[i].kind !== ParamKind.Positional &&
+                        baseParamDetails.params[i].kind !== ParamKind.ExpandedArgs
                     ) {
                         diag?.addMessage(
                             LocAddendum.overrideParamNamePositionOnly().format({
