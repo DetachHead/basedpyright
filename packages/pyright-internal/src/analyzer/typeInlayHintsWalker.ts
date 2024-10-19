@@ -2,6 +2,7 @@ import { Range } from 'vscode-languageserver-types';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 import { isDunderName, isUnderscoreOnlyName } from '../analyzer/symbolNameUtils';
 import {
+    ClassType,
     FunctionType,
     Type,
     getTypeAliasInfo,
@@ -15,6 +16,7 @@ import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
     CallNode,
+    ClassNode,
     FunctionNode,
     NameNode,
     ParamCategory,
@@ -28,6 +30,7 @@ import { convertRangeToTextRange } from '../common/positionUtils';
 import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
 import { InlayHintSettings } from '../common/languageServerInterface';
+import { transformTypeForEnumMember } from './enums';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter';
@@ -93,6 +96,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
     parseResults?: ParseFileResults;
     private _range: TextRange | undefined;
+    private _variablesThatShouldntHaveInlayHints = new Set<ParseNode>();
 
     constructor(
         private readonly _program: ProgramView,
@@ -110,13 +114,34 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         }
     }
 
+    override visitClass(node: ClassNode): boolean {
+        const evaluator = this._program.evaluator;
+        if (evaluator) {
+            const classType = evaluator.getTypeOfClass(node)?.classType;
+            // prevent inlay hints from appearing on enum members
+            if (classType && ClassType.isEnumClass(classType)) {
+                ClassType.getSymbolTable(classType).forEach((symbol, name) => {
+                    const symbolType = transformTypeForEnumMember(evaluator, classType, name, true);
+                    if (symbolType) {
+                        const nameNode = symbol.getDeclarations()[0]?.node;
+                        if (nameNode) {
+                            this._variablesThatShouldntHaveInlayHints.add(nameNode);
+                        }
+                    }
+                });
+            }
+        }
+        return super.visitClass(node);
+    }
+
     override visitName(node: NameNode): boolean {
         if (
             this._settings.variableTypes &&
             this._checkInRange(node) &&
             isLeftSideOfAssignment(node) &&
             !isDunderName(node.d.value) &&
-            !isUnderscoreOnlyName(node.d.value)
+            !isUnderscoreOnlyName(node.d.value) &&
+            !this._variablesThatShouldntHaveInlayHints.has(node)
         ) {
             const type = this._program.evaluator?.getType(node);
             if (
