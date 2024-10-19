@@ -84,6 +84,7 @@ import {
     mapSubtypes,
     partiallySpecializeType,
     preserveUnknown,
+    shouldUseVarianceForSpecialization,
     specializeTupleClass,
     specializeWithUnknownTypeArgs,
     transformPossibleRecursiveTypeAlias,
@@ -774,7 +775,12 @@ function narrowTypeBasedOnClassPattern(
     // specialize it with Unknown type arguments.
     if (isClass(exprType) && !exprType.props?.typeAliasInfo) {
         exprType = ClassType.cloneRemoveTypePromotions(exprType);
-        exprType = specializeWithUnknownTypeArgs(exprType, evaluator.getTupleClassType());
+        evaluator.inferVarianceForClass(exprType);
+        exprType = specializeWithUnknownTypeArgs(
+            exprType,
+            evaluator.getTupleClassType(),
+            shouldUseVarianceForSpecialization(type) ? evaluator.getObjectType() : undefined
+        );
     }
 
     // Are there any positional arguments? If so, try to get the mappings for
