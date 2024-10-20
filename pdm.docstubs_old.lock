@@ -3,7 +3,7 @@
 
 [metadata]
 groups = ["default", "docstubs_old"]
-strategy = ["inherit_metadata"]
+strategy = []
 lock_version = "4.5.0"
 content_hash = "sha256:25e93fe07bd10293480fef497999ff1e7996b3fc50c58c505382a902909d6449"
 
@@ -13,10 +13,7 @@ requires_python = ">=3.8"
 [[package]]
 name = "colorama"
 version = "0.4.6"
-requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
-summary = "Cross-platform colored terminal text."
-groups = ["docstubs_old"]
-marker = "platform_system == \"Windows\""
+summary = ""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
@@ -25,12 +22,10 @@ files = [
 [[package]]
 name = "docify"
 version = "1.0.0"
-requires_python = ">=3.8"
-summary = "A script to add docstrings to Python type stubs using reflection"
-groups = ["docstubs_old"]
+summary = ""
 dependencies = [
-    "libcst>=1.1.0",
-    "tqdm>=4.66.4",
+    "libcst",
+    "tqdm",
 ]
 files = [
     {file = "docify-1.0.0-py3-none-any.whl", hash = "sha256:518b4ad32eaec2ff527968055ee74ca2fbf9cabad3eb0e4db830fa06997e5609"},
@@ -40,13 +35,11 @@ files = [
 [[package]]
 name = "libcst"
 version = "1.1.0"
-requires_python = ">=3.8"
-summary = "A concrete syntax tree with AST-like properties for Python 3.5, 3.6, 3.7, 3.8, 3.9, and 3.10 programs."
-groups = ["docstubs_old"]
+summary = ""
 dependencies = [
-    "pyyaml>=5.2",
-    "typing-extensions>=3.7.4.2",
-    "typing-inspect>=0.4.0",
+    "pyyaml",
+    "typing-extensions",
+    "typing-inspect",
 ]
 files = [
     {file = "libcst-1.1.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:63f75656fd733dc20354c46253fde3cf155613e37643c3eaf6f8818e95b7a3d1"},
@@ -85,9 +78,7 @@ files = [
 [[package]]
 name = "mypy-extensions"
 version = "1.0.0"
-requires_python = ">=3.5"
-summary = "Type system extensions for programs checked with the mypy type checker."
-groups = ["docstubs_old"]
+summary = ""
 files = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
     {file = "mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782"},
@@ -96,9 +87,7 @@ files = [
 [[package]]
 name = "nodejs-wheel-binaries"
 version = "20.18.0"
-requires_python = ">=3.7"
-summary = "unoffical Node.js package"
-groups = ["default"]
+summary = ""
 files = [
     {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:74273eab1c2423c04d034d3f707f517da32d3a2b20ca244b5667f3a4e38003ac"},
     {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:f95fb0989dfc54fd6932850e589000a8d6fc902527cebe7afd747696561d94b8"},
@@ -112,9 +101,7 @@ files = [
 [[package]]
 name = "pyyaml"
 version = "6.0.2"
-requires_python = ">=3.8"
-summary = "YAML parser and emitter for Python"
-groups = ["docstubs_old"]
+summary = ""
 files = [
     {file = "PyYAML-6.0.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0a9a2848a5b7feac301353437eb7d5957887edbf81d56e903999a75a3d743086"},
     {file = "PyYAML-6.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:29717114e51c84ddfba879543fb232a6ed60086602313ca38cce623c1d62cfbf"},
@@ -174,9 +161,7 @@ files = [
 [[package]]
 name = "tqdm"
 version = "4.66.5"
-requires_python = ">=3.7"
-summary = "Fast, Extensible Progress Meter"
-groups = ["docstubs_old"]
+summary = ""
 dependencies = [
     "colorama; platform_system == \"Windows\"",
 ]
@@ -188,9 +173,7 @@ files = [
 [[package]]
 name = "typing-extensions"
 version = "4.12.2"
-requires_python = ">=3.8"
-summary = "Backported and Experimental Type Hints for Python 3.8+"
-groups = ["docstubs_old"]
+summary = ""
 files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
@@ -199,12 +182,10 @@ files = [
 [[package]]
 name = "typing-inspect"
 version = "0.9.0"
-summary = "Runtime inspection utilities for typing module."
-groups = ["docstubs_old"]
+summary = ""
 dependencies = [
-    "mypy-extensions>=0.3.0",
-    "typing-extensions>=3.7.4",
-    "typing>=3.7.4; python_version < \"3.5\"",
+    "mypy-extensions",
+    "typing-extensions",
 ]
 files = [
     {file = "typing_inspect-0.9.0-py3-none-any.whl", hash = "sha256:9ee6fc59062311ef8547596ab6b955e1b8aa46242d854bfc78f4f6b0eff35f9f"},
