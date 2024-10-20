@@ -35,7 +35,7 @@ import { ConstraintTracker } from './constraintTracker';
 import { Declaration } from './declaration';
 import * as DeclarationUtils from './declarationUtils';
 import { SymbolWithScope } from './scope';
-import { Symbol } from './symbol';
+import { Symbol, SynthesizedTypeInfo } from './symbol';
 import { PrintTypeFlags } from './typePrinter';
 import {
     AnyType,
@@ -518,11 +518,6 @@ export interface MapSubtypesOptions {
 export interface CallSiteEvaluationInfo {
     errorNode: ExpressionNode;
     args: ValidateArgTypeParams[];
-}
-
-export interface SynthesizedTypeInfo {
-    type: Type;
-    node: NameNode;
 }
 
 export interface SymbolDeclInfo {
