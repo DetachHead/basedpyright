@@ -7,8 +7,6 @@
  * Class that holds the configuration options for the analyzer.
  */
 
-import { isAbsolute } from 'path';
-
 import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
 import { appendArray } from './collectionUtils';
@@ -1570,8 +1568,6 @@ export class ConfigOptions {
                     (configValue as unknown[]).forEach((fileSpec, index) => {
                         if (typeof fileSpec !== 'string') {
                             errors.push(`Index ${index} of "${key}" array should be a string.`);
-                        } else if (isAbsolute(fileSpec)) {
-                            errors.push(`path "${fileSpec}" in "${key}" array should be relative.`);
                         } else {
                             // We'll allow absolute paths. While it
                             // is not recommended to use absolute paths anywhere in
