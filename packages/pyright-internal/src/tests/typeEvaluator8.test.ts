@@ -689,6 +689,12 @@ test('Self10', () => {
     TestUtils.validateResults(analysisResults, 2);
 });
 
+test('Self11', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['self11.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('UnusedVariable1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
@@ -790,6 +796,11 @@ test('TupleUnpack3', () => {
 test('TupleUnpack4', () => {
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['tupleUnpack4.py']);
     TestUtils.validateResults(analysisResults1, 2);
+});
+
+test('TupleUnpack5', () => {
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['tupleUnpack5.py']);
+    TestUtils.validateResults(analysisResults1, 0);
 });
 
 test('PseudoGeneric1', () => {

@@ -60,6 +60,7 @@ import {
     isEffectivelyInstantiable,
     isLiteralTypeOrUnion,
     isPartlyUnknown,
+    makePacked,
     makeUnpacked,
     mapSubtypes,
     simplifyFunctionToParamSpec,
@@ -107,6 +108,12 @@ export function assignTypeVar(
         if (constraints) {
             logConstraints(evaluator, constraints, indent);
         }
+    }
+
+    // If both src and dest types are packed, unpack them both.
+    if (isUnpacked(destType) && isUnpacked(srcType)) {
+        destType = TypeVarType.cloneForPacked(destType);
+        srcType = makePacked(srcType);
     }
 
     // If the TypeVar doesn't have a scope ID, then it's being used
@@ -816,7 +823,12 @@ function assignUnconstrainedTypeVar(
                         recursionCount
                     )
                 ) {
-                    newLowerBound = adjSrcType;
+                    // If the source is a TypeVar that just got assigned the value
+                    // of the current lower bound, don't replace the current lower
+                    // bound with the TypeVar.
+                    if (!isTypeVar(adjSrcType)) {
+                        newLowerBound = adjSrcType;
+                    }
                 } else if (isTypeVarTuple(destType)) {
                     const widenedType = widenTypeForTypeVarTuple(evaluator, curLowerBound, adjSrcType);
                     if (!widenedType) {

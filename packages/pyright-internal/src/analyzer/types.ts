@@ -168,15 +168,15 @@ interface CachedTypeInfo {
 export interface TypeBaseProps {
     // Used to handle nested references to instantiable classes
     // (e.g. type[type[type[T]]]). If the field isn't present,
-    // it is assumed to be zero.
+    // it is assumed to be zero
     instantiableDepth: number | undefined;
 
     // Used in cases where the type is a special form when used in a
-    // value expression such as UnionType, Literal, or Required.
+    // value expression such as UnionType, Literal, or Required
     specialForm: ClassType | undefined;
 
     // Used for "type form" objects, the evaluated form
-    // of a type expression in a value expression context.
+    // of a type expression in a value expression context
     typeForm: Type | undefined;
 
     // Used only for type aliases
@@ -697,6 +697,7 @@ interface ClassDetailsShared {
     dataClassBehaviors?: DataClassBehaviors | undefined;
     namedTupleEntries?: Set<string> | undefined;
     typedDictEntries?: TypedDictEntries | undefined;
+    typedDictExtraItemsExpr?: ExpressionNode | undefined;
     localSlotsNames?: string[];
 
     // If the class is decorated with a @deprecated decorator, this
@@ -828,6 +829,9 @@ export interface ClassDetailsPriv {
     // the "deprecated" class. This allows these instances to be used
     // as decorators for other classes or functions.
     deprecatedInstanceMessage?: string | undefined;
+
+    // Special-case fields for partial class.
+    partialCallType?: Type | undefined;
 }
 
 export interface ClassType extends TypeBase<TypeCategory.Class> {
@@ -1002,12 +1006,9 @@ export namespace ClassType {
         return newClassType;
     }
 
-    export function cloneForSymbolTableUpdate(classType: ClassType): ClassType {
+    export function cloneForPartial(classType: ClassType, partialCallType: Type): ClassType {
         const newClassType = TypeBase.cloneType(classType);
-        newClassType.shared = { ...newClassType.shared };
-        newClassType.shared.fields = new Map(newClassType.shared.fields);
-        newClassType.shared.mro = Array.from(newClassType.shared.mro);
-        newClassType.shared.mro[0] = cloneAsInstantiable(newClassType);
+        newClassType.priv.partialCallType = partialCallType;
         return newClassType;
     }
 
@@ -1500,11 +1501,11 @@ export interface FunctionParam {
     flags: FunctionParamFlags;
     name: string | undefined;
 
-    // Use getEffectiveParamType to access this field.
+    // Use getParamType to access this field.
     // eslint-disable-next-line @typescript-eslint/naming-convention
     _type: Type;
 
-    // Use getEffectiveParamDefaultArgType to access this field.
+    // Use getParamDefaultType to access this field.
     // eslint-disable-next-line @typescript-eslint/naming-convention
     _defaultType: Type | undefined;
 
@@ -2928,10 +2929,13 @@ export namespace TypeVarType {
         return newInstance;
     }
 
-    export function cloneForPacked(type: TypeVarTupleType) {
+    export function cloneForPacked(type: TypeVarType) {
         const newInstance = TypeBase.cloneType(type);
         newInstance.priv.isUnpacked = false;
-        newInstance.priv.isInUnion = false;
+
+        if (isTypeVarTuple(newInstance)) {
+            newInstance.priv.isInUnion = false;
+        }
 
         if (newInstance.priv.freeTypeVar) {
             newInstance.priv.freeTypeVar = TypeVarType.cloneForPacked(newInstance.priv.freeTypeVar);
@@ -3359,12 +3363,6 @@ export function isTypeSame(type1: Type, type2: Type, options: TypeSameOptions = 
             }
 
             if (!ClassType.isLiteralValueSame(type1, classType2)) {
-                return false;
-            }
-
-            // This test is required for the "partial" class, which clones
-            // the symbol table to add a custom __call__ method.
-            if (type1.shared.fields !== classType2.shared.fields) {
                 return false;
             }
 

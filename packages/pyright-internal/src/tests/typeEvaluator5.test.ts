@@ -18,7 +18,7 @@ test('TypeParams1', () => {
     configOptions.defaultPythonVersion = pythonVersion3_12;
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeParams1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 6);
 });
 
 test('TypeParams2', () => {
@@ -144,6 +144,14 @@ test('TypeAliasStatement4', () => {
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeAliasStatement4.py'], configOptions);
     TestUtils.validateResults(analysisResults, 5);
+});
+
+test('TypeAliasStatement5', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.defaultPythonVersion = pythonVersion3_12;
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeAliasStatement5.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('Hashability1', () => {
@@ -341,7 +349,7 @@ test('TypedDictClosed1', () => {
     configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDictClosed1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 7);
+    TestUtils.validateResults(analysisResults, 6);
 });
 
 test('TypedDictClosed2', () => {

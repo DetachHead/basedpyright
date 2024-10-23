@@ -147,11 +147,11 @@ export interface DiagnosticRuleSet {
     // Use tagged hints to identify unreachable code via type analysis?
     enableReachabilityAnalysis: boolean;
 
-    // No longer treat bytearray and memoryview as subclasses of bytes?
-    disableBytesTypePromotions: boolean;
-
     // Treat old typing aliases as deprecated if pythonVersion >= 3.9?
     deprecateTypingAliases: boolean;
+
+    // No longer treat bytearray and memoryview as subclasses of bytes?
+    disableBytesTypePromotions: boolean;
 
     // Report general type issues?
     reportGeneralTypeIssues: DiagnosticLevel;
@@ -1573,6 +1573,10 @@ export class ConfigOptions {
                         } else if (isAbsolute(fileSpec)) {
                             errors.push(`path "${fileSpec}" in "${key}" array should be relative.`);
                         } else {
+                            // We'll allow absolute paths. While it
+                            // is not recommended to use absolute paths anywhere in
+                            // the config file, there are a few legit use cases for ignore
+                            // paths when the conf file is used with a language server.
                             this[key].push(getFileSpec(configDirUri, fileSpec));
                         }
                     });

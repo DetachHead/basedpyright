@@ -19,8 +19,9 @@ import {
 } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper } from '../analyzer/sourceMapper';
+import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { isBuiltInModule } from '../analyzer/typeDocStringUtils';
-import { PrintTypeOptions, SynthesizedTypeInfo, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { PrintTypeOptions, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { convertToInstance, doForEachSubtype, isMaybeDescriptorInstance } from '../analyzer/typeUtils';
 import {
     ClassType,
@@ -138,7 +139,6 @@ export function getVariableTypeText(
         label = declaration.isConstant || evaluator.isFinalVariableDeclaration(declaration) ? 'constant' : 'variable';
     }
 
-    const expandTypeAlias = false;
     let typeVarName: string | undefined;
 
     if (type.props?.typeAliasInfo && typeNode.nodeType === ParseNodeType.Name) {
@@ -163,8 +163,7 @@ export function getVariableTypeText(
         return getToolTipForType(type, label, name, evaluator, /* isProperty */ false, functionSignatureDisplay);
     }
 
-    const typeText =
-        typeVarName ?? name + ': ' + evaluator.printType(getTypeForToolTip(evaluator, typeNode), { expandTypeAlias });
+    const typeText = typeVarName ?? name + ': ' + evaluator.printType(getTypeForToolTip(evaluator, typeNode));
 
     return `(${label}) ` + typeText;
 }
@@ -460,11 +459,11 @@ export class HoverProvider {
     }
 
     private _addResultsForSynthesizedType(parts: HoverTextPart[], typeInfo: SynthesizedTypeInfo, name: string) {
-        let typeText: string;
+        let typeText: string | undefined;
 
         if (isModule(typeInfo.type)) {
             typeText = '(module) ' + name;
-        } else {
+        } else if (typeInfo.node) {
             const type = this._getType(typeInfo.node);
             typeText = getVariableTypeText(
                 this._evaluator,
@@ -476,7 +475,9 @@ export class HoverProvider {
             );
         }
 
-        this._addResultsPart(parts, typeText, /* python */ true);
+        if (typeText) {
+            this._addResultsPart(parts, typeText, /* python */ true);
+        }
     }
 
     private _tryAddPartsForTypedDictKey(node: StringNode, type: Type, parts: HoverTextPart[]) {
