@@ -8,7 +8,7 @@
  * Python files.
  */
 
-import * as TOML from '@iarna/toml';
+import * as TOML from 'js-toml';
 import * as JSONC from 'jsonc-parser';
 import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-languageserver';
 
@@ -1172,15 +1172,15 @@ export class AnalyzerService {
     private _parsePyprojectTomlFile(pyprojectPath: Uri): object | undefined {
         return this._attemptParseFile(pyprojectPath, (fileContents, attemptCount) => {
             try {
-                const configObj = TOML.parse(fileContents);
-                if (configObj && configObj.tool) {
-                    const toml = configObj.tool as TOML.JsonMap;
+                const configObj = TOML.load(fileContents);
+                if (configObj && 'tool' in configObj) {
+                    const toml = configObj.tool as Record<string, object>;
                     if (toml.basedpyright && toml.pyright) {
                         throw new Error(
                             'Pyproject file cannot have both `pyright` and `basedpyright` sections. pick one'
                         );
                     }
-                    return (toml.basedpyright || toml.pyright) as object;
+                    return toml.basedpyright || toml.pyright;
                 }
             } catch (e) {
                 (this._console as ConsoleInterface).error(
