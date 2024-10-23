@@ -96,7 +96,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
             // pyright doesn't seem to support such packages anyway.
             const iteratorResult = module.priv.loaderFields.values().next();
             if (!iteratorResult.done) {
-                const synthesizedType = iteratorResult.value.getSynthesizedType();
+                const synthesizedType = iteratorResult.value.getSynthesizedType()?.type;
                 if (synthesizedType?.category === TypeCategory.Module) {
                     return this._moduleTypeToUri(synthesizedType).getDirectory();
                 } else {
