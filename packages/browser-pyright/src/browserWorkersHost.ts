@@ -1,3 +1,4 @@
+import { getDiagnosticRulesets } from 'pyright-internal/common/configOptions';
 import {
     Transferable,
     WorkersHost,
@@ -29,6 +30,7 @@ export class BrowserWorkersHost implements WorkersHost {
                 type: 'browser/newWorker',
                 initialData,
                 port: channel.port1,
+                diagnosticRulesets: getDiagnosticRulesets(),
             },
             [channel.port1]
         );
