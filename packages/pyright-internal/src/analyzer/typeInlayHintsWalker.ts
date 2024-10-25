@@ -8,6 +8,7 @@ import {
     getTypeAliasInfo,
     isAny,
     isClass,
+    isInstantiableClass,
     isParamSpec,
     isPositionOnlySeparator,
     isTypeVar,
@@ -23,6 +24,7 @@ import {
     ParseNode,
     ParseNodeBase,
     ParseNodeType,
+    TypeAnnotationNode,
 } from '../parser/parseNodes';
 import { isLiteralType } from './typeUtils';
 import { TextRange } from '../common/textRange';
@@ -33,7 +35,7 @@ import { InlayHintSettings } from '../common/languageServerInterface';
 import { transformTypeForEnumMember } from './enums';
 
 export type TypeInlayHintsItemType = {
-    inlayHintType: 'variable' | 'functionReturn' | 'parameter';
+    inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';
     position: number;
     value: string;
 };
@@ -193,6 +195,28 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         }
 
         return super.visitFunction(node);
+    }
+
+    override visitTypeAnnotation(node: TypeAnnotationNode): boolean {
+        const evaluator = this._program.evaluator;
+        if (evaluator) {
+            const annotationType = evaluator.getType(node.d.annotation);
+            if (
+                annotationType &&
+                isInstantiableClass(annotationType) &&
+                (ClassType.isBuiltIn(annotationType, 'Final') || ClassType.isBuiltIn(annotationType, 'ClassVar'))
+            ) {
+                const valueType = evaluator.getType(node.d.valueExpr);
+                if (valueType) {
+                    this.featureItems.push({
+                        inlayHintType: 'generic',
+                        position: node.start + node.length,
+                        value: `[${this._printType(valueType)}]`,
+                    });
+                }
+            }
+        }
+        return super.visitTypeAnnotation(node);
     }
 
     private _checkInRange = (node: ParseNodeBase<ParseNodeType>) =>
