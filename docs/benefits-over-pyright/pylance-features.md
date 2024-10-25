@@ -20,7 +20,6 @@ basedpyright re-implements pylance's import suggestion code actions:
 
 basedpyright re-implements pylance's semantic highlighting along with some additional improvements:
 
--   variables marked as `Final` have the correct "read-only" colour
 -   supports [the new `type` keyword in python 3.12](https://peps.python.org/pep-0695/)
 -   `Final` variables are coloured as read-only
 
