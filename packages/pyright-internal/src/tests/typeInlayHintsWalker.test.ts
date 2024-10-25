@@ -77,6 +77,21 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             },
         ]);
     });
+    test('generics', () => {
+        const result = inlayHintSampleFile('generics.py');
+        expect(result).toStrictEqual([
+            {
+                inlayHintType: 'generic',
+                position: 47,
+                value: '[int]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 118,
+                value: '[str]',
+            },
+        ]);
+    });
 } else {
     // prevent jest from failing because no tests were found
     test('windows placeholder', () => {});
