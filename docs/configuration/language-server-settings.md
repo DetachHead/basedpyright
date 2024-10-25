@@ -48,6 +48,10 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.functionReturnTypes.png)
 
+**basedpyright.analysis.inlayHints.genericTypes** [boolean]: Whether to show inlay hints on inferred generic types. (currently only works on `Final` and `ClassVar`):
+
+![](inlayHints.genericTypes.png)
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:

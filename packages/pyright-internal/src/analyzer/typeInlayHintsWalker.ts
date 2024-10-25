@@ -198,21 +198,23 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     }
 
     override visitTypeAnnotation(node: TypeAnnotationNode): boolean {
-        const evaluator = this._program.evaluator;
-        if (evaluator) {
-            const annotationType = evaluator.getType(node.d.annotation);
-            if (
-                annotationType &&
-                isInstantiableClass(annotationType) &&
-                (ClassType.isBuiltIn(annotationType, 'Final') || ClassType.isBuiltIn(annotationType, 'ClassVar'))
-            ) {
-                const valueType = evaluator.getType(node.d.valueExpr);
-                if (valueType) {
-                    this.featureItems.push({
-                        inlayHintType: 'generic',
-                        position: node.start + node.length,
-                        value: `[${this._printType(valueType)}]`,
-                    });
+        if (this._settings.genericTypes && this._checkInRange(node)) {
+            const evaluator = this._program.evaluator;
+            if (evaluator) {
+                const annotationType = evaluator.getType(node.d.annotation);
+                if (
+                    annotationType &&
+                    isInstantiableClass(annotationType) &&
+                    (ClassType.isBuiltIn(annotationType, 'Final') || ClassType.isBuiltIn(annotationType, 'ClassVar'))
+                ) {
+                    const valueType = evaluator.getType(node.d.valueExpr);
+                    if (valueType) {
+                        this.featureItems.push({
+                            inlayHintType: 'generic',
+                            position: node.start + node.length,
+                            value: `[${this._printType(valueType)}]`,
+                        });
+                    }
                 }
             }
         }
