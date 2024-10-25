@@ -1002,10 +1002,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         if (
             workspace.disableLanguageServices ||
             // don't bother creating the inlay hint provider if all the inlay hint settings are off
-            (inlayHintSettings &&
-                !inlayHintSettings.callArgumentNames &&
-                !inlayHintSettings.functionReturnTypes &&
-                !inlayHintSettings.variableTypes)
+            (inlayHintSettings && !Object.values(inlayHintSettings).some((value) => value))
         ) {
             return null;
         }
@@ -1014,6 +1011,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 callArgumentNames: inlayHintSettings?.callArgumentNames ?? true,
                 functionReturnTypes: inlayHintSettings?.functionReturnTypes ?? true,
                 variableTypes: inlayHintSettings?.variableTypes ?? true,
+                genericTypes: inlayHintSettings?.genericTypes ?? true,
             }).onInlayHints();
         }, token);
     }
