@@ -1223,6 +1223,8 @@ export namespace Localizer {
             new ParameterizedString<{ fromType: string; toType: string }>(getRawString('Diagnostic.invalidCast'));
         export const multipleInheritance = () =>
             new ParameterizedString<{ classes: string }>(getRawString('Diagnostic.multipleInheritance'));
+        export const unannotatedClassAttribute = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unannotatedClassAttribute'));
     }
 
     export namespace DiagnosticAddendum {

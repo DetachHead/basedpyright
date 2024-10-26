@@ -9,7 +9,7 @@
  * heavily upon).
  */
 
-import { ConfigOptions } from '../common/configOptions';
+import { BasedConfigOptions, ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { pythonVersion3_10, pythonVersion3_8, pythonVersion3_9 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
@@ -733,6 +733,18 @@ test('reportImplicitAbstractClass', () => {
         errors: [
             { code: DiagnosticRule.reportImplicitAbstractClass, line: 7 },
             { code: DiagnosticRule.reportImplicitAbstractClass, line: 25 },
+        ],
+    });
+});
+
+test('reportUnannotatedClassAttribute', () => {
+    const configOptions = new BasedConfigOptions(Uri.empty());
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['reportUnannotatedClassAttribute.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        warnings: [
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 4 },
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 8 },
         ],
     });
 });

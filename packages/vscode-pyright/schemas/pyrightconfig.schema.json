@@ -581,6 +581,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of abstract classes that do not explicitly extend `ABC`",
       "default": "none"
+    },
+    "reportUnannotatedClassAttribute": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of class variable declarations that do not have a type annotation, which is required due to performance reasons for strict validation of subclasses",
+      "default": "none"
     }
   },
   "properties": {
@@ -968,6 +973,9 @@
     "reportImplicitAbstractClass": {
       "$ref": "#/definitions/reportImplicitAbstractClass"
     },
+    "reportUnannotatedClassAttribute": {
+      "$ref": "#/definitions/reportUnannotatedClassAttribute"
+    },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
     },
@@ -1312,6 +1320,9 @@
           },
           "reportImplicitAbstractClass": {
             "$ref": "#/definitions/reportImplicitAbstractClass"
+          },
+          "reportUnannotatedClassAttribute": {
+            "$ref": "#/definitions/reportUnannotatedClassAttribute"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

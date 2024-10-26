@@ -115,4 +115,5 @@ export enum DiagnosticRule {
     reportUnsafeMultipleInheritance = 'reportUnsafeMultipleInheritance',
     reportUnusedParameter = 'reportUnusedParameter',
     reportImplicitAbstractClass = 'reportImplicitAbstractClass',
+    reportUnannotatedClassAttribute = 'reportUnannotatedClassAttribute',
 }
