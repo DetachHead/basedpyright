@@ -804,7 +804,7 @@
         "typeVarNotAllowed": "`TypeVar` 不得用于 `isinstance()` 或 `issubclass()`",
         "typeVarTupleRequiresKnownLength": "`TypeVarTuple` 不能绑定到长度未知的元组",
         "typeVarUnnecessarySuggestion": "请改用 {type}",
-        "typeVarUnsolvableRemedy": "提供一个重载，该重载指定未提供参数时的返回类型",
+        "typeVarUnsolvableRemedy": "提供一个重载来指定未提供参数时的返回类型",
         "typeVarsMissing": "缺少类型变量：{names}",
         "typedDictBaseClass": "类 \"{type}\" 不是 `TypedDict`",
         "typedDictClassNotAllowed": "不允许对实例或类检查使用 `TypedDict` 类",
