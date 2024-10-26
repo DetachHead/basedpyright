@@ -14,7 +14,7 @@ we recommend using vscode, as there are project configuration files in the repo 
 
 1. hit `F1` > `Tasks: Run task` > `install dependencies`, or run the following command:
     ```
-    ./pw pdm install
+    ./pw uv sync
     ```
     this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules`
 2. press "Yes" when prompted by vscode to use the newly created virtualenv

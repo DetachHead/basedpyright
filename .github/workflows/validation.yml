@@ -13,32 +13,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
+      - run: ./pw uv venv --python ${{ env.PYTHON_VERSION }}
 
       # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
-      - run: ./pw pdm lock --check
+      - run: ./pw uv sync --locked
 
       - name: activate pyprojectx context
         run: realpath ./.pyprojectx/main >> $GITHUB_PATH
 
-      - run: pdm install
-
       - name: typescript typecheck
-        run: pdm run npm run typecheck
+        run: uv run npm run typecheck
 
-      - run: pdm run npm run check
+      - run: uv run npm run check
 
       - name: python typecheck
-        run: pdm run typecheck
+        run: uv run npm run typecheck-python
 
       - name: ruff check
-        run: pdm run ruff check --output-format github
+        run: uv run ruff check --output-format github
 
       - name: ruff format
-        run: pdm run ruff format --check --diff
+        run: uv run ruff format --check --diff
 
       - name: pylint
-        run: pdm run pylint
+        run: uv run npm run pylint
 
   tests:
     strategy:
@@ -57,7 +55,7 @@ jobs:
         with:
           python-version: ${{env.PYTHON_VERSION}}
 
-      - run: ./pw pdm install
+      - run: ./pw uv sync
 
       # using relative path for npm scripts because it needs to work in the package directories too
       - name: add pyprojectx and npm scripts to PATH (linux)
@@ -73,7 +71,7 @@ jobs:
           echo "./node_modules/.bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: python tests
-        run: pdm run test_python -- -m "not needs_all_docstubs"
+        run: uv run npm run test-python -- -m "not needs_all_docstubs"
 
       - name: npm test (pyright-internal)
         run: npm test

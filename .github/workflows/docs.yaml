@@ -43,14 +43,14 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
       - name: install dependencies
-        run: ./pw pdm install
+        run: ./pw uv sync
       - name: validate docs
-        run: ./pw pdm run mkdocs build --strict
+        run: ./pw uv run mkdocs build --strict
       - name: deploy dev docs
         if: github.ref == 'refs/heads/main'
-        run: ./pw pdm run mike deploy --push --update-aliases dev
+        run: ./pw uv run mike deploy --push --update-aliases dev
       - name: deploy release docs
         if: github.ref_type == 'tag'
         run: |
-          ./pw pdm run mike deploy --push --update-aliases ${{ github.ref_name }} latest
-          ./pw pdm run mike set-default --push latest
+          ./pw uv run mike deploy --push --update-aliases ${{ github.ref_name }} latest
+          ./pw uv run mike set-default --push latest
