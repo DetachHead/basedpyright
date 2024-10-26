@@ -6396,18 +6396,23 @@ export class Checker extends ParseTreeWalker {
             // skip the type validation but still check for other issues like
             // Final overrides and class/instance variable mismatches.
             let validateType = true;
-            const nonTypedDeclaration = symbol
-                .getDeclarations()
-                .find((declaration) => !hasTypeForDeclaration(declaration));
-            if (nonTypedDeclaration) {
+            const declarations = symbol.getDeclarations();
+            if (!declarations.some((declaration) => hasTypeForDeclaration(declaration))) {
                 validateType = false;
-                if (!ClassType.isFinal(classType)) {
+                // TODO: why do some symbols have no declarations? i dont think we care about them for this check tho
+                const firstUntypedDeclaration = declarations[0];
+                if (
+                    firstUntypedDeclaration &&
+                    // not an issue on `final` classes or `Final` attributes because they can't be subtyped
+                    !ClassType.isFinal(classType) &&
+                    !this._evaluator.isFinalVariable(symbol)
+                ) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportUnannotatedClassAttribute,
                         LocMessage.unannotatedClassAttribute().format({
                             name,
                         }),
-                        nonTypedDeclaration.node
+                        firstUntypedDeclaration.node
                     );
                 }
             }
