@@ -807,7 +807,7 @@
         "typeVarUnsolvableRemedy": "提供一个重载来指定未提供参数时的返回类型",
         "typeVarsMissing": "缺少类型变量：{names}",
         "typedDictBaseClass": "类 \"{type}\" 不是 `TypedDict`",
-        "typedDictClassNotAllowed": "不允许对实例或类检查使用 `TypedDict` 类",
+        "typedDictClassNotAllowed": "`TypedDict` 类不能用于 `isinstance()` 或 `issubclass()`",
         "typedDictClosedExtraNotAllowed": "无法添加项 \"{name}\"",
         "typedDictClosedExtraTypeMismatch": "无法添加 \"{type}\" 类型的项 \"{name}\"",
         "typedDictClosedFieldNotRequired": "无法添加项 \"{name}\"，因为它必须是 `NotRequired`",
