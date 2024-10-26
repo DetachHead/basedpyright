@@ -6,7 +6,7 @@
         "focus": false,
         "panel": "shared"
     },
-    // tasks should be defined as either pdm or npm scripts where possible
+    // tasks should be defined npm scripts where possible
     "tasks": [
         {
             "label": "Watch extension",
@@ -80,7 +80,7 @@
           "label": "install dependencies",
           "type": "shell",
           "command": "./pw",
-          "args": ["pdm", "sync", "--clean", "-G", "dev", "-G", "docstubs", "-G", "lochelper"],
+          "args": ["uv", "sync"],
           "presentation": {
             "clear": true
           },

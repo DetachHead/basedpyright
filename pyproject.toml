@@ -7,14 +7,14 @@ authors = [
 ]
 readme = "README.md"
 classifiers = [
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -41,15 +41,10 @@ dev = [
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
-    # transient dependency of docify, but we need to specify it here explicitly to prevent it from being resolved
-    # to 1.1.0 (the last version compatible with 3.8) because the published package has a different version range
-    # to our dev dependencies
-    "libcst>=1.5.0",
-]
-docstubs-old = [
-    # docify depends on libcst which doesn't have a version that supports 3.8-3.13, so we need to use 2 different versions
-    "docify>=1.0.0",
-    "libcst==1.1.0",
+    # transient dependency of docify, but we need to specify it here explicitly because it doesn't have a version
+    # that supports 3.8-3.13, so we need to use 2 different versions
+    "libcst>=1.5.0 ; python_version>='3.9'",
+    "libcst==1.1.0 ; python_version<'3.9'",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
@@ -74,33 +69,14 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [tool.pyprojectx]
 lock-python-version = "3.8"
-main = ["pdm"]
+main = ["uv"]
 
-[tool.pdm]
-distribution = true
-
+[tool.uv]
+default-groups = ["dev", "docstubs", "lochelper"]
 
 [tool.pdm.version]
 source = "call"
 getter = "based_build.get_version:get_version"
-
-[tool.pdm.scripts]
-update = "pdm update -G dev -G docstubs -G lochelper"
-# we specify the python range here because our dev dependencies require at least python 3.9 but we still want to
-# support 3.8 in the published package. ideally we wouldn't because it's EOL but we want to support all versions
-# of python supported by pyright. https://github.com/DetachHead/basedpyright/issues/658
-refresh_lockfiles = { composite = [
-    "pdm lock --update-reuse -G dev -G docstubs -G lochelper --python=\">=3.9\"",
-    "pdm lock --update-reuse -G docstubs-old --lockfile pdm.docstubs-old.lock",
-] }
-typecheck = 'basedpyright'
-ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
-ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
-pylint = 'pylint basedpyright based_build pdm_build.py'
-test_python = 'pytest tests'
-generate_docstubs = { call = "based_build.generate_docstubs:main" }
-localization_helper = 'python based_build/localization_helper.py'
-docs = "mkdocs serve"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]

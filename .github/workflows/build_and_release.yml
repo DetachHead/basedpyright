@@ -87,9 +87,7 @@ jobs:
           name: docstubs
           path: docstubs
 
-      - run: ./pw pdm use ${{ env.PYTHON_VERSION }} --first
-
-      - run: ./pw pdm install
+      - run: ./pw uv sync
 
       # using relative path for npm scripts because it needs to work in the package directories too
       - name: add pyprojectx and npm scripts to PATH
@@ -101,17 +99,18 @@ jobs:
       # ideally this should be run with the rest of the pytest tests in the validation workflow,
       # but they depend on the docstubs generated in the previous job
       - name: validate docstubs
-        run: pdm run test_python -- -m needs_all_docstubs
+        run: uv run npm run test-python -- -m needs_all_docstubs
 
       - id: current-version
+        # https://github.com/astral-sh/uv/issues/6298
         run: |
-          echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
-          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./package.json\").version")
+          echo ::set-output name=CURRENT_VERSION::$(./pw uv run python -c "from based_build.get_version import get_version;print(get_version())")
+          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(uv run node -p "require(\"./package.json\").version")
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
-        run: echo ::set-output name=VERSION_INFO::$(pdm run npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
+        run: echo ::set-output name=VERSION_INFO::$(uv run npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
@@ -122,7 +121,7 @@ jobs:
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
         run: |
-          pdm run npm run package
+          uv run npm run package
           mv basedpyright-*.vsix ${{ env.VSIX_NAME }}
 
       - uses: actions/upload-artifact@v4
@@ -133,7 +132,7 @@ jobs:
       # publish npm canary version on every push to every branch except main
       - name: set version for npm canary
         if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
+        run: uv run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary
         if: github.ref != 'refs/heads/main'
         uses: JS-DevTools/npm-publish@v1
@@ -144,7 +143,7 @@ jobs:
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
       - name: set version for npm canary (browser)
         if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
+        run: uv run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary (browser)
         if: github.ref != 'refs/heads/main'
         uses: JS-DevTools/npm-publish@v1
@@ -171,14 +170,14 @@ jobs:
           access: public
           package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
-      # this isn't ideal, but it's required becayse pdm publish re-builds the npm packages even tho they were already built earlier.
+      # this isn't ideal, but it's required becayse uv publish re-builds the npm packages even tho they were already built earlier.
       # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
       - name: set npm package versions back to upstream so pypi package can use it in --version output
         if: github.ref == 'refs/heads/main'
         run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
 
       - name: build package - pypi
-        run: pdm build
+        run: uv build
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -186,7 +185,7 @@ jobs:
 
       - name: publish package - pypi
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: pdm publish
+        run: uv publish
 
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace

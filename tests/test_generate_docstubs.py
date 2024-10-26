@@ -1,6 +1,6 @@
 """
 these tests assume that the doc stubs have already run (they should get run as part of
-`pdm install`) as they validate that the current state of the `docstubs` folder is correct
+`uv sync`) as they validate that the current state of the `docstubs` folder is correct
 """
 
 from __future__ import annotations
