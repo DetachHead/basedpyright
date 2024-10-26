@@ -745,6 +745,7 @@ test('reportUnannotatedClassAttribute', () => {
         warnings: [
             { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 5 },
             { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 9 },
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 37 },
         ],
     });
 });

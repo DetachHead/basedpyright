@@ -28,5 +28,11 @@ class G:
     def __init__(self) -> None:
         self.a = 1 # no error because it has a typed declatation elsewhere
 
-class Foo(Enum):
+class H(Enum):
     a = 1
+
+class I:
+    __slots__: tuple[str,...] = ("asdf",)  # no error on this declaration because you can't put a type annotation here
+
+    def __init__(self) -> None:
+        self.asdf = 1 # error

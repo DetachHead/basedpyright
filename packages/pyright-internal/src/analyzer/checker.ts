@@ -6399,9 +6399,15 @@ export class Checker extends ParseTreeWalker {
             const declarations = symbol.getDeclarations();
             if (!declarations.some((declaration) => hasTypeForDeclaration(declaration))) {
                 validateType = false;
-                // TODO: why do some symbols have no declarations? i dont think we care about them for this check tho
-                const firstUntypedDeclaration = declarations[0];
+                const firstUntypedDeclaration =
+                    declarations.find(
+                        // we don't want to report the error on the slots declaration because you obviously can't put an annotation there
+                        (declaration) => declaration.type === DeclarationType.Variable && !declaration.isDefinedBySlots
+                    ) ??
+                    // fallback to the first declaration if a suitable one wasn't found
+                    declarations[0];
                 if (
+                    // TODO: why do some symbols have no declarations? i dont think we care about them for this check tho
                     firstUntypedDeclaration &&
                     // not an issue on final classes/attributes and enums because they can't be subtyped
                     !ClassType.isFinal(classType) &&
