@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union, cast, final
 
 from rich.highlighter import ReprHighlighter
 from rich.text import Text
@@ -56,6 +56,7 @@ def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
     return "\n".join(msgs)
 
 
+@final
 class LocDataTree(Tree[str]):
     _locnode: ClassVar[dict[str, TreeNode[str]]] = {}
     temp_comp = None
@@ -114,6 +115,7 @@ class LocDataTree(Tree[str]):
             )
 
 
+@final
 class MsgDiffReport(Screen[None]):
     BINDINGS: ClassVar = [("c", "dismiss()")]
     lang = "en-us"
@@ -140,6 +142,7 @@ class MsgDiffReport(Screen[None]):
         report.renderable = "\n".join(msgs)
 
 
+@final
 class HelperTUI(App[None]):
     BINDINGS: ClassVar = [
         ("q", "quit()", "Quit program"),
