@@ -199,3 +199,18 @@ class FooImpl(AbstractFoo, ABC):
     def bar(self):
         print("hi")
 ```
+
+## `reportUnannotatedClassAttribute`
+
+pyright does not warn when a member of a class that doesn't have a type annotation is overridden with an incompatible type:
+
+```py
+class A:
+    value = 1
+
+
+class B(A):
+    value = None # no error, even though the type on the base class is `int` and the type here is `None`
+```
+
+this decision seems to have been made for performance reasons, which is fair enough. but because it's unsafe, there should be a check that enforces type annotations on class attributes (unless the class is decorated with `@final`). the `reportUnannotatedClassAttribute` rule will do just that.

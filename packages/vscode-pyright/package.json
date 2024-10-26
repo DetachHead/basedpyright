@@ -1645,6 +1645,22 @@
                                 true,
                                 false
                             ]
+                        },
+                        "reportUnannotatedClassAttribute": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for class variable declarations that do not have a type annotation, which is required due to performance reasons for strict validation of subclasses",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
                         }
                     }
                 },

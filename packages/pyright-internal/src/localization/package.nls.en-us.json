@@ -1710,7 +1710,8 @@
         "typeIgnoreCommentWithoutRule": "`type: ignore` comment must specify a rule (eg. `# type: ignore[ruleName]`)",
         "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module",
         "invalidCast": "Conversion of type `{fromType}` to type `{toType}` may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to `object` first.",
-        "multipleInheritance": "Multiple inheritance is not allowed because the following base classes contain `__init__` or `__new__` methods that may not get called: {classes}"
+        "multipleInheritance": "Multiple inheritance is not allowed because the following base classes contain `__init__` or `__new__` methods that may not get called: {classes}",
+        "unannotatedClassAttribute": "Type annotation for attribute `{name}` is required"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": {

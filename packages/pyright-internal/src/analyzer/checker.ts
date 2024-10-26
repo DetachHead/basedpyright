@@ -98,7 +98,7 @@ import { ConstraintTracker } from './constraintTracker';
 import { getBoundCallMethod, getBoundInitMethod, getBoundNewMethod } from './constructors';
 import { addInheritedDataClassEntries } from './dataClasses';
 import { Declaration, DeclarationType, isAliasDeclaration } from './declaration';
-import { getNameNodeForDeclaration } from './declarationUtils';
+import { getNameNodeForDeclaration, hasTypeForDeclaration } from './declarationUtils';
 import { deprecatedAliases, deprecatedSpecialForms } from './deprecatedSymbols';
 import { getEnumDeclaredValueType, isEnumClassWithMembers, transformTypeForEnumMember } from './enums';
 import { ImportResolver, ImportedModuleDescriptor, createImportedModuleDescriptor } from './importResolver';
@@ -6396,8 +6396,20 @@ export class Checker extends ParseTreeWalker {
             // skip the type validation but still check for other issues like
             // Final overrides and class/instance variable mismatches.
             let validateType = true;
-            if (!symbol.hasTypedDeclarations()) {
+            const nonTypedDeclaration = symbol
+                .getDeclarations()
+                .find((declaration) => !hasTypeForDeclaration(declaration));
+            if (nonTypedDeclaration) {
                 validateType = false;
+                if (!ClassType.isFinal(classType)) {
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportUnannotatedClassAttribute,
+                        LocMessage.unannotatedClassAttribute().format({
+                            name,
+                        }),
+                        nonTypedDeclaration.node
+                    );
+                }
             }
 
             // Get the symbol type defined in this class.

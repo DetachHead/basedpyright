@@ -428,6 +428,7 @@ export interface DiagnosticRuleSet {
     reportUnsafeMultipleInheritance: DiagnosticLevel;
     reportUnusedParameter: UnusedDiagnosticLevel;
     reportImplicitAbstractClass: DiagnosticLevel;
+    reportUnannotatedClassAttribute: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -554,6 +555,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnsafeMultipleInheritance,
         DiagnosticRule.reportUnusedParameter,
         DiagnosticRule.reportImplicitAbstractClass,
+        DiagnosticRule.reportUnannotatedClassAttribute,
     ];
 }
 
@@ -706,6 +708,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
         reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -819,6 +822,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
         reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -932,6 +936,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
         reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -1044,6 +1049,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnsafeMultipleInheritance: 'error',
     reportUnusedParameter: 'warning',
     reportImplicitAbstractClass: 'warning',
+    reportUnannotatedClassAttribute: 'warning',
 });
 
 export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
@@ -1153,6 +1159,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnsafeMultipleInheritance: 'error',
     reportUnusedParameter: 'error',
     reportImplicitAbstractClass: 'error',
+    reportUnannotatedClassAttribute: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1263,6 +1270,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsafeMultipleInheritance: 'none',
         reportUnusedParameter: 'unused',
         reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -2087,7 +2095,7 @@ export class ConfigOptions {
 }
 
 /**
- * {@link ConfigOptions} except it defaults to typeCheckingMode=all. this is a separate subclass to
+ * {@link ConfigOptions} except it defaults to typeCheckingMode=recommended. this is a separate subclass to
  * preserve the behavior of the original in tests and anything else that i'm too scared to touch
  */
 export class BasedConfigOptions extends ConfigOptions {
