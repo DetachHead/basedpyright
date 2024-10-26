@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Final, final, override
 
 
@@ -26,3 +27,6 @@ class G:
     a: int = 1
     def __init__(self) -> None:
         self.a = 1 # no error because it has a typed declatation elsewhere
+
+class Foo(Enum):
+    a = 1

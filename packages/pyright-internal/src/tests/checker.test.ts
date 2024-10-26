@@ -743,8 +743,8 @@ test('reportUnannotatedClassAttribute', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['reportUnannotatedClassAttribute.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
         warnings: [
-            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 4 },
-            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 8 },
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 5 },
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 9 },
         ],
     });
 });
