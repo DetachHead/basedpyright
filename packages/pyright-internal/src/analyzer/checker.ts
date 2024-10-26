@@ -6403,9 +6403,10 @@ export class Checker extends ParseTreeWalker {
                 const firstUntypedDeclaration = declarations[0];
                 if (
                     firstUntypedDeclaration &&
-                    // not an issue on `final` classes or `Final` attributes because they can't be subtyped
+                    // not an issue on final classes/attributes and enums because they can't be subtyped
                     !ClassType.isFinal(classType) &&
-                    !this._evaluator.isFinalVariable(symbol)
+                    !this._evaluator.isFinalVariable(symbol) &&
+                    !isEnumClassWithMembers(this._evaluator, classType)
                 ) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportUnannotatedClassAttribute,
