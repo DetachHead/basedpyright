@@ -151,12 +151,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 !isAny(type) &&
                 !(isClass(type) && isLiteralType(type)) &&
                 !isTypeVar(type) &&
-                // !isFunction(type) &&
                 !isParamSpec(type)
             ) {
                 this.featureItems.push({
                     inlayHintType: 'variable',
-                    position: node.start + node.length,
+                    position: this._endOfNode(node),
                     value: `: ${
                         type.props?.typeAliasInfo &&
                         node.nodeType === ParseNodeType.Name &&
@@ -211,7 +210,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     if (valueType) {
                         this.featureItems.push({
                             inlayHintType: 'generic',
-                            position: node.start + node.length,
+                            position: this._endOfNode(node),
                             value: `[${this._printType(valueType)}]`,
                         });
                     }
@@ -229,12 +228,29 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         if (!evaluator) {
             return;
         }
-        const functionType = evaluator.getType(node.d.leftExpr);
-        if (!functionType) {
+        const callableType = evaluator.getType(node.d.leftExpr);
+        if (!callableType) {
             return;
         }
+
+        // inlay hints for generics where the type is not explicitly specified
+        if (this._settings.genericTypes && node.d.leftExpr.nodeType !== ParseNodeType.Index && isClass(callableType)) {
+            const returnType = evaluator.getType(node);
+            if (
+                returnType &&
+                isClass(returnType) &&
+                returnType.priv.typeArgs?.length === returnType.shared.typeParams.length
+            ) {
+                this.featureItems.push({
+                    inlayHintType: 'generic',
+                    position: this._endOfNode(node.d.leftExpr),
+                    value: `[${returnType.priv.typeArgs.map((typeArg) => this._printType(typeArg)).join(', ')}]`,
+                });
+            }
+        }
+
         // if it's an overload, figure out which one to use based on the arguments:
-        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, functionType, node.d.leftExpr);
+        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, callableType, node.d.leftExpr);
         const matchedArgs = this._program.evaluator?.matchCallArgsToParams(node, matchedFunctionType);
 
         // if there was no match, or if there were multiple matches, we don't want to show any inlay hints because they'd likely be wrong:
@@ -288,6 +304,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             }
         }
     }
+
+    private _endOfNode = (node: ParseNode) => node.start + node.length;
 
     private _printType = (type: Type): string =>
         this._program.evaluator!.printType(type, { enforcePythonSyntax: true });
