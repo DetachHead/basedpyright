@@ -619,6 +619,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportunannotatedclassattribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportUnannotatedClassAttribute
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1553,6 +1562,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportunannotatedclassattribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportUnannotatedClassAttribute
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1701,6 +1719,16 @@
     <span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;hi&quot;</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></h2>
+<p>pyright does not warn when a member of a class that doesn't have a type annotation is overridden with an incompatible type:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># no error, even though the type on the base class is `int` and the type here is `None`</span>
+</code></pre></div>
+<p>this decision seems to have been made for performance reasons, which is fair enough. but because it's unsafe, there should be a check that enforces type annotations on class attributes (unless the class is decorated with <code>@final</code>). the <code>reportUnannotatedClassAttribute</code> rule will do just that.</p>
 
 
 
