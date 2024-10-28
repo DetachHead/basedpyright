@@ -8,7 +8,7 @@
  * Python files.
  */
 
-import * as TOML from 'js-toml';
+import { parse } from 'smol-toml';
 import * as JSONC from 'jsonc-parser';
 import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-languageserver';
 
@@ -1172,7 +1172,7 @@ export class AnalyzerService {
     private _parsePyprojectTomlFile(pyprojectPath: Uri): object | undefined {
         return this._attemptParseFile(pyprojectPath, (fileContents, attemptCount) => {
             try {
-                const configObj = TOML.load(fileContents);
+                const configObj = parse(fileContents);
                 if (configObj && 'tool' in configObj) {
                     const toml = configObj.tool as Record<string, object>;
                     if (toml.basedpyright && toml.pyright) {
