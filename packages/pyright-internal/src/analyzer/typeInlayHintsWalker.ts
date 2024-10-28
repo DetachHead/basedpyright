@@ -171,7 +171,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     }
 
     override visitCall(node: CallNode): boolean {
-        if (this._settings.callArgumentNames && this._checkInRange(node)) {
+        if (this._checkInRange(node)) {
             this._generateHintsForCallNode(node);
         }
         return super.visitCall(node);
@@ -247,6 +247,10 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     value: `[${returnType.priv.typeArgs.map((typeArg) => this._printType(typeArg)).join(', ')}]`,
                 });
             }
+        }
+
+        if (!this._settings.callArgumentNames) {
+            return;
         }
 
         // if it's an overload, figure out which one to use based on the arguments:
