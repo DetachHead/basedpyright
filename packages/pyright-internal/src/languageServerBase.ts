@@ -1011,7 +1011,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 callArgumentNames: inlayHintSettings?.callArgumentNames ?? true,
                 functionReturnTypes: inlayHintSettings?.functionReturnTypes ?? true,
                 variableTypes: inlayHintSettings?.variableTypes ?? true,
-                genericTypes: inlayHintSettings?.genericTypes ?? true,
+                genericTypes: inlayHintSettings?.genericTypes ?? false,
             }).onInlayHints();
         }, token);
     }

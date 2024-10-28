@@ -102,7 +102,12 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             logLevel: LogLevel.Info,
             autoImportCompletions: true,
             functionSignatureDisplay: SignatureDisplayType.formatted,
-            inlayHints: { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: true },
+            inlayHints: {
+                callArgumentNames: true,
+                functionReturnTypes: true,
+                variableTypes: true,
+                genericTypes: false,
+            },
         };
 
         try {
