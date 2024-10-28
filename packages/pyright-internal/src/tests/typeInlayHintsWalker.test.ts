@@ -78,7 +78,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
     test('generics', () => {
-        const result = inlayHintSampleFile('generics.py');
+        const result = inlayHintSampleFile('generics.py', undefined, { genericTypes: true });
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'generic',
@@ -89,6 +89,16 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 inlayHintType: 'generic',
                 position: 118,
                 value: '[str]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 167,
+                value: '[int]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 265,
+                value: '[bool]',
             },
         ]);
     });

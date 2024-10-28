@@ -32,6 +32,7 @@ import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTok
 import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
+import { InlayHintSettings } from '../common/languageServerInterface';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -147,13 +148,17 @@ export const semanticTokenizeSampleFile = (fileName: string): SemanticTokenItem[
     return walker.items;
 };
 
-export const inlayHintSampleFile = (fileName: string, range?: Range): TypeInlayHintsItemType[] => {
+export const inlayHintSampleFile = (
+    fileName: string,
+    range?: Range,
+    settings: Partial<InlayHintSettings> = {}
+): TypeInlayHintsItemType[] => {
     const program = createProgram();
     const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(
         program,
-        { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: true },
+        { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: false, ...settings },
         fileUri,
         range
     );
