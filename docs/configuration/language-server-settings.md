@@ -48,7 +48,7 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.functionReturnTypes.png)
 
-**basedpyright.analysis.inlayHints.genericTypes** [boolean]: Whether to show inlay hints on inferred generic types. (currently only works on `Final` and `ClassVar`):
+**basedpyright.analysis.inlayHints.genericTypes** [boolean]: Whether to show inlay hints on inferred generic types. Defaults to `false`:
 
 ![](inlayHints.genericTypes.png)
 

@@ -1764,7 +1764,7 @@
                 },
                 "basedpyright.analysis.inlayHints.genericTypes": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Whether to show inlay hints on inferred generic types.",
                     "scope": "resource"
                 }
