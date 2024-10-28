@@ -233,18 +233,34 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             return;
         }
 
-        // inlay hints for generics where the type is not explicitly specified
-        if (this._settings.genericTypes && node.d.leftExpr.nodeType !== ParseNodeType.Index && isClass(callableType)) {
+        // inlay hints for generics
+        if (
+            this._settings.genericTypes &&
+            // where the type is not explicitly specified
+            node.d.leftExpr.nodeType !== ParseNodeType.Index &&
+            // only show them on classes, because the index syntax to specify generics isn't valid on functions
+            isClass(callableType)
+        ) {
             const returnType = evaluator.getType(node);
             if (
                 returnType &&
                 isClass(returnType) &&
                 returnType.priv.typeArgs?.length === returnType.shared.typeParams.length
             ) {
+                const printedTypeArgs = returnType.priv.typeArgs.flatMap((typeArg) =>
+                    isClass(typeArg) && typeArg.priv.tupleTypeArgs
+                        ? typeArg.priv.tupleTypeArgs.map((asdf) => this._printType(asdf.type))
+                        : this._printType(typeArg)
+                );
+                if (returnType.priv.tupleTypeArgs) {
+                    // for tuples, as far as i can tell there's no cases where it can infer non-variadic generics, so we just always
+                    // add the ellipsis
+                    printedTypeArgs.push('...');
+                }
                 this.featureItems.push({
                     inlayHintType: 'generic',
                     position: this._endOfNode(node.d.leftExpr),
-                    value: `[${returnType.priv.typeArgs.map((typeArg) => this._printType(typeArg)).join(', ')}]`,
+                    value: `[${printedTypeArgs.join(', ')}]`,
                 });
             }
         }
