@@ -82,23 +82,33 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'generic',
-                position: 47,
+                position: 55,
                 value: '[int]',
             },
             {
                 inlayHintType: 'generic',
-                position: 118,
+                position: 126,
                 value: '[str]',
             },
             {
                 inlayHintType: 'generic',
-                position: 167,
+                position: 175,
                 value: '[int]',
             },
             {
                 inlayHintType: 'generic',
-                position: 265,
+                position: 273,
                 value: '[bool]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 290,
+                value: '[Literal[1, 2, 3], ...]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 399,
+                value: '[list[int], int, int, str]',
             },
         ]);
     });
