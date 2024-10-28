@@ -101,6 +101,11 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 value: '[bool]',
             },
             {
+                inlayHintType: 'parameter',
+                position: 274,
+                value: 'value=',
+            },
+            {
                 inlayHintType: 'generic',
                 position: 290,
                 value: '[Literal[1, 2, 3], ...]',
@@ -109,6 +114,11 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 inlayHintType: 'generic',
                 position: 399,
                 value: '[list[int], int, int, str]',
+            },
+            {
+                inlayHintType: 'parameter',
+                position: 400,
+                value: 'asdf=',
             },
         ]);
     });
