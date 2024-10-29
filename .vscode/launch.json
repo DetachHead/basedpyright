@@ -54,7 +54,7 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-pyright",
                 // The published extension is named "detachhead.basedpyright", but in debug mode it's "ms-pyright.vscode-pyright"
-                // to allow the extension code to participate in the lerna monorepo. Make sure that the published extension
+                // to allow the extension code to participate in the npm monorepo. Make sure that the published extension
                 // isn't enabled, otherwise both are loaded and conflict.
                 "--disable-extension=detachhead.basedpyright"
             ],
@@ -73,7 +73,7 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-pyright",
                 // The published extension is named "detachhead.basedpyright", but in debug mode it's "ms-pyright.vscode-pyright"
-                // to allow the extension code to participate in the lerna monorepo. Make sure that the published extension
+                // to allow the extension code to participate in the npm monorepo. Make sure that the published extension
                 // isn't enabled, otherwise both are loaded and conflict.
                 "--disable-extension=detachhead.basedpyright"
             ],

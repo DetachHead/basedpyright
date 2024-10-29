@@ -106,7 +106,8 @@ jobs:
       - id: current-version
         run: |
           echo ::set-output name=CURRENT_VERSION::$(pdm show --version)
-          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./lerna.json\").version")
+          echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(pdm run node -p "require(\"./package.json\").version")
+        working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
@@ -116,7 +117,7 @@ jobs:
 
       - name: set version for npm packages
         if: github.ref == 'refs/heads/main'
-        run: lerna version ${{ steps.current-version.outputs.CURRENT_VERSION }} --yes --no-git-tag-version
+        run: npm version ${{ steps.current-version.outputs.CURRENT_VERSION }} --workspaces --no-git-tag-version
 
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
@@ -132,8 +133,7 @@ jobs:
       # publish npm canary version on every push to every branch except main
       - name: set version for npm canary
         if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --git-tag-version false
-        working-directory: ${{ env.NPM_PACKAGE_DIR }}
+        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary
         if: github.ref != 'refs/heads/main'
         uses: JS-DevTools/npm-publish@v1
@@ -144,8 +144,7 @@ jobs:
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
       - name: set version for npm canary (browser)
         if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --git-tag-version false
-        working-directory: ${{ env.BROWSER_NPM_PACKAGE_DIR }}
+        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary (browser)
         if: github.ref != 'refs/heads/main'
         uses: JS-DevTools/npm-publish@v1
@@ -156,7 +155,7 @@ jobs:
           package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
       - name: publish package - npm
-        # publish npm & pypi packages, vscode extension and github release if the version in lerna.json was changed:
+        # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         uses: JS-DevTools/npm-publish@v1
         with:
@@ -164,7 +163,7 @@ jobs:
           access: public
           package: ${{ env.NPM_PACKAGE_DIR }}/package.json
       - name: publish package - npm (browser)
-        # publish npm & pypi packages, vscode extension and github release if the version in lerna.json was changed:
+        # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         uses: JS-DevTools/npm-publish@v1
         with:
@@ -176,7 +175,7 @@ jobs:
       # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
       - name: set npm package versions back to upstream so pypi package can use it in --version output
         if: github.ref == 'refs/heads/main'
-        run: lerna version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --yes --no-git-tag-version
+        run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
 
       - name: build package - pypi
         run: pdm build
