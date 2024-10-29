@@ -65,7 +65,6 @@ source-includes = [
     "docstubs",
     "packages/pyright",
     "packages/pyright-internal",
-    "lerna.json",
     "package.json",
     "package-lock.json",
     "tsconfig.json",

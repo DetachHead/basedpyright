@@ -4,7 +4,7 @@
         "outDir": "./out",
         "paths": {
         },
-        "typeRoots": ["./node_modules/@types", "./typings"]
+        "typeRoots": ["../../node_modules/@types", "./typings"]
     },
     "include": [
         "src/**/*",

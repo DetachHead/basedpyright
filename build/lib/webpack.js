@@ -39,6 +39,9 @@ function monorepoResourceNameMapper(packageName) {
  * @param {string} workspaceRoot
  */
 function managedPaths(workspaceRoot) {
+    // this function is never called, but we want to know if that ever changes. see comment in cacheConfig
+    throw new Error('uh oh, this was added back upstream so it needs to be rewritten for npm workspaces');
+    // eslint-disable-next-line no-unreachable
     const contents = fs.readFileSync(path.join(workspaceRoot, 'lerna.json'), 'utf-8');
     /** @type {{ packages: string[] }} */
     const data = JSON.parse(contents);
