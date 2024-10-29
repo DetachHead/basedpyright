@@ -2,7 +2,6 @@
     "name": "pyright-root",
     "private": true,
     "scripts": {
-        "update:all": "node ./build/updateDeps.js",
         "build:extension:dev": "cd packages/vscode-pyright && npm run webpack",
         "build:extension": "cd packages/vscode-pyright && npm run package",
         "build:cli:dev": "cd packages/pyright && npm run webpack",
