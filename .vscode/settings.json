@@ -77,7 +77,6 @@
     "editor.unicodeHighlight.nonBasicASCII": true,
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
-    "jest.jestCommandLine": "npm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pdm-python": true,
