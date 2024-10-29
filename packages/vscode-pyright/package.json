@@ -1787,9 +1787,9 @@
     "scripts": {
         "clean": "shx rm -rf ./dist ./out README.md",
         "prepack": "npm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && npm run build",
-        "prepackage": "node ./build/renamePackage.js basedpyright",
+        "prepackage": "node ./build/renamePackage.js basedpyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js pyright && cd ../vscode-pyright",
         "package": "vsce package",
-        "postpackage": "node ./build/renamePackage.js vscode-pyright",
+        "postpackage": "node ./build/renamePackage.js vscode-pyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js basedpyright && cd ../vscode-pyright",
         "vscode:prepublish": "node ./build/checkPackage.js && npm run clean && webpack --mode production --progress && shx cp ../../README.md .",
         "webpack": "webpack --mode development --progress",
         "webpack-dev": "npm run clean && webpack --mode development --watch --progress"
