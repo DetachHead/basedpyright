@@ -67,11 +67,13 @@
         "**/build/*"
     ],
     "terminal.integrated.env.windows": {
-      "PATH": "${env:PATH};./.pyprojectx/main"
+      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
-    "terminal.integrated.env.osx": { "PATH": "${env:PATH};./.pyprojectx/main" },
+    "terminal.integrated.env.osx": { 
+        "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
+    },
     "terminal.integrated.env.linux": {
-      "PATH": "${env:PATH};./.pyprojectx/main"
+      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
