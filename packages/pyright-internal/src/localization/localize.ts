@@ -76,8 +76,13 @@ function getRawStringDefault(key: string): string {
     }
 
     const keyParts = key.split('.');
+    const isDiagnostic = keyParts[0] === 'Diagnostic' || keyParts[0] === 'DiagnosticAddendum';
 
-    const str = getRawStringFromMap(localizedStrings, keyParts) || getRawStringFromMap(defaultStrings, keyParts);
+    const str =
+        isDiagnostic && forceEnglishDiagnostics
+            ? getRawStringFromMap(defaultStrings, keyParts)
+            : getRawStringFromMap(localizedStrings, keyParts) || getRawStringFromMap(defaultStrings, keyParts);
+
     if (str) {
         return str;
     }
@@ -116,11 +121,16 @@ function initialize(): StringLookupMap {
 }
 
 let localeOverride: string | undefined;
+let forceEnglishDiagnostics = false;
 
 export function setLocaleOverride(locale: string) {
     // Force a reload of the localized strings.
     localizedStrings = undefined;
     localeOverride = locale.toLowerCase();
+}
+
+export function setForceEnglishDiagnostics(force: boolean) {
+    forceEnglishDiagnostics = force;
 }
 
 export function getLocaleFromEnv(): string {
@@ -774,6 +784,8 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramAnnotationMissing'));
         export const paramNameMissing = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramNameMissing'));
+        export const paramSpecArgsKwargsDuplicate = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.paramSpecArgsKwargsDuplicate'));
         export const paramSpecArgsKwargsUsage = () => getRawString('Diagnostic.paramSpecArgsKwargsUsage');
         export const paramSpecArgsMissing = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.paramSpecArgsMissing'));

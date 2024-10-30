@@ -992,6 +992,7 @@ function getTypedDictFieldsFromDictSyntax(
             range: convertOffsetsToRange(entry.d.keyExpr.start, TextRange.getEnd(entry.d.keyExpr), fileInfo.lines),
             moduleName: fileInfo.moduleName,
             isInExceptSuite: false,
+            isInInlinedTypedDict: true,
         };
         newSymbol.addDeclaration(declaration);
 

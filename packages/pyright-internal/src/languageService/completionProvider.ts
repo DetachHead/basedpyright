@@ -3184,7 +3184,10 @@ export class CompletionProvider {
         return (
             symbolType &&
             isClassInstance(symbolType) &&
-            ClassType.isSameGenericClass(symbolType, containingType) &&
+            ClassType.isSameGenericClass(
+                symbolType,
+                TypeBase.isInstance(containingType) ? containingType : ClassType.cloneAsInstance(containingType)
+            ) &&
             symbolType.priv.literalValue instanceof EnumLiteral
         );
     }
