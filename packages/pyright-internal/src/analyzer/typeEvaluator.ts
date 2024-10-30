@@ -643,7 +643,6 @@ export function createTypeEvaluator(
     let intClass: Type | undefined;
     let strClass: Type | undefined;
     let dictClass: Type | undefined;
-    let typedDictClass: Type | undefined;
     let moduleTypeClass: Type | undefined;
     let typedDictClass: Type | undefined;
     let typedDictPrivateClass: Type | undefined;
