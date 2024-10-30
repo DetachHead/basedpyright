@@ -191,13 +191,11 @@ jobs:
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: vsce publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
-        working-directory: ${{ env.VSIX_DIR }}
+        run: vsce publish --packagePath ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
 
       - name: publish VSIX - open VSX
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: ovsx publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
-        working-directory: ${{ env.VSIX_DIR }}
+        run: ovsx publish --packagePath ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
 
       - uses: marvinpinto/action-automatic-releases@v1.2.1
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
