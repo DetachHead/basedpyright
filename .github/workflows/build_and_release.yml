@@ -110,13 +110,13 @@ jobs:
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
       - name: get currently published npm package version
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
         run: echo ::set-output name=VERSION_INFO::$(pdm run npm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
         id: version-was-changed
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
       - name: set version for npm packages
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
         run: npm version ${{ steps.current-version.outputs.CURRENT_VERSION }} --workspaces --no-git-tag-version
 
       - name: Build VSIX
@@ -130,75 +130,75 @@ jobs:
           name: ${{ env.ARTIFACT_NAME_VSIX }}
           path: ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }}
 
-      # publish npm canary version on every push to every branch except main
-      - name: set version for npm canary
-        if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
-      - name: publish package - npm canary
-        if: github.ref != 'refs/heads/main'
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          tag: canary
-          package: ${{ env.NPM_PACKAGE_DIR }}/package.json
-      - name: set version for npm canary (browser)
-        if: github.ref != 'refs/heads/main'
-        run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
-      - name: publish package - npm canary (browser)
-        if: github.ref != 'refs/heads/main'
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          tag: canary
-          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
+      # # publish npm canary version on every push to every branch except main
+      # - name: set version for npm canary
+      #   if: github.ref != 'refs/heads/main'
+      #   run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
+      # - name: publish package - npm canary
+      #   if: github.ref != 'refs/heads/main'
+      #   uses: JS-DevTools/npm-publish@v1
+      #   with:
+      #     token: ${{ secrets.NPM_TOKEN }}
+      #     access: public
+      #     tag: canary
+      #     package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+      # - name: set version for npm canary (browser)
+      #   if: github.ref != 'refs/heads/main'
+      #   run: pdm run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
+      # - name: publish package - npm canary (browser)
+      #   if: github.ref != 'refs/heads/main'
+      #   uses: JS-DevTools/npm-publish@v1
+      #   with:
+      #     token: ${{ secrets.NPM_TOKEN }}
+      #     access: public
+      #     tag: canary
+      #     package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
-      - name: publish package - npm
-        # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: ${{ env.NPM_PACKAGE_DIR }}/package.json
-      - name: publish package - npm (browser)
-        # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
+      # - name: publish package - npm
+      #   # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
+      #   if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+      #   uses: JS-DevTools/npm-publish@v1
+      #   with:
+      #     token: ${{ secrets.NPM_TOKEN }}
+      #     access: public
+      #     package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+      # - name: publish package - npm (browser)
+      #   # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
+      #   if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+      #   uses: JS-DevTools/npm-publish@v1
+      #   with:
+      #     token: ${{ secrets.NPM_TOKEN }}
+      #     access: public
+      #     package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
 
-      # this isn't ideal, but it's required becayse pdm publish re-builds the npm packages even tho they were already built earlier.
-      # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
-      - name: set npm package versions back to upstream so pypi package can use it in --version output
-        if: github.ref == 'refs/heads/main'
-        run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
+      # # this isn't ideal, but it's required becayse pdm publish re-builds the npm packages even tho they were already built earlier.
+      # # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
+      # - name: set npm package versions back to upstream so pypi package can use it in --version output
+      #   if: github.ref == 'refs/heads/main'
+      #   run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
 
-      - name: build package - pypi
-        run: pdm build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist
+      # - name: build package - pypi
+      #   run: pdm build
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dist
+      #     path: dist
 
-      - name: publish package - pypi
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        run: pdm publish
+      # - name: publish package - pypi
+      #   if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+      #   run: pdm publish
 
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        # if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         run: vsce publish --packagePath ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
 
       - name: publish VSIX - open VSX
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        # if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         run: ovsx publish --packagePath ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
 
       - uses: marvinpinto/action-automatic-releases@v1.2.1
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        # if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
         with:
           title: v${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
           draft: true # so i can write the release notes manually before publishing it
