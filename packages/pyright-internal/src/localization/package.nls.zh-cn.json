@@ -109,7 +109,6 @@
         "dataClassConverterFunction": "\"{argType}\" 类型的参数不是 \"{fieldType}\" 类型的字段 \"{fieldName}\" 的合法转换器",
         "dataClassConverterOverloads": "\"{funcName}\" 的重载不是 \"{fieldType}\" 类型的字段 \"{fieldName}\" 的合法转换器",
         "dataClassFieldInheritedDefault": "\"{fieldName}\" 覆盖了（父类的）同名字段，但未给定默认值",
-        "dataClassFieldInvalidAlias": "别名标识符 \"{aliasName}\" 无效",
         "dataClassFieldWithDefault": "没有默认值的字段不能出现在具有默认值的字段之后",
         "dataClassFieldWithPrivateName": "`dataclass` 的字段不能使用私有名称",
         "dataClassFieldWithoutAnnotation": "缺少类型注解的 `dataclass` 字段将导致运行时异常",
