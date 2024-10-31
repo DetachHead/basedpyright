@@ -158,7 +158,7 @@ export function getLocaleFromEnv(): string {
             const localeStringSplit = localeString.split('.');
             if (localeStringSplit.length > 0 && localeStringSplit[0]) {
                 // en_US -> en-us
-                const normalizedLocaleString = localeStringSplit[0].replace("_", "-").toLowerCase();
+                const normalizedLocaleString = localeStringSplit[0].replace('_', '-').toLowerCase();
                 return normalizedLocaleString || defaultLocale;
             }
         }
