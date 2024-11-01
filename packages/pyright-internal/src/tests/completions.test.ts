@@ -1410,3 +1410,47 @@ test('enum with regular base type', async () => {
         },
     });
 });
+
+test('dataclass field alias with invalid python identifier', async () => {
+    const code = `
+// @filename: test.py
+//// from typing import dataclass_transform
+//// 
+//// 
+//// def field[T](*, init: bool = True, default: T | None = None, alias: str | None = None) -> T: ...
+//// 
+//// @dataclass_transform(field_specifiers=(field,))
+//// class Foo(type):...
+//// 
+//// class Bar(metaclass=Foo):...
+//// 
+//// class Baz(Bar):
+////     a: int = field(alias='foo bar')
+////     b: str = field(alias='baz')
+//// 
+//// Baz([|/*marker*/|])
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['marker']: {
+            completions: [
+                {
+                    label: 'baz=',
+                    kind: CompletionItemKind.Variable,
+                },
+            ],
+        },
+    });
+    await state.verifyCompletion('excluded', 'markdown', {
+        ['marker']: {
+            completions: [
+                {
+                    label: 'foo bar=',
+                    kind: CompletionItemKind.Variable,
+                },
+            ],
+        },
+    });
+});
