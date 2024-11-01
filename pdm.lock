@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docstubs", "lochelper"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:25e93fe07bd10293480fef497999ff1e7996b3fc50c58c505382a902909d6449"
+content_hash = "sha256:1372128063c4cda47bdc68ba0d44270a29ba1dad4f27e175ad649c218eca7224"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -42,17 +42,17 @@ files = [
 
 [[package]]
 name = "basedtyping"
-version = "0.1.4"
-requires_python = "<4.0,>=3.8"
+version = "0.1.5"
+requires_python = "<4.0,>=3.9"
 summary = "Utilities for basedmypy"
 groups = ["dev"]
 marker = "python_version >= \"3.9\""
 dependencies = [
-    "typing-extensions<5.0,>=4.1",
+    "typing-extensions<5.0.0,>=4.12.2",
 ]
 files = [
-    {file = "basedtyping-0.1.4-py3-none-any.whl", hash = "sha256:d4832ab7af178e6a5394199725dc55f26e36e1ad5fae68db41b956c1cb99a0d2"},
-    {file = "basedtyping-0.1.4.tar.gz", hash = "sha256:8a3ba80d4628eb2f6a205759a8151e6df7341ceba03e5daf6b395fcc873a7967"},
+    {file = "basedtyping-0.1.5-py3-none-any.whl", hash = "sha256:ac6cd896081ba6595984769e2cdd9cd5a5c33945394804fa6c5f47d08e9f62ec"},
+    {file = "basedtyping-0.1.5.tar.gz", hash = "sha256:a2dfc656d5c5173c616dbf82905acfc74969deab540181114c1f50e19bb64a75"},
 ]
 
 [[package]]
@@ -656,7 +656,7 @@ files = [
 
 [[package]]
 name = "mkdocs-macros-plugin"
-version = "1.3.6"
+version = "1.3.7"
 requires_python = ">=3.8"
 summary = "Unleash the power of MkDocs with macros and variables"
 groups = ["dev"]
@@ -673,13 +673,13 @@ dependencies = [
     "termcolor",
 ]
 files = [
-    {file = "mkdocs_macros_plugin-1.3.6-py3-none-any.whl", hash = "sha256:74fd418c8e1f9f021b7a45bb1c7d7461d8ae09ccec241787f3971e733374da8c"},
-    {file = "mkdocs_macros_plugin-1.3.6.tar.gz", hash = "sha256:074bc072cac14c28724037b6988743cd9425752bdd35ae05fbf96b1b2457f3b7"},
+    {file = "mkdocs_macros_plugin-1.3.7-py3-none-any.whl", hash = "sha256:02432033a5b77fb247d6ec7924e72fc4ceec264165b1644ab8d0dc159c22ce59"},
+    {file = "mkdocs_macros_plugin-1.3.7.tar.gz", hash = "sha256:17c7fd1a49b94defcdb502fd453d17a1e730f8836523379d21292eb2be4cb523"},
 ]
 
 [[package]]
 name = "mkdocs-material"
-version = "9.5.42"
+version = "9.5.43"
 requires_python = ">=3.8"
 summary = "Documentation that simply works"
 groups = ["dev"]
@@ -698,8 +698,8 @@ dependencies = [
     "requests~=2.26",
 ]
 files = [
-    {file = "mkdocs_material-9.5.42-py3-none-any.whl", hash = "sha256:452a7c5d21284b373f36b981a2cbebfff59263feebeede1bc28652e9c5bbe316"},
-    {file = "mkdocs_material-9.5.42.tar.gz", hash = "sha256:92779b5e9b5934540c574c11647131d217dc540dce72b05feeda088c8eb1b8f2"},
+    {file = "mkdocs_material-9.5.43-py3-none-any.whl", hash = "sha256:4aae0664c456fd12837a3192e0225c17960ba8bf55d7f0a7daef7e4b0b914a34"},
+    {file = "mkdocs_material-9.5.43.tar.gz", hash = "sha256:83be7ff30b65a1e4930dfa4ab911e75780a3afc9583d162692e434581cb46979"},
 ]
 
 [[package]]
@@ -728,34 +728,34 @@ files = [
 
 [[package]]
 name = "nodejs-wheel"
-version = "20.18.0"
+version = "22.11.0"
 requires_python = ">=3.7"
 summary = "unoffical Node.js package"
 groups = ["dev"]
 marker = "python_version >= \"3.9\""
 dependencies = [
-    "nodejs-wheel-binaries==20.18.0",
+    "nodejs-wheel-binaries==22.11.0",
 ]
 files = [
-    {file = "nodejs_wheel-20.18.0-py3-none-any.whl", hash = "sha256:20ed3eef20c92549cf4153f8daeb1125663fcbff4522a6eff3aadbd2dbcafe0a"},
-    {file = "nodejs_wheel-20.18.0.tar.gz", hash = "sha256:bf911f96d499f831b2a146a841527b37b1e72226037a7163be6d80f84c2f41f0"},
+    {file = "nodejs_wheel-22.11.0-py3-none-any.whl", hash = "sha256:2b0cfab121a36639e487e7bb6a1e3c0f376635c823936ce4c6a502e0684d74ba"},
+    {file = "nodejs_wheel-22.11.0.tar.gz", hash = "sha256:b4f633f4a7ea268b961ac16a8c7a660ead0698652eeb2ea953c35dfa3cf3cb40"},
 ]
 
 [[package]]
 name = "nodejs-wheel-binaries"
-version = "20.18.0"
+version = "22.11.0"
 requires_python = ">=3.7"
 summary = "unoffical Node.js package"
 groups = ["default", "dev"]
 marker = "python_version >= \"3.9\""
 files = [
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:74273eab1c2423c04d034d3f707f517da32d3a2b20ca244b5667f3a4e38003ac"},
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:f95fb0989dfc54fd6932850e589000a8d6fc902527cebe7afd747696561d94b8"},
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f62e38288d3a129b962dcba61b911d72b3d691935b8a2facfc0fa9433d9260b5"},
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:33b138288dbeb9aafc6d54f43fbca6545b37e8fd9cbb8f68275ff2a47d4fed07"},
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:bb4009d4d6abfb6765fabb62f322efdc520b6930d041af1d7f64d58445ce3e91"},
-    {file = "nodejs_wheel_binaries-20.18.0-py2.py3-none-win_amd64.whl", hash = "sha256:51c0cecb429a111351a54346909e672a57b96233a363c79cc0a2bbdbfa397304"},
-    {file = "nodejs_wheel_binaries-20.18.0.tar.gz", hash = "sha256:1d574a3d0e503b42414e80b4529da9fc71104b0d5e1d75606b3fb5802960fb6f"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:00afada277fd6e945a74f881831aaf1bb7f853a15e15e8c998238ab88d327f6a"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-macosx_11_0_x86_64.whl", hash = "sha256:f29471263d65a66520a04a0e74ff641a775df1135283f0b4d1826048932b289d"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bd2ff0e20389f22927e311ccab69c1ecb34c3431fa809d1548e7000dc8248680"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a9545cc43f1ba2c9f467f3444e9cd7f8db059933be1a5215135610dee5b38bf3"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:43a277cbabf4b68e0a4798578a4f17e5f518ada1f79a174bfde06eb2bb47e730"},
+    {file = "nodejs_wheel_binaries-22.11.0-py2.py3-none-win_amd64.whl", hash = "sha256:8310ab182ee159141e08c85bc07f11e67ac3044922e6e4958f4a8f3ba6860185"},
+    {file = "nodejs_wheel_binaries-22.11.0.tar.gz", hash = "sha256:e67f4e4a646bba24baa2150460c9cfbde0f75169ba37e58a2341930a5c1456ee"},
 ]
 
 [[package]]
@@ -871,7 +871,7 @@ files = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.11.2"
+version = "10.12"
 requires_python = ">=3.8"
 summary = "Extension pack for Python Markdown."
 groups = ["dev"]
@@ -881,8 +881,8 @@ dependencies = [
     "pyyaml",
 ]
 files = [
-    {file = "pymdown_extensions-10.11.2-py3-none-any.whl", hash = "sha256:41cdde0a77290e480cf53892f5c5e50921a7ee3e5cd60ba91bf19837b33badcf"},
-    {file = "pymdown_extensions-10.11.2.tar.gz", hash = "sha256:bc8847ecc9e784a098efd35e20cba772bc5a1b529dfcef9dc1972db9021a1049"},
+    {file = "pymdown_extensions-10.12-py3-none-any.whl", hash = "sha256:49f81412242d3527b8b4967b990df395c89563043bc51a3d2d7d500e52123b77"},
+    {file = "pymdown_extensions-10.12.tar.gz", hash = "sha256:b0ee1e0b2bef1071a47891ab17003bfe5bf824a398e13f49f8ed653b699369a7"},
 ]
 
 [[package]]
@@ -1210,7 +1210,7 @@ files = [
 
 [[package]]
 name = "textual"
-version = "0.85.0"
+version = "0.85.1"
 requires_python = "<4.0.0,>=3.8.1"
 summary = "Modern Text User Interface framework"
 groups = ["lochelper"]
@@ -1222,8 +1222,8 @@ dependencies = [
     "typing-extensions<5.0.0,>=4.4.0",
 ]
 files = [
-    {file = "textual-0.85.0-py3-none-any.whl", hash = "sha256:8e75d023f06b242fb88233926dfb7801792f867643493096dd45dd216dc950f3"},
-    {file = "textual-0.85.0.tar.gz", hash = "sha256:645c0fd0b4f61cd19383df78a1acd4f3b555e2c514cfa2f454e20692dffc10a0"},
+    {file = "textual-0.85.1-py3-none-any.whl", hash = "sha256:a1a064c67b9b81cfa0c1b14298aa52221855aa4a56ad17a9b89a5594c73657a8"},
+    {file = "textual-0.85.1.tar.gz", hash = "sha256:9966214390fad9a84c3f69d49398487897577f5fa788838106dd77bd7babc9cd"},
 ]
 
 [[package]]
@@ -1252,7 +1252,7 @@ files = [
 
 [[package]]
 name = "tqdm"
-version = "4.66.5"
+version = "4.66.6"
 requires_python = ">=3.7"
 summary = "Fast, Extensible Progress Meter"
 groups = ["docstubs"]
@@ -1261,8 +1261,8 @@ dependencies = [
     "colorama; platform_system == \"Windows\"",
 ]
 files = [
-    {file = "tqdm-4.66.5-py3-none-any.whl", hash = "sha256:90279a3770753eafc9194a0364852159802111925aa30eb3f9d85b0e805ac7cd"},
-    {file = "tqdm-4.66.5.tar.gz", hash = "sha256:e1020aef2e5096702d8a025ac7d16b1577279c9d63f8375b63083e9a5f0fcbad"},
+    {file = "tqdm-4.66.6-py3-none-any.whl", hash = "sha256:223e8b5359c2efc4b30555531f09e9f2f3589bcd7fdd389271191031b49b7a63"},
+    {file = "tqdm-4.66.6.tar.gz", hash = "sha256:4bdd694238bef1485ce839d67967ab50af8f9272aab687c0d7702a01da0be090"},
 ]
 
 [[package]]
