@@ -1,5 +1,5 @@
 [tool.pyprojectx]
-main = ["pdm==2.19.3"]
+main = ["pdm==2.20.0.post1"]
 
 [tool.pdm]
 distribution = true
