@@ -1,10 +1,19 @@
-[tool.pyprojectx]
-main = ["pdm==2.20.0.post1"]
-
-[tool.pdm]
-distribution = true
-
-[tool.pdm.dev-dependencies]
+[project]
+name = "basedpyright"
+description = "static type checking for Python (but based)"
+dynamic = ["version"]
+authors = [
+    { name = "detachhead", email = "detachhead@users.noreply.github.com" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
+    # since the user shouldn't have a node/npm binary unknowingly added to their PATH
+    "nodejs-wheel-binaries>=20.13.1",
+]
+[dependency-groups]
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
@@ -34,6 +43,32 @@ docstubs_old = [
     "libcst==1.1.0",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
+
+[build-system]
+build-backend = "pdm.backend"
+requires = [
+    "pdm-backend>=2.3.0",
+    # required for building the pyright npm package to be bundled in the pypi package.
+    # cli is required due to dependencies with install scripts that assume node/npm is in the path
+    "nodejs-wheel>=20.13.1",
+    # used in pdm_build.py:
+    "typing_extensions>=4.12.2",
+    "docify>=1.0.0",
+]
+
+[project.urls]
+repository = "https://github.com/detachhead/basedpyright"
+
+[project.scripts]
+basedpyright = 'basedpyright.pyright:main'
+basedpyright-langserver = 'basedpyright.langserver:main'
+
+[tool.pyprojectx]
+main = ["pdm==2.20.0.post1"]
+
+[tool.pdm]
+distribution = true
+
 
 [tool.pdm.version]
 source = "call"
@@ -69,41 +104,6 @@ source-includes = [
     "package-lock.json",
     "tsconfig.json",
 ]
-
-[project]
-name = "basedpyright"
-description = "static type checking for Python (but based)"
-dynamic = ["version"]
-authors = [
-    { name = "detachhead", email = "detachhead@users.noreply.github.com" },
-]
-dependencies = [
-    # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
-    # since the user shouldn't have a node/npm binary unknowingly added to their PATH
-    "nodejs-wheel-binaries>=20.13.1",
-]
-requires-python = ">=3.8"
-readme = "README.md"
-license = { text = "MIT" }
-
-[project.urls]
-repository = "https://github.com/detachhead/basedpyright"
-
-[project.scripts]
-basedpyright = 'basedpyright.pyright:main'
-basedpyright-langserver = 'basedpyright.langserver:main'
-
-[build-system]
-requires = [
-    "pdm-backend>=2.3.0",
-    # required for building the pyright npm package to be bundled in the pypi package.
-    # cli is required due to dependencies with install scripts that assume node/npm is in the path
-    "nodejs-wheel>=20.13.1",
-    # used in pdm_build.py:
-    "typing_extensions>=4.12.2",
-    "docify>=1.0.0",
-]
-build-backend = "pdm.backend"
 
 [tool.pylint.MASTER]
 fail-on = "I"
