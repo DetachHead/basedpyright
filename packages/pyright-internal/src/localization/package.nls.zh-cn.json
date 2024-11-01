@@ -656,7 +656,8 @@
         "typeIgnoreCommentWithoutRule": "`type: ignore` 注释必须指定具体规则（例如 `# type: ignore[ruleName]`）",
         "implicitRelativeImport": "从 \"{importName}\" 导入会进行隐式的相对导入，如果此文件作为模块导入则会出错",
         "invalidCast": "从 \"{fromType}\" 类型到 \"{toType}\" 类型的转换可能有误，这两个类型不完全重叠。如果确有必要，请先将其转换为 `object`",
-        "multipleInheritance": "当前的基类无法进行多继承；因为基类 \"{classes}\" 具有的 `__init__` 或 `__new__` 方法可能不会被执行"
+        "multipleInheritance": "当前的基类无法进行多继承；因为基类 \"{classes}\" 具有的 `__init__` 或 `__new__` 方法可能不会被执行",
+        "unannotatedClassAttribute": "由于类未用 `@final` 装饰，其 `{name}` 属性需要类型注解"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "特化的 `Annotated` 形式不能用于 `isinstance()` 或 `issubclass()`",
