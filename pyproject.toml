@@ -37,7 +37,7 @@ docstubs = [
     # to our dev dependencies
     "libcst>=1.5.0",
 ]
-docstubs_old = [
+docstubs-old = [
     # docify depends on libcst which doesn't have a version that supports 3.8-3.13, so we need to use 2 different versions
     "docify>=1.0.0",
     "libcst==1.1.0",
@@ -81,7 +81,7 @@ update = "pdm update -G dev -G docstubs -G lochelper"
 # of python supported by pyright. https://github.com/DetachHead/basedpyright/issues/658
 refresh_lockfiles = { composite = [
     "pdm lock --update-reuse -G dev -G docstubs -G lochelper --python=\">=3.9\"",
-    "pdm lock --update-reuse -G docstubs_old --lockfile pdm.docstubs_old.lock",
+    "pdm lock --update-reuse -G docstubs-old --lockfile pdm.docstubs-old.lock",
 ] }
 typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
