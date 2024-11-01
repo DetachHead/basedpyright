@@ -41,10 +41,5 @@
         "word-wrap": "1.2.5",
         "yargs": "^16.2.0"
     },
-    "workspaces": [
-        "packages/pyright",
-        "packages/pyright-internal",
-        "packages/vscode-pyright",
-        "packages/browser-pyright"
-    ]
+    "workspaces": ["packages/*"]
 }
