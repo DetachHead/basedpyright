@@ -1156,9 +1156,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             }
             const workspace = await this.getWorkspaceForFile(newUri);
             const program = workspace.service.backgroundAnalysisProgram.program;
+
+            // if the uri being renamed is not part of the workspace, don't bother
+            if (!program.containsSourceFileIn(oldUri)) {
+                continue;
+            }
+
+            const oldFileContents = program.getParseResults(oldUri);
             workspace.service.getUserFiles().forEach((file) => {
                 const currentFileParseResults = program.getParseResults(file);
-                const oldFile = program.getParseResults(oldUri) ?? oldUri;
+                const oldFile = oldFileContents ?? oldUri;
                 if (currentFileParseResults && workspace.rootUri && program.evaluator) {
                     const importFinder = new RenameUsageFinder(program, currentFileParseResults, oldFile, newUri);
                     importFinder.walk(currentFileParseResults.parserOutput.parseTree);
