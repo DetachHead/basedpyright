@@ -1,7 +1,3 @@
-/**
- * visitor that looks for imports of an old file path and creates {@link TextEdit}s to update them for the new file path
- */
-
 import { TextEdit } from 'vscode-languageserver-types';
 import { ModuleNameNode, NameNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseTreeWalker } from './parseTreeWalker';
@@ -14,6 +10,9 @@ import { TextRange } from '../common/textRange';
 import { ModuleType, TypeCategory } from './types';
 import { Program } from './program';
 
+/**
+ * visitor that looks for imports of an old file path and creates {@link TextEdit}s to update them for the new file path
+ */
 export class RenameUsageFinder extends ParseTreeWalker {
     edits: TextEdit[] = [];
     private _oldModuleName: string;
