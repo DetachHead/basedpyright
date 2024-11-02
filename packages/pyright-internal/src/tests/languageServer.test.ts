@@ -777,7 +777,7 @@ describe(`Basic language server tests`, () => {
                 const result = await serverInfo.connection.sendRequest(
                     WillRenameFilesRequest.type,
                     {
-                        files: [{ oldUri: 'file:///src/foo/bar', newUri: 'file:///src/foo/bar2' }],
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/bar2.py' }],
                     },
                     CancellationToken.None
                 );
