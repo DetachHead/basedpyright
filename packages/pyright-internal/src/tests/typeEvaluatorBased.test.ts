@@ -12,7 +12,7 @@ test('reportUnreachable', () => {
     validateResultsButBased(analysisResults, {
         errors: [78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
         infos: [{ line: 95 }, { line: 98 }],
-        unusedCodes: [{ line: 102 }],
+        hints: [{ line: 102 }],
     });
 });
 

@@ -18,7 +18,7 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { invalidateTypeCacheIfCanceled, throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
-import { DiagnosticRuleSet, LspDiagnosticLevel } from '../common/configOptions';
+import { DiagnosticRuleSet, DiagnosticLevel } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { assert, assertNever, fail } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
@@ -3395,7 +3395,7 @@ export function createTypeEvaluator(
     }
 
     function addDiagnosticWithSuppressionCheck(
-        diagLevel: LspDiagnosticLevel,
+        diagLevel: DiagnosticLevel,
         message: string,
         node: ParseNode,
         range?: TextRange,
@@ -3450,7 +3450,7 @@ export function createTypeEvaluator(
 
     function addDiagnostic(rule: DiagnosticRule, message: string, node: ParseNode, range?: TextRange) {
         const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
-        const diagLevel = fileInfo.diagnosticRuleSet[rule] as LspDiagnosticLevel;
+        const diagLevel = fileInfo.diagnosticRuleSet[rule] as DiagnosticLevel;
 
         if (diagLevel === 'none') {
             return undefined;
@@ -3504,7 +3504,7 @@ export function createTypeEvaluator(
         message: string,
         range: TextRange
     ) {
-        const diagLevel = fileInfo.diagnosticRuleSet[rule] as LspDiagnosticLevel;
+        const diagLevel = fileInfo.diagnosticRuleSet[rule] as DiagnosticLevel;
 
         if (diagLevel === 'none') {
             return undefined;

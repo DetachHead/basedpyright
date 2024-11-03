@@ -18,7 +18,7 @@
 
 import { Commands } from '../commands/commands';
 import { appendArray } from '../common/collectionUtils';
-import { LspDiagnosticLevel } from '../common/configOptions';
+import { DiagnosticLevel } from '../common/configOptions';
 import { assert, assertNever, fail } from '../common/debug';
 import { CreateTypeStubFileAction, Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -4283,16 +4283,14 @@ export class Binder extends ParseTreeWalker {
     }
 
     private _addDiagnostic(rule: DiagnosticRule, message: string, textRange: TextRange) {
-        const diagLevel = this._fileInfo.diagnosticRuleSet[rule] as LspDiagnosticLevel;
+        const diagLevel = this._fileInfo.diagnosticRuleSet[rule] as DiagnosticLevel;
 
         let diagnostic: Diagnostic | undefined;
         switch (diagLevel) {
             case 'error':
             case 'warning':
             case 'information':
-            case 'unreachable':
-            case 'unused':
-            case 'deprecated':
+            case 'hint':
                 diagnostic = this._fileInfo.diagnosticSink.addDiagnosticWithTextRange(diagLevel, message, textRange);
                 break;
 
