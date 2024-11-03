@@ -71,6 +71,23 @@ The following settings determine how different types should be evaluated.
 
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
 
+## Diagnostic Categories
+
+diagnostics can be configured to be reported as any of the following categories:
+
+- `"error"` - causes the CLI to fail with exit code 1
+- `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#failOnWarnings) is enabled or the [`--warnings`](./command-line.md#command-line) argument is used
+- `"information"` - never causes the CLI to fail
+- `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](../benefits-over-pyright/baseline.md) are reported as hints
+
+!!! note
+    the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
+    to be report them as "unnecessary" or "deprecated" [as mentioned in the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity) are still reported as such, the configuration to do so has just been simplified.
+
+    the `"hint"` diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. [baselined diagnostics](../benefits-over-pyright/baseline.md) are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.
+
+    for backwards compatibility, setting a diagnostic rule to any of these three deprecated categories will act as an alias for the `"hint"` category, however they may be removed entirely in a future release.
+
 ## Type Check Diagnostics Settings
 The following settings control pyright’s diagnostic output (warnings or errors).
 
@@ -80,7 +97,7 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 ### Type Check Rule Overrides
 
-The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level.
+The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"hint"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level. [see above for more information](#diagnostic-categories)
 
 - <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.
 
@@ -387,10 +404,9 @@ executionEnvironments = [
 
 Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings.
 
-Some rules have an additional severity level such as `"unused"`, `"deprecated"` or `"unreachable"`. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`.
+Some rules default to `"hint"`. This diagnostic category is only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`. [see here](#diagnostic-categories) for more information about each diagnostic category.
 
 The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"`, `"recommended"` and `"all"`).
-
 
 ### `"recommended"` and `"all"`
 

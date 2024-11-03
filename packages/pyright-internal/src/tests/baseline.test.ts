@@ -12,23 +12,22 @@ const typeAnalyzeFilesWithBaseline = (sampleFolderName: string, files: string[])
     );
 };
 
-test('baselined error not reported', () => {
+test('baselined error reported as a hint', () => {
     const analysisResults = typeAnalyzeFilesWithBaseline('baselined_error_not_reported', ['foo.py']);
 
     validateResultsButBased(analysisResults, {
-        errors: [
-            { line: 0, code: DiagnosticRule.reportAssignmentType, baselineStatus: 'baselined' },
-            { line: 1, code: DiagnosticRule.reportUndefinedVariable },
-        ],
+        errors: [{ line: 1, code: DiagnosticRule.reportUndefinedVariable }],
+        hints: [{ line: 0, code: DiagnosticRule.reportAssignmentType, baselined: true }],
         warnings: [{ line: 1, code: DiagnosticRule.reportUnusedExpression }],
     });
 });
 
-test('baselined error that can be reported as a hint gets converted to a hint', () => {
+test('baselined error that can use a diagnostic tag gets converted to a hint', () => {
+    //TODO: figure out a way to test the diagnostic tag, but the logic for that is now entirely handled in the language server
     const analysisResults = typeAnalyzeFilesWithBaseline('baselined_hint', ['foo.py']);
 
     validateResultsButBased(analysisResults, {
-        unreachableCodes: [{ line: 1, code: DiagnosticRule.reportUnreachable, baselineStatus: 'baselined with hint' }],
+        hints: [{ line: 1, code: DiagnosticRule.reportUnreachable, baselined: true }],
         warnings: [{ line: 3, code: DiagnosticRule.reportUnreachable }],
     });
 });

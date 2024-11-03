@@ -600,8 +600,8 @@ export class TestState {
                         ? result.warnings
                         : category === 'information'
                         ? result.information
-                        : category === 'unused'
-                        ? result.unused
+                        : category === 'hint'
+                        ? result.hint
                         : category === 'none'
                         ? []
                         : this.raiseError(`unexpected category ${category}`);
@@ -1916,7 +1916,7 @@ export class TestState {
                     errors: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Error),
                     warnings: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Warning),
                     information: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Information),
-                    unused: diagnostics.filter((diag) => diag.category === DiagnosticCategory.UnusedCode),
+                    hint: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Hint),
                 };
 
                 // Don't use the uri key, but rather the file name, because other spots

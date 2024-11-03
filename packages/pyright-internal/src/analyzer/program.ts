@@ -894,12 +894,7 @@ export class Program {
                 if (diagnostics !== undefined) {
                     // Filter out all categories that are translated to tagged hints?
                     if (options.disableTaggedHints) {
-                        diagnostics = diagnostics.filter(
-                            (diag) =>
-                                diag.category !== DiagnosticCategory.UnreachableCode &&
-                                diag.category !== DiagnosticCategory.UnusedCode &&
-                                diag.category !== DiagnosticCategory.Deprecated
-                        );
+                        diagnostics = diagnostics.filter((diag) => diag.category !== DiagnosticCategory.Hint);
                     }
 
                     fileDiagnostics.push({

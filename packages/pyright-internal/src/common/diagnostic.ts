@@ -9,7 +9,7 @@
 
 import { Commands } from '../commands/commands';
 import { appendArray } from './collectionUtils';
-import { LspDiagnosticLevel } from './configOptions';
+import { DiagnosticLevel } from './configOptions';
 import { Range, TextRange } from './textRange';
 import { Uri } from './uri/uri';
 
@@ -37,13 +37,11 @@ export const enum DiagnosticCategory {
     Error,
     Warning,
     Information,
-    UnusedCode,
-    UnreachableCode,
-    Deprecated,
+    Hint,
     TaskItem,
 }
 
-export function convertLevelToCategory(level: LspDiagnosticLevel) {
+export function convertLevelToCategory(level: DiagnosticLevel) {
     switch (level) {
         case 'error':
             return DiagnosticCategory.Error;
@@ -54,25 +52,14 @@ export function convertLevelToCategory(level: LspDiagnosticLevel) {
         case 'information':
             return DiagnosticCategory.Information;
 
-        case 'unreachable':
-            return DiagnosticCategory.UnreachableCode;
-
-        case 'unused':
-            return DiagnosticCategory.UnusedCode;
-
-        case 'deprecated':
-            return DiagnosticCategory.Deprecated;
+        case 'hint':
+            return DiagnosticCategory.Hint;
 
         default:
             level satisfies 'none';
             throw new Error(`${level} is not expected`);
     }
 }
-
-export const isHintDiagnostic = (diagnostic: Diagnostic) =>
-    diagnostic.category === DiagnosticCategory.UnusedCode ||
-    diagnostic.category === DiagnosticCategory.UnreachableCode ||
-    diagnostic.category === DiagnosticCategory.Deprecated;
 
 export interface DiagnosticAction {
     action: string;
@@ -125,8 +112,6 @@ export namespace DiagnosticRelatedInfo {
     }
 }
 
-export type BaselineStatus = 'baselined' | 'baselined with hint';
-
 // Represents a single error or warning.
 export class Diagnostic {
     private _actions: DiagnosticAction[] | undefined;
@@ -138,7 +123,7 @@ export class Diagnostic {
         readonly message: string,
         readonly range: Range,
         readonly priority: TaskListPriority = TaskListPriority.Normal,
-        readonly baselineStatus: BaselineStatus | undefined = undefined
+        readonly baselined = false
     ) {}
 
     /**
@@ -150,7 +135,7 @@ export class Diagnostic {
             message?: string;
             range?: Range;
             priority?: TaskListPriority;
-            baselineStatus?: BaselineStatus | undefined;
+            baselined?: boolean;
         } = {}
     ) => {
         const diag = new Diagnostic(
@@ -158,7 +143,7 @@ export class Diagnostic {
             args.message ?? this.message,
             args.range ?? this.range,
             args.priority ?? this.priority,
-            args.baselineStatus ?? this.baselineStatus
+            args.baselined ?? this.baselined
         );
         if (this._actions) {
             for (const action of this._actions) {
@@ -185,7 +170,7 @@ export class Diagnostic {
             message: this.message,
             range: this.range,
             priority: this.priority,
-            baselineStatus: this.baselineStatus,
+            baselined: this.baselined,
             actions: this._actions,
             rule: this._rule,
             relatedInfo: this._relatedInfo.map((info) => DiagnosticRelatedInfo.toJsonObj(info)),
@@ -193,7 +178,7 @@ export class Diagnostic {
     }
 
     static fromJsonObj(obj: any) {
-        const diag = new Diagnostic(obj.category, obj.message, obj.range, obj.priority, obj.baselineStatus);
+        const diag = new Diagnostic(obj.category, obj.message, obj.range, obj.priority, obj.baselined);
         diag._actions = obj.actions;
         diag._rule = obj.rule;
         diag._relatedInfo = obj.relatedInfo.map((info: any) => DiagnosticRelatedInfo.fromJsonObj(info));

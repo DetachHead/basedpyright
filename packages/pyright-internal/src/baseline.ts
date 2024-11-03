@@ -1,8 +1,7 @@
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { Uri } from './common/uri/uri';
-import { compareDiagnostics, convertLevelToCategory, Diagnostic, isHintDiagnostic } from './common/diagnostic';
-import { extraOptionDiagnosticRules } from './common/configOptions';
+import { compareDiagnostics, Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { fileExists } from './common/uri/uriUtils';
 import { FileSystem } from './common/fileSystem';
 import { pluralize } from './common/stringUtils';
@@ -126,7 +125,7 @@ export class BaselineHandler {
             const newDiagnostics = filesWithDiagnostics.map((file) => ({
                 ...file,
                 diagnostics: file.diagnostics.filter(
-                    (diagnostic) => !diagnostic.baselineStatus && !isHintDiagnostic(diagnostic)
+                    (diagnostic) => !diagnostic.baselined && diagnostic.category !== DiagnosticCategory.Hint
                 ),
             }));
             if (newDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add, 0)) {
@@ -188,10 +187,11 @@ export class BaselineHandler {
                 assert(change.value[0] instanceof Diagnostic, "change object wasn't a Diagnostic");
                 result.push(...(change.value as Diagnostic[]));
             } else {
-                // if not added and not removed
+                // if unchanged
+
                 // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic
                 // level to that instead
-                // TODO: should we only baseline errors and not warnings/notes?
+                // TODO: should we only baseline errors/warnings and not notes?
                 for (const diagnostic of change.value) {
                     assert(
                         diagnostic instanceof Diagnostic,
@@ -200,20 +200,14 @@ export class BaselineHandler {
                     let newDiagnostic;
                     const diagnosticRule = diagnostic.getRule() as DiagnosticRule | undefined;
                     if (diagnosticRule) {
-                        for (const { name, get } of extraOptionDiagnosticRules) {
-                            if (get().includes(diagnosticRule)) {
-                                newDiagnostic = diagnostic.copy({
-                                    category: convertLevelToCategory(name),
-                                    baselineStatus: 'baselined with hint',
-                                });
-                                newDiagnostic.setRule(diagnosticRule);
-                                // none of these rules should have multiple extra diagnostic levels so we break after the first match
-                                break;
-                            }
-                        }
+                        newDiagnostic = diagnostic.copy({
+                            category: DiagnosticCategory.Hint,
+                            baselined: true,
+                        });
+                        newDiagnostic.setRule(diagnosticRule);
                     }
                     if (!newDiagnostic) {
-                        newDiagnostic = diagnostic.copy({ baselineStatus: 'baselined' });
+                        newDiagnostic = diagnostic.copy({ baselined: true });
                     }
                     result.push(newDiagnostic);
                 }
@@ -224,12 +218,12 @@ export class BaselineHandler {
 
     /**
      * filters out diagnostics that are baselined, but keeps any that have been turned into hints. so you will need
-     * to filter it further using {@link isHintDiagnostic} if you want those removed as well
+     * to filter it further by removing diagnostics with {@link DiagnosticCategory.Hint} if you want those removed as well
      */
     filterOutBaselinedDiagnostics = (filesWithDiagnostics: readonly FileDiagnostics[]): readonly FileDiagnostics[] =>
         filesWithDiagnostics.map((file) => ({
             ...file,
-            diagnostics: file.diagnostics.filter((diagnostic) => diagnostic.baselineStatus !== 'baselined'),
+            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselined),
         }));
 
     private _getBaselinedErrorsForFile = (file: Uri): BaselinedDiagnostic[] => {
@@ -249,7 +243,7 @@ export class BaselineHandler {
         for (const fileWithDiagnostics of filesWithDiagnostics) {
             const filePath = this._rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString();
             const errorDiagnostics = fileWithDiagnostics.diagnostics.filter(
-                (diagnostic) => !isHintDiagnostic(diagnostic) || diagnostic.baselineStatus === 'baselined with hint'
+                (diagnostic) => diagnostic.category !== DiagnosticCategory.Hint || diagnostic.baselined
             );
             if (!(filePath in baselineData.files)) {
                 baselineData.files[filePath] = [];
