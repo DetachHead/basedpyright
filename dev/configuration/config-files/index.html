@@ -809,6 +809,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#diagnostic-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Categories
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#type-check-diagnostics-settings" class="md-nav__link">
     <span class="md-ellipsis">
       Type Check Diagnostics Settings
@@ -1528,6 +1537,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#diagnostic-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diagnostic Categories
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#type-check-diagnostics-settings" class="md-nav__link">
     <span class="md-ellipsis">
       Type Check Diagnostics Settings
@@ -1755,6 +1773,21 @@ who haven't yet updated to >=1.18.1
 <p><a name="disableBytesTypePromotions"></a> <strong>disableBytesTypePromotions</strong> [boolean]: Disables legacy behavior where <code>bytearray</code> and <code>memoryview</code> are considered subtypes of <code>bytes</code>. <a href="https://peps.python.org/pep-0688/#no-special-meaning-for-bytes">PEP 688</a> deprecates this behavior, but this switch is provided to restore the older behavior.</p>
 </li>
 </ul>
+<h2 id="diagnostic-categories">Diagnostic Categories</h2>
+<p>diagnostics can be configured to be reported as any of the following categories:</p>
+<ul>
+<li><code>"error"</code> - causes the CLI to fail with exit code 1</li>
+<li><code>"warning"</code> - only causes the CLI to fail if <a href="#failOnWarnings"><code>failOnWarnings</code></a> is enabled or the <a href="../command-line/#command-line"><code>--warnings</code></a> argument is used</li>
+<li><code>"information"</code> - never causes the CLI to fail</li>
+<li><code>"hint"</code> - only appears as a hint in the language server, not reported in the CLI at all. <a href="../../benefits-over-pyright/baseline/">baselined diagnostics</a> are reported as hints</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>the <code>"unreachable"</code>, <code>"unused"</code> and <code>"deprecated"</code> diagnostic categories are deprecated in favor of <code>"hint"</code>. rules where it makes sense
+to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity">as mentioned in the LSP spec</a> are still reported as such, the configuration to do so has just been simplified.</p>
+<p>the <code>"hint"</code> diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. <a href="../../benefits-over-pyright/baseline/">baselined diagnostics</a> are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.</p>
+<p>for backwards compatibility, setting a diagnostic rule to any of these three deprecated categories will act as an alias for the <code>"hint"</code> category, however they may be removed entirely in a future release.</p>
+</div>
 <h2 id="type-check-diagnostics-settings">Type Check Diagnostics Settings</h2>
 <p>The following settings control pyright’s diagnostic output (warnings or errors).</p>
 <ul>
@@ -1766,7 +1799,7 @@ who haven't yet updated to >=1.18.1
 </li>
 </ul>
 <h3 id="type-check-rule-overrides">Type Check Rule Overrides</h3>
-<p>The following settings allow more fine grained control over the <strong>typeCheckingMode</strong>. Unless otherwise specified, each diagnostic setting can specify a boolean value (<code>false</code> indicating that no error is generated and <code>true</code> indicating that an error is generated). Alternatively, a string value of <code>"none"</code>, <code>"warning"</code>, <code>"information"</code>, or <code>"error"</code> can be used to specify the diagnostic level.</p>
+<p>The following settings allow more fine grained control over the <strong>typeCheckingMode</strong>. Unless otherwise specified, each diagnostic setting can specify a boolean value (<code>false</code> indicating that no error is generated and <code>true</code> indicating that an error is generated). Alternatively, a string value of <code>"none"</code>, <code>"hint"</code>, <code>"warning"</code>, <code>"information"</code>, or <code>"error"</code> can be used to specify the diagnostic level. <a href="#diagnostic-categories">see above for more information</a></p>
 <ul>
 <li>
 <p><a name="reportGeneralTypeIssues"></a> <strong>reportGeneralTypeIssues</strong> [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.</p>
@@ -2165,7 +2198,7 @@ who haven't yet updated to >=1.18.1
 </code></pre></div>
 <h2 id="diagnostic-settings-defaults">Diagnostic Settings Defaults</h2>
 <p>Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings.</p>
-<p>Some rules have an additional severity level such as <code>"unused"</code>, <code>"deprecated"</code> or <code>"unreachable"</code>. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to <code>"off"</code>. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as <code>"off"</code>.</p>
+<p>Some rules default to <code>"hint"</code>. This diagnostic category is only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to <code>"off"</code>. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as <code>"off"</code>. <a href="#diagnostic-categories">see here</a> for more information about each diagnostic category.</p>
 <p>The following table lists the default severity levels for each diagnostic rule within each type checking mode (<code>"off"</code>, <code>"basic"</code>, <code>"standard"</code>, <code>"strict"</code>, <code>"recommended"</code> and <code>"all"</code>).</p>
 <h3 id="recommended-and-all"><code>"recommended"</code> and <code>"all"</code></h3>
 <p>basedpyright introduces two new diagnostic rulesets in addition to the ones in pyright: <code>"recommended"</code> and <code>"all"</code>. <code>"recommended"</code> enables all diagnostic rules as either <code>"warning"</code> or <code>"error"</code>, but sets <code>failOnWarnings</code> to <code>true</code> so that all diagnostics will still cause a non-zero exit code when run in the CLI. this means <code>"recommended"</code> is essentially the same as <code>"all"</code>, but makes it easier to differentiate errors that are likely to cause a runtime crash like an undefined variable from less serious warnings such as a missing type annotation.</p>
@@ -2359,36 +2392,36 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedImport</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedClass</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedFunction</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedVariable</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
@@ -2638,9 +2671,9 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportTypeCommentUsage</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
@@ -2665,9 +2698,9 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportDeprecated</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
-<td style="text-align: left;">"deprecated"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
@@ -2962,7 +2995,7 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedExcept</td>
-<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
 <td style="text-align: left;">"error"</td>
@@ -3016,10 +3049,10 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportUnreachable</td>
-<td style="text-align: left;">"unreachable"</td>
-<td style="text-align: left;">"unreachable"</td>
-<td style="text-align: left;">"unreachable"</td>
-<td style="text-align: left;">"unreachable"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
@@ -3079,10 +3112,10 @@ who haven't yet updated to >=1.18.1
 </tr>
 <tr>
 <td style="text-align: left;">reportUnusedParameter</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
-<td style="text-align: left;">"unused"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
+<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
