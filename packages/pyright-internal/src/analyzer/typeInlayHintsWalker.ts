@@ -236,8 +236,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         // inlay hints for generics
         if (
             this._settings.genericTypes &&
-            // where the type is not explicitly specified
-            node.d.leftExpr.nodeType !== ParseNodeType.Index &&
+            // where the type is not explicitly specified (theoretically we could show them on all node types that aren't
+            // `ParseNodeType.Index`, but we don't because it would probably look weird to show them on any other type of expression)
+            node.d.leftExpr.nodeType === ParseNodeType.Name &&
+            // don't show them on super calls because that's invalid.
+            node.d.leftExpr.d.value !== 'super' &&
             // only show them on classes, because the index syntax to specify generics isn't valid on functions
             isClass(callableType)
         ) {

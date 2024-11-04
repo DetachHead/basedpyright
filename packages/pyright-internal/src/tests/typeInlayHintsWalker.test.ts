@@ -82,42 +82,42 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'generic',
-                position: 55,
+                position: 65,
                 value: '[int]',
             },
             {
                 inlayHintType: 'generic',
-                position: 126,
+                position: 136,
                 value: '[str]',
             },
             {
                 inlayHintType: 'generic',
-                position: 175,
+                position: 185,
                 value: '[int]',
             },
             {
                 inlayHintType: 'generic',
-                position: 273,
+                position: 315,
                 value: '[bool]',
             },
             {
                 inlayHintType: 'parameter',
-                position: 274,
+                position: 316,
                 value: 'value=',
             },
             {
                 inlayHintType: 'generic',
-                position: 290,
+                position: 332,
                 value: '[Literal[1, 2, 3], ...]',
             },
             {
                 inlayHintType: 'generic',
-                position: 399,
+                position: 441,
                 value: '[list[int], int, int, str]',
             },
             {
                 inlayHintType: 'parameter',
-                position: 400,
+                position: 442,
                 value: 'asdf=',
             },
         ]);
