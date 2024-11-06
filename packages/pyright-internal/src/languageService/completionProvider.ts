@@ -130,7 +130,6 @@ import {
 } from './completionProviderUtils';
 import { DocumentSymbolCollector } from './documentSymbolCollector';
 import { getAutoImportText, getDocumentationPartsForTypeAndDecl } from './tooltipUtils';
-import { Tokenizer } from '../parser/tokenizer';
 
 namespace Keywords {
     const base: string[] = [
@@ -2893,8 +2892,6 @@ export class CompletionProvider {
         paramDetails.params.forEach((paramInfo) => {
             if (
                 paramInfo.param.name &&
-                // filter out any dataclass field aliases that aren't valid identifiers
-                Tokenizer.isPythonIdentifier(paramInfo.param.name) &&
                 paramInfo.kind !== ParamKind.Positional &&
                 paramInfo.kind !== ParamKind.ExpandedArgs
             ) {
