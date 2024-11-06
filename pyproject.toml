@@ -64,7 +64,7 @@ basedpyright = 'basedpyright.pyright:main'
 basedpyright-langserver = 'basedpyright.langserver:main'
 
 [tool.pyprojectx]
-main = ["pdm==2.20.0.post1"]
+main = ["pdm"]
 
 [tool.pdm]
 distribution = true

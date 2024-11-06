@@ -95,6 +95,7 @@
         "package-lock.json": true,
         "pdm.*.lock": true,
         "pdm.lock": true,
+        "pw.lock": true,
         "pw": true,
         "pw.bat": true
     }
