@@ -22,7 +22,6 @@ import { DiagnosticLevel } from '../common/configOptions';
 import { assert, assertNever, fail } from '../common/debug';
 import { CreateTypeStubFileAction, Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { DocStringService } from '../common/docStringService';
 import { stripFileExtension } from '../common/pathUtils';
 import { convertTextRangeToRange } from '../common/positionUtils';
 import { TextRange, getEmptyRange } from '../common/textRange';
@@ -256,11 +255,7 @@ export class Binder extends ParseTreeWalker {
     // the current function.
     private _codeFlowComplexity = 0;
 
-    constructor(
-        fileInfo: AnalyzerFileInfo,
-        private _docStringService: DocStringService,
-        private _moduleSymbolOnly = false
-    ) {
+    constructor(fileInfo: AnalyzerFileInfo, private _moduleSymbolOnly = false) {
         super();
 
         this._fileInfo = fileInfo;
@@ -565,15 +560,6 @@ export class Binder extends ParseTreeWalker {
                         if (paramNode.d.name) {
                             const symbol = this._bindNameToScope(this._currentScope, paramNode.d.name);
 
-                            // Extract the parameter docString from the function docString
-                            let docString = ParseTreeUtils.getDocString(node?.d.suite?.d.statements ?? []);
-                            if (docString !== undefined) {
-                                docString = this._docStringService.extractParameterDocumentation(
-                                    docString,
-                                    paramNode.d.name.d.value
-                                );
-                            }
-
                             if (symbol) {
                                 const paramDeclaration: ParamDeclaration = {
                                     type: DeclarationType.Param,
@@ -582,7 +568,6 @@ export class Binder extends ParseTreeWalker {
                                     range: convertTextRangeToRange(paramNode, this._fileInfo.lines),
                                     moduleName: this._fileInfo.moduleName,
                                     isInExceptSuite: this._isInExceptSuite,
-                                    docString: docString,
                                 };
 
                                 symbol.addDeclaration(paramDeclaration);
@@ -4095,9 +4080,10 @@ export class Binder extends ParseTreeWalker {
             // To determine whether the first parameter of the method
             // refers to the class or the instance, we need to apply
             // some heuristics.
-            if (methodNode.d.name.d.value === '__new__') {
-                // The __new__ method is special. It acts as a classmethod even
-                // though it doesn't have a @classmethod decorator.
+            const implicitClassMethods = ['__new__', '__init_subclass__', '__class_getitem__'];
+            if (implicitClassMethods.includes(methodNode.d.name.d.value)) {
+                // Several methods are special. They act as class methods even
+                // though they don't have a @classmethod decorator.
                 isInstanceMember = false;
             } else {
                 // Assume that it's an instance member unless we find

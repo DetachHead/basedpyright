@@ -2037,6 +2037,11 @@ export function getTypeVarArgsRecursive(type: Type, recursionCount = 0): TypeVar
             return [];
         }
 
+        // Don't return any bound type variables.
+        if (TypeVarType.isBound(type)) {
+            return [];
+        }
+
         // Don't return any P.args or P.kwargs types.
         if (isParamSpec(type) && type.priv.paramSpecAccess) {
             return [TypeVarType.cloneForParamSpecAccess(type, /* access */ undefined)];
@@ -4197,30 +4202,43 @@ class ApplySolvedTypeVarsTransformer extends TypeVarTransformer {
         // in cases where TypeVars can go unsolved due to unions in parameter
         // annotations, like this:
         //   def test(x: Union[str, T]) -> Union[str, T]
-        if (this._options.replaceUnsolved?.eliminateUnsolvedInUnions) {
-            if (
-                isTypeVar(preTransform) &&
-                this._shouldReplaceTypeVar(preTransform) &&
-                this._shouldReplaceUnsolvedTypeVar(preTransform)
-            ) {
-                const solutionSet = this._solution.getSolutionSet(this._activeConstraintSetIndex ?? 0);
-                const typeVarType = solutionSet.getType(preTransform);
+        if (!this._options.replaceUnsolved?.eliminateUnsolvedInUnions) {
+            return postTransform;
+        }
 
-                // Did the TypeVar remain unsolved?
-                if (!typeVarType || (isTypeVar(typeVarType) && TypeVarType.isUnification(typeVarType))) {
-                    // If the TypeVar was not transformed, then it was unsolved,
-                    // and we'll eliminate it.
-                    if (preTransform === postTransform) {
-                        return undefined;
-                    }
+        const solutionSet = this._solution.getSolutionSet(this._activeConstraintSetIndex ?? 0);
 
-                    // If useDefaultForUnsolved or useUnknownForUnsolved is true, the postTransform type will
-                    // be Unknown, which we want to eliminate.
-                    if (this._options.replaceUnsolved) {
-                        if (isUnknown(postTransform)) {
-                            return undefined;
-                        }
-                    }
+        if (isTypeVar(preTransform)) {
+            if (!this._shouldReplaceTypeVar(preTransform) || !this._shouldReplaceUnsolvedTypeVar(preTransform)) {
+                return postTransform;
+            }
+
+            const typeVarType = solutionSet.getType(preTransform);
+
+            // Did the TypeVar remain unsolved?
+            if (typeVarType) {
+                if (!isTypeVar(typeVarType) || !TypeVarType.isUnification(typeVarType)) {
+                    return postTransform;
+                }
+            }
+
+            // If the TypeVar was not transformed, then it was unsolved,
+            // and we'll eliminate it.
+            if (preTransform === postTransform) {
+                return undefined;
+            }
+
+            // If useDefaultForUnsolved or useUnknownForUnsolved is true, the postTransform type will
+            // be Unknown, which we want to eliminate.
+            if (this._options.replaceUnsolved && isUnknown(postTransform)) {
+                return undefined;
+            }
+        } else if (preTransform.props?.condition) {
+            // If this is a type that is conditioned on a unification TypeVar,
+            // see if TypeVar was solved. If not, eliminate the type.
+            for (const condition of preTransform.props.condition) {
+                if (TypeVarType.isUnification(condition.typeVar) && !solutionSet.getType(condition.typeVar)) {
+                    return undefined;
                 }
             }
         }
