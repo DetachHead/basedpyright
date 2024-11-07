@@ -64,6 +64,8 @@
     "jest.runMode": "on-demand",
     "pylint.ignorePatterns": [
         "**/pyright-internal/src/tests/samples/*",
+        "**/pyright-internal/typeshed-fallback/*",
+        "**/docstubs/*",
         "**/build/*"
     ],
     "terminal.integrated.env.windows": {

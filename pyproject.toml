@@ -214,9 +214,9 @@ max-line-length = 200
 pythonVersion = "3.8"
 include = ["basedpyright", "based_build", "pdm_build.py", "tests"]
 # https://github.com/DetachHead/basedpyright/issues/31
-ignore = ["pw", "basedpyright/dist", "packages", "build"]
-exclude = ["pw", "basedpyright/dist", "packages", "build"]
-reportImplicitStringConcatenation = false                  # conflicts with ruff formatter
+ignore = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
+exclude = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
+reportImplicitStringConcatenation = false                              # conflicts with ruff formatter
 
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
 # only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
