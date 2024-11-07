@@ -70,7 +70,7 @@
       "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
     "terminal.integrated.env.osx": { 
-        "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
+      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
     "terminal.integrated.env.linux": {
       "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
