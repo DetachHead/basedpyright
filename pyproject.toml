@@ -6,7 +6,16 @@ authors = [
     { name = "detachhead", email = "detachhead@users.noreply.github.com" },
 ]
 readme = "README.md"
-license = { text = "MIT" }
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 requires-python = ">=3.8"
 dependencies = [
     # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
