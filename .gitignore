@@ -129,8 +129,9 @@ Thumbs.db
 **/__pycache__
 /.venv/
 
-# js files copied into the basedpyright pypi package
+# files from the npm package copied into the basedpyright pypi package
 basedpyright/*.js
+basedpyright/package.json
 
 # typeshed stubs with docstrings
 docstubs
