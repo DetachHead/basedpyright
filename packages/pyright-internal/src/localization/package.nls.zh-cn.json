@@ -830,8 +830,8 @@
         "useListInstead": "使用 `List[T]` 表示列表类型或 `Union[T1, T2]` 表示示联合类型",
         "useTupleInstead": "使用 `tuple[T1, ..., Tn]` 表示元组类型或使用 `Union[T1, T2]` 表示联合类型",
         "useTypeInstead": "改用 `Type[T]`",
-        "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的差异与基类 \"{className}\" 不兼容",
-        "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的差异与 \"{typeAliasParam}\" 不兼容",
+        "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的可变性与基类 \"{className}\" 不兼容",
+        "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的可变性与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 \".{importName}\" 作为相对导入",
         "fullPathImportSuggestion": "或指定完整模块路径：\"{importName}\""
     },
