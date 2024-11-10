@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from json import loads
 from pathlib import Path
-from shutil import copyfile, copytree
+from shutil import copy, copyfile, copytree
 from typing import TYPE_CHECKING, TypedDict, cast
 
 from nodejs_wheel.executable import npm
@@ -34,7 +34,8 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         npm_package_dir = Path("packages/pyright")
         pypi_package_dir = Path("basedpyright")
         dist_dir = Path("dist")
-        npm_script_paths = cast(PackageJson, loads((npm_package_dir / "package.json").read_text()))[
+        package_json = "package.json"
+        npm_script_paths = cast(PackageJson, loads((npm_package_dir / package_json).read_text()))[
             "bin"
         ].values()
         generate_docstubs()
@@ -43,10 +44,12 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         run_npm("run", "build:cli:dev")
 
         if context.target == "editable":
+            copy(npm_package_dir / package_json, pypi_package_dir)
             copytree(npm_package_dir / dist_dir, pypi_package_dir / dist_dir, dirs_exist_ok=True)
             for script_path in npm_script_paths:
                 _ = copyfile(npm_package_dir / script_path, pypi_package_dir / script_path)
         else:
+            files[str(pypi_package_dir / package_json)] = npm_package_dir / package_json
             for file in (npm_package_dir / dist_dir).rglob("**/*"):
                 if file.is_file():
                     files[str(pypi_package_dir / file.relative_to(npm_package_dir))] = file
