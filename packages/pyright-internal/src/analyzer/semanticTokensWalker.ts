@@ -17,7 +17,7 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
-import { isParamDeclaration } from './declaration';
+import { isAliasDeclaration, isParamDeclaration } from './declaration';
 
 export type SemanticTokenItem = {
     type: string;
@@ -240,7 +240,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return;
         } else if (
             (type?.category === TypeCategory.Unknown || type?.category === TypeCategory.Any) &&
-            (declarations === undefined || declarations.length === 0)
+            (declarations === undefined || declarations.length === 0 || declarations.every(isAliasDeclaration))
         ) {
             return;
         } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
