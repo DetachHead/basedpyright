@@ -1,6 +1,16 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, FunctionType, getTypeAliasInfo, OverloadedType, Type, TypeCategory, TypeFlags } from './types';
+import {
+    ClassType,
+    ClassTypeFlags,
+    FunctionType,
+    getTypeAliasInfo,
+    isClass,
+    OverloadedType,
+    Type,
+    TypeCategory,
+    TypeFlags,
+} from './types';
 import {
     ClassNode,
     DecoratorNode,
@@ -8,6 +18,7 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
+    isExpressionNode,
     LambdaNode,
     NameNode,
     ParameterNode,
@@ -181,7 +192,23 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 break;
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
-                if (!(type.flags & TypeFlags.Instance)) {
+                if (type.flags & TypeFlags.Instance) {
+                    if (node.parent && this._evaluator && isExpressionNode(node.parent)) {
+                        const declaredType = this._evaluator.getDeclaredTypeForExpression(node.parent, {
+                            method: 'set',
+                        });
+                        if (
+                            declaredType &&
+                            isClass(declaredType) &&
+                            declaredType.shared.flags & ClassTypeFlags.PropertyClass
+                        ) {
+                            this._addItem(node.start, node.length, SemanticTokenTypes.variable, [
+                                SemanticTokenModifiers.readonly,
+                            ]);
+                            return;
+                        }
+                    }
+                } else {
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
