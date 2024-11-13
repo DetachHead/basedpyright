@@ -288,6 +288,7 @@ export namespace Localizer {
             new ParameterizedString<{ type: string; methodName: string; paramName: string }>(
                 getRawString('Diagnostic.bindTypeMismatch')
             );
+        export const breakInExceptionGroup = () => getRawString('Diagnostic.breakInExceptionGroup');
         export const breakOutsideLoop = () => getRawString('Diagnostic.breakOutsideLoop');
         export const callableExtraArgs = () => getRawString('Diagnostic.callableExtraArgs');
         export const callableFirstArg = () => getRawString('Diagnostic.callableFirstArg');
@@ -361,7 +362,7 @@ export namespace Localizer {
             new ParameterizedString<{ leftType: string; rightType: string }>(
                 getRawString('Diagnostic.containmentAlwaysTrue')
             );
-        export const continueInFinally = () => getRawString('Diagnostic.continueInFinally');
+        export const continueInExceptionGroup = () => getRawString('Diagnostic.continueInExceptionGroup');
         export const continueOutsideLoop = () => getRawString('Diagnostic.continueOutsideLoop');
         export const dataClassBaseClassFrozen = () => getRawString('Diagnostic.dataClassBaseClassFrozen');
         export const dataClassBaseClassNotFrozen = () => getRawString('Diagnostic.dataClassBaseClassNotFrozen');
@@ -460,6 +461,8 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberSet'));
         export const enumMemberTypeAnnotation = () => getRawString('Diagnostic.enumMemberTypeAnnotation');
         export const exceptionGroupIncompatible = () => getRawString('Diagnostic.exceptionGroupIncompatible');
+        export const exceptGroupMismatch = () => getRawString('Diagnostic.exceptGroupMismatch');
+        export const exceptGroupRequiresType = () => getRawString('Diagnostic.exceptGroupRequiresType');
         export const exceptionGroupTypeIncorrect = () => getRawString('Diagnostic.exceptionGroupTypeIncorrect');
         export const exceptionTypeIncorrect = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.exceptionTypeIncorrect'));
@@ -879,6 +882,7 @@ export namespace Localizer {
         export const returnInAsyncGenerator = () => getRawString('Diagnostic.returnInAsyncGenerator');
         export const returnMissing = () =>
             new ParameterizedString<{ returnType: string }>(getRawString('Diagnostic.returnMissing'));
+        export const returnInExceptionGroup = () => getRawString('Diagnostic.returnInExceptionGroup');
         export const returnOutsideFunction = () => getRawString('Diagnostic.returnOutsideFunction');
         export const returnTypeContravariant = () => getRawString('Diagnostic.returnTypeContravariant');
         export const returnTypeMismatch = () =>

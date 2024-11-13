@@ -201,6 +201,10 @@ export class Binder extends ParseTreeWalker {
     // and require code flow analysis to resolve.
     private _currentScopeCodeFlowExpressions: Set<string> | undefined;
 
+    // If we're actively binding a match statement, this is the current
+    // match expression.
+    private _currentMatchSubjExpr: ExpressionNode | undefined;
+
     // Aliases of "typing" and "typing_extensions".
     private _typingImportAliases: string[] = [];
 
@@ -1645,18 +1649,24 @@ export class Binder extends ParseTreeWalker {
 
     override visitAwait(node: AwaitNode) {
         // Make sure this is within an async lambda or function.
-        const enclosingFunction = ParseTreeUtils.getEnclosingFunction(node);
-        if (enclosingFunction === undefined || !enclosingFunction.d.isAsync) {
-            if (this._fileInfo.ipythonMode && enclosingFunction === undefined) {
+        const execScopeNode = ParseTreeUtils.getExecutionScopeNode(node);
+        if (execScopeNode?.nodeType !== ParseNodeType.Function || !execScopeNode.d.isAsync) {
+            if (this._fileInfo.ipythonMode && execScopeNode?.nodeType === ParseNodeType.Module) {
                 // Top level await is allowed in ipython mode.
                 return true;
             }
 
+            const isInGenerator =
+                node.parent?.nodeType === ParseNodeType.Comprehension &&
+                node.parent?.parent?.nodeType !== ParseNodeType.List &&
+                node.parent?.parent?.nodeType !== ParseNodeType.Set &&
+                node.parent?.parent?.nodeType !== ParseNodeType.Dictionary;
+
             // Allow if it's within a generator expression. Execution of
             // generator expressions is deferred and therefore can be
             // run within the context of an async function later.
-            if (node.parent?.nodeType !== ParseNodeType.Comprehension) {
-                this._addSyntaxError(LocMessage.awaitNotInAsync(), node);
+            if (!isInGenerator) {
+                this._addSyntaxError(LocMessage.awaitNotInAsync(), node.d.awaitToken);
             }
         }
 
@@ -2228,7 +2238,11 @@ export class Binder extends ParseTreeWalker {
                                 // Allow if it's within a generator expression. Execution of
                                 // generator expressions is deferred and therefore can be
                                 // run within the context of an async function later.
-                                if (node.parent?.nodeType === ParseNodeType.List) {
+                                if (
+                                    node.parent?.nodeType === ParseNodeType.List ||
+                                    node.parent?.nodeType === ParseNodeType.Set ||
+                                    node.parent?.nodeType === ParseNodeType.Dictionary
+                                ) {
                                     this._addSyntaxError(LocMessage.asyncNotInAsyncFunction(), compr.d.asyncToken);
                                 }
                             }
@@ -2312,10 +2326,20 @@ export class Binder extends ParseTreeWalker {
 
             this._currentFlowNode = this._finishFlowLabel(preGuardLabel);
 
+            // Note the active match subject expression prior to binding
+            // the pattern. If the pattern involves any targets that overwrite
+            // the subject expression, this will be set to undefined.
+            this._currentMatchSubjExpr = node.d.expr;
+
             // Bind the pattern.
             this.walk(caseStatement.d.pattern);
 
-            this._createFlowNarrowForPattern(node.d.expr, caseStatement);
+            // If the pattern involves targets that overwrite the subject
+            // expression, skip creating a flow node for narrowing the subject.
+            if (this._currentMatchSubjExpr) {
+                this._createFlowNarrowForPattern(node.d.expr, caseStatement);
+                this._currentMatchSubjExpr = undefined;
+            }
 
             // Apply the guard expression.
             if (caseStatement.d.guardExpr) {
@@ -2501,6 +2525,16 @@ export class Binder extends ParseTreeWalker {
     private _addPatternCaptureTarget(target: NameNode) {
         const symbol = this._bindNameToScope(this._currentScope, target);
         this._createAssignmentTargetFlowNodes(target, /* walkTargets */ false, /* unbound */ false);
+
+        // See if the target overwrites all or a portion of the subject expression.
+        if (this._currentMatchSubjExpr) {
+            if (
+                ParseTreeUtils.isMatchingExpression(target, this._currentMatchSubjExpr) ||
+                ParseTreeUtils.isPartialMatchingExpression(target, this._currentMatchSubjExpr)
+            ) {
+                this._currentMatchSubjExpr = undefined;
+            }
+        }
 
         if (symbol) {
             const declaration: VariableDeclaration = {

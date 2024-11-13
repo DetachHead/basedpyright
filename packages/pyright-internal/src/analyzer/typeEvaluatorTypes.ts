@@ -205,6 +205,26 @@ export const enum EvalFlags {
         IsinstanceArg,
 }
 
+// Types whose definitions are prefetched and cached by the type evaluator
+export interface PrefetchedTypes {
+    noneTypeClass: Type;
+    objectClass: Type;
+    typeClass: Type;
+    unionTypeClass: Type;
+    awaitableClass: Type;
+    functionClass: Type;
+    tupleClass: Type;
+    boolClass: Type;
+    intClass: Type;
+    strClass: Type;
+    dictClass: Type;
+    moduleTypeClass: Type;
+    typedDictClass: Type;
+    typedDictPrivateClass: Type;
+    supportsKeysAndGetItemClass: Type;
+    mappingClass: Type;
+}
+
 export interface TypeResult<T extends Type = Type> {
     type: T;
 
@@ -662,7 +682,7 @@ export interface TypeEvaluator {
     ) => Type;
 
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
-    verifyRaiseExceptionType: (node: ExpressionNode) => void;
+    verifyRaiseExceptionType: (node: ExpressionNode, allowNone: boolean) => void;
     verifyDeleteExpression: (node: ExpressionNode) => void;
     validateOverloadedArgTypes: (
         errorNode: ExpressionNode,
