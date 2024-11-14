@@ -413,6 +413,7 @@ export interface DiagnosticRuleSet {
     failOnWarnings: boolean;
     reportUnreachable: DiagnosticLevel;
     reportAny: DiagnosticLevel;
+    reportExplicitAny: DiagnosticLevel;
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
     reportPrivateLocalImportUsage: DiagnosticLevel;
     reportImplicitRelativeImport: DiagnosticLevel;
@@ -540,6 +541,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportImplicitOverride,
         DiagnosticRule.reportUnreachable,
         DiagnosticRule.reportAny,
+        DiagnosticRule.reportExplicitAny,
         DiagnosticRule.reportIgnoreCommentWithoutRule,
         DiagnosticRule.reportInvalidCast,
         DiagnosticRule.reportImplicitRelativeImport,
@@ -673,6 +675,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         failOnWarnings: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
+        reportExplicitAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
@@ -787,6 +790,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         failOnWarnings: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
+        reportExplicitAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
@@ -901,6 +905,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         failOnWarnings: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
+        reportExplicitAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
@@ -1014,6 +1019,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     failOnWarnings: true,
     reportUnreachable: 'warning',
     reportAny: 'warning',
+    reportExplicitAny: 'warning',
     reportIgnoreCommentWithoutRule: 'warning',
     reportPrivateLocalImportUsage: 'warning',
     reportImplicitRelativeImport: 'error',
@@ -1124,6 +1130,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     failOnWarnings: true,
     reportUnreachable: 'error',
     reportAny: 'error',
+    reportExplicitAny: 'error',
     reportIgnoreCommentWithoutRule: 'error',
     reportPrivateLocalImportUsage: 'error',
     reportImplicitRelativeImport: 'error',
@@ -1235,6 +1242,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         failOnWarnings: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
+        reportExplicitAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
