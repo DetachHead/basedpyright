@@ -1481,6 +1481,10 @@ export class Checker extends ParseTreeWalker {
         const type = this._evaluator.getType(node);
         this._reportDeprecatedUseForType(node, type);
 
+        if (type && isAny(type) && type.props?.specialForm) {
+            this._evaluator.addDiagnostic(DiagnosticRule.reportAny, LocMessage.explicitAny(), node);
+        }
+
         return true;
     }
 
