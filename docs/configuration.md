@@ -1,9 +1,9 @@
 <!--8<-- [start:before-table] -->
 ## Pyright Configuration
 
-basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see [below](../configuration/config-files.md#sample-config-file).
+basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see [below](#sample-config-file).
 
-basedpyright settings can also be specified in a `[tool.basedpyright]` section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see [below](../configuration/config-files.md#sample-pyprojecttoml-file).
+basedpyright settings can also be specified in a `[tool.basedpyright]` section of a “pyproject.toml” file. A “pyrightconfig.json” file always takes precedent over “pyproject.toml” if both are present. For a sample pyproject.toml file, see [below](#sample-pyprojecttoml-file).
 
 !!! info
 
@@ -17,7 +17,7 @@ The following settings control the *environment* in which basedpyright will chec
 
 - **include** [array of paths, optional]: Paths of directories or files that should be considered part of the project. If no paths are specified, pyright defaults to the directory that contains the config file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no include paths are specified, the root path for the workspace is assumed.
 
-- **exclude** [array of paths, optional]: Paths of directories or files that should not be considered part of the project. These override the directories and files that `include` matched, allowing specific subdirectories to be excluded. Note that files in the exclude paths may still be included in the analysis if they are referenced (imported) by source files that are not excluded. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no exclude paths are specified, Pyright automatically excludes the following: `**/node_modules`, `**/__pycache__`, `**/.*`. Pylance also excludes any virtual environment directories regardless of the exclude paths specified. For more detail on Python environment specification and discovery, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
+- **exclude** [array of paths, optional]: Paths of directories or files that should not be considered part of the project. These override the directories and files that `include` matched, allowing specific subdirectories to be excluded. Note that files in the exclude paths may still be included in the analysis if they are referenced (imported) by source files that are not excluded. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). If no exclude paths are specified, Pyright automatically excludes the following: `**/node_modules`, `**/__pycache__`, `**/.*`. Pylance also excludes any virtual environment directories regardless of the exclude paths specified. For more detail on Python environment specification and discovery, refer to the [import resolution](./usage/import-resolution.md#configuring-your-python-environment) documentation.
 
 - **strict** [array of paths, optional]: Paths of directories or files that should use “strict” analysis if they are included. This is the same as manually adding a “# pyright: strict” comment. In strict mode, most type-checking rules are enabled. Refer to [this table](#diagnostic-settings-defaults) for details about which rules are enabled in strict mode. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character).
 
@@ -32,10 +32,10 @@ The following settings control the *environment* in which basedpyright will chec
 - **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
 
     !!! note
-        If you are working on a project with other developers and not using a tool like [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation), it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a [per-user setting](./configuration/language-server-settings.md). For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
+        If you are working on a project with other developers and not using a tool like [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation), it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a [per-user setting](./configuration/language-server-settings.md). For more details, refer to the [import resolution](./usage/import-resolution.md#configuring-your-python-environment) documentation.
 
 
-- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
+- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](./usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
 
 - **verboseOutput** [boolean]: Specifies whether output logs should be verbose. This is useful when diagnosing certain problems like import resolution issues.
 
@@ -45,7 +45,7 @@ The following settings control the *environment* in which basedpyright will chec
 
 - **pythonPlatform** [string, optional]: Specifies the target platform that will be used to execute the source code. Should be one of `"Windows"`, `"Darwin"`, `"Linux"`, or `"All"`. If specified, pyright will tailor its use of type stub files, which conditionalize type definitions based on the platform. If no platform is specified, pyright will use the current platform.
 
-- **executionEnvironments** [array of objects, optional]: Specifies a list of execution environments (see [below](config-files.md#execution-environment-options)). Execution environments are searched from start to finish by comparing the path of a source file with the root path specified in the execution environment.
+- **executionEnvironments** [array of objects, optional]: Specifies a list of execution environments (see [below](#execution-environment-options)). Execution environments are searched from start to finish by comparing the path of a source file with the root path specified in the execution environment.
 
 - **useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
 
@@ -76,9 +76,9 @@ The following settings determine how different types should be evaluated.
 diagnostics can be configured to be reported as any of the following categories:
 
 - `"error"` - causes the CLI to fail with exit code 1
-- `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#failOnWarnings) is enabled or the [`--warnings`](./command-line.md#command-line) argument is used
+- `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#based-options) is enabled or the [`--warnings`](./configuration/command-line.md#command-line) argument is used
 - `"information"` - never causes the CLI to fail
-- `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](../benefits-over-pyright/baseline.md) are reported as hints
+- `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](./benefits-over-pyright/baseline.md) are reported as hints
 
 !!! note
     the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
@@ -93,7 +93,7 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 - **typeCheckingMode** ["off", "basic", "standard", "strict", "recommended", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "recommended". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
 
-- **ignore** [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden using the [language server settings](./language-server-settings.md).
+- **ignore** [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden using the [language server settings](./configuration/language-server-settings.md).
 
 ### Type Check Rule Overrides
 
@@ -291,9 +291,9 @@ the following additional options are not available in regular pyright:
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.
 
-- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](../benefits-over-pyright/new-diagnostic-rules.md#reportignorecommentwithoutrule) for more information.
+- <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](./benefits-over-pyright/new-diagnostic-rules.md#reportignorecommentwithoutrule) for more information.
 
-- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of [`reportUnreachable`](../benefits-over-pyright/new-diagnostic-rules.md#reportunreachable).
+- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of [`reportUnreachable`](./benefits-over-pyright/new-diagnostic-rules.md#reportunreachable).
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
@@ -308,7 +308,7 @@ The following settings can be specified for each execution environment. Each sou
 
 - **pythonPlatform** [string, optional]: Specifies the target platform that will be used for this execution environment. If not specified, the global `pythonPlatform` setting is used instead.
 
-In addition, any of the [type check diagnostics settings](config-files.md#type-check-diagnostics-settings) listed above can be specified. These settings act as overrides for the files in this execution environment.
+In addition, any of the [type check diagnostics settings](#type-check-diagnostics-settings) listed above can be specified. These settings act as overrides for the files in this execution environment.
 
 ## Sample Config File
 The following is an example of a pyright config file:
@@ -404,7 +404,7 @@ executionEnvironments = [
 
 Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings.
 
-Some rules default to `"hint"`. This diagnostic category is only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`. [see here](#diagnostic-categories) for more information about each diagnostic category.
+Some rules default to `"hint"`. This diagnostic category is only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`. [See here](#diagnostic-categories) for more information about each diagnostic category.
 
 The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"`, `"recommended"` and `"all"`).
 
@@ -422,11 +422,11 @@ basedpyright introduces two new diagnostic rulesets in addition to the ones in p
 <!--8<-- [start:after-table] -->
 ## Overriding language server settings
 
-If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [dicouraged language server settings](./language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
+If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [discouraged language server settings](./configuration/language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
 
 If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` does not exist, then the language server settings apply.
 
-for more information about why this is the case, [see here](./language-server-settings.md#discouraged-settings).
+For more information about why this is the case, [see here](./configuration/language-server-settings.md#discouraged-settings).
 
 ## Locale Configuration
 
