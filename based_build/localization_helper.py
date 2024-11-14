@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypedDict, Union, cast, final
+from typing import TYPE_CHECKING, ClassVar, Dict, TypedDict, Union, cast, final
 
 from rich.highlighter import ReprHighlighter
 from rich.text import Text
@@ -14,6 +14,8 @@ from textual.widgets import Footer, Header, Label, Tabs, Tree
 from typing_extensions import override
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from textual.widgets.tree import TreeNode
 
 highlighter = ReprHighlighter()
@@ -41,7 +43,7 @@ def read_locfile(language: str = "en-us") -> dict[str, LocMessages]:
 LOCDATA_EN_US = read_locfile()
 
 
-def diff_keys(orig: dict[str, Any], comp: dict[str, Any]):
+def diff_keys(orig: Mapping[str, object], comp: Mapping[str, object]):
     msgs: list[str] = []
     orig_set = set(orig.keys())
     comp_set = set(comp.keys())
