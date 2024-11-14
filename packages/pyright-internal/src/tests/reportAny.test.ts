@@ -12,6 +12,8 @@ test('reportAny', () => {
     validateResultsButBased(analysisResults, {
         errors: [
             { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
+            { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
+            { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 3,
                 code: DiagnosticRule.reportAny,
@@ -20,6 +22,7 @@ test('reportAny', () => {
             { line: 4, code: DiagnosticRule.reportAny },
             { line: 5, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
             { line: 7, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'bar' }) },
+            { line: 7, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 9,
                 code: DiagnosticRule.reportAny,
@@ -40,6 +43,7 @@ test('reportAny', () => {
                 code: DiagnosticRule.reportAny,
                 message: LocMessage.lambdaReturnTypeAny(),
             },
+            { line: 15, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 18,
                 code: DiagnosticRule.reportAny,

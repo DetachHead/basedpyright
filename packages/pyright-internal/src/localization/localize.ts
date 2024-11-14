@@ -1241,6 +1241,7 @@ export namespace Localizer {
             new ParameterizedString<{ classes: string }>(getRawString('Diagnostic.multipleInheritance'));
         export const unannotatedClassAttribute = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unannotatedClassAttribute'));
+        export const explicitAny = () => getRawString('Diagnostic.explicitAny');
     }
 
     export namespace DiagnosticAddendum {
