@@ -71,7 +71,7 @@
     "terminal.integrated.env.windows": {
       "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
-    "terminal.integrated.env.osx": { 
+    "terminal.integrated.env.osx": {
       "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
     },
     "terminal.integrated.env.linux": {
@@ -100,5 +100,8 @@
         "pw.lock": true,
         "pw": true,
         "pw.bat": true
-    }
+    },
+    // package.json file copied into the pypi package
+    // this is a top-level folder but the ** is still needed due to https://github.com/microsoft/vscode/issues/92114
+    "npm.exclude": "**/basedpyright/*"
 }
