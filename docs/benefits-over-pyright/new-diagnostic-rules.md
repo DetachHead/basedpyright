@@ -35,7 +35,21 @@ def foo(bar, baz: Any) -> Any:
     print(baz) # no error
 ```
 
-basedpyright introduces the `reportAny` option, which will report an error on usages of anything typed as `Any`.
+basedpyright introduces the `reportAny` option, which will report an error on usages of anything typed as `Any`:
+
+```py
+def foo(baz: Any) -> Any:
+    print(baz) # error: reportAny
+```
+
+## `reportExplicitAny`
+
+similar to [`reportAny`](#reportany), however this rule bans usages of the `Any` type itself rather than expressions that are typed as `Any`:
+
+```py
+def foo(baz: Any) -> Any: # error: reportExplicitAny
+    print(baz) # error: reportAny
+```
 
 ## `reportIgnoreCommentWithoutRule`
 

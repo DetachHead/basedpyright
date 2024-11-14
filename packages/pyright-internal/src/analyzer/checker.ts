@@ -1482,7 +1482,7 @@ export class Checker extends ParseTreeWalker {
         this._reportDeprecatedUseForType(node, type);
 
         if (type && isAny(type) && type.props?.specialForm) {
-            this._evaluator.addDiagnostic(DiagnosticRule.reportAny, LocMessage.explicitAny(), node);
+            this._evaluator.addDiagnostic(DiagnosticRule.reportExplicitAny, LocMessage.explicitAny(), node);
         }
 
         return true;

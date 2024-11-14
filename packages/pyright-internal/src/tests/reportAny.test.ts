@@ -12,8 +12,6 @@ test('reportAny', () => {
     validateResultsButBased(analysisResults, {
         errors: [
             { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
-            { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
-            { line: 3, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 3,
                 code: DiagnosticRule.reportAny,
@@ -22,7 +20,6 @@ test('reportAny', () => {
             { line: 4, code: DiagnosticRule.reportAny },
             { line: 5, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
             { line: 7, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'bar' }) },
-            { line: 7, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 9,
                 code: DiagnosticRule.reportAny,
@@ -43,12 +40,25 @@ test('reportAny', () => {
                 code: DiagnosticRule.reportAny,
                 message: LocMessage.lambdaReturnTypeAny(),
             },
-            { line: 15, code: DiagnosticRule.reportAny, message: LocMessage.explicitAny() },
             {
                 line: 18,
                 code: DiagnosticRule.reportAny,
                 message: LocMessage.wildcardPatternTypeAny(),
             },
         ],
+    });
+});
+
+test('reportExplicitAny', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportExplicitAny = 'error';
+    const analysisResults = typeAnalyzeSampleFiles(['reportAny.py'], configOptions);
+
+    validateResultsButBased(analysisResults, {
+        errors: [3, 3, 7, 15].map((lineNumber) => ({
+            line: lineNumber,
+            code: DiagnosticRule.reportExplicitAny,
+            message: LocMessage.explicitAny(),
+        })),
     });
 });

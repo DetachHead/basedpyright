@@ -269,7 +269,9 @@ the following additional options are not available in regular pyright:
 
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.
 
-- <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Ban all usages of the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances).
+- <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances).
+
+- <a name="reportExplicitAny"></a> **reportExplicitAny** [boolean or string, optional]: Ban all explicit usages of the `Any` type. While `reportAny` bans expressions typed as `Any`, this rule bans using the `Any` type directly eg. in a type annotation.
 
 - <a name="reportIgnoreCommentWithoutRule"></a> **reportIgnoreCommentWithoutRule** [boolean or string, optional]: Enforce that all `# type:ignore`/`# pyright:ignore` comments specify a rule in brackets (eg. `# pyright:ignore[reportAny]`)
 

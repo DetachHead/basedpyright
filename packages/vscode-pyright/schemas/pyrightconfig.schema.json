@@ -512,7 +512,12 @@
     },
     "reportAny": {
       "$ref": "#/definitions/diagnostic",
-      "title": "Controls reporting of values typed as `Any`",
+      "title": "Controls reporting of expressions typed as `Any`",
+      "default": "none"
+    },
+    "reportExplicitAny": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of type annotations that use the `Any` type",
       "default": "none"
     },
     "reportIgnoreCommentWithoutRule": {
@@ -920,6 +925,9 @@
     "reportAny": {
       "$ref": "#/definitions/reportAny"
     },
+    "reportExplicitAny": {
+      "$ref": "#/definitions/reportExplicitAny"
+    },
     "reportIgnoreCommentWithoutRule": {
       "$ref": "#/definitions/reportIgnoreCommentWithoutRule"
     },
@@ -1267,6 +1275,9 @@
           },
           "reportAny": {
             "$ref": "#/definitions/reportAny"
+          },
+          "reportExplicitAny": {
+            "$ref": "#/definitions/reportExplicitAny"
           },
           "reportIgnoreCommentWithoutRule": {
             "$ref": "#/definitions/reportIgnoreCommentWithoutRule"
