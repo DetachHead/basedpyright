@@ -1086,7 +1086,7 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
  * variance/bound for compatibility with less strictly typed code (cringe)
  */
 export const shouldUseVarianceForSpecialization = (type: Type) =>
-    (type.category !== TypeCategory.Class || type.shared.typeParams.length === 0);
+    type.category !== TypeCategory.Class || type.shared.typeParams.length === 0;
 
 /**
  * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its
