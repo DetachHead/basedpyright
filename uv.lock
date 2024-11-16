@@ -56,8 +56,6 @@ dev = [
 ]
 docstubs = [
     { name = "docify" },
-    { name = "libcst", version = "1.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "libcst", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 lochelper = [
     { name = "rich" },
@@ -82,11 +80,7 @@ dev = [
     { name = "ruff", specifier = ">=0.2.2" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
 ]
-docstubs = [
-    { name = "docify", specifier = ">=1.0.0" },
-    { name = "libcst", marker = "python_full_version < '3.9'", specifier = "==1.1.0" },
-    { name = "libcst", marker = "python_full_version >= '3.9'", specifier = ">=1.5.0" },
-]
+docstubs = [{ name = "docify", specifier = ">=1.0.0" }]
 lochelper = [
     { name = "rich", specifier = ">=13.0" },
     { name = "textual", specifier = ">=0.70.0" },
