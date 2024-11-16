@@ -41,10 +41,6 @@ dev = [
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
-    # transient dependency of docify, but we need to specify it here explicitly because it doesn't have a version
-    # that supports 3.8-3.13, so we need to use 2 different versions
-    "libcst>=1.5.0 ; python_version>='3.9'",
-    "libcst==1.1.0 ; python_version<'3.9'",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
