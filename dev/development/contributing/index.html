@@ -1449,7 +1449,7 @@
 <p>we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).</p>
 <ol>
 <li>hit <code>F1</code> &gt; <code>Tasks: Run task</code> &gt; <code>install dependencies</code>, or run the following command:
-    <div class="highlight"><pre><span></span><code>./pw pdm install
+    <div class="highlight"><pre><span></span><code>./pw uv sync
 </code></pre></div>
     this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to <code>./.venv</code> and <code>./node_modules</code></li>
 <li>press "Yes" when prompted by vscode to use the newly created virtualenv</li>
