@@ -80,21 +80,20 @@
           "label": "install dependencies",
           "type": "shell",
           "command": "./pw",
-          "args": ["pdm", "sync", "--clean", "-G:all"],
+          "args": ["pdm", "sync", "--clean", "-G", "dev", "-G", "docstubs", "-G", "lochelper"],
           "presentation": {
             "clear": true
           },
           "problemMatcher": []
         },
-        // https://github.com/pyprojectx/pyprojectx/issues/112
-        // {
-        //   "label": "update pyprojectx lockfile",
-        //   "type": "shell",
-        //   "command": "./pw",
-        //   "args": ["--lock"],
-        //   "presentation": {
-        //     "clear": true
-        //   }
-        // }
+        {
+          "label": "update pyprojectx lockfile",
+          "type": "shell",
+          "command": "./pw",
+          "args": ["--lock"],
+          "presentation": {
+            "clear": true
+          }
+        }
     ]
 }

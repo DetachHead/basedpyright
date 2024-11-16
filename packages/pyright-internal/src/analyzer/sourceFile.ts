@@ -11,7 +11,12 @@ import { isMainThread } from '../common/workersHost';
 
 import { OperationCanceledException } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
-import { ConfigOptions, ExecutionEnvironment, getBasicDiagnosticRuleSet } from '../common/configOptions';
+import {
+    ConfigOptions,
+    ExecutionEnvironment,
+    getBasicDiagnosticRuleSet,
+    unreachableDiagnosticRules,
+} from '../common/configOptions';
 import { ConsoleInterface, StandardConsole } from '../common/console';
 import { assert } from '../common/debug';
 import { Diagnostic, DiagnosticCategory, TaskListToken, convertLevelToCategory } from '../common/diagnostic';
@@ -824,11 +829,7 @@ export class SourceFile {
                     );
                     AnalyzerNodeInfo.setFileInfo(this._writableData.parserOutput!.parseTree, fileInfo);
 
-                    const binder = new Binder(
-                        fileInfo,
-                        this.serviceProvider.docStringService(),
-                        configOptions.indexGenerationMode
-                    );
+                    const binder = new Binder(fileInfo, configOptions.indexGenerationMode);
                     this._writableData.isBindingInProgress = true;
                     binder.bindModule(this._writableData.parserOutput!.parseTree);
 
@@ -1018,11 +1019,7 @@ export class SourceFile {
         if (this._diagnosticRuleSet.enableTypeIgnoreComments) {
             if (this._writableData.typeIgnoreLines.size > 0) {
                 diagList = diagList.filter((d) => {
-                    if (
-                        d.category !== DiagnosticCategory.UnusedCode &&
-                        d.category !== DiagnosticCategory.UnreachableCode &&
-                        d.category !== DiagnosticCategory.Deprecated
-                    ) {
+                    if (d.category !== DiagnosticCategory.Hint) {
                         for (let line = d.range.start.line; line <= d.range.end.line; line++) {
                             if (this._writableData.typeIgnoreLines.has(line)) {
                                 typeIgnoreLinesClone.delete(line);
@@ -1039,11 +1036,7 @@ export class SourceFile {
         // Filter the diagnostics based on "pyright: ignore" lines.
         if (this._writableData.pyrightIgnoreLines.size > 0) {
             diagList = diagList.filter((d) => {
-                if (
-                    d.category !== DiagnosticCategory.UnusedCode &&
-                    d.category !== DiagnosticCategory.UnreachableCode &&
-                    d.category !== DiagnosticCategory.Deprecated
-                ) {
+                if (d.category !== DiagnosticCategory.Hint) {
                     for (let line = d.range.start.line; line <= d.range.end.line; line++) {
                         const pyrightIgnoreComment = this._writableData.pyrightIgnoreLines.get(line);
                         if (pyrightIgnoreComment) {
@@ -1137,13 +1130,20 @@ export class SourceFile {
                     diag.category === DiagnosticCategory.Information
             );
 
+            const unreachableDiagnostics = unreachableDiagnosticRules();
             const isUnreachableCodeRange = (range: Range) => {
-                return prefilteredDiagList.find(
-                    (diag) =>
-                        diag.category === DiagnosticCategory.UnreachableCode &&
+                return prefilteredDiagList.find((diag) => {
+                    if (diag.category !== DiagnosticCategory.Hint) {
+                        return false;
+                    }
+                    const rule = diag.getRule();
+                    return (
+                        rule &&
+                        unreachableDiagnostics.includes(rule as DiagnosticRule) &&
                         diag.range.start.line <= range.start.line &&
                         diag.range.end.line >= range.end.line
-                );
+                    );
+                });
             };
 
             if (prefilteredErrorList.length === 0 && this._writableData.typeIgnoreAll !== undefined) {
@@ -1256,12 +1256,7 @@ export class SourceFile {
         // the errors and warnings, leaving only the unreachable code
         // and deprecated diagnostics.
         if (!includeWarningsAndErrors) {
-            diagList = diagList.filter(
-                (diag) =>
-                    diag.category === DiagnosticCategory.UnusedCode ||
-                    diag.category === DiagnosticCategory.UnreachableCode ||
-                    diag.category === DiagnosticCategory.Deprecated
-            );
+            diagList = diagList.filter((diag) => diag.category === DiagnosticCategory.Hint);
         }
 
         // If the file is in the ignore list, clear the diagnostic list.

@@ -1,7 +1,10 @@
+# https://github.com/microsoft/vscode-vsce/issues/580
+# https://stackoverflow.com/a/74909348
+../../**
+../**
+
 # Until https://github.com/microsoft/vscode-vsce/issues/417 is fixed,
 # ignore known build artifacts.
-
-node_modules
 .vscode/**
 .vscode-test/**
 out/**

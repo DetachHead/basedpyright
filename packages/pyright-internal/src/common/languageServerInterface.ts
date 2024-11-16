@@ -21,7 +21,6 @@ import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
 import { FileDiagnostics } from './diagnosticSink';
 
-// if adding a new inlay hint type here, make sure you update onInlayHints where it checks if all of them are false
 export interface InlayHintSettings {
     /**
      * pylance's version of this option supports 3 settings: `"all" | "partial" | "off"`. `"all"` shows inlay hints
@@ -30,6 +29,7 @@ export interface InlayHintSettings {
     callArgumentNames: boolean;
     functionReturnTypes: boolean;
     variableTypes: boolean;
+    genericTypes: boolean;
 }
 
 export interface ServerSettings {

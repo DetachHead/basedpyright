@@ -67,6 +67,7 @@ import {
     applySolvedTypeVars,
     buildSolutionFromSpecializedClass,
     computeMroLinearization,
+    convertToInstance,
     getTypeVarScopeId,
     isLiteralType,
     mapSubtypes,
@@ -185,7 +186,9 @@ export function createTypedDictType(
     }
 
     if (usingDictSyntax) {
-        for (const arg of argList.slice(2)) {
+        const argsToConsider = argList.slice(2);
+
+        for (const arg of argsToConsider) {
             if (arg.name?.d.value === 'total' || arg.name?.d.value === 'closed') {
                 if (
                     !arg.valueExpression ||
@@ -209,6 +212,9 @@ export function createTypedDictType(
                             ClassTypeFlags.TypedDictMarkedClosed | ClassTypeFlags.TypedDictEffectivelyClosed;
                     }
                 }
+            } else if (arg.name?.d.value === 'extra_items') {
+                classType.shared.typedDictExtraItemsExpr = arg.valueExpression;
+                classType.shared.flags |= ClassTypeFlags.TypedDictEffectivelyClosed;
             } else {
                 evaluator.addDiagnostic(
                     DiagnosticRule.reportCallIssue,
@@ -216,6 +222,17 @@ export function createTypedDictType(
                     arg.valueExpression || errorNode
                 );
             }
+        }
+
+        if (ClassType.isTypedDictMarkedClosed(classType) && classType.shared.typedDictExtraItemsExpr) {
+            const arg = argsToConsider.find((arg) => arg.name?.d.value === 'extra_items');
+
+            // A TypedDict cannot be "closed" and allow extra_items at the same time.
+            evaluator.addDiagnostic(
+                DiagnosticRule.reportGeneralTypeIssues,
+                LocMessage.typedDictExtraItemsClosed(),
+                arg?.valueExpression ?? errorNode
+            );
         }
     }
 
@@ -744,6 +761,16 @@ export function synthesizeTypedDictClassMethods(
         const mappingValueType = getTypedDictMappingEquivalent(evaluator, classType);
 
         if (mappingValueType) {
+            let keyValueType: Type = strType;
+
+            // If we know that there can be no more items, we can provide
+            // a more accurate key type consisting of all known keys.
+            if (entries.extraItems && isNever(entries.extraItems.valueType)) {
+                keyValueType = combineTypes(
+                    Array.from(entries.knownItems.keys()).map((key) => ClassType.cloneWithLiteral(strType, key))
+                );
+            }
+
             ['items', 'keys', 'values'].forEach((methodName) => {
                 const method = FunctionType.createSynthesizedInstance(methodName);
                 FunctionType.addParam(method, selfParam);
@@ -756,7 +783,7 @@ export function synthesizeTypedDictClassMethods(
                 ) {
                     method.shared.declaredReturnType = ClassType.specialize(
                         ClassType.cloneAsInstance(returnTypeClass),
-                        [strType, mappingValueType]
+                        [keyValueType, mappingValueType]
                     );
 
                     symbolTable.set(methodName, Symbol.createWithType(SymbolFlags.ClassMember, method));
@@ -975,6 +1002,7 @@ function getTypedDictFieldsFromDictSyntax(
             range: convertOffsetsToRange(entry.d.keyExpr.start, TextRange.getEnd(entry.d.keyExpr), fileInfo.lines),
             moduleName: fileInfo.moduleName,
             isInExceptSuite: false,
+            isInInlinedTypedDict: true,
         };
         newSymbol.addDeclaration(declaration);
 
@@ -1015,6 +1043,27 @@ function getTypedDictMembersForClassRecursive(
 
     const solution = buildSolutionFromSpecializedClass(classType);
 
+    if (ClassType.isTypedDictMarkedClosed(classType)) {
+        entries.extraItems = {
+            valueType: NeverType.createNever(),
+            isReadOnly: false,
+            isRequired: false,
+            isProvided: false,
+        };
+    } else if (classType.shared.typedDictExtraItemsExpr) {
+        const extraItemsTypeResult = evaluator.getTypeOfExpressionExpectingType(
+            classType.shared.typedDictExtraItemsExpr,
+            { allowReadOnly: true }
+        );
+
+        entries.extraItems = {
+            valueType: convertToInstance(extraItemsTypeResult.type),
+            isReadOnly: !!extraItemsTypeResult.isReadOnly,
+            isRequired: false,
+            isProvided: true,
+        };
+    }
+
     // Add any new typed dict entries from this class.
     ClassType.getSymbolTable(classType).forEach((symbol, name) => {
         if (!symbol.isIgnoredForProtocolMatch()) {
@@ -1025,13 +1074,12 @@ function getTypedDictMembersForClassRecursive(
                 let valueType = evaluator.getEffectiveTypeOfSymbol(symbol);
                 valueType = applySolvedTypeVars(valueType, solution);
 
-                const allowRequired = !ClassType.isTypedDictMarkedClosed(classType) || name !== '__extra_items__';
                 let isRequired = !ClassType.isCanOmitDictValues(classType);
                 let isReadOnly = false;
 
-                if (isRequiredTypedDictVariable(evaluator, symbol, allowRequired)) {
+                if (isRequiredTypedDictVariable(evaluator, symbol)) {
                     isRequired = true;
-                } else if (isNotRequiredTypedDictVariable(evaluator, symbol, allowRequired)) {
+                } else if (isNotRequiredTypedDictVariable(evaluator, symbol)) {
                     isRequired = false;
                 }
 
@@ -1046,12 +1094,7 @@ function getTypedDictMembersForClassRecursive(
                     isProvided: false,
                 };
 
-                if (ClassType.isTypedDictMarkedClosed(classType) && name === '__extra_items__') {
-                    tdEntry.isRequired = false;
-                    entries.extraItems = tdEntry;
-                } else {
-                    entries.knownItems.set(name, tdEntry);
-                }
+                entries.knownItems.set(name, tdEntry);
             }
         }
     });
@@ -1255,7 +1298,7 @@ export function assignTypedDictToTypedDict(
         ) {
             subDiag?.addMessage(
                 LocAddendum.typedDictExtraFieldTypeMismatch().format({
-                    name: '__extra_items__',
+                    name: 'extra_items',
                     type: evaluator.printType(ClassType.cloneAsInstance(srcType)),
                 })
             );
@@ -1263,7 +1306,7 @@ export function assignTypedDictToTypedDict(
         } else if (!extraDestEntries.isReadOnly && extraSrcEntries.isReadOnly) {
             diag?.createAddendum().addMessage(
                 LocAddendum.typedDictFieldNotReadOnly().format({
-                    name: '__extra_items__',
+                    name: 'extra_items',
                     type: evaluator.printType(ClassType.cloneAsInstance(destType)),
                 })
             );
@@ -1331,7 +1374,7 @@ export function assignToTypedDict(
                         if (subDiag) {
                             subDiag.addMessage(
                                 LocAddendum.typedDictFieldTypeMismatch().format({
-                                    name: '__extra_items__',
+                                    name: 'extra_items',
                                     type: evaluator.printType(valueTypes[index].type),
                                 })
                             );
@@ -1576,7 +1619,7 @@ export function narrowForKeyAssignment(classType: ClassType, key: string) {
     return ClassType.cloneForNarrowedTypedDictEntries(classType, narrowedEntries);
 }
 
-function isRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol, allowRequired: boolean) {
+function isRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol) {
     return symbol.getDeclarations().some((decl) => {
         if (decl.type !== DeclarationType.Variable || !decl.typeAnnotationNode) {
             return false;
@@ -1585,25 +1628,14 @@ function isRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol, a
         const annotatedType = evaluator.getTypeOfExpressionExpectingType(decl.typeAnnotationNode, {
             allowFinal: true,
             allowRequired: true,
+            allowReadOnly: true,
         });
-
-        if (!allowRequired) {
-            if (annotatedType.isRequired) {
-                evaluator.addDiagnostic(
-                    DiagnosticRule.reportGeneralTypeIssues,
-                    LocMessage.requiredNotInTypedDict(),
-                    decl.typeAnnotationNode
-                );
-            }
-
-            return false;
-        }
 
         return !!annotatedType.isRequired;
     });
 }
 
-function isNotRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol, allowRequired: boolean) {
+function isNotRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol) {
     return symbol.getDeclarations().some((decl) => {
         if (decl.type !== DeclarationType.Variable || !decl.typeAnnotationNode) {
             return false;
@@ -1612,19 +1644,8 @@ function isNotRequiredTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol
         const annotatedType = evaluator.getTypeOfExpressionExpectingType(decl.typeAnnotationNode, {
             allowFinal: true,
             allowRequired: true,
+            allowReadOnly: true,
         });
-
-        if (!allowRequired) {
-            if (annotatedType.isNotRequired) {
-                evaluator.addDiagnostic(
-                    DiagnosticRule.reportGeneralTypeIssues,
-                    LocMessage.notRequiredNotInTypedDict(),
-                    decl.typeAnnotationNode
-                );
-            }
-
-            return false;
-        }
 
         return !!annotatedType.isNotRequired;
     });
@@ -1639,6 +1660,7 @@ function isReadOnlyTypedDictVariable(evaluator: TypeEvaluator, symbol: Symbol) {
         const annotatedType = evaluator.getTypeOfExpressionExpectingType(decl.typeAnnotationNode, {
             allowFinal: true,
             allowRequired: true,
+            allowReadOnly: true,
         });
 
         return !!annotatedType.isReadOnly;

@@ -18,9 +18,7 @@ export const enum DiagnosticSeverityOverrides {
     Warning = 'warning',
     Information = 'information',
     None = 'none',
-    Unused = 'unused',
-    Unreachable = 'unreachable',
-    Deprecated = 'deprecated',
+    Hint = 'hint',
 }
 
 export function getDiagnosticSeverityOverrides() {
@@ -29,9 +27,7 @@ export function getDiagnosticSeverityOverrides() {
         DiagnosticSeverityOverrides.Warning,
         DiagnosticSeverityOverrides.Information,
         DiagnosticSeverityOverrides.None,
-        DiagnosticSeverityOverrides.Unused,
-        DiagnosticSeverityOverrides.Unreachable,
-        DiagnosticSeverityOverrides.Deprecated,
+        DiagnosticSeverityOverrides.Hint,
     ];
 }
 
@@ -94,8 +90,7 @@ export class CommandLineConfigOptions {
     // when user has not explicitly defined execution environments.
     extraPaths?: string[] | undefined;
 
-    // Default type-checking rule set. Should be one of 'off',
-    // 'basic', 'standard', 'strict' or 'all'.
+    // Default type-checking rule set.
     typeCheckingMode?: string | undefined;
 
     // Indicates diagnostic severity overrides

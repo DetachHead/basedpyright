@@ -95,7 +95,14 @@ import { CancelAfter } from './common/cancellationUtils';
 import { CaseSensitivityDetector } from './common/caseSensitivityDetector';
 import { getNestedProperty } from './common/collectionUtils';
 import { DiagnosticSeverityOverrides, getDiagnosticSeverityOverrides } from './common/commandLineOptions';
-import { ConfigOptions, getDiagLevelDiagnosticRules, parseDiagLevel } from './common/configOptions';
+import {
+    ConfigOptions,
+    deprecatedDiagnosticRules,
+    getDiagLevelDiagnosticRules,
+    parseDiagLevel,
+    unreachableDiagnosticRules,
+    unusedDiagnosticRules,
+} from './common/configOptions';
 import { ConsoleInterface, ConsoleWithLogLevel, LogLevel } from './common/console';
 import { Diagnostic as AnalyzerDiagnostic, DiagnosticCategory } from './common/diagnostic';
 import { DiagnosticRule } from './common/diagnosticRules';
@@ -140,6 +147,7 @@ import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { BaselineHandler } from './baseline';
+import { assert } from './common/debug';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -1002,10 +1010,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         if (
             workspace.disableLanguageServices ||
             // don't bother creating the inlay hint provider if all the inlay hint settings are off
-            (inlayHintSettings &&
-                !inlayHintSettings.callArgumentNames &&
-                !inlayHintSettings.functionReturnTypes &&
-                !inlayHintSettings.variableTypes)
+            (inlayHintSettings && !Object.values(inlayHintSettings).some((value) => value))
         ) {
             return null;
         }
@@ -1014,6 +1019,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 callArgumentNames: inlayHintSettings?.callArgumentNames ?? true,
                 functionReturnTypes: inlayHintSettings?.functionReturnTypes ?? true,
                 variableTypes: inlayHintSettings?.variableTypes ?? true,
+                genericTypes: inlayHintSettings?.genericTypes ?? false,
             }).onInlayHints();
         }, token);
     }
@@ -1158,9 +1164,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             }
             const workspace = await this.getWorkspaceForFile(newUri);
             const program = workspace.service.backgroundAnalysisProgram.program;
+
+            // if the uri being renamed is not part of the workspace, don't bother
+            if (!program.containsSourceFileIn(oldUri)) {
+                continue;
+            }
+
+            const oldFileContents = program.getParseResults(oldUri);
             workspace.service.getUserFiles().forEach((file) => {
                 const currentFileParseResults = program.getParseResults(file);
-                const oldFile = program.getParseResults(oldUri) ?? oldUri;
+                const oldFile = oldFileContents ?? oldUri;
                 if (currentFileParseResults && workspace.rootUri && program.evaluator) {
                     const importFinder = new RenameUsageFinder(program, currentFileParseResults, oldFile, newUri);
                     importFinder.walk(currentFileParseResults.parserOutput.parseTree);
@@ -1468,67 +1481,63 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     private _convertDiagnostics(fs: FileSystem, diags: AnalyzerDiagnostic[]): Diagnostic[] {
         const convertedDiags: Diagnostic[] = [];
-        diags
-            .filter((diag) => diag.baselineStatus !== 'baselined')
-            .forEach((diag) => {
-                const severity = convertCategoryToSeverity(diag.category);
-                const rule = diag.getRule();
-                const code = this.getDiagCode(diag, rule);
-                const vsDiag = Diagnostic.create(
-                    diag.range,
-                    diag.message,
-                    severity,
-                    code,
-                    this.serverOptions.productName
-                );
+        diags.forEach((diag) => {
+            const severity = convertCategoryToSeverity(diag.category);
+            const rule = diag.getRule() as DiagnosticRule;
+            const code = this.getDiagCode(diag, rule);
+            const vsDiag = Diagnostic.create(diag.range, diag.message, severity, code, this.serverOptions.productName);
 
-                if (
-                    diag.category === DiagnosticCategory.UnusedCode ||
-                    diag.category === DiagnosticCategory.UnreachableCode
-                ) {
-                    vsDiag.tags = [DiagnosticTag.Unnecessary];
-                    vsDiag.severity = DiagnosticSeverity.Hint;
-
-                    // If the client doesn't support "unnecessary" tags, don't report unused code.
-                    if (!this.client.supportsUnnecessaryDiagnosticTag) {
+            if (diag.category === DiagnosticCategory.Hint) {
+                if (diag.baselined) {
+                    vsDiag.message = `Baselined: ${vsDiag.message}`;
+                }
+                if (deprecatedDiagnosticRules().includes(rule)) {
+                    // If the client doesn't support "deprecated" tags, don't report deprecated diagnostics unless it's a baselined error.
+                    if (!this.client.supportsDeprecatedDiagnosticTag && !diag.baselined) {
                         return;
                     }
-                } else if (diag.category === DiagnosticCategory.Deprecated) {
                     vsDiag.tags = [DiagnosticTag.Deprecated];
-                    vsDiag.severity = DiagnosticSeverity.Hint;
-
-                    // If the client doesn't support "deprecated" tags, don't report.
-                    if (!this.client.supportsDeprecatedDiagnosticTag) {
+                } else if ([...unreachableDiagnosticRules(), ...unusedDiagnosticRules()].includes(rule)) {
+                    // If the client doesn't support "unnecessary" tags, don't report unused code unless it's a baselined error.
+                    if (!this.client.supportsUnnecessaryDiagnosticTag && !diag.baselined) {
                         return;
                     }
-                } else if (diag.category === DiagnosticCategory.TaskItem) {
+                    vsDiag.tags = [DiagnosticTag.Unnecessary];
+                }
+                vsDiag.severity = DiagnosticSeverity.Hint;
+            } else {
+                assert(
+                    !diag.baselined,
+                    `a baselined diagnostic somehow had the wrong diagnostic category: ${diag.message} (${diag.category})`
+                );
+                if (diag.category === DiagnosticCategory.TaskItem) {
                     // TaskItem is not supported.
                     return;
                 }
-
-                if (rule) {
-                    const ruleDocUrl = this.getDocumentationUrlForDiagnostic(diag);
-                    if (ruleDocUrl) {
-                        vsDiag.codeDescription = {
-                            href: ruleDocUrl,
-                        };
-                    }
+            }
+            if (rule) {
+                const ruleDocUrl = this.getDocumentationUrlForDiagnostic(diag);
+                if (ruleDocUrl) {
+                    vsDiag.codeDescription = {
+                        href: ruleDocUrl,
+                    };
                 }
+            }
 
-                const relatedInfo = diag.getRelatedInfo();
-                if (relatedInfo.length > 0) {
-                    vsDiag.relatedInformation = relatedInfo
-                        .filter((info) => this.canNavigateToFile(info.uri, fs))
-                        .map((info) =>
-                            DiagnosticRelatedInformation.create(
-                                Location.create(convertUriToLspUriString(fs, info.uri), info.range),
-                                info.message
-                            )
-                        );
-                }
+            const relatedInfo = diag.getRelatedInfo();
+            if (relatedInfo.length > 0) {
+                vsDiag.relatedInformation = relatedInfo
+                    .filter((info) => this.canNavigateToFile(info.uri, fs))
+                    .map((info) =>
+                        DiagnosticRelatedInformation.create(
+                            Location.create(convertUriToLspUriString(fs, info.uri), info.range),
+                            info.message
+                        )
+                    );
+            }
 
-                convertedDiags.push(vsDiag);
-            });
+            convertedDiags.push(vsDiag);
+        });
 
         function convertCategoryToSeverity(category: DiagnosticCategory) {
             switch (category) {
@@ -1542,9 +1551,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 case DiagnosticCategory.TaskItem: // task items only show up in the task list if they are information or above.
                     return DiagnosticSeverity.Information;
 
-                case DiagnosticCategory.UnusedCode:
-                case DiagnosticCategory.UnreachableCode:
-                case DiagnosticCategory.Deprecated:
+                case DiagnosticCategory.Hint:
                     return DiagnosticSeverity.Hint;
             }
         }

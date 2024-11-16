@@ -1,10 +1,28 @@
-[tool.pyprojectx]
-main = ["pdm==2.18.2"]
-
-[tool.pdm]
-distribution = true
-
-[tool.pdm.dev-dependencies]
+[project]
+name = "basedpyright"
+description = "static type checking for Python (but based)"
+dynamic = ["version"]
+authors = [
+    { name = "detachhead", email = "detachhead@users.noreply.github.com" },
+]
+readme = "README.md"
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
+    # since the user shouldn't have a node/npm binary unknowingly added to their PATH
+    "nodejs-wheel-binaries>=20.13.1",
+]
+[dependency-groups]
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
@@ -18,20 +36,63 @@ dev = [
     "mkdocs-material>=9.5.37",
     "mkdocs-awesome-pages-plugin>=2.9.2",
     "mike>=2.1.3",
+    "mkdocs-macros-plugin>=1.2.0",
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
+    # transient dependency of docify, but we need to specify it here explicitly to prevent it from being resolved
+    # to 1.1.0 (the last version compatible with 3.8) because the published package has a different version range
+    # to our dev dependencies
+    "libcst>=1.5.0",
+]
+docstubs-old = [
+    # docify depends on libcst which doesn't have a version that supports 3.8-3.13, so we need to use 2 different versions
+    "docify>=1.0.0",
+    "libcst==1.1.0",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
+
+[build-system]
+build-backend = "pdm.backend"
+requires = [
+    "pdm-backend>=2.3.0",
+    # required for building the pyright npm package to be bundled in the pypi package.
+    # cli is required due to dependencies with install scripts that assume node/npm is in the path
+    "nodejs-wheel>=20.13.1",
+    # used in pdm_build.py:
+    "typing_extensions>=4.12.2",
+    "docify>=1.0.0",
+]
+
+[project.urls]
+repository = "https://github.com/detachhead/basedpyright"
+
+[project.scripts]
+basedpyright = 'basedpyright.pyright:main'
+basedpyright-langserver = 'basedpyright.langserver:main'
+
+[tool.pyprojectx]
+lock-python-version = "3.8"
+main = ["pdm"]
+
+[tool.pdm]
+distribution = true
+
 
 [tool.pdm.version]
 source = "call"
 getter = "based_build.get_version:get_version"
 
 [tool.pdm.scripts]
-update = "pdm update -G:all"
-refresh_lockfile = "pdm lock --update-reuse -G:all"
+update = "pdm update -G dev -G docstubs -G lochelper"
+# we specify the python range here because our dev dependencies require at least python 3.9 but we still want to
+# support 3.8 in the published package. ideally we wouldn't because it's EOL but we want to support all versions
+# of python supported by pyright. https://github.com/DetachHead/basedpyright/issues/658
+refresh_lockfiles = { composite = [
+    "pdm lock --update-reuse -G dev -G docstubs -G lochelper --python=\">=3.9\"",
+    "pdm lock --update-reuse -G docstubs-old --lockfile pdm.docstubs-old.lock",
+] }
 typecheck = 'basedpyright'
 ruff_check = { composite = ['ruff check', 'ruff format --check --diff'] }
 ruff_fix = { composite = ['ruff check --fix', 'ruff format --fix'] }
@@ -49,46 +110,10 @@ source-includes = [
     "docstubs",
     "packages/pyright",
     "packages/pyright-internal",
-    "lerna.json",
     "package.json",
     "package-lock.json",
     "tsconfig.json",
 ]
-
-[project]
-name = "basedpyright"
-description = "static type checking for Python (but based)"
-dynamic = ["version"]
-authors = [
-    { name = "detachhead", email = "detachhead@users.noreply.github.com" },
-]
-dependencies = [
-    # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
-    # since the user shouldn't have a node/npm binary unknowingly added to their PATH
-    "nodejs-wheel-binaries>=20.13.1",
-]
-requires-python = ">=3.8"
-readme = "README.md"
-license = { text = "MIT" }
-
-[project.urls]
-repository = "https://github.com/detachhead/basedpyright"
-
-[project.scripts]
-basedpyright = 'basedpyright.pyright:main'
-basedpyright-langserver = 'basedpyright.langserver:main'
-
-[build-system]
-requires = [
-    "pdm-backend>=2.3.0",
-    # required for building the pyright npm package to be bundled in the pypi package.
-    # cli is required due to dependencies with install scripts that assume node/npm is in the path
-    "nodejs-wheel>=20.13.1",
-    # used in pdm_build.py:
-    "typing_extensions>=4.12.2",
-    "docify>=1.0.0",
-]
-build-backend = "pdm.backend"
 
 [tool.pylint.MASTER]
 fail-on = "I"
@@ -198,10 +223,9 @@ max-line-length = 200
 pythonVersion = "3.8"
 include = ["basedpyright", "based_build", "pdm_build.py", "tests"]
 # https://github.com/DetachHead/basedpyright/issues/31
-ignore = ["pw", "basedpyright/dist", "packages", "build"]
-exclude = ["pw", "basedpyright/dist", "packages", "build"]
-typeCheckingMode = "all"
-reportImplicitStringConcatenation = false                  # conflicts with ruff formatter
+ignore = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
+exclude = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
+reportImplicitStringConcatenation = false                              # conflicts with ruff formatter
 
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
 # only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
@@ -268,6 +292,7 @@ ignore = [
     "CPY001",  # missing-copyright-notice
     "C901",    # max-complexity
     "DOC402",  # docstring-missing-yields
+    "DOC201",  # docstring-missing-returns
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -275,8 +300,8 @@ ignore-overlong-task-comments = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = ["A001", "A002", "N"] # we don't control names in 3rd party modules
-"tests/**/*.py" = [
-    "S", # none of these security focused rules are relevant for the tests
+"{tests,based_build}/**/*.py" = [
+    "S", # none of these security focused rules are relevant for tests/build scripts
 ]
 [tool.ruff.lint.isort]
 combine-as-imports = true

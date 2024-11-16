@@ -30,7 +30,7 @@ import { CommandLineOptions as PyrightCommandLineOptions } from './common/comman
 import { ConsoleInterface, LogLevel, StandardConsole, StderrConsole } from './common/console';
 import { fail } from './common/debug';
 import { createDeferred } from './common/deferred';
-import { Diagnostic, DiagnosticCategory, isHintDiagnostic } from './common/diagnostic';
+import { Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { FullAccessHost } from './common/fullAccessHost';
 import { combinePaths, normalizePath } from './common/pathUtils';
@@ -50,6 +50,12 @@ import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
 import { BaselineHandler } from './baseline';
 import { pluralize } from './common/stringUtils';
+import {
+    allTypeCheckingModes,
+    ConfigOptions,
+    getBooleanDiagnosticRules,
+    getDiagLevelDiagnosticRules,
+} from './common/configOptions';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -178,6 +184,8 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'version', type: Boolean },
         { name: 'warnings', type: Boolean },
         { name: 'watch', alias: 'w', type: Boolean },
+        // undocumented option only used internally for generating docs. pretty cringe but it's the least messy way i could think of to do it
+        { name: 'printdiagnosticrulesets', type: Boolean },
     ];
 
     let args: CommandLineOptions;
@@ -194,7 +202,22 @@ async function processArgs(): Promise<ExitStatus> {
         console.error(`Unexpected error\n${toolName} --help for usage`);
         return ExitStatus.ParameterError;
     }
-
+    if (args.printdiagnosticrulesets) {
+        console.log(
+            JSON.stringify(
+                [...getBooleanDiagnosticRules(true), ...getDiagLevelDiagnosticRules()].map((rule) => ({
+                    'Diagnostic Rule': rule,
+                    ...Object.fromEntries(
+                        allTypeCheckingModes.map((typeCheckingMode) => [
+                            typeCheckingMode,
+                            ConfigOptions.getDiagnosticRuleSet(typeCheckingMode)[rule],
+                        ])
+                    ),
+                }))
+            )
+        );
+        return ExitStatus.NoErrors;
+    }
     if (args.help !== undefined) {
         printUsage();
         return ExitStatus.NoErrors;
@@ -469,7 +492,16 @@ const outputResults = (
     }
     const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(results.diagnostics);
 
-    const treatWarningsAsErrors = !!args.warnings;
+    const treatWarningsAsErrors =
+        !!args.warnings ||
+        filteredDiagnostics.some(
+            (fileWithDiagnostics) =>
+                fileWithDiagnostics.diagnostics.some(
+                    (diagnostic) => diagnostic.category === DiagnosticCategory.Warning
+                ) &&
+                service.backgroundAnalysisProgram.configOptions.findExecEnvironment(fileWithDiagnostics.fileUri)
+                    .diagnosticRuleSet.failOnWarnings
+        );
     let errorCount = 0;
     let report: DiagnosticResult;
     if (args.outputjson) {
@@ -1295,7 +1327,7 @@ function reportDiagnosticsAsText(
         // Don't report unused code or deprecated diagnostics.
         const fileErrorsAndWarnings = fileDiagnostics.diagnostics.filter(
             (diag) =>
-                !isHintDiagnostic(diag) &&
+                diag.category !== DiagnosticCategory.Hint &&
                 isDiagnosticIncluded(convertDiagnosticCategoryToSeverity(diag.category), minSeverityLevel)
         );
 

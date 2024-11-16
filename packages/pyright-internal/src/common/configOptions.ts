@@ -7,8 +7,6 @@
  * Class that holds the configuration options for the analyzer.
  */
 
-import { isAbsolute } from 'path';
-
 import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
 import { appendArray } from './collectionUtils';
@@ -87,15 +85,9 @@ export class ExecutionEnvironment {
     }
 }
 
-export type DiagnosticLevel = 'none' | 'information' | 'warning' | 'error';
+export type DiagnosticLevel = 'none' | 'information' | 'warning' | 'error' | 'hint';
 
-type UnusedDiagnosticLevel = DiagnosticLevel | 'unused';
-
-type UnreachableDiagnosticLevel = DiagnosticLevel | 'unreachable';
-
-type DeprecatedDiagnosticLevel = DiagnosticLevel | 'deprecated';
-
-export type LspDiagnosticLevel = DiagnosticLevel | 'unreachable' | 'unused' | 'deprecated';
+export type TypeCheckingMode = (typeof allTypeCheckingModes)[number];
 
 export enum SignatureDisplayType {
     compact = 'compact',
@@ -145,11 +137,11 @@ export interface DiagnosticRuleSet {
     // Use tagged hints to identify unreachable code via type analysis?
     enableReachabilityAnalysis: boolean;
 
-    // No longer treat bytearray and memoryview as subclasses of bytes?
-    disableBytesTypePromotions: boolean;
-
     // Treat old typing aliases as deprecated if pythonVersion >= 3.9?
     deprecateTypingAliases: boolean;
+
+    // No longer treat bytearray and memoryview as subclasses of bytes?
+    disableBytesTypePromotions: boolean;
 
     // Report general type issues?
     reportGeneralTypeIssues: DiagnosticLevel;
@@ -176,16 +168,16 @@ export interface DiagnosticRuleSet {
     reportImportCycles: DiagnosticLevel;
 
     // Report imported symbol that is not accessed?
-    reportUnusedImport: UnusedDiagnosticLevel;
+    reportUnusedImport: DiagnosticLevel;
 
     // Report private class that is not accessed?
-    reportUnusedClass: UnusedDiagnosticLevel;
+    reportUnusedClass: DiagnosticLevel;
 
     // Report private function or method that is not accessed?
-    reportUnusedFunction: UnusedDiagnosticLevel;
+    reportUnusedFunction: DiagnosticLevel;
 
     // Report variable that is not accessed?
-    reportUnusedVariable: UnusedDiagnosticLevel;
+    reportUnusedVariable: DiagnosticLevel;
 
     // Report symbol or module that is imported more than once?
     reportDuplicateImport: DiagnosticLevel;
@@ -270,7 +262,7 @@ export interface DiagnosticRuleSet {
     reportPrivateUsage: DiagnosticLevel;
 
     // Report usage of deprecated type comments.
-    reportTypeCommentUsage: DeprecatedDiagnosticLevel;
+    reportTypeCommentUsage: DiagnosticLevel;
 
     // Report usage of an import from a py.typed module that is
     // not meant to be re-exported from that module.
@@ -280,7 +272,7 @@ export interface DiagnosticRuleSet {
     reportConstantRedefinition: DiagnosticLevel;
 
     // Report use of deprecated classes or functions.
-    reportDeprecated: DeprecatedDiagnosticLevel;
+    reportDeprecated: DiagnosticLevel;
 
     // Report usage of method override that is incompatible with
     // the base class method of the same name?
@@ -390,7 +382,7 @@ export interface DiagnosticRuleSet {
     reportUnusedCoroutine: DiagnosticLevel;
 
     // Report except clause that is unreachable.
-    reportUnusedExcept: UnreachableDiagnosticLevel;
+    reportUnusedExcept: DiagnosticLevel;
 
     // Report cases where a simple expression result is not used in any way.
     reportUnusedExpression: DiagnosticLevel;
@@ -410,14 +402,25 @@ export interface DiagnosticRuleSet {
     reportImplicitOverride: DiagnosticLevel;
 
     // basedpyright options:
-    reportUnreachable: UnreachableDiagnosticLevel;
+
+    /**
+     * this probably doesn't really fit as a diagnostic rule config, but it's here because we want the default
+     * "fail on warnings" behavior to be different depending on the `typeCheckingMode`. this is kinda weird,
+     * but a compromize we're making to enforce the strictest checks by default without bombarding the user
+     * with too many errors.
+     * @see https://github.com/DetachHead/basedpyright/issues/603#issuecomment-2303297625
+     */
+    failOnWarnings: boolean;
+    reportUnreachable: DiagnosticLevel;
     reportAny: DiagnosticLevel;
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
     reportPrivateLocalImportUsage: DiagnosticLevel;
     reportImplicitRelativeImport: DiagnosticLevel;
     reportInvalidCast: DiagnosticLevel;
     reportUnsafeMultipleInheritance: DiagnosticLevel;
-    reportUnusedParameter: UnusedDiagnosticLevel;
+    reportUnusedParameter: DiagnosticLevel;
+    reportImplicitAbstractClass: DiagnosticLevel;
+    reportUnannotatedClassAttribute: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -441,10 +444,10 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
 
     if (includeNonOverridable) {
         // Do not include these because we don't
-        // want to override it in strict mode or support
-        // it within pyright comments.
+        // want to support it within pyright comments.
         boolRules.push(DiagnosticRule.enableTypeIgnoreComments);
         boolRules.push(DiagnosticRule.enableReachabilityAnalysis);
+        boolRules.push(DiagnosticRule.failOnWarnings);
     }
 
     return boolRules;
@@ -543,41 +546,26 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportPrivateLocalImportUsage,
         DiagnosticRule.reportUnsafeMultipleInheritance,
         DiagnosticRule.reportUnusedParameter,
+        DiagnosticRule.reportImplicitAbstractClass,
+        DiagnosticRule.reportUnannotatedClassAttribute,
     ];
 }
 
-// this is pretty cringe https://github.com/DetachHead/basedpyright/issues/64
-interface DiagnosticGetter {
-    name: LspDiagnosticLevel;
-    get: () => DiagnosticRule[];
-}
+export const unreachableDiagnosticRules = () => [DiagnosticRule.reportUnreachable, DiagnosticRule.reportUnusedExcept];
 
-const unreachableDiagnosticRules: DiagnosticGetter = {
-    name: 'unreachable',
-    get: () => [DiagnosticRule.reportUnreachable, DiagnosticRule.reportUnusedExcept],
-};
-
-const unusedDiagnosticRules: DiagnosticGetter = {
-    name: 'unused',
-    get: () => [
-        DiagnosticRule.reportUnusedClass,
-        DiagnosticRule.reportUnusedImport,
-        DiagnosticRule.reportUnusedFunction,
-        DiagnosticRule.reportUnusedVariable,
-        DiagnosticRule.reportUnusedParameter,
-    ],
-};
-const deprecatedDiagnosticRules: DiagnosticGetter = {
-    name: 'deprecated',
-    get: () => [DiagnosticRule.reportDeprecated, DiagnosticRule.reportTypeCommentUsage],
-};
-
-export const extraOptionDiagnosticRules = [
-    unreachableDiagnosticRules,
-    unusedDiagnosticRules,
-    deprecatedDiagnosticRules,
+export const unusedDiagnosticRules = () => [
+    DiagnosticRule.reportUnusedClass,
+    DiagnosticRule.reportUnusedImport,
+    DiagnosticRule.reportUnusedFunction,
+    DiagnosticRule.reportUnusedVariable,
+    DiagnosticRule.reportUnusedParameter,
 ];
 
+export const deprecatedDiagnosticRules = () => [DiagnosticRule.reportDeprecated, DiagnosticRule.reportTypeCommentUsage];
+
+// TODO: should this be removed? there was documentation stating that when typeCheckingMode is "strict"
+// diagnostics can't be overridden with a less strict level. as far as i can tell this isn't the case
+// so i think this function is useless
 export function getStrictModeNotOverriddenRules() {
     // In strict mode, the value in the user config file should be honored and
     // not overwritten by the value from the strict rule set.
@@ -609,10 +597,10 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidTypeForm: 'none',
         reportMissingTypeStubs: 'none',
         reportImportCycles: 'none',
-        reportUnusedImport: 'unused',
-        reportUnusedClass: 'unused',
-        reportUnusedFunction: 'unused',
-        reportUnusedVariable: 'unused',
+        reportUnusedImport: 'hint',
+        reportUnusedClass: 'hint',
+        reportUnusedFunction: 'hint',
+        reportUnusedVariable: 'hint',
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'none',
         reportAbstractUsage: 'none',
@@ -640,10 +628,10 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'none',
         reportUntypedNamedTuple: 'none',
         reportPrivateUsage: 'none',
-        reportTypeCommentUsage: 'deprecated',
+        reportTypeCommentUsage: 'hint',
         reportPrivateImportUsage: 'none',
         reportConstantRedefinition: 'none',
-        reportDeprecated: 'deprecated',
+        reportDeprecated: 'hint',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
         reportInconsistentConstructor: 'none',
@@ -676,20 +664,23 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsupportedDunderAll: 'none',
         reportUnusedCallResult: 'none',
         reportUnusedCoroutine: 'none',
-        reportUnusedExcept: 'unreachable',
+        reportUnusedExcept: 'hint',
         reportUnusedExpression: 'none',
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
-        reportUnreachable: 'unreachable',
+        failOnWarnings: false,
+        reportUnreachable: 'hint',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
-        reportUnusedParameter: 'unused',
+        reportUnusedParameter: 'hint',
+        reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -720,10 +711,10 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidTypeForm: 'error',
         reportMissingTypeStubs: 'none',
         reportImportCycles: 'none',
-        reportUnusedImport: 'unused',
-        reportUnusedClass: 'unused',
-        reportUnusedFunction: 'unused',
-        reportUnusedVariable: 'unused',
+        reportUnusedImport: 'hint',
+        reportUnusedClass: 'hint',
+        reportUnusedFunction: 'hint',
+        reportUnusedVariable: 'hint',
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
@@ -751,10 +742,10 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'none',
         reportUntypedNamedTuple: 'none',
         reportPrivateUsage: 'none',
-        reportTypeCommentUsage: 'deprecated',
+        reportTypeCommentUsage: 'hint',
         reportPrivateImportUsage: 'error',
         reportConstantRedefinition: 'none',
-        reportDeprecated: 'deprecated',
+        reportDeprecated: 'hint',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
         reportInconsistentConstructor: 'none',
@@ -793,14 +784,17 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
-        reportUnreachable: 'unreachable',
+        failOnWarnings: false,
+        reportUnreachable: 'hint',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
-        reportUnusedParameter: 'unused',
+        reportUnusedParameter: 'hint',
+        reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
@@ -831,10 +825,10 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportInvalidTypeForm: 'error',
         reportMissingTypeStubs: 'none',
         reportImportCycles: 'none',
-        reportUnusedImport: 'unused',
-        reportUnusedClass: 'unused',
-        reportUnusedFunction: 'unused',
-        reportUnusedVariable: 'unused',
+        reportUnusedImport: 'hint',
+        reportUnusedClass: 'hint',
+        reportUnusedFunction: 'hint',
+        reportUnusedVariable: 'hint',
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
@@ -862,10 +856,10 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUntypedBaseClass: 'none',
         reportUntypedNamedTuple: 'none',
         reportPrivateUsage: 'none',
-        reportTypeCommentUsage: 'deprecated',
+        reportTypeCommentUsage: 'hint',
         reportPrivateImportUsage: 'error',
         reportConstantRedefinition: 'none',
-        reportDeprecated: 'deprecated',
+        reportDeprecated: 'hint',
         reportIncompatibleMethodOverride: 'error',
         reportIncompatibleVariableOverride: 'error',
         reportInconsistentConstructor: 'none',
@@ -904,18 +898,131 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
-        reportUnreachable: 'unreachable',
+        failOnWarnings: false,
+        reportUnreachable: 'hint',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
-        reportUnusedParameter: 'unused',
+        reportUnusedParameter: 'hint',
+        reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
 }
+
+export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
+    printUnknownAsAny: false,
+    omitTypeArgsIfUnknown: false,
+    omitUnannotatedParamType: false,
+    omitConditionalConstraint: false,
+    pep604Printing: true,
+    strictListInference: true,
+    strictSetInference: true,
+    strictDictionaryInference: true,
+    analyzeUnannotatedFunctions: true,
+    strictParameterNoneValue: true,
+    enableExperimentalFeatures: false,
+    enableTypeIgnoreComments: false,
+    enableReachabilityAnalysis: true,
+    deprecateTypingAliases: true,
+    disableBytesTypePromotions: true,
+    reportGeneralTypeIssues: 'error',
+    reportPropertyTypeMismatch: 'warning',
+    reportFunctionMemberAccess: 'error',
+    reportMissingImports: 'error',
+    reportMissingModuleSource: 'error',
+    reportInvalidTypeForm: 'error',
+    reportMissingTypeStubs: 'warning',
+    reportImportCycles: 'error',
+    reportUnusedImport: 'warning',
+    reportUnusedClass: 'warning',
+    reportUnusedFunction: 'warning',
+    reportUnusedVariable: 'warning',
+    reportDuplicateImport: 'warning',
+    reportWildcardImportFromLibrary: 'warning',
+    reportAbstractUsage: 'error',
+    reportArgumentType: 'error',
+    reportAssertTypeFailure: 'error',
+    reportAssignmentType: 'error',
+    reportAttributeAccessIssue: 'error',
+    reportCallIssue: 'error',
+    reportInconsistentOverload: 'error',
+    reportIndexIssue: 'error',
+    reportInvalidTypeArguments: 'error',
+    reportNoOverloadImplementation: 'error',
+    reportOperatorIssue: 'error',
+    reportOptionalSubscript: 'error',
+    reportOptionalMemberAccess: 'error',
+    reportOptionalCall: 'error',
+    reportOptionalIterable: 'error',
+    reportOptionalContextManager: 'error',
+    reportOptionalOperand: 'error',
+    reportRedeclaration: 'warning',
+    reportReturnType: 'error',
+    reportTypedDictNotRequiredAccess: 'error',
+    reportUntypedFunctionDecorator: 'warning',
+    reportUntypedClassDecorator: 'warning',
+    reportUntypedBaseClass: 'warning',
+    reportUntypedNamedTuple: 'warning',
+    reportPrivateUsage: 'warning',
+    reportTypeCommentUsage: 'warning',
+    reportPrivateImportUsage: 'warning',
+    reportConstantRedefinition: 'error',
+    reportDeprecated: 'warning',
+    reportIncompatibleMethodOverride: 'error',
+    reportIncompatibleVariableOverride: 'error',
+    reportInconsistentConstructor: 'error',
+    reportOverlappingOverload: 'error',
+    reportPossiblyUnboundVariable: 'error',
+    reportMissingSuperCall: 'error',
+    reportUninitializedInstanceVariable: 'error',
+    reportInvalidStringEscapeSequence: 'error',
+    reportUnknownParameterType: 'warning',
+    reportUnknownArgumentType: 'warning',
+    reportUnknownLambdaType: 'warning',
+    reportUnknownVariableType: 'warning',
+    reportUnknownMemberType: 'warning',
+    reportMissingParameterType: 'warning',
+    reportMissingTypeArgument: 'error',
+    reportInvalidTypeVarUse: 'warning',
+    reportCallInDefaultInitializer: 'warning',
+    reportUnnecessaryIsInstance: 'warning',
+    reportUnnecessaryCast: 'warning',
+    reportUnnecessaryComparison: 'warning',
+    reportUnnecessaryContains: 'warning',
+    reportAssertAlwaysTrue: 'error',
+    reportSelfClsParameterName: 'error',
+    reportImplicitStringConcatenation: 'warning',
+    reportUnboundVariable: 'error',
+    reportUnhashable: 'error',
+    reportUndefinedVariable: 'error',
+    reportInvalidStubStatement: 'warning',
+    reportIncompleteStub: 'warning',
+    reportUnsupportedDunderAll: 'warning',
+    reportUnusedCallResult: 'warning',
+    reportUnusedCoroutine: 'warning',
+    reportUnusedExcept: 'error',
+    reportUnusedExpression: 'warning',
+    reportUnnecessaryTypeIgnoreComment: 'warning',
+    reportMatchNotExhaustive: 'warning',
+    reportShadowedImports: 'warning',
+    reportImplicitOverride: 'warning',
+    failOnWarnings: true,
+    reportUnreachable: 'warning',
+    reportAny: 'warning',
+    reportIgnoreCommentWithoutRule: 'warning',
+    reportPrivateLocalImportUsage: 'warning',
+    reportImplicitRelativeImport: 'error',
+    reportInvalidCast: 'error',
+    reportUnsafeMultipleInheritance: 'error',
+    reportUnusedParameter: 'warning',
+    reportImplicitAbstractClass: 'warning',
+    reportUnannotatedClassAttribute: 'warning',
+});
 
 export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     printUnknownAsAny: false,
@@ -928,7 +1035,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     strictDictionaryInference: true,
     analyzeUnannotatedFunctions: true,
     strictParameterNoneValue: true,
-    enableExperimentalFeatures: true,
+    enableExperimentalFeatures: false,
     enableTypeIgnoreComments: false,
     enableReachabilityAnalysis: true,
     deprecateTypingAliases: true,
@@ -1014,6 +1121,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportMatchNotExhaustive: 'error',
     reportShadowedImports: 'error',
     reportImplicitOverride: 'error',
+    failOnWarnings: true,
     reportUnreachable: 'error',
     reportAny: 'error',
     reportIgnoreCommentWithoutRule: 'error',
@@ -1022,6 +1130,8 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportInvalidCast: 'error',
     reportUnsafeMultipleInheritance: 'error',
     reportUnusedParameter: 'error',
+    reportImplicitAbstractClass: 'error',
+    reportUnannotatedClassAttribute: 'error',
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1122,18 +1232,25 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportMatchNotExhaustive: 'error',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
-        reportUnreachable: 'unreachable',
+        failOnWarnings: false,
+        reportUnreachable: 'hint',
         reportAny: 'none',
         reportIgnoreCommentWithoutRule: 'none',
         reportPrivateLocalImportUsage: 'none',
         reportImplicitRelativeImport: 'none',
         reportInvalidCast: 'none',
         reportUnsafeMultipleInheritance: 'none',
-        reportUnusedParameter: 'unused',
+        reportUnusedParameter: 'hint',
+        reportImplicitAbstractClass: 'none',
+        reportUnannotatedClassAttribute: 'none',
     };
 
     return diagSettings;
 }
+
+export const allDiagnosticCategories = ['none', 'hint', 'information', 'warning', 'error'] as const;
+
+export const allTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'recommended', 'all'] as const;
 
 export function matchFileSpecs(configOptions: ConfigOptions, uri: Uri, isFile = true) {
     for (const includeSpec of configOptions.include) {
@@ -1308,7 +1425,7 @@ export class ConfigOptions {
     configFileSource?: Uri | undefined;
 
     // Determines the effective default type checking mode.
-    effectiveTypeCheckingMode: 'all' | 'strict' | 'basic' | 'off' | 'standard' = 'standard';
+    effectiveTypeCheckingMode: TypeCheckingMode = 'standard'; // TODO: we default to "recommended", wheres this default being used?
 
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;
@@ -1319,7 +1436,11 @@ export class ConfigOptions {
         this.functionSignatureDisplay = SignatureDisplayType.formatted;
     }
 
-    static getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
+    static getDiagnosticRuleSet(typeCheckingMode?: TypeCheckingMode): DiagnosticRuleSet {
+        if (typeCheckingMode === 'recommended') {
+            return getRecommendedDiagnosticRuleSet();
+        }
+
         if (typeCheckingMode === 'all') {
             return getAllDiagnosticRuleSet();
         }
@@ -1335,7 +1456,7 @@ export class ConfigOptions {
         if (typeCheckingMode === 'off') {
             return getOffDiagnosticRuleSet();
         }
-
+        typeCheckingMode satisfies 'standard' | undefined;
         return getStandardDiagnosticRuleSet();
     }
 
@@ -1373,15 +1494,35 @@ export class ConfigOptions {
     }
 
     initializeTypeCheckingMode(
-        typeCheckingMode: string | undefined,
+        typeCheckingMode: TypeCheckingMode | undefined,
         severityOverrides?: DiagnosticSeverityOverridesMap
     ) {
         this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet(typeCheckingMode);
-        this.effectiveTypeCheckingMode = typeCheckingMode as 'all' | 'strict' | 'basic' | 'off' | 'standard';
+        this.effectiveTypeCheckingMode = typeCheckingMode as TypeCheckingMode;
 
         if (severityOverrides) {
             this.applyDiagnosticOverrides(severityOverrides);
         }
+    }
+
+    /**
+     * initializes `typeCheckingMode` from an unknown, potentially invalid value
+     *
+     * @returns any errors that occurred
+     */
+    initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined): string[] {
+        if (typeCheckingMode !== undefined) {
+            if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
+                this.initializeTypeCheckingMode(typeCheckingMode as TypeCheckingMode);
+            } else {
+                return [
+                    `invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(
+                        allTypeCheckingModes
+                    )}`,
+                ];
+            }
+        }
+        return [];
     }
 
     // Initialize the structure from a JSON object.
@@ -1409,9 +1550,11 @@ export class ConfigOptions {
                     (configValue as unknown[]).forEach((fileSpec, index) => {
                         if (typeof fileSpec !== 'string') {
                             errors.push(`Index ${index} of "${key}" array should be a string.`);
-                        } else if (isAbsolute(fileSpec)) {
-                            errors.push(`path "${fileSpec}" in "${key}" array should be relative.`);
                         } else {
+                            // We'll allow absolute paths. While it
+                            // is not recommended to use absolute paths anywhere in
+                            // the config file, there are a few legit use cases for ignore
+                            // paths when the conf file is used with a language server.
                             this[key].push(getFileSpec(configDirUri, fileSpec));
                         }
                     });
@@ -1420,16 +1563,7 @@ export class ConfigOptions {
         }
 
         // If there is a "typeCheckingMode", it can override the provided setting.
-        if (configObj.typeCheckingMode !== undefined) {
-            const validTypeCheckingModes = ['off', 'basic', 'standard', 'strict', 'all'];
-            if (validTypeCheckingModes.includes(configObj.typeCheckingMode)) {
-                this.initializeTypeCheckingMode(configObj.typeCheckingMode);
-            } else {
-                errors.push(
-                    `Config "typeCheckingMode" entry must contain ${userFacingOptionsList(validTypeCheckingModes)}.`
-                );
-            }
-        }
+        errors.push(...this.initializeTypeCheckingModeFromString(configObj.typeCheckingMode));
 
         if (configObj.useLibraryCodeForTypes !== undefined) {
             if (typeof configObj.useLibraryCodeForTypes === 'boolean') {
@@ -1800,33 +1934,19 @@ export class ConfigOptions {
         defaultValue: DiagnosticLevel,
         errors: string[]
     ): DiagnosticLevel {
-        const allowedValues = ['error', 'warning', 'information', 'none'];
         if (value === undefined) {
             return defaultValue;
-        } else if (typeof value === 'boolean') {
-            return value ? 'error' : 'none';
-        } else if (
-            typeof value === 'string' &&
-            (value === 'error' || value === 'warning' || value === 'information' || value === 'none')
-        ) {
-            return value;
-        } else {
-            for (const { name, get } of extraOptionDiagnosticRules) {
-                if ((get() as string[]).includes(fieldName)) {
-                    if (value === name) {
-                        return value;
-                    }
-                    allowedValues.push(name);
-                }
-            }
         }
-
-        errors.push(
-            `Config "${fieldName}" entry must be true, false, ${userFacingOptionsList(
-                allowedValues
-            )}. (received: "${value}")`
-        );
-        return defaultValue;
+        const result = parseDiagLevel(value);
+        if (result === undefined) {
+            errors.push(
+                `Config "${fieldName}" entry must be true, false, ${userFacingOptionsList(
+                    allDiagnosticCategories
+                )}. (received: "${value}")`
+            );
+            return defaultValue;
+        }
+        return result;
     }
 
     private _initExecutionEnvironmentFromJson(
@@ -1935,13 +2055,13 @@ export class ConfigOptions {
 }
 
 /**
- * {@link ConfigOptions} except it defaults to typeCheckingMode=all. this is a separate subclass to
+ * {@link ConfigOptions} except it defaults to typeCheckingMode=recommended. this is a separate subclass to
  * preserve the behavior of the original in tests and anything else that i'm too scared to touch
  */
 export class BasedConfigOptions extends ConfigOptions {
-    static override getDiagnosticRuleSet(typeCheckingMode?: string): DiagnosticRuleSet {
+    static override getDiagnosticRuleSet(typeCheckingMode?: TypeCheckingMode): DiagnosticRuleSet {
         if (typeCheckingMode === undefined) {
-            return getAllDiagnosticRuleSet();
+            return getRecommendedDiagnosticRuleSet();
         }
         return super.getDiagnosticRuleSet(typeCheckingMode);
     }
@@ -1963,14 +2083,14 @@ export function parseDiagLevel(value: string | boolean): DiagnosticSeverityOverr
         case 'information':
             return DiagnosticSeverityOverrides.Information;
 
-        case 'unused':
-            return DiagnosticSeverityOverrides.Unused;
-
-        case 'unreachable':
-            return DiagnosticSeverityOverrides.Unreachable;
-
         case 'deprecated':
-            return DiagnosticSeverityOverrides.Deprecated;
+        case 'unused':
+        case 'unreachable':
+            console.log(`the ${value} diagnostic level is deprecated in favor of "hint", which means the same thing`);
+        // intentional
+        // eslint-disable-next-line no-fallthrough
+        case 'hint':
+            return DiagnosticSeverityOverrides.Hint;
 
         default:
             return undefined;

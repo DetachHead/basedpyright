@@ -7,7 +7,7 @@
                 "../pyright-internal/src/*"
             ]
         },
-        "typeRoots": ["./node_modules/@types", "../pyright-internal/typings"]
+        "typeRoots": ["../../node_modules/@types", "../pyright-internal/typings"]
     },
     "include": [
         "src/**/*",

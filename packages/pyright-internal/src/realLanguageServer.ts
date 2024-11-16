@@ -97,12 +97,17 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             disableLanguageServices: false,
             disableTaggedHints: false,
             disableOrganizeImports: false,
-            typeCheckingMode: 'all',
+            typeCheckingMode: 'recommended',
             diagnosticSeverityOverrides: {},
             logLevel: LogLevel.Info,
             autoImportCompletions: true,
             functionSignatureDisplay: SignatureDisplayType.formatted,
-            inlayHints: { callArgumentNames: true, functionReturnTypes: true, variableTypes: true },
+            inlayHints: {
+                callArgumentNames: true,
+                functionReturnTypes: true,
+                variableTypes: true,
+                genericTypes: false,
+            },
         };
 
         try {

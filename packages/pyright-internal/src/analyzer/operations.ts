@@ -44,6 +44,7 @@ import {
     removeNoneFromUnion,
     someSubtypes,
     specializeTupleClass,
+    specializeWithDefaultTypeArgs,
     transformPossibleRecursiveTypeAlias,
 } from './typeUtils';
 import {
@@ -366,6 +367,14 @@ export function getTypeOfBinaryOperation(
         }
 
         if (isUnionableType([adjustedLeftType, adjustedRightType])) {
+            if (isInstantiableClass(adjustedLeftType)) {
+                adjustedLeftType = specializeWithDefaultTypeArgs(adjustedLeftType);
+            }
+
+            if (isInstantiableClass(adjustedRightType)) {
+                adjustedRightType = specializeWithDefaultTypeArgs(adjustedRightType);
+            }
+
             return createUnionType(
                 evaluator,
                 node,
@@ -1198,7 +1207,7 @@ function validateContainmentOperation(
                         deprecatedInfo = returnTypeResult.magicMethodDeprecationInfo;
                     }
 
-                    return returnTypeResult?.type;
+                    return returnTypeResult?.type ?? evaluator.getBuiltInObject(errorNode, 'bool');
                 }
             );
         }

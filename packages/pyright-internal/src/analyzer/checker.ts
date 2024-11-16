@@ -98,7 +98,7 @@ import { ConstraintTracker } from './constraintTracker';
 import { getBoundCallMethod, getBoundInitMethod, getBoundNewMethod } from './constructors';
 import { addInheritedDataClassEntries } from './dataClasses';
 import { Declaration, DeclarationType, isAliasDeclaration } from './declaration';
-import { getNameNodeForDeclaration } from './declarationUtils';
+import { getNameNodeForDeclaration, hasTypeForDeclaration } from './declarationUtils';
 import { deprecatedAliases, deprecatedSpecialForms } from './deprecatedSymbols';
 import { getEnumDeclaredValueType, isEnumClassWithMembers, transformTypeForEnumMember } from './enums';
 import { ImportResolver, ImportedModuleDescriptor, createImportedModuleDescriptor } from './importResolver';
@@ -373,7 +373,7 @@ export class Checker extends ParseTreeWalker {
 
             this._validateInstanceVariableInitialization(node, classTypeResult.classType);
 
-            this._validateFinalClassNotAbstract(classTypeResult.classType, node);
+            this._validateClassNotAbstract(classTypeResult.classType, node);
 
             this._validateDataClassPostInit(classTypeResult.classType);
 
@@ -1117,11 +1117,11 @@ export class Checker extends ParseTreeWalker {
 
     override visitRaise(node: RaiseNode): boolean {
         if (node.d.expr) {
-            this._evaluator.verifyRaiseExceptionType(node.d.expr);
+            this._evaluator.verifyRaiseExceptionType(node.d.expr, /* allowNone */ false);
         }
 
         if (node.d.fromExpr) {
-            this._evaluator.verifyRaiseExceptionType(node.d.fromExpr);
+            this._evaluator.verifyRaiseExceptionType(node.d.fromExpr, /* allowNone */ true);
         }
 
         return true;
@@ -1288,11 +1288,6 @@ export class Checker extends ParseTreeWalker {
     }
 
     override visitBinaryOperation(node: BinaryOperationNode): boolean {
-        if (node.d.operator === OperatorType.And || node.d.operator === OperatorType.Or) {
-            this._validateConditionalIsBool(node.d.leftExpr);
-            this._validateConditionalIsBool(node.d.rightExpr);
-        }
-
         if (node.d.operator === OperatorType.Equals || node.d.operator === OperatorType.NotEquals) {
             // Don't apply this rule if it's within an assert.
             if (!ParseTreeUtils.isWithinAssertExpression(node)) {
@@ -3804,7 +3799,7 @@ export class Checker extends ParseTreeWalker {
             if (isInstantiableClass(filterType)) {
                 this._validateUnsafeProtocolOverlap(
                     node.d.args[0].d.valueExpr,
-                    convertToInstance(filterType),
+                    ClassType.cloneAsInstance(filterType),
                     isInstanceCheck ? arg0Type : convertToInstance(arg0Type)
                 );
             }
@@ -4855,7 +4850,7 @@ export class Checker extends ParseTreeWalker {
             if (
                 !symbolType ||
                 !isClassInstance(symbolType) ||
-                !ClassType.isSameGenericClass(symbolType, classType) ||
+                !ClassType.isSameGenericClass(symbolType, ClassType.cloneAsInstance(classType)) ||
                 !(symbolType.priv.literalValue instanceof EnumLiteral)
             ) {
                 return;
@@ -5079,13 +5074,10 @@ export class Checker extends ParseTreeWalker {
         });
     }
 
-    // If a class is marked final, it must implement all abstract methods,
-    // otherwise it is of no use.
-    private _validateFinalClassNotAbstract(classType: ClassType, errorNode: ClassNode) {
-        if (!ClassType.isFinal(classType)) {
-            return;
-        }
-
+    /*
+     * If a class is marked final, or if `reportImplicitAbstractClass` is enabled, it must implement all abstract methods
+     */
+    private _validateClassNotAbstract(classType: ClassType, errorNode: ClassNode) {
         if (!ClassType.supportsAbstractMethods(classType)) {
             return;
         }
@@ -5117,14 +5109,37 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         });
-
-        this._evaluator.addDiagnostic(
-            DiagnosticRule.reportGeneralTypeIssues,
-            LocMessage.finalClassIsAbstract().format({
-                type: classType.shared.name,
-            }) + diagAddendum.getString(),
-            errorNode.d.name
-        );
+        if (ClassType.isFinal(classType)) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportGeneralTypeIssues,
+                LocMessage.finalClassIsAbstract().format({
+                    type: classType.shared.name,
+                }) + diagAddendum.getString(),
+                errorNode.d.name
+            );
+        } else {
+            const baseClasses = classType.shared.baseClasses.filter(isClass);
+            if (
+                (classType.shared.declaredMetaclass?.category !== TypeCategory.Class ||
+                    !ClassType.isBuiltIn(classType.shared.declaredMetaclass, 'ABCMeta')) &&
+                !baseClasses.some(
+                    (baseClass) => baseClass.shared.fullName === 'abc.ABC' || ClassType.isBuiltIn(baseClass, 'Protocol')
+                )
+            ) {
+                const errorMessage = classType.shared.mro.some(
+                    (baseClass) => isClass(baseClass) && ClassType.isBuiltIn(baseClass, 'Protocol')
+                )
+                    ? LocMessage.classImplicitlyProtocol()
+                    : LocMessage.classImplicitlyAbstract();
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportImplicitAbstractClass,
+                    errorMessage.format({
+                        type: classType.shared.name,
+                    }) + diagAddendum.getString(),
+                    errorNode.d.name
+                );
+            }
+        }
     }
 
     // Reports the case where an instance variable is not declared or initialized
@@ -5311,6 +5326,12 @@ export class Checker extends ParseTreeWalker {
         classType.shared.typeParams.forEach((param, paramIndex) => {
             // Skip TypeVarTuples and ParamSpecs.
             if (isTypeVarTuple(param) || isParamSpec(param)) {
+                return;
+            }
+
+            // Skip type variables that have been internally synthesized
+            // for a variety of reasons.
+            if (param.shared.isSynthesized) {
                 return;
             }
 
@@ -6331,7 +6352,7 @@ export class Checker extends ParseTreeWalker {
                 ) {
                     diag.addMessage(
                         LocAddendum.typedDictClosedExtraTypeMismatch().format({
-                            name: '__extra_items__',
+                            name: 'extra_items',
                             type: this._evaluator.printType(typedDictEntries.extraItems.valueType),
                         })
                     );
@@ -6381,8 +6402,32 @@ export class Checker extends ParseTreeWalker {
             // skip the type validation but still check for other issues like
             // Final overrides and class/instance variable mismatches.
             let validateType = true;
-            if (!symbol.hasTypedDeclarations()) {
+            const declarations = symbol.getDeclarations();
+            if (!declarations.some((declaration) => hasTypeForDeclaration(declaration))) {
                 validateType = false;
+                const firstUntypedDeclaration =
+                    declarations.find(
+                        // we don't want to report the error on the slots declaration because you obviously can't put an annotation there
+                        (declaration) => declaration.type === DeclarationType.Variable && !declaration.isDefinedBySlots
+                    ) ??
+                    // fallback to the first declaration if a suitable one wasn't found
+                    declarations[0];
+                if (
+                    // TODO: why do some symbols have no declarations? i dont think we care about them for this check tho
+                    firstUntypedDeclaration &&
+                    // not an issue on final classes/attributes and enums because they can't be subtyped
+                    !ClassType.isFinal(classType) &&
+                    !this._evaluator.isFinalVariable(symbol) &&
+                    !isEnumClassWithMembers(this._evaluator, classType)
+                ) {
+                    this._evaluator.addDiagnostic(
+                        DiagnosticRule.reportUnannotatedClassAttribute,
+                        LocMessage.unannotatedClassAttribute().format({
+                            name,
+                        }),
+                        firstUntypedDeclaration.node
+                    );
+                }
             }
 
             // Get the symbol type defined in this class.
@@ -6560,9 +6605,11 @@ export class Checker extends ParseTreeWalker {
         }
 
         const baseClass = baseClassAndSymbol.classType;
-        const childClassSelf = ClassType.cloneAsInstance(selfSpecializeClass(childClassType));
+        const childClassSelf = ClassType.cloneAsInstance(
+            selfSpecializeClass(childClassType, { useBoundTypeVars: true })
+        );
 
-        let baseType = partiallySpecializeType(
+        const baseType = partiallySpecializeType(
             this._evaluator.getEffectiveTypeOfSymbol(baseClassAndSymbol.symbol),
             baseClass,
             this._evaluator.getTypeClassType(),
@@ -6577,7 +6624,6 @@ export class Checker extends ParseTreeWalker {
         );
 
         if (childClassType.shared.typeVarScopeId) {
-            baseType = makeTypeVarsBound(baseType, [childClassType.shared.typeVarScopeId]);
             overrideType = makeTypeVarsBound(overrideType, [childClassType.shared.typeVarScopeId]);
         }
 
@@ -6757,18 +6803,10 @@ export class Checker extends ParseTreeWalker {
                         }
 
                         if (childClassType.shared.typedDictEntries) {
-                            // Exempt __extra_items__ here. We'll check this separately
-                            // in _validateTypedDictOverrides. If we don't skip it here,
-                            // redundant errors will be produced.
-                            if (ClassType.isTypedDictMarkedClosed(childClassType) && memberName === '__extra_items__') {
-                                overrideTDEntry = overriddenTDEntry;
-                                overrideType = baseType;
-                            } else {
-                                overrideTDEntry =
-                                    childClassType.shared.typedDictEntries.knownItems.get(memberName) ??
-                                    childClassType.shared.typedDictEntries.extraItems ??
-                                    getEffectiveExtraItemsEntryType(this._evaluator, childClassType);
-                            }
+                            overrideTDEntry =
+                                childClassType.shared.typedDictEntries.knownItems.get(memberName) ??
+                                childClassType.shared.typedDictEntries.extraItems ??
+                                getEffectiveExtraItemsEntryType(this._evaluator, childClassType);
                         }
                     }
 

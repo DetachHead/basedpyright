@@ -86,6 +86,9 @@ export const enum PrintTypeFlags {
     // Use the fully-qualified name of classes, type aliases, modules,
     // and functions rather than short names.
     UseFullyQualifiedNames = 1 << 12,
+
+    // Omit TypeVar scopes.
+    OmitTypeVarScope = 1 << 13,
 }
 
 export type FunctionReturnTypeCallback = (type: FunctionType) => Type;
@@ -571,10 +574,13 @@ function printTypeInternal(
                         );
 
                         if (!isAnyOrUnknown(type.shared.boundType)) {
-                            if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-                                boundTypeString = `Self`;
-                            } else {
+                            if (
+                                (printTypeFlags & PrintTypeFlags.PythonSyntax) === 0 &&
+                                (printTypeFlags & PrintTypeFlags.OmitTypeVarScope) === 0
+                            ) {
                                 boundTypeString = `Self@${boundTypeString}`;
+                            } else {
+                                boundTypeString = `Self`;
                             }
                         }
 
@@ -591,9 +597,10 @@ function printTypeInternal(
                 }
 
                 if (isParamSpec(type)) {
-                    const paramSpecText = _getReadableTypeVarName(
+                    const paramSpecText = getReadableTypeVarName(
                         type,
-                        (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
+                        (printTypeFlags & PrintTypeFlags.PythonSyntax) === 0 &&
+                            (printTypeFlags & PrintTypeFlags.OmitTypeVarScope) === 0
                     );
 
                     if (type.priv.paramSpecAccess) {
@@ -602,16 +609,18 @@ function printTypeInternal(
                     return paramSpecText;
                 }
 
-                let typeVarName = _getReadableTypeVarName(type, (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0);
+                let typeVarName = getReadableTypeVarName(
+                    type,
+                    (printTypeFlags & PrintTypeFlags.PythonSyntax) === 0 &&
+                        (printTypeFlags & PrintTypeFlags.OmitTypeVarScope) === 0
+                );
 
-                if (isTypeVarTuple(type)) {
-                    if (type.priv.isUnpacked) {
-                        typeVarName = _printUnpack(typeVarName, printTypeFlags);
-                    }
+                if (type.priv.isUnpacked) {
+                    typeVarName = printUnpack(typeVarName, printTypeFlags);
+                }
 
-                    if (type.priv.isInUnion) {
-                        typeVarName = `Union[${typeVarName}]`;
-                    }
+                if (isTypeVarTuple(type) && type.priv.isInUnion) {
+                    typeVarName = `Union[${typeVarName}]`;
                 }
 
                 if (TypeBase.isInstantiable(type)) {
@@ -619,7 +628,7 @@ function printTypeInternal(
                 }
 
                 if (!isTypeVarTuple(type) && (printTypeFlags & PrintTypeFlags.PrintTypeVarVariance) !== 0) {
-                    const varianceText = _getTypeVarVarianceText(type);
+                    const varianceText = getTypeVarVarianceText(type);
                     if (varianceText) {
                         typeVarName = `${typeVarName} (${varianceText})`;
                     }
@@ -963,7 +972,7 @@ function printObjectTypeForClassInternal(
                             }
 
                             if (index === 0) {
-                                typeArgStrings.push(_printUnpack('tuple[()]', printTypeFlags));
+                                typeArgStrings.push(printUnpack('tuple[()]', printTypeFlags));
                             }
                         } else {
                             appendArray(
@@ -983,7 +992,7 @@ function printObjectTypeForClassInternal(
                                     );
 
                                     if (typeArg.isUnbounded) {
-                                        return _printUnpack(`tuple[${typeArgText}, ...]`, printTypeFlags);
+                                        return printUnpack(`tuple[${typeArgText}, ...]`, printTypeFlags);
                                     }
 
                                     return typeArgText;
@@ -1008,7 +1017,7 @@ function printObjectTypeForClassInternal(
                             if (typeArgs.length === 1) {
                                 typeArgStrings.push(typeArgTypeText, '...');
                             } else {
-                                typeArgStrings.push(_printUnpack(`tuple[${typeArgTypeText}, ...]`, printTypeFlags));
+                                typeArgStrings.push(printUnpack(`tuple[${typeArgTypeText}, ...]`, printTypeFlags));
                             }
                         } else {
                             typeArgStrings.push(typeArgTypeText);
@@ -1017,7 +1026,7 @@ function printObjectTypeForClassInternal(
                 });
 
                 if (type.priv.isUnpacked) {
-                    objName = _printUnpack(objName, printTypeFlags);
+                    objName = printUnpack(objName, printTypeFlags);
                 }
 
                 if ((printTypeFlags & PrintTypeFlags.OmitTypeArgsIfUnknown) === 0 || !isAllUnknown) {
@@ -1025,7 +1034,7 @@ function printObjectTypeForClassInternal(
                 }
             } else {
                 if (type.priv.isUnpacked) {
-                    objName = _printUnpack(objName, printTypeFlags);
+                    objName = printUnpack(objName, printTypeFlags);
                 }
 
                 if (ClassType.isTupleClass(type) || isVariadic) {
@@ -1034,7 +1043,7 @@ function printObjectTypeForClassInternal(
             }
         } else {
             if (type.priv.isUnpacked) {
-                objName = _printUnpack(objName, printTypeFlags);
+                objName = printUnpack(objName, printTypeFlags);
             }
 
             if (typeParams.length > 0) {
@@ -1282,7 +1291,7 @@ function printFunctionPartsInternal(
     return [paramTypeStrings, returnTypeString];
 }
 
-function _printUnpack(textToWrap: string, flags: PrintTypeFlags) {
+function printUnpack(textToWrap: string, flags: PrintTypeFlags) {
     return flags & PrintTypeFlags.UseTypingUnpack ? `Unpack[${textToWrap}]` : `*${textToWrap}`;
 }
 
@@ -1298,15 +1307,11 @@ function _printNestedInstantiable(type: Type, textToWrap: string) {
     return textToWrap;
 }
 
-function _getReadableTypeVarName(type: TypeVarType, usePythonSyntax: boolean) {
-    if (usePythonSyntax) {
-        return type.shared.name;
-    }
-
-    return TypeVarType.getReadableName(type);
+function getReadableTypeVarName(type: TypeVarType, includeScope: boolean) {
+    return TypeVarType.getReadableName(type, includeScope);
 }
 
-function _getTypeVarVarianceText(type: TypeVarType) {
+function getTypeVarVarianceText(type: TypeVarType) {
     const computedVariance = type.priv.computedVariance ?? type.shared.declaredVariance;
     if (computedVariance === Variance.Invariant) {
         return 'invariant';
@@ -1461,6 +1466,14 @@ class UniqueNameMap {
         }
 
         if (isClass(type1) && isClass(type2)) {
+            while (TypeBase.isInstantiable(type1)) {
+                type1 = ClassType.cloneAsInstance(type1);
+            }
+
+            while (TypeBase.isInstantiable(type2)) {
+                type2 = ClassType.cloneAsInstance(type2);
+            }
+
             return ClassType.isSameGenericClass(type1, type2);
         }
 

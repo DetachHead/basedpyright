@@ -215,10 +215,10 @@ function stableSortIndices<T>(array: readonly T[], indices: number[], comparer: 
  */
 export const sorter = <T>(prev: T, next: T, comparator: (prev: T, next: T) => boolean) => {
     if (comparator(prev, next)) {
-        return 1;
+        return -1;
     }
     if (comparator(next, prev)) {
-        return -1;
+        return 1;
     }
     return 0;
 };

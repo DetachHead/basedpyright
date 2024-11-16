@@ -4,7 +4,6 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -130,8 +129,9 @@ Thumbs.db
 **/__pycache__
 /.venv/
 
-# js files copied into the basedpyright pypi package
+# files from the npm package copied into the basedpyright pypi package
 basedpyright/*.js
+basedpyright/package.json
 
 # typeshed stubs with docstrings
 docstubs

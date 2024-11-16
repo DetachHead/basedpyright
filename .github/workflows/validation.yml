@@ -24,7 +24,7 @@ jobs:
       - run: pdm install
 
       - name: typescript typecheck
-        run: pdm run npx lerna exec --stream --no-bail -- tsc --noEmit
+        run: pdm run npm run typecheck
 
       - run: pdm run npm run check
 

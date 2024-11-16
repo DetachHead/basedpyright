@@ -18,7 +18,7 @@ import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
 import { ConsoleWithLogLevel, NullConsole } from '../common/console';
 import { fail } from '../common/debug';
-import { BaselineStatus, Diagnostic, DiagnosticCategory } from '../common/diagnostic';
+import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
 import { DiagnosticSink } from '../common/diagnosticSink';
 import { FullAccessHost } from '../common/fullAccessHost';
 import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem';
@@ -32,6 +32,7 @@ import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTok
 import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
+import { InlayHintSettings } from '../common/languageServerInterface';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -45,9 +46,7 @@ export interface FileAnalysisResult {
     errors: Diagnostic[];
     warnings: Diagnostic[];
     infos: Diagnostic[];
-    unusedCodes: Diagnostic[];
-    unreachableCodes: Diagnostic[];
-    deprecateds: Diagnostic[];
+    hints: Diagnostic[];
 }
 
 export function resolveSampleFilePath(fileName: string): string {
@@ -147,13 +146,17 @@ export const semanticTokenizeSampleFile = (fileName: string): SemanticTokenItem[
     return walker.items;
 };
 
-export const inlayHintSampleFile = (fileName: string, range?: Range): TypeInlayHintsItemType[] => {
+export const inlayHintSampleFile = (
+    fileName: string,
+    range?: Range,
+    settings: Partial<InlayHintSettings> = {}
+): TypeInlayHintsItemType[] => {
     const program = createProgram();
     const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(
         program,
-        { callArgumentNames: true, functionReturnTypes: true, variableTypes: true },
+        { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: false, ...settings },
         fileUri,
         range
     );
@@ -185,25 +188,11 @@ export function getAnalysisResults(
                 errors: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Error),
                 warnings: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Warning),
                 infos: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Information),
-                unusedCodes: diagnostics.filter((diag) => diag.category === DiagnosticCategory.UnusedCode),
-                unreachableCodes: diagnostics.filter((diag) => diag.category === DiagnosticCategory.UnreachableCode),
-                deprecateds: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Deprecated),
+                hints: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Hint),
             };
             return analysisResult;
         } else {
             fail(`Source file not found for ${fileUris[index]}`);
-
-            const analysisResult: FileAnalysisResult = {
-                fileUri: Uri.empty(),
-                parseResults: undefined,
-                errors: [],
-                warnings: [],
-                infos: [],
-                unusedCodes: [],
-                unreachableCodes: [],
-                deprecateds: [],
-            };
-            return analysisResult;
         }
     });
 }
@@ -230,9 +219,7 @@ export function validateResults(
     errorCount: number,
     warningCount = 0,
     infoCount?: number,
-    unusedCode?: number,
-    unreachableCode?: number,
-    deprecated?: number
+    hint?: number
 ) {
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].errors.length, errorCount);
@@ -242,16 +229,8 @@ export function validateResults(
         assert.strictEqual(results[0].infos.length, infoCount);
     }
 
-    if (unusedCode !== undefined) {
-        assert.strictEqual(results[0].unusedCodes.length, unusedCode);
-    }
-
-    if (unreachableCode !== undefined) {
-        assert.strictEqual(results[0].unreachableCodes.length, unreachableCode);
-    }
-
-    if (deprecated !== undefined) {
-        assert.strictEqual(results[0].deprecateds.length, deprecated);
+    if (hint !== undefined) {
+        assert.strictEqual(results[0].hints.length, hint);
     }
 }
 
@@ -259,7 +238,7 @@ interface ExpectedResult {
     message?: string;
     line: number;
     code?: DiagnosticRule;
-    baselineStatus?: BaselineStatus;
+    baselined?: boolean;
 }
 
 export type ExpectedResults = {
@@ -278,7 +257,7 @@ export const validateResultsButBased = (allResults: FileAnalysisResult[], expect
                 message: result.message,
                 line: result.range.start.line,
                 code: result.getRule() as DiagnosticRule | undefined,
-                baselineStatus: result.baselineStatus,
+                baselined: result.baselined,
             })
         );
         const expectedResult = expectedResults[diagnosticType] ?? [];

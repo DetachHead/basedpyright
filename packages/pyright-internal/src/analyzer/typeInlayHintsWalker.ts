@@ -2,11 +2,13 @@ import { Range } from 'vscode-languageserver-types';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 import { isDunderName, isUnderscoreOnlyName } from '../analyzer/symbolNameUtils';
 import {
+    ClassType,
     FunctionType,
     Type,
     getTypeAliasInfo,
     isAny,
     isClass,
+    isInstantiableClass,
     isParamSpec,
     isPositionOnlySeparator,
     isTypeVar,
@@ -15,12 +17,14 @@ import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
     CallNode,
+    ClassNode,
     FunctionNode,
     NameNode,
     ParamCategory,
     ParseNode,
     ParseNodeBase,
     ParseNodeType,
+    TypeAnnotationNode,
 } from '../parser/parseNodes';
 import { isLiteralType } from './typeUtils';
 import { TextRange } from '../common/textRange';
@@ -28,9 +32,10 @@ import { convertRangeToTextRange } from '../common/positionUtils';
 import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
 import { InlayHintSettings } from '../common/languageServerInterface';
+import { transformTypeForEnumMember } from './enums';
 
 export type TypeInlayHintsItemType = {
-    inlayHintType: 'variable' | 'functionReturn' | 'parameter';
+    inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';
     position: number;
     value: string;
 };
@@ -93,6 +98,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
     parseResults?: ParseFileResults;
     private _range: TextRange | undefined;
+    private _variablesThatShouldntHaveInlayHints = new Set<ParseNode>();
 
     constructor(
         private readonly _program: ProgramView,
@@ -110,13 +116,34 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         }
     }
 
+    override visitClass(node: ClassNode): boolean {
+        const evaluator = this._program.evaluator;
+        if (evaluator) {
+            const classType = evaluator.getTypeOfClass(node)?.classType;
+            // prevent inlay hints from appearing on enum members
+            if (classType && ClassType.isEnumClass(classType)) {
+                ClassType.getSymbolTable(classType).forEach((symbol, name) => {
+                    const symbolType = transformTypeForEnumMember(evaluator, classType, name, true);
+                    if (symbolType) {
+                        const nameNode = symbol.getDeclarations()[0]?.node;
+                        if (nameNode) {
+                            this._variablesThatShouldntHaveInlayHints.add(nameNode);
+                        }
+                    }
+                });
+            }
+        }
+        return super.visitClass(node);
+    }
+
     override visitName(node: NameNode): boolean {
         if (
             this._settings.variableTypes &&
             this._checkInRange(node) &&
             isLeftSideOfAssignment(node) &&
             !isDunderName(node.d.value) &&
-            !isUnderscoreOnlyName(node.d.value)
+            !isUnderscoreOnlyName(node.d.value) &&
+            !this._variablesThatShouldntHaveInlayHints.has(node)
         ) {
             const type = this._program.evaluator?.getType(node);
             if (
@@ -124,12 +151,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 !isAny(type) &&
                 !(isClass(type) && isLiteralType(type)) &&
                 !isTypeVar(type) &&
-                // !isFunction(type) &&
                 !isParamSpec(type)
             ) {
                 this.featureItems.push({
                     inlayHintType: 'variable',
-                    position: node.start + node.length,
+                    position: this._endOfNode(node),
                     value: `: ${
                         type.props?.typeAliasInfo &&
                         node.nodeType === ParseNodeType.Name &&
@@ -145,7 +171,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     }
 
     override visitCall(node: CallNode): boolean {
-        if (this._settings.callArgumentNames && this._checkInRange(node)) {
+        if (this._checkInRange(node)) {
             this._generateHintsForCallNode(node);
         }
         return super.visitCall(node);
@@ -170,6 +196,30 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         return super.visitFunction(node);
     }
 
+    override visitTypeAnnotation(node: TypeAnnotationNode): boolean {
+        if (this._settings.genericTypes && this._checkInRange(node)) {
+            const evaluator = this._program.evaluator;
+            if (evaluator) {
+                const annotationType = evaluator.getType(node.d.annotation);
+                if (
+                    annotationType &&
+                    isInstantiableClass(annotationType) &&
+                    (ClassType.isBuiltIn(annotationType, 'Final') || ClassType.isBuiltIn(annotationType, 'ClassVar'))
+                ) {
+                    const valueType = evaluator.getType(node.d.valueExpr);
+                    if (valueType) {
+                        this.featureItems.push({
+                            inlayHintType: 'generic',
+                            position: this._endOfNode(node),
+                            value: `[${this._printType(valueType)}]`,
+                        });
+                    }
+                }
+            }
+        }
+        return super.visitTypeAnnotation(node);
+    }
+
     private _checkInRange = (node: ParseNodeBase<ParseNodeType>) =>
         !this._range || TextRange.overlapsRange(this._range, TextRange.create(node.start, node.length));
 
@@ -178,12 +228,52 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         if (!evaluator) {
             return;
         }
-        const functionType = evaluator.getType(node.d.leftExpr);
-        if (!functionType) {
+        const callableType = evaluator.getType(node.d.leftExpr);
+        if (!callableType) {
             return;
         }
+
+        // inlay hints for generics
+        if (
+            this._settings.genericTypes &&
+            // where the type is not explicitly specified (theoretically we could show them on all node types that aren't
+            // `ParseNodeType.Index`, but we don't because it would probably look weird to show them on any other type of expression)
+            node.d.leftExpr.nodeType === ParseNodeType.Name &&
+            // don't show them on super calls because that's invalid.
+            node.d.leftExpr.d.value !== 'super' &&
+            // only show them on classes, because the index syntax to specify generics isn't valid on functions
+            isClass(callableType)
+        ) {
+            const returnType = evaluator.getType(node);
+            if (
+                returnType &&
+                isClass(returnType) &&
+                returnType.priv.typeArgs?.length === returnType.shared.typeParams.length
+            ) {
+                const printedTypeArgs = returnType.priv.typeArgs.flatMap((typeArg) =>
+                    isClass(typeArg) && typeArg.priv.tupleTypeArgs
+                        ? typeArg.priv.tupleTypeArgs.map((asdf) => this._printType(asdf.type))
+                        : this._printType(typeArg)
+                );
+                if (returnType.priv.tupleTypeArgs) {
+                    // for tuples, as far as i can tell there's no cases where it can infer non-variadic generics, so we just always
+                    // add the ellipsis
+                    printedTypeArgs.push('...');
+                }
+                this.featureItems.push({
+                    inlayHintType: 'generic',
+                    position: this._endOfNode(node.d.leftExpr),
+                    value: `[${printedTypeArgs.join(', ')}]`,
+                });
+            }
+        }
+
+        if (!this._settings.callArgumentNames) {
+            return;
+        }
+
         // if it's an overload, figure out which one to use based on the arguments:
-        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, functionType, node.d.leftExpr);
+        const matchedFunctionType = limitOverloadBasedOnCall(evaluator, callableType, node.d.leftExpr);
         const matchedArgs = this._program.evaluator?.matchCallArgsToParams(node, matchedFunctionType);
 
         // if there was no match, or if there were multiple matches, we don't want to show any inlay hints because they'd likely be wrong:
@@ -237,6 +327,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             }
         }
     }
+
+    private _endOfNode = (node: ParseNode) => node.start + node.length;
 
     private _printType = (type: Type): string =>
         this._program.evaluator!.printType(type, { enforcePythonSyntax: true });

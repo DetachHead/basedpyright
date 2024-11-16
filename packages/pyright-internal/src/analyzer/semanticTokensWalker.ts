@@ -1,6 +1,16 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, FunctionType, getTypeAliasInfo, OverloadedType, Type, TypeCategory, TypeFlags } from './types';
+import {
+    ClassType,
+    ClassTypeFlags,
+    FunctionType,
+    getTypeAliasInfo,
+    isClass,
+    OverloadedType,
+    Type,
+    TypeCategory,
+    TypeFlags,
+} from './types';
 import {
     ClassNode,
     DecoratorNode,
@@ -8,6 +18,7 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
+    isExpressionNode,
     LambdaNode,
     NameNode,
     ParameterNode,
@@ -17,7 +28,7 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
-import { isParamDeclaration } from './declaration';
+import { isAliasDeclaration, isParamDeclaration } from './declaration';
 
 export type SemanticTokenItem = {
     type: string;
@@ -181,7 +192,23 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 break;
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
-                if (!(type.flags & TypeFlags.Instance)) {
+                if (type.flags & TypeFlags.Instance) {
+                    if (node.parent && this._evaluator && isExpressionNode(node.parent)) {
+                        const declaredType = this._evaluator.getDeclaredTypeForExpression(node.parent, {
+                            method: 'set',
+                        });
+                        if (
+                            declaredType &&
+                            isClass(declaredType) &&
+                            declaredType.shared.flags & ClassTypeFlags.PropertyClass
+                        ) {
+                            this._addItem(node.start, node.length, SemanticTokenTypes.variable, [
+                                SemanticTokenModifiers.readonly,
+                            ]);
+                            return;
+                        }
+                    }
+                } else {
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
@@ -240,7 +267,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return;
         } else if (
             (type?.category === TypeCategory.Unknown || type?.category === TypeCategory.Any) &&
-            (declarations === undefined || declarations.length === 0)
+            (declarations === undefined || declarations.length === 0 || declarations.every(isAliasDeclaration))
         ) {
             return;
         } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {

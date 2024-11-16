@@ -8,7 +8,7 @@
  */
 
 import { appendArray } from './collectionUtils';
-import { LspDiagnosticLevel } from './configOptions';
+import { DiagnosticLevel } from './configOptions';
 import { assertNever } from './debug';
 import { Diagnostic, DiagnosticAction, DiagnosticCategory } from './diagnostic';
 import { convertOffsetsToRange } from './positionUtils';
@@ -74,24 +74,8 @@ export class DiagnosticSink {
         return this.addDiagnostic(new Diagnostic(DiagnosticCategory.Information, message, range));
     }
 
-    addUnusedCode(message: string, range: Range, action?: DiagnosticAction) {
-        const diag = new Diagnostic(DiagnosticCategory.UnusedCode, message, range);
-        if (action) {
-            diag.addAction(action);
-        }
-        return this.addDiagnostic(diag);
-    }
-
-    addUnreachableCode(message: string, range: Range, action?: DiagnosticAction) {
-        const diag = new Diagnostic(DiagnosticCategory.UnreachableCode, message, range);
-        if (action) {
-            diag.addAction(action);
-        }
-        return this.addDiagnostic(diag);
-    }
-
-    addDeprecated(message: string, range: Range, action?: DiagnosticAction) {
-        const diag = new Diagnostic(DiagnosticCategory.Deprecated, message, range);
+    addHint(message: string, range: Range, action?: DiagnosticAction) {
+        const diag = new Diagnostic(DiagnosticCategory.Hint, message, range);
         if (action) {
             diag.addAction(action);
         }
@@ -127,16 +111,8 @@ export class DiagnosticSink {
         return this._diagnosticList.filter((diag) => diag.category === DiagnosticCategory.Information);
     }
 
-    getUnusedCode() {
-        return this._diagnosticList.filter((diag) => diag.category === DiagnosticCategory.UnusedCode);
-    }
-
-    getUnreachableCode() {
-        return this._diagnosticList.filter((diag) => diag.category === DiagnosticCategory.UnreachableCode);
-    }
-
-    getDeprecated() {
-        return this._diagnosticList.filter((diag) => diag.category === DiagnosticCategory.Deprecated);
+    getHint() {
+        return this._diagnosticList.filter((diag) => diag.category === DiagnosticCategory.Hint);
     }
 }
 
@@ -150,7 +126,7 @@ export class TextRangeDiagnosticSink extends DiagnosticSink {
         this._lines = lines;
     }
 
-    addDiagnosticWithTextRange(level: LspDiagnosticLevel, message: string, range: TextRange) {
+    addDiagnosticWithTextRange(level: DiagnosticLevel, message: string, range: TextRange) {
         const positionRange = convertOffsetsToRange(range.start, range.start + range.length, this._lines);
         switch (level) {
             case 'error':
@@ -161,12 +137,8 @@ export class TextRangeDiagnosticSink extends DiagnosticSink {
 
             case 'information':
                 return this.addInformation(message, positionRange);
-            case 'unreachable':
-                return this.addUnreachableCode(message, positionRange);
-            case 'unused':
-                return this.addUnusedCode(message, positionRange);
-            case 'deprecated':
-                return this.addDeprecated(message, positionRange);
+            case 'hint':
+                return this.addHint(message, positionRange);
             case 'none':
                 //TODO: why is none even allowed here?
                 throw new Error(`${level} is not expected value`);

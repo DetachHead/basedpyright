@@ -7,37 +7,37 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 80,
+                position: 102,
                 value: ': str',
             },
             {
                 inlayHintType: 'variable',
-                position: 386,
+                position: 408,
                 value: ': TypeAlias',
             },
             {
                 inlayHintType: 'variable',
-                position: 547,
+                position: 569,
                 value: ': Foo',
             },
             {
                 inlayHintType: 'variable',
-                position: 572,
+                position: 594,
                 value: ': type[int]',
             },
             {
                 inlayHintType: 'variable',
-                position: 623,
+                position: 645,
                 value: ': int | str',
             },
             {
                 inlayHintType: 'variable',
-                position: 648,
+                position: 670,
                 value: ': Literal[1, 2]',
             },
             {
                 inlayHintType: 'variable',
-                position: 674,
+                position: 696,
                 value: ': type[int]',
             },
         ]);
@@ -72,8 +72,53 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 80,
+                position: 102,
                 value: ': str',
+            },
+        ]);
+    });
+    test('generics', () => {
+        const result = inlayHintSampleFile('generics.py', undefined, { genericTypes: true });
+        expect(result).toStrictEqual([
+            {
+                inlayHintType: 'generic',
+                position: 65,
+                value: '[int]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 136,
+                value: '[str]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 185,
+                value: '[int]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 315,
+                value: '[bool]',
+            },
+            {
+                inlayHintType: 'parameter',
+                position: 316,
+                value: 'value=',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 332,
+                value: '[Literal[1, 2, 3], ...]',
+            },
+            {
+                inlayHintType: 'generic',
+                position: 441,
+                value: '[list[int], int, int, str]',
+            },
+            {
+                inlayHintType: 'parameter',
+                position: 442,
+                value: 'asdf=',
             },
         ]);
     });

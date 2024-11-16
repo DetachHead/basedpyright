@@ -8,8 +8,8 @@
  * Python files.
  */
 
-import * as TOML from '@iarna/toml';
 import * as JSONC from 'jsonc-parser';
+import { parse } from 'smol-toml';
 import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-languageserver';
 
 import { BackgroundAnalysisBase, RefreshOptions } from '../backgroundAnalysisBase';
@@ -28,7 +28,7 @@ import { EditableProgram, ProgramView } from '../common/extensibility';
 import { FileSystem } from '../common/fileSystem';
 import { FileWatcher, FileWatcherEventType, ignoredWatchEventFunction } from '../common/fileWatcher';
 import { Host, HostFactory, NoAccessHost } from '../common/host';
-import { defaultStubsDirectory } from '../common/pathConsts';
+import { configFileName, defaultStubsDirectory } from '../common/pathConsts';
 import { getFileName, isRootedDiskPath, normalizeSlashes } from '../common/pathUtils';
 import { PythonVersion } from '../common/pythonVersion';
 import { ServiceKeys } from '../common/serviceKeys';
@@ -59,7 +59,6 @@ import { ImportResolver, ImportResolverFactory, createImportedModuleDescriptor }
 import { MaxAnalysisTime, Program } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
 import {
-    configFileName,
     findConfigFile,
     findConfigFileHereOrUp,
     findPyprojectTomlFile,
@@ -674,7 +673,7 @@ export class AnalyzerService {
                 throw e;
             }
         }
-        configOptions.initializeTypeCheckingMode('all');
+        configOptions.initializeTypeCheckingMode('recommended');
         if (configs && configs.length > 0) {
             // Then we apply the config file settings. This can update the
             // the typeCheckingMode.
@@ -694,15 +693,24 @@ export class AnalyzerService {
 
             // When not in language server mode, command line options override config file options.
             if (!commandLineOptions.fromLanguageServer) {
-                this._applyCommandLineOverrides(configOptions, commandLineOptions.configSettings, projectRoot, false);
+                errors.push(
+                    ...this._applyCommandLineOverrides(
+                        configOptions,
+                        commandLineOptions.configSettings,
+                        projectRoot,
+                        false
+                    )
+                );
             }
         } else {
             // If there are no config files, we can then directly apply the command line options.
-            this._applyCommandLineOverrides(
-                configOptions,
-                commandLineOptions.configSettings,
-                projectRoot,
-                commandLineOptions.fromLanguageServer
+            errors.push(
+                ...this._applyCommandLineOverrides(
+                    configOptions,
+                    commandLineOptions.configSettings,
+                    projectRoot,
+                    commandLineOptions.fromLanguageServer
+                )
             );
         }
 
@@ -713,7 +721,7 @@ export class AnalyzerService {
         // Ensure that if no command line or config options were applied, we have some defaults.
         errors.push(...this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions));
 
-        // Once we have defaults, we can then setup the execution environments. Execution enviroments
+        // Once we have defaults, we can then setup the execution environments. Execution environments
         // inherit from the defaults.
         if (configs) {
             for (const config of configs) {
@@ -922,10 +930,8 @@ export class AnalyzerService {
         commandLineOptions: CommandLineConfigOptions,
         projectRoot: Uri,
         fromLanguageServer: boolean
-    ) {
-        if (commandLineOptions.typeCheckingMode) {
-            configOptions.initializeTypeCheckingMode(commandLineOptions.typeCheckingMode);
-        }
+    ): string[] {
+        const errors = configOptions.initializeTypeCheckingModeFromString(commandLineOptions.typeCheckingMode);
 
         if (commandLineOptions.extraPaths) {
             configOptions.ensureDefaultExtraPaths(
@@ -1029,6 +1035,7 @@ export class AnalyzerService {
                 reportDuplicateSetting('stubPath', configOptions.stubPath.toUserVisibleString());
             }
         }
+        return errors;
     }
 
     // Loads the config JSON object from the specified config file along with any
@@ -1164,15 +1171,15 @@ export class AnalyzerService {
     private _parsePyprojectTomlFile(pyprojectPath: Uri): object | undefined {
         return this._attemptParseFile(pyprojectPath, (fileContents, attemptCount) => {
             try {
-                const configObj = TOML.parse(fileContents);
-                if (configObj && configObj.tool) {
-                    const toml = configObj.tool as TOML.JsonMap;
+                const configObj = parse(fileContents);
+                if (configObj && 'tool' in configObj) {
+                    const toml = configObj.tool as Record<string, object>;
                     if (toml.basedpyright && toml.pyright) {
                         throw new Error(
                             'Pyproject file cannot have both `pyright` and `basedpyright` sections. pick one'
                         );
                     }
-                    return (toml.basedpyright || toml.pyright) as object;
+                    return toml.basedpyright || toml.pyright;
                 }
             } catch (e) {
                 (this._console as ConsoleInterface).error(
@@ -1394,7 +1401,7 @@ export class AnalyzerService {
                             `${website}/configuration/config-files`
                     );
 
-                    // Show it in messagebox if it is supported.
+                    // Show it in message box if it is supported.
                     this._tryShowLongOperationMessageBox();
 
                     loggedLongOperationError = true;

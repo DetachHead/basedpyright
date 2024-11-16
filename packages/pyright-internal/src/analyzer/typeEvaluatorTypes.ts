@@ -35,7 +35,7 @@ import { ConstraintTracker } from './constraintTracker';
 import { Declaration } from './declaration';
 import * as DeclarationUtils from './declarationUtils';
 import { SymbolWithScope } from './scope';
-import { Symbol } from './symbol';
+import { Symbol, SynthesizedTypeInfo } from './symbol';
 import { PrintTypeFlags } from './typePrinter';
 import {
     AnyType,
@@ -141,16 +141,19 @@ export const enum EvalFlags {
     // Required and NotRequired are allowed in this context.
     AllowRequired = 1 << 20,
 
+    // ReadOnly is allowed in this context.
+    AllowReadOnly = 1 << 21,
+
     // Allow Unpack annotation for a tuple or TypeVarTuple.
-    AllowUnpackedTuple = 1 << 21,
+    AllowUnpackedTuple = 1 << 22,
 
     // Allow Unpack annotation for TypedDict.
-    AllowUnpackedTypedDict = 1 << 22,
+    AllowUnpackedTypedDict = 1 << 23,
 
     // Even though an expression is enclosed in a string literal,
     // the interpreter (within a source file, not a stub) still
     // parses the expression and generates parse errors.
-    ParsesStringLiteral = 1 << 23,
+    ParsesStringLiteral = 1 << 24,
 
     // Do not convert special forms to their corresponding runtime
     // objects even when expecting a type expression.
@@ -202,6 +205,26 @@ export const enum EvalFlags {
         IsinstanceArg,
 }
 
+// Types whose definitions are prefetched and cached by the type evaluator
+export interface PrefetchedTypes {
+    noneTypeClass: Type;
+    objectClass: Type;
+    typeClass: Type;
+    unionTypeClass: Type;
+    awaitableClass: Type;
+    functionClass: Type;
+    tupleClass: Type;
+    boolClass: Type;
+    intClass: Type;
+    strClass: Type;
+    dictClass: Type;
+    moduleTypeClass: Type;
+    typedDictClass: Type;
+    typedDictPrivateClass: Type;
+    supportsKeysAndGetItemClass: Type;
+    mappingClass: Type;
+}
+
 export interface TypeResult<T extends Type = Type> {
     type: T;
 
@@ -219,11 +242,11 @@ export interface TypeResult<T extends Type = Type> {
     unpackedType?: Type | undefined;
     typeList?: TypeResultWithNode[] | undefined;
 
-    // For inlined TypedDict definitions.
-    inlinedTypeDict?: ClassType;
-
     // Type consistency errors detected when evaluating this type.
     typeErrors?: boolean | undefined;
+
+    // For inlined TypedDict definitions.
+    inlinedTypeDict?: ClassType;
 
     // Used for getTypeOfBoundMember to indicate that class
     // that declares the member.
@@ -366,6 +389,7 @@ export interface ValidateArgTypeParams {
 export interface ExpectedTypeOptions {
     allowFinal?: boolean;
     allowRequired?: boolean;
+    allowReadOnly?: boolean;
     allowUnpackedTuple?: boolean;
     allowUnpackedTypedDict?: boolean;
     allowParamSpec?: boolean;
@@ -516,11 +540,6 @@ export interface CallSiteEvaluationInfo {
     args: ValidateArgTypeParams[];
 }
 
-export interface SynthesizedTypeInfo {
-    type: Type;
-    node: NameNode;
-}
-
 export interface SymbolDeclInfo {
     decls: Declaration[];
     synthesizedTypes: SynthesizedTypeInfo[];
@@ -663,7 +682,7 @@ export interface TypeEvaluator {
     ) => Type;
 
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
-    verifyRaiseExceptionType: (node: ExpressionNode) => void;
+    verifyRaiseExceptionType: (node: ExpressionNode, allowNone: boolean) => void;
     verifyDeleteExpression: (node: ExpressionNode) => void;
     validateOverloadedArgTypes: (
         errorNode: ExpressionNode,

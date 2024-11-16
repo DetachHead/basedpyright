@@ -151,6 +151,12 @@ test('Await2', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('Await3', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['await3.py']);
+
+    TestUtils.validateResults(analysisResults, 6);
+});
+
 test('Coroutines1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
@@ -159,7 +165,7 @@ test('Coroutines1', () => {
     configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['coroutines1.py'], configOptions);
 
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('Coroutines2', () => {
@@ -485,6 +491,12 @@ test('Loop50', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('Loop51', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loop51.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('ForLoop1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['forLoop1.py']);
 
@@ -596,7 +608,7 @@ test('Literals5', () => {
 test('Literals6', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['literals6.py']);
 
-    TestUtils.validateResults(analysisResults, 26);
+    TestUtils.validateResults(analysisResults, 25);
 });
 
 test('Literals7', () => {
@@ -919,7 +931,7 @@ test('MethodOverride1', () => {
 
     configOptions.diagnosticRuleSet.reportIncompatibleMethodOverride = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['methodOverride1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 41);
+    TestUtils.validateResults(analysisResults, 40);
 });
 
 test('MethodOverride2', () => {

@@ -28,7 +28,7 @@ import * as TestUtils from './testUtils';
 test('Unreachable1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['unreachable1.py']);
 
-    TestUtils.validateResults(analysisResults, 0, 0, 2, 1, 6);
+    TestUtils.validateResults(analysisResults, 0, 0, 2, 7);
 });
 
 test('Builtins1', () => {
@@ -92,6 +92,7 @@ test('Builtins1', () => {
         'PendingDeprecationWarning',
         'PermissionError',
         'ProcessLookupError',
+        'PythonFinalizationError',
         'RecursionError',
         'ReferenceError',
         'ResourceWarning',

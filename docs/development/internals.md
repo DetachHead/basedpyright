@@ -1,4 +1,4 @@
-# basedpyright Internals
+# Internals
 
 ## Code Structure
 

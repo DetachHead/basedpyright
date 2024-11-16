@@ -22,7 +22,7 @@ import * as StringUtils from '../common/stringUtils';
 import { equateStringsCaseInsensitive } from '../common/stringUtils';
 import { Uri } from '../common/uri/uri';
 import { getFileSystemEntriesFromDirEntries, isDirectory, isFile, tryRealpath, tryStat } from '../common/uri/uriUtils';
-import { isIdentifierChar, isIdentifierStartChar } from '../parser/characters';
+import { Tokenizer } from '../parser/tokenizer';
 import { ImplicitImport, ImportResult, ImportType } from './importResult';
 import { getDirectoryLeadingDotsPointsTo } from './importStatementUtils';
 import { ImportPath, ParentDirectoryCache } from './parentDirectoryCache';
@@ -516,6 +516,12 @@ export class ImportResolver {
         return excludes;
     }
 
+    // Intended to be overridden by subclasses to provide additional stub
+    // path capabilities. Return undefined if no extra stub path were found.
+    getTypeshedPathEx(execEnv: ExecutionEnvironment, importFailureInfo: string[]): Uri | undefined {
+        return undefined;
+    }
+
     protected readdirEntriesCached(uri: Uri): Dirent[] {
         const cachedValue = this._cachedEntriesForPath.get(uri.key);
         if (cachedValue) {
@@ -756,12 +762,6 @@ export class ImportResolver {
             allowPyi,
             lookForPyTyped
         );
-    }
-
-    // Intended to be overridden by subclasses to provide additional stub
-    // path capabilities. Return undefined if no extra stub path were found.
-    protected getTypeshedPathEx(execEnv: ExecutionEnvironment, importFailureInfo: string[]): Uri | undefined {
-        return undefined;
     }
 
     // Intended to be overridden by subclasses to provide additional stub
@@ -2834,7 +2834,7 @@ function _getModuleNameInfoFromPath(
     }
 
     // Check whether parts contains invalid characters.
-    const containsInvalidCharacters = parts.some((p) => !_isIdentifier(p));
+    const containsInvalidCharacters = parts.some((p) => !Tokenizer.isPythonIdentifier(p));
 
     return {
         moduleName: parts.join('.'),
@@ -2848,14 +2848,4 @@ function _isNativeModuleFileExtension(fileExtension: string): boolean {
 
 function _isDefaultWorkspace(uri: Uri | undefined) {
     return !uri || uri.isEmpty() || Uri.isDefaultWorkspace(uri);
-}
-
-function _isIdentifier(value: string) {
-    for (let i = 0; i < value.length; i++) {
-        if (i === 0 ? !isIdentifierStartChar(value.charCodeAt(i)) : !isIdentifierChar(value.charCodeAt(i))) {
-            return false;
-        }
-    }
-
-    return true;
 }

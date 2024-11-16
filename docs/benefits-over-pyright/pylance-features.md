@@ -20,7 +20,6 @@ basedpyright re-implements pylance's import suggestion code actions:
 
 basedpyright re-implements pylance's semantic highlighting along with some additional improvements:
 
--   variables marked as `Final` have the correct "read-only" colour
 -   supports [the new `type` keyword in python 3.12](https://peps.python.org/pep-0695/)
 -   `Final` variables are coloured as read-only
 
@@ -75,3 +74,7 @@ python -m docify path/to/typeshed/stdlib --if-needed --in-place
 when renaming a package or module, basedpyright will update all usages to the new name, just like pylance does:
 
 ![](https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c)
+
+## Pylance features missing from basedpyright
+
+See the [open issues](https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22) related to feature parity with Pylance.

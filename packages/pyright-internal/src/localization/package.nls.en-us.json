@@ -109,6 +109,10 @@
             "message": "Could not bind method \"{methodName}\" because \"{type}\" is not assignable to parameter \"{paramName}\"",
             "comment": "Binding is the process through which Pyright determines what object a name refers to"
         },
+        "breakInExceptionGroup": {
+            "message": "\"break\" is not allowed in an \"except*\" block",
+            "comment": "{Locked='break','except*'}"
+        },
         "breakOutsideLoop": {
             "message": "\"break\" can be used only within a loop",
             "comment": "{Locked='break'}"
@@ -204,9 +208,9 @@
             "message": "Expression will always evaluate to True since the types \"{leftType}\" and \"{rightType}\" have no overlap",
             "comment": "{Locked='True'}"
         },
-        "continueInFinally": {
-            "message": "\"continue\" cannot be used within a finally clause",
-            "comment": "{Locked='continue','finally'}"
+        "continueInExceptionGroup": {
+            "message": "\"continue\" is not allowed in an \"except*\" block",
+            "comment": "{Locked='continue','except*'}"
         },
         "continueOutsideLoop": {
             "message": "\"continue\" can be used only within a loop",
@@ -344,6 +348,14 @@
             "message": "Exception group syntax (\"except*\") requires Python 3.11 or newer",
             "comment": "{Locked='except*'}"
         },
+        "exceptGroupMismatch": {
+            "message": "Try statement cannot include both \"except\" and \"except*\"",
+            "comment": "{Locked='except','except*'}"
+        },
+        "exceptGroupRequiresType": {
+            "message": "Exception group syntax (\"except*\") requires an exception type",
+            "comment": "{Locked='except*'}"
+        },
         "exceptionGroupTypeIncorrect": {
             "message": "Exception type in except* cannot derive from BaseGroupException",
             "comment": "{Locked='except*','BaseGroupException'}"
@@ -459,6 +471,8 @@
             "message": "Class \"{type}\" is marked final and must implement all abstract symbols",
             "comment": "{Locked='final'}"
         },
+        "classImplicitlyAbstract": "Class \"{type}\" is implicitly abstract because it extends an abstract class without implementing all abstract symbols. If this is intentional, add `ABC` to its base classes or use `metaclass=ABCMeta`.",
+        "classImplicitlyProtocol": "Class \"{type}\" is implicitly a `Protocol` because it extends a `Protocol` without implementing all abstract symbols. If this is intentional, add `Protocol` or `ABC` to its base classes, or use `metaclass=ABCMeta`.",
         "finalContext": {
             "message": "\"Final\" is not allowed in this context",
             "comment": "{Locked='Final'}"
@@ -924,6 +938,10 @@
         "paramAnnotationMissing": "Type annotation is missing for parameter \"{name}\"",
         "paramAssignmentMismatch": "Expression of type \"{sourceType}\" cannot be assigned to parameter of type \"{paramType}\"",
         "paramNameMissing": "No parameter named \"{name}\"",
+        "paramSpecArgsKwargsDuplicate": {
+            "message": "Arguments for ParamSpec \"{type}\" have already been provided",
+            "comment": "{Locked='ParamSpec'}"
+        },
         "paramSpecArgsKwargsUsage": {
             "message": "\"args\" and \"kwargs\" attributes of ParamSpec must both appear within a function signature",
             "comment": "{Locked='args','kwargs','ParamSpec'}"
@@ -1086,6 +1104,10 @@
             "comment": "{Locked='async'}"
         },
         "returnMissing": "Function with declared return type \"{returnType}\" must return value on all code paths",
+        "returnInExceptionGroup": {
+            "message": "\"return\" is not allowed in an \"except*\" block",
+            "comment": "{Locked='return','except*'}"
+        },
         "returnOutsideFunction": {
             "message": "\"return\" can be used only within a function",
             "comment": "{Locked='return'}"
@@ -1460,6 +1482,10 @@
             "message": "Extra TypedDict arguments not supported",
             "comment": "{Locked='TypedDict'}"
         },
+        "typedDictExtraItemsClosed": {
+            "message": "A TypedDict cannot be closed if it supports extra items",
+            "comment": "{Locked='TypedDict','closed'}"
+        },
         "typedDictFieldNotRequiredRedefinition": {
             "message": "TypedDict item \"{name}\" cannot be redefined as NotRequired",
             "comment": "{Locked='TypedDict','NotRequired'}"
@@ -1703,7 +1729,8 @@
         "typeIgnoreCommentWithoutRule": "`type: ignore` comment must specify a rule (eg. `# type: ignore[ruleName]`)",
         "implicitRelativeImport": "Import from `{importName}` is implicitly relative and will not work if this file is imported as a module",
         "invalidCast": "Conversion of type `{fromType}` to type `{toType}` may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to `object` first.",
-        "multipleInheritance": "Multiple inheritance is not allowed because the following base classes contain `__init__` or `__new__` methods that may not get called: {classes}"
+        "multipleInheritance": "Multiple inheritance is not allowed because the following base classes contain `__init__` or `__new__` methods that may not get called: {classes}",
+        "unannotatedClassAttribute": "Type annotation for attribute `{name}` is required because this class is not decorated with `@final`"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": {
@@ -2025,8 +2052,8 @@
         },
         "typedDictExtraFieldNotAllowed": "\"{name}\" is not present in \"{type}\"",
         "typedDictExtraFieldTypeMismatch": {
-            "message": "Type of \"{name}\" is incompatible with type of \"__extra_items__\" in \"{type}\"",
-            "comment": "{Locked='__extra_items__'}"
+            "message": "Type of \"{name}\" is incompatible with type of \"extra_items\" in \"{type}\"",
+            "comment": "{Locked='extra_items'}"
         },
         "typedDictFieldMissing": "\"{name}\" is missing from \"{type}\"",
         "typedDictFieldNotReadOnly": "\"{name}\" is not read-only in \"{type}\"",

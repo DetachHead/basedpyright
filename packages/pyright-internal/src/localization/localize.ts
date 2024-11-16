@@ -76,8 +76,13 @@ function getRawStringDefault(key: string): string {
     }
 
     const keyParts = key.split('.');
+    const isDiagnostic = keyParts[0] === 'Diagnostic' || keyParts[0] === 'DiagnosticAddendum';
 
-    const str = getRawStringFromMap(localizedStrings, keyParts) || getRawStringFromMap(defaultStrings, keyParts);
+    const str =
+        isDiagnostic && forceEnglishDiagnostics
+            ? getRawStringFromMap(defaultStrings, keyParts)
+            : getRawStringFromMap(localizedStrings, keyParts) || getRawStringFromMap(defaultStrings, keyParts);
+
     if (str) {
         return str;
     }
@@ -116,11 +121,16 @@ function initialize(): StringLookupMap {
 }
 
 let localeOverride: string | undefined;
+let forceEnglishDiagnostics = false;
 
 export function setLocaleOverride(locale: string) {
     // Force a reload of the localized strings.
     localizedStrings = undefined;
     localeOverride = locale.toLowerCase();
+}
+
+export function setForceEnglishDiagnostics(force: boolean) {
+    forceEnglishDiagnostics = force;
 }
 
 export function getLocaleFromEnv(): string {
@@ -144,10 +154,12 @@ export function getLocaleFromEnv(): string {
         // See if there is a language env variable.
         const localeString = env?.LC_ALL || env?.LC_MESSAGES || env?.LANG || env?.LANGUAGE;
         if (localeString) {
-            // This string may contain a local followed by an encoding (e.g. "en-us.UTF-8").
+            // This string may contain a local followed by an encoding (e.g. "en_US.UTF-8").
             const localeStringSplit = localeString.split('.');
             if (localeStringSplit.length > 0 && localeStringSplit[0]) {
-                return localeStringSplit[0] || defaultLocale;
+                // en_US -> en-us
+                const normalizedLocaleString = localeStringSplit[0].replace('_', '-').toLowerCase();
+                return normalizedLocaleString || defaultLocale;
             }
         }
     } catch {
@@ -276,6 +288,7 @@ export namespace Localizer {
             new ParameterizedString<{ type: string; methodName: string; paramName: string }>(
                 getRawString('Diagnostic.bindTypeMismatch')
             );
+        export const breakInExceptionGroup = () => getRawString('Diagnostic.breakInExceptionGroup');
         export const breakOutsideLoop = () => getRawString('Diagnostic.breakOutsideLoop');
         export const callableExtraArgs = () => getRawString('Diagnostic.callableExtraArgs');
         export const callableFirstArg = () => getRawString('Diagnostic.callableFirstArg');
@@ -349,7 +362,7 @@ export namespace Localizer {
             new ParameterizedString<{ leftType: string; rightType: string }>(
                 getRawString('Diagnostic.containmentAlwaysTrue')
             );
-        export const continueInFinally = () => getRawString('Diagnostic.continueInFinally');
+        export const continueInExceptionGroup = () => getRawString('Diagnostic.continueInExceptionGroup');
         export const continueOutsideLoop = () => getRawString('Diagnostic.continueOutsideLoop');
         export const dataClassBaseClassFrozen = () => getRawString('Diagnostic.dataClassBaseClassFrozen');
         export const dataClassBaseClassNotFrozen = () => getRawString('Diagnostic.dataClassBaseClassNotFrozen');
@@ -448,6 +461,8 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.enumMemberSet'));
         export const enumMemberTypeAnnotation = () => getRawString('Diagnostic.enumMemberTypeAnnotation');
         export const exceptionGroupIncompatible = () => getRawString('Diagnostic.exceptionGroupIncompatible');
+        export const exceptGroupMismatch = () => getRawString('Diagnostic.exceptGroupMismatch');
+        export const exceptGroupRequiresType = () => getRawString('Diagnostic.exceptGroupRequiresType');
         export const exceptionGroupTypeIncorrect = () => getRawString('Diagnostic.exceptionGroupTypeIncorrect');
         export const exceptionTypeIncorrect = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.exceptionTypeIncorrect'));
@@ -504,6 +519,10 @@ export namespace Localizer {
         export const expectedYieldExpr = () => getRawString('Diagnostic.expectedYieldExpr');
         export const finalClassIsAbstract = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.finalClassIsAbstract'));
+        export const classImplicitlyAbstract = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classImplicitlyAbstract'));
+        export const classImplicitlyProtocol = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classImplicitlyProtocol'));
         export const finalContext = () => getRawString('Diagnostic.finalContext');
         export const finalInLoop = () => getRawString('Diagnostic.finalInLoop');
         export const finalMethodOverride = () =>
@@ -768,6 +787,8 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramAnnotationMissing'));
         export const paramNameMissing = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.paramNameMissing'));
+        export const paramSpecArgsKwargsDuplicate = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.paramSpecArgsKwargsDuplicate'));
         export const paramSpecArgsKwargsUsage = () => getRawString('Diagnostic.paramSpecArgsKwargsUsage');
         export const paramSpecArgsMissing = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.paramSpecArgsMissing'));
@@ -861,6 +882,7 @@ export namespace Localizer {
         export const returnInAsyncGenerator = () => getRawString('Diagnostic.returnInAsyncGenerator');
         export const returnMissing = () =>
             new ParameterizedString<{ returnType: string }>(getRawString('Diagnostic.returnMissing'));
+        export const returnInExceptionGroup = () => getRawString('Diagnostic.returnInExceptionGroup');
         export const returnOutsideFunction = () => getRawString('Diagnostic.returnOutsideFunction');
         export const returnTypeContravariant = () => getRawString('Diagnostic.returnTypeContravariant');
         export const returnTypeMismatch = () =>
@@ -994,6 +1016,7 @@ export namespace Localizer {
         export const typedDictEntryName = () => getRawString('Diagnostic.typedDictEntryName');
         export const typedDictEntryUnique = () => getRawString('Diagnostic.typedDictEntryUnique');
         export const typedDictExtraArgs = () => getRawString('Diagnostic.typedDictExtraArgs');
+        export const typedDictExtraItemsClosed = () => getRawString('Diagnostic.typedDictExtraItemsClosed');
         export const typedDictFieldNotRequiredRedefinition = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typedDictFieldNotRequiredRedefinition'));
         export const typedDictFieldReadOnlyRedefinition = () =>
@@ -1216,6 +1239,8 @@ export namespace Localizer {
             new ParameterizedString<{ fromType: string; toType: string }>(getRawString('Diagnostic.invalidCast'));
         export const multipleInheritance = () =>
             new ParameterizedString<{ classes: string }>(getRawString('Diagnostic.multipleInheritance'));
+        export const unannotatedClassAttribute = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unannotatedClassAttribute'));
     }
 
     export namespace DiagnosticAddendum {

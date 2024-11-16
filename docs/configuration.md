@@ -1,3 +1,4 @@
+<!--8<-- [start:before-table] -->
 ## Pyright Configuration
 
 basedpyright offers flexible configuration options specified in a JSON-formatted text configuration. By default, the file is called “pyrightconfig.json” and is located within the root directory of your project. Multi-root workspaces (“Add Folder to Workspace…”) are supported, and each workspace root can have its own “pyrightconfig.json” file. For a sample pyrightconfig.json file, see [below](../configuration/config-files.md#sample-config-file).
@@ -28,7 +29,11 @@ The following settings control the *environment* in which basedpyright will chec
 
 - **stubPath** [path, optional]: Path to a directory that contains custom type stubs. Each package's type stub file(s) are expected to be in its own subdirectory. The default value of this setting is "./typings". (typingsPath is now deprecated)
 
-- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. If you are working on a project with other developers, it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a per-user setting. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
+- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
+
+    !!! note
+        If you are working on a project with other developers and not using a tool like [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation), it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a [per-user setting](./language-server-settings.md). For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
+
 
 - **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
 
@@ -66,16 +71,33 @@ The following settings determine how different types should be evaluated.
 
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
 
+## Diagnostic Categories
+
+diagnostics can be configured to be reported as any of the following categories:
+
+- `"error"` - causes the CLI to fail with exit code 1
+- `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#failOnWarnings) is enabled or the [`--warnings`](./command-line.md#command-line) argument is used
+- `"information"` - never causes the CLI to fail
+- `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](../benefits-over-pyright/baseline.md) are reported as hints
+
+!!! note
+    the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
+    to be report them as "unnecessary" or "deprecated" [as mentioned in the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity) are still reported as such, the configuration to do so has just been simplified.
+
+    the `"hint"` diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. [baselined diagnostics](../benefits-over-pyright/baseline.md) are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.
+
+    for backwards compatibility, setting a diagnostic rule to any of these three deprecated categories will act as an alias for the `"hint"` category, however they may be removed entirely in a future release.
+
 ## Type Check Diagnostics Settings
 The following settings control pyright’s diagnostic output (warnings or errors).
 
-- **typeCheckingMode** ["off", "basic", "standard", "strict", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "all". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
+- **typeCheckingMode** ["off", "basic", "standard", "strict", "recommended", "all"]: Specifies the default rule set to use. Some rules can be overridden using additional configuration flags documented below. The default value for this setting is "recommended". If set to "off", all type-checking rules are disabled, but Python syntax and semantic errors are still reported.
 
 - **ignore** [array of paths, optional]: Paths of directories or files whose diagnostic output (errors and warnings) should be suppressed even if they are an included file or within the transitive closure of an included file. Paths may contain wildcard characters ** (a directory or multiple levels of directories), * (a sequence of zero or more characters), or ? (a single character). This setting can be overridden using the [language server settings](./language-server-settings.md).
 
 ### Type Check Rule Overrides
 
-The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level.
+The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"hint"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level. [see above for more information](#diagnostic-categories)
 
 - <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.
 
@@ -205,7 +227,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportUnnecessaryContains"></a> **reportUnnecessaryContains** [boolean or string, optional]: Generate or suppress diagnostics for `in` operations that are statically determined to always evaluate to False or True. Such operations are sometimes indicative of a programming error.
 
-- <a name="reportAssertAlwaysTrue"></a> **reportAssertAlwaysTrue** [boolean or string, optional]: Generate or suppress diagnostics for `assert` statement that will provably always assert because its first argument is a parenthesized tuple (for example, `assert (v > 0, "Bad value")` when the intent was probably `assert v > 0, "Bad value"`). This is a common programming error.
+- <a name="reportAssertAlwaysTrue"></a> **reportAssertAlwaysTrue** [boolean or string, optional]: Generate or suppress diagnostics for `assert` statement that will always succeed because its first argument is a parenthesized tuple (for example, `assert (v > 0, "Bad value")` when the intent was `assert v > 0, "Bad value"`). This is a common programming error.
 
 - <a name="reportSelfClsParameterName"></a> **reportSelfClsParameterName** [boolean or string, optional]: Generate or suppress diagnostics for a missing or misnamed “self” parameter in instance methods and “cls” parameter in class methods. Instance methods in metaclasses (classes that derive from “type”) are allowed to use “cls” for instance methods.
 
@@ -243,6 +265,8 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 the following additional options are not available in regular pyright:
 
+- <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
+
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.
 
 - <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Ban all usages of the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances).
@@ -258,6 +282,10 @@ the following additional options are not available in regular pyright:
 - <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.
 
 - <a name="reportUnusedParameter"></a> **reportUnusedParameter** [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.
+
+- <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods.
+
+- <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype.
 
 ## Discouraged options
 
@@ -374,116 +402,24 @@ executionEnvironments = [
 
 ## Diagnostic Settings Defaults
 
-Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings. In strict type checking mode, overrides may only increase the strictness (e.g. increase the severity level from `"warning"` to `"error"`).
+Each diagnostic setting has a default that is dictated by the specified type checking mode. The default for each rule can be overridden in the configuration file or settings.
 
-Some rules have an additional severity level such as `"unused"`, `"deprecated"` or `"unreachable"`. These are only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`.
+Some rules default to `"hint"`. This diagnostic category is only used by the language server so that your editor can grey out or add a strikethrough to the symbol, which you can disable by setting it to `"off"`. it does not effect the outcome when running basedpyright via the CLI, so in that context these severity levels essentially mean the same thing as `"off"`. [see here](#diagnostic-categories) for more information about each diagnostic category.
 
-The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"` and `"all"`).
+The following table lists the default severity levels for each diagnostic rule within each type checking mode (`"off"`, `"basic"`, `"standard"`, `"strict"`, `"recommended"` and `"all"`).
 
-note that some settings which are enabled by default in pyright are disabled by default in basedpyright (even though the default `typeCheckingMode` is `"all"`). this is because these rules are discouraged, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
+### `"recommended"` and `"all"`
 
-| Diagnostic Rule                          | Off           | Basic         | Standard      | Strict        | All     |
-|:-----------------------------------------|:--------------|:--------------|:--------------|:--------------|:--------|
-| analyzeUnannotatedFunctions              | true          | true          | true          | true          | true    |
-| disableBytesTypePromotions               | true          | true          | true          | true          | true    |
-| strictParameterNoneValue                 | false         | true          | true          | true          | true    |
-| enableTypeIgnoreComments                 | true          | true          | true          | true          | false   |
-| enableReachabilityAnalysis               | false         | true          | true          | true          | true    |
-| strictListInference                      | false         | false         | false         | true          | true    |
-| strictDictionaryInference                | false         | false         | false         | true          | true    |
-| strictSetInference                       | false         | false         | false         | true          | true    |
-| deprecateTypingAliases                   | false         | false         | false         | false         | true    |
-| enableExperimentalFeatures               | false         | false         | false         | false         | true    |
-| reportMissingModuleSource                | "none"        | "warning"     | "warning"     | "warning"     | "error" |
-| reportInvalidTypeForm                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportMissingImports                     | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUndefinedVariable                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssertAlwaysTrue                   | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportInvalidStringEscapeSequence        | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportInvalidTypeVarUse                  | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportMissingTypeStubs                   | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportSelfClsParameterName               | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportUnsupportedDunderAll               | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportUnusedExpression                   | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportWildcardImportFromLibrary          | "none"        | "warning"     | "warning"     | "error"       | "error" |
-| reportAbstractUsage                      | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportArgumentType                       | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssertTypeFailure                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAssignmentType                     | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportAttributeAccessIssue               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportCallIssue                          | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportGeneralTypeIssues                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportInconsistentOverload               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportIndexIssue                         | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportInvalidTypeArguments               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportNoOverloadImplementation           | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOperatorIssue                      | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalSubscript                  | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalMemberAccess               | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalCall                       | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalIterable                   | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalContextManager             | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportOptionalOperand                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportRedeclaration                      | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportReturnType                         | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportTypedDictNotRequiredAccess         | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportPrivateImportUsage                 | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnboundVariable                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnhashable                         | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnusedCoroutine                    | "none"        | "error"       | "error"       | "error"       | "error" |
-| reportUnusedExcept                       | "unreachable" | "error"       | "error"       | "error"       | "error" |
-| reportFunctionMemberAccess               | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportIncompatibleMethodOverride         | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportIncompatibleVariableOverride       | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportOverlappingOverload                | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportPossiblyUnboundVariable            | "none"        | "none"        | "error"       | "error"       | "error" |
-| reportConstantRedefinition               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportDeprecated                         | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
-| reportDuplicateImport                    | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportIncompleteStub                     | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportInconsistentConstructor            | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportInvalidStubStatement               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMatchNotExhaustive                 | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMissingParameterType               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportMissingTypeArgument                | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportPrivateUsage                       | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportTypeCommentUsage                   | "deprecated"  | "deprecated"  | "deprecated"  | "error"       | "error" |
-| reportUnknownArgumentType                | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownLambdaType                  | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownMemberType                  | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownParameterType               | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnknownVariableType                | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryCast                    | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryComparison              | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryContains                | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnnecessaryIsInstance              | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUnusedClass                        | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedImport                       | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedFunction                     | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUnusedVariable                     | "unused"      | "unused"      | "unused"      | "error"       | "error" |
-| reportUntypedBaseClass                   | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedClassDecorator              | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedFunctionDecorator           | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportUntypedNamedTuple                  | "none"        | "none"        | "none"        | "error"       | "error" |
-| reportCallInDefaultInitializer           | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitOverride                   | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitStringConcatenation        | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImportCycles                       | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportMissingSuperCall                   | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportPropertyTypeMismatch               | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportShadowedImports                    | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUninitializedInstanceVariable      | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnnecessaryTypeIgnoreComment       | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnusedCallResult                   | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnreachable                        | "unreachable" | "unreachable" | "unreachable" | "unreachable" | "error" |
-| reportAny                                | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportIgnoreCommentWithoutRule           | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportPrivateLocalImportUsage            | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportImplicitRelativeImport             | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportInvalidCast                        | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnsafeMultipleInheritance          | "none"        | "none"        | "none"        | "none"        | "error" |
-| reportUnusedParameter                    | "unused"      | "unused"      | "unused"      | "unused"      | "error" |
+basedpyright introduces two new diagnostic rulesets in addition to the ones in pyright: `"recommended"` and `"all"`. `"recommended"` enables all diagnostic rules as either `"warning"` or `"error"`, but sets `failOnWarnings` to `true` so that all diagnostics will still cause a non-zero exit code when run in the CLI. this means `"recommended"` is essentially the same as `"all"`, but makes it easier to differentiate errors that are likely to cause a runtime crash like an undefined variable from less serious warnings such as a missing type annotation.
 
+!!! note
+
+    some settings which are enabled by default in pyright are disabled by default in basedpyright (even when `typeCheckingMode` is `"all"`). this is because these rules are [discouraged](#discouraged-options), but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
+<!--8<-- [end:before-table] -->
+
+<!-- the table is generated by a macro in configuration/config-files.md because macros don't work in snippets -->
+
+<!--8<-- [start:after-table] -->
 ## Overriding language server settings
 
 If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [dicouraged language server settings](./language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
@@ -504,3 +440,4 @@ LANGUAGE="fr"
 ```
 
 When running in VS Code, the editor's locale takes precedence. Setting these environment variables applies only when using pyright outside of VS Code.
+<!--8<-- [end:after-table] -->

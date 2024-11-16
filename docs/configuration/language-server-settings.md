@@ -48,6 +48,10 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.functionReturnTypes.png)
 
+**basedpyright.analysis.inlayHints.genericTypes** [boolean]: Whether to show inlay hints on inferred generic types. Defaults to `false`:
+
+![](inlayHints.genericTypes.png)
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
@@ -69,7 +73,7 @@ however these settings are still suppored to maintain compatibility with pyright
 
 **basedpyright.analysis.stubPath** [path]: Path to directory containing custom type stub files.
 
-**basedpyright.analysis.typeCheckingMode** ["off", "basic", "standard", "strict", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "pyright.typeCheckingMode". The old name is deprecated but is still currently honored.)
+**basedpyright.analysis.typeCheckingMode** ["off", "basic", "standard", "strict", "recommended", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "basedpyright.typeCheckingMode". The old name is deprecated but is still currently honored.)
 
 **basedpyright.analysis.typeshedPaths** [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.
 

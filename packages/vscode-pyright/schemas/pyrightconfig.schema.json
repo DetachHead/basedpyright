@@ -14,43 +14,11 @@
           "type": "string",
           "enum": [
             "none",
+            "hint",
             "information",
             "warning",
             "error"
           ]
-        }
-      ]
-    },
-    "unreachable": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/diagnostic"
-        },
-        {
-          "type": "string",
-          "enum": ["unreachable"]
-        }
-      ]
-    },
-    "unused": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/diagnostic"
-        },
-        {
-          "type": "string",
-          "enum": ["unused"]
-        }
-      ]
-    },
-    "deprecated": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/diagnostic"
-        },
-        {
-          "type": "string",
-          "enum": ["deprecated"]
         }
       ]
     },
@@ -173,24 +141,24 @@
       "default": "none"
     },
     "reportUnusedImport": {
-      "$ref": "#/definitions/unused",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of imported symbols that are not referenced within the source file",
-      "default": "unused"
+      "default": "hint"
     },
     "reportUnusedClass": {
-      "$ref": "#/definitions/unused",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of private classes that are not accessed",
-      "default": "unused"
+      "default": "hint"
     },
     "reportUnusedFunction": {
-      "$ref": "#/definitions/unused",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of private functions or methods that are not accessed",
-      "default": "unused"
+      "default": "hint"
     },
     "reportUnusedVariable": {
-      "$ref": "#/definitions/unused",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of local variables that are not accessed",
-      "default": "unused"
+      "default": "hint"
     },
     "reportDuplicateImport": {
       "$ref": "#/definitions/diagnostic",
@@ -328,9 +296,9 @@
       "default": "none"
     },
     "reportTypeCommentUsage": {
-      "$ref": "#/definitions/deprecated",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of deprecated type comment usage",
-      "default": "deprecated"
+      "default": "hint"
     },
     "reportPrivateImportUsage": {
       "$ref": "#/definitions/diagnostic",
@@ -343,9 +311,9 @@
       "default": "none"
     },
     "reportDeprecated": {
-      "$ref": "#/definitions/deprecated",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of use of deprecated class or function",
-      "default": "deprecated"
+      "default": "hint"
     },
     "reportIncompatibleMethodOverride": {
       "$ref": "#/definitions/diagnostic",
@@ -508,7 +476,7 @@
       "default": "error"
     },
     "reportUnusedExcept": {
-      "$ref": "#/definitions/unreachable",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of unreachable except clauses",
       "default": "error"
     },
@@ -538,9 +506,9 @@
       "default": "none"
     },
     "reportUnreachable": {
-      "$ref": "#/definitions/unreachable",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of unreachable code",
-      "default": "unreachable"
+      "default": "hint"
     },
     "reportAny": {
       "$ref": "#/definitions/diagnostic",
@@ -573,9 +541,19 @@
       "default": "none"
     },
     "reportUnusedParameter": {
-      "$ref": "#/definitions/unused",
+      "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of unused function parameters",
-      "default": "unused"
+      "default": "hint"
+    },
+    "reportImplicitAbstractClass": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of abstract classes that do not explicitly extend `ABC`",
+      "default": "none"
+    },
+    "reportUnannotatedClassAttribute": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of class variable declarations that do not have a type annotation, which is required due to performance reasons for strict validation of subclasses",
+      "default": "none"
     }
   },
   "properties": {
@@ -637,10 +615,11 @@
         "basic",
         "standard",
         "strict",
+        "recommended",
         "all"
       ],
       "title": "Specifies the default rule set to use for type checking",
-      "default": "all"
+      "default": "recommended"
     },
     "useLibraryCodeForTypes": {
       "type": "boolean",
@@ -958,6 +937,12 @@
     },
     "reportUnusedParameter": {
       "$ref": "#/definitions/reportUnusedParameter"
+    },
+    "reportImplicitAbstractClass": {
+      "$ref": "#/definitions/reportImplicitAbstractClass"
+    },
+    "reportUnannotatedClassAttribute": {
+      "$ref": "#/definitions/reportUnannotatedClassAttribute"
     },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
@@ -1300,6 +1285,12 @@
           },
           "reportUnusedParameter": {
             "$ref": "#/definitions/reportUnusedParameter"
+          },
+          "reportImplicitAbstractClass": {
+            "$ref": "#/definitions/reportImplicitAbstractClass"
+          },
+          "reportUnannotatedClassAttribute": {
+            "$ref": "#/definitions/reportUnannotatedClassAttribute"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

@@ -17,9 +17,7 @@ test('validateResults pass 😀', () => {
             fileUri: fakeUri,
             warnings: [],
             infos: [],
-            unusedCodes: [],
-            deprecateds: [],
-            unreachableCodes: [],
+            hints: [],
         },
     ];
     validateResultsButBased(actualResults, expectedResults);
@@ -35,9 +33,7 @@ test('validateResults wrong number of errors', () => {
             fileUri: fakeUri,
             warnings: [],
             infos: [],
-            unusedCodes: [],
-            deprecateds: [],
-            unreachableCodes: [],
+            hints: [],
         },
     ];
     // ideally we would be checking for JestAssertionError but can't because of https://github.com/jestjs/jest/issues/14882
@@ -54,9 +50,7 @@ test('validateResults wrong line number', () => {
             fileUri: fakeUri,
             warnings: [],
             infos: [],
-            unusedCodes: [],
-            deprecateds: [],
-            unreachableCodes: [],
+            hints: [],
         },
     ];
     expect(() => validateResultsButBased(actualResults, expectedResults)).toThrow(Error);
@@ -72,9 +66,7 @@ test('validateResults wrong code', () => {
             fileUri: fakeUri,
             warnings: [],
             infos: [],
-            unusedCodes: [],
-            deprecateds: [],
-            unreachableCodes: [],
+            hints: [],
         },
     ];
     expect(() => validateResultsButBased(actualResults, expectedResults)).toThrow(Error);
