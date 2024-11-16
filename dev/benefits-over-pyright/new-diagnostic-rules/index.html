@@ -534,6 +534,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reportexplicitany" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportExplicitAny
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reportignorecommentwithoutrule" class="md-nav__link">
     <span class="md-ellipsis">
       reportIgnoreCommentWithoutRule
@@ -1477,6 +1486,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reportexplicitany" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportExplicitAny
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reportignorecommentwithoutrule" class="md-nav__link">
     <span class="md-ellipsis">
       reportIgnoreCommentWithoutRule
@@ -1588,7 +1606,15 @@
     <span class="nb">print</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span> <span class="c1"># error: unknown type</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># no error</span>
 </code></pre></div>
-<p>basedpyright introduces the <code>reportAny</code> option, which will report an error on usages of anything typed as <code>Any</code>.</p>
+<p>basedpyright introduces the <code>reportAny</code> option, which will report an error on usages of anything typed as <code>Any</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># error: reportAny</span>
+</code></pre></div>
+<h2 id="reportexplicitany"><code>reportExplicitAny</code></h2>
+<p>similar to <a href="#reportany"><code>reportAny</code></a>, however this rule bans usages of the <code>Any</code> type itself rather than expressions that are typed as <code>Any</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="c1"># error: reportExplicitAny</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># error: reportAny</span>
+</code></pre></div>
 <h2 id="reportignorecommentwithoutrule"><code>reportIgnoreCommentWithoutRule</code></h2>
 <p>it's good practice to specify an error code in your <code>pyright: ignore</code> comments:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># pyright: ignore[reportUnreachable]</span>

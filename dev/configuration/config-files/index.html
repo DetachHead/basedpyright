@@ -2055,7 +2055,10 @@ to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.gi
 <p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.</p>
 </li>
 <li>
-<p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Ban all usages of the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances).</p>
+<p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances).</p>
+</li>
+<li>
+<p><a name="reportExplicitAny"></a> <strong>reportExplicitAny</strong> [boolean or string, optional]: Ban all explicit usages of the <code>Any</code> type. While <code>reportAny</code> bans expressions typed as <code>Any</code>, this rule bans using the <code>Any</code> type directly eg. in a type annotation.</p>
 </li>
 <li>
 <p><a name="reportIgnoreCommentWithoutRule"></a> <strong>reportIgnoreCommentWithoutRule</strong> [boolean or string, optional]: Enforce that all <code># type:ignore</code>/<code># pyright:ignore</code> comments specify a rule in brackets (eg. <code># pyright:ignore[reportAny]</code>)</p>
@@ -3058,6 +3061,15 @@ to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.gi
 </tr>
 <tr>
 <td style="text-align: left;">reportAny</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportExplicitAny</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
