@@ -1082,8 +1082,8 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
 }
 
 /**
- * if the type we're narrowing is Any or Unknown, we don't want to specialize using the
- * variance/bound for compatibility with less strictly typed code (cringe)
+ * If the type we're narrowing already has type parameters,
+ * there's no need to use variance for specialization.
  */
 export const shouldUseVarianceForSpecialization = (type: Type) =>
     type.category !== TypeCategory.Class || type.shared.typeParams.length === 0;
