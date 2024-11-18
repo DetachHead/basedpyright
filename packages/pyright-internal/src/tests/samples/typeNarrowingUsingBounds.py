@@ -48,7 +48,7 @@ class ContravariantWithBound[T: int | str]:
 
 
 class Invariant[T]:
-    """ make sure invariant doesn't think it knows the type param - narrowing to invariant isn't safe """
+    """make sure invariant doesn't think it knows the type param - narrowing to invariant isn't safe """
     def foo(self, other: object):
         if isinstance(other, Invariant):
             assert_type(other, Invariant[Any])  # Unknown
@@ -57,7 +57,7 @@ class Invariant[T]:
 
 
 class InvariantWithBound[T: float | bytes]:
-    """ make sure invariant doesn't think it knows the type param - narrowing to invariant isn't safe """
+    """make sure invariant doesn't think it knows the type param - narrowing to invariant isn't safe """
     def foo(self, other: object):
         if isinstance(other, Invariant):
             assert_type(other, Invariant[Any])  # Unknown
