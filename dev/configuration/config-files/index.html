@@ -1746,9 +1746,6 @@ who haven't yet updated to >=1.18.1
 <p>The following settings determine how different types should be evaluated.</p>
 <ul>
 <li>
-<p><a name="strictListInference"></a> <strong>strictListInference</strong> [boolean]: When inferring the type of a list, use strict type assumptions. For example, the expression <code>[1, 'a', 3.4]</code> could be inferred to be of type <code>list[Any]</code> or <code>list[int | str | float]</code>. If this setting is true, it will use the latter (stricter) type. The default value for this setting is <code>false</code>.</p>
-</li>
-<li>
 <p><a name="strictListInference"></a> <strong>strictListInference</strong> [boolean]: When inferring the type of a list, use strict type assumptions. For example, the expression <code>[1, 'a', 3.4]</code> could be inferred to be of type <code>list[Any]</code> or <code>list[int | str | float]</code>. If this setting is true, it will use the latter (stricter) type.</p>
 </li>
 <li>
