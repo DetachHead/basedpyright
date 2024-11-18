@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from shutil import copytree
+from shutil import copytree, rmtree
 
 from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
 
@@ -15,8 +15,9 @@ def main():
     version and OS."""
     stubs_path = Path("packages/pyright-internal/typeshed-fallback")
     stubs_with_docs_path = Path("docstubs")
-    if not stubs_with_docs_path.exists():
-        copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
+    if stubs_with_docs_path.exists():
+        rmtree(stubs_with_docs_path)
+    copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
     docify([str(stubs_with_docs_path / "stdlib"), "--if-needed", "--in-place"])
 
 
