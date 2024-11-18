@@ -80,7 +80,8 @@
           "label": "install dependencies",
           "type": "shell",
           "command": "./pw",
-          "args": ["uv", "sync"],
+          // need to always reinstall the current project because docstubs may be outdated
+          "args": ["uv", "sync", "--reinstall-package", "basedpyright"],
           "presentation": {
             "clear": true
           },
