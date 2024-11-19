@@ -7,6 +7,8 @@ env:
   VSIX_DIR: packages/vscode-pyright
   NPM_PACKAGE_DIR: packages/pyright
   BROWSER_NPM_PACKAGE_DIR: packages/browser-pyright
+  # prevent uv from constantly reinstalling the project and overwriting docstubs
+  UV_NO_SYNC: true
 
 on: push
 
@@ -87,7 +89,7 @@ jobs:
           name: docstubs
           path: docstubs
 
-      - run: ./pw uv sync
+      - run: ./pw uv sync --config-setting regenerate_docstubs=false
 
       # using relative path for npm scripts because it needs to work in the package directories too
       - name: add pyprojectx and npm scripts to PATH
@@ -177,7 +179,7 @@ jobs:
         run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
 
       - name: build package - pypi
-        run: uv build
+        run: uv build --config-setting regenerate_docstubs=false
       - uses: actions/upload-artifact@v4
         with:
           name: dist
