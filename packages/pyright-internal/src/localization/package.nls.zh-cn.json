@@ -67,7 +67,7 @@
         "callableFirstArg": "此处应为参数类型列表或 `...`",
         "callableNotInstantiable": "无法实例化 \"{type}\" 类型",
         "callableSecondArg": "返回类型应为 `Callable` 的第二个类型参数",
-        "casePatternIsIrrefutable": "只有最后一个 `case` 语句允许使用 `_` 模式",
+        "casePatternIsIrrefutable": "只有最后一个 `case` 语句允许使用通配模式",
         "classAlreadySpecialized": "原泛型（在定义时）已被特化为 \"{type}\"",
         "classDecoratorTypeAny": "返回 `Any` 类型的类装饰器覆盖了原始类的类型",
         "classDecoratorTypeUnknown": "未标注返回类型的类装饰器会覆盖原始类的类型，因此已忽略此装饰器",
