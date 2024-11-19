@@ -270,8 +270,13 @@ ignore-overlong-task-comments = true
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = ["A001", "A002", "N"] # we don't control names in 3rd party modules
 "{tests,based_build}/**/*.py" = [
-    "S", # none of these security focused rules are relevant for tests/build scripts
+    "S",    # none of these security focused rules are relevant for tests/build scripts
+    "T201",
 ]
+"based_build/**/*.py" = [
+    "T201", # print
+]
+
 [tool.ruff.lint.isort]
 combine-as-imports = true
 required-imports = ["from __future__ import annotations"]
