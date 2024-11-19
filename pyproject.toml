@@ -163,7 +163,6 @@ enable = [
     "redefined-slots-in-subclass",
     "redundant-returns-doc",
     "redundant-yields-doc",
-    "shallow-copy-environ",
     "useless-param-doc",
     "useless-parent-delegation",
     "useless-type-doc",
