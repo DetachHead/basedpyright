@@ -99,3 +99,10 @@ class AnyOrUnknown:
 def goo[KT, VT](self: MutableMapping[KT, VT]) -> Iterator[KT]:
     assert isinstance(self, Reversible)
     return reversed(self)
+
+class Constraints[T: (int, str), U: (int, str), V: int]:
+    ...
+ 
+def _(value: object):
+    if isinstance(value, Constraints):
+        assert_type(value, Constraints[int, int, int] | Constraints[int, str, int] | Constraints[str, int, int] | Constraints[str, str, int])

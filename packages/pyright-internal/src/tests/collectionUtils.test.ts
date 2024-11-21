@@ -176,3 +176,59 @@ class D extends B {
         this.name = name;
     }
 }
+
+describe('allCombinations', () => {
+    test('2', () => {
+        assert.deepEqual(
+            utils.allCombinations([
+                ['int', 'str'],
+                ['dict', 'list'],
+            ]),
+            [
+                ['int', 'dict'],
+                ['int', 'list'],
+                ['str', 'dict'],
+                ['str', 'list'],
+            ]
+        );
+    });
+    test('3', () => {
+        assert.deepEqual(
+            utils.allCombinations([
+                ['int', 'str'],
+                ['dict', 'list'],
+                ['asdf', 'fdsa'],
+            ]),
+            [
+                ['int', 'dict', 'asdf'],
+                ['int', 'dict', 'fdsa'],
+                ['int', 'list', 'asdf'],
+                ['int', 'list', 'fdsa'],
+                ['str', 'dict', 'asdf'],
+                ['str', 'dict', 'fdsa'],
+                ['str', 'list', 'asdf'],
+                ['str', 'list', 'fdsa'],
+            ]
+        );
+    });
+    describe('varying lengths', () => {
+        test('2 and 1', () => {
+            assert.deepEqual(utils.allCombinations([['int', 'str'], ['dict', 'list'], ['asdf']]), [
+                ['int', 'dict', 'asdf'],
+                ['int', 'list', 'asdf'],
+                ['str', 'dict', 'asdf'],
+                ['str', 'list', 'asdf'],
+            ]);
+        });
+        test('3 and 2 and 1', () => {
+            assert.deepEqual(utils.allCombinations([['int', 'str', 'fdsa'], ['dict', 'list'], ['asdf']]), [
+                ['int', 'dict', 'asdf'],
+                ['int', 'list', 'asdf'],
+                ['str', 'dict', 'asdf'],
+                ['str', 'list', 'asdf'],
+                ['fdsa', 'dict', 'asdf'],
+                ['fdsa', 'list', 'asdf'],
+            ]);
+        });
+    });
+});
