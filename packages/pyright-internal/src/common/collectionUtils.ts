@@ -428,3 +428,17 @@ export function arrayEquals<T>(c1: T[], c2: T[], predicate: (e1: T, e2: T) => bo
 
     return c1.every((v, i) => predicate(v, c2[i]));
 }
+
+export const allCombinations = <T>(items: T[][]): T[][] => {
+    const [head, ...tail] = items;
+    if (!tail.length) {
+        return head.map((value) => [value]);
+    }
+    const result: T[][] = [];
+    for (const item1 of head) {
+        for (const item2 of allCombinations(tail)) {
+            result.push([item1, ...item2]);
+        }
+    }
+    return result;
+};

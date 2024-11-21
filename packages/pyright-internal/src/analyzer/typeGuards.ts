@@ -1139,42 +1139,51 @@ export function getIsInstanceClassTypes(
     // Create a helper function that returns a list of class types or
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {
-        types.forEach((subtype) => {
-            if (isClass(subtype)) {
-                evaluator.inferVarianceForClass(subtype);
-                subtype = specializeWithUnknownTypeArgs(
-                    subtype,
+        types.forEach((type) => {
+            const subtypes: Type[] = [];
+            if (isClass(type)) {
+                evaluator.inferVarianceForClass(type);
+                type = specializeWithUnknownTypeArgs(
+                    type,
                     evaluator.getTupleClassType(),
                     useVarianceForSpecialization ? evaluator.getObjectType() : undefined
                 );
 
-                if (isInstantiableClass(subtype) && ClassType.isBuiltIn(subtype, 'Callable')) {
-                    subtype = convertToInstantiable(getUnknownTypeForCallable());
-                }
+                doForEachSubtype(type, (subtype) => {
+                    if (isInstantiableClass(subtype) && ClassType.isBuiltIn(subtype, 'Callable')) {
+                        subtypes.push(convertToInstantiable(getUnknownTypeForCallable()));
+                    } else {
+                        subtypes.push(subtype);
+                    }
+                });
+            } else {
+                subtypes.push(type);
             }
 
-            if (isInstantiableClass(subtype)) {
-                // If this is a reference to a class that has type promotions (e.g.
-                // float or complex), remove the promotions for purposes of the
-                // isinstance check).
-                if (!subtype.priv.includeSubclasses && subtype.priv.includePromotions) {
-                    subtype = ClassType.cloneRemoveTypePromotions(subtype);
+            for (let subtype of subtypes) {
+                if (isInstantiableClass(subtype)) {
+                    // If this is a reference to a class that has type promotions (e.g.
+                    // float or complex), remove the promotions for purposes of the
+                    // isinstance check).
+                    if (!subtype.priv.includeSubclasses && subtype.priv.includePromotions) {
+                        subtype = ClassType.cloneRemoveTypePromotions(subtype);
+                    }
+                    classTypeList.push(subtype);
+                } else if (isTypeVar(subtype) && TypeBase.isInstantiable(subtype)) {
+                    classTypeList.push(subtype);
+                } else if (isNoneTypeClass(subtype)) {
+                    assert(isInstantiableClass(subtype));
+                    classTypeList.push(subtype);
+                } else if (
+                    isFunction(subtype) &&
+                    subtype.shared.parameters.length === 2 &&
+                    subtype.shared.parameters[0].category === ParamCategory.ArgsList &&
+                    subtype.shared.parameters[1].category === ParamCategory.KwargsDict
+                ) {
+                    classTypeList.push(subtype);
+                } else {
+                    foundNonClassType = true;
                 }
-                classTypeList.push(subtype);
-            } else if (isTypeVar(subtype) && TypeBase.isInstantiable(subtype)) {
-                classTypeList.push(subtype);
-            } else if (isNoneTypeClass(subtype)) {
-                assert(isInstantiableClass(subtype));
-                classTypeList.push(subtype);
-            } else if (
-                isFunction(subtype) &&
-                subtype.shared.parameters.length === 2 &&
-                subtype.shared.parameters[0].category === ParamCategory.ArgsList &&
-                subtype.shared.parameters[1].category === ParamCategory.KwargsDict
-            ) {
-                classTypeList.push(subtype);
-            } else {
-                foundNonClassType = true;
             }
         });
     };

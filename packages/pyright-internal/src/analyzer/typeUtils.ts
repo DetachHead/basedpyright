@@ -7,7 +7,7 @@
  * Functions that operate on Type objects.
  */
 
-import { appendArray } from '../common/collectionUtils';
+import { allCombinations, appendArray } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { ParamCategory } from '../parser/parseNodes';
 import { ConstraintSolution, ConstraintSolutionSet } from './constraintSolution';
@@ -1105,7 +1105,7 @@ export function specializeWithUnknownTypeArgs(
     type: ClassType,
     tupleClassType?: ClassType,
     objectTypeForVarianceCheck?: Type
-): ClassType {
+): ClassType | UnionType {
     if (type.shared.typeParams.length === 0) {
         return type;
     }
@@ -1121,12 +1121,39 @@ export function specializeWithUnknownTypeArgs(
         );
     }
 
-    return ClassType.specialize(
-        type,
-        type.shared.typeParams.map((param) => getUnknownForTypeVar(param, tupleClassType, objectTypeForVarianceCheck)),
-        /* isTypeArgExplicit */ false,
-        /* includeSubclasses */ type.priv.includeSubclasses
-    );
+    const result = UnionType.create();
+    const constraintCombinations = new Array<Type[]>();
+
+    // since constraints can't be specialized, we create a union of every possible combination of constraints
+    // instead of specializing them or leaving them as Unknown (cringe)
+    for (const typeParam of type.shared.typeParams) {
+        const currentConstraints = new Array<Type>();
+        constraintCombinations.push(currentConstraints);
+        if (typeParam.shared.constraints.length) {
+            for (const constraint of typeParam.shared.constraints) {
+                currentConstraints.push(constraint);
+            }
+        } else {
+            currentConstraints.push(getUnknownForTypeVar(typeParam, tupleClassType, objectTypeForVarianceCheck));
+        }
+    }
+    for (const typeVarsToSpecialize of allCombinations(constraintCombinations)) {
+        UnionType.addType(
+            result,
+            ClassType.specialize(
+                type,
+                typeVarsToSpecialize,
+                /* isTypeArgExplicit */ false,
+                /* includeSubclasses */ type.priv.includeSubclasses
+            )
+        );
+    }
+    if (result.priv.subtypes.length === 1) {
+        // convert it back to a ClassType if there's only one type, because there's places where the result is checked
+        // that don't account for unions and we want to minimize the risk of breaking things
+        return result.priv.subtypes[0] as ClassType;
+    }
+    return result;
 }
 
 /**
