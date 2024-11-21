@@ -19466,7 +19466,7 @@ export function createTypeEvaluator(
                         if (isAbstract || methodAlwaysRaisesNotImplemented(functionDecl)) {
                             inferredReturnType = UnknownType.create();
                         } else {
-                            inferredReturnType = NeverType.createNoReturn();
+                            inferredReturnType = NeverType.createNever();
                         }
                     } else {
                         const inferredReturnTypes: Type[] = [];
