@@ -26,7 +26,7 @@
         "test-python": "uv run --no-sync pytest tests",
         "generate-docstubs": "uv run --no-sync based_build/generate_docstubs.py",
         "localization-helper": "uv run --no-sync based_build/localization_helper.py",
-        "docs": "uv run mkdocs serve"
+        "docs": "uv run --no-sync mkdocs serve"
     },
     "devDependencies": {
         "@detachhead/ts-helpers": "^16.2.0",
