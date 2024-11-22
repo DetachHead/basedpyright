@@ -49,6 +49,10 @@ The following settings control the *environment* in which basedpyright will chec
 
 - **useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
 
+### basedpyright exclusive settings
+
+- <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
+
 ## Type Evaluation Settings
 
 The following settings determine how different types should be evaluated.
@@ -68,6 +72,10 @@ The following settings determine how different types should be evaluated.
 - <a name="enableExperimentalFeatures"></a> **enableExperimentalFeatures** [boolean]: Enables a set of experimental (mostly undocumented) features that correspond to proposed or exploratory changes to the Python typing standard. These features will likely change or be removed, so they should not be used except for experimentation purposes.
 
 - <a name="disableBytesTypePromotions"></a> **disableBytesTypePromotions** [boolean]: Disables legacy behavior where `bytearray` and `memoryview` are considered subtypes of `bytes`. [PEP 688](https://peps.python.org/pep-0688/#no-special-meaning-for-bytes) deprecates this behavior, but this switch is provided to restore the older behavior.
+
+### basedpyright exclusive settings
+
+- <a name="improvedGenericNarrowing"></a> **improvedGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`.
 
 ## Diagnostic Categories
 
@@ -259,11 +267,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportShadowedImports"></a> **reportShadowedImports** [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.
 
-## Based options
-
-the following additional options are not available in regular pyright:
-
-- <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
+### basedpyright exclusive settings
 
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.
 

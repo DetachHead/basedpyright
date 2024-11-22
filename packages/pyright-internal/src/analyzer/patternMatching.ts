@@ -28,6 +28,7 @@ import {
     PatternSequenceNode,
     PatternValueNode,
 } from '../parser/parseNodes';
+import { getFileInfo } from './analyzerNodeInfo';
 import { CodeFlowReferenceExpressionNode } from './codeFlowTypes';
 import { addConstraintsForExpectedType } from './constraintSolver';
 import { ConstraintTracker } from './constraintTracker';
@@ -779,7 +780,9 @@ function narrowTypeBasedOnClassPattern(
         exprType = specializeWithUnknownTypeArgs(
             exprType,
             evaluator.getTupleClassType(),
-            shouldUseVarianceForSpecialization(type) ? evaluator.getObjectType() : undefined
+            shouldUseVarianceForSpecialization(type, getFileInfo(pattern).diagnosticRuleSet.improvedGenericNarrowing)
+                ? evaluator.getObjectType()
+                : undefined
         );
     }
 

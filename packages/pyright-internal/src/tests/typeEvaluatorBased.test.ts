@@ -118,11 +118,23 @@ test('subscript context manager types on 3.8', () => {
     });
 });
 
-test('narrowing type vars using their bounds', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
-    const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
-    validateResultsButBased(analysisResults, {
-        errors: [],
+describe('narrowing type vars using their bounds', () => {
+    test('enabled', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+        configOptions.diagnosticRuleSet.improvedGenericNarrowing = true;
+        const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
+        validateResultsButBased(analysisResults, {
+            errors: [],
+        });
+    });
+    test('disabled', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+        configOptions.diagnosticRuleSet.improvedGenericNarrowing = false;
+        const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBoundsDisabled.py'], configOptions);
+        validateResultsButBased(analysisResults, {
+            errors: [],
+        });
     });
 });
