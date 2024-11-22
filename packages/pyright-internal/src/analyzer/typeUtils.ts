@@ -1083,8 +1083,8 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
  * If the type we're narrowing already has type parameters,
  * there's no need to use variance for specialization.
  */
-export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, improvedGenericNarrowing: boolean) => {
-    if (!improvedGenericNarrowing) {
+export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, strictGenericNarrowing: boolean) => {
+    if (!strictGenericNarrowing) {
         return false;
     }
     return allSubtypes(
@@ -1098,12 +1098,12 @@ export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, improvedG
 
 /**
  * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its
- * widest possible type if its variance is known and {@link objectTypeForImprovedGenericNarrowing} is provided (`object` if
+ * widest possible type if its variance is known and {@link objectTypeForstrictGenericNarrowing} is provided (`object` if
  * the bound if covariant, `Never` if contravariant). see docstring on {@link getUnknownForTypeVar} for more info
  *
  * @param tupleClassType the builtin `tuple` type for special-casing tuples. needs to be passed so that this
  * module doesn't depend on `typeEvaluator.ts`
- * @param objectTypeForImprovedGenericNarrowing
+ * @param objectTypeForstrictGenericNarrowing
  * the builtin `object` type to be returned if the type var is covariant.
  * needs to be passed so that this module doesn't depend on `typeEvaluator.ts`. note that
  * `evaluator.inferVarianceForClass` needs to be called on {@link type} first if passing this parameter.
@@ -1115,7 +1115,7 @@ export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, improvedG
 export function specializeWithUnknownTypeArgs(
     type: ClassType,
     tupleClassType?: ClassType,
-    objectTypeForImprovedGenericNarrowing?: Type
+    objectTypeForstrictGenericNarrowing?: Type
 ): ClassType | UnionType {
     if (type.shared.typeParams.length === 0) {
         return type;
@@ -1131,7 +1131,7 @@ export function specializeWithUnknownTypeArgs(
             !!type.priv.includeSubclasses
         );
     }
-    if (objectTypeForImprovedGenericNarrowing) {
+    if (objectTypeForstrictGenericNarrowing) {
         const result = UnionType.create();
         const constraintCombinations = new Array<Type[]>();
 
@@ -1146,7 +1146,7 @@ export function specializeWithUnknownTypeArgs(
                 }
             } else {
                 currentConstraints.push(
-                    getUnknownForTypeVar(typeParam, tupleClassType, objectTypeForImprovedGenericNarrowing)
+                    getUnknownForTypeVar(typeParam, tupleClassType, objectTypeForstrictGenericNarrowing)
                 );
             }
         }

@@ -780,7 +780,7 @@ function narrowTypeBasedOnClassPattern(
         exprType = specializeWithUnknownTypeArgs(
             exprType,
             evaluator.getTupleClassType(),
-            shouldUseVarianceForSpecialization(type, getFileInfo(pattern).diagnosticRuleSet.improvedGenericNarrowing)
+            shouldUseVarianceForSpecialization(type, getFileInfo(pattern).diagnosticRuleSet.strictGenericNarrowing)
                 ? evaluator.getObjectType()
                 : undefined
         );

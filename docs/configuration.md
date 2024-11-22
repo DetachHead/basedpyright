@@ -75,7 +75,7 @@ The following settings determine how different types should be evaluated.
 
 ### basedpyright exclusive settings
 
-- <a name="improvedGenericNarrowing"></a> **improvedGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`.
+- <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`.
 
 ## Diagnostic Categories
 

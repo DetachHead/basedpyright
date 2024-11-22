@@ -100,7 +100,7 @@
       "title": "Treat typing-specific aliases to standard types as deprecated",
       "default": false
     },
-    "improvedGenericNarrowing": {
+    "strictGenericNarrowing": {
       "type": "boolean",
       "title": "Use generic bounds instead of `Any` when narrowing",
       "default": false
@@ -681,8 +681,8 @@
     "deprecateTypingAliases": {
       "$ref": "#/definitions/deprecateTypingAliases"
     },
-    "improvedGenericNarrowing": {
-      "$ref": "#/definitions/improvedGenericNarrowing"
+    "strictGenericNarrowing": {
+      "$ref": "#/definitions/strictGenericNarrowing"
     },
     "reportGeneralTypeIssues": {
       "$ref": "#/definitions/reportGeneralTypeIssues"
@@ -1035,8 +1035,8 @@
           "deprecateTypingAliases": {
             "$ref": "#/definitions/deprecateTypingAliases"
           },
-          "improvedGenericNarrowing": {
-            "$ref": "#/definitions/improvedGenericNarrowing"
+          "strictGenericNarrowing": {
+            "$ref": "#/definitions/strictGenericNarrowing"
           },
           "reportGeneralTypeIssues": {
             "$ref": "#/definitions/reportGeneralTypeIssues"

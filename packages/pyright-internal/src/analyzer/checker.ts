@@ -3797,7 +3797,7 @@ export class Checker extends ParseTreeWalker {
             this._evaluator,
             arg1Type,
             arg0Type,
-            this._fileInfo.diagnosticRuleSet.improvedGenericNarrowing
+            this._fileInfo.diagnosticRuleSet.strictGenericNarrowing
         );
         if (!classTypeList) {
             return;
