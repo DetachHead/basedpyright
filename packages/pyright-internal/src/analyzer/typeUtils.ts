@@ -778,9 +778,7 @@ export function someSubtypes(type: Type, callback: (type: Type) => boolean): boo
 
 export function allSubtypes(type: Type, callback: (type: Type) => boolean): boolean {
     if (isUnion(type)) {
-        return type.priv.subtypes.every((subtype) => {
-            callback(subtype);
-        });
+        return type.priv.subtypes.every((subtype) => callback(subtype));
     } else {
         return callback(type);
     }
@@ -1085,8 +1083,18 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
  * If the type we're narrowing already has type parameters,
  * there's no need to use variance for specialization.
  */
-export const shouldUseVarianceForSpecialization = (type: Type, improvedGenericNarrowing: boolean) =>
-    improvedGenericNarrowing && (type.category !== TypeCategory.Class || type.shared.typeParams.length === 0);
+export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, improvedGenericNarrowing: boolean) => {
+    if (!improvedGenericNarrowing) {
+        return false;
+    }
+    return allSubtypes(
+        typeToNarrow,
+        (subtype) =>
+            subtype.category !== TypeCategory.Class ||
+            // !ClassType.isSameGenericClass(subtype, narrowToType) ||
+            subtype.shared.typeParams.length === 0
+    );
+};
 
 /**
  * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its

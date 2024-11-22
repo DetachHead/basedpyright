@@ -1,4 +1,4 @@
-from typing import Any, assert_type, Iterable, Iterator, MutableMapping, Reversible
+from typing import Any, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible
 
 
 class Covariant[T]:
@@ -106,3 +106,13 @@ class Constraints[T: (int, str), U: (int, str), V: int]:
 def _(value: object):
     if isinstance(value, Constraints):
         assert_type(value, Constraints[Any, Any, Any])
+
+@runtime_checkable
+class Foo[T: (int, str)](Protocol):
+    def asdf(self): ...
+
+def _(
+    value: str | Foo[str],
+):
+    if isinstance(value, Foo):
+        assert_type(value, Foo[str])

@@ -1137,18 +1137,20 @@ export function getIsInstanceClassTypes(
 ): (ClassType | TypeVarType | FunctionType)[] | undefined {
     let foundNonClassType = false;
     const classTypeList: (ClassType | TypeVarType | FunctionType)[] = [];
-    const useVarianceForSpecialization = shouldUseVarianceForSpecialization(typeToNarrow, improvedGenericNarrowing);
     // Create a helper function that returns a list of class types or
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {
         types.forEach((type) => {
             const subtypes: Type[] = [];
             if (isClass(type)) {
-                evaluator.inferVarianceForClass(type);
+                const useVariance = shouldUseVarianceForSpecialization(typeToNarrow, improvedGenericNarrowing);
+                if (useVariance) {
+                    evaluator.inferVarianceForClass(type);
+                }
                 type = specializeWithUnknownTypeArgs(
                     type,
                     evaluator.getTupleClassType(),
-                    useVarianceForSpecialization ? evaluator.getObjectType() : undefined
+                    useVariance ? evaluator.getObjectType() : undefined
                 );
 
                 doForEachSubtype(type, (subtype) => {
