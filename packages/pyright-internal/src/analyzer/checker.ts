@@ -3793,7 +3793,12 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        const classTypeList = getIsInstanceClassTypes(this._evaluator, arg1Type, arg0Type);
+        const classTypeList = getIsInstanceClassTypes(
+            this._evaluator,
+            arg1Type,
+            arg0Type,
+            this._fileInfo.diagnosticRuleSet.improvedGenericNarrowing
+        );
         if (!classTypeList) {
             return;
         }

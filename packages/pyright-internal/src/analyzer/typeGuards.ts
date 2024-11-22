@@ -627,7 +627,8 @@ export function getTypeNarrowingCallback(
                     const classTypeList = getIsInstanceClassTypes(
                         evaluator,
                         arg1Type,
-                        evaluator.getTypeOfExpression(arg0Expr).type
+                        evaluator.getTypeOfExpression(arg0Expr).type,
+                        getFileInfo(testExpression).diagnosticRuleSet.improvedGenericNarrowing
                     );
                     const isIncomplete = !!callTypeResult.isIncomplete || !!arg1TypeResult.isIncomplete;
 
@@ -1131,11 +1132,12 @@ function narrowTypeForIsEllipsis(evaluator: TypeEvaluator, node: ExpressionNode,
 export function getIsInstanceClassTypes(
     evaluator: TypeEvaluator,
     argType: Type,
-    typeToNarrow: Type
+    typeToNarrow: Type,
+    improvedGenericNarrowing: boolean
 ): (ClassType | TypeVarType | FunctionType)[] | undefined {
     let foundNonClassType = false;
     const classTypeList: (ClassType | TypeVarType | FunctionType)[] = [];
-    const useVarianceForSpecialization = shouldUseVarianceForSpecialization(typeToNarrow);
+    const useVarianceForSpecialization = shouldUseVarianceForSpecialization(typeToNarrow, improvedGenericNarrowing);
     // Create a helper function that returns a list of class types or
     // undefined if any of the types are not valid.
     const addClassTypesToList = (types: Type[]) => {

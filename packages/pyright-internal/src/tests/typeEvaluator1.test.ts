@@ -434,7 +434,9 @@ test('TypeNarrowingIsinstance12', () => {
 });
 
 test('TypeNarrowingIsinstance13.py', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsinstance13.py']);
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.improvedGenericNarrowing = true;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingIsinstance13.py'], configOptions);
 
     TestUtils.validateResults(analysisResults, 0);
 });

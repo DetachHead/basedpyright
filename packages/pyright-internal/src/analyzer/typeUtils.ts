@@ -1085,26 +1085,29 @@ export function getTypeVarScopeIds(type: Type): TypeVarScopeId[] {
  * If the type we're narrowing already has type parameters,
  * there's no need to use variance for specialization.
  */
-export const shouldUseVarianceForSpecialization = (type: Type) =>
-    type.category !== TypeCategory.Class || type.shared.typeParams.length === 0;
+export const shouldUseVarianceForSpecialization = (type: Type, improvedGenericNarrowing: boolean) =>
+    improvedGenericNarrowing && (type.category !== TypeCategory.Class || type.shared.typeParams.length === 0);
 
 /**
  * Specializes the class with "Unknown" type args (or the equivalent for ParamSpecs or TypeVarTuples), or its
- * widest possible type if its variance is known and {@link objectTypeForVarianceCheck} is provided (`object` if
+ * widest possible type if its variance is known and {@link objectTypeForImprovedGenericNarrowing} is provided (`object` if
  * the bound if covariant, `Never` if contravariant). see docstring on {@link getUnknownForTypeVar} for more info
  *
  * @param tupleClassType the builtin `tuple` type for special-casing tuples. needs to be passed so that this
  * module doesn't depend on `typeEvaluator.ts`
- * @param objectTypeForVarianceCheck the builtin `object` type to be returned if the type var is covariant.
- * passing this parameter enables the variance check which allows it to return a better result than just "Unknown"
- * in cases where the variance is known (ie. `object` or its bound if it's covariant, and `Never` if it's
- * contravariant). needs to be passed so that this module doesn't depend on `typeEvaluator.ts`. note that
- * `evaluator.inferVarianceForClass` needs to be called on {@link type} first if passing this parameter
+ * @param objectTypeForImprovedGenericNarrowing
+ * the builtin `object` type to be returned if the type var is covariant.
+ * needs to be passed so that this module doesn't depend on `typeEvaluator.ts`. note that
+ * `evaluator.inferVarianceForClass` needs to be called on {@link type} first if passing this parameter.
+ * passing this parameter enables the following functionality:
+ * - the variance check which allows it to return a better result than just "Unknown" in cases where the variance is known
+ * (ie. `object` or its bound if it's covariant, and `Never` if it's * contravariant).
+ * - "specializes" generics with constraints to a union of all possible combinations
  */
 export function specializeWithUnknownTypeArgs(
     type: ClassType,
     tupleClassType?: ClassType,
-    objectTypeForVarianceCheck?: Type
+    objectTypeForImprovedGenericNarrowing?: Type
 ): ClassType | UnionType {
     if (type.shared.typeParams.length === 0) {
         return type;
@@ -1120,40 +1123,50 @@ export function specializeWithUnknownTypeArgs(
             !!type.priv.includeSubclasses
         );
     }
+    if (objectTypeForImprovedGenericNarrowing) {
+        const result = UnionType.create();
+        const constraintCombinations = new Array<Type[]>();
 
-    const result = UnionType.create();
-    const constraintCombinations = new Array<Type[]>();
-
-    // since constraints can't be specialized, we create a union of every possible combination of constraints
-    // instead of specializing them or leaving them as Unknown (cringe)
-    for (const typeParam of type.shared.typeParams) {
-        const currentConstraints = new Array<Type>();
-        constraintCombinations.push(currentConstraints);
-        if (typeParam.shared.constraints.length) {
-            for (const constraint of typeParam.shared.constraints) {
-                currentConstraints.push(constraint);
+        // since constraints can't be specialized, we create a union of every possible combination of constraints
+        // instead of specializing them or leaving them as Unknown (cringe)
+        for (const typeParam of type.shared.typeParams) {
+            const currentConstraints = new Array<Type>();
+            constraintCombinations.push(currentConstraints);
+            if (typeParam.shared.constraints.length) {
+                for (const constraint of typeParam.shared.constraints) {
+                    currentConstraints.push(constraint);
+                }
+            } else {
+                currentConstraints.push(
+                    getUnknownForTypeVar(typeParam, tupleClassType, objectTypeForImprovedGenericNarrowing)
+                );
             }
-        } else {
-            currentConstraints.push(getUnknownForTypeVar(typeParam, tupleClassType, objectTypeForVarianceCheck));
         }
-    }
-    for (const typeVarsToSpecialize of allCombinations(constraintCombinations)) {
-        UnionType.addType(
-            result,
-            ClassType.specialize(
-                type,
-                typeVarsToSpecialize,
-                /* isTypeArgExplicit */ false,
-                /* includeSubclasses */ type.priv.includeSubclasses
-            )
+        for (const typeVarsToSpecialize of allCombinations(constraintCombinations)) {
+            UnionType.addType(
+                result,
+                ClassType.specialize(
+                    type,
+                    typeVarsToSpecialize,
+                    /* isTypeArgExplicit */ false,
+                    /* includeSubclasses */ type.priv.includeSubclasses
+                )
+            );
+        }
+        if (result.priv.subtypes.length === 1) {
+            // convert it back to a ClassType if there's only one type, because there's places where the result is checked
+            // that don't account for unions and we want to minimize the risk of breaking things
+            return result.priv.subtypes[0] as ClassType;
+        }
+        return result;
+    } else {
+        return ClassType.specialize(
+            type,
+            type.shared.typeParams.map((param) => getUnknownForTypeVar(param, tupleClassType)),
+            /* isTypeArgExplicit */ false,
+            /* includeSubclasses */ type.priv.includeSubclasses
         );
     }
-    if (result.priv.subtypes.length === 1) {
-        // convert it back to a ClassType if there's only one type, because there's places where the result is checked
-        // that don't account for unions and we want to minimize the risk of breaking things
-        return result.priv.subtypes[0] as ClassType;
-    }
-    return result;
 }
 
 /**

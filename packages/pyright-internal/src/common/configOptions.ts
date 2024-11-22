@@ -411,6 +411,7 @@ export interface DiagnosticRuleSet {
      * @see https://github.com/DetachHead/basedpyright/issues/603#issuecomment-2303297625
      */
     failOnWarnings: boolean;
+    improvedGenericNarrowing: boolean;
     reportUnreachable: DiagnosticLevel;
     reportAny: DiagnosticLevel;
     reportExplicitAny: DiagnosticLevel;
@@ -441,6 +442,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
         DiagnosticRule.enableExperimentalFeatures,
         DiagnosticRule.deprecateTypingAliases,
         DiagnosticRule.disableBytesTypePromotions,
+        DiagnosticRule.improvedGenericNarrowing,
     ];
 
     if (includeNonOverridable) {
@@ -673,6 +675,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
+        improvedGenericNarrowing: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -788,6 +791,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
+        improvedGenericNarrowing: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -903,6 +907,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
+        improvedGenericNarrowing: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -1017,6 +1022,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportShadowedImports: 'warning',
     reportImplicitOverride: 'warning',
     failOnWarnings: true,
+    improvedGenericNarrowing: true,
     reportUnreachable: 'warning',
     reportAny: 'warning',
     reportExplicitAny: 'warning',
@@ -1128,6 +1134,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportShadowedImports: 'error',
     reportImplicitOverride: 'error',
     failOnWarnings: true,
+    improvedGenericNarrowing: true,
     reportUnreachable: 'error',
     reportAny: 'error',
     reportExplicitAny: 'error',
@@ -1240,6 +1247,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
+        improvedGenericNarrowing: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
