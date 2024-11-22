@@ -628,7 +628,7 @@ export function getTypeNarrowingCallback(
                         evaluator,
                         arg1Type,
                         evaluator.getTypeOfExpression(arg0Expr).type,
-                        getFileInfo(testExpression).diagnosticRuleSet.improvedGenericNarrowing
+                        getFileInfo(testExpression).diagnosticRuleSet.strictGenericNarrowing
                     );
                     const isIncomplete = !!callTypeResult.isIncomplete || !!arg1TypeResult.isIncomplete;
 
@@ -1133,7 +1133,7 @@ export function getIsInstanceClassTypes(
     evaluator: TypeEvaluator,
     argType: Type,
     typeToNarrow: Type,
-    improvedGenericNarrowing: boolean
+    strictGenericNarrowing: boolean
 ): (ClassType | TypeVarType | FunctionType)[] | undefined {
     let foundNonClassType = false;
     const classTypeList: (ClassType | TypeVarType | FunctionType)[] = [];
@@ -1143,7 +1143,7 @@ export function getIsInstanceClassTypes(
         types.forEach((type) => {
             const subtypes: Type[] = [];
             if (isClass(type)) {
-                const useVariance = shouldUseVarianceForSpecialization(typeToNarrow, improvedGenericNarrowing);
+                const useVariance = shouldUseVarianceForSpecialization(typeToNarrow, strictGenericNarrowing);
                 if (useVariance) {
                     evaluator.inferVarianceForClass(type);
                 }

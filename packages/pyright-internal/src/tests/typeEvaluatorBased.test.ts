@@ -122,7 +122,7 @@ describe('narrowing type vars using their bounds', () => {
     test('enabled', () => {
         const configOptions = new ConfigOptions(Uri.empty());
         configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
-        configOptions.diagnosticRuleSet.improvedGenericNarrowing = true;
+        configOptions.diagnosticRuleSet.strictGenericNarrowing = true;
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
         validateResultsButBased(analysisResults, {
             errors: [],
@@ -131,7 +131,7 @@ describe('narrowing type vars using their bounds', () => {
     test('disabled', () => {
         const configOptions = new ConfigOptions(Uri.empty());
         configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
-        configOptions.diagnosticRuleSet.improvedGenericNarrowing = false;
+        configOptions.diagnosticRuleSet.strictGenericNarrowing = false;
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBoundsDisabled.py'], configOptions);
         validateResultsButBased(analysisResults, {
             errors: [],

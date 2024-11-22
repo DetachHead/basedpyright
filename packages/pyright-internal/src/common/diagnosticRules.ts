@@ -106,7 +106,7 @@ export enum DiagnosticRule {
 
     // basedpyright options:
     failOnWarnings = 'failOnWarnings',
-    improvedGenericNarrowing = 'improvedGenericNarrowing',
+    strictGenericNarrowing = 'strictGenericNarrowing',
     reportUnreachable = 'reportUnreachable',
     reportAny = 'reportAny',
     reportExplicitAny = 'reportExplicitAny',
