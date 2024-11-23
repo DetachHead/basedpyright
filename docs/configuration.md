@@ -75,7 +75,7 @@ The following settings determine how different types should be evaluated.
 
 ### basedpyright exclusive settings
 
-- <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`.
+- <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`. [more info](../benefits-over-pyright/improved-generic-narrowing.md)
 
 ## Diagnostic Categories
 
@@ -269,27 +269,27 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 ### basedpyright exclusive settings
 
-- <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.
+- <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunreachable)
 
-- <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances).
+- <a name="reportAny"></a> **reportAny** [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the `Any` type. this accounts for all scenarios not covered by the `reportUnknown*` rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the `Any` type only in certain circumstances). [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportany)
 
-- <a name="reportExplicitAny"></a> **reportExplicitAny** [boolean or string, optional]: Ban all explicit usages of the `Any` type. While `reportAny` bans expressions typed as `Any`, this rule bans using the `Any` type directly eg. in a type annotation.
+- <a name="reportExplicitAny"></a> **reportExplicitAny** [boolean or string, optional]: Ban all explicit usages of the `Any` type. While `reportAny` bans expressions typed as `Any`, this rule bans using the `Any` type directly eg. in a type annotation. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportexplicitany)
 
-- <a name="reportIgnoreCommentWithoutRule"></a> **reportIgnoreCommentWithoutRule** [boolean or string, optional]: Enforce that all `# type:ignore`/`# pyright:ignore` comments specify a rule in brackets (eg. `# pyright:ignore[reportAny]`)
+- <a name="reportIgnoreCommentWithoutRule"></a> **reportIgnoreCommentWithoutRule** [boolean or string, optional]: Enforce that all `# type:ignore`/`# pyright:ignore` comments specify a rule in brackets (eg. `# pyright:ignore[reportAny]`). [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportignorecommentwithoutrule)
 
-- <a name="reportPrivateLocalImportUsage"></a> **reportPrivateLocalImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like `reportPrivateImportUsage` but also checks imports from your own code.
+- <a name="reportPrivateLocalImportUsage"></a> **reportPrivateLocalImportUsage** [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like `reportPrivateImportUsage` but also checks imports from your own code. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportprivatelocalimportusage)
 
-- <a name="reportImplicitRelativeImport"></a> **reportImplicitRelativeImport** [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module.
+- <a name="reportImplicitRelativeImport"></a> **reportImplicitRelativeImport** [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportimplicitrelativeimport)
 
-- <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types.
+- <a name="reportInvalidCast"></a> **reportInvalidCast** [boolean or string, optional]: Generate or suppress diagnostics for `cast`s to non-overlapping types. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidcast)
 
-- <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.
+- <a name="reportUnsafeMultipleInheritance"></a> **reportUnsafeMultipleInheritance** [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an `__init__` or `__new__` method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunsafemultipleinheritance)
 
 - <a name="reportUnusedParameter"></a> **reportUnusedParameter** [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.
 
-- <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods.
+- <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportimplicitabstractclass)
 
-- <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype.
+- <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
 
 ## Discouraged options
 
