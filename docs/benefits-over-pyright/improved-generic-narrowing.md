@@ -1,6 +1,6 @@
 # improved type narrowing
 
-when narrowing a type using an `isinstance` check, there's no way for the type checker to narrow its type variables, so pyright just narrows them to ["Unknown"](../usage/mypy-comparison.md#unknown-type-and-strict-mode)):
+when narrowing a type using an `isinstance` check, there's no way for the type checker to narrow its type variables, so pyright just narrows them to ["Unknown"](../usage/mypy-comparison.md#unknown-type-and-strict-mode):
 
 ```py
 def foo(value: object):
