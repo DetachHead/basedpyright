@@ -26,6 +26,7 @@ import { DiagnosticRule } from '../common/diagnosticRules';
 import { convertOffsetsToRange, convertOffsetToPosition } from '../common/positionUtils';
 import {
     PythonVersion,
+    pythonVersion3_11,
     pythonVersion3_13,
     pythonVersion3_6,
     pythonVersion3_7,
@@ -19452,8 +19453,10 @@ export function createTypeEvaluator(
                 const functionNeverReturns = !isAfterNodeReachable(node);
                 const implicitlyReturnsNone = isAfterNodeReachable(node.d.suite);
 
+                const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+
                 // Infer the return type based on all of the return statements in the function's body.
-                if (AnalyzerNodeInfo.getFileInfo(node).isStubFile) {
+                if (fileInfo.isStubFile) {
                     // If a return type annotation is missing in a stub file, assume
                     // it's an "unknown" type. In normal source files, we can infer the
                     // type from the implementation.
@@ -19465,8 +19468,17 @@ export function createTypeEvaluator(
                         // NotImplementedError()".
                         if (isAbstract || methodAlwaysRaisesNotImplemented(functionDecl)) {
                             inferredReturnType = UnknownType.create();
-                        } else {
+                        } else if (
+                            // Never was added in python 3.11 which is the exact same thing but it's a much better
+                            // name than NoReturn so we prefer it when it's available
+                            PythonVersion.isGreaterOrEqualTo(
+                                fileInfo.executionEnvironment.pythonVersion,
+                                pythonVersion3_11
+                            )
+                        ) {
                             inferredReturnType = NeverType.createNever();
+                        } else {
+                            inferredReturnType = NeverType.createNoReturn();
                         }
                     } else {
                         const inferredReturnTypes: Type[] = [];

@@ -130,7 +130,7 @@ def func12(val: A | B):
         raise Exception
 
 
-reveal_type(func12(A()), expected_text="NoReturn")
+reveal_type(func12(A()), expected_text="Never")
 
 
 def func13(val: int | float):
