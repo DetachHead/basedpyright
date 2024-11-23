@@ -140,13 +140,13 @@ def func1(val: int):
         return True
 ```
 
-#### NoReturn return type
+#### `Never` return type
 
-If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of `NoReturn`. As an exception to this rule, if the function is decorated with `@abstractmethod`, the return type is not inferred as `NoReturn` even if there is no return. This accommodates a common practice where an abstract method is implemented with a `raise` statement that raises an exception of type `NotImplementedError`.
+If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of `Never`. As an exception to this rule, if the function is decorated with `@abstractmethod`, the return type is not inferred as `Never` even if there is no return. This accommodates a common practice where an abstract method is implemented with a `raise` statement that raises an exception of type `NotImplementedError`.
 
 ```python
 class Foo:
-    # The inferred return type is NoReturn.
+    # The inferred return type is Never.
     def method1(self):
         raise Exception()
     
@@ -155,6 +155,30 @@ class Foo:
     def method2(self):
         raise NotImplementedError()
 ```
+
+##### Difference between `Never` and `NoReturn`
+
+both `Never` and `NoReturn` mean the exact same thing. `Never` was added in python 3.11 when they realized that it doesn't just mean "a function that doesn't return a value", because it can be used in any situation to refer to narrowest possible type, eg. to validate that all possible types have been narrowed out of a union:
+
+```py
+from typing import assert_never
+
+def foo(value: int | str):
+    if isinstance(value, int):
+        ...
+    elif isinstance(value, str):
+        ...
+    else:
+        assert_never(value) # will report a type error if any type is unaccounted for
+```
+
+this is because `assert_never` takes `Never` as a parameter:
+
+```py
+def assert_never(arg: Never, /) -> Never: ...
+```
+
+the name `NoReturn` makes no sense for use cases like this, which is why the `Never` type is preferred. a future release of basedpyright will mark `NoReturn` as deprecated in favor of `Never` for this reason. [see this comment for more information](https://github.com/DetachHead/basedpyright/issues/356#issuecomment-2224318021)
 
 #### Generator return types
 
