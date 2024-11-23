@@ -1249,11 +1249,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#noreturn-return-type" class="md-nav__link">
+  <a href="#never-return-type" class="md-nav__link">
     <span class="md-ellipsis">
-      NoReturn return type
+      Never return type
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Never return type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#difference-between-never-and-noreturn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Difference between Never and NoReturn
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1688,11 +1703,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#noreturn-return-type" class="md-nav__link">
+  <a href="#never-return-type" class="md-nav__link">
     <span class="md-ellipsis">
-      NoReturn return type
+      Never return type
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Never return type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#difference-between-never-and-noreturn" class="md-nav__link">
+    <span class="md-ellipsis">
+      Difference between Never and NoReturn
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1955,10 +1985,10 @@
     <span class="k">elif</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
-<h4 id="noreturn-return-type">NoReturn return type</h4>
-<p>If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of <code>NoReturn</code>. As an exception to this rule, if the function is decorated with <code>@abstractmethod</code>, the return type is not inferred as <code>NoReturn</code> even if there is no return. This accommodates a common practice where an abstract method is implemented with a <code>raise</code> statement that raises an exception of type <code>NotImplementedError</code>.</p>
+<h4 id="never-return-type"><code>Never</code> return type</h4>
+<p>If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of <code>Never</code>. As an exception to this rule, if the function is decorated with <code>@abstractmethod</code>, the return type is not inferred as <code>Never</code> even if there is no return. This accommodates a common practice where an abstract method is implemented with a <code>raise</code> statement that raises an exception of type <code>NotImplementedError</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
-    <span class="c1"># The inferred return type is NoReturn.</span>
+    <span class="c1"># The inferred return type is Never.</span>
     <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 
@@ -1967,6 +1997,22 @@
     <span class="k">def</span> <span class="nf">method2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </code></pre></div>
+<h5 id="difference-between-never-and-noreturn">Difference between <code>Never</code> and <code>NoReturn</code></h5>
+<p>both <code>Never</code> and <code>NoReturn</code> mean the exact same thing. <code>Never</code> was added in python 3.11 when they realized that it doesn't just mean "a function that doesn't return a value", because it can be used in any situation to refer to narrowest possible type, eg. to validate that all possible types have been narrowed out of a union:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">assert_never</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">assert_never</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># will report a type error if any type is unaccounted for</span>
+</code></pre></div>
+<p>this is because <code>assert_never</code> takes <code>Never</code> as a parameter:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">assert_never</span><span class="p">(</span><span class="n">arg</span><span class="p">:</span> <span class="n">Never</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Never</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>the name <code>NoReturn</code> makes no sense for use cases like this, which is why the <code>Never</code> type is preferred. a future release of basedpyright will mark <code>NoReturn</code> as deprecated in favor of <code>Never</code> for this reason. <a href="https://github.com/DetachHead/basedpyright/issues/356#issuecomment-2224318021">see this comment for more information</a></p>
 <h4 id="generator-return-types">Generator return types</h4>
 <p>Pyright can infer the return type for a generator function from the <code>yield</code> statements contained within that function.</p>
 <h4 id="call-site-return-type-inference">Call-site Return Type Inference</h4>
