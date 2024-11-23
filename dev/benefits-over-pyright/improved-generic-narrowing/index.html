@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/development/contributing/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/improved-generic-narrowing/">
       
       
-        <link rel="prev" href="../../usage/typed-libraries/">
+        <link rel="prev" href="../improved-ci-integration/">
       
       
-        <link rel="next" href="../internals/">
+        <link rel="next" href="../improved-translations/">
       
       
       <link rel="icon" href="../../img/favicon.ico">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Contributing - basedpyright</title>
+        <title>improved type narrowing - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing" class="md-skip">
+        <a href="#improved-type-narrowing" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              improved type narrowing
             
           </span>
         </div>
@@ -284,8 +284,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -312,11 +314,11 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -330,7 +332,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Benefits over pyright
@@ -344,7 +346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/baseline/" class="md-nav__link">
+      <a href="../baseline/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -365,7 +367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/better-defaults/" class="md-nav__link">
+      <a href="../better-defaults/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -386,7 +388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
+      <a href="../errors-on-invalid-configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -407,7 +409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
+      <a href="../fixes-for-rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -428,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
+      <a href="../improved-ci-integration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -446,10 +448,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-generic-narrowing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    improved type narrowing
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -458,6 +480,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#narrowing-of-covariant-generics" class="md-nav__link">
+    <span class="md-ellipsis">
+      narrowing of covariant generics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#narrowing-of-contravariant-generics" class="md-nav__link">
+    <span class="md-ellipsis">
+      narrowing of contravariant generics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#narrowing-of-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      narrowing of constraints
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -470,7 +539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-translations/" class="md-nav__link">
+      <a href="../improved-translations/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -491,7 +560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
+      <a href="../new-diagnostic-rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -512,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pylance-features/" class="md-nav__link">
+      <a href="../pylance-features/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -533,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
+      <a href="../pypi-package-vscode-pinning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1171,10 +1240,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1189,11 +1256,11 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
@@ -1207,7 +1274,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             Development
@@ -1218,30 +1285,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Contributing
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../development/contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1250,53 +1297,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#github-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      Github Issues
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
-    <span class="md-ellipsis">
-      Building
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#debugging" class="md-nav__link">
-    <span class="md-ellipsis">
-      Debugging
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1309,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../internals/" class="md-nav__link">
+      <a href="../../development/internals/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1330,7 +1330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../localization/" class="md-nav__link">
+      <a href="../../development/localization/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1351,7 +1351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../upstream/" class="md-nav__link">
+      <a href="../../development/upstream/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1419,27 +1419,27 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#github-issues" class="md-nav__link">
+  <a href="#narrowing-of-covariant-generics" class="md-nav__link">
     <span class="md-ellipsis">
-      Github Issues
+      narrowing of covariant generics
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
+  <a href="#narrowing-of-contravariant-generics" class="md-nav__link">
     <span class="md-ellipsis">
-      Building
+      narrowing of contravariant generics
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#debugging" class="md-nav__link">
+  <a href="#narrowing-of-constraints" class="md-nav__link">
     <span class="md-ellipsis">
-      Debugging
+      narrowing of constraints
     </span>
   </a>
   
@@ -1463,25 +1463,65 @@
   
 
 
-<h1 id="contributing">Contributing</h1>
-<h2 id="github-issues">Github Issues</h2>
-<p>unlike the upstream pyright repo, we are very open to ideas for improvements and bug reports. if you've raised an issue on the upstream pyright repo that was closed without a solution, feel free to <a href="https://github.com/DetachHead/basedpyright/issues/new">raise it again here</a>.</p>
-<p>please upvote issues you find important using the 👍 react. we don't close issues that don't get enough upvotes or anything like that. this is just to help us prioritize which issues to address first.</p>
-<h2 id="building">Building</h2>
-<p>although pyright is written in typescript, in basedpyright we've made improvements to the developer experience for python developers who are not familiar with typescript/nodejs. you should be able to work on basedpyright without ever having to install nodejs yourself. the node installation is instead managed by a <a href="https://pypi.org/project/nodejs-wheel/">pypi package</a> and installed to the project's virtualenv. the only thing you need to have installed already is python (any version from 3.9 to 3.13 should work)</p>
-<p>we recommend using vscode, as there are project configuration files in the repo that set everything up correctly (linters/formatters/debug configs, etc).</p>
-<ol>
-<li>hit <code>F1</code> &gt; <code>Tasks: Run task</code> &gt; <code>install dependencies</code>, or run the following command:
-    <div class="highlight"><pre><span></span><code>./pw uv sync
+<h1 id="improved-type-narrowing">improved type narrowing</h1>
+<p>when narrowing a type using an <code>isinstance</code> check, there's no way for the type checker to narrow its type variables, so pyright just narrows them to <a href="../../usage/mypy-comparison/#unknown-type-and-strict-mode">"Unknown"</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># list[Unknown]</span>
 </code></pre></div>
-    this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to <code>./.venv</code> and <code>./node_modules</code></li>
-<li>press "Yes" when prompted by vscode to use the newly created virtualenv</li>
-</ol>
-<p>you can now run any node/npm commands from inside the venv.</p>
-<h2 id="debugging">Debugging</h2>
-<p>To debug pyright, open the root source directory within VS Code. Open the debug sub-panel and choose “Pyright CLI” from the debug target menu. Click on the green “run” icon or press F5 to build and launch the command-line version in the VS Code debugger. There's also a similar option that provides a slightly faster build/debug loop: make sure you've built the pyright-internal project e.g. with Terminal &gt; Run Build Task &gt; tsc: watch, then choose “Pyright CLI (pyright-internal)”.</p>
-<p>To debug the VS Code extension, select “Pyright extension” from the debug target menu. Click on the green “run” icon or press F5 to build and launch a second copy of VS Code with the extension. Within the second VS Code instance, open a python source file so the pyright extension is loaded. Return to the first instance of VS Code and select “Pyright extension attach server” from the debug target menu and click the green “run” icon. This will attach the debugger to the process that hosts the type checker. You can now set breakpoints, etc.</p>
-<p>To debug the VS Code extension in watch mode, you can do the above, but select “Pyright extension (watch mode)”. When pyright's source is saved, an incremental build will occur, and you can either reload the second VS Code window or relaunch it to start using the updated code. Note that the watcher stays open when debugging stops, so you may need to stop it (or close VS Code) if you want to perform packaging steps without the output potentially being overwritten.</p>
+<p>this makes sense in cases where the generic is invariant and there's no other way to represent any of its possibilities. for example if it were to be narrowed to <code>list[object]</code>, you wouldn't be able to assign <code>list[int]</code> to it. however in cases where the generic is covariant, contravariant, or uses constraints, it can be narrowed more accurately.</p>
+<p>basedpyright introduces the new <a href="../../configuration/config-files/#strictGenericNarrowing"><code>strictGenericNarrowing</code></a> setting to address this. the following sections explain how this new behavior effects different types of generics.</p>
+<h2 id="narrowing-of-covariant-generics">narrowing of covariant generics</h2>
+<p>when a type variable is covariant, its widest possible type is its bound, which defaults to <code>object</code>.</p>
+<p>when <code>strictGenericNarrowing</code> is enabled, if a generic is covariant and does not have a bound, it gets narrowed to <code>object</code> instead of "Unknown":</p>
+<div class="highlight"><pre><span></span><code><span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[object]</span>
+</code></pre></div>
+<p>if the generic does have a bound, it gets narrowed to that bound instead:</p>
+<div class="highlight"><pre><span></span><code><span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[int | str]</span>
+</code></pre></div>
+<h2 id="narrowing-of-contravariant-generics">narrowing of contravariant generics</h2>
+<p>when a type variable is contravariant its widest possible type is <code>Never</code>, so when <code>strictGenericNarrowing</code> is enabled, contravariant generics get narrowed to <code>Never</code> instead of "Unknown":</p>
+<div class="highlight"><pre><span></span><code><span class="n">T_contra</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_contra&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_contra</span><span class="p">]):</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[Never]</span>
+</code></pre></div>
+<h2 id="narrowing-of-constraints">narrowing of constraints</h2>
+<p>when a type variable uses constraints, the rules of variance do not apply - see <a href="https://github.com/DetachHead/basedpyright/issues/893">this issue</a> for more information. instead, a constraint declares that the generic must be resolved to be exactly one of the types specified.</p>
+<p>when <code>strictGenericNarrowing</code> is enabled, constrained generics are narrowed to a union of all possibilities:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]:</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[int] | Foo[str]</span>
+</code></pre></div>
+<p>this also works when there's more than one constrained type variable - it creates a union of all possible combinations:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="n">U</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)]:</span>
+    <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1">#  Foo[int, float] | Foo[int, bytes] | Foo[str, float] | Foo[str, bytes]</span>
+</code></pre></div>
 
 
 

@@ -307,6 +307,8 @@
       
         
       
+        
+      
     
     
     
@@ -431,6 +433,27 @@
   
   <span class="md-ellipsis">
     improved integration with CI platforms
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/improved-generic-narrowing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    improved type narrowing
   </span>
   
 
@@ -797,6 +820,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Environment Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -805,6 +843,21 @@
       Type Evaluation Settings
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Type Evaluation Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -836,17 +889,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#based-options" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings_2" class="md-nav__link">
     <span class="md-ellipsis">
-      Based options
+      basedpyright exclusive settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1525,6 +1578,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Environment Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1533,6 +1601,21 @@
       Type Evaluation Settings
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Type Evaluation Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1564,17 +1647,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#based-options" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings_2" class="md-nav__link">
     <span class="md-ellipsis">
-      Based options
+      basedpyright exclusive settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1742,6 +1825,10 @@ who haven't yet updated to >=1.18.1
 <p><strong>useLibraryCodeForTypes</strong> [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.</p>
 </li>
 </ul>
+<h3 id="basedpyright-exclusive-settings">basedpyright exclusive settings</h3>
+<ul>
+<li><a name="failOnWarnings"></a> <strong>failOnWarnings</strong> [boolean]: Whether to exit with a non-zero exit code in the CLI if any <code>"warning"</code> diagnostics are reported. Has no effect on the language server. This is equivalent to the <code>--warnings</code> CLI argument.</li>
+</ul>
 <h2 id="type-evaluation-settings">Type Evaluation Settings</h2>
 <p>The following settings determine how different types should be evaluated.</p>
 <ul>
@@ -1769,6 +1856,10 @@ who haven't yet updated to >=1.18.1
 <li>
 <p><a name="disableBytesTypePromotions"></a> <strong>disableBytesTypePromotions</strong> [boolean]: Disables legacy behavior where <code>bytearray</code> and <code>memoryview</code> are considered subtypes of <code>bytes</code>. <a href="https://peps.python.org/pep-0688/#no-special-meaning-for-bytes">PEP 688</a> deprecates this behavior, but this switch is provided to restore the older behavior.</p>
 </li>
+</ul>
+<h3 id="basedpyright-exclusive-settings_1">basedpyright exclusive settings</h3>
+<ul>
+<li><a name="strictGenericNarrowing"></a> <strong>strictGenericNarrowing</strong> [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an <code>isinstance</code> check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of <code>Any</code>. <a href="../../benefits-over-pyright/improved-generic-narrowing/">more info</a></li>
 </ul>
 <h2 id="diagnostic-categories">Diagnostic Categories</h2>
 <p>diagnostics can be configured to be reported as any of the following categories:</p>
@@ -2042,44 +2133,40 @@ to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.gi
 <p><a name="reportShadowedImports"></a> <strong>reportShadowedImports</strong> [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.</p>
 </li>
 </ul>
-<h2 id="based-options">Based options</h2>
-<p>the following additional options are not available in regular pyright:</p>
+<h3 id="basedpyright-exclusive-settings_2">basedpyright exclusive settings</h3>
 <ul>
 <li>
-<p><a name="failOnWarnings"></a> <strong>failOnWarnings</strong> [boolean]: Whether to exit with a non-zero exit code in the CLI if any <code>"warning"</code> diagnostics are reported. Has no effect on the language server. This is equivalent to the <code>--warnings</code> CLI argument.</p>
+<p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable">more info</a></p>
 </li>
 <li>
-<p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code.</p>
+<p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances). <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportany">more info</a></p>
 </li>
 <li>
-<p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances).</p>
+<p><a name="reportExplicitAny"></a> <strong>reportExplicitAny</strong> [boolean or string, optional]: Ban all explicit usages of the <code>Any</code> type. While <code>reportAny</code> bans expressions typed as <code>Any</code>, this rule bans using the <code>Any</code> type directly eg. in a type annotation. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportexplicitany">more info</a></p>
 </li>
 <li>
-<p><a name="reportExplicitAny"></a> <strong>reportExplicitAny</strong> [boolean or string, optional]: Ban all explicit usages of the <code>Any</code> type. While <code>reportAny</code> bans expressions typed as <code>Any</code>, this rule bans using the <code>Any</code> type directly eg. in a type annotation.</p>
+<p><a name="reportIgnoreCommentWithoutRule"></a> <strong>reportIgnoreCommentWithoutRule</strong> [boolean or string, optional]: Enforce that all <code># type:ignore</code>/<code># pyright:ignore</code> comments specify a rule in brackets (eg. <code># pyright:ignore[reportAny]</code>). <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportignorecommentwithoutrule">more info</a></p>
 </li>
 <li>
-<p><a name="reportIgnoreCommentWithoutRule"></a> <strong>reportIgnoreCommentWithoutRule</strong> [boolean or string, optional]: Enforce that all <code># type:ignore</code>/<code># pyright:ignore</code> comments specify a rule in brackets (eg. <code># pyright:ignore[reportAny]</code>)</p>
+<p><a name="reportPrivateLocalImportUsage"></a> <strong>reportPrivateLocalImportUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like <code>reportPrivateImportUsage</code> but also checks imports from your own code. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportprivatelocalimportusage">more info</a></p>
 </li>
 <li>
-<p><a name="reportPrivateLocalImportUsage"></a> <strong>reportPrivateLocalImportUsage</strong> [boolean or string, optional]: Generate or suppress diagnostics for use of a symbol from a local module that is not meant to be exported from that module. Like <code>reportPrivateImportUsage</code> but also checks imports from your own code.</p>
+<p><a name="reportImplicitRelativeImport"></a> <strong>reportImplicitRelativeImport</strong> [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportimplicitrelativeimport">more info</a></p>
 </li>
 <li>
-<p><a name="reportImplicitRelativeImport"></a> <strong>reportImplicitRelativeImport</strong> [boolean or string, optional]: Generate or suppress diagnostics for non-relative imports that do not specify the full path to the module.</p>
+<p><a name="reportInvalidCast"></a> <strong>reportInvalidCast</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>cast</code>s to non-overlapping types. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportinvalidcast">more info</a></p>
 </li>
 <li>
-<p><a name="reportInvalidCast"></a> <strong>reportInvalidCast</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>cast</code>s to non-overlapping types.</p>
-</li>
-<li>
-<p><a name="reportUnsafeMultipleInheritance"></a> <strong>reportUnsafeMultipleInheritance</strong> [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an <code>__init__</code> or <code>__new__</code> method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments.</p>
+<p><a name="reportUnsafeMultipleInheritance"></a> <strong>reportUnsafeMultipleInheritance</strong> [boolean or string, optional]: Generate or suppress diagnostics for classes that inherit from multiple base classes with an <code>__init__</code> or <code>__new__</code> method, which is unsafe because those additional constructors may either never get called or get called with invalid arguments. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunsafemultipleinheritance">more info</a></p>
 </li>
 <li>
 <p><a name="reportUnusedParameter"></a> <strong>reportUnusedParameter</strong> [boolean or string, optional]: Generate or suppress diagnostics for unused function parameters.</p>
 </li>
 <li>
-<p><a name="reportImplicitAbstractClass"></a> <strong>reportImplicitAbstractClass</strong> [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods.</p>
+<p><a name="reportImplicitAbstractClass"></a> <strong>reportImplicitAbstractClass</strong> [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportimplicitabstractclass">more info</a></p>
 </li>
 <li>
-<p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype.</p>
+<p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunannotatedclassattribute">more info</a></p>
 </li>
 </ul>
 <h2 id="discouraged-options">Discouraged options</h2>
@@ -2288,6 +2375,15 @@ to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.gi
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+<td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">strictGenericNarrowing</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 </tr>
