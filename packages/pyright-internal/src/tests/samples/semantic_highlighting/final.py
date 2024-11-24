@@ -17,3 +17,6 @@ class Foo:
 
 Foo().foo
 Foo().bar
+
+baz = Foo()
+_ = baz.foo
