@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: generate docstubs for each python version
-        run: ./based_build/generateAllDocstubs.sh
+        run: ./build/generateAllDocstubs.sh
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
@@ -38,7 +38,7 @@ jobs:
           name: docstubs-linux
           path: docstubs
       - name: generate docstubs for each python version
-        run: ./based_build/generateAllDocstubs.sh
+        run: ./build/generateAllDocstubs.sh
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
@@ -57,7 +57,7 @@ jobs:
           name: docstubs-linux-and-macos
           path: docstubs
       - name: generate docstubs for each python version
-        run: ./based_build/generateAllDocstubs.sh
+        run: ./build/generateAllDocstubs.sh
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
@@ -106,7 +106,7 @@ jobs:
       - id: current-version
         # https://github.com/astral-sh/uv/issues/6298
         run: |
-          echo ::set-output name=CURRENT_VERSION::$(uv run python -c "from based_build.get_version import get_version;print(get_version())")
+          echo ::set-output name=CURRENT_VERSION::$(uv run python -c "from build.get_version import get_version;print(get_version())")
           echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(uv run node -p "require(\"./package.json\").version")
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
