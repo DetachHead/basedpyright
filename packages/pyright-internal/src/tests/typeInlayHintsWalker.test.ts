@@ -120,6 +120,11 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 position: 442,
                 value: 'asdf=',
             },
+            {
+                inlayHintType: 'generic',
+                position: 581,
+                value: '[tuple[int, str]]',
+            },
         ]);
     });
 } else {
