@@ -133,3 +133,34 @@ language-servers = [ "basedpyright" ]
 ```
 
 You can verify the active configuration by running `hx --health python`
+
+## Zed
+
+Install the [BasedPyright extension](https://github.com/m1guer/basedpyright-zed) through Zed's extension manager.
+
+Enable and configure basedpyright under Zed settings:
+
+```json
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["basedpyright"]
+    }
+  },
+  "lsp": {
+    "basedpyright": {
+      "settings": {
+        "python": {
+          "pythonPath": ".venv/bin/python"
+        },
+        "basedpyright.analysis": {
+          "diagnosticMode": "openFilesOnly",
+          "inlayHints": {
+            "callArgumentNames": true
+          }
+        }
+      }
+    }
+  }
+}
+```
