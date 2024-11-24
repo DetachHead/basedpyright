@@ -252,7 +252,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             ) {
                 const printedTypeArgs = returnType.priv.typeArgs.flatMap((typeArg) =>
                     isClass(typeArg) && typeArg.priv.tupleTypeArgs && typeArg.priv.isUnpacked
-                        ? typeArg.priv.tupleTypeArgs.map((asdf) => this._printType(asdf.type))
+                        ? typeArg.priv.tupleTypeArgs.map((tupleTypeArg) => this._printType(tupleTypeArg.type))
                         : this._printType(typeArg)
                 );
                 if (returnType.priv.tupleTypeArgs) {
