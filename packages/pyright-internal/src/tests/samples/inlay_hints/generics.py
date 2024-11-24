@@ -11,23 +11,25 @@ class Foo:
 
 _ = list([1])
 
-class Foo[T]:
+class Bar[T]:
     def __init__(self, value: T) -> None:
         self.value = value
 
     def foo(self) -> None: ...
 
-_ = Foo(True)
+_ = Bar(True)
 
 _ = tuple((1,2,3))
 
-class Bar[U, *T]:
+class Baz[U, *T]:
     def __init__(self, asdf: U,*value: Unpack[T]) -> None:
         pass
 
-_ = Bar([1], 1,2,"")
+_ = Baz([1], 1,2,"")
 
-class Baz(Foo[int]):
+class Qux(Bar[int]):
     @override
     def foo(self) -> None:
         return super().foo()
+
+qux: list[tuple[int, str]] = list()
