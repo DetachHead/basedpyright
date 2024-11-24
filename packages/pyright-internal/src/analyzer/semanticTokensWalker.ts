@@ -18,8 +18,8 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
-    isExpressionNode,
     LambdaNode,
+    MemberAccessNode,
     NameNode,
     ParameterNode,
     ParseNodeType,
@@ -135,6 +135,21 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return super.visitTypeAlias(node);
     }
 
+    override visitMemberAccess(node: MemberAccessNode): boolean {
+        // check for properties without a setter
+        if (node.parent && this._evaluator) {
+            const declaredType = this._evaluator.getDeclaredTypeForExpression(node, {
+                method: 'set',
+            });
+            if (declaredType && isClass(declaredType) && declaredType.shared.flags & ClassTypeFlags.PropertyClass) {
+                this._addItem(node.d.member.start, node.d.member.length, SemanticTokenTypes.variable, [
+                    SemanticTokenModifiers.readonly,
+                ]);
+            }
+        }
+        return super.visitMemberAccess(node);
+    }
+
     private _visitNameWithType(node: NameNode, type: Type | undefined) {
         switch (type?.category) {
             case TypeCategory.Function:
@@ -192,23 +207,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 break;
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
-                if (type.flags & TypeFlags.Instance) {
-                    if (node.parent && this._evaluator && isExpressionNode(node.parent)) {
-                        const declaredType = this._evaluator.getDeclaredTypeForExpression(node.parent, {
-                            method: 'set',
-                        });
-                        if (
-                            declaredType &&
-                            isClass(declaredType) &&
-                            declaredType.shared.flags & ClassTypeFlags.PropertyClass
-                        ) {
-                            this._addItem(node.start, node.length, SemanticTokenTypes.variable, [
-                                SemanticTokenModifiers.readonly,
-                            ]);
-                            return;
-                        }
-                    }
-                } else {
+                if (!(type.flags & TypeFlags.Instance)) {
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
