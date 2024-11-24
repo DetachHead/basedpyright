@@ -65,8 +65,7 @@
     "pylint.ignorePatterns": [
         "**/pyright-internal/src/tests/samples/*",
         "**/pyright-internal/typeshed-fallback/*",
-        "**/docstubs/*",
-        "**/build/*"
+        "**/docstubs/*"
     ],
     "terminal.integrated.env.windows": {
       "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"

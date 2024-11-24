@@ -72,13 +72,12 @@ default-groups = ["dev", "docstubs", "lochelper"]
 
 [tool.pdm.version]
 source = "call"
-getter = "based_build.get_version:get_version"
+getter = "build.get_version:get_version"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]
 source-includes = [
     "build",
-    "based_build",
     "docstubs",
     "packages/pyright",
     "packages/pyright-internal",
@@ -192,11 +191,11 @@ max-line-length = 200
 
 [tool.basedpyright]
 pythonVersion = "3.8"
-include = ["basedpyright", "based_build", "pdm_build.py", "tests"]
+include = ["basedpyright", "build", "pdm_build.py", "tests"]
 # https://github.com/DetachHead/basedpyright/issues/31
-ignore = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
-exclude = ["pw", "basedpyright/dist", "packages", "build", "docstubs"]
-reportImplicitStringConcatenation = false                              # conflicts with ruff formatter
+ignore = ["pw", "basedpyright/dist", "packages", "docstubs"]
+exclude = ["pw", "basedpyright/dist", "packages", "docstubs"]
+reportImplicitStringConcatenation = false                     # conflicts with ruff formatter
 
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
 # only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
@@ -215,7 +214,7 @@ extend-exclude = [
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
     "packages/pyright-internal/src/tests/samples",
-    "build",
+    "build/generateUnicodeTables.py",              # comes from upstream
 ]
 
 [tool.ruff.lint]
@@ -269,12 +268,9 @@ ignore-overlong-task-comments = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.pyi" = ["A001", "A002", "N"] # we don't control names in 3rd party modules
-"{tests,based_build}/**/*.py" = [
+"{tests,build}/**/*.py" = [
     "S",    # none of these security focused rules are relevant for tests/build scripts
     "T201",
-]
-"based_build/**/*.py" = [
-    "T201", # print
 ]
 
 [tool.ruff.lint.isort]

@@ -22,10 +22,10 @@
         "typecheck-python": "uv run --no-sync basedpyright",
         "ruff-check": "uv run --no-sync ruff check && pw uv run --no-sync ruff format --check --diff",
         "ruff-fix": "uv run --no-sync ruff check --fix && pw uv run --no-sync ruff format --fix",
-        "pylint": "uv run --no-sync pylint basedpyright based_build pdm_build.py",
+        "pylint": "uv run --no-sync pylint basedpyright build pdm_build.py",
         "test-python": "uv run --no-sync pytest tests",
-        "generate-docstubs": "uv run --no-sync based_build/generate_docstubs.py",
-        "localization-helper": "uv run --no-sync based_build/localization_helper.py",
+        "generate-docstubs": "uv run --no-sync build/generate_docstubs.py",
+        "localization-helper": "uv run --no-sync build/localization_helper.py",
         "docs": "uv run --no-sync mkdocs serve"
     },
     "devDependencies": {
