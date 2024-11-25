@@ -9,7 +9,7 @@ from nodejs_wheel.executable import npm
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
 
-from build.generate_docstubs import main as generate_docstubs
+from build.py3_8.generate_docstubs import main as generate_docstubs
 
 if TYPE_CHECKING:
     from pdm.backend.hooks import Context

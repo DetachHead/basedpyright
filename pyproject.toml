@@ -73,7 +73,7 @@ no-build-package = ["libcst"]
 
 [tool.pdm.version]
 source = "call"
-getter = "build.version:get"
+getter = "build.py3_8.version:get"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]
@@ -197,6 +197,8 @@ ignore = ["pw", "basedpyright/dist", "packages", "docstubs"]
 exclude = ["pw", "basedpyright/dist", "packages", "docstubs"]
 reportImplicitStringConcatenation = false                     # conflicts with ruff formatter
 
+executionEnvironments = [{ root = 'build/py3_13', pythonVersion = '3.13' }]
+
 # currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
 # only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
 # venvPath = "."
@@ -214,7 +216,7 @@ extend-exclude = [
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
     "packages/pyright-internal/src/tests/samples",
-    "build/generateUnicodeTables.py",              # comes from upstream
+    "build/py3_13/generateUnicodeTables.py",       # comes from upstream
 ]
 
 [tool.ruff.lint]
@@ -229,6 +231,9 @@ ignore = [
     "ISC001",  # single-line-implicit-string-concatenation (conflicts with formatter)
     "COM812",  # missing-trailing-comma (conflicts with formatter)
     "PLC0414", # Import alias does not rename original package (used by basedpyright for explicit re-export)
+    "UP035",   # deprecated-import (covered by basedpyright deprecateTypingAliases)
+    "UP006",   # non-pep585-annotation (covered by basedpyright deprecateTypingAliases)
+    "UP007",   # non-pep604-annotation  (covered by basedpyright deprecateTypingAliases)
 
     # rules i disabled because i don't like them:
     "EM",      # flake8-errmsg
