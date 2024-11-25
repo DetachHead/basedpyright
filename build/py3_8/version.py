@@ -5,7 +5,7 @@ from json import dumps, loads
 from pathlib import Path
 from typing import cast
 
-version_file = Path(__file__).parent.parent / "packages/pyright-internal/src/version.json"
+version_file = Path(__file__).parents[2] / "packages/pyright-internal/src/version.json"
 
 
 def get() -> str:
