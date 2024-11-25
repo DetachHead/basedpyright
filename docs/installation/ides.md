@@ -142,25 +142,25 @@ Enable and configure basedpyright under Zed settings:
 
 ```json
 {
-  "languages": {
-    "Python": {
-      "language_servers": ["basedpyright"]
-    }
-  },
-  "lsp": {
-    "basedpyright": {
-      "settings": {
-        "python": {
-          "pythonPath": ".venv/bin/python"
-        },
-        "basedpyright.analysis": {
-          "diagnosticMode": "openFilesOnly",
-          "inlayHints": {
-            "callArgumentNames": true
-          }
+    "languages": {
+        "Python": {
+            "language_servers": ["basedpyright"]
         }
-      }
+    },
+    "lsp": {
+        "basedpyright": {
+            "settings": {
+                "python": {
+                    "pythonPath": ".venv/bin/python"
+                },
+                "basedpyright.analysis": {
+                    "diagnosticMode": "openFilesOnly",
+                    "inlayHints": {
+                        "callArgumentNames": true
+                    }
+                }
+            }
+        }
     }
-  }
 }
 ```
