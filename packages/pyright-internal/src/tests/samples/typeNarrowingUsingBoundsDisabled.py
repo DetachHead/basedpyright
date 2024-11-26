@@ -1,4 +1,4 @@
-from typing import Any, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible
+from typing import Any, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible, Callable
 
 
 class Covariant[T]:
@@ -116,3 +116,17 @@ def _(
 ):
     if isinstance(value, Foo):
         assert_type(value, Foo[str])
+
+def _(f: Callable[[], None]):
+    if isinstance(f, staticmethod):
+        # narrowing Callable this way doesn't work so we use the old method.
+        # see https://github.com/DetachHead/basedpyright/issues/905
+        assert_type(f, staticmethod[..., Any])
+
+class CallableProtocol[**P, T](Protocol):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T: ...
+
+
+def _(f: CallableProtocol[[], None]):
+    if isinstance(f, staticmethod):
+        assert_type(f, staticmethod[[], None])
