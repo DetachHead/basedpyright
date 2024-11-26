@@ -4,6 +4,8 @@
 
     note that most of these editor plugins require [the language server to be installed](./command-line-and-language-server.md).
 
+for information on how to configure the language server in your IDE, [see here](../configuration/language-server-settings.md#where-do-i-configure-these-settings).
+
 ## VSCode / VSCodium
 
 ### VSCode
@@ -145,21 +147,6 @@ Enable and configure basedpyright under Zed settings:
     "languages": {
         "Python": {
             "language_servers": ["basedpyright"]
-        }
-    },
-    "lsp": {
-        "basedpyright": {
-            "settings": {
-                "python": {
-                    "pythonPath": ".venv/bin/python"
-                },
-                "basedpyright.analysis": {
-                    "diagnosticMode": "openFilesOnly",
-                    "inlayHints": {
-                        "callArgumentNames": true
-                    }
-                }
-            }
         }
     }
 }
