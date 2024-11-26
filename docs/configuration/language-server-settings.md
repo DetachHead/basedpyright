@@ -117,3 +117,27 @@ args = ["--stdio"]
 [language-server.basedpyright.config]
 basedpyright.analysis.diagnosticMode = "openFilesOnly"
 ```
+
+### zed
+
+```json
+{
+    "languages": {
+        "Python": {
+            "language_servers": ["basedpyright"]
+        }
+    },
+    "lsp": {
+        "basedpyright": {
+            "settings": {
+                "python": {
+                    "pythonPath": ".venv/bin/python"
+                },
+                "basedpyright.analysis": {
+                    "diagnosticMode": "openFilesOnly"
+                }
+            }
+        }
+    }
+}
+```
