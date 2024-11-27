@@ -126,7 +126,35 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
             }
 
-            const pythonAnalysisSection = await this.getConfiguration(workspace.rootUri, 'basedpyright.analysis');
+            const pyrightSection = await this.getConfiguration(workspace.rootUri, 'basedpyright');
+            if (pyrightSection) {
+                if (pyrightSection.openFilesOnly !== undefined) {
+                    serverSettings.openFilesOnly = !!pyrightSection.openFilesOnly;
+                }
+
+                if (pyrightSection.useLibraryCodeForTypes !== undefined) {
+                    serverSettings.useLibraryCodeForTypes = !!pyrightSection.useLibraryCodeForTypes;
+                }
+
+                serverSettings.disableLanguageServices = !!pyrightSection.disableLanguageServices;
+                serverSettings.disableTaggedHints = !!pyrightSection.disableTaggedHints;
+                serverSettings.disableOrganizeImports = !!pyrightSection.disableOrganizeImports;
+
+                const typeCheckingMode = pyrightSection.typeCheckingMode;
+                if (typeCheckingMode && isString(typeCheckingMode)) {
+                    serverSettings.typeCheckingMode = typeCheckingMode;
+                }
+            }
+
+            // Maybe the pyrightSection defined above already defines the analysis section; in which case, we should't
+            // be asking it again, just use that. https://github.com/DetachHead/basedpyright/issues/894
+            let pythonAnalysisSection
+            if ("analysis" in pyrightSection) {
+                pythonAnalysisSection = pyrightSection.analysis
+            } else {
+                pythonAnalysisSection = await this.getConfiguration(workspace.rootUri, 'basedpyright.analysis');
+            }
+
             if (pythonAnalysisSection) {
                 const typeshedPaths = pythonAnalysisSection.typeshedPaths;
                 if (typeshedPaths && Array.isArray(typeshedPaths) && typeshedPaths.length > 0) {
@@ -202,26 +230,6 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
             } else {
                 serverSettings.autoSearchPaths = true;
-            }
-
-            const pyrightSection = await this.getConfiguration(workspace.rootUri, 'basedpyright');
-            if (pyrightSection) {
-                if (pyrightSection.openFilesOnly !== undefined) {
-                    serverSettings.openFilesOnly = !!pyrightSection.openFilesOnly;
-                }
-
-                if (pyrightSection.useLibraryCodeForTypes !== undefined) {
-                    serverSettings.useLibraryCodeForTypes = !!pyrightSection.useLibraryCodeForTypes;
-                }
-
-                serverSettings.disableLanguageServices = !!pyrightSection.disableLanguageServices;
-                serverSettings.disableTaggedHints = !!pyrightSection.disableTaggedHints;
-                serverSettings.disableOrganizeImports = !!pyrightSection.disableOrganizeImports;
-
-                const typeCheckingMode = pyrightSection.typeCheckingMode;
-                if (typeCheckingMode && isString(typeCheckingMode)) {
-                    serverSettings.typeCheckingMode = typeCheckingMode;
-                }
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : error;
