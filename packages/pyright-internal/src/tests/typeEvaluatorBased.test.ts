@@ -126,6 +126,7 @@ describe('narrowing type vars using their bounds', () => {
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
         validateResultsButBased(analysisResults, {
             errors: [],
+            infos: [{ line: 124, message: 'Type of "f" is "<subclass of Callable and staticmethod[..., object]>"' }],
         });
     });
     test('disabled', () => {

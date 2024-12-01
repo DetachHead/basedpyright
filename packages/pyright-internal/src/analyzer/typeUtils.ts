@@ -1089,9 +1089,7 @@ export const shouldUseVarianceForSpecialization = (typeToNarrow: Type, strictGen
     }
     return allSubtypes(
         typeToNarrow,
-        (subtype) =>
-            (subtype.category !== TypeCategory.Class || subtype.shared.typeParams.length === 0) &&
-            (subtype.category !== TypeCategory.Function || !subtype.priv.isCallableWithTypeArgs)
+        (subtype) => subtype.category !== TypeCategory.Class || subtype.shared.typeParams.length === 0
     );
 };
 
