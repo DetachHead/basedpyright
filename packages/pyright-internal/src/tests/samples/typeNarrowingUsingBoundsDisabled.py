@@ -1,4 +1,4 @@
-from typing import Any, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible, Callable
+from typing import Any, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible, Callable, TypeIs
 from types import FunctionType
 
 
@@ -133,3 +133,9 @@ def _(f: CallableProtocol[[], None]):
 def _(f: Callable[[int], str]):
     if isinstance(f, FunctionType):
         assert_type(f, FunctionType)
+        
+def takes_arg(value: object) -> TypeIs[Callable[[int], None]]: ...
+
+def _(value: Callable[[], None] | Callable[[int], None]):
+    if takes_arg(value):
+        assert_type(value, Callable[[int], None])
