@@ -36,6 +36,12 @@ this makes it far more convenient for python developers to use, since there's no
 
 the basedpyright CLI & language server is also available outside of pypi:
 
+=== "conda"
+
+     ```
+     conda install conda-forge::basedpyright
+     ```
+
 === "homebrew"
 
      ```
