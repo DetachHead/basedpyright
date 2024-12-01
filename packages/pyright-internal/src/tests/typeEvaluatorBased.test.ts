@@ -126,7 +126,10 @@ describe('narrowing type vars using their bounds', () => {
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBounds.py'], configOptions);
         validateResultsButBased(analysisResults, {
             errors: [],
-            infos: [{ line: 124, message: 'Type of "f" is "<subclass of Callable and staticmethod[..., object]>"' }],
+            infos: [
+                { line: 124, message: 'Type of "f" is "<subclass of Callable and staticmethod[..., object]>"' },
+                { line: 152, message: 'Type of "value" is "<subclass of Callable and Bar>"' },
+            ],
         });
     });
     test('disabled', () => {
@@ -135,7 +138,7 @@ describe('narrowing type vars using their bounds', () => {
         configOptions.diagnosticRuleSet.strictGenericNarrowing = false;
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBoundsDisabled.py'], configOptions);
         validateResultsButBased(analysisResults, {
-            errors: [],
+            hints: [{ line: 151, code: DiagnosticRule.reportUnreachable }],
         });
     });
 });

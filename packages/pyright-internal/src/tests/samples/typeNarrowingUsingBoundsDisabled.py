@@ -139,3 +139,14 @@ def takes_arg(value: object) -> TypeIs[Callable[[int], None]]: ...
 def _(value: Callable[[], None] | Callable[[int], None]):
     if takes_arg(value):
         assert_type(value, Callable[[int], None])
+
+
+# test for an upstream bug that i accidentally fixed
+# https://github.com/DetachHead/basedpyright/issues/452
+class Bar:
+    ...
+class Baz(Bar):
+    def __call__(self): ...
+def _[T, **P](value: Callable[P, T]):
+    if isinstance(value, Bar):
+        pass
