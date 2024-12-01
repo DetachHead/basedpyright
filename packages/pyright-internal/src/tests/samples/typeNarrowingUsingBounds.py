@@ -1,5 +1,5 @@
 from typing import Any, Never, assert_type, runtime_checkable, Protocol, Iterable, Iterator, MutableMapping, Reversible, Callable
-
+from types import FunctionType
 
 class Covariant[T]:
     def foo(self, other: object):
@@ -131,3 +131,7 @@ class CallableProtocol[**P, T](Protocol):
 def _(f: CallableProtocol[[], None]):
     if isinstance(f, staticmethod):
         assert_type(f, staticmethod[[], None])
+
+def _(f: Callable[[int], str]):
+    if isinstance(f, FunctionType):
+        assert_type(f, FunctionType)

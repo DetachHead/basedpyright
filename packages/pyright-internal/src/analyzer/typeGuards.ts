@@ -1874,7 +1874,16 @@ const synthesizeCallableProtocolFromFunctionType = (
 ): ClassType => {
     //TODO: fix hover text. currently this causes narrowed `FunctionType`s to display like this:
     // "<subclass of Callable and staticmethod[..., object]>"
-    const callableType = ClassType.createInstantiable('Callable', '', '', Uri.empty(), 0, 0, undefined, undefined);
+    const callableType = ClassType.createInstantiable(
+        'Callable',
+        '',
+        '',
+        Uri.empty(),
+        ClassTypeFlags.ProtocolClass,
+        0,
+        undefined,
+        undefined
+    );
     callableType.shared.baseClasses.push(evaluator.getBuiltInType(errorNode, 'Protocol'));
     computeMroLinearization(callableType);
     const fields = ClassType.getSymbolTable(callableType);
