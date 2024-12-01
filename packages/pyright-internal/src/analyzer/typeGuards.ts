@@ -1818,7 +1818,12 @@ function narrowTypeForInstance(
 
             if (
                 isClass(subtype) ||
-                (getFileInfo(errorNode).diagnosticRuleSet.strictGenericNarrowing && isFunction(subtype))
+                // when strictGenericNarrowing is enabled, we need to convert the Callable type to a Callable
+                // protocol to make sure it keeps the generics when narrowing, but this is only needed for
+                // isinstance checks because you can't specify generics to it
+                (!isTypeIsCheck &&
+                    getFileInfo(errorNode).diagnosticRuleSet.strictGenericNarrowing &&
+                    isFunction(subtype))
             ) {
                 if (isFunction(subtype)) {
                     subtype = synthesizeCallableProtocolFromFunctionType(evaluator, subtype, errorNode);
