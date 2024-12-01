@@ -10,6 +10,7 @@
  */
 
 import { assert } from '../common/debug';
+import { Uri } from '../common/uri/uri';
 import {
     ArgCategory,
     AssignmentExpressionNode,
@@ -95,6 +96,7 @@ import {
     specializeTupleClass,
     specializeWithUnknownTypeArgs,
     stripTypeForm,
+    synthesizeTypeVarForSelfCls,
     transformPossibleRecursiveTypeAlias,
 } from './typeUtils';
 
@@ -1814,7 +1816,13 @@ function narrowTypeForInstance(
                 }
             }
 
-            if (isClass(subtype)) {
+            if (
+                isClass(subtype) ||
+                (getFileInfo(errorNode).diagnosticRuleSet.strictGenericNarrowing && isFunction(subtype))
+            ) {
+                if (isFunction(subtype)) {
+                    subtype = synthesizeCallableProtocolFromFunctionType(evaluator, subtype, errorNode);
+                }
                 return combineTypes(
                     filterClassType(
                         unexpandedSubtype,
@@ -1849,6 +1857,45 @@ function narrowTypeForInstance(
 
     return filteredType;
 }
+
+/**
+ * the logic for narrowing `typing.Callable` (`FunctionType`) is completely different to the logic
+ * for narrowing callable protocols. when `typing.Callable`s are narrowed, it does not retain the
+ * generics from the supertype, so we create a fake callable protocol from a `FunctionType` so it
+ * can be narrowed using the same logic that's used to narrow `ClassType`s.
+ *
+ * this is not ideal and probably super hacky, but i couldnt figure out how to update the narrowing
+ * logic for `FunctionType` so this solution was easier.
+ */
+const synthesizeCallableProtocolFromFunctionType = (
+    evaluator: TypeEvaluator,
+    callable: FunctionType,
+    errorNode: ParseNode
+): ClassType => {
+    //TODO: fix hover text. currently this causes narrowed `FunctionType`s to display like this:
+    // "<subclass of Callable and staticmethod[..., object]>"
+    const callableType = ClassType.createInstantiable('Callable', '', '', Uri.empty(), 0, 0, undefined, undefined);
+    callableType.shared.baseClasses.push(evaluator.getBuiltInType(errorNode, 'Protocol'));
+    computeMroLinearization(callableType);
+    const fields = ClassType.getSymbolTable(callableType);
+    const callMethod = FunctionType.createSynthesizedInstance(callable.shared.name);
+    FunctionType.addParam(
+        callMethod,
+        FunctionParam.create(
+            ParamCategory.Simple,
+            synthesizeTypeVarForSelfCls(callableType, false),
+            FunctionParamFlags.TypeDeclared,
+            'self'
+        )
+    );
+    for (const parameter of callable.shared.parameters) {
+        FunctionType.addParam(callMethod, parameter);
+    }
+    callMethod.shared.declaredReturnType = FunctionType.getEffectiveReturnType(callable);
+    const callSymbol = Symbol.createWithType(SymbolFlags.ClassMember, callMethod);
+    fields.set('__call__', callSymbol);
+    return ClassType.cloneAsInstance(callableType);
+};
 
 // This function assumes that the caller has already verified that the two
 // types are the same class and are not literals. It also assumes that the

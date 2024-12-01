@@ -119,8 +119,6 @@ def _(
 
 def _(f: Callable[[], None]):
     if isinstance(f, staticmethod):
-        # narrowing Callable this way doesn't work so we use the old method.
-        # see https://github.com/DetachHead/basedpyright/issues/905
         assert_type(f, staticmethod[..., Any])
 
 class CallableProtocol[**P, T](Protocol):

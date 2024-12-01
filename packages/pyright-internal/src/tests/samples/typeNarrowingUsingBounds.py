@@ -117,11 +117,12 @@ def _(
     if isinstance(value, Foo):
         assert_type(value, Foo[str])
 
-def _(f: Callable[[], None]):
+def _(f: Callable[[int], str]):
     if isinstance(f, staticmethod):
-        # narrowing Callable this way doesn't work so we use the old method.
-        # see https://github.com/DetachHead/basedpyright/issues/905
-        assert_type(f, staticmethod[..., Any])
+        # can't use assert_type on the function itself, see TODO in synthesizeCallableProtocolFromFunctionType
+        assert_type(f(1), str)
+        assert_type(f.__call__, Callable[[int], str])
+        reveal_type(f)
 
 class CallableProtocol[**P, T](Protocol):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T: ...
