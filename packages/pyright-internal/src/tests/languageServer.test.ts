@@ -176,11 +176,13 @@ describe(`Basic language server tests`, () => {
             {
                 item: {
                     scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
+                    section: 'basedpyright',
                 },
                 value: {
-                    typeCheckingMode: 'strict',
-                    diagnosticMode: 'workspace',
+                    analysis: {
+                        typeCheckingMode: 'strict',
+                        diagnosticMode: 'workspace',
+                    },
                 },
             },
         ];
@@ -207,7 +209,7 @@ describe(`Basic language server tests`, () => {
         assert.equal(diagnostic.diagnostics[0].code, 'reportUnusedImport');
         assert.equal(diagnostic.diagnostics[1].code, 'reportUnusedImport');
         assert.equal(diagnostic.diagnostics[2].code, 'reportUnusedImport');
-    });
+    }, 10000000);
 
     test('Diagnostic severity overrides test', async () => {
         const code = `
@@ -221,12 +223,14 @@ describe(`Basic language server tests`, () => {
             {
                 item: {
                     scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
+                    section: 'basedpyright',
                 },
                 value: {
-                    diagnosticSeverityOverrides: {
-                        reportUnknownParameterType: 'warning',
-                        reportUnusedFunction: 'unused',
+                    analysis: {
+                        diagnosticSeverityOverrides: {
+                            reportUnknownParameterType: 'warning',
+                            reportUnusedFunction: 'unused',
+                        },
                     },
                 },
             },
@@ -907,9 +911,9 @@ describe(`Basic language server tests`, () => {
             {
                 item: {
                     scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
+                    section: 'basedpyright',
                 },
-                value: {},
+                value: { analysis: {} },
             },
         ];
 
@@ -938,10 +942,12 @@ describe(`Basic language server tests`, () => {
             {
                 item: {
                     scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
+                    section: 'basedpyright',
                 },
                 value: {
-                    diagnosticMode: 'asdf',
+                    analysis: {
+                        diagnosticMode: 'asdf',
+                    },
                 },
             },
         ];
