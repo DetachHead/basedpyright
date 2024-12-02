@@ -5,7 +5,7 @@ import { convertOffsetToPosition } from '../common/positionUtils';
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Uri } from '../common/uri/uri';
 import { Range } from 'vscode-languageserver-types';
-import { InlayHintSettings } from '../common/languageServerInterface';
+import { InlayHintSettings } from '../workspaceFactory';
 
 export class InlayHintsProvider {
     private readonly _walker: TypeInlayHintsWalker;

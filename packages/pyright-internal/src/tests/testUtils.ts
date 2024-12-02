@@ -32,7 +32,7 @@ import { SemanticTokenItem, SemanticTokensWalker } from '../analyzer/semanticTok
 import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
-import { InlayHintSettings } from '../common/languageServerInterface';
+import { InlayHintSettings } from '../workspaceFactory';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
