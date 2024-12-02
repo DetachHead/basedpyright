@@ -31,8 +31,8 @@ import { TextRange } from '../common/textRange';
 import { convertRangeToTextRange } from '../common/positionUtils';
 import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
-import { InlayHintSettings } from '../common/languageServerInterface';
 import { transformTypeForEnumMember } from './enums';
+import { InlayHintSettings } from '../workspaceFactory';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';

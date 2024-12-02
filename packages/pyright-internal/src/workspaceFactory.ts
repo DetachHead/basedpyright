@@ -16,6 +16,17 @@ import { createDeferred } from './common/deferred';
 import { ServiceProvider } from './common/serviceProvider';
 import { Uri } from './common/uri/uri';
 
+export interface InlayHintSettings {
+    /**
+     * pylance's version of this option supports 3 settings: `"all" | "partial" | "off"`. `"all"` shows inlay hints
+     * for positional only arguments which i think is dumb so we don't support it
+     */
+    callArgumentNames: boolean;
+    functionReturnTypes: boolean;
+    variableTypes: boolean;
+    genericTypes: boolean;
+}
+
 let WorkspaceFactoryIdCounter = 0;
 
 export enum WellKnownWorkspaceKinds {
@@ -87,6 +98,7 @@ export interface Workspace extends WorkspaceFolder {
     disableWorkspaceSymbol: boolean;
     isInitialized: InitStatus;
     searchPathsToWatch: Uri[];
+    inlayHints?: InlayHintSettings | undefined;
 }
 
 export interface NormalWorkspace extends Workspace {

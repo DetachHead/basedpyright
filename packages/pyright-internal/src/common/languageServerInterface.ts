@@ -9,7 +9,7 @@
 import { MarkupKind } from 'vscode-languageserver';
 import { MaxAnalysisTime } from '../analyzer/program';
 import { BackgroundAnalysisBase } from '../backgroundAnalysisBase';
-import { Workspace } from '../workspaceFactory';
+import { InlayHintSettings, Workspace } from '../workspaceFactory';
 import { CancellationProvider } from './cancellationUtils';
 import { DiagnosticBooleanOverridesMap, DiagnosticSeverityOverridesMap } from './commandLineOptions';
 import { SignatureDisplayType } from './configOptions';
@@ -20,17 +20,6 @@ import { FileWatcherHandler } from './fileWatcher';
 import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
 import { FileDiagnostics } from './diagnosticSink';
-
-export interface InlayHintSettings {
-    /**
-     * pylance's version of this option supports 3 settings: `"all" | "partial" | "off"`. `"all"` shows inlay hints
-     * for positional only arguments which i think is dumb so we don't support it
-     */
-    callArgumentNames: boolean;
-    functionReturnTypes: boolean;
-    variableTypes: boolean;
-    genericTypes: boolean;
-}
 
 export interface ServerSettings {
     venvPath?: Uri | undefined;

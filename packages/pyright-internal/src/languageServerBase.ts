@@ -363,6 +363,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.disableLanguageServices = !!serverSettings.disableLanguageServices;
             workspace.disableTaggedHints = !!serverSettings.disableTaggedHints;
             workspace.disableOrganizeImports = !!serverSettings.disableOrganizeImports;
+            workspace.inlayHints = serverSettings.inlayHints;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -1005,21 +1006,19 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected async onInlayHints(params: InlayHintParams, token: CancellationToken): Promise<InlayHint[] | null> {
         const uri = Uri.parse(params.textDocument.uri, this.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
-
-        const inlayHintSettings = (await this.getSettings(workspace)).inlayHints;
         if (
             workspace.disableLanguageServices ||
             // don't bother creating the inlay hint provider if all the inlay hint settings are off
-            (inlayHintSettings && !Object.values(inlayHintSettings).some((value) => value))
+            (workspace.inlayHints && !Object.values(workspace.inlayHints).some((value) => value))
         ) {
             return null;
         }
         return workspace.service.run((program) => {
             return new InlayHintsProvider(program, uri, params.range, {
-                callArgumentNames: inlayHintSettings?.callArgumentNames ?? true,
-                functionReturnTypes: inlayHintSettings?.functionReturnTypes ?? true,
-                variableTypes: inlayHintSettings?.variableTypes ?? true,
-                genericTypes: inlayHintSettings?.genericTypes ?? false,
+                callArgumentNames: workspace.inlayHints?.callArgumentNames ?? true,
+                functionReturnTypes: workspace.inlayHints?.functionReturnTypes ?? true,
+                variableTypes: workspace.inlayHints?.variableTypes ?? true,
+                genericTypes: workspace.inlayHints?.genericTypes ?? false,
             }).onInlayHints();
         }, token);
     }
