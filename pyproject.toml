@@ -264,6 +264,7 @@ ignore = [
     "C901",    # max-complexity
     "DOC402",  # docstring-missing-yields
     "DOC201",  # docstring-missing-returns
+    "TC006",   # runtime-cast-value (quoted types look disgusting)
 ]
 
 [tool.ruff.lint.pycodestyle]
