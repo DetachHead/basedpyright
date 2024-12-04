@@ -50,20 +50,17 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'method', modifiers: ['definition'], start: 103, length: 3 },
             { type: 'decorator', modifiers: [], start: 85, length: 1 },
             { type: 'decorator', modifiers: [], start: 86, length: 8 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 86, length: 8 },
             { type: 'method', modifiers: [], start: 103, length: 3 },
             { type: 'parameter', modifiers: ['definition'], start: 107, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 116, length: 3 },
             { type: 'method', modifiers: ['definition'], start: 148, length: 3 },
             { type: 'decorator', modifiers: [], start: 130, length: 1 },
             { type: 'decorator', modifiers: [], start: 131, length: 8 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 131, length: 8 },
             { type: 'method', modifiers: [], start: 148, length: 3 },
             { type: 'parameter', modifiers: ['definition'], start: 152, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 161, length: 3 },
             { type: 'method', modifiers: ['definition'], start: 194, length: 3 },
             { type: 'decorator', modifiers: [], start: 174, length: 1 },
-            { type: 'decorator', modifiers: [], start: 179, length: 6 },
             { type: 'variable', modifiers: [], start: 175, length: 3 },
             { type: 'function', modifiers: [], start: 179, length: 6 },
             { type: 'method', modifiers: [], start: 194, length: 3 },
@@ -224,33 +221,28 @@ if (process.platform !== 'win32' || !process.env['CI']) {
 
             { type: 'class', modifiers: ['definition'], start: 115, length: 1 }, // A
             { type: 'decorator', modifiers: [], start: 96, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 97, length: 9 }, // dataclass
             { type: 'function', modifiers: [], start: 97, length: 9 },
             { type: 'class', modifiers: [], start: 115, length: 1 },
 
             { type: 'class', modifiers: ['definition'], start: 154, length: 1 }, // B
             { type: 'decorator', modifiers: [], start: 123, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 136, length: 9 }, // dataclass
             { type: 'namespace', modifiers: [], start: 124, length: 11 }, // dataclasses
-            { type: 'function', modifiers: [], start: 136, length: 9 },
+            { type: 'function', modifiers: [], start: 136, length: 9 }, // dataclass
             { type: 'class', modifiers: [], start: 154, length: 1 },
             { type: 'method', modifiers: ['definition'], start: 176, length: 6 }, // method
             { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
-            { type: 'function', modifiers: [], start: 162, length: 5 },
             { type: 'method', modifiers: [], start: 176, length: 6 },
             { type: 'parameter', modifiers: ['definition'], start: 183, length: 4 }, // self
             { type: 'method', modifiers: ['definition'], start: 220, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 199, length: 12 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 199, length: 12 }, // staticmethod
             { type: 'method', modifiers: [], start: 220, length: 6 },
 
             { type: 'function', modifiers: ['definition'], start: 256, length: 6 }, // cached
             { type: 'decorator', modifiers: [], start: 235, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 246, length: 5 }, // cache
             { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
-            { type: 'function', modifiers: [], start: 246, length: 5 },
+            { type: 'function', modifiers: [], start: 246, length: 5 }, // cache
             { type: 'function', modifiers: [], start: 256, length: 6 },
         ]);
     });
@@ -271,7 +263,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'method', modifiers: ['definition'], start: 81, length: 1 }, // m
             { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 61, length: 11 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 61, length: 11 }, // classmethod
             { type: 'method', modifiers: [], start: 81, length: 1 },
             { type: 'parameter', modifiers: ['definition'], start: 83, length: 3 }, // cls
             { type: 'parameter', modifiers: [], start: 104, length: 3 }, // cls

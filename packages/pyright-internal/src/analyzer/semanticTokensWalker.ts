@@ -76,25 +76,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitDecorator(node: DecoratorNode) {
-        let nameNode: NameNode | undefined;
         this._addItem(node.start, 1 /* '@' symbol */, SemanticTokenTypes.decorator, []);
-        switch (node.d.expr.nodeType) {
-            case ParseNodeType.Call:
-                if (node.d.expr.d.leftExpr.nodeType === ParseNodeType.MemberAccess) {
-                    nameNode = node.d.expr.d.leftExpr.d.member;
-                } else if (node.d.expr.d.leftExpr.nodeType === ParseNodeType.Name) {
-                    nameNode = node.d.expr.d.leftExpr;
-                }
-                break;
-            case ParseNodeType.MemberAccess:
-                nameNode = node.d.expr.d.member;
-                break;
-            case ParseNodeType.Name:
-                nameNode = node.d.expr;
-                break;
-        }
-        if (nameNode) {
-            this._addItem(nameNode.start, nameNode.length, SemanticTokenTypes.decorator, []);
+        // only add the decorator token type if it's just a name (eg. `@property`). any more complicated
+        // decorator expressions (eg. `@foo.setter`, `@mark.parametrize("foo", (bar, baz))`) are left
+        // as-is and their individual symbols are highlighted with their normal token type.
+        // see discussion in https://github.com/DetachHead/basedpyright/issues/278#issuecomment-2517502311
+        if (node.d.expr.nodeType === ParseNodeType.Name) {
+            this._addItem(node.d.expr.start, node.d.expr.length, SemanticTokenTypes.decorator, []);
         }
         return super.visitDecorator(node);
     }
@@ -122,7 +110,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitName(node: NameNode): boolean {
-        this._visitNameWithType(node, this._evaluator?.getType(node));
+        // covered by visitDecorator
+        if (node.parent?.nodeType !== ParseNodeType.Decorator) {
+            this._visitNameWithType(node, this._evaluator?.getType(node));
+        }
         return super.visitName(node);
     }
 
