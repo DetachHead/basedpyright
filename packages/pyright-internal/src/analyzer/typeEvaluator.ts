@@ -2432,7 +2432,7 @@ export function createTypeEvaluator(
             return getBoundMagicMethod(
                 boundMethodResult.type,
                 '__call__',
-                selfType ?? ClassType.cloneAsInstance(classType),
+                /* selfType */ undefined,
                 diag,
                 recursionCount
             );
@@ -4450,7 +4450,7 @@ export function createTypeEvaluator(
                 let annotationType: Type | undefined = getTypeOfAnnotation(target.d.annotation, {
                     varTypeAnnotation: true,
                     allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(target.d.valueExpr),
-                    allowClassVar: ParseTreeUtils.isClassVarAllowedForAssignmentTarget(target.d.valueExpr),
+                    allowClassVar: isClassVarAllowedForAssignmentTarget(target.d.valueExpr),
                 });
 
                 if (annotationType) {
@@ -4521,6 +4521,21 @@ export function createTypeEvaluator(
                 break;
             }
         }
+    }
+
+    function isClassVarAllowedForAssignmentTarget(targetNode: ExpressionNode): boolean {
+        const classNode = ParseTreeUtils.getEnclosingClass(targetNode, /* stopAtFunction */ true);
+        if (!classNode) {
+            return false;
+        }
+
+        // ClassVar is not allowed in a TypedDict or a NamedTuple class.
+        const classType = getTypeOfClass(classNode)?.classType;
+        if (!classType) {
+            return false;
+        }
+
+        return !ClassType.isTypedDictClass(classType) && !classType.shared.namedTupleEntries;
     }
 
     function verifyRaiseExceptionType(node: ExpressionNode, allowNone: boolean) {
@@ -7811,15 +7826,18 @@ export function createTypeEvaluator(
         }
 
         const transformedType = transformPossibleRecursiveTypeAlias(type);
+        const isRecursiveTypeAlias = transformedType !== type;
 
         // If this is a recursive type alias, see if we've already recursed
         // seen it once before in the recursion stack. If so, don't recurse
         // further.
-        if (transformedType !== type) {
+        if (isRecursiveTypeAlias) {
             const pendingOverlaps = pendingTypes.filter((pendingType) => isTypeSame(pendingType, type));
             if (pendingOverlaps.length > 1) {
                 return;
             }
+
+            pendingTypes.push(type);
         }
 
         recursionCount++;
@@ -7831,8 +7849,6 @@ export function createTypeEvaluator(
                 if (typeParamIndex >= 0) {
                     usageVariances[typeParamIndex] = combineVariances(usageVariances[typeParamIndex], variance);
                 } else {
-                    pendingTypes.push(type);
-
                     updateUsageVariancesRecursive(
                         subtype,
                         typeAliasTypeParams,
@@ -7841,8 +7857,6 @@ export function createTypeEvaluator(
                         pendingTypes,
                         recursionCount
                     );
-
-                    pendingTypes.pop();
                 }
             });
         }
@@ -7890,6 +7904,10 @@ export function createTypeEvaluator(
                 }
             }
         });
+
+        if (isRecursiveTypeAlias) {
+            pendingTypes.pop();
+        }
     }
 
     function getIndexAccessMagicMethodName(usage: EvaluatorUsage): string {
@@ -15248,23 +15266,45 @@ export function createTypeEvaluator(
     }
 
     function getTypeOfSlice(node: SliceNode): TypeResult {
+        const noneType = getNoneType();
+        let startType = noneType;
+        let endType = noneType;
+        let stepType = noneType;
+        let isIncomplete = false;
+
         // Evaluate the expressions to report errors and record symbol
-        // references. We can skip this if we're executing speculatively.
-        if (!isSpeculativeModeInUse(node)) {
-            if (node.d.startValue) {
-                getTypeOfExpression(node.d.startValue);
-            }
-
-            if (node.d.endValue) {
-                getTypeOfExpression(node.d.endValue);
-            }
-
-            if (node.d.stepValue) {
-                getTypeOfExpression(node.d.stepValue);
+        // references.
+        if (node.d.startValue) {
+            const startTypeResult = getTypeOfExpression(node.d.startValue);
+            startType = startTypeResult.type;
+            if (startTypeResult.isIncomplete) {
+                isIncomplete = true;
             }
         }
 
-        return { type: getBuiltInObject(node, 'slice') };
+        if (node.d.endValue) {
+            const endTypeResult = getTypeOfExpression(node.d.endValue);
+            endType = endTypeResult.type;
+            if (endTypeResult.isIncomplete) {
+                isIncomplete = true;
+            }
+        }
+
+        if (node.d.stepValue) {
+            const stepTypeResult = getTypeOfExpression(node.d.stepValue);
+            stepType = stepTypeResult.type;
+            if (stepTypeResult.isIncomplete) {
+                isIncomplete = true;
+            }
+        }
+
+        const sliceType = getBuiltInObject(node, 'slice');
+
+        if (!isClassInstance(sliceType)) {
+            return { type: sliceType };
+        }
+
+        return { type: ClassType.specialize(sliceType, [startType, endType, stepType]), isIncomplete };
     }
 
     // Verifies that a type argument's type is not disallowed.
@@ -18599,7 +18639,6 @@ export function createTypeEvaluator(
         // Set the "partially evaluated" flag around this logic to detect recursion.
         functionType.shared.flags |= FunctionTypeFlags.PartiallyEvaluated;
         const preDecoratedType = node.d.isAsync ? createAsyncFunction(node, functionType) : functionType;
-        functionType.shared.flags &= ~FunctionTypeFlags.PartiallyEvaluated;
 
         // Apply all of the decorators in reverse order.
         decoratedType = preDecoratedType;
@@ -18652,6 +18691,10 @@ export function createTypeEvaluator(
         decoratedType = addOverloadsToFunctionType(evaluatorInterface, node, decoratedType);
 
         writeTypeCache(node, { type: decoratedType }, EvalFlags.None);
+
+        // Now that the decorator has been applied, we can clear the
+        // "partially evaluated" flag.
+        functionType.shared.flags &= ~FunctionTypeFlags.PartiallyEvaluated;
 
         return { functionType, decoratedType };
     }
@@ -19711,6 +19754,7 @@ export function createTypeEvaluator(
 
         const exceptionTypeResult = getTypeOfExpression(node.d.typeExpr!);
         const exceptionTypes = exceptionTypeResult.type;
+        let includesBaseException = false;
 
         function getExceptionType(exceptionType: Type, errorNode: ExpressionNode) {
             exceptionType = makeTopLevelTypeVarsConcrete(exceptionType);
@@ -19720,6 +19764,9 @@ export function createTypeEvaluator(
             }
 
             if (isInstantiableClass(exceptionType)) {
+                if (ClassType.isBuiltIn(exceptionType, 'BaseException')) {
+                    includesBaseException = true;
+                }
                 return ClassType.cloneAsInstance(exceptionType);
             }
 
@@ -19757,9 +19804,13 @@ export function createTypeEvaluator(
             return getExceptionType(subType, node.d.typeExpr!);
         });
 
-        // If this is an except group, wrap the exception type in an BaseExceptionGroup.
+        // If this is an except group, wrap the exception type in an ExceptionGroup
+        // or BaseExceptionGroup depending on whether the target exception is
+        // a BaseException.
         if (node.d.isExceptGroup) {
-            targetType = getBuiltInObject(node, 'BaseExceptionGroup', [targetType]);
+            targetType = getBuiltInObject(node, includesBaseException ? 'BaseExceptionGroup' : 'ExceptionGroup', [
+                targetType,
+            ]);
         }
 
         if (node.d.name) {
@@ -20153,7 +20204,7 @@ export function createTypeEvaluator(
             const annotationType = getTypeOfAnnotation(node.d.annotation, {
                 varTypeAnnotation: true,
                 allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(node.d.valueExpr),
-                allowClassVar: ParseTreeUtils.isClassVarAllowedForAssignmentTarget(node.d.valueExpr),
+                allowClassVar: isClassVarAllowedForAssignmentTarget(node.d.valueExpr),
             });
 
             writeTypeCache(node.d.valueExpr, { type: annotationType }, EvalFlags.None);
@@ -20305,7 +20356,7 @@ export function createTypeEvaluator(
                     getTypeOfAnnotation(annotationNode, {
                         varTypeAnnotation: true,
                         allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(annotationParent.d.leftExpr),
-                        allowClassVar: ParseTreeUtils.isClassVarAllowedForAssignmentTarget(annotationParent.d.leftExpr),
+                        allowClassVar: isClassVarAllowedForAssignmentTarget(annotationParent.d.leftExpr),
                     });
                 } else {
                     evaluateTypesForAssignmentStatement(annotationParent);
@@ -22284,7 +22335,7 @@ export function createTypeEvaluator(
                             declaration.node.parent?.nodeType === ParseNodeType.MemberAccess
                                 ? declaration.node.parent
                                 : declaration.node;
-                        const allowClassVar = ParseTreeUtils.isClassVarAllowedForAssignmentTarget(declNode);
+                        const allowClassVar = isClassVarAllowedForAssignmentTarget(declNode);
                         const allowFinal = ParseTreeUtils.isFinalAllowedForAssignmentTarget(declNode);
                         const allowRequired =
                             ParseTreeUtils.isRequiredAllowedForAssignmentTarget(declNode) ||
@@ -26678,6 +26729,16 @@ export function createTypeEvaluator(
                 );
                 canAssign = false;
             }
+        }
+
+        // If we're checking for full overlapping overloads and the source is
+        // a gradual form, the dest must also be a gradual form.
+        if (
+            (flags & AssignTypeFlags.OverloadOverlap) !== 0 &&
+            FunctionType.isGradualCallableForm(srcType) &&
+            !FunctionType.isGradualCallableForm(destType)
+        ) {
+            canAssign = false;
         }
 
         // If the source and the dest are using the same ParamSpec, any additional

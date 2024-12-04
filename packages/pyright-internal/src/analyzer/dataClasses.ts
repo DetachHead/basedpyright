@@ -63,12 +63,15 @@ import {
     OverloadedType,
     TupleTypeArg,
     Type,
+    TypeVarScopeType,
     TypeVarType,
     UnknownType,
+    Variance,
 } from './types';
 import {
     addSolutionForSelfType,
     applySolvedTypeVars,
+    buildSolution,
     buildSolutionFromSpecializedClass,
     computeMroLinearization,
     convertToInstance,
@@ -181,8 +184,10 @@ export function synthesizeDataClassMethods(
             return;
         }
 
+        let isInferredFinal = false;
+
         // Only variables (not functions, classes, etc.) are considered.
-        const classVarDecl = symbol.getTypedDeclarations().find((decl) => {
+        let classVarDecl = symbol.getTypedDeclarations().find((decl) => {
             if (decl.type !== DeclarationType.Variable) {
                 return false;
             }
@@ -194,6 +199,15 @@ export function synthesizeDataClassMethods(
 
             return true;
         });
+
+        // See if this is an unannotated (inferred) Final value.
+        if (!classVarDecl) {
+            classVarDecl = symbol.getDeclarations().find((decl) => {
+                return decl.type === DeclarationType.Variable && !decl.typeAnnotationNode && decl.isFinal;
+            });
+
+            isInferredFinal = true;
+        }
 
         if (classVarDecl) {
             let statement: ParseNode | undefined = classVarDecl.node;
@@ -236,8 +250,12 @@ export function synthesizeDataClassMethods(
                     variableNameNode = statement.d.leftExpr.d.valueExpr;
                     typeAnnotationNode = statement.d.leftExpr;
                     const assignmentStatement = statement;
-                    variableTypeEvaluator = () =>
-                        evaluator.getTypeOfAnnotation(
+                    variableTypeEvaluator = () => {
+                        if (isInferredFinal && defaultExpr) {
+                            return evaluator.getTypeOfExpression(defaultExpr).type;
+                        }
+
+                        return evaluator.getTypeOfAnnotation(
                             (assignmentStatement.d.leftExpr as TypeAnnotationNode).d.annotation,
                             {
                                 varTypeAnnotation: true,
@@ -245,6 +263,7 @@ export function synthesizeDataClassMethods(
                                 allowClassVar: true,
                             }
                         );
+                    };
                 }
 
                 hasDefault = true;
@@ -560,9 +579,9 @@ export function synthesizeDataClassMethods(
                             entry.name,
                             getDescriptorForConverterField(
                                 evaluator,
+                                classType,
                                 node,
                                 entry.nameNode,
-                                entry.typeAnnotationNode,
                                 entry.converter,
                                 entry.name,
                                 fieldType,
@@ -860,7 +879,7 @@ function getConverterInputType(
 ): Type {
     const converterType = getConverterAsFunction(
         evaluator,
-        evaluator.getTypeOfExpression(converterNode.d.valueExpr).type
+        evaluator.getTypeOfExpression(converterNode.d.valueExpr, EvalFlags.NoSpecialize).type
     );
 
     if (!converterType) {
@@ -989,9 +1008,9 @@ function getConverterAsFunction(
 // type.
 function getDescriptorForConverterField(
     evaluator: TypeEvaluator,
+    dataclass: ClassType,
     dataclassNode: ParseNode,
     fieldNameNode: NameNode | undefined,
-    fieldAnnotationNode: TypeAnnotationNode | undefined,
     converterNode: ParseNode,
     fieldName: string,
     getType: Type,
@@ -1011,6 +1030,26 @@ function getDescriptorForConverterField(
         /* declaredMetaclass */ undefined,
         isInstantiableClass(typeMetaclass) ? typeMetaclass : UnknownType.create()
     );
+
+    const scopeId = getScopeIdForNode(converterNode);
+    descriptorClass.shared.typeVarScopeId = scopeId;
+
+    // Make the descriptor generic, copying the type parameters from the dataclass.
+    descriptorClass.shared.typeParams = dataclass.shared.typeParams.map((typeParm) => {
+        const typeParam = TypeVarType.cloneForScopeId(
+            typeParm,
+            scopeId,
+            descriptorClass.shared.name,
+            TypeVarScopeType.Class
+        );
+        typeParam.priv.computedVariance = Variance.Covariant;
+        return typeParam;
+    });
+
+    const solution = buildSolution(dataclass.shared.typeParams, descriptorClass.shared.typeParams);
+    getType = applySolvedTypeVars(getType, solution);
+    setType = applySolvedTypeVars(setType, solution);
+
     descriptorClass.shared.baseClasses.push(evaluator.getBuiltInType(dataclassNode, 'object'));
     computeMroLinearization(descriptorClass);
 
@@ -1051,7 +1090,11 @@ function getDescriptorForConverterField(
     const getSymbol = Symbol.createWithType(SymbolFlags.ClassMember, getFunction);
     fields.set('__get__', getSymbol);
 
-    return Symbol.createWithType(SymbolFlags.ClassMember, ClassType.cloneAsInstance(descriptorClass), fieldNameNode);
+    const descriptorInstance = ClassType.specialize(ClassType.cloneAsInstance(descriptorClass), [
+        ...dataclass.shared.typeParams,
+    ]);
+
+    return Symbol.createWithType(SymbolFlags.ClassMember, descriptorInstance, fieldNameNode);
 }
 
 // If the specified type is a descriptor — in particular, if it implements a

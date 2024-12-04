@@ -497,6 +497,12 @@ test('Loop51', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('Loop52', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['loop52.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('ForLoop1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['forLoop1.py']);
 
@@ -848,6 +854,15 @@ test('RecursiveTypeAlias15', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['recursiveTypeAlias15.py'], configOptions);
 
     TestUtils.validateResults(analysisResults, 4);
+});
+
+test('RecursiveTypeAlias16', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.defaultPythonVersion = pythonVersion3_12;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['recursiveTypeAlias16.py'], configOptions);
+
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('Classes1', () => {
