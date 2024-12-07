@@ -327,7 +327,12 @@ export class Program {
         return fileInfo;
     }
 
-    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false): SourceFile {
+    addTrackedFile(
+        fileUri: Uri,
+        isThirdPartyImport = false,
+        isInPyTypedPackage = false,
+        isTypeshedFile = false
+    ): SourceFile {
         let sourceFileInfo = this.getSourceFileInfo(fileUri);
         const moduleImportInfo = this._getModuleImportInfoForFile(fileUri);
         const importName = moduleImportInfo.moduleName;
@@ -352,7 +357,7 @@ export class Program {
         );
         sourceFileInfo = new SourceFileInfo(
             sourceFile,
-            /* isTypeshedFile */ false,
+            isTypeshedFile,
             isThirdPartyImport,
             isInPyTypedPackage,
             this._editModeTracker,
@@ -1833,7 +1838,7 @@ export class Program {
 
                     if (!sourceFileInfo) {
                         // Start tracking the source file.
-                        this.addTrackedFile(resolvedPath);
+                        this.addTrackedFile(resolvedPath, false, false, importResult.isStdlibTypeshedFile);
                         sourceFileInfo = this.getSourceFileInfo(resolvedPath);
                     }
                 }
