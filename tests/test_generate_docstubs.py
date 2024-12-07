@@ -10,15 +10,12 @@ import sys
 from functools import wraps
 from locale import getpreferredencoding
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 
 from pytest import mark
 
-if TYPE_CHECKING:
-    from basedtyping import P, T
 
-
-def needs_all_docstubs(
+def needs_all_docstubs[T, **P](
     condition_to_run_locally: bool,  # noqa: FBT001
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(fn: Callable[P, T]) -> Callable[P, T]:
@@ -45,7 +42,7 @@ def read_module_text(name: str):
 def test_builtin_docstring():
     assert '''
 class float:
-    """Convert a string or number to a floating point number, if possible."""
+    """Convert a string or number to a floating-point number, if possible."""
 ''' in read_module_text("builtins.pyi")
 
 

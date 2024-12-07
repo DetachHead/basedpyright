@@ -1,7 +1,7 @@
 name: 'build and release'
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   ARTIFACT_NAME_VSIX: vsix
   VSIX_NAME: vscode-pyright.vsix
   VSIX_DIR: packages/vscode-pyright
