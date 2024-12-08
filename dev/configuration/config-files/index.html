@@ -1872,7 +1872,7 @@ who haven't yet updated to >=1.18.1
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>the <code>"unreachable"</code>, <code>"unused"</code> and <code>"deprecated"</code> diagnostic categories are deprecated in favor of <code>"hint"</code>. rules where it makes sense
-to be report them as "unnecessary" or "deprecated" <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity">as mentioned in the LSP spec</a> are still reported as such, the configuration to do so has just been simplified.</p>
+to report them as "unnecessary" or "deprecated" <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity">as mentioned in the LSP spec</a> are still reported as such, the configuration to do so has just been simplified.</p>
 <p>the <code>"hint"</code> diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. <a href="../../benefits-over-pyright/baseline/">baselined diagnostics</a> are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.</p>
 <p>for backwards compatibility, setting a diagnostic rule to any of these three deprecated categories will act as an alias for the <code>"hint"</code> category, however they may be removed entirely in a future release.</p>
 </div>
