@@ -88,7 +88,7 @@ diagnostics can be configured to be reported as any of the following categories:
 
 !!! note
     the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
-    to be report them as "unnecessary" or "deprecated" [as mentioned in the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity) are still reported as such, the configuration to do so has just been simplified.
+    to report them as "unnecessary" or "deprecated" [as mentioned in the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity) are still reported as such, the configuration to do so has just been simplified.
 
     the `"hint"` diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. [baselined diagnostics](../benefits-over-pyright/baseline.md) are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.
 
