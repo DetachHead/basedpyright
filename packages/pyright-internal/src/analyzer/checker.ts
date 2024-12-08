@@ -211,6 +211,8 @@ interface TypeVarUsageInfo {
     nodes: NameNode[];
 }
 
+type SymbolVisibility = 'public' | 'protected' | 'private';
+
 // When enabled, this debug flag causes the code complexity of
 // functions to be emitted.
 const isPrintCodeComplexityEnabled = false;
@@ -2964,7 +2966,7 @@ export class Checker extends ParseTreeWalker {
 
             if (scope) {
                 scope.symbolTable.forEach((symbol, name) => {
-                    this._conditionallyReportUnusedSymbol(name, symbol, scope.type, dependentFileInfo);
+                    this._conditionallyReportUnusedSymbol(name, symbol, scope.type, dependentFileInfo, scopedNode);
 
                     this._reportIncompatibleDeclarations(name, symbol);
 
@@ -2996,7 +2998,7 @@ export class Checker extends ParseTreeWalker {
                 if (!accessedSymbolSet.has(symbol.id)) {
                     const decls = symbol.getDeclarations();
                     decls.forEach((decl) => {
-                        this._conditionallyReportUnusedDeclaration(decl, /* isPrivate */ false);
+                        this._conditionallyReportUnusedDeclaration(decl, 'public');
                     });
                 }
             }
@@ -3554,7 +3556,8 @@ export class Checker extends ParseTreeWalker {
         name: string,
         symbol: Symbol,
         scopeType: ScopeType,
-        dependentFileInfo?: AnalyzerFileInfo[]
+        dependentFileInfo: AnalyzerFileInfo[] | undefined,
+        scopedNode: AnalyzerNodeInfo.ScopedNode
     ) {
         const accessedSymbolSet = this._fileInfo.accessedSymbolSet;
         if (symbol.isIgnoredForProtocolMatch() || accessedSymbolSet.has(symbol.id)) {
@@ -3579,11 +3582,15 @@ export class Checker extends ParseTreeWalker {
 
         const decls = symbol.getDeclarations();
         decls.forEach((decl) => {
-            this._conditionallyReportUnusedDeclaration(decl, this._isSymbolPrivate(name, scopeType));
+            this._conditionallyReportUnusedDeclaration(decl, this._symbolVisibility(name, scopeType), scopedNode);
         });
     }
 
-    private _conditionallyReportUnusedDeclaration(decl: Declaration, isPrivate: boolean) {
+    private _conditionallyReportUnusedDeclaration(
+        decl: Declaration,
+        symbolVisibility: SymbolVisibility,
+        scopedNode?: AnalyzerNodeInfo.ScopedNode
+    ) {
         let nameNode: NameNode | undefined;
         let message: string | undefined;
         let rule: DiagnosticRule | undefined;
@@ -3642,7 +3649,7 @@ export class Checker extends ParseTreeWalker {
             case DeclarationType.TypeAlias:
             case DeclarationType.Variable:
             case DeclarationType.Param:
-                if (!isPrivate) {
+                if (symbolVisibility !== 'private') {
                     return;
                 }
 
@@ -3711,7 +3718,7 @@ export class Checker extends ParseTreeWalker {
                 break;
 
             case DeclarationType.Class:
-                if (!isPrivate) {
+                if (symbolVisibility !== 'private') {
                     return;
                 }
 
@@ -3726,22 +3733,27 @@ export class Checker extends ParseTreeWalker {
                 message = LocMessage.unaccessedClass().format({ name: nameNode.d.value });
                 break;
 
-            case DeclarationType.Function:
-                if (!isPrivate) {
-                    return;
-                }
+            case DeclarationType.Function: {
+                const type =
+                    scopedNode?.nodeType === ParseNodeType.Class
+                        ? this._evaluator.getTypeOfClass(scopedNode)?.classType
+                        : undefined;
+                if (
+                    symbolVisibility === 'private' ||
+                    (symbolVisibility === 'protected' && (!type || ClassType.isFinal(type)))
+                ) {
+                    // If a stub is exporting a private type, we'll assume that the author
+                    // knows what he or she is doing.
+                    if (this._fileInfo.isStubFile) {
+                        return;
+                    }
 
-                // If a stub is exporting a private type, we'll assume that the author
-                // knows what he or she is doing.
-                if (this._fileInfo.isStubFile) {
-                    return;
+                    nameNode = decl.node.d.name;
+                    rule = DiagnosticRule.reportUnusedFunction;
+                    message = LocMessage.unaccessedFunction().format({ name: nameNode.d.value });
                 }
-
-                nameNode = decl.node.d.name;
-                rule = DiagnosticRule.reportUnusedFunction;
-                message = LocMessage.unaccessedFunction().format({ name: nameNode.d.value });
                 break;
-
+            }
             case DeclarationType.TypeParam:
                 // Never report a diagnostic for an unused TypeParam.
                 nameNode = decl.node.d.name;
@@ -4054,25 +4066,25 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
-    private _isSymbolPrivate(nameValue: string, scopeType: ScopeType) {
-        // All variables within the scope of a function or a list
-        // comprehension are considered private.
-        if (scopeType === ScopeType.Function || scopeType === ScopeType.Comprehension) {
-            return true;
-        }
-
-        // See if the symbol is private.
-        if (SymbolNameUtils.isPrivateName(nameValue)) {
-            return true;
+    private _symbolVisibility(nameValue: string, scopeType: ScopeType): SymbolVisibility {
+        if (
+            // All variables within the scope of a function or a list
+            // comprehension are considered private.
+            scopeType === ScopeType.Function ||
+            scopeType === ScopeType.Comprehension ||
+            // See if the symbol is private.
+            SymbolNameUtils.isPrivateName(nameValue)
+        ) {
+            return 'private';
         }
 
         if (SymbolNameUtils.isProtectedName(nameValue)) {
             // Protected names outside of a class scope are considered private.
             const isClassScope = scopeType === ScopeType.Class;
-            return !isClassScope;
+            return isClassScope ? 'protected' : 'private';
         }
 
-        return false;
+        return 'public';
     }
 
     private _reportDeprecatedClassProperty(node: FunctionNode, functionTypeResult: FunctionTypeResult) {
