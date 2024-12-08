@@ -102,7 +102,7 @@ export class BaselineHandler {
     /**
      * updates the baseline file
      *
-     * @param force whether to write the baseline file even if there are new errors or if there is not baseline
+     * @param force whether to write the baseline file even if there are new errors or if there is no baseline
      * file yet
      * @param removeDeletedFiles whether to check whether each file listed in the baseline still exists, and
      * delete its errors from the baseline file if not. this option mainly exists for performance reasons (but
@@ -189,8 +189,7 @@ export class BaselineHandler {
             } else {
                 // if unchanged
 
-                // if the baselined error can be reported as a hint (eg. unreachable/deprecated), keep it and change its diagnostic
-                // level to that instead
+                // update the diagnostic category of the baselined diagnostics to hint
                 // TODO: should we only baseline errors/warnings and not notes?
                 for (const diagnostic of change.value) {
                     assert(
