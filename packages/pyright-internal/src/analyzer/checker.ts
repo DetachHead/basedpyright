@@ -3738,9 +3738,32 @@ export class Checker extends ParseTreeWalker {
                     scopedNode?.nodeType === ParseNodeType.Class
                         ? this._evaluator.getTypeOfClass(scopedNode)?.classType
                         : undefined;
+                const functionType = this._evaluator.getTypeForDeclaration(decl).type;
                 if (
                     symbolVisibility === 'private' ||
-                    (symbolVisibility === 'protected' && (!type || ClassType.isFinal(type)))
+                    // normally if it's a protected method we don't report it as unused because a subclass could use it,
+                    // but that's not possible in cases where the class is decorated with `@final`:
+                    (symbolVisibility === 'protected' &&
+                        (!type || ClassType.isFinal(type)) &&
+                        // unless it's overriding a method with the same name in a base class, in which case we also shouldn't
+                        // report it because it could have a usage in the base class
+                        !(
+                            // check if it's explicitly overridden
+                            (
+                                (functionType && isFunction(functionType) && FunctionType.isOverridden(functionType)) ||
+                                // if it's not explicitly overridden, check if it's implicitly overridden by checking for the
+                                // same method on a base class in case the user doesn't have reportImplicitOverride enabled
+                                type?.shared.baseClasses.find(
+                                    (baseClass) =>
+                                        isClass(baseClass) &&
+                                        lookUpClassMember(
+                                            baseClass,
+                                            decl.node.d.name.d.value,
+                                            MemberAccessFlags.Default
+                                        )
+                                )
+                            )
+                        ))
                 ) {
                     // If a stub is exporting a private type, we'll assume that the author
                     // knows what he or she is doing.

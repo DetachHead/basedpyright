@@ -145,12 +145,14 @@ describe('narrowing type vars using their bounds', () => {
 
 test('`reportUnusedFunction` on `@final` classes', () => {
     const configOptions = new BasedConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportImplicitOverride = 'none';
     const analysisResults = typeAnalyzeSampleFiles(['reportUnusedFunction_final.py'], configOptions);
     validateResultsButBased(analysisResults, {
         warnings: [
             { line: 5, code: DiagnosticRule.reportUnusedFunction },
             { line: 6, code: DiagnosticRule.reportUnusedFunction },
             { line: 11, code: DiagnosticRule.reportUnusedFunction },
+            { line: 21, code: DiagnosticRule.reportUnusedFunction },
         ],
     });
 });
