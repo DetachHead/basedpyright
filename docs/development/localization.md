@@ -6,6 +6,36 @@ in basedpyright we want to fix this but we need your help! if you are fluent in 
 
 Here are some guidelines for contributors who would like to help improve the translations in basedpyright.
 
+## Tools for localization
+
+A TUI tool `build/localization_helper.py` script is provided to help you with the localization process. It can be used to:
+
+-   Check every message in comparison with the corresponding English message.
+-   Compare message keys with the English version and find out which messages are missing and which ones are redundant.
+
+### Usage
+
+Run the script:
+
+```shell
+# use uv
+uv run build/localization_helper.py
+# or pdm
+pdm run build/localization_helper.py
+# or run the script directly IF YOU CAN ASSURE YOU ARE ALREADY IN THE VIRTUAL ENVIRONMENT OF THE PROJECT
+python build/localization_helper.py
+```
+
+About the interface:
+
+-   The TUI is created with [textual](https://github.com/Textualize/textual), and it is generally fine to use it with mouse.
+-   Click on the tabs for the given language at the top of the interface to switch to the localized content in the corresponding language.
+-   Click on the function buttons at the bottom of the interface to carry out the corresponding operations.
+-   Click on a category in the message tree to expand/collapse the content under that category.
+-   Click on a message entry in the message tree to prompt the corresponding English entry automatically.
+
+> NOTE: If the operation "Compare message keys differences" is triggered, the popup can ONLY be closed by pressing `c`.
+
 ## General guidelines
 
 -   Do not use any automatic translation tools.
