@@ -19,11 +19,9 @@ Run the script:
 
 ```shell
 # use uv
-uv run build/localization_helper.py
-# or pdm
-pdm run build/localization_helper.py
-# or run the script directly IF YOU CAN ASSURE YOU ARE ALREADY IN THE VIRTUAL ENVIRONMENT OF THE PROJECT
-python build/localization_helper.py
+./pw uv run build/localization_helper.py
+# or from inside the venv
+npm run localization-helper
 ```
 
 About the interface:
@@ -34,7 +32,9 @@ About the interface:
 -   Click on a category in the message tree to expand/collapse the content under that category.
 -   Click on a message entry in the message tree to prompt the corresponding English entry automatically.
 
-> NOTE: If the operation "Compare message keys differences" is triggered, the popup can ONLY be closed by pressing `c`.
+!!! note
+
+    If the operation "Compare message keys differences" is triggered, the popup can ONLY be closed by pressing <kbd>C</kbd>.
 
 ## General guidelines
 
