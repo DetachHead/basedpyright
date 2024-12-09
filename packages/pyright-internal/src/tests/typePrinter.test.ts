@@ -186,3 +186,26 @@ test('FunctionTypes', () => {
     assert.strictEqual(printType(funcTypeD, PrintTypeFlags.None, returnTypeCallback), '(**P) -> Any');
     assert.strictEqual(printType(funcTypeD, PrintTypeFlags.PythonSyntax, returnTypeCallback), 'Callable[P, Any]');
 });
+
+describe('ParamSpec', () => {
+    test('positional only', () => {
+        const paramSpec = FunctionType.createSynthesizedInstance('', FunctionTypeFlags.ParamSpecValue);
+        for (const name of ['a', 'b']) {
+            FunctionType.addParam(
+                paramSpec,
+                FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, name)
+            );
+        }
+        FunctionType.addPositionOnlyParamSeparator(paramSpec);
+        assert.strictEqual(printType(paramSpec, PrintTypeFlags.PythonSyntax, returnTypeCallback), '[Any, Any]');
+    });
+    test('keyword only', () => {
+        const paramSpec = FunctionType.createSynthesizedInstance('', FunctionTypeFlags.ParamSpecValue);
+        FunctionType.addKeywordOnlyParamSeparator(paramSpec);
+        FunctionType.addParam(
+            paramSpec,
+            FunctionParam.create(ParamCategory.Simple, AnyType.create(), FunctionParamFlags.TypeDeclared, 'a')
+        );
+        assert.strictEqual(printType(paramSpec, PrintTypeFlags.PythonSyntax, returnTypeCallback), '...');
+    });
+});
