@@ -58,3 +58,15 @@ class U(A, C): # error
 @dataclass(init=False)
 class V(A, C): # no error
     ...
+
+class Up:
+    def __init__(self): ...
+
+
+class Left(Up): ...
+
+
+class Right(Up): ...
+
+
+class Down(Left, Right): ...  # no error

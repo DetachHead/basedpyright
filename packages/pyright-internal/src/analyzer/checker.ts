@@ -5712,6 +5712,7 @@ export class Checker extends ParseTreeWalker {
         }
         /** if it's a dataclass then no further base classes in the MRO can have constructors */
         let constructorIsSafe = !this._isDataclassWithGeneratedConstructor(classType);
+        const uniqueBaseClasses = new Set<ClassType>();
         const baseClassesWithPossiblyUncalledConstructors: ClassType[] = [];
         const isTypedDict = ClassType.isTypedDictClass(classType);
         const diagAddendum = new DiagnosticAddendum();
@@ -5732,12 +5733,15 @@ export class Checker extends ParseTreeWalker {
                         constructorMethodResult &&
                         constructorMethodResult.classType &&
                         isClass(constructorMethodResult.classType) &&
+                        // prevent the same base class from being checked twice which can happen in diamond inheritance situations
+                        !uniqueBaseClasses.has(constructorMethodResult.classType) &&
                         // synthesized dataclass constructors are safe as the runtime machinery seems to account for multiple inheritance moments
                         !(
                             isFunction(constructorMethodResult.type) &&
                             FunctionType.isSynthesizedMethod(constructorMethodResult.type)
                         )
                     ) {
+                        uniqueBaseClasses.add(constructorMethodResult.classType);
                         if (constructorIsSafe) {
                             constructorIsSafe = false;
                         } else {
