@@ -1309,6 +1309,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#tools-for-localization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tools for localization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tools for localization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#general-guidelines" class="md-nav__link">
     <span class="md-ellipsis">
       General guidelines
@@ -1482,6 +1506,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#tools-for-localization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tools for localization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tools for localization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#general-guidelines" class="md-nav__link">
     <span class="md-ellipsis">
       General guidelines
@@ -1593,6 +1641,31 @@
 <p>the translations in pyright come from microsoft's localization team, who are not programmers. this not only results in poor quality translations, but microsoft also doesn't accept contributions to fix them (<a href="https://github.com/microsoft/pyright/issues/7441#issuecomment-1987027067">more info here</a>).</p>
 <p>in basedpyright we want to fix this but we need your help! if you are fluent in a language other than english and would like to contribute, it would be greatly appreciated.</p>
 <p>Here are some guidelines for contributors who would like to help improve the translations in basedpyright.</p>
+<h2 id="tools-for-localization">Tools for localization</h2>
+<p>A TUI tool <code>build/localization_helper.py</code> script is provided to help you with the localization process. It can be used to:</p>
+<ul>
+<li>Check every message in comparison with the corresponding English message.</li>
+<li>Compare message keys with the English version and find out which messages are missing and which ones are redundant.</li>
+</ul>
+<h3 id="usage">Usage</h3>
+<p>Run the script:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># use uv</span>
+./pw<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>build/localization_helper.py
+<span class="c1"># or from inside the venv</span>
+npm<span class="w"> </span>run<span class="w"> </span>localization-helper
+</code></pre></div>
+<p>About the interface:</p>
+<ul>
+<li>The TUI is created with <a href="https://github.com/Textualize/textual">textual</a>, and it is generally fine to use it with mouse.</li>
+<li>Click on the tabs for the given language at the top of the interface to switch to the localized content in the corresponding language.</li>
+<li>Click on the function buttons at the bottom of the interface to carry out the corresponding operations.</li>
+<li>Click on a category in the message tree to expand/collapse the content under that category.</li>
+<li>Click on a message entry in the message tree to prompt the corresponding English entry automatically.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the operation "Compare message keys differences" is triggered, the popup can ONLY be closed by pressing <kbd>C</kbd>.</p>
+</div>
 <h2 id="general-guidelines">General guidelines</h2>
 <ul>
 <li>Do not use any automatic translation tools.</li>
