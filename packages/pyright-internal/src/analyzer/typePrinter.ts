@@ -845,6 +845,7 @@ function printFunctionType(
             );
         }
 
+        let result: string;
         if (isPositionalParamsOnly) {
             const paramTypes: string[] = [];
 
@@ -870,20 +871,19 @@ function printFunctionType(
 
             if (paramSpec) {
                 if (paramTypes.length > 0) {
-                    return `Callable[Concatenate[${paramTypes.join(', ')}, ${
-                        paramSpec.shared.name
-                    }], ${returnTypeString}]`;
+                    result = `Concatenate[${paramTypes.join(', ')}, ${paramSpec.shared.name}]`;
+                } else {
+                    result = paramSpec.shared.name;
                 }
-
-                return `Callable[${paramSpec.shared.name}, ${returnTypeString}]`;
+            } else {
+                result = `[${paramTypes.join(', ')}]`;
             }
-
-            return `Callable[[${paramTypes.join(', ')}], ${returnTypeString}]`;
         } else {
             // We can't represent this type using a Callable so default to
             // a "catch all" Callable.
-            return `Callable[..., ${returnTypeString}]`;
+            result = '...';
         }
+        return FunctionType.isParamSpecValue(type) ? result : `Callable[${result}, ${returnTypeString}]`;
     } else {
         const parts = printFunctionPartsInternal(
             type,
