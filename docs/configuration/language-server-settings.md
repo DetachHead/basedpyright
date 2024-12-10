@@ -142,7 +142,8 @@ basedpyright.analysis.diagnosticMode = "openFilesOnly"
 }
 ```
 
-### eglot
+### emacs
+#### eglot
 
 ```lisp
 (use-package eglot
