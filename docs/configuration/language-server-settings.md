@@ -141,3 +141,30 @@ basedpyright.analysis.diagnosticMode = "openFilesOnly"
     }
 }
 ```
+
+### emacs
+#### eglot
+
+```lisp
+(use-package eglot
+  :ensure t
+  :config
+    (add-to-list 'eglot-server-programs '(
+      (python-mode python-ts-mode)
+         "basedpyright-langserver" "--stdio"
+    ))
+    (setq-default
+       eglot-workspace-configuration
+       '(:basedpyright (
+           :typeCheckingMode "recommended"
+         )
+         :basedpyright.analysis (
+           :diagnosticSeverityOverrides (
+             :reportUnusedCallResult "none"
+           )
+           :inlayHints (
+             :callArgumentNames :json-false
+           )
+         )))
+)
+```
