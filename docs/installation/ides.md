@@ -52,7 +52,7 @@ if you're adding basedpyright as a development dependency in your project, we re
 
 ## Neovim
 
-You need to install the LSP client addapter plugin,
+You need to install the LSP client adapter plugin,
 [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig), for setting up the
 LSP for the editor. These configurations are for launching the LSP server,
 as well as for being able to give launching parameters at the same time.
