@@ -23,7 +23,7 @@ import { ImportResolver } from './analyzer/importResolver';
 import { isPythonBinary } from './analyzer/pythonPathUtils';
 import { CommandController } from './commands/commandController';
 import { ConfigOptions, SignatureDisplayType } from './common/configOptions';
-import { ConsoleWithLogLevel, LogLevel, convertLogLevel } from './common/console';
+import { ConsoleInterface, ConsoleWithLogLevel, LogLevel, convertLogLevel } from './common/console';
 import { isDefined, isString } from './common/core';
 import { resolvePathWithEnvVariables } from './common/envVarUtils';
 import { FileSystem, TempFile } from './common/fileSystem';
@@ -44,6 +44,19 @@ import { FileWatcherHandler } from './common/fileWatcher';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
+class ErrorNotificationConsole extends ConsoleWithLogLevel {
+    ls?: RealLanguageServer;
+
+    constructor(console: ConsoleInterface) {
+        super(console);
+    }
+
+    override error(message: string): void {
+        this.ls?.window.showErrorMessage(message);
+        super.error(message);
+    }
+}
+
 //TODO: better name. this class is used by both the node and web language server, but not the test one
 export abstract class RealLanguageServer extends LanguageServerBase {
     protected controller: CommandController;
@@ -58,7 +71,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const version = require('../package.json').version || '';
 
-        const console = new ConsoleWithLogLevel(connection.console);
+        const console = new ErrorNotificationConsole(connection.console);
         const pyrightFs = new PyrightFileSystem(realFileSystem);
         const cacheManager = new CacheManager(maxWorkers);
 
@@ -83,6 +96,8 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             },
             connection
         );
+
+        console.ls = this;
 
         this.controller = new CommandController(this);
     }
