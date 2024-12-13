@@ -102,5 +102,7 @@
     },
     // package.json file copied into the pypi package
     // this is a top-level folder but the ** is still needed due to https://github.com/microsoft/vscode/issues/92114
-    "npm.exclude": "**/basedpyright/*"
+    "npm.exclude": "**/basedpyright/*",
+    "git.blame.editorDecoration.enabled": true,
+    "git.blame.statusBarItem.enabled": true
 }
