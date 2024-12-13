@@ -486,7 +486,7 @@ const outputResults = (
             ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
             : options.executionRoot;
 
-    const baselineFile = new BaselineHandler(service.fs, rootDir);
+    const baselineFile = new BaselineHandler(service.fs, rootDir, console);
     const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
     if (baselineDiffMessage) {
         console.info(baselineDiffMessage);

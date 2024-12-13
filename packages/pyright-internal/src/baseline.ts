@@ -9,6 +9,7 @@ import { diffArrays } from 'diff';
 import { assert } from './common/debug';
 import { Range } from './common/textRange';
 import { add } from 'lodash';
+import { ConsoleInterface } from './common/console';
 
 export interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
@@ -84,7 +85,7 @@ export class BaselineHandler {
      * none of this functionality should be observed by the user until they explicitly opt in to the baseline
      * feature
      */
-    constructor(private _fs: FileSystem, private _rootDir: Uri) {
+    constructor(private _fs: FileSystem, private _rootDir: Uri, private _console: ConsoleInterface) {
         this.fileUri = baselineFilePath(_rootDir);
     }
 
@@ -96,7 +97,12 @@ export class BaselineHandler {
             // assume the file didn't exist
             return undefined;
         }
-        return JSON.parse(baselineFileContents);
+        try {
+            return JSON.parse(baselineFileContents);
+        } catch (e) {
+            this._console.error(`failed to parse baseline file - ${e}`);
+            return undefined;
+        }
     };
 
     /**
@@ -113,13 +119,12 @@ export class BaselineHandler {
         force: T,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
-    ): OptionalIfFalse<T, BaselineDiff<T>> => {
-        type Result = OptionalIfFalse<T, BaselineDiff<T>>;
+    ): BaselineDiff<T> | undefined => {
         const baselineData = this.getContents();
         if (!force) {
             if (!baselineData) {
                 // there currently is no baseline file and the user did not explicitly ask for one, so we do nothing
-                return undefined as Result;
+                return undefined;
             }
             /** diagnostics that haven't yet been baselined */
             const newDiagnostics = filesWithDiagnostics.map((file) => ({
@@ -131,7 +136,7 @@ export class BaselineHandler {
             if (newDiagnostics.map((fileWithDiagnostics) => fileWithDiagnostics.diagnostics.length).reduce(add, 0)) {
                 // there are unbaselined diagnostics and the user did not explicitly ask to update the baseline, so we do
                 // nothing
-                return undefined as Result;
+                return undefined;
             }
         }
         const newBaselineFiles = this._filteredDiagnosticsToBaselineFormat(filesWithDiagnostics).files;
@@ -159,7 +164,12 @@ export class BaselineHandler {
             }
         }
         this._fs.mkdirSync(this.fileUri.getDirectory(), { recursive: true });
-        this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
+        try {
+            this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
+        } catch (e) {
+            this._console.error(`failed to write baseline file - ${e}`);
+            return undefined;
+        }
         return new BaselineDiff(this._rootDir, { files: previousBaselineFiles }, result, force);
     };
 
