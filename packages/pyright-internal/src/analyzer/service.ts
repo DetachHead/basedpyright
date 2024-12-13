@@ -19,7 +19,7 @@ import {
     CommandLineLanguageServerOptions,
     CommandLineOptions,
 } from '../common/commandLineOptions';
-import { BasedConfigOptions, ConfigErrors, ConfigOptions, matchFileSpecs } from '../common/configOptions';
+import { BasedConfigOptions, ConfigOptions, matchFileSpecs } from '../common/configOptions';
 import { ConsoleInterface, LogLevel, NoErrorConsole, StandardConsole, log } from '../common/console';
 import { isString } from '../common/core';
 import { Diagnostic } from '../common/diagnostic';
@@ -536,7 +536,7 @@ export class AnalyzerService {
         this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
     }
 
-    private get _console(): NoErrorConsole {
+    private get _console(): ConsoleInterface {
         return this.options.console!;
     }
 
@@ -660,31 +660,18 @@ export class AnalyzerService {
 
         const configOptions = new BasedConfigOptions(projectRoot);
 
-        const errors: string[] = [];
-
         // If we found a config file, load it and apply its settings.
-        let configs;
-        try {
-            configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
-        } catch (e) {
-            if (e instanceof ConfigErrors) {
-                errors.push(...e.errors);
-            } else {
-                throw e;
-            }
-        }
+        const configs = this._getExtendedConfigurations(configFilePath ?? pyprojectFilePath);
         configOptions.initializeTypeCheckingMode('recommended');
         if (configs && configs.length > 0) {
             // Then we apply the config file settings. This can update the
             // the typeCheckingMode.
             for (const config of configs) {
-                errors.push(
-                    ...configOptions.initializeFromJson(
-                        config.configFileJsonObj,
-                        config.configFileDirUri,
-                        this.serviceProvider,
-                        host
-                    )
+                configOptions.initializeFromJson(
+                    config.configFileJsonObj,
+                    config.configFileDirUri,
+                    this.serviceProvider,
+                    host
                 );
             }
 
@@ -693,24 +680,15 @@ export class AnalyzerService {
 
             // When not in language server mode, command line options override config file options.
             if (!commandLineOptions.fromLanguageServer) {
-                errors.push(
-                    ...this._applyCommandLineOverrides(
-                        configOptions,
-                        commandLineOptions.configSettings,
-                        projectRoot,
-                        false
-                    )
-                );
+                this._applyCommandLineOverrides(configOptions, commandLineOptions.configSettings, projectRoot, false);
             }
         } else {
             // If there are no config files, we can then directly apply the command line options.
-            errors.push(
-                ...this._applyCommandLineOverrides(
-                    configOptions,
-                    commandLineOptions.configSettings,
-                    projectRoot,
-                    commandLineOptions.fromLanguageServer
-                )
+            this._applyCommandLineOverrides(
+                configOptions,
+                commandLineOptions.configSettings,
+                projectRoot,
+                commandLineOptions.fromLanguageServer
             );
         }
 
@@ -719,20 +697,23 @@ export class AnalyzerService {
         this._applyLanguageServerOptions(configOptions, projectRoot, commandLineOptions.languageServerSettings);
 
         // Ensure that if no command line or config options were applied, we have some defaults.
-        errors.push(...this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions));
+        this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions);
 
         // Once we have defaults, we can then setup the execution environments. Execution environments
         // inherit from the defaults.
         if (configs) {
             for (const config of configs) {
-                errors.push(
-                    ...configOptions.setupExecutionEnvironments(config.configFileJsonObj, config.configFileDirUri)
+                configOptions.setupExecutionEnvironments(
+                    config.configFileJsonObj,
+                    config.configFileDirUri,
+                    // TODO: will this ever be a different console to this._console?
+                    this.serviceProvider.console()
                 );
             }
         }
-
-        if (errors.length > 0) {
-            this._reportConfigParseError(errors);
+        if (this._console instanceof StandardConsole && this._console.errors.length > 0) {
+            this._reportConfigParseError();
+            this._console.errors = [];
         }
 
         return configOptions;
@@ -744,8 +725,7 @@ export class AnalyzerService {
         projectRoot: Uri,
         executionRoot: Uri,
         commandLineOptions: CommandLineOptions
-    ): string[] {
-        const errors = [];
+    ) {
         const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
 
         // If no include paths were provided, assume that all files within
@@ -811,7 +791,7 @@ export class AnalyzerService {
         if (configOptions.stubPath) {
             // If there was a stub path specified, validate it.
             if (!this.fs.existsSync(configOptions.stubPath) || !isDirectory(this.fs, configOptions.stubPath)) {
-                errors.push(`stubPath ${configOptions.stubPath} is not a valid directory.`);
+                this._console.error(`stubPath ${configOptions.stubPath} is not a valid directory.`);
             }
         } else {
             // If no stub path was specified, use a default path.
@@ -822,7 +802,9 @@ export class AnalyzerService {
         // or inconsistent information.
         if (configOptions.venvPath) {
             if (!this.fs.existsSync(configOptions.venvPath) || !isDirectory(this.fs, configOptions.venvPath)) {
-                errors.push(`venvPath ${configOptions.venvPath.toUserVisibleString()} is not a valid directory.`);
+                this._console.error(
+                    `venvPath ${configOptions.venvPath.toUserVisibleString()} is not a valid directory.`
+                );
             }
 
             // venvPath without venv means it won't do anything while resolveImport.
@@ -833,7 +815,7 @@ export class AnalyzerService {
                 const fullVenvPath = configOptions.venvPath.resolvePaths(configOptions.venv);
 
                 if (!this.fs.existsSync(fullVenvPath) || !isDirectory(this.fs, fullVenvPath)) {
-                    errors.push(
+                    this._console.error(
                         `venv ${
                             configOptions.venv
                         } subdirectory not found in venv path ${configOptions.venvPath.toUserVisibleString()}.`
@@ -841,14 +823,14 @@ export class AnalyzerService {
                 } else {
                     const importFailureInfo: string[] = [];
                     if (findPythonSearchPaths(this.fs, configOptions, host, importFailureInfo) === undefined) {
-                        errors.push(
+                        this._console.error(
                             `site-packages directory cannot be located for venvPath ` +
                                 `${configOptions.venvPath.toUserVisibleString()} and venv ${configOptions.venv}.`
                         );
 
                         if (configOptions.verboseOutput) {
                             importFailureInfo.forEach((diag) => {
-                                errors.push(`  ${diag}`);
+                                this._console.error(`  ${diag}`);
                             });
                         }
                     }
@@ -865,7 +847,7 @@ export class AnalyzerService {
 
         if (configOptions.typeshedPath) {
             if (!this.fs.existsSync(configOptions.typeshedPath) || !isDirectory(this.fs, configOptions.typeshedPath)) {
-                errors.push(
+                this._console.error(
                     `typeshedPath ${configOptions.typeshedPath.toUserVisibleString()} is not a valid directory.`
                 );
             }
@@ -883,7 +865,6 @@ export class AnalyzerService {
             configOptions.ensureDefaultPythonVersion(host, this._console);
         }
         configOptions.ensureDefaultPythonPlatform(host, this._console);
-        return errors;
     }
 
     private _applyLanguageServerOptions(
@@ -930,8 +911,8 @@ export class AnalyzerService {
         commandLineOptions: CommandLineConfigOptions,
         projectRoot: Uri,
         fromLanguageServer: boolean
-    ): string[] {
-        const errors = configOptions.initializeTypeCheckingModeFromString(commandLineOptions.typeCheckingMode);
+    ) {
+        configOptions.initializeTypeCheckingModeFromString(commandLineOptions.typeCheckingMode, this._console);
 
         if (commandLineOptions.extraPaths) {
             configOptions.ensureDefaultExtraPaths(
@@ -1035,7 +1016,6 @@ export class AnalyzerService {
                 reportDuplicateSetting('stubPath', configOptions.stubPath.toUserVisibleString());
             }
         }
-        return errors;
     }
 
     // Loads the config JSON object from the specified config file along with any
@@ -1051,7 +1031,6 @@ export class AnalyzerService {
         let curConfigFileUri = primaryConfigFileUri;
 
         const configJsonObjs: ConfigFileContents[] = [];
-        const errors = [];
 
         while (true) {
             this._extendedConfigFileUris.push(curConfigFileUri);
@@ -1073,23 +1052,18 @@ export class AnalyzerService {
 
             // Push onto the start of the array so base configs are processed first.
             configJsonObjs.unshift({ configFileJsonObj, configFileDirUri: curConfigFileUri.getDirectory() });
-            let baseConfigUri;
-            try {
-                baseConfigUri = ConfigOptions.resolveExtends(configFileJsonObj, curConfigFileUri.getDirectory());
-            } catch (e) {
-                if (e instanceof ConfigErrors) {
-                    errors.push(...e.errors);
-                } else {
-                    throw e;
-                }
-            }
+            const baseConfigUri = ConfigOptions.resolveExtends(
+                configFileJsonObj,
+                curConfigFileUri.getDirectory(),
+                this._console
+            );
             if (!baseConfigUri) {
                 break;
             }
 
             // Check for circular references.
             if (this._extendedConfigFileUris.some((uri) => uri.equals(baseConfigUri))) {
-                errors.push(
+                this._console.error(
                     `Circular reference in configuration file "extends" setting: ${curConfigFileUri.toUserVisibleString()} ` +
                         `extends ${baseConfigUri.toUserVisibleString()}`
                 );
@@ -1097,9 +1071,6 @@ export class AnalyzerService {
             }
 
             curConfigFileUri = baseConfigUri;
-        }
-        if (errors.length) {
-            throw new ConfigErrors(errors);
         }
         return configJsonObjs;
     }
@@ -1209,8 +1180,8 @@ export class AnalyzerService {
             try {
                 fileContents = this.fs.readFileSync(fileUri, 'utf8');
             } catch {
-                const error = `Config file "${fileUri.toUserVisibleString()}" could not be read.`;
-                this._reportConfigParseError([error]);
+                this._console.error(`Config file "${fileUri.toUserVisibleString()}" could not be read.`);
+                this._reportConfigParseError();
                 return undefined;
             }
 
@@ -1230,8 +1201,10 @@ export class AnalyzerService {
             // may have been partially written when we read it, resulting in parse
             // errors. We'll give it a little more time and try again.
             if (parseAttemptCount++ >= 5) {
-                const error = `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`;
-                this._reportConfigParseError([error]);
+                this._console.error(
+                    `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`
+                );
+                this._reportConfigParseError();
                 return undefined;
             }
         }
@@ -1951,7 +1924,7 @@ export class AnalyzerService {
         }, timeUntilNextAnalysisInMs);
     }
 
-    private _reportConfigParseError(errors: string[]) {
+    private _reportConfigParseError() {
         if (this._onCompletionCallback) {
             this._onCompletionCallback({
                 diagnostics: [],
@@ -1959,7 +1932,7 @@ export class AnalyzerService {
                 requiringAnalysisCount: { files: 0, cells: 0 },
                 checkingOnlyOpenFiles: true,
                 fatalErrorOccurred: false,
-                configParseErrors: errors,
+                configParseErrorOccurred: true,
                 elapsedTime: 0,
                 reason: 'analysis',
             });

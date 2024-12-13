@@ -53,14 +53,12 @@ import {
     InitializeResult,
     Location,
     MarkupKind,
-    MessageType,
     PrepareRenameParams,
     PublishDiagnosticsParams,
     ReferenceParams,
     RemoteWindow,
     RenameFilesParams,
     RenameParams,
-    ShowMessageNotification,
     SignatureHelp,
     SignatureHelpParams,
     SymbolInformation,
@@ -1285,10 +1283,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             this.sendDiagnostics(fs, { ...fileDiag, reason: results.reason });
         });
 
-        results.configParseErrors.forEach((error) =>
-            this.connection.sendNotification(ShowMessageNotification.type, { message: error, type: MessageType.Error })
-        );
-
         // if any baselined diagnostics disappeared, update the baseline for the effected files
         if (
             results.reason === 'analysis' &&
@@ -1316,7 +1310,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 if (!workspace.rootUri) {
                     continue;
                 }
-                const baseline = new BaselineHandler(this.fs, workspace.rootUri);
+                const baseline = new BaselineHandler(this.fs, workspace.rootUri, this.console);
                 const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
                 if (baselineDiffSummary) {
                     this.console.info(

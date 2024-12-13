@@ -273,7 +273,7 @@ export class BackgroundAnalysisProgram {
                 requiringAnalysisCount: this._program.getFilesToAnalyzeCount(),
                 checkingOnlyOpenFiles: this._program.isCheckingOnlyOpenFiles(),
                 fatalErrorOccurred: false,
-                configParseErrors: [],
+                configParseErrorOccurred: false,
                 elapsedTime: 0,
                 reason: 'tracking',
             });
