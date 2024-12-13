@@ -51,6 +51,7 @@ import { createTypeEvaluatorWithTracker } from './typeEvaluatorWithTracker';
 import { PrintTypeFlags } from './typePrinter';
 import { TypeStubWriter } from './typeStubWriter';
 import { Type } from './types';
+import { BaselineHandler } from '../baseline';
 
 const _maxImportDepth = 256;
 
@@ -137,6 +138,8 @@ export class Program {
     private _editModeTracker = new EditModeTracker();
     private _sourceFileFactory: ISourceFileFactory;
 
+    private _baselineHandler: BaselineHandler;
+
     constructor(
         initialImportResolver: ImportResolver,
         initialConfigOptions: ConfigOptions,
@@ -151,6 +154,7 @@ export class Program {
         this._configOptions = initialConfigOptions;
 
         this._sourceFileFactory = serviceProvider.sourceFileFactory();
+        this._baselineHandler = new BaselineHandler(this.fileSystem, this._configOptions.projectRoot, this._console);
 
         this._cacheManager = serviceProvider.tryGet(ServiceKeys.cacheManager) ?? new CacheManager();
         this._cacheManager.registerCacheOwner(this);
@@ -257,6 +261,7 @@ export class Program {
     setConfigOptions(configOptions: ConfigOptions) {
         this._configOptions = configOptions;
         this._importResolver.setConfigOptions(configOptions);
+        this._baselineHandler.setRootDir(configOptions.projectRoot);
 
         // Create a new evaluator with the updated config options.
         this._createNewEvaluator();
@@ -351,6 +356,7 @@ export class Program {
             importName,
             isThirdPartyImport,
             isInPyTypedPackage,
+            this._baselineHandler,
             this._editModeTracker,
             this._console,
             this._logTracker
@@ -379,6 +385,7 @@ export class Program {
                 moduleImportInfo.moduleName,
                 /* isThirdPartyImport */ false,
                 moduleImportInfo.isThirdPartyPyTypedPresent,
+                this._baselineHandler,
                 this._editModeTracker,
                 this._console,
                 this._logTracker,
@@ -623,6 +630,7 @@ export class Program {
     // to the smaller value to maintain responsiveness.
     analyze(maxTime?: MaxAnalysisTime, token: CancellationToken = CancellationToken.None): boolean {
         return this._runEvaluatorWithCancellationToken(token, () => {
+            this._baselineHandler.invalidateCache();
             const elapsedTime = new Duration();
 
             const openFiles = this._sourceFileList.filter(
@@ -1477,6 +1485,7 @@ export class Program {
                         moduleImportInfo.moduleName,
                         importInfo.isThirdPartyImport,
                         importInfo.isPyTypedPresent,
+                        this._baselineHandler,
                         this._editModeTracker,
                         this._console,
                         this._logTracker
@@ -1619,6 +1628,7 @@ export class Program {
             moduleImportInfo.moduleName,
             /* isThirdPartyImport */ false,
             /* isInPyTypedPackage */ false,
+            this._baselineHandler,
             this._editModeTracker,
             this._console,
             this._logTracker

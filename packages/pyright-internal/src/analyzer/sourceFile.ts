@@ -261,6 +261,7 @@ export class SourceFile {
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
         editMode: SourceFileEditMode,
+        private _baselineHandler: BaselineHandler,
         console?: ConsoleInterface,
         logTracker?: LogTracker,
         ipythonMode?: IPythonMode
@@ -1247,11 +1248,7 @@ export class SourceFile {
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
-        diagList = new BaselineHandler(
-            this.fileSystem,
-            configOptions.projectRoot,
-            this._console
-        ).sortDiagnosticsAndMatchBaseline(this._uri, diagList);
+        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, diagList);
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
