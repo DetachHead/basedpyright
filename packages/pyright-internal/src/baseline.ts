@@ -78,31 +78,37 @@ class BaselineDiff<T extends boolean> {
 }
 
 export class BaselineHandler {
-    readonly fileUri: Uri;
+    private _fileUri!: Uri;
 
     /**
-     * when {@link baselineData} is `undefined` that means there is currently no baseline file, in which case
-     * none of this functionality should be observed by the user until they explicitly opt in to the baseline
-     * feature
+     * `null` means the baseline data hasn't been cached, `undefined` means it has been cached and the result
+     * was that there is no baseline file
      */
+    private _cachedContents: BaselineData | undefined | null = null;
+
     constructor(private _fs: FileSystem, private _rootDir: Uri, private _console: ConsoleInterface) {
-        this.fileUri = baselineFilePath(_rootDir);
+        this.setRootDir(_rootDir);
     }
 
+    get fileUri() {
+        return this._fileUri;
+    }
+
+    setRootDir = (uri: Uri) => {
+        this.invalidateCache();
+        this._rootDir = uri;
+        this._fileUri = baselineFilePath(uri);
+    };
+
     getContents = (): BaselineData | undefined => {
-        let baselineFileContents: string | undefined;
-        try {
-            baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
-        } catch (e) {
-            // assume the file didn't exist
-            return undefined;
+        if (this._cachedContents === null) {
+            this._cachedContents = this._getContents();
         }
-        try {
-            return JSON.parse(baselineFileContents);
-        } catch (e) {
-            this._console.error(`failed to parse baseline file - ${e}`);
-            return undefined;
-        }
+        return this._cachedContents;
+    };
+
+    invalidateCache = () => {
+        this._cachedContents = null;
     };
 
     /**
@@ -170,6 +176,7 @@ export class BaselineHandler {
             this._console.error(`failed to write baseline file - ${e}`);
             return undefined;
         }
+        this._cachedContents = result;
         return new BaselineDiff(this._rootDir, { files: previousBaselineFiles }, result, force);
     };
 
@@ -234,6 +241,22 @@ export class BaselineHandler {
             ...file,
             diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselined),
         }));
+
+    private _getContents = (): BaselineData | undefined => {
+        let baselineFileContents: string | undefined;
+        try {
+            baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
+        } catch (e) {
+            // assume the file didn't exist
+            return undefined;
+        }
+        try {
+            return JSON.parse(baselineFileContents);
+        } catch (e) {
+            this._console.error(`failed to parse baseline file - ${e}`);
+            return undefined;
+        }
+    };
 
     private _getBaselinedErrorsForFile = (file: Uri): BaselinedDiagnostic[] => {
         const relativePath = this._rootDir.getRelativePath(file);

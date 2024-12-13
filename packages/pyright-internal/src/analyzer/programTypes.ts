@@ -5,6 +5,7 @@
  *
  * Various interfaces/types used in
  */
+import { BaselineHandler } from '../baseline';
 import { ConsoleInterface } from '../common/console';
 import { LogTracker } from '../common/logTracker';
 import { ServiceProvider } from '../common/serviceProvider';
@@ -18,6 +19,7 @@ export interface ISourceFileFactory {
         moduleName: string,
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
+        baselineHandler: BaselineHandler,
         editMode: SourceFileEditMode,
         console?: ConsoleInterface,
         logTracker?: LogTracker,

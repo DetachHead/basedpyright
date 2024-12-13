@@ -30,7 +30,7 @@ import { ChokidarFileWatcherProvider } from './common/chokidarFileWatcherProvide
 import { CommandLineOptions as PyrightCommandLineOptions } from './common/commandLineOptions';
 import { ConsoleInterface, LogLevel, StandardConsole, StderrConsole } from './common/console';
 import { fail } from './common/debug';
-import { createDeferred } from './common/deferred';
+import { createDeferred, Deferred } from './common/deferred';
 import { Diagnostic, DiagnosticCategory } from './common/diagnostic';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { FullAccessHost } from './common/fullAccessHost';
@@ -485,7 +485,7 @@ const outputResults = (
         typeof options.executionRoot === 'string' || options.executionRoot === undefined
             ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
             : options.executionRoot;
-
+    service.backgroundAnalysisProgram;
     const baselineFile = new BaselineHandler(service.fs, rootDir, console);
     const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
     if (baselineDiffMessage) {
@@ -543,6 +543,29 @@ const outputResults = (
     return errorCount;
 };
 
+/**
+ * checks for errors parsing config files and / or the baseline file and exits with a non-zero exit code
+ * if there were any
+ */
+const checkForErrors = (
+    exitStatus: Deferred<ExitStatus>,
+    configParseErrorOccurred: boolean,
+    console: ConsoleInterface
+): boolean => {
+    if (console instanceof StandardConsole && console.errors.length > 0) {
+        console.errors = [];
+        exitStatus.resolve(ExitStatus.ConfigFileParseError);
+        return true;
+    }
+    // in basedpyright configParseErrorOccurred is redundant since we track the errors in the StandardConsole
+    // but we keep it just in case an upstream change relies on it without also calling console.error
+    if (configParseErrorOccurred) {
+        exitStatus.resolve(ExitStatus.ConfigFileParseError);
+        return true;
+    }
+    return false;
+};
+
 async function runSingleThreaded(
     args: CommandLineOptions,
     options: PyrightCommandLineOptions,
@@ -560,8 +583,7 @@ async function runSingleThreaded(
             return;
         }
 
-        if (results.configParseErrorOccurred) {
-            exitStatus.resolve(ExitStatus.ConfigFileParseError);
+        if (checkForErrors(exitStatus, results.configParseErrorOccurred, output)) {
             return;
         }
 
@@ -756,8 +778,7 @@ async function runMultiThreaded(
                         return;
                     }
 
-                    if (results.configParseErrorOccurred) {
-                        exitStatus.resolve(ExitStatus.ConfigFileParseError);
+                    if (checkForErrors(exitStatus, results.configParseErrorOccurred, console)) {
                         return;
                     }
 

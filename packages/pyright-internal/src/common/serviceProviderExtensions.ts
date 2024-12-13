@@ -18,6 +18,7 @@ import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
 import { DocStringService, PyrightDocStringService } from './docStringService';
 import { CommandService, WindowService } from './languageServerInterface';
+import { BaselineHandler } from '../baseline';
 
 declare module './serviceProvider' {
     interface ServiceProvider {
@@ -104,6 +105,7 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
         moduleName: string,
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
+        baselineHandler: BaselineHandler,
         editMode: SourceFileEditMode,
         console?: ConsoleInterface,
         logTracker?: LogTracker,
@@ -116,6 +118,7 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
             isThirdPartyImport,
             isThirdPartyPyTypedPresent,
             editMode,
+            baselineHandler,
             console,
             logTracker,
             ipythonMode

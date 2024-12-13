@@ -711,10 +711,6 @@ export class AnalyzerService {
                 );
             }
         }
-        if (this._console instanceof StandardConsole && this._console.errors.length > 0) {
-            this._reportConfigParseError();
-            this._console.errors = [];
-        }
 
         return configOptions;
     }
