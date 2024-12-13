@@ -16,7 +16,7 @@ import {
     DiagnosticSeverityOverridesMap,
     getDiagnosticSeverityOverrides,
 } from './commandLineOptions';
-import { NoErrorConsole, NullConsole } from './console';
+import { ConsoleInterface, NoErrorConsole, NullConsole } from './console';
 import { isBoolean } from './core';
 import { TaskListToken } from './diagnostic';
 import { DiagnosticRule } from './diagnosticRules';
@@ -1278,12 +1278,6 @@ export function matchFileSpecs(configOptions: ConfigOptions, uri: Uri, isFile = 
     return false;
 }
 
-export class ConfigErrors extends Error {
-    constructor(public errors: string[]) {
-        super(errors.join('\n'));
-    }
-}
-
 /**
  * keep track of which options have been parsed so we can raise an error on unknown options later.
  * this is pretty cringe and we should just replace all this with some sort of schema validator thingy
@@ -1526,26 +1520,24 @@ export class ConfigOptions {
      *
      * @returns any errors that occurred
      */
-    initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined): string[] {
+    initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined, console_: ConsoleInterface) {
         if (typeCheckingMode !== undefined) {
             if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
                 this.initializeTypeCheckingMode(typeCheckingMode as TypeCheckingMode);
             } else {
-                return [
+                console_.error(
                     `invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(
                         allTypeCheckingModes
-                    )}`,
-                ];
+                    )}`
+                );
             }
         }
-        return [];
     }
 
     // Initialize the structure from a JSON object.
-    initializeFromJson(configObj: any, configDirUri: Uri, serviceProvider: ServiceProvider, host: Host): string[] {
+    initializeFromJson(configObj: any, configDirUri: Uri, serviceProvider: ServiceProvider, host: Host) {
         this.initializedFromJson = true;
         const console = serviceProvider.tryGet(ServiceKeys.console) ?? new NullConsole();
-        const errors: string[] = [];
 
         // we initialize it with `extends` because this option gets read before this function gets called
         // 'executionEnvironments' also gets read elsewhere
@@ -1560,12 +1552,12 @@ export class ConfigOptions {
             const configValue = configObj[key];
             if (configValue !== undefined) {
                 if (!Array.isArray(configValue)) {
-                    errors.push(`Config "${key}" entry must contain an array.`);
+                    console.error(`Config "${key}" entry must contain an array.`);
                 } else {
                     this[key] = [];
                     (configValue as unknown[]).forEach((fileSpec, index) => {
                         if (typeof fileSpec !== 'string') {
-                            errors.push(`Index ${index} of "${key}" array should be a string.`);
+                            console.error(`Index ${index} of "${key}" array should be a string.`);
                         } else {
                             // We'll allow absolute paths. While it
                             // is not recommended to use absolute paths anywhere in
@@ -1579,13 +1571,13 @@ export class ConfigOptions {
         }
 
         // If there is a "typeCheckingMode", it can override the provided setting.
-        errors.push(...this.initializeTypeCheckingModeFromString(configObj.typeCheckingMode));
+        this.initializeTypeCheckingModeFromString(configObj.typeCheckingMode, console);
 
         if (configObj.useLibraryCodeForTypes !== undefined) {
             if (typeof configObj.useLibraryCodeForTypes === 'boolean') {
                 this.useLibraryCodeForTypes = configObj.useLibraryCodeForTypes;
             } else {
-                errors.push(`Config "useLibraryCodeForTypes" entry must be true or false.`);
+                console.error(`Config "useLibraryCodeForTypes" entry must be true or false.`);
             }
         }
 
@@ -1606,7 +1598,7 @@ export class ConfigOptions {
                 configObj[ruleName],
                 ruleName,
                 configRuleSet[ruleName] as DiagnosticLevel,
-                errors
+                console
             );
         });
         this.diagnosticRuleSet = { ...configRuleSet };
@@ -1614,7 +1606,7 @@ export class ConfigOptions {
         // Read the "venvPath".
         if (configObj.venvPath !== undefined) {
             if (typeof configObj.venvPath !== 'string') {
-                errors.push(`Config "venvPath" field must contain a string.`);
+                console.error(`Config "venvPath" field must contain a string.`);
             } else {
                 this.venvPath = configDirUri.resolvePaths(configObj.venvPath);
             }
@@ -1623,7 +1615,7 @@ export class ConfigOptions {
         // Read the "venv" name.
         if (configObj.venv !== undefined) {
             if (typeof configObj.venv !== 'string') {
-                errors.push(`Config "venv" field must contain a string.`);
+                console.error(`Config "venv" field must contain a string.`);
             } else {
                 this.venv = configObj.venv;
             }
@@ -1633,12 +1625,12 @@ export class ConfigOptions {
         const configExtraPaths: Uri[] = [];
         if (configObj.extraPaths !== undefined) {
             if (!Array.isArray(configObj.extraPaths)) {
-                errors.push(`Config "extraPaths" field must contain an array.`);
+                console.error(`Config "extraPaths" field must contain an array.`);
             } else {
                 const pathList = configObj.extraPaths as string[];
                 pathList.forEach((path, pathIndex) => {
                     if (typeof path !== 'string') {
-                        errors.push(`Config "extraPaths" field ${pathIndex} must be a string.`);
+                        console.error(`Config "extraPaths" field ${pathIndex} must be a string.`);
                     } else {
                         configExtraPaths!.push(configDirUri.resolvePaths(path));
                     }
@@ -1654,17 +1646,17 @@ export class ConfigOptions {
                 if (version) {
                     this.defaultPythonVersion = version;
                 } else {
-                    errors.push(`Config "pythonVersion" field contains unsupported version.`);
+                    console.error(`Config "pythonVersion" field contains unsupported version.`);
                 }
             } else {
-                errors.push(`Config "pythonVersion" field must contain a string.`);
+                console.error(`Config "pythonVersion" field must contain a string.`);
             }
         }
 
         // Read the default "pythonPlatform".
         if (configObj.pythonPlatform !== undefined) {
             if (typeof configObj.pythonPlatform !== 'string') {
-                errors.push(`Config "pythonPlatform" field must contain a string.`);
+                console.error(`Config "pythonPlatform" field must contain a string.`);
             } else if (!['Linux', 'Windows', 'Darwin', 'All'].includes(configObj.pythonPlatform)) {
                 `'${configObj.pythonPlatform}' is not a supported Python platform; specify All, Darwin, Linux, or Windows.`;
             } else {
@@ -1687,7 +1679,7 @@ export class ConfigOptions {
         // Read the "typeshedPath" setting.
         if (configObj.typeshedPath !== undefined) {
             if (typeof configObj.typeshedPath !== 'string') {
-                errors.push(`Config "typeshedPath" field must contain a string.`);
+                console.error(`Config "typeshedPath" field must contain a string.`);
             } else {
                 this.typeshedPath = configObj.typeshedPath
                     ? configDirUri.resolvePaths(configObj.typeshedPath)
@@ -1700,16 +1692,16 @@ export class ConfigOptions {
         // Keep this for backward compatibility
         if (configObj.typingsPath !== undefined) {
             if (typeof configObj.typingsPath !== 'string') {
-                errors.push(`Config "typingsPath" field must contain a string.`);
+                console.error(`Config "typingsPath" field must contain a string.`);
             } else {
-                errors.push(`Config "typingsPath" is now deprecated. Please, use stubPath instead.`);
+                console.error(`Config "typingsPath" is now deprecated. Please, use stubPath instead.`);
                 this.stubPath = configDirUri.resolvePaths(configObj.typingsPath);
             }
         }
 
         if (configObj.stubPath !== undefined) {
             if (typeof configObj.stubPath !== 'string') {
-                errors.push(`Config "stubPath" field must contain a string.`);
+                console.error(`Config "stubPath" field must contain a string.`);
             } else {
                 this.stubPath = configDirUri.resolvePaths(configObj.stubPath);
             }
@@ -1720,7 +1712,7 @@ export class ConfigOptions {
         // switch to apply if this setting isn't specified in the config file.
         if (configObj.verboseOutput !== undefined) {
             if (typeof configObj.verboseOutput !== 'boolean') {
-                errors.push(`Config "verboseOutput" field must be true or false.`);
+                console.error(`Config "verboseOutput" field must be true or false.`);
             } else {
                 this.verboseOutput = configObj.verboseOutput;
             }
@@ -1729,14 +1721,14 @@ export class ConfigOptions {
         // Read the "defineConstant" setting.
         if (configObj.defineConstant !== undefined) {
             if (typeof configObj.defineConstant !== 'object' || Array.isArray(configObj.defineConstant)) {
-                errors.push(`Config "defineConstant" field must contain a map indexed by constant names.`);
+                console.error(`Config "defineConstant" field must contain a map indexed by constant names.`);
             } else {
                 const keys = Object.getOwnPropertyNames(configObj.defineConstant);
                 keys.forEach((key) => {
                     const value = configObj.defineConstant[key];
                     const valueType = typeof value;
                     if (valueType !== 'boolean' && valueType !== 'string') {
-                        errors.push(`Defined constant "${key}" must be associated with a boolean or string value.`);
+                        console.error(`Defined constant "${key}" must be associated with a boolean or string value.`);
                     } else {
                         this.defineConstant.set(key, value);
                     }
@@ -1747,7 +1739,7 @@ export class ConfigOptions {
         // Read the "useLibraryCodeForTypes" setting.
         if (configObj.useLibraryCodeForTypes !== undefined) {
             if (typeof configObj.useLibraryCodeForTypes !== 'boolean') {
-                errors.push(`Config "useLibraryCodeForTypes" field must be true or false.`);
+                console.error(`Config "useLibraryCodeForTypes" field must be true or false.`);
             } else {
                 this.useLibraryCodeForTypes = configObj.useLibraryCodeForTypes;
             }
@@ -1767,7 +1759,7 @@ export class ConfigOptions {
             const value = configObj[key];
             if (value !== undefined) {
                 if (typeof value !== 'boolean') {
-                    errors.push(`Config "${key}" field must be true or false.`);
+                    console.error(`Config "${key}" field must be true or false.`);
                 } else {
                     this[key] = value;
                 }
@@ -1777,7 +1769,7 @@ export class ConfigOptions {
         // Read the "typeEvaluationTimeThreshold" setting.
         if (configObj.typeEvaluationTimeThreshold !== undefined) {
             if (typeof configObj.typeEvaluationTimeThreshold !== 'number') {
-                errors.push(`Config "typeEvaluationTimeThreshold" field must be a number.`);
+                console.error(`Config "typeEvaluationTimeThreshold" field must be a number.`);
             } else {
                 this.typeEvaluationTimeThreshold = configObj.typeEvaluationTimeThreshold;
             }
@@ -1786,7 +1778,7 @@ export class ConfigOptions {
         // Read the "functionSignatureDisplay" setting.
         if (configObj.functionSignatureDisplay !== undefined) {
             if (typeof configObj.functionSignatureDisplay !== 'string') {
-                errors.push(`Config "functionSignatureDisplay" field must be true or false.`);
+                console.error(`Config "functionSignatureDisplay" field must be true or false.`);
             } else {
                 if (
                     configObj.functionSignatureDisplay === 'compact' ||
@@ -1796,14 +1788,15 @@ export class ConfigOptions {
                 }
             }
         }
-        errors.push(...unusedConfigDetector.unreadOptions().map((key) => `unknown config option: ${key}`));
-        return errors;
+        for (const key of unusedConfigDetector.unreadOptions()) {
+            console.error(`unknown config option: ${key}`);
+        }
     }
 
-    static resolveExtends(configObj: any, configDirUri: Uri): Uri | undefined {
+    static resolveExtends(configObj: any, configDirUri: Uri, console: ConsoleInterface): Uri | undefined {
         if (configObj.extends !== undefined) {
             if (typeof configObj.extends !== 'string') {
-                throw new ConfigErrors([`Config "extends" field must contain a string.`]);
+                console.error(`Config "extends" field must contain a string.`);
             } else {
                 return configDirUri.resolvePaths(configObj.extends);
             }
@@ -1888,13 +1881,12 @@ export class ConfigOptions {
         }
     }
 
-    setupExecutionEnvironments(configObj: any, configDirUri: Uri): string[] {
+    setupExecutionEnvironments(configObj: any, configDirUri: Uri, console: ConsoleInterface) {
         // Read the "executionEnvironments" array. This should be done at the end
         // after we've established default values.
-        const errors = [];
         if (configObj.executionEnvironments !== undefined) {
             if (!Array.isArray(configObj.executionEnvironments)) {
-                errors.push(`Config "executionEnvironments" field must contain an array.`);
+                console.error(`Config "executionEnvironments" field must contain an array.`);
             } else {
                 this.executionEnvironments = [];
 
@@ -1903,30 +1895,25 @@ export class ConfigOptions {
                 execEnvironments.forEach((env, index) => {
                     const unusedConfigDetector = new UnusedConfigDetector(env);
                     env = unusedConfigDetector.proxy;
-                    const result = this._initExecutionEnvironmentFromJson(
+                    const execEnv = this._initExecutionEnvironmentFromJson(
                         env,
                         configDirUri,
                         index,
+                        console,
                         this.diagnosticRuleSet,
                         this.defaultPythonVersion,
                         this.defaultPythonPlatform,
                         this.defaultExtraPaths || []
                     );
-
-                    if (result instanceof ExecutionEnvironment) {
-                        this.executionEnvironments.push(result);
-                        errors.push(
-                            ...unusedConfigDetector
-                                .unreadOptions()
-                                .map((key) => `unknown config option in execution environment "${env.root}": ${key}`)
-                        );
-                    } else {
-                        errors.push(...result);
+                    if (execEnv) {
+                        this.executionEnvironments.push(execEnv);
+                    }
+                    for (const key of unusedConfigDetector.unreadOptions()) {
+                        console.error(`unknown config option in execution environment "${env.root}": ${key}`);
                     }
                 });
             }
         }
-        return errors;
     }
 
     private _getEnvironmentName(): string {
@@ -1948,14 +1935,14 @@ export class ConfigOptions {
         value: any,
         fieldName: string,
         defaultValue: DiagnosticLevel,
-        errors: string[]
+        console: ConsoleInterface
     ): DiagnosticLevel {
         if (value === undefined) {
             return defaultValue;
         }
         const result = parseDiagLevel(value);
         if (result === undefined) {
-            errors.push(
+            console.error(
                 `Config "${fieldName}" entry must be true, false, ${userFacingOptionsList(
                     allDiagnosticCategories
                 )}. (received: "${value}")`
@@ -1969,12 +1956,12 @@ export class ConfigOptions {
         envObj: any,
         configDirUri: Uri,
         index: number,
+        console: ConsoleInterface,
         configDiagnosticRuleSet: DiagnosticRuleSet,
         configPythonVersion: PythonVersion | undefined,
         configPythonPlatform: string | undefined,
         configExtraPaths: Uri[]
-    ): ExecutionEnvironment | string[] {
-        const errors: string[] = [];
+    ): ExecutionEnvironment | undefined {
         try {
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
@@ -1989,18 +1976,20 @@ export class ConfigOptions {
             if (envObj.root && typeof envObj.root === 'string') {
                 newExecEnv.root = configDirUri.resolvePaths(envObj.root);
             } else {
-                errors.push(`Config executionEnvironments index ${index}: missing root value.`);
+                console.error(`Config executionEnvironments index ${index}: missing root value.`);
             }
 
             // Validate the extraPaths.
             if (envObj.extraPaths) {
                 if (!Array.isArray(envObj.extraPaths)) {
-                    errors.push(`Config executionEnvironments index ${index}: extraPaths field must contain an array.`);
+                    console.error(
+                        `Config executionEnvironments index ${index}: extraPaths field must contain an array.`
+                    );
                 } else {
                     const pathList = envObj.extraPaths as string[];
                     pathList.forEach((path, pathIndex) => {
                         if (typeof path !== 'string') {
-                            errors.push(
+                            console.error(
                                 `Config executionEnvironments index ${index}:` +
                                     ` extraPaths field ${pathIndex} must be a string.`
                             );
@@ -2018,10 +2007,12 @@ export class ConfigOptions {
                     if (version) {
                         newExecEnv.pythonVersion = version;
                     } else {
-                        errors.push(`Config executionEnvironments index ${index} contains unsupported pythonVersion.`);
+                        console.error(
+                            `Config executionEnvironments index ${index} contains unsupported pythonVersion.`
+                        );
                     }
                 } else {
-                    errors.push(`Config executionEnvironments index ${index} pythonVersion must be a string.`);
+                    console.error(`Config executionEnvironments index ${index} pythonVersion must be a string.`);
                 }
             }
 
@@ -2030,7 +2021,7 @@ export class ConfigOptions {
                 if (typeof envObj.pythonPlatform === 'string') {
                     newExecEnv.pythonPlatform = envObj.pythonPlatform;
                 } else {
-                    errors.push(`Config executionEnvironments index ${index} pythonPlatform must be a string.`);
+                    console.error(`Config executionEnvironments index ${index} pythonPlatform must be a string.`);
                 }
             }
 
@@ -2039,7 +2030,7 @@ export class ConfigOptions {
                 if (typeof envObj.name === 'string') {
                     newExecEnv.name = envObj.name;
                 } else {
-                    errors.push(`Config executionEnvironments index ${index} name must be a string.`);
+                    console.error(`Config executionEnvironments index ${index} name must be a string.`);
                 }
             }
 
@@ -2058,14 +2049,14 @@ export class ConfigOptions {
                     envObj[ruleName],
                     ruleName,
                     newExecEnv.diagnosticRuleSet[ruleName] as DiagnosticLevel,
-                    errors
+                    console
                 );
             });
 
-            return errors.length > 0 ? errors : newExecEnv;
+            return newExecEnv;
         } catch {
-            errors.push(`Config executionEnvironments index ${index} is not accessible.`);
-            return errors;
+            console.error(`Config executionEnvironments index ${index} is not accessible.`);
+            return undefined;
         }
     }
 }

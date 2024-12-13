@@ -560,10 +560,7 @@ async function runSingleThreaded(
             return;
         }
 
-        if (results.configParseErrors.length) {
-            for (const error of results.configParseErrors) {
-                output.error(error);
-            }
+        if (results.configParseErrorOccurred) {
             exitStatus.resolve(ExitStatus.ConfigFileParseError);
             return;
         }
@@ -759,7 +756,7 @@ async function runMultiThreaded(
                         return;
                     }
 
-                    if (results.configParseErrors.length) {
+                    if (results.configParseErrorOccurred) {
                         exitStatus.resolve(ExitStatus.ConfigFileParseError);
                         return;
                     }

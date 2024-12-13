@@ -255,7 +255,7 @@ describe('invalid config', () => {
         const { analysisResult } = setupPyprojectToml(
             'src/tests/samples/project_with_invalid_option_in_execution_environments'
         );
-        assert.deepStrictEqual(analysisResult?.configParseErrors, [
+        assert.deepStrictEqual(analysisResult?.configParseErrorOccurred, [
             `unknown config option in execution environment "foo": asdf`,
         ]);
     });
@@ -385,7 +385,7 @@ test('both pyright and basedpyright in pyproject.toml', () => {
         'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
     );
     assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
-    assert(analysisResult?.configParseErrors.length);
+    assert(analysisResult?.configParseErrorOccurred);
     assert(!analysisResult.fatalErrorOccurred);
 });
 
@@ -393,7 +393,7 @@ test('invalid option value in pyproject.toml', () => {
     const analysisResult = setupPyprojectToml(
         'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
     ).analysisResult;
-    assert(analysisResult?.configParseErrors.length);
+    assert(analysisResult?.configParseErrorOccurred);
     assert(!analysisResult.fatalErrorOccurred);
 });
 
@@ -402,7 +402,7 @@ test('unknown option name in pyproject.toml', () => {
         'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
     );
     assert(!('asdf' in configOptions));
-    assert(analysisResult?.configParseErrors.length);
+    assert(analysisResult?.configParseErrorOccurred);
     assert(!analysisResult.fatalErrorOccurred);
 });
 

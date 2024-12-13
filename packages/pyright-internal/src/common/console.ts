@@ -83,6 +83,8 @@ export class NullConsole implements ConsoleInterface {
 }
 
 export class StandardConsole implements ConsoleInterface {
+    /** useful for determining whether to exit with a non-zero exit code */
+    errors = new Array<string>();
     constructor(private _maxLevel: LogLevel = LogLevel.Log) {}
 
     get level(): LogLevel {
@@ -108,6 +110,7 @@ export class StandardConsole implements ConsoleInterface {
     }
 
     error(message: string) {
+        this.errors.push(message);
         if (getLevelNumber(this._maxLevel) >= getLevelNumber(LogLevel.Error)) {
             console.error(message);
         }
