@@ -548,8 +548,8 @@ const checkForErrors = (
     configParseErrorOccurred: boolean,
     console: ConsoleInterface
 ): boolean => {
-    if (console instanceof StandardConsole && console.errors.length > 0) {
-        console.errors = [];
+    if (console instanceof StandardConsole && console.errorWasLogged) {
+        console.errorWasLogged = false;
         exitStatus.resolve(ExitStatus.ConfigFileParseError);
         return true;
     }
