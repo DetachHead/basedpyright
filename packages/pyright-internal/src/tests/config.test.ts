@@ -27,9 +27,18 @@ import { AnalysisResults } from '../analyzer/analysis';
 import { existsSync } from 'fs';
 import { NoAccessHost } from '../common/host';
 
+class ErrorTrackingNullConsole extends NullConsole {
+    errors = new Array<string>();
+
+    override error(message: string) {
+        this.errors.push(message);
+        super.error(message);
+    }
+}
+
 function createAnalyzer(console?: ConsoleInterface) {
     const tempFile = new RealTempFile();
-    const cons = console ?? new NullConsole();
+    const cons = console ?? new ErrorTrackingNullConsole();
     const fs = createFromRealFileSystem(tempFile, cons);
     const serviceProvider = createServiceProvider(fs, cons, tempFile);
     return new AnalyzerService('<default>', serviceProvider, { console: cons });
@@ -227,12 +236,12 @@ describe('invalid config', () => {
         const json = { asdf: 1 };
 
         const fs = new TestFileSystem(/* ignoreCase */ false);
-        const nullConsole = new NullConsole();
+        const console = new ErrorTrackingNullConsole();
 
-        const sp = createServiceProvider(fs, nullConsole);
-        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+        const sp = createServiceProvider(fs, console);
+        configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
 
-        assert.deepStrictEqual(errors, ['unknown config option: asdf']);
+        assert.deepStrictEqual(console.errors, ['unknown config option: asdf']);
     });
     test('unknown value for top-level option', () => {
         const cwd = UriEx.file(normalizePath(process.cwd()));
@@ -242,22 +251,20 @@ describe('invalid config', () => {
         const json = { typeCheckingMode: 'asdf' };
 
         const fs = new TestFileSystem(/* ignoreCase */ false);
-        const nullConsole = new NullConsole();
+        const console = new ErrorTrackingNullConsole();
 
-        const sp = createServiceProvider(fs, nullConsole);
-        const errors = configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+        const sp = createServiceProvider(fs, console);
+        configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
 
-        assert.deepStrictEqual(errors, [
+        assert.deepStrictEqual(console.errors, [
             'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
         ]);
     });
     test('unknown value in execution environments', () => {
-        const { analysisResult } = setupPyprojectToml(
+        const { consoleErrors } = setupPyprojectToml(
             'src/tests/samples/project_with_invalid_option_in_execution_environments'
         );
-        assert.deepStrictEqual(analysisResult?.configParseErrorOccurred, [
-            `unknown config option in execution environment "foo": asdf`,
-        ]);
+        assert.deepStrictEqual(consoleErrors, [`unknown config option in execution environment "foo": asdf`]);
     });
 });
 
@@ -348,10 +355,15 @@ test('AutoSearchPathsOnAndExtraPaths', () => {
 
 const setupPyprojectToml = (
     projectPath: string
-): { configOptions: ConfigOptions; analysisResult: AnalysisResults | undefined } => {
+): {
+    configOptions: ConfigOptions;
+    analysisResult: AnalysisResults | undefined;
+    consoleErrors: string[];
+} => {
     const cwd = normalizePath(combinePaths(process.cwd(), projectPath));
     assert(existsSync(cwd));
-    const service = createAnalyzer();
+    const console = new ErrorTrackingNullConsole();
+    const service = createAnalyzer(console);
     let analysisResult = undefined as AnalysisResults | undefined;
     service.setCompletionCallback((result) => (analysisResult = result));
     const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
@@ -359,7 +371,8 @@ const setupPyprojectToml = (
     service.setOptions(commandLineOptions);
 
     return {
-        configOptions: service.test_getConfigOptions(commandLineOptions),
+        configOptions: service.getConfigOptions(),
+        consoleErrors: console.errors,
         analysisResult,
     };
 };
@@ -390,20 +403,22 @@ test('both pyright and basedpyright in pyproject.toml', () => {
 });
 
 test('invalid option value in pyproject.toml', () => {
-    const analysisResult = setupPyprojectToml(
+    const { consoleErrors, analysisResult } = setupPyprojectToml(
         'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
-    ).analysisResult;
-    assert(analysisResult?.configParseErrorOccurred);
-    assert(!analysisResult.fatalErrorOccurred);
+    );
+    assert.deepStrictEqual(consoleErrors, [
+        'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
+    ]);
+    assert(!analysisResult?.fatalErrorOccurred);
 });
 
 test('unknown option name in pyproject.toml', () => {
-    const { configOptions, analysisResult } = setupPyprojectToml(
+    const { configOptions, analysisResult, consoleErrors } = setupPyprojectToml(
         'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
     );
     assert(!('asdf' in configOptions));
-    assert(analysisResult?.configParseErrorOccurred);
-    assert(!analysisResult.fatalErrorOccurred);
+    assert.deepStrictEqual(consoleErrors, ['unknown config option: asdf']);
+    assert(!analysisResult?.fatalErrorOccurred);
 });
 
 test('FindFilesInMemoryOnly', () => {
