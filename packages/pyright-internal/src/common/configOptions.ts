@@ -1306,7 +1306,7 @@ class UnusedConfigDetector<T extends object> {
 export class ConfigOptions {
     // Absolute directory of project. All relative paths in the config
     // are based on this path.
-    readonly projectRoot: Uri;
+    projectRoot: Uri;
 
     // Path to python interpreter.
     pythonPath?: Uri | undefined;

@@ -17,16 +17,25 @@ import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem
 import { createServiceProvider } from '../common/serviceProviderExtensions';
 import { parseAndGetTestState } from './harness/fourslash/testState';
 import { Uri } from '../common/uri/uri';
+import { BaselineHandler } from '../baseline';
 
 test('Empty', () => {
     const filePath = combinePaths(process.cwd(), 'tests/samples/test_file1.py');
     const tempFile = new RealTempFile();
     const fs = createFromRealFileSystem(tempFile);
     const serviceProvider = createServiceProvider(tempFile, fs);
-    const sourceFile = new SourceFile(serviceProvider, Uri.file(filePath, serviceProvider), '', false, false, {
-        isEditMode: false,
-    });
     const configOptions = new ConfigOptions(Uri.file(process.cwd(), serviceProvider));
+    const sourceFile = new SourceFile(
+        serviceProvider,
+        Uri.file(filePath, serviceProvider),
+        '',
+        false,
+        false,
+        {
+            isEditMode: false,
+        },
+        new BaselineHandler(fs, configOptions, undefined)
+    );
     const sp = createServiceProvider(fs);
     const importResolver = new ImportResolver(sp, configOptions, new FullAccessHost(sp));
 

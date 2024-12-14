@@ -1310,7 +1310,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 if (!workspace.rootUri) {
                     continue;
                 }
-                const baseline = new BaselineHandler(this.fs, workspace.rootUri, this.console);
+                const baseline = new BaselineHandler(this.fs, workspace.service.getConfigOptions(), this.console);
                 const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
                 if (baselineDiffSummary) {
                     this.console.info(

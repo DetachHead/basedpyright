@@ -9,7 +9,8 @@ import { diffArrays } from 'diff';
 import { assert } from './common/debug';
 import { Range } from './common/textRange';
 import { add } from 'lodash';
-import { ConsoleInterface } from './common/console';
+import { ConsoleInterface, StandardConsole } from './common/console';
+import { ConfigOptions } from './common/configOptions';
 
 export interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
@@ -78,37 +79,32 @@ class BaselineDiff<T extends boolean> {
 }
 
 export class BaselineHandler {
-    private _fileUri!: Uri;
-
     /**
-     * `null` means the baseline data hasn't been cached, `undefined` means it has been cached and the result
-     * was that there is no baseline file
+     * project root can change and we need to invalidate the cache when that happens
      */
-    private _cachedContents: BaselineData | undefined | null = null;
+    private _cache?: { content: BaselineData | undefined; projectRoot: Uri };
+    private _console: ConsoleInterface;
 
-    constructor(private _fs: FileSystem, private _rootDir: Uri, private _console: ConsoleInterface) {
-        this.setRootDir(_rootDir);
+    constructor(private _fs: FileSystem, public configOptions: ConfigOptions, console: ConsoleInterface | undefined) {
+        this._console = console ?? new StandardConsole();
     }
 
     get fileUri() {
-        return this._fileUri;
+        return baselineFilePath(this.configOptions.projectRoot);
     }
 
-    setRootDir = (uri: Uri) => {
-        this.invalidateCache();
-        this._rootDir = uri;
-        this._fileUri = baselineFilePath(uri);
-    };
-
     getContents = (): BaselineData | undefined => {
-        if (this._cachedContents === null) {
-            this._cachedContents = this._getContents();
+        if (!this._cache || this._cache.projectRoot !== this.configOptions.projectRoot) {
+            const result = this._getContents();
+            this._setCache(result);
+            return result;
+        } else {
+            return this._cache.content;
         }
-        return this._cachedContents;
     };
 
     invalidateCache = () => {
-        this._cachedContents = null;
+        this._cache = undefined;
     };
 
     /**
@@ -155,7 +151,7 @@ export class BaselineHandler {
         for (const filePath in previousBaselineFiles) {
             if (
                 !newBaselineFiles[filePath] &&
-                (!removeDeletedFiles || fileExists(this._fs, this._rootDir.combinePaths(filePath)))
+                (!removeDeletedFiles || fileExists(this._fs, this.configOptions.projectRoot.combinePaths(filePath)))
             ) {
                 newBaselineFiles[filePath] = previousBaselineFiles[filePath];
             }
@@ -176,8 +172,8 @@ export class BaselineHandler {
             this._console.error(`failed to write baseline file - ${e}`);
             return undefined;
         }
-        this._cachedContents = result;
-        return new BaselineDiff(this._rootDir, { files: previousBaselineFiles }, result, force);
+        this._setCache(result);
+        return new BaselineDiff(this.configOptions.projectRoot, { files: previousBaselineFiles }, result, force);
     };
 
     sortDiagnosticsAndMatchBaseline = (moduleUri: Uri, diagnostics: Diagnostic[]): Diagnostic[] => {
@@ -258,8 +254,12 @@ export class BaselineHandler {
         }
     };
 
+    private _setCache = (content: BaselineData | undefined) => {
+        this._cache = { projectRoot: this.configOptions.projectRoot, content };
+    };
+
     private _getBaselinedErrorsForFile = (file: Uri): BaselinedDiagnostic[] => {
-        const relativePath = this._rootDir.getRelativePath(file);
+        const relativePath = this.configOptions.projectRoot.getRelativePath(file);
         let result;
         // if this is undefined it means the file isn't in the workspace
         if (relativePath) {
@@ -273,7 +273,7 @@ export class BaselineHandler {
             files: {},
         };
         for (const fileWithDiagnostics of filesWithDiagnostics) {
-            const filePath = this._rootDir.getRelativePath(fileWithDiagnostics.fileUri)!.toString();
+            const filePath = this.configOptions.projectRoot.getRelativePath(fileWithDiagnostics.fileUri)!.toString();
             const errorDiagnostics = fileWithDiagnostics.diagnostics.filter(
                 (diagnostic) => diagnostic.category !== DiagnosticCategory.Hint || diagnostic.baselined
             );
