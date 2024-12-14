@@ -95,7 +95,7 @@ the basedpyright language server settings can be configured using a workspace or
 
 ### neovim
 
-the language server can be configured in your neovim settings:
+The language server can be configured in your neovim settings:
 
 ```lua
 require("lspconfig").basedpyright.setup {
