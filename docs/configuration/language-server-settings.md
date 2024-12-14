@@ -99,9 +99,11 @@ the language server can be configured in your neovim settings:
 
 ```lua
 require("lspconfig").basedpyright.setup {
-  basedpyright = {
-    analysis = {
-      diagnosticMode = "openFilesOnly",
+  settings = {
+    basedpyright = {
+      analysis = {
+        diagnosticMode = "openFilesOnly",
+        }
     }
   }
 }
