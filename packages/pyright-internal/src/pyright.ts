@@ -481,12 +481,8 @@ const outputResults = (
     minSeverityLevel: SeverityLevel,
     output: ConsoleInterface
 ) => {
-    const rootDir =
-        typeof options.executionRoot === 'string' || options.executionRoot === undefined
-            ? Uri.file(options.executionRoot ?? '', service.serviceProvider)
-            : options.executionRoot;
     service.backgroundAnalysisProgram;
-    const baselineFile = new BaselineHandler(service.fs, rootDir, console);
+    const baselineFile = new BaselineHandler(service.fs, service.getConfigOptions(), console);
     const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
     if (baselineDiffMessage) {
         console.info(baselineDiffMessage);
