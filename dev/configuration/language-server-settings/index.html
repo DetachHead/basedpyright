@@ -1682,11 +1682,13 @@
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="neovim">neovim</h3>
-<p>the language server can be configured in your neovim settings:</p>
+<p>The language server can be configured in your neovim settings:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;lspconfig&quot;</span><span class="p">).</span><span class="n">basedpyright</span><span class="p">.</span><span class="n">setup</span> <span class="p">{</span>
-  <span class="n">basedpyright</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
-      <span class="n">diagnosticMode</span> <span class="o">=</span> <span class="s2">&quot;openFilesOnly&quot;</span><span class="p">,</span>
+  <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">basedpyright</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">diagnosticMode</span> <span class="o">=</span> <span class="s2">&quot;openFilesOnly&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
     <span class="p">}</span>
   <span class="p">}</span>
 <span class="p">}</span>
