@@ -49,7 +49,6 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { BaselineHandler } from './baseline';
 import { pluralize } from './common/stringUtils';
 import {
     allTypeCheckingModes,
@@ -481,8 +480,7 @@ const outputResults = (
     minSeverityLevel: SeverityLevel,
     output: ConsoleInterface
 ) => {
-    service.backgroundAnalysisProgram;
-    const baselineFile = new BaselineHandler(service.fs, service.getConfigOptions(), console);
+    const baselineFile = service.backgroundAnalysisProgram.program.baselineHandler;
     const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
     if (baselineDiffMessage) {
         console.info(baselineDiffMessage);
