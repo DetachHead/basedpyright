@@ -1178,7 +1178,6 @@ export class AnalyzerService {
                 fileContents = this.fs.readFileSync(fileUri, 'utf8');
             } catch {
                 this._console.error(`Config file "${fileUri.toUserVisibleString()}" could not be read.`);
-                this._reportConfigParseError();
                 return undefined;
             }
 
@@ -1201,7 +1200,6 @@ export class AnalyzerService {
                 this._console.error(
                     `Config file "${fileUri.toUserVisibleString()}" could not be parsed. Verify that format is correct.`
                 );
-                this._reportConfigParseError();
                 return undefined;
             }
         }
@@ -1919,20 +1917,5 @@ export class AnalyzerService {
             // start the analysis.
             this.runAnalysis(this._backgroundAnalysisCancellationSource.token);
         }, timeUntilNextAnalysisInMs);
-    }
-
-    private _reportConfigParseError() {
-        if (this._onCompletionCallback) {
-            this._onCompletionCallback({
-                diagnostics: [],
-                filesInProgram: 0,
-                requiringAnalysisCount: { files: 0, cells: 0 },
-                checkingOnlyOpenFiles: true,
-                fatalErrorOccurred: false,
-                configParseErrorOccurred: true,
-                elapsedTime: 0,
-                reason: 'analysis',
-            });
-        }
     }
 }

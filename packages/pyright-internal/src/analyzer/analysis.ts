@@ -26,7 +26,6 @@ export interface AnalysisResults {
     checkingOnlyOpenFiles: boolean;
     requiringAnalysisCount: RequiringAnalysisCount;
     fatalErrorOccurred: boolean;
-    configParseErrorOccurred: boolean;
     elapsedTime: number;
     error?: Error | undefined;
     reason: 'analysis' | 'tracking';
@@ -75,7 +74,6 @@ export function analyzeProgram(
                 requiringAnalysisCount: requiringAnalysisCount,
                 checkingOnlyOpenFiles: program.isCheckingOnlyOpenFiles(),
                 fatalErrorOccurred: false,
-                configParseErrorOccurred: false,
                 elapsedTime,
                 reason: 'analysis',
             });
@@ -94,7 +92,6 @@ export function analyzeProgram(
             requiringAnalysisCount: { files: 0, cells: 0 },
             checkingOnlyOpenFiles: true,
             fatalErrorOccurred: true,
-            configParseErrorOccurred: false,
             elapsedTime: 0,
             error: debug.getSerializableError(e),
             reason: 'analysis',

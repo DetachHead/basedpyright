@@ -543,23 +543,11 @@ const outputResults = (
  * checks for errors parsing config files and / or the baseline file and exits with a non-zero exit code
  * if there were any
  */
-const checkForErrors = (
-    exitStatus: Deferred<ExitStatus>,
-    configParseErrorOccurred: boolean,
-    console: ConsoleInterface
-): boolean => {
+const checkForErrors = (exitStatus: Deferred<ExitStatus>, console: ConsoleInterface) => {
     if (console instanceof StandardConsole && console.errorWasLogged) {
         console.errorWasLogged = false;
         exitStatus.resolve(ExitStatus.ConfigFileParseError);
-        return true;
     }
-    // in basedpyright configParseErrorOccurred is redundant since we track the errors in the StandardConsole
-    // but we keep it just in case an upstream change relies on it without also calling console.error
-    if (configParseErrorOccurred) {
-        exitStatus.resolve(ExitStatus.ConfigFileParseError);
-        return true;
-    }
-    return false;
 };
 
 async function runSingleThreaded(
@@ -579,9 +567,7 @@ async function runSingleThreaded(
             return;
         }
 
-        if (checkForErrors(exitStatus, results.configParseErrorOccurred, output)) {
-            return;
-        }
+        checkForErrors(exitStatus, output);
 
         const errorCount =
             args.createstub || args.verifytypes
@@ -774,9 +760,7 @@ async function runMultiThreaded(
                         return;
                     }
 
-                    if (checkForErrors(exitStatus, results.configParseErrorOccurred, console)) {
-                        return;
-                    }
+                    checkForErrors(exitStatus, console);
 
                     for (const fileDiag of results.diagnostics) {
                         fileDiagnostics.push(FileDiagnostics.fromJsonObj(fileDiag));
