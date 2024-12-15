@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 from functools import partial
 from subprocess import run as stupid_run
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from mkdocs_macros.plugin import MacrosPlugin
 
 run = partial(stupid_run, check=True, capture_output=True)
