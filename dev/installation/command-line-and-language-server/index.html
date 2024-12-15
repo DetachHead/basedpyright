@@ -1465,7 +1465,7 @@
 
 <h1 id="command-line-language-server">Command-line &amp; language server</h1>
 <h2 id="pypi-package-recommended">pypi package (recommended)</h2>
-<p>unlike pyright, the basedpyright CLI &amp; LSP are available as a <a href="https://pypi.org/project/basedpyright/">pypi package</a> instead of an npm package.</p>
+<p>unlike pyright, the basedpyright CLI and language server are available as a <a href="https://pypi.org/project/basedpyright/">pypi package</a>.</p>
 <p>this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">uv</label><label for="__tabbed_1_2">pdm</label><label for="__tabbed_1_3">pip</label></div>
 <div class="tabbed-content">
@@ -1489,7 +1489,7 @@
 </div>
 <h2 id="other-installation-methods">other installation methods</h2>
 <p>the basedpyright CLI &amp; language server is also available outside of pypi:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">conda</label><label for="__tabbed_2_2">homebrew</label><label for="__tabbed_2_3">nixOS</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">conda</label><label for="__tabbed_2_2">homebrew</label><label for="__tabbed_2_3">nixOS</label><label for="__tabbed_2_4">npm</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code>conda install conda-forge::basedpyright
@@ -1501,6 +1501,12 @@
 </div>
 <div class="tabbed-block">
 <p><a href="https://search.nixos.org/packages?channel=unstable&amp;show=basedpyright">see here</a></p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>npm install basedpyright
+</code></pre></div>
+<p>note that we recommend installing basedpyright via pypi instead - <a href="https://www.npmjs.com/package/basedpyright?activeTab=readme">see here for more information</a>.</p>
+<p>the basedpyright npm package is intended for users who are unable to use the pypi package for some reason. for example if you're using an operating system not <a href="https://github.com/njzjz/nodejs-wheel?tab=readme-ov-file#available-builds">supported by nodejs-wheel</a> or a version of python older than 3.8.</p>
 </div>
 </div>
 </div>
