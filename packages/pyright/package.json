@@ -40,6 +40,8 @@
     ],
     "main": "index.js",
     "bin": {
+        "basedpyright": "index.js",
+        "basedpyright-langserver": "langserver.index.js",
         "pyright": "index.js",
         "pyright-langserver": "langserver.index.js"
     }

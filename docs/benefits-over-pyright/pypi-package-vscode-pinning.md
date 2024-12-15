@@ -4,7 +4,11 @@
 
 pyright is only published as an npm package, which requires you to install nodejs. [the version on pypi](https://pypi.org/project/pyright/) is just an unofficial wrapper that installs node and the npm package the first time you invoke the cli, [which is quite flaky](https://github.com/RobertCraigie/pyright-python/issues/231).
 
-python developers should not be expected to have to install nodejs in order to typecheck their python code. it should just be a regular pypi package like mypy, ruff, and pretty much all other python tooling. this is why basedpyright is [officially published on pypi](https://pypi.org/project/basedpyright/), which comes bundled with the npm package.
+python developers should not be expected to install nodejs in order to typecheck their python code. although pyright itself is written in typescript and therefore depends on nodejs, it's an implementation detail that should be of no concern to the user. a command-line tool intended for python developers should not have to be installed and managed by a package manager for a completely different language.
+
+this is why basedpyright is [officially published on pypi](https://pypi.org/project/basedpyright/), which comes bundled with the npm package using [nodejs-wheel](https://github.com/njzjz/nodejs-wheel).
+
+see [the installation instructions](../installation/command-line-and-language-server.md#pypi-package-recommended) for more information.
 
 ## ability to pin the version used by vscode
 
