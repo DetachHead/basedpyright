@@ -398,8 +398,7 @@ test('both pyright and basedpyright in pyproject.toml', () => {
         'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
     );
     assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
-    assert(analysisResult?.configParseErrorOccurred);
-    assert(!analysisResult.fatalErrorOccurred);
+    assert(!analysisResult?.fatalErrorOccurred);
 });
 
 test('invalid option value in pyproject.toml', () => {
