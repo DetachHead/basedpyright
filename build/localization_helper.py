@@ -166,7 +166,7 @@ class HelperTUI(App[None]):
     @override
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
-        self.dark = not self.dark
+        self.theme = "textual-dark" if self.theme == "textual-light" else "textual-light"
 
     @work
     async def action_popup_keydiff(self) -> None:
