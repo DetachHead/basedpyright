@@ -4,8 +4,8 @@ basedpyright is a pyright fork with various type checking improvements, improved
 
 **[full documentation](https://docs.basedpyright.com)**
 
-## ⚠ warning
+## installation
 
-this npm package is only really intended for internal use. the recommended way to install basedpyright is [from pypi](https://pypi.org/project/basedpyright/). see [the docs for more information](https://docs.basedpyright.com/latest/benefits-over-pyright/pypi-package-vscode-pinning/).
+it's recommended to install basedpyright [via pypi](https://docs.basedpyright.com/latest/installation/command-line-and-language-server/#pypi-package-recommended) rather than npm. [see here](https://docs.basedpyright.com/latest/benefits-over-pyright/pypi-package-vscode-pinning/#ability-to-pin-the-version-used-by-vscode) for more information.
 
-if you have a use case for the npm package, feel free to [raise an issue](https://github.com/DetachHead/basedpyright/issues).
+the basedpyright npm package is intended for users who are unable to use the pypi package for some reason, for example if you're using an operating system not [supported by nodejs-wheel](https://github.com/njzjz/nodejs-wheel?tab=readme-ov-file#available-builds) or a version of python older than 3.8.
