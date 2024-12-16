@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import override
 
 
@@ -24,3 +24,11 @@ class Bar(Foo):
         ...
 
 def bar(_value: int): ...
+
+class Baz(ABC):
+    @property
+    @abstractmethod
+    def foo(self) -> str:...
+    @foo.setter
+    def foo(self, new_value: str):  # no error, abstract property
+        ...

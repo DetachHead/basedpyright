@@ -884,4 +884,5 @@ export interface TypeEvaluator {
         logger: ConsoleInterface
     ) => void;
     typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
+    markParamAccessed: (param: ParameterNode) => void;
 }

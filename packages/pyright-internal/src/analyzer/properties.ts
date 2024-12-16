@@ -121,6 +121,14 @@ export function clonePropertyWithSetter(
     if (!isProperty(prop)) {
         return prop;
     }
+    // this is safe. see comment on isProperty
+    prop = prop as ClassType;
+
+    // if it's an abstract property, mark the parameter as accessed
+    if (prop.priv?.fgetInfo?.methodType && FunctionType.isAbstractMethod(prop.priv.fgetInfo.methodType)) {
+        // first parameter is self, there should only ever be one other parameter.
+        evaluator.markParamAccessed(errorNode.d.params[1]);
+    }
 
     const classType = prop as ClassType;
     const flagsToClone = classType.shared.flags;
