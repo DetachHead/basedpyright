@@ -1423,7 +1423,8 @@ export function isEllipsisType(type: Type): boolean {
     return isAny(type) && type.priv.isEllipsis;
 }
 
-export function isProperty(type: Type) {
+// type guard commented out due to https://github.com/microsoft/TypeScript/issues/15048
+export function isProperty(type: Type) /* : type is ClassType */ {
     return isClassInstance(type) && ClassType.isPropertyClass(type);
 }
 

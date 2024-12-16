@@ -28434,6 +28434,7 @@ export function createTypeEvaluator(
         checkForCancellation,
         printControlFlowGraph,
         typesOverlap,
+        markParamAccessed,
     };
 
     const codeFlowEngine = getCodeFlowEngine(evaluatorInterface, speculativeTypeTracker);
