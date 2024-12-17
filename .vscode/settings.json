@@ -81,10 +81,6 @@
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
     "typescript.inlayHints.enumMemberValues.enabled": true,
-    "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
-    "typescript.inlayHints.parameterTypes.enabled": true,
-    "typescript.inlayHints.propertyDeclarationTypes.enabled": true,
-    "typescript.inlayHints.variableTypes.enabled": true,
     "jest.jestCommandLine": "npm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
