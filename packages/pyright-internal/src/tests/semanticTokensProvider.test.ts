@@ -4,7 +4,11 @@ import { semanticTokenizeSampleFile } from './testUtils';
 if (process.platform !== 'win32' || !process.env['CI']) {
     test('variable', () => {
         const result = semanticTokenizeSampleFile('variable.py');
-        expect(result).toStrictEqual([{ type: 'variable', length: 1, start: 0, modifiers: [] }]);
+        expect(result).toStrictEqual([
+            { type: 'variable', start: 0, length: 3, modifiers: [] },
+            { type: 'variable', start: 8, length: 3, modifiers: [] },
+            { type: 'variable', start: 20, length: 3, modifiers: [] },
+        ]);
     });
 
     test('type annotation', () => {
