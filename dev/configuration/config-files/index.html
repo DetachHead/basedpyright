@@ -2076,7 +2076,7 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="reportUnnecessaryCast"></a> <strong>reportUnnecessaryCast</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>cast</code> calls that are statically determined to be unnecessary. Such calls are sometimes indicative of a programming error.</p>
 </li>
 <li>
-<p><a name="reportUnnecessaryComparison"></a> <strong>reportUnnecessaryComparison</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>==</code> or <code>!=</code> comparisons or other conditional expressions that are statically determined to always evaluate to False or True. Such comparisons are sometimes indicative of a programming error.</p>
+<p><a name="reportUnnecessaryComparison"></a> <strong>reportUnnecessaryComparison</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>==</code> or <code>!=</code> comparisons or other conditional expressions that are statically determined to always evaluate to False or True. Such comparisons are sometimes indicative of a programming error. Also reports <code>case</code> clauses in a <code>match</code> statement that can be statically determined to never match (with exception of the <code>_</code> wildcard pattern if it's used to explicitly assert that the case is unreachable).</p>
 </li>
 <li>
 <p><a name="reportUnnecessaryContains"></a> <strong>reportUnnecessaryContains</strong> [boolean or string, optional]: Generate or suppress diagnostics for <code>in</code> operations that are statically determined to always evaluate to False or True. Such operations are sometimes indicative of a programming error.</p>
