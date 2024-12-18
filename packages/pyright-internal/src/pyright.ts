@@ -56,6 +56,7 @@ import {
     getBooleanDiagnosticRules,
     getDiagLevelDiagnosticRules,
 } from './common/configOptions';
+import { writeFileSync } from 'fs';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -518,7 +519,7 @@ const outputResults = (
         report = reportDiagnosticsAsText(filteredDiagnostics, minSeverityLevel);
     }
     if (args.gitlabcodequality) {
-        fs.writeFileSync(
+        writeFileSync(
             args.gitlabcodequality,
             JSON.stringify(
                 createGitlabCodeQualityReport(
