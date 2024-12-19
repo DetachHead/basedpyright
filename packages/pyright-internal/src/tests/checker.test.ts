@@ -170,6 +170,16 @@ test('With2', () => {
     TestUtils.validateResults(analysisResults, 3);
 });
 
+test('context manager where __exit__ returns bool | None', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withBased.py']);
+    TestUtils.validateResultsButBased(analysisResults, {
+        hints: [
+            { code: DiagnosticRule.reportUnreachable, line: 45 },
+            { code: DiagnosticRule.reportUnreachable, line: 60 },
+        ],
+    });
+});
+
 test('With3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with3.py']);
 
