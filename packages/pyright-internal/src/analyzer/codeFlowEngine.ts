@@ -1968,7 +1968,10 @@ export function getCodeFlowEngine(
                         // valid return types here are `bool | None`. if the context manager returns `True` then it suppresses,
                         // meaning we only know for sure that the context manager can't swallow exceptions if its return type
                         // does not allow `True`.
-                        const typesToCheck = isUnion(returnType) ? returnType.priv.subtypes : [returnType];
+                        const typesToCheck =
+                            getFileInfo(node).diagnosticRuleSet.strictContextManagerExitTypes && isUnion(returnType)
+                                ? returnType.priv.subtypes
+                                : [returnType];
                         const boolType = typesToCheck.find(
                             (type): type is ClassType => isClassInstance(type) && ClassType.isBuiltIn(type, 'bool')
                         );
