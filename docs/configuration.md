@@ -77,6 +77,8 @@ The following settings determine how different types should be evaluated.
 
 - <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`. [more info](../benefits-over-pyright/improved-generic-narrowing.md)
 
+- <a name="strictContextManagerExitTypes"></a> **strictContextManagerExitTypes** [boolean]: Assume that a context manager could potentially suppress an exception if its `__exit__` method is typed as returning `bool | None`. [more info](../benefits-over-pyright/fixed-context-manager-exit-types.md)
+
 ## Diagnostic Categories
 
 diagnostics can be configured to be reported as any of the following categories:
