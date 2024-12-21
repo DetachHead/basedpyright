@@ -1946,27 +1946,28 @@ export function getCodeFlowEngine(
                 const exitMethodName = isAsync ? '__aexit__' : '__exit__';
                 const exitType = evaluator.getBoundMagicMethod(cmType, exitMethodName);
 
-                if (exitType && isFunction(exitType) && exitType.shared.declaredReturnType) {
-                    let returnType = exitType.shared.declaredReturnType;
-
-                    // If it's an __aexit__ method, its return type will typically be wrapped
-                    // in a Coroutine, so we need to extract the return type from the third
-                    // type argument.
-                    if (isAsync) {
-                        if (
-                            isClassInstance(returnType) &&
-                            ClassType.isBuiltIn(returnType, 'Coroutine') &&
-                            returnType.priv.typeArgs &&
-                            returnType.priv.typeArgs.length >= 3
-                        ) {
-                            returnType = returnType.priv.typeArgs[2];
+                if (exitType && isFunction(exitType)) {
+                    let returnType = FunctionType.getEffectiveReturnType(exitType);
+                    if (returnType) {
+                        // If it's an __aexit__ method, its return type will typically be wrapped
+                        // in a Coroutine, so we need to extract the return type from the third
+                        // type argument.
+                        if (isAsync) {
+                            if (
+                                isClassInstance(returnType) &&
+                                ClassType.isBuiltIn(returnType, 'Coroutine') &&
+                                returnType.priv.typeArgs &&
+                                returnType.priv.typeArgs.length >= 3
+                            ) {
+                                returnType = returnType.priv.typeArgs[2];
+                            }
                         }
-                    }
 
-                    cmSwallowsExceptions = false;
-                    if (isClassInstance(returnType) && ClassType.isBuiltIn(returnType, 'bool')) {
-                        if (returnType.priv.literalValue === undefined || returnType.priv.literalValue === true) {
-                            cmSwallowsExceptions = true;
+                        cmSwallowsExceptions = false;
+                        if (isClassInstance(returnType) && ClassType.isBuiltIn(returnType, 'bool')) {
+                            if (returnType.priv.literalValue === undefined || returnType.priv.literalValue === true) {
+                                cmSwallowsExceptions = true;
+                            }
                         }
                     }
                 }

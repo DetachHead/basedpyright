@@ -200,6 +200,14 @@ test('With6', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('`AbstractContextManager` with exit type specified with a generic', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withGenericExitType.py']);
+
+    TestUtils.validateResultsButBased(analysisResults, {
+        hints: [{ code: DiagnosticRule.reportUnreachable, line: 11 }],
+    });
+});
+
 test('Mro1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro1.py']);
 
