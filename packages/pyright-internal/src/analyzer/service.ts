@@ -1441,9 +1441,13 @@ export class AnalyzerService {
                 }
 
                 if (!foundFileSpec) {
-                    (this._console as ConsoleInterface).error(
-                        `File or directory "${includeSpec.wildcardRoot.toUserVisibleString()}" does not exist.`
-                    );
+                    const path = includeSpec.wildcardRoot.toUserVisibleString();
+                    const message = `File or directory "${path}" does not exist.`;
+                    if (path.includes(Uri.DefaultWorkspaceRootComponent)) {
+                        this._console.warn(message);
+                    } else {
+                        this._console.error(message);
+                    }
                 }
             }
         });
