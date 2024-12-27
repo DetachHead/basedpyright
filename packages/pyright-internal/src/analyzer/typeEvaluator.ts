@@ -15114,6 +15114,10 @@ export function createTypeEvaluator(
         return { type, isIncomplete, typeErrors };
     }
 
+    function _ignoreUntypedModule(ruleset: DiagnosticRuleSet, module: string) {
+        return ruleset.allowedUntypedLibraries.some(x => (module + ".").startsWith(x + "."));
+    }
+
     function reportPossibleUnknownAssignment(
         ruleset: DiagnosticRuleSet,
         rule: DiagnosticRule,
@@ -15125,6 +15129,14 @@ export function createTypeEvaluator(
         // Don't bother if the features are disabled.
         if (ruleset[rule] === 'none' && ruleset.reportAny === 'none') {
             return;
+        }
+
+        // Or if the object is in an untyped library that was explicitly mentioned.
+        if (type.shared && "moduleName" in type.shared) {
+            const moduleName = type.shared.moduleName;
+            if (_ignoreUntypedModule(ruleset, moduleName)) {
+                return;
+            }
         }
 
         const nameValue = target.d.value;
