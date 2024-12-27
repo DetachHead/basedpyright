@@ -423,6 +423,7 @@ export interface DiagnosticRuleSet {
     reportUnusedParameter: DiagnosticLevel;
     reportImplicitAbstractClass: DiagnosticLevel;
     reportUnannotatedClassAttribute: DiagnosticLevel;
+    allowedUntypedLibraries: string[];
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -687,6 +688,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        allowedUntypedLibraries: [],
     };
 
     return diagSettings;
@@ -803,6 +805,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        allowedUntypedLibraries: [],
     };
 
     return diagSettings;
@@ -919,6 +922,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        allowedUntypedLibraries: [],
     };
 
     return diagSettings;
@@ -1034,6 +1038,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedParameter: 'warning',
     reportImplicitAbstractClass: 'warning',
     reportUnannotatedClassAttribute: 'warning',
+    allowedUntypedLibraries: [],
 });
 
 export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
@@ -1146,6 +1151,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedParameter: 'error',
     reportImplicitAbstractClass: 'error',
     reportUnannotatedClassAttribute: 'error',
+    allowedUntypedLibraries: [],
 });
 
 export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
@@ -1259,6 +1265,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        allowedUntypedLibraries: [],
     };
 
     return diagSettings;
@@ -1601,6 +1608,25 @@ export class ConfigOptions {
                 console
             );
         });
+
+        // Read the config "allowedUntypedLibraries".
+        const allowedUntypedLibraries: string[] = [];
+        if (configObj.allowedUntypedLibraries !== undefined) {
+            if (!Array.isArray(configObj.allowedUntypedLibraries)) {
+                console.error(`Config "allowedUntypedLibraries" field must contain an array.`);
+            } else {
+                const pathList = configObj.allowedUntypedLibraries as string[];
+                pathList.forEach((lib, libIndex) => {
+                    if (typeof lib !== 'string') {
+                        console.error(`Config "allowedUntypedLibraries" field ${libIndex} must be a string.`);
+                    } else {
+                        allowedUntypedLibraries.push(lib);
+                    }
+                });
+                configRuleSet.allowedUntypedLibraries = allowedUntypedLibraries;
+            }
+        }
+
         this.diagnosticRuleSet = { ...configRuleSet };
 
         // Read the "venvPath".

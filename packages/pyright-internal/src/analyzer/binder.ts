@@ -403,10 +403,12 @@ export class Binder extends ParseTreeWalker {
         }
 
         // A source file was found, but the type stub was missing.
+        // If the module is allowed as an untyped library, we don't need the stub
         if (
             !importResult.isStubFile &&
             importResult.importType === ImportType.ThirdParty &&
-            !importResult.pyTypedInfo
+            !importResult.pyTypedInfo &&
+            !this._ignoreUntypedModule(importResult.importName)
         ) {
             const diagnostic = this._addDiagnostic(
                 DiagnosticRule.reportMissingTypeStubs,
@@ -4330,6 +4332,10 @@ export class Binder extends ParseTreeWalker {
 
     private _addSyntaxError(message: string, textRange: TextRange) {
         return this._fileInfo.diagnosticSink.addDiagnosticWithTextRange('error', message, textRange);
+    }
+
+    private _ignoreUntypedModule(module: string) {
+        return this._fileInfo.diagnosticRuleSet.allowedUntypedLibraries.some(x => (module + ".").startsWith(x + "."));
     }
 }
 
