@@ -5341,6 +5341,27 @@ export class Checker extends ParseTreeWalker {
                         return true;
                     }
 
+                    // if containingClass (that initializes this symbol) is a method that is called in __init__
+                    // then we consider this symbol initialized
+                    if (containingClass.nodeType === ParseNodeType.Function) {
+                        const initNode = ClassType.getSymbolTable(classType).get('__init__')?.getDeclarations().at(0)
+                            ?.node;
+                        if (initNode && initNode.nodeType === ParseNodeType.Function) {
+                            return initNode.d.suite.d.statements.some((maybeStatementList) => {
+                                if (maybeStatementList.nodeType === ParseNodeType.StatementList) {
+                                    return maybeStatementList.d.statements.some((maybeCall) => {
+                                        return (
+                                            maybeCall.nodeType === ParseNodeType.Call &&
+                                            maybeCall.d.leftExpr.nodeType === ParseNodeType.MemberAccess &&
+                                            maybeCall.d.leftExpr.d.member.d.value === containingClass.d.name.d.value
+                                        );
+                                    });
+                                }
+                                return false;
+                            });
+                        }
+                    }
+
                     return false;
                 })
             ) {

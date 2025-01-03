@@ -156,3 +156,20 @@ test('`reportUnusedFunction` on `@final` classes', () => {
         ],
     });
 });
+
+describe('uninitialized variable checking with init method calling', () => {
+    test('uninitialized', () => {
+        const configOptions = new BasedConfigOptions(Uri.empty());
+        const analysisResults = typeAnalyzeSampleFiles(['uninitializedVariableBased1.py'], configOptions);
+        validateResultsButBased(analysisResults, {
+            errors: [{ line: 8, code: DiagnosticRule.reportUninitializedInstanceVariable }],
+        });
+    });
+    test('initialized', () => {
+        const configOptions = new BasedConfigOptions(Uri.empty());
+        const analysisResults = typeAnalyzeSampleFiles(['uninitializedVariableBased2.py'], configOptions);
+        validateResultsButBased(analysisResults, {
+            errors: [],
+        });
+    });
+});
