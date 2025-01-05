@@ -5344,18 +5344,18 @@ export class Checker extends ParseTreeWalker {
                     // if containingClass (that initializes this symbol) is a method that is called in __init__
                     // then we consider this symbol initialized
                     if (containingClass.nodeType === ParseNodeType.Function) {
-                        const initNode = ClassType.getSymbolTable(classType).get('__init__')?.getDeclarations()[0]
-                            ?.node;
+                        const initNode = ClassType.getSymbolTable(classType)
+                            .get('__init__')
+                            ?.getDeclarations()[0]?.node;
                         if (initNode && initNode.nodeType === ParseNodeType.Function) {
                             return initNode.d.suite.d.statements.some((maybeStatementList) => {
                                 if (maybeStatementList.nodeType === ParseNodeType.StatementList) {
-                                    return maybeStatementList.d.statements.some((maybeCall) => {
-                                        return (
+                                    return maybeStatementList.d.statements.some(
+                                        (maybeCall) =>
                                             maybeCall.nodeType === ParseNodeType.Call &&
                                             maybeCall.d.leftExpr.nodeType === ParseNodeType.MemberAccess &&
                                             maybeCall.d.leftExpr.d.member.d.value === containingClass.d.name.d.value
-                                        );
-                                    });
+                                    );
                                 }
                                 return false;
                             });
