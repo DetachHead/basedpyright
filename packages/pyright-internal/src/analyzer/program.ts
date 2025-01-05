@@ -544,7 +544,7 @@ export class Program {
 
         this._sourceFileList.forEach((fileInfo) => {
             const sourceFile = fileInfo.sourceFile;
-            if (sourceFile.isCheckingRequired()) {
+            if (isUserCode(fileInfo) && sourceFile.isCheckingRequired()) {
                 if (this._shouldCheckFile(fileInfo)) {
                     sourceFile.getIPythonMode() === IPythonMode.CellDocs
                         ? cellsToAnalyzeCount++
