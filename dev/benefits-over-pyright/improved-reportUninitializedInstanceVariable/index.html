@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/usage/import-resolution/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/improved-reportUninitializedInstanceVariable/">
       
       
-        <link rel="prev" href="../commands/">
+        <link rel="prev" href="../improved-generic-narrowing/">
       
       
-        <link rel="next" href="../import-statements/">
+        <link rel="next" href="../improved-translations/">
       
       
       <link rel="icon" href="../../img/favicon.ico">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Import resolution - basedpyright</title>
+        <title>improved logic for detecting uninitialized instance variables - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#import-resolution" class="md-skip">
+        <a href="#improved-logic-for-detecting-uninitialized-instance-variables" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Import resolution
+              improved logic for detecting uninitialized instance variables
             
           </span>
         </div>
@@ -284,8 +284,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -314,11 +316,11 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -332,7 +334,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Benefits over pyright
@@ -346,7 +348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/baseline/" class="md-nav__link">
+      <a href="../baseline/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -367,7 +369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/better-defaults/" class="md-nav__link">
+      <a href="../better-defaults/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -388,7 +390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
+      <a href="../errors-on-invalid-configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -409,7 +411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
+      <a href="../fixes-for-rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -430,7 +432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
+      <a href="../improved-ci-integration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -451,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-generic-narrowing/" class="md-nav__link">
+      <a href="../improved-generic-narrowing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -469,10 +471,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-reportUninitializedInstanceVariable/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    improved logic for detecting uninitialized instance variables
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -481,6 +503,35 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      limitations
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -493,7 +544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-translations/" class="md-nav__link">
+      <a href="../improved-translations/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -514,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
+      <a href="../new-diagnostic-rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -535,7 +586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pylance-features/" class="md-nav__link">
+      <a href="../pylance-features/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -556,7 +607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
+      <a href="../pypi-package-vscode-pinning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -943,10 +994,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -971,11 +1020,11 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
@@ -989,7 +1038,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -1003,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../builtins/" class="md-nav__link">
+      <a href="../../usage/builtins/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1024,7 +1073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../commands/" class="md-nav__link">
+      <a href="../../usage/commands/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1042,28 +1091,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Import resolution
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../usage/import-resolution/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1072,108 +1103,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#import-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      Import Resolution
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Import Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      Resolution Order
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuring-your-python-environment" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuring Your Python Environment
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#editable-installs" class="md-nav__link">
-    <span class="md-ellipsis">
-      Editable installs
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Editable installs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#setuptools" class="md-nav__link">
-    <span class="md-ellipsis">
-      setuptools
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hatchling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Hatchling
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pdm" class="md-nav__link">
-    <span class="md-ellipsis">
-      PDM
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging-import-resolution-problems" class="md-nav__link">
-    <span class="md-ellipsis">
-      Debugging Import Resolution Problems
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1186,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../import-statements/" class="md-nav__link">
+      <a href="../../usage/import-statements/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1207,7 +1136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../mypy-comparison/" class="md-nav__link">
+      <a href="../../usage/mypy-comparison/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1228,7 +1157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../type-concepts-advanced/" class="md-nav__link">
+      <a href="../../usage/type-concepts-advanced/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1249,7 +1178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../type-inference/" class="md-nav__link">
+      <a href="../../usage/type-inference/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1270,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../type-stubs/" class="md-nav__link">
+      <a href="../../usage/type-stubs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1291,7 +1220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../typed-libraries/" class="md-nav__link">
+      <a href="../../usage/typed-libraries/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1485,6 +1414,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1493,86 +1424,11 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#import-resolution" class="md-nav__link">
+  <a href="#limitations" class="md-nav__link">
     <span class="md-ellipsis">
-      Import Resolution
+      limitations
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Import Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resolution-order" class="md-nav__link">
-    <span class="md-ellipsis">
-      Resolution Order
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuring-your-python-environment" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuring Your Python Environment
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#editable-installs" class="md-nav__link">
-    <span class="md-ellipsis">
-      Editable installs
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Editable installs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#setuptools" class="md-nav__link">
-    <span class="md-ellipsis">
-      setuptools
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hatchling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Hatchling
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pdm" class="md-nav__link">
-    <span class="md-ellipsis">
-      PDM
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging-import-resolution-problems" class="md-nav__link">
-    <span class="md-ellipsis">
-      Debugging Import Resolution Problems
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1594,79 +1450,41 @@
   
 
 
-  <h1>Import resolution</h1>
+<h1 id="improved-logic-for-detecting-uninitialized-instance-variables">improved logic for detecting uninitialized instance variables</h1>
+<p>in pyright, the <a href="../../configuration/config-files/#reportUninitializedInstanceVariable"><code>reportUninitializedInstanceVariable</code></a> rule will report cases where an instance attribute is defined but not initialized:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># error: Instance variable &quot;x&quot; is not initialized in the class body or __init__ method</span>
 
-<h2 id="import-resolution">Import Resolution</h2>
-<h3 id="resolution-order">Resolution Order</h3>
-<p>If the import is relative (the module name starts with one or more dots), it resolves the import relative to the path of the importing source file.</p>
-<p>For absolute (non-relative) imports, Pyright employs the following resolution order:</p>
-<ol>
-<li>
-<p>Try to resolve using the <strong>stubPath</strong> as defined in the <code>stubPath</code> config entry or the <code>basedpyright.analysis.stubPath</code> setting.</p>
-</li>
-<li>
-<p>Try to resolve using <strong>code within the workspace</strong>.</p>
-<ul>
-<li>
-<p>Try to resolve relative to the <strong>root directory</strong> of the execution environment. If no execution environments are specified in the config file, use the root of the workspace. For more information about execution environments, refer to the <a href="../../configuration/config-files/#execution-environment-options">configuration documentation</a>.</p>
-</li>
-<li>
-<p>Try to resolve using any of the <strong>extra paths</strong> defined for the execution environment in the config file. If no execution environment applies, use the <code>basedpyright.analysis.extraPaths</code> setting. Extra paths are searched in the order in which they are provided in the config file or setting.</p>
-</li>
-<li>
-<p>If no execution environment is configured, try to resolve using the <strong>local directory <code>src</code></strong>. It is common for Python projects to place local source files within a directory of this name.</p>
-</li>
-</ul>
-</li>
-<li>
-<p>Try to resolve using <strong>stubs or inlined types found within installed packages</strong>. Pyright uses the configured Python environment to determine whether a package has been installed. For more details about how to configure your Python environment for Pyright, see below. If a Python environment is configured, Pyright looks in the <code>lib/site-packages</code>, <code>Lib/site-packages</code>, or <code>python*/site-packages</code> subdirectory. If no site-packages directory can be found, Pyright attempts to run the configured Python interpreter and ask it for its search paths. If no Python environment is configured, Pyright will use the default Python interpreter by invoking <code>python</code>.</p>
-<ul>
-<li>For a given package, try to resolve first using a <strong>stub package</strong>. Stub packages, as defined in <a href="https://www.python.org/dev/peps/pep-0561/#type-checker-module-resolution-order">PEP 561</a>, are named the same as the original package but with “-stubs” appended.</li>
-<li>Try to resolve using an <strong>inline stub</strong>, a “.pyi” file that ships within the package.</li>
-<li>If the package contains a “py.typed” file as described in <a href="https://www.python.org/dev/peps/pep-0561/">PEP 561</a>, use inlined type annotations provided in “.py” files within the package.</li>
-<li>If the <code>basedpyright.analysis.useLibraryCodeForTypes</code> setting is set to true, try to resolve using the <strong>library implementation</strong> (“.py” file). Some “.py” files may contain partial or complete type annotations. Pyright will use type annotations that are provided and do its best to infer any missing type information.</li>
-</ul>
-</li>
-<li>
-<p>Try to resolve using a <strong>stdlib typeshed stub</strong>. If the <code>typeshedPath</code> is configured, use this instead of the typeshed stubs that are packaged with Pyright. This allows for the use of a newer or a patched version of the typeshed stdlib stubs.</p>
-</li>
-<li>
-<p>Try to resolve using a <strong>third-party typeshed</strong> stub. If the <code>typeshedPath</code> is configured, use this instead of the typeshed stubs that are packaged with Pyright. This allows for the use of a newer or a patched version of the typeshed third-party stubs.</p>
-</li>
-<li>
-<p>For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory.</p>
-</li>
-</ol>
-<h3 id="configuring-your-python-environment">Configuring Your Python Environment</h3>
-<p>Pyright does not require a Python environment to be configured if all imports can be resolved using local files and type stubs. If a Python environment is configured, it will attempt to use the packages installed in the <code>site-packages</code> subdirectory during import resolution.</p>
-<p>Pyright uses the following mechanisms (in priority order) to determine which Python environment to use:</p>
-<ol>
-<li>
-<p>If a <code>venv</code> name is specified along with a <code>python.venvPath</code> setting (or a <code>--venvpath</code> command-line argument), it appends the venv name to the specified venv path. This mechanism is not recommended for most users because it is less robust than the next two options because it relies on pyright’s internal logic to determine the import resolution paths based on the virtual environment directories and files. The other two mechanisms (2 and 3 below) use the configured python interpreter to determine the import resolution paths (the value of <code>sys.path</code>).</p>
-</li>
-<li>
-<p>Use the <code>python.pythonPath</code> setting. This setting is defined in the language server. if using VS Code, this can be configured using the Python extension’s environment picker interface. More recent versions of the Python extension no longer store the selected Python environment in the <code>python.pythonPath</code> setting and instead use a storage mechanism that is private to the extension. Pyright is able to access this through an API exposed by the Python extension.</p>
-</li>
-<li>
-<p>As a fallback, use the default Python environment (i.e. the one that is invoked when typing <code>python</code> in the shell).</p>
-</li>
-</ol>
-<h3 id="editable-installs">Editable installs</h3>
-<p>If you want to use static analysis tools with an editable install, you should configure the editable install to use <code>.pth</code> files that contain file paths rather than executable lines (prefixed with <code>import</code>) that install import hooks. See your build backend’s documentation for details on how to do this. We have provided some basic information for common build backends below.</p>
-<p>Import hooks can provide an editable installation that is a more accurate representation of your real installation. However, because resolving module locations using an import hook requires executing Python code, they are not usable by Pyright and other static analysis tools. Therefore, if your editable install is configured to use import hooks, Pyright will be unable to find the corresponding source files.</p>
-<h4 id="setuptools">setuptools</h4>
-<p><code>setuptools</code> supports two ways to avoid import hooks:
-- <a href="https://setuptools.pypa.io/en/latest/userguide/development_mode.html#legacy-behavior">compat mode</a>
-- <a href="https://setuptools.pypa.io/en/latest/userguide/development_mode.html#strict-editable-installs">strict mode</a></p>
-<h4 id="hatchling">Hatchling</h4>
-<p><a href="https://hatch.pypa.io/latest/config/build/#dev-mode">Hatchling</a> uses path-based <code>.pth</code> files by
-default. It will only use import hooks if you set <code>dev-mode-exact</code> to <code>true</code>.</p>
-<h4 id="pdm">PDM</h4>
-<p><a href="https://pdm.fming.dev/latest/pyproject/build/#editable-build-backend">PDM</a> uses path-based <code>.pth</code>
-files by default. It will only use import hooks if you set <code>editable-backend</code> to
-<code>"editables"</code>.</p>
-<h3 id="debugging-import-resolution-problems">Debugging Import Resolution Problems</h3>
-<p>The import resolution mechanisms in Python are complicated, and Pyright offers many configuration options. If you are encountering problems with import resolution, Pyright provides additional logging that may help you identify the cause. To enable verbose logging, pass <code>--verbose</code> as a command-line argument or add the following entry to the config file <code>"verboseOutput": true</code>. If you are using the Pyright VS Code extension, the additional logging will appear in the Output tab (select “Pyright” from the menu). Please include this verbose logging when reporting import resolution bugs.</p>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># there&#39;s no guarantee this will be called so it doesn&#39;t count</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+</code></pre></div>
+<p>however, it's very common to write constructors that call a "reset" method. pyright doesn't account for this, so <code>reportUninitializedInstanceVariable</code> is still reported even though the attribute will always be initialized.</p>
+<p>basedpyright checks the class's <code>__init__</code> method for calls to other methods that may initialize instance attributes to eliminate such false positives:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># error in pyright, no error in basedpyright</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+</code></pre></div>
+<h2 id="limitations">limitations</h2>
+<p>for performance reasons, this only checks one call deep from the <code>__init__</code> method, so the following class will still report an error:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># reportUninitializedInstanceVariable error</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+</code></pre></div>
+<p>although this compromise is not ideal, we've found that this change still eliminates a very common source of false positives for this rule.</p>
 
 
 
