@@ -272,8 +272,13 @@ export class BaselineHandler {
         const baselineData: BaselineData = {
             files: {},
         };
+        const failedFiles = [];
         for (const fileWithDiagnostics of filesWithDiagnostics) {
-            const filePath = this.configOptions.projectRoot.getRelativePath(fileWithDiagnostics.fileUri)!.toString();
+            const filePath = this.configOptions.projectRoot.getRelativePath(fileWithDiagnostics.fileUri)?.toString();
+            if (filePath === undefined) {
+                failedFiles.push(fileWithDiagnostics.fileUri.toUserVisibleString());
+                continue;
+            }
             const errorDiagnostics = fileWithDiagnostics.diagnostics.filter(
                 (diagnostic) => diagnostic.category !== DiagnosticCategory.Hint || diagnostic.baselined
             );
@@ -292,6 +297,14 @@ export class BaselineHandler {
                         lineCount: lineCount(diagnostic.range),
                     },
                 }))
+            );
+        }
+        if (failedFiles.length) {
+            const separator = '\n- ';
+            this._console.error(
+                `could not baseline diagnostics for the following files because they are located outside the project root directory (${this.configOptions.projectRoot.toUserVisibleString()}):` +
+                    separator +
+                    failedFiles.join(separator)
             );
         }
         return baselineData;

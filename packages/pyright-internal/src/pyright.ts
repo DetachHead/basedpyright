@@ -566,12 +566,12 @@ async function runSingleThreaded(
             return;
         }
 
-        checkForErrors(exitStatus, output);
-
         const errorCount =
             args.createstub || args.verifytypes
                 ? 0
                 : outputResults(args, options, results, service, minSeverityLevel, output);
+
+        checkForErrors(exitStatus, output);
 
         if (args.createstub && results.requiringAnalysisCount.files === 0) {
             try {
@@ -759,13 +759,12 @@ async function runMultiThreaded(
                         return;
                     }
 
-                    checkForErrors(exitStatus, console);
-
                     for (const fileDiag of results.diagnostics) {
                         fileDiagnostics.push(FileDiagnostics.fromJsonObj(fileDiag));
                     }
 
                     analyzeNextFile(i);
+                    checkForErrors(exitStatus, console);
                     break;
                 }
 
