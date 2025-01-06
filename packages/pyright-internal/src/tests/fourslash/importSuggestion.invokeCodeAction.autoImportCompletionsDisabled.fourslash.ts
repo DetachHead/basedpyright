@@ -1,7 +1,9 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: pyrightconfig.json
-//// {}
+//// {
+////   "autoImportCompletions": false
+//// }
 
 // @filename: test.py
 //// [|/*import*/|]foo[|/*noImportMarker*/|]: [|/*startMarker*/|][|TracebackType/*range*/|][|/*endMarker*/|]

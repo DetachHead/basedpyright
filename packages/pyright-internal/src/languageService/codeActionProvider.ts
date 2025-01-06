@@ -77,7 +77,8 @@ export class CodeActionProvider {
                     lazyEdit: false,
                     snippet: false,
                 },
-                token
+                token,
+                true
             );
 
             const word = node.nodeType === ParseNodeType.Name ? node.d.value : undefined;

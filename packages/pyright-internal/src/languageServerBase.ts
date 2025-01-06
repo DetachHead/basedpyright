@@ -924,7 +924,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     lazyEdit: false,
                     triggerCharacter: params?.context?.triggerCharacter,
                 },
-                token
+                token,
+                false
             ).getCompletions();
 
             this.setCompletionIncomplete(params, completions);
@@ -953,7 +954,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         snippet: this.client.completionSupportsSnippet,
                         lazyEdit: false,
                     },
-                    token
+                    token,
+                    false
                 ).resolveCompletionItem(params);
             }, token);
         }
