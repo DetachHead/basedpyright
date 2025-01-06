@@ -103,7 +103,10 @@ require("lspconfig").basedpyright.setup {
     basedpyright = {
       analysis = {
         diagnosticMode = "openFilesOnly",
+        inlayHints = {
+          callArgumentNames = true
         }
+      }
     }
   }
 }
