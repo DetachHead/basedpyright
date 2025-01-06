@@ -58,7 +58,8 @@ test('check chained files', () => {
             lazyEdit: false,
             snippet: false,
         },
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert(result?.items.some((i) => i.label === 'foo1'));
@@ -105,7 +106,8 @@ test('modify chained files', () => {
             lazyEdit: false,
             snippet: false,
         },
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert(result);

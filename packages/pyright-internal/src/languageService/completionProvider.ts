@@ -293,7 +293,8 @@ export class CompletionProvider {
         protected readonly fileUri: Uri,
         protected readonly position: Position,
         protected readonly options: CompletionOptions,
-        protected readonly cancellationToken: CancellationToken
+        protected readonly cancellationToken: CancellationToken,
+        private readonly _codeActions: boolean
     ) {
         this.execEnv = this.configOptions.findExecEnvironment(this.fileUri);
 
@@ -824,7 +825,7 @@ export class CompletionProvider {
         completionMap: CompletionMap,
         parensDisabled?: boolean
     ) {
-        if (!this.configOptions.autoImportCompletions) {
+        if (!this._codeActions && !this.configOptions.autoImportCompletions) {
             // If auto import on the server is turned off or this particular invocation
             // is turned off (ex, notebook), don't do any thing.
             return;

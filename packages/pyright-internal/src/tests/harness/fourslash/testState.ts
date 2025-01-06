@@ -1600,7 +1600,8 @@ export class TestState {
             Uri.file(filePath, this.serviceProvider),
             completionPosition,
             options,
-            CancellationToken.None
+            CancellationToken.None,
+            false
         );
 
         return {

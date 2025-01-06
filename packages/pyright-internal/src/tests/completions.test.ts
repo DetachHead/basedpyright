@@ -814,7 +814,8 @@ test('completion quote trigger', async () => {
         uri,
         position,
         options,
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert(result);
@@ -852,7 +853,8 @@ test('completion quote trigger - middle', async () => {
         uri,
         position,
         options,
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert.strictEqual(result?.items.length, 0);
@@ -897,7 +899,8 @@ test('auto import sort text', async () => {
         uri,
         position,
         options,
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     const items = result?.items.filter((i) => i.label === 'os');
