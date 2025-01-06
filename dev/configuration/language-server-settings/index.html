@@ -1661,6 +1661,10 @@
 <p><strong>basedpyright.openFilesOnly</strong> [boolean]: Determines whether pyright analyzes (and reports errors for) all files in the workspace, as indicated by the config file. If this option is set to true, pyright analyzes only open files. This setting is deprecated in favor of basedpyright.analysis.diagnosticMode. It will be removed at a future time.</p>
 <p><strong>basedpyright.useLibraryCodeForTypes</strong> [boolean]: This setting is deprecated in favor of basedpyright.analysis.useLibraryCodeForTypes. It will be removed at a future time.</p>
 <p><strong>basedpyright.analysis.autoImportCompletions</strong> [boolean]: Determines whether pyright offers auto-import completions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this setting is only for import suggestion <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_completion"><em>completions</em></a>, which are displayed as you type. it does not affect <a href="../../benefits-over-pyright/pylance-features/#import-suggestion-code-actions">import suggestion <em>code actions</em></a>, which are tied to the <a href="../config-files/#reportUndefinedVariable"><code>reportUndefinedVariable</code></a> diagnostic rule. to disable those, you must disable the diagnostic rule itself.</p>
+</div>
 <p><strong>basedpyright.analysis.autoSearchPaths</strong> [boolean]: Determines whether pyright automatically adds common search paths like "src" if there are no execution environments defined in the config file.</p>
 <p><strong>basedpyright.analysis.diagnosticMode</strong> ["openFilesOnly", "workspace"]: Determines whether pyright analyzes (and reports errors for) all files in the workspace, as indicated by the config file. If this option is set to "openFilesOnly", pyright analyzes only open files. Defaults to "openFilesOnly"</p>
 <p><strong>basedpyright.analysis.logLevel</strong> ["Error", "Warning", "Information", or "Trace"]: Level of logging for Output panel. The default value for this option is "Information".</p>
