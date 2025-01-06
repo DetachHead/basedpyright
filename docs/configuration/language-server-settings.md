@@ -19,6 +19,9 @@ The basedpyright language server honors the following settings.
 
 **basedpyright.analysis.autoImportCompletions** [boolean]: Determines whether pyright offers auto-import completions.
 
+!!! note
+    this setting is only for import suggestion [*completions*](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_completion), which are displayed as you type. it does not affect [import suggestion *code actions*](../benefits-over-pyright/pylance-features.md#import-suggestion-code-actions), which are tied to the [`reportUndefinedVariable`](./config-files.md#reportUndefinedVariable) diagnostic rule. to disable those, you must disable the diagnostic rule itself.
+
 **basedpyright.analysis.autoSearchPaths** [boolean]: Determines whether pyright automatically adds common search paths like "src" if there are no execution environments defined in the config file.
 
 **basedpyright.analysis.diagnosticMode** ["openFilesOnly", "workspace"]: Determines whether pyright analyzes (and reports errors for) all files in the workspace, as indicated by the config file. If this option is set to "openFilesOnly", pyright analyzes only open files. Defaults to "openFilesOnly"
