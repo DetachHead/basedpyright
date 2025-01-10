@@ -217,3 +217,7 @@ function addPathIfUnique(pathList: Uri[], pathToAdd: Uri) {
 
     return false;
 }
+
+export function moduleIsInList(modules: string[], module: string) {
+    return modules.some(x => (module + ".").startsWith(x + "."));
+}

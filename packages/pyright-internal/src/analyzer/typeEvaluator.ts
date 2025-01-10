@@ -373,6 +373,7 @@ import {
     validateTypeVarDefault,
 } from './typeUtils';
 import { Commands } from '../commands/commands';
+import { moduleIsInList } from './pythonPathUtils';
 
 interface GetTypeArgsOptions {
     isAnnotatedClass?: boolean;
@@ -15114,10 +15115,6 @@ export function createTypeEvaluator(
         return { type, isIncomplete, typeErrors };
     }
 
-    function _ignoreUntypedModule(ruleset: DiagnosticRuleSet, module: string) {
-        return ruleset.allowedUntypedLibraries.some(x => (module + ".").startsWith(x + "."));
-    }
-
     function reportPossibleUnknownAssignment(
         ruleset: DiagnosticRuleSet,
         rule: DiagnosticRule,
@@ -15134,7 +15131,7 @@ export function createTypeEvaluator(
         // Or if the object is in an untyped library that was explicitly mentioned.
         if (type.shared && "moduleName" in type.shared) {
             const moduleName = type.shared.moduleName;
-            if (_ignoreUntypedModule(ruleset, moduleName)) {
+            if (moduleIsInList(ruleset.allowedUntypedLibraries, moduleName)) {
                 return;
             }
         }
