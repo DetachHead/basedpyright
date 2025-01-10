@@ -267,6 +267,8 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportShadowedImports"></a> **reportShadowedImports** [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.
 
+- <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules **reportUnknownParameterType**, **reportUnknownArgumentType**, **reportUnknownMemberType**, and **reportMissingTypeStubs**. The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
+
 ### basedpyright exclusive settings
 
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for unreachable code. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunreachable)
