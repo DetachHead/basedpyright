@@ -53,6 +53,8 @@ The following settings control the *environment* in which basedpyright will chec
 
 - <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
 
+- <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules **reportUnknownParameterType**, **reportUnknownArgumentType**, **reportUnknownMemberType**, and **reportMissingTypeStubs**. The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
+
 ## Type Evaluation Settings
 
 The following settings determine how different types should be evaluated.
@@ -266,8 +268,6 @@ The following settings allow more fine grained control over the **typeCheckingMo
 - <a name="reportImplicitOverride"></a> **reportImplicitOverride** [boolean or string, optional]: Generate or suppress diagnostics for overridden methods in a class that are missing an explicit `@override` decorator.
 
 - <a name="reportShadowedImports"></a> **reportShadowedImports** [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.
-
-- <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules **reportUnknownParameterType**, **reportUnknownArgumentType**, **reportUnknownMemberType**, and **reportMissingTypeStubs**. The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
 
 ### basedpyright exclusive settings
 
