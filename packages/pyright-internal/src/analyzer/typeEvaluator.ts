@@ -15129,7 +15129,7 @@ export function createTypeEvaluator(
         }
 
         // Or if the object is in an untyped library that was explicitly mentioned.
-        if (type.shared && "moduleName" in type.shared) {
+        if (type.shared && 'moduleName' in type.shared) {
             const moduleName = type.shared.moduleName;
             if (moduleIsInList(ruleset.allowedUntypedLibraries, moduleName)) {
                 return;
