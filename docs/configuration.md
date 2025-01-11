@@ -53,7 +53,7 @@ The following settings control the *environment* in which basedpyright will chec
 
 - <a name="failOnWarnings"></a> **failOnWarnings** [boolean]: Whether to exit with a non-zero exit code in the CLI if any `"warning"` diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.
 
-- <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules [`reportUnknownParameterType`](#reportUnknownParameterType), [`reportUnknownArgumentType`](#reportUnknownArgumentType), [`reportUnknownMemberType`](#reportUnknownMemberType), and [`reportMissingTypeStubs`](#reportMissingTypeStubs). The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
+- <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules [`reportUnknownVariableType`](#reportUnknownVariableType), [`reportUnknownMemberType`](#reportUnknownMemberType), and [`reportMissingTypeStubs`](#reportMissingTypeStubs). The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
 
 ## Type Evaluation Settings
 
