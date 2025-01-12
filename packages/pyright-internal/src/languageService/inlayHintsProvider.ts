@@ -3,7 +3,7 @@ import { ProgramView } from '../common/extensibility';
 import { convertOffsetToPosition } from '../common/positionUtils';
 
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
-import { Range } from 'vscode-languageserver-types';
+import { Range, TextEdit } from 'vscode-languageserver-types';
 import { InlayHintSettings } from '../workspaceFactory';
 import { ParseFileResults } from '../parser/parser';
 import { AutoImporter } from './autoImporter';
@@ -32,38 +32,45 @@ export class InlayHintsProvider {
         }
         this._walker.walk(parseResults.parserOutput.parseTree);
 
-        return this._walker.featureItems.map((item) => ({
-            label: [InlayHintLabelPart.create(item.value)],
-            position: convertOffsetToPosition(item.position, parseResults.tokenizerOutput.lines),
-            paddingLeft: item.inlayHintType === 'functionReturn',
-            kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
-            textEdits: item.imports
-                ? Array.from(item.imports).flatMap((import_) => {
-                      let nameToImport: string | undefined;
-                      let importFrom: string;
-                      if (Array.isArray(import_)) {
-                          [importFrom, nameToImport] = import_;
-                      } else {
-                          importFrom = import_;
-                      }
-                      const result = this._autoImporter?.getTextEditsForAutoImportByFilePath(
-                          { name: nameToImport },
-                          { name: importFrom },
-                          nameToImport ?? importFrom,
-                          ImportGroup.BuiltIn, // TODO: figure out the correct import group
-                          this._program.importResolver.resolveImport(
-                              this._fileUri,
-                              this._program.configOptions.findExecEnvironment(this._fileUri),
-                              {
-                                  nameParts: importFrom.split('.'),
-                                  importedSymbols: nameToImport ? new Set([nameToImport]) : undefined,
-                                  leadingDots: 0,
-                              }
-                          ).resolvedUris[0]
-                      );
-                      return result?.edits ? convertToTextEdits(result.edits) : [];
-                  })
-                : [],
-        }));
+        return this._walker.featureItems.map((item) => {
+            const position = convertOffsetToPosition(item.position, parseResults.tokenizerOutput.lines);
+            const textEdits: TextEdit[] = [{ newText: item.value, range: { start: position, end: position } }];
+            if (item.imports) {
+                for (const module of item.imports.imports) {
+                    textEdits.push(...this._createTextEditsForImport(module, undefined));
+                }
+                for (const [module, names] of item.imports.importFroms) {
+                    for (const name of names) {
+                        textEdits.push(...this._createTextEditsForImport(module, name));
+                    }
+                }
+            }
+            return {
+                label: [InlayHintLabelPart.create(item.value)],
+                position,
+                paddingLeft: item.inlayHintType === 'functionReturn',
+                kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
+                textEdits,
+            };
+        });
     }
+
+    private _createTextEditsForImport = (module: string, name: string | undefined) => {
+        const result = this._autoImporter?.getTextEditsForAutoImportByFilePath(
+            { name },
+            { name: module },
+            name ?? module,
+            ImportGroup.BuiltIn, // TODO: figure out the correct import group
+            this._program.importResolver.resolveImport(
+                this._fileUri,
+                this._program.configOptions.findExecEnvironment(this._fileUri),
+                {
+                    nameParts: module.split('.'),
+                    importedSymbols: name ? new Set([name]) : undefined,
+                    leadingDots: 0,
+                }
+            ).resolvedUris[0]
+        );
+        return result?.edits ? convertToTextEdits(result.edits) : [];
+    };
 }
