@@ -28215,7 +28215,12 @@ export function createTypeEvaluator(
     }
 
     function printObjectTypeForClass(type: ClassType): string {
-        return TypePrinter.printObjectTypeForClass(type, evaluatorOptions.printTypeFlags, getEffectiveReturnType);
+        return TypePrinter.printObjectTypeForClass(
+            type,
+            evaluatorOptions.printTypeFlags,
+            getEffectiveReturnType,
+            undefined
+        );
     }
 
     function printFunctionParts(type: FunctionType, extraFlags?: TypePrinter.PrintTypeFlags): [string[], string] {
@@ -28278,8 +28283,8 @@ export function createTypeEvaluator(
         if (options?.useFullyQualifiedNames) {
             flags |= TypePrinter.PrintTypeFlags.UseFullyQualifiedNames;
         }
-
-        return TypePrinter.printType(type, flags, getEffectiveReturnType);
+        const result = TypePrinter.printType(type, flags, getEffectiveReturnType, options?.importTracker);
+        return result;
     }
 
     // Calls back into the parser to parse the contents of a string literal.
