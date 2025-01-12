@@ -37,7 +37,7 @@ import { ResolvedAliasInfo } from './declarationUtils';
 import { SymbolWithScope } from './scope';
 import { Symbol, SynthesizedTypeInfo } from './symbol';
 import { SpeculativeModeOptions } from './typeCacheUtils';
-import { PrintTypeFlags } from './typePrinter';
+import { ImportTracker, PrintTypeFlags } from './typePrinter';
 import {
     AnyType,
     ClassType,
@@ -510,6 +510,7 @@ export interface PrintTypeOptions {
     printUnknownWithAny?: boolean;
     printTypeVarVariance?: boolean;
     omitTypeArgsIfUnknown?: boolean;
+    importTracker?: ImportTracker;
 }
 
 export interface DeclaredSymbolTypeInfo {

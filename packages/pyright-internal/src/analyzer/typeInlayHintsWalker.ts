@@ -29,15 +29,16 @@ import {
 import { isLiteralType } from './typeUtils';
 import { TextRange } from '../common/textRange';
 import { convertRangeToTextRange } from '../common/positionUtils';
-import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
 import { transformTypeForEnumMember } from './enums';
 import { InlayHintSettings } from '../workspaceFactory';
+import { ImportTracker } from './typePrinter';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';
     position: number;
     value: string;
+    imports?: ImportTracker;
 };
 // Don't generate inlay hints for arguments to builtin types and functions
 const ignoredBuiltinTypes = new Set(
@@ -96,18 +97,16 @@ function isLeftSideOfAssignment(node: ParseNode): boolean {
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
-    parseResults?: ParseFileResults;
     private _range: TextRange | undefined;
     private _variablesThatShouldntHaveInlayHints = new Set<ParseNode>();
 
     constructor(
         private readonly _program: ProgramView,
         private _settings: InlayHintSettings,
-        fileUri: Uri,
+        public parseResults?: ParseFileResults,
         range?: Range
     ) {
         super();
-        this.parseResults = this._program.getParseResults(fileUri);
         if (this.parseResults) {
             const lines = this.parseResults.tokenizerOutput.lines;
             if (range && lines) {
@@ -153,17 +152,26 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 !isTypeVar(type) &&
                 !isParamSpec(type)
             ) {
+                let importTracker: ImportTracker;
+                let inlayHintValue;
+                if (
+                    type.props?.typeAliasInfo &&
+                    node.nodeType === ParseNodeType.Name &&
+                    // prevent variables whose type comes from a type alias from being incorrectly treated as a TypeAlias.
+                    getTypeAliasInfo(type)?.shared.name === node.d.value
+                ) {
+                    inlayHintValue = 'TypeAlias';
+                    importTracker = new Set(['typing', inlayHintValue]);
+                } else {
+                    const result = this._printType(type);
+                    inlayHintValue = result.value;
+                    importTracker = result.imports;
+                }
                 this.featureItems.push({
                     inlayHintType: 'variable',
                     position: this._endOfNode(node),
-                    value: `: ${
-                        type.props?.typeAliasInfo &&
-                        node.nodeType === ParseNodeType.Name &&
-                        // prevent variables whose type comes from a type alias from being incorrectly treated as a TypeAlias.
-                        getTypeAliasInfo(type)?.shared.name === node.d.value
-                            ? 'TypeAlias'
-                            : this._printType(type)
-                    }`,
+                    value: `: ${inlayHintValue}`,
+                    imports: importTracker,
                 });
             }
         }
@@ -184,10 +192,12 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             if (functionType !== undefined && !functionType.shared.declaredReturnType) {
                 const inferredReturnType = evaluator?.getInferredReturnType(functionType);
                 if (inferredReturnType) {
+                    const { imports, value } = this._printType(inferredReturnType);
                     this.featureItems.push({
                         inlayHintType: 'functionReturn',
                         position: node.d.suite.start,
-                        value: `-> ${this._printType(inferredReturnType)}`,
+                        value: `-> ${value}`,
+                        imports,
                     });
                 }
             }
@@ -208,10 +218,12 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 ) {
                     const valueType = evaluator.getType(node.d.valueExpr);
                     if (valueType) {
+                        const { value, imports } = this._printType(valueType);
                         this.featureItems.push({
                             inlayHintType: 'generic',
                             position: this._endOfNode(node),
-                            value: `[${this._printType(valueType)}]`,
+                            value: `[${value}]`,
+                            imports,
                         });
                     }
                 }
@@ -255,15 +267,18 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                         ? typeArg.priv.tupleTypeArgs.map((tupleTypeArg) => this._printType(tupleTypeArg.type))
                         : this._printType(typeArg)
                 );
+                const imports = new Set(printedTypeArgs.flatMap((inlayHintInfo) => Array.from(inlayHintInfo.imports)));
+                const values = printedTypeArgs.map((inlayHintInfo) => inlayHintInfo.value);
                 if (returnType.priv.tupleTypeArgs) {
                     // for tuples, as far as i can tell there's no cases where it can infer non-variadic generics, so we just always
                     // add the ellipsis
-                    printedTypeArgs.push('...');
+                    values.push('...');
                 }
                 this.featureItems.push({
                     inlayHintType: 'generic',
                     position: this._endOfNode(node.d.leftExpr),
-                    value: `[${printedTypeArgs.join(', ')}]`,
+                    value: `[${values.join(', ')}]`,
+                    imports,
                 });
             }
         }
@@ -330,6 +345,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
 
     private _endOfNode = (node: ParseNode) => node.start + node.length;
 
-    private _printType = (type: Type): string =>
-        this._program.evaluator!.printType(type, { enforcePythonSyntax: true });
+    private _printType = (type: Type): { value: string; imports: ImportTracker } => {
+        const importTracker: ImportTracker = new Set();
+        return {
+            value: this._program.evaluator!.printType(type, { enforcePythonSyntax: true, importTracker }),
+            imports: importTracker,
+        };
+    };
 }

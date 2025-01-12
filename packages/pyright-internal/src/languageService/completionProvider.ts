@@ -2088,7 +2088,7 @@ export class CompletionProvider {
         const quoteValue = this._getQuoteInfo(priorWord, priorText);
         this._getSubTypesWithLiteralValues(type).forEach((v) => {
             if (ClassType.isBuiltIn(v, 'str')) {
-                const value = printLiteralValue(v, quoteValue.quoteCharacter);
+                const value = printLiteralValue(v, quoteValue.quoteCharacter, undefined);
                 if (quoteValue.stringValue === undefined) {
                     this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
                         sortText: this._makeSortText(SortCategory.LiteralValue, v.priv.literalValue as string),
@@ -2199,7 +2199,9 @@ export class CompletionProvider {
                     return;
                 }
 
-                keys.push(printLiteralValue(v, this.parseResults.tokenizerOutput.predominantSingleQuoteCharacter));
+                keys.push(
+                    printLiteralValue(v, this.parseResults.tokenizerOutput.predominantSingleQuoteCharacter, undefined)
+                );
             });
 
             if (keys.length > 0) {

@@ -125,7 +125,7 @@ import { convertUriToLspUriString } from './common/uri/uriUtils';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';
 import { InlayHintsProvider } from './languageService/inlayHintsProvider';
-import { CompletionItemData, CompletionProvider } from './languageService/completionProvider';
+import { CompletionItemData, CompletionMap, CompletionProvider } from './languageService/completionProvider';
 import { DefinitionFilter, DefinitionProvider, TypeDefinitionProvider } from './languageService/definitionProvider';
 import { DocumentHighlightProvider } from './languageService/documentHighlightProvider';
 import { CollectionResult } from './languageService/documentSymbolCollector';
@@ -146,6 +146,7 @@ import { SemanticTokensProvider, SemanticTokensProviderLegend } from './language
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { BaselineHandler } from './baseline';
 import { assert } from './common/debug';
+import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 
 export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatcherHandler>
     implements LanguageServerInterface, Disposable
@@ -1016,7 +1017,24 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
             return null;
         }
         return workspace.service.run((program) => {
-            return new InlayHintsProvider(program, uri, params.range, {
+            const currentFile = program.getSourceFileInfo(uri);
+            const moduleSymbolMap = buildModuleSymbolsMap(
+                program.getSourceFileInfoList().filter((s) => s !== currentFile)
+            );
+
+            const parseFileResults = program.getParseResults(uri);
+            const autoImporter = parseFileResults
+                ? new AutoImporter(
+                      program,
+                      program.configOptions.findExecEnvironment(uri),
+                      parseFileResults,
+                      params.range.start,
+                      new CompletionMap(),
+                      moduleSymbolMap,
+                      {}
+                  )
+                : undefined;
+            return new InlayHintsProvider(program, uri, parseFileResults, autoImporter, params.range, {
                 callArgumentNames: workspace.inlayHints?.callArgumentNames ?? true,
                 functionReturnTypes: workspace.inlayHints?.functionReturnTypes ?? true,
                 variableTypes: workspace.inlayHints?.variableTypes ?? true,

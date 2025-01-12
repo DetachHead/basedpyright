@@ -96,12 +96,12 @@ export type FunctionReturnTypeCallback = (type: FunctionType) => Type;
 export function printType(
     type: Type,
     printTypeFlags: PrintTypeFlags,
-    returnTypeCallback: FunctionReturnTypeCallback
+    returnTypeCallback: FunctionReturnTypeCallback,
+    importTracker?: ImportTracker
 ): string {
     const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
     uniqueNameMap.build(type);
-
-    return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0);
+    return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0, importTracker);
 }
 
 export function printFunctionParts(
@@ -118,12 +118,21 @@ export function printFunctionParts(
 export function printObjectTypeForClass(
     type: ClassType,
     printTypeFlags: PrintTypeFlags,
-    returnTypeCallback: FunctionReturnTypeCallback
+    returnTypeCallback: FunctionReturnTypeCallback,
+    importTracker: ImportTracker | undefined
 ): string {
     const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
     uniqueNameMap.build(type);
 
-    return printObjectTypeForClassInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0);
+    return printObjectTypeForClassInternal(
+        type,
+        printTypeFlags,
+        returnTypeCallback,
+        uniqueNameMap,
+        [],
+        0,
+        importTracker
+    );
 }
 
 const maxLiteralStringLength = 50;
@@ -138,16 +147,18 @@ export function isLiteralValueTruncated(type: ClassType): boolean {
     return false;
 }
 
-export function printLiteralValueTruncated(type: ClassType): string {
+export function printLiteralValueTruncated(type: ClassType, importTracker: ImportTracker | undefined): string {
     if (type.shared.name === 'bytes') {
         return 'bytes';
     }
 
     assert(type.shared.name === 'str');
-    return 'LiteralString';
+    const name = 'LiteralString';
+    importTracker?.add(['typing', name]);
+    return name;
 }
 
-export function printLiteralValue(type: ClassType, quotation = "'"): string {
+export function printLiteralValue(type: ClassType, quotation = "'", importTracker: ImportTracker | undefined): string {
     const literalValue = type.priv.literalValue;
     if (literalValue === undefined) {
         return '';
@@ -170,6 +181,10 @@ export function printLiteralValue(type: ClassType, quotation = "'"): string {
     } else if (typeof literalValue === 'boolean') {
         literalStr = literalValue ? 'True' : 'False';
     } else if (literalValue instanceof EnumLiteral) {
+        const result = literalValue.classFullName.match(/(.*)\.(.*)/);
+        if (result) {
+            importTracker?.add([result[0], result[1]]);
+        }
         literalStr = `${literalValue.className}.${literalValue.itemName}`;
     } else if (typeof literalValue === 'bigint') {
         literalStr = literalValue.toString();
@@ -183,16 +198,21 @@ export function printLiteralValue(type: ClassType, quotation = "'"): string {
     return literalStr;
 }
 
+/** tuples are `from x import y` imports, `string`s are `import x` imports */
+export type ImportTracker = Set<[string, string] | string>;
+
 function printTypeInternal(
     type: Type,
     printTypeFlags: PrintTypeFlags,
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    importTracker: ImportTracker | undefined
 ): string {
     if (recursionCount > maxTypeRecursionCount) {
         if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
+            importTracker?.add(['typing', 'Any']);
             return 'Any';
         }
         return '<Recursive>';
@@ -227,6 +247,9 @@ function printTypeInternal(
                 // Use the fully-qualified name if the name isn't unique.
                 if (!uniqueNameMap.isUnique(aliasName)) {
                     aliasName = aliasInfo.shared.fullName;
+                    importTracker?.add(aliasInfo.shared.moduleName);
+                } else {
+                    importTracker?.add([aliasInfo.shared.moduleName, aliasName]);
                 }
 
                 const typeParams = aliasInfo.shared.typeParams;
@@ -262,7 +285,8 @@ function printTypeInternal(
                                                 returnTypeCallback,
                                                 uniqueNameMap,
                                                 recursionTypes,
-                                                recursionCount
+                                                recursionCount,
+                                                importTracker
                                             )
                                         );
                                     });
@@ -274,7 +298,8 @@ function printTypeInternal(
                                             returnTypeCallback,
                                             uniqueNameMap,
                                             recursionTypes,
-                                            recursionCount
+                                            recursionCount,
+                                            importTracker
                                         )
                                     );
                                 }
@@ -294,7 +319,8 @@ function printTypeInternal(
                                         returnTypeCallback,
                                         uniqueNameMap,
                                         recursionTypes,
-                                        recursionCount
+                                        recursionCount,
+                                        importTracker
                                     )
                                 );
                             });
@@ -332,6 +358,7 @@ function printTypeInternal(
         // If this is a recursive TypeVar, we've already expanded it once, so
         // just print its name at this point.
         if (isTypeVar(type) && type.shared.isSynthesized && type.shared.recursiveAlias) {
+            importTracker?.add([type.shared.recursiveAlias.moduleName, type.shared.recursiveAlias.name]);
             return type.shared.recursiveAlias.name;
         }
 
@@ -341,7 +368,10 @@ function printTypeInternal(
                     (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
                         ? aliasInfo.shared.fullName
                         : aliasInfo.shared.name;
-                if (!uniqueNameMap.isUnique(name)) {
+                if (uniqueNameMap.isUnique(name)) {
+                    importTracker?.add([aliasInfo.shared.moduleName, name]);
+                } else {
+                    importTracker?.add(aliasInfo.shared.moduleName);
                     name = aliasInfo.shared.fullName;
                 }
                 return name;
@@ -356,7 +386,8 @@ function printTypeInternal(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    importTracker
                 );
             } finally {
                 recursionTypes.pop();
@@ -381,6 +412,7 @@ function printTypeInternal(
         switch (type.category) {
             case TypeCategory.Unbound: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
+                    importTracker?.add(['typing', 'Any']);
                     return 'Any';
                 }
                 return 'Unbound';
@@ -388,6 +420,7 @@ function printTypeInternal(
 
             case TypeCategory.Unknown: {
                 if (printTypeFlags & (PrintTypeFlags.PythonSyntax | PrintTypeFlags.PrintUnknownWithAny)) {
+                    importTracker?.add(['typing', 'Any']);
                     return 'Any';
                 }
                 return 'Unknown';
@@ -395,6 +428,7 @@ function printTypeInternal(
 
             case TypeCategory.Module: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
+                    importTracker?.add(['typing', 'Any']);
                     return 'Any';
                 }
                 return `Module("${type.priv.moduleName}")`;
@@ -404,9 +438,10 @@ function printTypeInternal(
                 if (TypeBase.isInstance(type)) {
                     if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                            return printLiteralValueTruncated(type);
+                            return printLiteralValueTruncated(type, importTracker);
                         } else {
-                            return `Literal[${printLiteralValue(type)}]`;
+                            importTracker?.add(['typing', 'Literal']);
+                            return `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
                     }
 
@@ -416,16 +451,18 @@ function printTypeInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     )}${getConditionalIndicator(type)}`;
                 } else {
                     let typeToWrap: string;
 
                     if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                            typeToWrap = printLiteralValueTruncated(type);
+                            typeToWrap = printLiteralValueTruncated(type, importTracker);
                         } else {
-                            typeToWrap = `Literal[${printLiteralValue(type)}]`;
+                            importTracker?.add(['typing', 'Literal']);
+                            typeToWrap = `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
 
                         return printWrappedType(type, typeToWrap);
@@ -438,7 +475,8 @@ function printTypeInternal(
                             returnTypeCallback,
                             uniqueNameMap,
                             recursionTypes,
-                            recursionCount
+                            recursionCount,
+                            importTracker
                         );
 
                         return specialFormText;
@@ -450,7 +488,8 @@ function printTypeInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     );
 
                     return printWrappedType(type, typeToWrap);
@@ -465,7 +504,8 @@ function printTypeInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     );
                     return `type[${typeString}]`;
                 }
@@ -476,7 +516,8 @@ function printTypeInternal(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    importTracker
                 );
             }
 
@@ -488,11 +529,14 @@ function printTypeInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     )
                 );
 
                 if ((printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
+                    importTracker?.add(['typing', 'Callable']);
+                    importTracker?.add(['typing', 'Any']);
                     return 'Callable[..., Any]';
                 }
 
@@ -513,7 +557,8 @@ function printTypeInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     );
 
                     return specialFormText;
@@ -532,7 +577,8 @@ function printTypeInternal(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    importTracker
                 );
             }
 
@@ -554,7 +600,8 @@ function printTypeInternal(
                                 returnTypeCallback,
                                 uniqueNameMap,
                                 recursionTypes,
-                                recursionCount
+                                recursionCount,
+                                importTracker
                             );
                         }
                         return type.shared.recursiveAlias.name;
@@ -570,7 +617,8 @@ function printTypeInternal(
                             returnTypeCallback,
                             uniqueNameMap,
                             recursionTypes,
-                            recursionCount
+                            recursionCount,
+                            importTracker
                         );
 
                         if (!isAnyOrUnknown(type.shared.boundType)) {
@@ -580,6 +628,7 @@ function printTypeInternal(
                             ) {
                                 boundTypeString = `Self@${boundTypeString}`;
                             } else {
+                                importTracker?.add(['typing', 'Self']);
                                 boundTypeString = `Self`;
                             }
                         }
@@ -590,10 +639,12 @@ function printTypeInternal(
 
                         return boundTypeString;
                     }
-
-                    return (printTypeFlags & (PrintTypeFlags.PrintUnknownWithAny | PrintTypeFlags.PythonSyntax)) !== 0
-                        ? 'Any'
-                        : 'Unknown';
+                    if ((printTypeFlags & (PrintTypeFlags.PrintUnknownWithAny | PrintTypeFlags.PythonSyntax)) !== 0) {
+                        importTracker?.add(['typing', 'Self']);
+                        return 'Any';
+                    } else {
+                        return 'Unknown';
+                    }
                 }
 
                 if (isParamSpec(type)) {
@@ -620,6 +671,7 @@ function printTypeInternal(
                 }
 
                 if (isTypeVarTuple(type) && type.priv.isInUnion) {
+                    importTracker?.add(['typing', 'Union']);
                     typeVarName = `Union[${typeVarName}]`;
                 }
 
@@ -638,12 +690,18 @@ function printTypeInternal(
             }
 
             case TypeCategory.Never: {
-                return type.priv.isNoReturn ? 'NoReturn' : 'Never';
+                const result = type.priv.isNoReturn ? 'NoReturn' : 'Never';
+                importTracker?.add(['typing', result]);
+                return result;
             }
 
             case TypeCategory.Any: {
                 const anyType = type;
-                return anyType.priv.isEllipsis ? '...' : 'Any';
+                if (anyType.priv.isEllipsis) {
+                    return '...';
+                }
+                importTracker?.add(['typing', 'Any']);
+                return 'Any';
             }
         }
 
@@ -660,7 +718,8 @@ function printUnionType(
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    importTracker: ImportTracker | undefined
 ) {
     // Allocate a set that refers to subtypes in the union by
     // their indices. If the index is within the set, it is already
@@ -710,7 +769,8 @@ function printUnionType(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     )
                 );
                 indicesCoveredByTypeAlias.forEach((index) => subtypeHandledSet.add(index));
@@ -731,7 +791,8 @@ function printUnionType(
             returnTypeCallback,
             uniqueNameMap,
             recursionTypes,
-            recursionCount
+            recursionCount,
+            importTracker
         );
 
         if (printTypeFlags & PrintTypeFlags.PEP604) {
@@ -742,6 +803,7 @@ function printUnionType(
             return unionString;
         }
 
+        importTracker?.add(['typing', 'Optional']);
         return 'Optional[' + optionalType + ']';
     }
 
@@ -751,15 +813,15 @@ function printUnionType(
         if (!subtypeHandledSet.has(index)) {
             if (isClassInstance(subtype) && subtype.priv.literalValue !== undefined) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    subtypeStrings.add(printLiteralValueTruncated(subtype));
+                    subtypeStrings.add(printLiteralValueTruncated(subtype, importTracker));
                 } else {
-                    literalObjectStrings.add(printLiteralValue(subtype));
+                    literalObjectStrings.add(printLiteralValue(subtype, "'", importTracker));
                 }
             } else if (isInstantiableClass(subtype) && subtype.priv.literalValue !== undefined) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    subtypeStrings.add(`type[${printLiteralValueTruncated(subtype)}]`);
+                    subtypeStrings.add(`type[${printLiteralValueTruncated(subtype, importTracker)}]`);
                 } else {
-                    literalClassStrings.add(printLiteralValue(subtype));
+                    literalClassStrings.add(printLiteralValue(subtype, "'", importTracker));
                 }
             } else {
                 subtypeStrings.add(
@@ -769,7 +831,8 @@ function printUnionType(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        importTracker
                     )
                 );
             }
@@ -782,12 +845,14 @@ function printUnionType(
     if (literalObjectStrings.size > 0) {
         const literalStrings: string[] = [];
         literalObjectStrings.forEach((s) => literalStrings.push(s));
+        importTracker?.add(['typing', 'Literal']);
         dedupedSubtypeStrings.push(`Literal[${literalStrings.join(', ')}]`);
     }
 
     if (literalClassStrings.size > 0) {
         const literalStrings: string[] = [];
         literalClassStrings.forEach((s) => literalStrings.push(s));
+        importTracker?.add(['typing', 'Literal']);
         dedupedSubtypeStrings.push(`type[Literal[${literalStrings.join(', ')}]]`);
     }
 
@@ -802,7 +867,7 @@ function printUnionType(
         }
         return unionString;
     }
-
+    importTracker?.add(['typing', 'Union']);
     return `Union[${dedupedSubtypeStrings.join(', ')}]`;
 }
 
@@ -812,7 +877,8 @@ function printFunctionType(
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    importTracker: ImportTracker | undefined
 ) {
     if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
         const paramSpec = FunctionType.getParamSpecFromArgsKwargs(type);
@@ -841,7 +907,8 @@ function printFunctionType(
                 returnTypeCallback,
                 uniqueNameMap,
                 recursionTypes,
-                recursionCount
+                recursionCount,
+                importTracker
             );
         }
 
@@ -860,7 +927,8 @@ function printFunctionType(
                                 returnTypeCallback,
                                 uniqueNameMap,
                                 recursionTypes,
-                                recursionCount
+                                recursionCount,
+                                importTracker
                             )
                         );
                     } else {
@@ -919,13 +987,16 @@ function printObjectTypeForClassInternal(
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    importTracker: ImportTracker | undefined
 ): string {
     let objName = type.priv.aliasName;
     if (!objName) {
         objName =
             (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0 ? type.shared.fullName : type.shared.name;
     }
+
+    importTracker?.add([type.shared.moduleName, objName]);
 
     // Special-case NoneType to convert it to None.
     if (ClassType.isBuiltIn(type, 'NoneType')) {
@@ -934,6 +1005,7 @@ function printObjectTypeForClassInternal(
 
     // Use the fully-qualified name if the name isn't unique.
     if (!uniqueNameMap.isUnique(objName)) {
+        importTracker?.add(type.shared.moduleName);
         objName = type.shared.fullName;
     }
 
@@ -988,7 +1060,8 @@ function printObjectTypeForClassInternal(
                                         returnTypeCallback,
                                         uniqueNameMap,
                                         recursionTypes,
-                                        recursionCount
+                                        recursionCount,
+                                        importTracker
                                     );
 
                                     if (typeArg.isUnbounded) {
@@ -1010,7 +1083,8 @@ function printObjectTypeForClassInternal(
                             returnTypeCallback,
                             uniqueNameMap,
                             recursionTypes,
-                            recursionCount
+                            recursionCount,
+                            importTracker
                         );
 
                         if (typeArg.isUnbounded) {
@@ -1061,7 +1135,8 @@ function printObjectTypeForClassInternal(
                                     returnTypeCallback,
                                     uniqueNameMap,
                                     recursionTypes,
-                                    recursionCount
+                                    recursionCount,
+                                    importTracker
                                 );
                             })
                             .join(', ') +
@@ -1121,7 +1196,8 @@ function printFunctionPartsInternal(
                         returnTypeCallback,
                         uniqueNameMap,
                         recursionTypes,
-                        recursionCount
+                        recursionCount,
+                        undefined
                     );
                     paramTypeStrings.push(paramString);
                 });
@@ -1142,7 +1218,8 @@ function printFunctionPartsInternal(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    undefined
                 );
                 paramTypeStrings.push(`${k}: ${valueTypeString}`);
             });
@@ -1184,7 +1261,8 @@ function printFunctionPartsInternal(
                               returnTypeCallback,
                               uniqueNameMap,
                               recursionTypes,
-                              recursionCount
+                              recursionCount,
+                              undefined
                           )
                         : '';
 
@@ -1269,7 +1347,8 @@ function printFunctionPartsInternal(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    undefined
                 )}`
             );
         }
@@ -1284,7 +1363,8 @@ function printFunctionPartsInternal(
                   returnTypeCallback,
                   uniqueNameMap,
                   recursionTypes,
-                  recursionCount
+                  recursionCount,
+                  undefined
               )
             : '';
 
