@@ -32,13 +32,13 @@ import { convertRangeToTextRange } from '../common/positionUtils';
 import { ParseFileResults } from '../parser/parser';
 import { transformTypeForEnumMember } from './enums';
 import { InlayHintSettings } from '../workspaceFactory';
-import { ImportTracker } from './typePrinter';
+import { ImportTracker, ImportTrackerResults } from './typePrinter';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';
     position: number;
     value: string;
-    imports?: ImportTracker;
+    imports?: ImportTrackerResults;
 };
 // Don't generate inlay hints for arguments to builtin types and functions
 const ignoredBuiltinTypes = new Set(
@@ -161,7 +161,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     getTypeAliasInfo(type)?.shared.name === node.d.value
                 ) {
                     inlayHintValue = 'TypeAlias';
-                    importTracker = new Set(['typing', inlayHintValue]);
+                    importTracker = new ImportTracker();
+                    importTracker.add('typing', inlayHintValue);
                 } else {
                     const result = this._printType(type);
                     inlayHintValue = result.value;
@@ -171,7 +172,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     inlayHintType: 'variable',
                     position: this._endOfNode(node),
                     value: `: ${inlayHintValue}`,
-                    imports: importTracker,
+                    imports: importTracker.result,
                 });
             }
         }
@@ -197,7 +198,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                         inlayHintType: 'functionReturn',
                         position: node.d.suite.start,
                         value: `-> ${value}`,
-                        imports,
+                        imports: imports.result,
                     });
                 }
             }
@@ -223,7 +224,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                             inlayHintType: 'generic',
                             position: this._endOfNode(node),
                             value: `[${value}]`,
-                            imports,
+                            imports: imports.result,
                         });
                     }
                 }
@@ -267,7 +268,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                         ? typeArg.priv.tupleTypeArgs.map((tupleTypeArg) => this._printType(tupleTypeArg.type))
                         : this._printType(typeArg)
                 );
-                const imports = new Set(printedTypeArgs.flatMap((inlayHintInfo) => Array.from(inlayHintInfo.imports)));
+                const imports = printedTypeArgs.map((inlayHintInfo) => inlayHintInfo.imports);
                 const values = printedTypeArgs.map((inlayHintInfo) => inlayHintInfo.value);
                 if (returnType.priv.tupleTypeArgs) {
                     // for tuples, as far as i can tell there's no cases where it can infer non-variadic generics, so we just always
@@ -278,7 +279,10 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     inlayHintType: 'generic',
                     position: this._endOfNode(node.d.leftExpr),
                     value: `[${values.join(', ')}]`,
-                    imports,
+                    imports: {
+                        imports: new Set(imports.flatMap((imp) => Array.from(imp.result.imports))),
+                        importFroms: new Map(imports.flatMap((imp) => Array.from(imp.result.importFroms.entries()))),
+                    },
                 });
             }
         }
@@ -346,7 +350,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     private _endOfNode = (node: ParseNode) => node.start + node.length;
 
     private _printType = (type: Type): { value: string; imports: ImportTracker } => {
-        const importTracker: ImportTracker = new Set();
+        const importTracker = new ImportTracker();
         return {
             value: this._program.evaluator!.printType(type, { enforcePythonSyntax: true, importTracker }),
             imports: importTracker,

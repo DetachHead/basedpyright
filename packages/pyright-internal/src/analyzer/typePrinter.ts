@@ -154,7 +154,7 @@ export function printLiteralValueTruncated(type: ClassType, importTracker: Impor
 
     assert(type.shared.name === 'str');
     const name = 'LiteralString';
-    importTracker?.add(['typing', name]);
+    importTracker?.add('typing', name);
     return name;
 }
 
@@ -183,7 +183,7 @@ export function printLiteralValue(type: ClassType, quotation = "'", importTracke
     } else if (literalValue instanceof EnumLiteral) {
         const result = literalValue.classFullName.match(/(.*)\.(.*)/);
         if (result) {
-            importTracker?.add([result[0], result[1]]);
+            importTracker?.add(result[0], result[1]);
         }
         literalStr = `${literalValue.className}.${literalValue.itemName}`;
     } else if (typeof literalValue === 'bigint') {
@@ -198,8 +198,41 @@ export function printLiteralValue(type: ClassType, quotation = "'", importTracke
     return literalStr;
 }
 
-/** tuples are `from x import y` imports, `string`s are `import x` imports */
-export type ImportTracker = Set<[string, string] | string>;
+export interface ImportTrackerResults {
+    imports: ReadonlySet<string>;
+    importFroms: ReadonlyMap<string, ReadonlySet<string>>;
+}
+
+/**
+ * tracks imports that would be required if the printed type were to be converted to real life (eg. when double clicking
+ * an inlay hint)
+ */
+export class ImportTracker {
+    static importModule = Symbol();
+    private readonly _imports = new Set<string>();
+    private readonly _importFroms = new Map<string, Set<string>>();
+    readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
+
+    /**
+     * @param module the name of the module being imported
+     * @param name the name of the thing being imported if it's an `import x from y` statement. `undefined` if it's an `import x` statement
+     */
+    add = (module: string, name?: string) => {
+        if (module === 'builtins') {
+            return;
+        }
+        if (name) {
+            const importFroms = this._importFroms.get(module);
+            if (importFroms) {
+                importFroms.add(name);
+            } else {
+                this._importFroms.set(module, new Set([name]));
+            }
+        } else {
+            this._imports.add(module);
+        }
+    };
+}
 
 function printTypeInternal(
     type: Type,
@@ -212,7 +245,7 @@ function printTypeInternal(
 ): string {
     if (recursionCount > maxTypeRecursionCount) {
         if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-            importTracker?.add(['typing', 'Any']);
+            importTracker?.add('typing', 'Any');
             return 'Any';
         }
         return '<Recursive>';
@@ -249,7 +282,7 @@ function printTypeInternal(
                     aliasName = aliasInfo.shared.fullName;
                     importTracker?.add(aliasInfo.shared.moduleName);
                 } else {
-                    importTracker?.add([aliasInfo.shared.moduleName, aliasName]);
+                    importTracker?.add(aliasInfo.shared.moduleName, aliasName);
                 }
 
                 const typeParams = aliasInfo.shared.typeParams;
@@ -358,7 +391,7 @@ function printTypeInternal(
         // If this is a recursive TypeVar, we've already expanded it once, so
         // just print its name at this point.
         if (isTypeVar(type) && type.shared.isSynthesized && type.shared.recursiveAlias) {
-            importTracker?.add([type.shared.recursiveAlias.moduleName, type.shared.recursiveAlias.name]);
+            importTracker?.add(type.shared.recursiveAlias.moduleName, type.shared.recursiveAlias.name);
             return type.shared.recursiveAlias.name;
         }
 
@@ -369,7 +402,7 @@ function printTypeInternal(
                         ? aliasInfo.shared.fullName
                         : aliasInfo.shared.name;
                 if (uniqueNameMap.isUnique(name)) {
-                    importTracker?.add([aliasInfo.shared.moduleName, name]);
+                    importTracker?.add(aliasInfo.shared.moduleName, name);
                 } else {
                     importTracker?.add(aliasInfo.shared.moduleName);
                     name = aliasInfo.shared.fullName;
@@ -412,7 +445,7 @@ function printTypeInternal(
         switch (type.category) {
             case TypeCategory.Unbound: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-                    importTracker?.add(['typing', 'Any']);
+                    importTracker?.add('typing', 'Any');
                     return 'Any';
                 }
                 return 'Unbound';
@@ -420,7 +453,7 @@ function printTypeInternal(
 
             case TypeCategory.Unknown: {
                 if (printTypeFlags & (PrintTypeFlags.PythonSyntax | PrintTypeFlags.PrintUnknownWithAny)) {
-                    importTracker?.add(['typing', 'Any']);
+                    importTracker?.add('typing', 'Any');
                     return 'Any';
                 }
                 return 'Unknown';
@@ -428,7 +461,7 @@ function printTypeInternal(
 
             case TypeCategory.Module: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-                    importTracker?.add(['typing', 'Any']);
+                    importTracker?.add('typing', 'Any');
                     return 'Any';
                 }
                 return `Module("${type.priv.moduleName}")`;
@@ -440,7 +473,7 @@ function printTypeInternal(
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             return printLiteralValueTruncated(type, importTracker);
                         } else {
-                            importTracker?.add(['typing', 'Literal']);
+                            importTracker?.add('typing', 'Literal');
                             return `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
                     }
@@ -461,7 +494,7 @@ function printTypeInternal(
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             typeToWrap = printLiteralValueTruncated(type, importTracker);
                         } else {
-                            importTracker?.add(['typing', 'Literal']);
+                            importTracker?.add('typing', 'Literal');
                             typeToWrap = `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
 
@@ -535,8 +568,8 @@ function printTypeInternal(
                 );
 
                 if ((printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    importTracker?.add(['typing', 'Callable']);
-                    importTracker?.add(['typing', 'Any']);
+                    importTracker?.add('typing', 'Callable');
+                    importTracker?.add('typing', 'Any');
                     return 'Callable[..., Any]';
                 }
 
@@ -628,7 +661,7 @@ function printTypeInternal(
                             ) {
                                 boundTypeString = `Self@${boundTypeString}`;
                             } else {
-                                importTracker?.add(['typing', 'Self']);
+                                importTracker?.add('typing', 'Self');
                                 boundTypeString = `Self`;
                             }
                         }
@@ -640,7 +673,7 @@ function printTypeInternal(
                         return boundTypeString;
                     }
                     if ((printTypeFlags & (PrintTypeFlags.PrintUnknownWithAny | PrintTypeFlags.PythonSyntax)) !== 0) {
-                        importTracker?.add(['typing', 'Self']);
+                        importTracker?.add('typing', 'Self');
                         return 'Any';
                     } else {
                         return 'Unknown';
@@ -671,7 +704,7 @@ function printTypeInternal(
                 }
 
                 if (isTypeVarTuple(type) && type.priv.isInUnion) {
-                    importTracker?.add(['typing', 'Union']);
+                    importTracker?.add('typing', 'Union');
                     typeVarName = `Union[${typeVarName}]`;
                 }
 
@@ -691,7 +724,7 @@ function printTypeInternal(
 
             case TypeCategory.Never: {
                 const result = type.priv.isNoReturn ? 'NoReturn' : 'Never';
-                importTracker?.add(['typing', result]);
+                importTracker?.add('typing', result);
                 return result;
             }
 
@@ -700,7 +733,7 @@ function printTypeInternal(
                 if (anyType.priv.isEllipsis) {
                     return '...';
                 }
-                importTracker?.add(['typing', 'Any']);
+                importTracker?.add('typing', 'Any');
                 return 'Any';
             }
         }
@@ -803,7 +836,7 @@ function printUnionType(
             return unionString;
         }
 
-        importTracker?.add(['typing', 'Optional']);
+        importTracker?.add('typing', 'Optional');
         return 'Optional[' + optionalType + ']';
     }
 
@@ -845,14 +878,14 @@ function printUnionType(
     if (literalObjectStrings.size > 0) {
         const literalStrings: string[] = [];
         literalObjectStrings.forEach((s) => literalStrings.push(s));
-        importTracker?.add(['typing', 'Literal']);
+        importTracker?.add('typing', 'Literal');
         dedupedSubtypeStrings.push(`Literal[${literalStrings.join(', ')}]`);
     }
 
     if (literalClassStrings.size > 0) {
         const literalStrings: string[] = [];
         literalClassStrings.forEach((s) => literalStrings.push(s));
-        importTracker?.add(['typing', 'Literal']);
+        importTracker?.add('typing', 'Literal');
         dedupedSubtypeStrings.push(`type[Literal[${literalStrings.join(', ')}]]`);
     }
 
@@ -867,7 +900,7 @@ function printUnionType(
         }
         return unionString;
     }
-    importTracker?.add(['typing', 'Union']);
+    importTracker?.add('typing', 'Union');
     return `Union[${dedupedSubtypeStrings.join(', ')}]`;
 }
 
@@ -996,7 +1029,7 @@ function printObjectTypeForClassInternal(
             (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0 ? type.shared.fullName : type.shared.name;
     }
 
-    importTracker?.add([type.shared.moduleName, objName]);
+    importTracker?.add(type.shared.moduleName, objName);
 
     // Special-case NoneType to convert it to None.
     if (ClassType.isBuiltIn(type, 'NoneType')) {
