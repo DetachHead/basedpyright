@@ -164,7 +164,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     getTypeAliasInfo(type)?.shared.name === node.d.value
                 ) {
                     inlayHintValue = 'TypeAlias';
-                    importTracker = new ImportTracker(this._program, this._fileUri);
+                    importTracker = new ImportTracker(this._fileUri);
                     importTracker.add('typing', inlayHintValue);
                 } else {
                     const result = this._printType(type);
@@ -353,7 +353,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
     private _endOfNode = (node: ParseNode) => node.start + node.length;
 
     private _printType = (type: Type): { value: string; imports: ImportTracker } => {
-        const importTracker = new ImportTracker(this._program, this._fileUri);
+        const importTracker = new ImportTracker(this._fileUri);
         return {
             value: this._program.evaluator!.printType(type, { enforcePythonSyntax: true, importTracker }),
             imports: importTracker,

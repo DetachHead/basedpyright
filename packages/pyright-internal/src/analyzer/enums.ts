@@ -157,13 +157,7 @@ export function createEnumType(
 
             const valueType = ClassType.cloneWithLiteral(ClassType.cloneAsInstance(intClassType), index + 1);
 
-            const enumLiteral = new EnumLiteral(
-                classType.shared.fullName,
-                classType.shared.name,
-                entryName,
-                valueType,
-                isReprEnum
-            );
+            const enumLiteral = new EnumLiteral(classType, entryName, valueType, isReprEnum);
 
             const newSymbol = Symbol.createWithType(
                 SymbolFlags.ClassMember,
@@ -231,13 +225,7 @@ export function createEnumType(
 
             const entryName = nameNode.d.strings[0].d.value;
 
-            const enumLiteral = new EnumLiteral(
-                classType.shared.fullName,
-                classType.shared.name,
-                entryName,
-                valueType,
-                isReprEnum
-            );
+            const enumLiteral = new EnumLiteral(classType, entryName, valueType, isReprEnum);
 
             const newSymbol = Symbol.createWithType(
                 SymbolFlags.ClassMember,
@@ -272,13 +260,7 @@ export function createEnumType(
             }
 
             const entryName = nameNode.d.strings[0].d.value;
-            const enumLiteral = new EnumLiteral(
-                classType.shared.fullName,
-                classType.shared.name,
-                entryName,
-                valueType,
-                isReprEnum
-            );
+            const enumLiteral = new EnumLiteral(classType, entryName, valueType, isReprEnum);
 
             const newSymbol = Symbol.createWithType(
                 SymbolFlags.ClassMember,
@@ -497,13 +479,7 @@ export function transformTypeForEnumMember(
         return undefined;
     }
 
-    const enumLiteral = new EnumLiteral(
-        memberInfo.classType.shared.fullName,
-        memberInfo.classType.shared.name,
-        memberName,
-        valueType,
-        isReprEnumClass(classType)
-    );
+    const enumLiteral = new EnumLiteral(memberInfo.classType, memberName, valueType, isReprEnumClass(classType));
 
     return ClassType.cloneAsInstance(ClassType.cloneWithLiteral(memberInfo.classType, enumLiteral));
 }

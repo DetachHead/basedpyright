@@ -9,7 +9,6 @@
 
 import { appendArray, getOrAdd } from '../common/collectionUtils';
 import { assert } from '../common/debug';
-import { ProgramView } from '../common/extensibility';
 import { Uri } from '../common/uri/uri';
 import { ParamCategory } from '../parser/parseNodes';
 import { isTypedKwargs } from './parameterUtils';
@@ -183,11 +182,11 @@ export function printLiteralValue(type: ClassType, quotation = "'", importTracke
     } else if (typeof literalValue === 'boolean') {
         literalStr = literalValue ? 'True' : 'False';
     } else if (literalValue instanceof EnumLiteral) {
-        const result = literalValue.classFullName.match(/(.*)\.(.*)/);
+        const result = literalValue.classType.shared.fullName.match(/(.*)\.(.*)/);
         if (result) {
-            importTracker?.add(result[0], result[1]);
+            importTracker?.add(literalValue.classType.shared, literalValue.classType.shared.name);
         }
-        literalStr = `${literalValue.className}.${literalValue.itemName}`;
+        literalStr = `${literalValue.classType.shared.name}.${literalValue.itemName}`;
     } else if (typeof literalValue === 'bigint') {
         literalStr = literalValue.toString();
         if (literalStr.endsWith('n')) {
@@ -198,6 +197,11 @@ export function printLiteralValue(type: ClassType, quotation = "'", importTracke
     }
 
     return literalStr;
+}
+
+interface HasModuleInfo {
+    moduleName: string;
+    fileUri: Uri | string;
 }
 
 export interface ImportTrackerResults {
@@ -211,27 +215,28 @@ export interface ImportTrackerResults {
  */
 export class ImportTracker {
     static importModule = Symbol();
-    private _currentModule: string;
     private readonly _imports = new Set<string>();
     private readonly _importFroms = new Map<string, Set<string>>();
     readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
 
-    constructor(program: ProgramView, uri: Uri) {
-        this._currentModule = program.importResolver.getModuleNameForImport(
-            uri,
-            program.configOptions.findExecEnvironment(uri),
-            // invalid module names are allwoed here because this is only used to compare the module from potential new imports
-            // against the curent one to prevent imports of the current module from being added.
-            true
-        ).moduleName;
-    }
+    constructor(private _fileUri: Uri) {}
 
     /**
-     * @param module the name of the module being imported
+     * @param module the name of the module being imported. if it's possible for the module to be the same as the current module, you should
+     * pass a {@link HasModuleInfo} instead of a string
      * @param name the name of the thing being imported if it's an `import x from y` statement. `undefined` if it's an `import x` statement
      */
-    add = (module: string, name?: string) => {
-        if (module === 'builtins' || module === this._currentModule) {
+    add = (module: string | HasModuleInfo, name?: string) => {
+        let importIsFromCurrentModule: boolean;
+        if (typeof module === 'string') {
+            // we don't have enough info to determine whether it's the current module, so we just assume it's not.
+            // there are other more reliable ways to figure it out, but i think this is faster
+            importIsFromCurrentModule = false;
+        } else {
+            importIsFromCurrentModule = module.fileUri.toString() === this._fileUri.toString();
+            module = module.moduleName;
+        }
+        if (module === 'builtins' || importIsFromCurrentModule) {
             return;
         }
         if (name) {
@@ -289,9 +294,9 @@ function printTypeInternal(
                 // Use the fully-qualified name if the name isn't unique.
                 if (!uniqueNameMap.isUnique(aliasName)) {
                     aliasName = aliasInfo.shared.fullName;
-                    importTracker?.add(aliasInfo.shared.moduleName);
+                    importTracker?.add(aliasInfo.shared);
                 } else {
-                    importTracker?.add(aliasInfo.shared.moduleName, aliasName);
+                    importTracker?.add(aliasInfo.shared, aliasName);
                 }
 
                 const typeParams = aliasInfo.shared.typeParams;
@@ -400,7 +405,7 @@ function printTypeInternal(
         // If this is a recursive TypeVar, we've already expanded it once, so
         // just print its name at this point.
         if (isTypeVar(type) && type.shared.isSynthesized && type.shared.recursiveAlias) {
-            importTracker?.add(type.shared.recursiveAlias.moduleName, type.shared.recursiveAlias.name);
+            importTracker?.add(type.shared.recursiveAlias, type.shared.recursiveAlias.name);
             return type.shared.recursiveAlias.name;
         }
 
@@ -411,9 +416,9 @@ function printTypeInternal(
                         ? aliasInfo.shared.fullName
                         : aliasInfo.shared.name;
                 if (uniqueNameMap.isUnique(name)) {
-                    importTracker?.add(aliasInfo.shared.moduleName, name);
+                    importTracker?.add(aliasInfo.shared, name);
                 } else {
-                    importTracker?.add(aliasInfo.shared.moduleName);
+                    importTracker?.add(aliasInfo.shared);
                     name = aliasInfo.shared.fullName;
                 }
                 return name;
@@ -1042,12 +1047,12 @@ function printObjectTypeForClassInternal(
     if (ClassType.isBuiltIn(type, 'NoneType')) {
         objName = 'None';
     } else {
-        importTracker?.add(type.shared.moduleName, objName);
+        importTracker?.add(type.shared, objName);
     }
 
     // Use the fully-qualified name if the name isn't unique.
     if (!uniqueNameMap.isUnique(objName)) {
-        importTracker?.add(type.shared.moduleName);
+        importTracker?.add(type.shared);
         objName = type.shared.fullName;
     }
 
