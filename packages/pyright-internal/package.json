@@ -55,6 +55,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.2.5",
         "ts-loader": "^9.5.1",
+        "typed-jest-expect": "^1.0.1",
         "typescript": "~5.5.4",
         "webpack": "^5.97.1",
         "webpack-cli": "^5.1.4",
