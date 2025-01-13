@@ -1038,11 +1038,11 @@ function printObjectTypeForClassInternal(
             (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0 ? type.shared.fullName : type.shared.name;
     }
 
-    importTracker?.add(type.shared.moduleName, objName);
-
     // Special-case NoneType to convert it to None.
     if (ClassType.isBuiltIn(type, 'NoneType')) {
         objName = 'None';
+    } else {
+        importTracker?.add(type.shared.moduleName, objName);
     }
 
     // Use the fully-qualified name if the name isn't unique.
