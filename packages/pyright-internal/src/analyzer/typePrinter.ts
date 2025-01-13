@@ -7,7 +7,7 @@
  * Converts a type into a string representation.
  */
 
-import { appendArray } from '../common/collectionUtils';
+import { appendArray, getOrAdd } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { ParamCategory } from '../parser/parseNodes';
 import { isTypedKwargs } from './parameterUtils';
@@ -222,12 +222,8 @@ export class ImportTracker {
             return;
         }
         if (name) {
-            const importFroms = this._importFroms.get(module);
-            if (importFroms) {
-                importFroms.add(name);
-            } else {
-                this._importFroms.set(module, new Set([name]));
-            }
+            const importFroms = getOrAdd(this._importFroms, module, () => new Set());
+            importFroms.add(name);
         } else {
             this._imports.add(module);
         }
