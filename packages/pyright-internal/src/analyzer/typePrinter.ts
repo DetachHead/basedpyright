@@ -9,6 +9,8 @@
 
 import { appendArray, getOrAdd } from '../common/collectionUtils';
 import { assert } from '../common/debug';
+import { ProgramView } from '../common/extensibility';
+import { Uri } from '../common/uri/uri';
 import { ParamCategory } from '../parser/parseNodes';
 import { isTypedKwargs } from './parameterUtils';
 import * as ParseTreeUtils from './parseTreeUtils';
@@ -209,16 +211,27 @@ export interface ImportTrackerResults {
  */
 export class ImportTracker {
     static importModule = Symbol();
+    private _currentModule: string;
     private readonly _imports = new Set<string>();
     private readonly _importFroms = new Map<string, Set<string>>();
     readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
+
+    constructor(program: ProgramView, uri: Uri) {
+        this._currentModule = program.importResolver.getModuleNameForImport(
+            uri,
+            program.configOptions.findExecEnvironment(uri),
+            // invalid module names are allwoed here because this is only used to compare the module from potential new imports
+            // against the curent one to prevent imports of the current module from being added.
+            true
+        ).moduleName;
+    }
 
     /**
      * @param module the name of the module being imported
      * @param name the name of the thing being imported if it's an `import x from y` statement. `undefined` if it's an `import x` statement
      */
     add = (module: string, name?: string) => {
-        if (module === 'builtins') {
+        if (module === 'builtins' || module === this._currentModule) {
             return;
         }
         if (name) {

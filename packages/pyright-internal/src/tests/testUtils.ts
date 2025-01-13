@@ -157,7 +157,7 @@ export const inlayHintSampleFile = (
     const walker = new TypeInlayHintsWalker(
         program,
         { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: false, ...settings },
-        program.getParseResults(fileUri),
+        fileUri,
         range
     );
     walker.walk(program.getParseResults(fileUri)!.parserOutput.parseTree);
