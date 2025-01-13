@@ -5,7 +5,6 @@ import { convertOffsetToPosition } from '../common/positionUtils';
 import { TypeInlayHintsWalker } from '../analyzer/typeInlayHintsWalker';
 import { Range, TextEdit } from 'vscode-languageserver-types';
 import { InlayHintSettings } from '../workspaceFactory';
-import { ParseFileResults } from '../parser/parser';
 import { AutoImporter } from './autoImporter';
 import { ImportGroup } from '../analyzer/importStatementUtils';
 import { Uri } from '../common/uri/uri';
@@ -17,12 +16,11 @@ export class InlayHintsProvider {
     constructor(
         private _program: ProgramView,
         private _fileUri: Uri,
-        parseResults: ParseFileResults | undefined,
         private _autoImporter: AutoImporter | undefined,
         range: Range,
         inlayHintSettings: InlayHintSettings
     ) {
-        this._walker = new TypeInlayHintsWalker(this._program, inlayHintSettings, parseResults, range);
+        this._walker = new TypeInlayHintsWalker(this._program, inlayHintSettings, _fileUri, range);
     }
 
     async onInlayHints(): Promise<InlayHint[] | null> {

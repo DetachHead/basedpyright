@@ -1034,7 +1034,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                       {}
                   )
                 : undefined;
-            return new InlayHintsProvider(program, uri, parseFileResults, autoImporter, params.range, {
+            return new InlayHintsProvider(program, uri, autoImporter, params.range, {
                 callArgumentNames: workspace.inlayHints?.callArgumentNames ?? true,
                 functionReturnTypes: workspace.inlayHints?.functionReturnTypes ?? true,
                 variableTypes: workspace.inlayHints?.variableTypes ?? true,
