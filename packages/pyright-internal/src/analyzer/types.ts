@@ -85,15 +85,14 @@ export const UnificationScopeId: TypeVarScopeId = '-';
 // type annotation.
 export class EnumLiteral {
     constructor(
-        public classFullName: string,
-        public className: string,
+        public classType: ClassType,
         public itemName: string,
         public itemType: Type,
         public isReprEnum: boolean
     ) {}
 
     getName() {
-        return `${this.classFullName}.${this.itemName}`;
+        return `${this.classType.shared.fullName}.${this.itemName}`;
     }
 }
 
