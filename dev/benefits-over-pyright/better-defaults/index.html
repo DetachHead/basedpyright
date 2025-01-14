@@ -1475,6 +1475,7 @@
 <ul>
 <li>less severe diagnostic rules are reported as warnings instead of errors. this reduces <a href="https://en.wikipedia.org/wiki/Alarm_fatigue">alarm fatigue</a> while still ensuring that the user is made aware of all potentential issues that basedpyright can detect. <code>failOnWarnings</code> is also enabled by default in this mode, which causes the CLI to exit with a non-zero exit code if any warnings are detected. you disable this behavior by setting <code>failOnWarnings</code> to <code>false</code>.</li>
 <li>we support <a href="../baseline/">baselining</a> to allow for easy adoption of more strict rules in existing codebases.</li>
+<li>we've added a new setting, <a href="../../configuration/config-files/#allowedUntypedLibraries"><code>allowedUntypedLibraries</code></a> which allows you to turn off rules about unknown types on a per-module basis, which can be useful when working with third party packages that aren't properly typed.</li>
 </ul>
 <h2 id="pythonplatform"><code>pythonPlatform</code></h2>
 <p>used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, <code>pythonPlatform</code> defaults to <code>All</code>, which assumes your code can run on any operating system.</p>

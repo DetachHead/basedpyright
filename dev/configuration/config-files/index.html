@@ -1850,7 +1850,12 @@ who haven't yet updated to >=1.18.1
 </ul>
 <h3 id="basedpyright-exclusive-settings">basedpyright exclusive settings</h3>
 <ul>
-<li><a name="failOnWarnings"></a> <strong>failOnWarnings</strong> [boolean]: Whether to exit with a non-zero exit code in the CLI if any <code>"warning"</code> diagnostics are reported. Has no effect on the language server. This is equivalent to the <code>--warnings</code> CLI argument.</li>
+<li>
+<p><a name="failOnWarnings"></a> <strong>failOnWarnings</strong> [boolean]: Whether to exit with a non-zero exit code in the CLI if any <code>"warning"</code> diagnostics are reported. Has no effect on the language server. This is equivalent to the <code>--warnings</code> CLI argument.</p>
+</li>
+<li>
+<p><a name="allowedUntypedLibraries"></a> <strong>allowedUntypedLibraries</strong> [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules <a href="#reportUnknownVariableType"><code>reportUnknownVariableType</code></a>, <a href="#reportUnknownMemberType"><code>reportUnknownMemberType</code></a>, and <a href="#reportMissingTypeStubs"><code>reportMissingTypeStubs</code></a>. The option name should be a list of module names, for example, <code>["library", "module.submodule"]</code>. By default, no modules are configured.</p>
+</li>
 </ul>
 <h2 id="type-evaluation-settings">Type Evaluation Settings</h2>
 <p>The following settings determine how different types should be evaluated.</p>
