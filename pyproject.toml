@@ -74,7 +74,7 @@ default-groups = ["dev", "docstubs", "lochelper"]
 
 [tool.pdm.version]
 source = "call"
-getter = "build.get_version:get_version"
+getter = "build.version:get"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]
