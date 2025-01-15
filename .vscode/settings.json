@@ -84,7 +84,6 @@
     "jest.jestCommandLine": "npm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
-        ".pdm-python": true,
         ".pyprojectx/**/*": true,
         ".pytest_cache/**/*": true,
         ".venv/**/*": true,
@@ -95,8 +94,7 @@
         "basedpyright/langserver.index.js": true,
         "docstubs/**/*": true,
         "package-lock.json": true,
-        "pdm.*.lock": true,
-        "pdm.lock": true,
+        "uv.lock": true,
         "pw.lock": true,
         "pw": true,
         "pw.bat": true
