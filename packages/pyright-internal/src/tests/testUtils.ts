@@ -225,9 +225,9 @@ export function validateResults(
     }
 
     if (hint !== undefined) {
-        if (results[0].hint.length !== hint) {
-            logDiagnostics(results[0].hint);
-            assert.fail(`Expected ${hint} hints, got ${results[0].hint.length}`);
+        if (results[0].hints.length !== hint) {
+            logDiagnostics(results[0].hints);
+            assert.fail(`Expected ${hint} hints, got ${results[0].hints.length}`);
         }
     }
 }
