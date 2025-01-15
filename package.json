@@ -19,6 +19,7 @@
         "run:cli:unix": "npm run build:cli:dev && node packages/pyright/index.js --pythonpath .venv/bin/python",
         "jest": "cd packages/pyright-internal && jest",
         "update-python-deps": "uv sync --upgrade",
+        "update-pyprojectx-lockfile": "python pw --lock",
         "typecheck-python": "uv run --no-sync basedpyright",
         "ruff-check": "uv run --no-sync ruff check --no-cache && uv run --no-sync ruff format --check --diff",
         "ruff-fix": "uv run --no-sync ruff check --no-cache --fix && uv run --no-sync ruff format",
