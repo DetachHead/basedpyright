@@ -709,6 +709,7 @@ export namespace Localizer {
         export const noneNotIterable = () => getRawString('Diagnostic.noneNotIterable');
         export const noneNotSubscriptable = () => getRawString('Diagnostic.noneNotSubscriptable');
         export const noneNotUsableWith = () => getRawString('Diagnostic.noneNotUsableWith');
+        export const noneNotUsableWithAsync = () => getRawString('Diagnostic.noneNotUsableWithAsync');
         export const noneOperator = () =>
             new ParameterizedString<{ operator: string }>(getRawString('Diagnostic.noneOperator'));
         export const noneUnknownMember = () =>
@@ -823,6 +824,7 @@ export namespace Localizer {
         export const patternNeverMatches = () =>
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.patternNeverMatches'));
         export const positionArgAfterNamedArg = () => getRawString('Diagnostic.positionArgAfterNamedArg');
+        export const positionArgAfterUnpackedDictArg = () => getRawString('Diagnostic.positionArgAfterUnpackedDictArg');
         export const privateImportFromPyTypedModule = () =>
             new ParameterizedString<{ name: string; module: string }>(
                 getRawString('Diagnostic.privateImportFromPyTypedModule')
@@ -1051,6 +1053,10 @@ export namespace Localizer {
             new ParameterizedString<{ type: string }>(getRawString('Diagnostic.typeNotSubscriptable'));
         export const typeNotUsableWith = () =>
             new ParameterizedString<{ type: string; method: string }>(getRawString('Diagnostic.typeNotUsableWith'));
+        export const typeNotUsableWithAsync = () =>
+            new ParameterizedString<{ type: string; method: string }>(
+                getRawString('Diagnostic.typeNotUsableWithAsync')
+            );
         export const typeNotSupportBinaryOperator = () =>
             new ParameterizedString<{ leftType: string; rightType: string; operator: string }>(
                 getRawString('Diagnostic.typeNotSupportBinaryOperator')

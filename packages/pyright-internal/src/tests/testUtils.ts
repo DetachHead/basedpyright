@@ -197,22 +197,6 @@ export function getAnalysisResults(
     });
 }
 
-export function printDiagnostics(fileResults: FileAnalysisResult) {
-    if (fileResults.errors.length > 0) {
-        console.error(`Errors in ${fileResults.fileUri}:`);
-        for (const diag of fileResults.errors) {
-            console.error(`  ${diag.message}`);
-        }
-    }
-
-    if (fileResults.warnings.length > 0) {
-        console.error(`Warnings in ${fileResults.fileUri}:`);
-        for (const diag of fileResults.warnings) {
-            console.error(`  ${diag.message}`);
-        }
-    }
-}
-
 /** @deprecated use {@link validateResultsButBased} instead */
 export function validateResults(
     results: FileAnalysisResult[],
@@ -222,15 +206,35 @@ export function validateResults(
     hint?: number
 ) {
     assert.strictEqual(results.length, 1);
-    assert.strictEqual(results[0].errors.length, errorCount);
-    assert.strictEqual(results[0].warnings.length, warningCount);
+
+    if (results[0].errors.length !== errorCount) {
+        logDiagnostics(results[0].errors);
+        assert.fail(`Expected ${errorCount} errors, got ${results[0].errors.length}`);
+    }
+
+    if (results[0].warnings.length !== warningCount) {
+        logDiagnostics(results[0].warnings);
+        assert.fail(`Expected ${warningCount} warnings, got ${results[0].warnings.length}`);
+    }
 
     if (infoCount !== undefined) {
-        assert.strictEqual(results[0].infos.length, infoCount);
+        if (results[0].infos.length !== infoCount) {
+            logDiagnostics(results[0].infos);
+            assert.fail(`Expected ${infoCount} infos, got ${results[0].infos.length}`);
+        }
     }
 
     if (hint !== undefined) {
-        assert.strictEqual(results[0].hints.length, hint);
+        if (results[0].hint.length !== hint) {
+            logDiagnostics(results[0].hint);
+            assert.fail(`Expected ${hint} hints, got ${results[0].hint.length}`);
+        }
+    }
+}
+
+function logDiagnostics(diags: Diagnostic[]) {
+    for (const diag of diags) {
+        console.error(`   [${diag.range.start.line + 1}:${diag.range.start.character + 1}] ${diag.message}`);
     }
 }
 

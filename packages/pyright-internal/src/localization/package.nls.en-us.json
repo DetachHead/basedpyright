@@ -867,6 +867,10 @@
             "message": "Object of type \"None\" cannot be used with \"with\"",
             "comment": "{Locked='None','with'}"
         },
+        "noneNotUsableWithAsync": {
+            "message": "Object of type \"None\" cannot be used with \"async with\"",
+            "comment": "{Locked='None','with', 'async}"
+        },
         "noneOperator": {
             "message": "Operator \"{operator}\" not supported for \"None\"",
             "comment": "{Locked='None'}"
@@ -1004,6 +1008,7 @@
         },
         "patternNeverMatches": "Pattern will never be matched for subject type \"{type}\"",
         "positionArgAfterNamedArg": "Positional argument cannot appear after keyword arguments",
+        "positionArgAfterUnpackedDictArg": "Positional argument cannot appear after keyword argument unpacking",
         "positionOnlyAfterArgs": "Position-only parameter separator not allowed after \"*\" parameter",
         "positionOnlyAfterKeywordOnly": "\"/\" parameter must appear before \"*\" parameter",
         "positionOnlyAfterNon": "Position-only parameter not allowed after parameter that is not position-only",
@@ -1341,7 +1346,11 @@
         "typeNotSupportBinaryOperatorBidirectional": "Operator \"{operator}\" not supported for types \"{leftType}\" and \"{rightType}\" when expected type is \"{expectedType}\"",
         "typeNotSupportUnaryOperator": "Operator \"{operator}\" not supported for type \"{type}\"",
         "typeNotSupportUnaryOperatorBidirectional": "Operator \"{operator}\" not supported for type \"{type}\" when expected type is \"{expectedType}\"",
-        "typeNotUsableWith": "Object of type \"{type}\" cannot be used with \"with\" because it does not implement {method}",
+        "typeNotUsableWith": "Object of type \"{type}\" cannot be used with \"with\" because it does not correctly implement {method}",
+        "typeNotUsableWithAsync": {
+            "message": "Object of type \"{type}\" cannot be used with \"async with\" because it does not correctly implement {method}",
+            "comment": ["{Locked='async','with}"]
+    },
         "typeParameterBoundNotAllowed": {
             "message": "Bound or constraint cannot be used with a variadic type parameter or ParamSpec",
             "comment": ["{Locked='ParamSpec'}", "'variadic' means that it accepts a variable number of arguments"]
@@ -2082,20 +2091,20 @@
         "uninitializedAbstractVariable": "Instance variable \"{name}\" is defined in abstract base class \"{classType}\" but not initialized",
         "unreachableExcept": "\"{exceptionType}\" is a subclass of \"{parentType}\"",
         "useDictInstead": {
-            "message": "Use Dict[T1, T2] to indicate a dictionary type",
-            "comment": "{Locked='Dict[T1, T2]'}"
+            "message": "Use dict[T1, T2] to indicate a dictionary type",
+            "comment": "{Locked='dict[T1, T2]'}"
         },
         "useListInstead": {
-            "message": "Use List[T] to indicate a list type or Union[T1, T2] to indicate a union type",
-            "comment": "{Locked='List[T]','list','Union[T1, T2]','union'}"
+            "message": "Use list[T] to indicate a list type or T1 | T2 to indicate a union type",
+            "comment": "{Locked='list[T]','list','T1 | T2','union'}"
         },
         "useTupleInstead": {
-            "message": "Use tuple[T1, ..., Tn] to indicate a tuple type or Union[T1, T2] to indicate a union type",
-            "comment": "{Locked='tuple[T1, ..., Tn]','tuple','Union[T1, T2]','union'}"
+            "message": "Use tuple[T1, ..., Tn] to indicate a tuple type or T1 | T2 to indicate a union type",
+            "comment": "{Locked='tuple[T1, ..., Tn]','tuple','T1 | T2','union'}"
         },
         "useTypeInstead": {
-            "message": "Use Type[T] instead",
-            "comment": "{Locked='Type[T]'}"
+            "message": "Use type[T] instead",
+            "comment": "{Locked='type[T]'}"
         },
         "varianceMismatchForClass": "Variance of type argument \"{typeVarName}\" is incompatible with base class \"{className}\"",
         "varianceMismatchForTypeAlias": "Variance of type argument \"{typeVarName}\" is incompatible with \"{typeAliasParam}\"",

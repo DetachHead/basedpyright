@@ -433,7 +433,6 @@ interface ValidateArgTypeOptions {
 
 interface EffectiveReturnTypeOptions {
     callSiteInfo?: CallSiteEvaluationInfo;
-    skipInferReturnType?: boolean;
 }
 
 interface SignatureTrackerStackEntry {
@@ -602,6 +601,10 @@ interface CodeFlowAnalyzerCacheEntry {
     codeFlowAnalyzer: CodeFlowAnalyzer;
 }
 
+interface FunctionRecursionInfo {
+    callerNode: ExpressionNode | undefined;
+}
+
 type LogWrapper = <T extends (...args: any[]) => any>(func: T) => (...args: Parameters<T>) => ReturnType<T>;
 
 interface SuppressedNodeStackEntry {
@@ -620,7 +623,7 @@ export function createTypeEvaluator(
     const suppressedNodeStack: SuppressedNodeStackEntry[] = [];
     const assignClassToSelfStack: AssignClassToSelfInfo[] = [];
 
-    let functionRecursionMap = new Set<number>();
+    let functionRecursionMap = new Map<number, FunctionRecursionInfo[]>();
     let codeFlowAnalyzerCache = new Map<number, CodeFlowAnalyzerCacheEntry[]>();
     let typeCache = new Map<number, TypeCacheEntry>();
     let effectiveTypeCache = new Map<number, Map<string, EffectiveTypeResult>>();
@@ -660,7 +663,7 @@ export function createTypeEvaluator(
     // circular references in complex data structures, so it fails
     // to clean up the objects if we don't help it out.
     function disposeEvaluator() {
-        functionRecursionMap = new Set<number>();
+        functionRecursionMap = new Map<number, FunctionRecursionInfo[]>();
         codeFlowAnalyzerCache = new Map<number, CodeFlowAnalyzerCacheEntry[]>();
         typeCache = new Map<number, TypeCacheEntry>();
         effectiveTypeCache = new Map<number, Map<string, EffectiveTypeResult>>();
@@ -2866,13 +2869,7 @@ export function createTypeEvaluator(
                 );
 
                 if (baseType && isClassInstance(baseType)) {
-                    const setItemType = getBoundMagicMethod(baseType, '__setitem__');
-                    if (setItemType && isFunction(setItemType) && setItemType.shared.parameters.length >= 2) {
-                        const paramType = FunctionType.getParamType(setItemType, 1);
-                        if (!isAnyOrUnknown(paramType)) {
-                            return paramType;
-                        }
-                    } else if (ClassType.isTypedDictClass(baseType)) {
+                    if (ClassType.isTypedDictClass(baseType)) {
                         const typeFromTypedDict = getTypeOfIndexedTypedDict(
                             evaluatorInterface,
                             expression,
@@ -2881,6 +2878,39 @@ export function createTypeEvaluator(
                         );
                         if (typeFromTypedDict) {
                             return typeFromTypedDict.type;
+                        }
+                    }
+
+                    let setItemType = getBoundMagicMethod(baseType, '__setitem__');
+                    if (!setItemType) {
+                        break;
+                    }
+
+                    if (isOverloaded(setItemType)) {
+                        // Determine whether we need to use the slice overload.
+                        const expectsSlice =
+                            expression.d.items.length === 1 &&
+                            expression.d.items[0].d.valueExpr.nodeType === ParseNodeType.Slice;
+                        const overloads = OverloadedType.getOverloads(setItemType);
+                        setItemType = overloads.find((overload) => {
+                            if (overload.shared.parameters.length < 2) {
+                                return false;
+                            }
+
+                            const keyType = FunctionType.getParamType(overload, 0);
+                            const isSlice = isClassInstance(keyType) && ClassType.isBuiltIn(keyType, 'slice');
+                            return expectsSlice === isSlice;
+                        });
+
+                        if (!setItemType) {
+                            break;
+                        }
+                    }
+
+                    if (isFunction(setItemType) && setItemType.shared.parameters.length >= 2) {
+                        const paramType = FunctionType.getParamType(setItemType, 1);
+                        if (!isAnyOrUnknown(paramType)) {
+                            return paramType;
                         }
                     }
                 }
@@ -7589,7 +7619,9 @@ export function createTypeEvaluator(
                     ) {
                         const itemMethodType = getBoundMagicMethod(
                             concreteSubtype,
-                            getIndexAccessMagicMethodName(usage)
+                            getIndexAccessMagicMethodName(usage),
+                            /* selfType */ undefined,
+                            node.d.leftExpr
                         );
 
                         if ((flags & EvalFlags.TypeExpression) !== 0) {
@@ -7939,7 +7971,7 @@ export function createTypeEvaluator(
         }
 
         const magicMethodName = getIndexAccessMagicMethodName(usage);
-        const itemMethodType = getBoundMagicMethod(baseType, magicMethodName, selfType);
+        const itemMethodType = getBoundMagicMethod(baseType, magicMethodName, selfType, node.d.leftExpr);
 
         if (!itemMethodType) {
             addDiagnostic(
@@ -10542,6 +10574,14 @@ export function createTypeEvaluator(
 
     // Evaluates the type of the "cast" call.
     function evaluateCastCall(argList: Arg[], errorNode: ExpressionNode) {
+        if (argList[0].argCategory !== ArgCategory.Simple && argList[0].valueExpression) {
+            addDiagnostic(
+                DiagnosticRule.reportInvalidTypeForm,
+                LocMessage.unpackInAnnotation(),
+                argList[0].valueExpression
+            );
+        }
+
         // Verify that the cast is necessary.
         let castToType = getTypeOfArgExpectingType(argList[0], { typeExpression: true }).type;
 
@@ -14071,7 +14111,15 @@ export function createTypeEvaluator(
             stripTypeForm(convertSpecialFormToRuntimeValue(stripLiteralValue(t.type), flags, /* convertModule */ true))
         );
 
-        keyType = keyTypes.length > 0 ? combineTypes(keyTypes) : fallbackType;
+        if (keyTypes.length > 0) {
+            if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.strictDictionaryInference || hasExpectedType) {
+                keyType = combineTypes(keyTypes);
+            } else {
+                keyType = areTypesSame(keyTypes, { ignorePseudoGeneric: true }) ? keyTypes[0] : fallbackType;
+            }
+        } else {
+            keyType = fallbackType;
+        }
 
         // If the value type differs and we're not using "strict inference mode",
         // we need to back off because we can't properly represent the mappings
@@ -14286,7 +14334,12 @@ export function createTypeEvaluator(
                 }
 
                 const unexpandedType = unexpandedTypeResult.type;
+
                 if (isAnyOrUnknown(unexpandedType)) {
+                    if (forceStrictInference || index < maxEntriesToUseForInference) {
+                        keyTypes.push({ node: entryNode, type: unexpandedType });
+                        valueTypes.push({ node: entryNode, type: unexpandedType });
+                    }
                     addUnknown = false;
                 } else if (isClassInstance(unexpandedType) && ClassType.isTypedDictClass(unexpandedType)) {
                     // Handle dictionary expansion for a TypedDict.
@@ -19472,7 +19525,11 @@ export function createTypeEvaluator(
         return awaitableReturnType;
     }
 
-    function inferFunctionReturnType(node: FunctionNode, isAbstract: boolean): TypeResult | undefined {
+    function inferFunctionReturnType(
+        node: FunctionNode,
+        isAbstract: boolean,
+        callerNode: ExpressionNode | undefined
+    ): TypeResult | undefined {
         const returnAnnotation = node.d.returnAnnotation || node.d.funcAnnotationComment?.d.returnAnnotation;
 
         // This shouldn't be called if there is a declared return type, but it
@@ -19491,11 +19548,17 @@ export function createTypeEvaluator(
             return { type: inferredReturnType, isIncomplete };
         }
 
-        if (functionRecursionMap.has(node.id) || functionRecursionMap.size >= maxInferFunctionReturnRecursionCount) {
+        const recursionEntry = functionRecursionMap.get(node.id) ?? [];
+
+        if (functionRecursionMap.size >= maxInferFunctionReturnRecursionCount) {
+            inferredReturnType = UnknownType.create();
+            isIncomplete = true;
+        } else if (recursionEntry.some((entry) => entry.callerNode === callerNode)) {
             inferredReturnType = UnknownType.create();
             isIncomplete = true;
         } else {
-            functionRecursionMap.add(node.id);
+            recursionEntry.push({ callerNode });
+            functionRecursionMap.set(node.id, recursionEntry);
 
             try {
                 let functionDecl: FunctionDeclaration | undefined;
@@ -19693,7 +19756,10 @@ export function createTypeEvaluator(
                 }
                 throw err;
             } finally {
-                functionRecursionMap.delete(node.id);
+                recursionEntry.pop();
+                if (recursionEntry.length === 0) {
+                    functionRecursionMap.delete(node.id);
+                }
             }
         }
 
@@ -19842,7 +19908,11 @@ export function createTypeEvaluator(
         const isAsync = node.parent && node.parent.nodeType === ParseNodeType.With && !!node.parent.d.isAsync;
 
         if (isOptionalType(exprType)) {
-            addDiagnostic(DiagnosticRule.reportOptionalContextManager, LocMessage.noneNotUsableWith(), node.d.expr);
+            addDiagnostic(
+                DiagnosticRule.reportOptionalContextManager,
+                isAsync ? LocMessage.noneNotUsableWithAsync() : LocMessage.noneNotUsableWith(),
+                node.d.expr
+            );
             exprType = removeNoneFromUnion(exprType);
         }
 
@@ -19855,25 +19925,20 @@ export function createTypeEvaluator(
                 return subtype;
             }
 
-            const additionalHelp = new DiagnosticAddendum();
+            const enterDiag = new DiagnosticAddendum();
 
             if (isClass(subtype)) {
-                let enterType = getTypeOfMagicMethodCall(
+                const enterTypeResult = getTypeOfMagicMethodCall(
                     subtype,
                     enterMethodName,
                     [],
                     node.d.expr,
                     /* inferenceContext */ undefined,
-                    additionalHelp.createAddendum()
-                )?.type;
+                    enterDiag.createAddendum()
+                );
 
-                if (enterType) {
-                    // For "async while", an implicit "await" is performed.
-                    if (isAsync) {
-                        enterType = getTypeOfAwaitable(enterType, node.d.expr);
-                    }
-
-                    return enterType;
+                if (enterTypeResult) {
+                    return isAsync ? getTypeOfAwaitable(enterTypeResult.type, node.d.expr) : enterTypeResult.type;
                 }
 
                 if (!isAsync) {
@@ -19886,15 +19951,15 @@ export function createTypeEvaluator(
                             /* inferenceContext */ undefined
                         )?.type
                     ) {
-                        additionalHelp.addMessage(LocAddendum.asyncHelp());
+                        enterDiag.addMessage(LocAddendum.asyncHelp());
                     }
                 }
             }
 
+            const message = isAsync ? LocMessage.typeNotUsableWithAsync() : LocMessage.typeNotUsableWith();
             addDiagnostic(
                 DiagnosticRule.reportGeneralTypeIssues,
-                LocMessage.typeNotUsableWith().format({ type: printType(subtype), method: enterMethodName }) +
-                    additionalHelp.getString(),
+                message.format({ type: printType(subtype), method: enterMethodName }) + enterDiag.getString(),
                 node.d.expr
             );
             return UnknownType.create();
@@ -19902,6 +19967,8 @@ export function createTypeEvaluator(
 
         // Verify that the target has an __exit__ or __aexit__ method defined.
         const exitMethodName = isAsync ? '__aexit__' : '__exit__';
+        const exitDiag = new DiagnosticAddendum();
+
         doForEachSubtype(exprType, (subtype) => {
             subtype = makeTopLevelTypeVarsConcrete(subtype);
 
@@ -19911,24 +19978,27 @@ export function createTypeEvaluator(
 
             if (isClass(subtype)) {
                 const anyArg: TypeResult = { type: AnyType.create() };
-                const exitType = getTypeOfMagicMethodCall(
+                const exitTypeResult = getTypeOfMagicMethodCall(
                     subtype,
                     exitMethodName,
                     [anyArg, anyArg, anyArg],
                     node.d.expr,
-                    /* inferenceContext */ undefined
-                )?.type;
+                    /* inferenceContext */ undefined,
+                    exitDiag
+                );
 
-                if (exitType) {
-                    return;
+                if (exitTypeResult) {
+                    return isAsync ? getTypeOfAwaitable(exitTypeResult.type, node.d.expr) : exitTypeResult.type;
                 }
             }
 
             addDiagnostic(
                 DiagnosticRule.reportGeneralTypeIssues,
-                LocMessage.typeNotUsableWith().format({ type: printType(subtype), method: exitMethodName }),
+                LocMessage.typeNotUsableWith().format({ type: printType(subtype), method: exitMethodName }) +
+                    exitDiag.getString(),
                 node.d.expr
             );
+            return UnknownType.create();
         });
 
         if (node.d.target) {
@@ -23296,11 +23366,7 @@ export function createTypeEvaluator(
             return specializedReturnType;
         }
 
-        if (!options?.skipInferReturnType) {
-            return getInferredReturnType(type, options?.callSiteInfo);
-        }
-
-        return UnknownType.create();
+        return getInferredReturnType(type, options?.callSiteInfo);
     }
 
     function _getInferredReturnType(type: FunctionType, callSiteInfo?: CallSiteEvaluationInfo) {
@@ -23357,7 +23423,8 @@ export function createTypeEvaluator(
                         disableSpeculativeMode(() => {
                             returnTypeResult = inferFunctionReturnType(
                                 functionNode,
-                                FunctionType.isAbstractMethod(type)
+                                FunctionType.isAbstractMethod(type),
+                                callSiteInfo?.errorNode
                             );
                         });
 
@@ -23566,7 +23633,8 @@ export function createTypeEvaluator(
                     } else {
                         contextualReturnType = inferFunctionReturnType(
                             functionNode,
-                            FunctionType.isAbstractMethod(type)
+                            FunctionType.isAbstractMethod(type),
+                            callSiteInfo?.errorNode
                         )?.type;
                     }
                 }
@@ -24216,7 +24284,7 @@ export function createTypeEvaluator(
         return true;
     }
 
-    function getGetterTypeFromProperty(propertyClass: ClassType, inferTypeIfNeeded: boolean): Type | undefined {
+    function getGetterTypeFromProperty(propertyClass: ClassType): Type | undefined {
         if (!ClassType.isPropertyClass(propertyClass)) {
             return undefined;
         }
@@ -25949,18 +26017,6 @@ export function createTypeEvaluator(
         flags: AssignTypeFlags,
         recursionCount: number
     ) {
-        // Handle the special case where the dest type is a synthesized
-        // "self" for a protocol class.
-        if (
-            isTypeVar(destType) &&
-            destType.shared.isSynthesized &&
-            destType.shared.boundType &&
-            isClassInstance(destType.shared.boundType) &&
-            ClassType.isProtocolClass(destType.shared.boundType)
-        ) {
-            return true;
-        }
-
         if (isTypeVarTuple(destType) && !isUnpacked(srcType)) {
             return false;
         }
@@ -26771,21 +26827,32 @@ export function createTypeEvaluator(
                         if (p.name) {
                             matchedParamCount++;
                         }
-                    } else if (isPositionOnlySeparator(p) && remainingParams.length === 0) {
+
+                        // If this is a *args parameter, assume that it provides
+                        // the remaining positional parameters, but also assume
+                        // that it is not exhausted and can provide additional
+                        // parameters.
+                        if (p.category !== ParamCategory.ArgsList) {
+                            return;
+                        }
+                    }
+
+                    if (isPositionOnlySeparator(p) && remainingParams.length === 0) {
                         // Don't bother pushing a position-only separator if it
                         // is the first remaining param.
-                    } else {
-                        remainingParams.push(
-                            FunctionParam.create(
-                                p.category,
-                                FunctionType.getParamType(effectiveSrcType, index),
-                                p.flags,
-                                p.name,
-                                FunctionType.getParamDefaultType(effectiveSrcType, index),
-                                p.defaultExpr
-                            )
-                        );
+                        return;
                     }
+
+                    remainingParams.push(
+                        FunctionParam.create(
+                            p.category,
+                            FunctionType.getParamType(effectiveSrcType, index),
+                            p.flags,
+                            p.name,
+                            FunctionType.getParamDefaultType(effectiveSrcType, index),
+                            p.defaultExpr
+                        )
+                    );
                 });
 
                 // If there are remaining parameters and the source and dest do not contain
