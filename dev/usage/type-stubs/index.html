@@ -1603,11 +1603,11 @@
 <p>Decorator functions are especially problematic for static type analyzers. Unless properly typed, they completely hide the signature of any class or function they are applied to. For this reason, it is highly recommended that you enable the “reportUntypedFunctionDecorator” and “reportUntypedClassDecorator” switches in pyrightconfig.json. Most decorators simply return the same function they are passed. Those can easily be annotated with a TypeVar like this:</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span>
 
 <span class="n">_FuncT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;_FuncT&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span>
 
-<span class="k">def</span> <span class="nf">my_decorator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">_FuncT</span><span class="p">],</span> <span class="n">_FuncT</span><span class="p">]:</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">_FuncT</span><span class="p">],</span> <span class="n">_FuncT</span><span class="p">]:</span> <span class="o">...</span>
 </code></pre></div>
 
 

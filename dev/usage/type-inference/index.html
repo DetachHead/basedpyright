@@ -1874,7 +1874,7 @@
 <p>A symbol can be declared with an explicit type. The “def” and “class” keywords, for example, declare a symbol as a function or a class. Other symbols in Python can be introduced into a scope with no declared type. Newer versions of Python have introduced syntax for declaring the types of input parameters, return parameters, and variables.</p>
 <p>When a parameter or variable is annotated with a type, the type checker verifies that all values assigned to that parameter or variable conform to that type.</p>
 <p>Consider the following example:
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p3</span><span class="p">,</span> <span class="o">**</span><span class="n">p4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p3</span><span class="p">,</span> <span class="o">**</span><span class="n">p4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">var1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">p1</span>    <span class="c1"># This is a type violation</span>
     <span class="n">var2</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">p2</span>    <span class="c1"># This is allowed because the types match</span>
     <span class="n">var2</span><span class="p">:</span> <span class="nb">int</span>         <span class="c1"># This is an error because it redeclares var2</span>
@@ -1959,11 +1959,11 @@
 <h4 id="multi-assignment-type-inference">Multi-Assignment Type Inference</h4>
 <p>When a symbol is assigned values in multiple places within the code, those values may have different types. The inferred type of the variable is the union of all such types.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># In this example, symbol var1 has an inferred type of `str | int`.</span>
-<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">var1</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">do_something</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">do_something</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">var1</span> <span class="o">=</span> <span class="n">val</span>
 
 <span class="c1"># In this example, symbol var2 has an inferred type of `Foo | None`.</span>
@@ -2002,7 +2002,7 @@
 <span class="c1"># so Pyright infers its return type based on the return expressions.</span>
 <span class="c1"># In this case, the inferred return type is `str | bool | None`.</span>
 
-<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;&quot;</span>
     <span class="k">elif</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -2010,21 +2010,21 @@
 </code></pre></div>
 <h4 id="never-return-type"><code>Never</code> return type</h4>
 <p>If there is no code path that returns from a function (e.g. all code paths raise an exception), Pyright infers a return type of <code>Never</code>. As an exception to this rule, if the function is decorated with <code>@abstractmethod</code>, the return type is not inferred as <code>Never</code> even if there is no return. This accommodates a common practice where an abstract method is implemented with a <code>raise</code> statement that raises an exception of type <code>NotImplementedError</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
     <span class="c1"># The inferred return type is Never.</span>
-    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
 
     <span class="c1"># The inferred return type is Unknown.</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">method2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">method2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </code></pre></div>
 <h5 id="difference-between-never-and-noreturn">Difference between <code>Never</code> and <code>NoReturn</code></h5>
 <p>both <code>Never</code> and <code>NoReturn</code> mean the exact same thing. <code>Never</code> was added in python 3.11 when they realized that it doesn't just mean "a function that doesn't return a value", because it can be used in any situation to refer to narrowest possible type, eg. to validate that all possible types have been narrowed out of a union:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">assert_never</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_never</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="o">...</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -2033,7 +2033,7 @@
         <span class="n">assert_never</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># will report a type error if any type is unaccounted for</span>
 </code></pre></div>
 <p>this is because <code>assert_never</code> takes <code>Never</code> as a parameter:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">assert_never</span><span class="p">(</span><span class="n">arg</span><span class="p">:</span> <span class="n">Never</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Never</span><span class="p">:</span> <span class="o">...</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assert_never</span><span class="p">(</span><span class="n">arg</span><span class="p">:</span> <span class="n">Never</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Never</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p>the name <code>NoReturn</code> makes no sense for use cases like this, which is why the <code>Never</code> type is preferred. a future release of basedpyright will mark <code>NoReturn</code> as deprecated in favor of <code>Never</code> for this reason. <a href="https://github.com/DetachHead/basedpyright/issues/356#issuecomment-2224318021">see this comment for more information</a></p>
 <h4 id="generator-return-types">Generator return types</h4>
@@ -2045,7 +2045,7 @@
 <span class="c1"># a and b are unknown. In this case, the inferred return</span>
 <span class="c1"># type is `Unknown | None`.</span>
 
-<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">c</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">a</span>
     <span class="k">elif</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
@@ -2054,7 +2054,7 @@
         <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div>
 <p>In cases where all parameters are unannotated, Pyright uses a technique called <em>call-site return type inference</em>. It performs type inference using the the types of arguments passed to the function in a call expression. If the unannotated function calls other functions, call-site return type inference can be used recursively. Pyright limits this recursion to a small number for practical performance reasons.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func2</span><span class="p">(</span><span class="n">p_int</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p_flt</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">p_int</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p_flt</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
     <span class="c1"># The type of var1 is inferred to be `int | None` based</span>
     <span class="c1"># on call-site return type inference.</span>
     <span class="n">var1</span> <span class="o">=</span> <span class="n">func1</span><span class="p">(</span><span class="n">p_int</span><span class="p">,</span> <span class="n">p_int</span><span class="p">,</span> <span class="n">p_int</span><span class="p">)</span>
@@ -2067,20 +2067,20 @@
 <p>For instance methods, the first parameter (named <code>self</code> by convention) is inferred to be type <code>Self</code>.</p>
 <p>For class methods, the first parameter (named <code>cls</code> by convention) is inferred to be type <code>type[Self]</code>.</p>
 <p>For other unannotated parameters within a method, Pyright looks for a method of the same name implemented in a base class. If the corresponding method in the base class has the same signature (the same number of parameters with the same names), no overloads, and annotated parameter types, the type annotation from this method is “inherited” for the corresponding parameter in the child class method.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Parent</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="o">...</span>
 
 
-<span class="k">class</span> <span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">a</span>
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">method1</span><span class="p">)</span>  <span class="c1"># (self: Child, a: int, b: str) -&gt; int</span>
 </code></pre></div>
 <p>When parameter types are inherited from a base class method, the return type is not inherited. Instead, normal return type inference techniques are used.</p>
 <p>If the type of an unannotated parameter cannot be inferred using any of the above techniques and the parameter has a default argument expression associated with it, the parameter type is inferred from the default argument type. If the default argument is <code>None</code>, the inferred type is <code>Unknown | None</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="k">pass</span>
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>  <span class="c1"># (a: Unknown, b: int, c: Unknown | None) -&gt; None</span>
@@ -2092,11 +2092,11 @@
 <h4 id="literals">Literals</h4>
 <p>Python 3.8 introduced support for <em>literal types</em>. This allows a type checker like Pyright to track specific literal values of str, bytes, int, bool, and enum values. As with other types, literal types can be declared.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># This function is allowed to return only values 1, 2 or 3.</span>
-<span class="k">def</span> <span class="nf">func1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
     <span class="o">...</span>
 
 <span class="c1"># This function must be passed one of three specific string values.</span>
-<span class="k">def</span> <span class="nf">func2</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;rw&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;rw&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="o">...</span>
 </code></pre></div>
 <p>When Pyright is performing type inference, it generally does not infer literal types. Consider the following example:</p>
@@ -2111,7 +2111,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># The inferred type is tuple[Literal[1], Literal[&quot;a&quot;], Literal[True]].</span>
 <span class="n">var1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="c1"># The inferred type is tuple[int, int].</span>
     <span class="n">var2</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
 
@@ -2198,7 +2198,7 @@
 <span class="n">var1</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
 
 <span class="c1"># This function takes a comparison function callback.</span>
-<span class="k">def</span> <span class="nf">float_sort</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">comp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">float_sort</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">comp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span> <span class="o">...</span>
 
 <span class="c1"># In this example, the types of the lambda’s input parameters</span>
 <span class="c1"># a and b can be inferred to be float because the float_sort</span>

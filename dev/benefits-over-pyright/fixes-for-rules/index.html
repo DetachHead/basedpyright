@@ -1400,9 +1400,9 @@
 <span class="n">foo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># no error</span>
 </code></pre></div>
 <p>nor does it care if you have a duplicated import in multiple different <code>import</code> statements, or in aliases:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">foo</span> <span class="kn">import</span> <span class="n">bar</span>
-<span class="kn">from</span> <span class="nn">bar</span> <span class="kn">import</span> <span class="n">bar</span>  <span class="c1"># no error</span>
-<span class="kn">from</span> <span class="nn">baz</span> <span class="kn">import</span> <span class="n">foo</span> <span class="k">as</span> <span class="n">baz</span><span class="p">,</span> <span class="n">bar</span> <span class="k">as</span> <span class="n">baz</span>  <span class="c1"># no error</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">foo</span><span class="w"> </span><span class="kn">import</span> <span class="n">bar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bar</span><span class="w"> </span><span class="kn">import</span> <span class="n">bar</span>  <span class="c1"># no error</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">baz</span><span class="w"> </span><span class="kn">import</span> <span class="n">foo</span> <span class="k">as</span> <span class="n">baz</span><span class="p">,</span> <span class="n">bar</span> <span class="k">as</span> <span class="n">baz</span>  <span class="c1"># no error</span>
 </code></pre></div>
 <p>basedpyright solves both of these problems by always reporting an error on a redeclaration or an import with the same name as an existing import.</p>
 

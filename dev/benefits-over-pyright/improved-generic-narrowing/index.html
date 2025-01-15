@@ -1488,7 +1488,7 @@
 
 <h1 id="improved-type-narrowing">improved type narrowing</h1>
 <p>when narrowing a type using an <code>isinstance</code> check, there's no way for the type checker to narrow its type variables, so pyright just narrows them to <a href="../../usage/mypy-comparison/#unknown-type-and-strict-mode">"Unknown"</a>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># list[Unknown]</span>
 </code></pre></div>
@@ -1499,20 +1499,20 @@
 <p>when <code>strictGenericNarrowing</code> is enabled, if a generic is covariant and does not have a bound, it gets narrowed to <code>object</code> instead of "Unknown":</p>
 <div class="highlight"><pre><span></span><code><span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[object]</span>
 </code></pre></div>
 <p>if the generic does have a bound, it gets narrowed to that bound instead:</p>
 <div class="highlight"><pre><span></span><code><span class="n">T_co</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_co&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_co</span><span class="p">]):</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[int | str]</span>
 </code></pre></div>
@@ -1520,28 +1520,28 @@
 <p>when a type variable is contravariant its widest possible type is <code>Never</code>, so when <code>strictGenericNarrowing</code> is enabled, contravariant generics get narrowed to <code>Never</code> instead of "Unknown":</p>
 <div class="highlight"><pre><span></span><code><span class="n">T_contra</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_contra&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_contra</span><span class="p">]):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_contra</span><span class="p">]):</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[Never]</span>
 </code></pre></div>
 <h2 id="narrowing-of-constraints">narrowing of constraints</h2>
 <p>when a type variable uses constraints, the rules of variance do not apply - see <a href="https://github.com/DetachHead/basedpyright/issues/893">this issue</a> for more information. instead, a constraint declares that the generic must be resolved to be exactly one of the types specified.</p>
 <p>when <code>strictGenericNarrowing</code> is enabled, constrained generics are narrowed to a union of all possibilities:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)]:</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Foo[int] | Foo[str]</span>
 </code></pre></div>
 <p>this also works when there's more than one constrained type variable - it creates a union of all possible combinations:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="n">U</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)]:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="n">U</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)]:</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Foo</span><span class="p">):</span>
         <span class="n">reveal_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1">#  Foo[int, float] | Foo[int, bytes] | Foo[str, float] | Foo[str, bytes]</span>
 </code></pre></div>

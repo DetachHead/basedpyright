@@ -1648,17 +1648,17 @@
 </div>
 <h2 id="reportany"><code>reportAny</code></h2>
 <p>pyright has a few options to ban "Unknown" types such as <code>reportUnknownVariableType</code>, <code>reportUnknownParameterType</code>, etc. but "Unknown" is not a real type, rather a distinction pyright uses used to represent <code>Any</code>s that come from untyped code or unfollowed imports. if you want to ban all kinds of <code>Any</code>, pyright has no way to do that:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span> <span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span> <span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span> <span class="c1"># error: unknown type</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># no error</span>
 </code></pre></div>
 <p>basedpyright introduces the <code>reportAny</code> option, which will report an error on usages of anything typed as <code>Any</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># error: reportAny</span>
 </code></pre></div>
 <h2 id="reportexplicitany"><code>reportExplicitAny</code></h2>
 <p>similar to <a href="#reportany"><code>reportAny</code></a>, however this rule bans usages of the <code>Any</code> type itself rather than expressions that are typed as <code>Any</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="c1"># error: reportExplicitAny</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="c1"># error: reportExplicitAny</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">baz</span><span class="p">)</span> <span class="c1"># error: reportAny</span>
 </code></pre></div>
 <h2 id="reportignorecommentwithoutrule"><code>reportIgnoreCommentWithoutRule</code></h2>
@@ -1674,31 +1674,31 @@
 <p>pyright's <code>reportPrivateImportUsage</code> rule only checks for private imports of third party modules inside <code>py.typed</code> packages. but there's no reason your own code shouldn't be subject to the same restrictions. to explicitly re-export something, give it a redundant alias <a href="https://peps.python.org/pep-0484/#stub-files">as described in the "Stub Files" section of PEP484</a> (although it only mentions stub files, other type checkers like mypy have also extended this behavior to source files as well):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># foo.py</span>
 
-<span class="kn">from</span> <span class="nn">.some_module</span> <span class="kn">import</span> <span class="n">a</span>  <span class="c1"># private import</span>
-<span class="kn">from</span> <span class="nn">.some_module</span> <span class="kn">import</span> <span class="n">b</span> <span class="k">as</span> <span class="n">b</span>  <span class="c1"># explicit re-export</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.some_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">a</span>  <span class="c1"># private import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.some_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">b</span> <span class="k">as</span> <span class="n">b</span>  <span class="c1"># explicit re-export</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># bar.py</span>
 
 <span class="c1"># reportPrivateLocalImportUsage error, because `a` is not explicitly re-exported by the `foo` module:</span>
-<span class="kn">from</span> <span class="nn">foo</span> <span class="kn">import</span> <span class="n">a</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">foo</span><span class="w"> </span><span class="kn">import</span> <span class="n">a</span>
 
 <span class="c1"># no error, because `b` is explicitly re-exported:</span>
-<span class="kn">from</span> <span class="nn">foo</span> <span class="kn">import</span> <span class="n">b</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">foo</span><span class="w"> </span><span class="kn">import</span> <span class="n">b</span>
 </code></pre></div>
 <h2 id="reportimplicitrelativeimport"><code>reportImplicitRelativeImport</code></h2>
 <p>pyright allows invalid imports such as this:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ./module_name/foo.py:</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># ./module_name/bar.py:</span>
-<span class="kn">import</span> <span class="nn">foo</span> <span class="c1"># wrong! should be `import module_name.foo` or `from module_name import foo`</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">foo</span> <span class="c1"># wrong! should be `import module_name.foo` or `from module_name import foo`</span>
 </code></pre></div>
 <p>this may look correct at first glance, and will work when running <code>bar.py</code> directly as a script, but when it's imported as a module, it will crash:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ./main.py:</span>
-<span class="kn">import</span> <span class="nn">module_name.bar</span>  <span class="c1"># ModuleNotFoundError: No module named &#39;foo&#39;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">module_name.bar</span>  <span class="c1"># ModuleNotFoundError: No module named &#39;foo&#39;</span>
 </code></pre></div>
 <p>the new <code>reportImplicitRelativeImport</code> rule bans imports like this. if you want to do a relative import, the correct way to do it is by importing it from <code>.</code> (the current package):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ./module_name/bar.py:</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">foo</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">foo</span>
 </code></pre></div>
 <h2 id="reportinvalidcast"><code>reportInvalidCast</code></h2>
 <p>most of the time when casting, you want to either cast to a narrower or wider type:</p>
@@ -1722,14 +1722,14 @@
 </div>
 <h2 id="reportunsafemultipleinheritance"><code>reportUnsafeMultipleInheritance</code></h2>
 <p>multiple inheritance in python is awful:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<span class="k">class</span> <span class="nc">Bar</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Bar</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
 
-<span class="k">class</span> <span class="nc">Baz</span><span class="p">(</span><span class="n">Foo</span><span class="p">,</span> <span class="n">Bar</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Baz</span><span class="p">(</span><span class="n">Foo</span><span class="p">,</span> <span class="n">Bar</span><span class="p">):</span>
     <span class="o">...</span>
 
 <span class="n">Baz</span><span class="p">()</span>
@@ -1740,22 +1740,22 @@
 <p><code>reportUnsafeMultipleInheritance</code> bans multiple inheritance when there are multiple base classes with an <code>__init__</code> or <code>__new__</code> method, as there's no way to guarantee that all of them will get called with the correct arguments (or at all). this allows <code>reportMissingSuperCall</code> to be more lenient. ie. when <code>reportUnsafeMultipleInheritance</code> is enabled, missing <code>super()</code> calls will only be reported on classes that actually have a base class.</p>
 <h2 id="reportunusedparameter"><code>reportUnusedParameter</code></h2>
 <p>pyright will report an unused diagnostic on unused function parameters:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">print_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="c1"># &quot;value&quot; is not accessed</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="c1"># &quot;value&quot; is not accessed</span>
   <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;something else&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>but like with <a href="#reportunreachable">unreachable code</a>, this just greys out code instead of actually reporting it as an error. basedpyright introduces a new <code>reportUnusedParameter</code> diagnostic rule which supports all the severity options (<code>"error"</code>, <code>"warning"</code> and <code>"none"</code>) as well as <code>"unused"</code>, which is the default behavior in pyright.</p>
 <h2 id="reportimplicitabstractclass"><code>reportImplicitAbstractClass</code></h2>
 <p>abstract classes in python are declared using a base class called <code>ABC</code>, and were designed to be validated at runtime rather than by a static type checker. this means that there's no decent way to ensure on a class's definition that it implements all of the required abstract methods:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 
-<span class="k">class</span> <span class="nc">AbstractFoo</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AbstractFoo</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
 
 <span class="c1"># no error here even though you haven&#39;t implemented `foo` because pyright assumes you want this class to also be abstract</span>
-<span class="k">class</span> <span class="nc">FooImpl</span><span class="p">(</span><span class="n">AbstractFoo</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FooImpl</span><span class="p">(</span><span class="n">AbstractFoo</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;hi&quot;</span><span class="p">)</span>
 
 <span class="n">foo</span> <span class="o">=</span> <span class="n">FooImpl</span><span class="p">()</span> <span class="c1"># error</span>
@@ -1764,17 +1764,17 @@
 <p>the <code>reportImplicitAbstractClass</code> rule bans classes like this that are implicitly abstract just because their base class is also abstract. it enforces that the class also explicitly extends <code>ABC</code> as well, to indicate that this is intentional:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># even though Foo also extends ABC and this is technically redundant, it&#39;s still required to tell basedpyright that you</span>
 <span class="c1"># are intentionally keeping this class abstract</span>
-<span class="k">class</span> <span class="nc">FooImpl</span><span class="p">(</span><span class="n">AbstractFoo</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FooImpl</span><span class="p">(</span><span class="n">AbstractFoo</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;hi&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></h2>
 <p>pyright does not warn when a member of a class that doesn't have a type annotation is overridden with an incompatible type:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span>
     <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
 
 
-<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
     <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># no error, even though the type on the base class is `int` and the type here is `None`</span>
 </code></pre></div>
 <p>this decision seems to have been made for performance reasons, which is fair enough. but because it's unsafe, there should be a check that enforces type annotations on class attributes (unless the class is decorated with <code>@final</code>). the <code>reportUnannotatedClassAttribute</code> rule will do just that.</p>

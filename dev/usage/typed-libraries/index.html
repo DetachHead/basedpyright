@@ -2115,91 +2115,91 @@
 <span class="n">DictOrList</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="n">_T</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_T</span><span class="p">]</span>
 
 <span class="c1"># Function with known type</span>
-<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">pass</span>
 
 <span class="c1"># Function with partially unknown type (because type annotations</span>
 <span class="c1"># are missing for input parameters and return type)</span>
-<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
     <span class="k">pass</span>
 
 <span class="c1"># Function with partially unknown type (because of missing</span>
 <span class="c1"># type args on dict)</span>
-<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">pass</span>
 
 <span class="c1"># Function with partially unknown type (because return type</span>
 <span class="c1"># annotation is missing)</span>
-<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>
     <span class="k">pass</span>
 
 <span class="c1"># Decorator with partially unknown type (because type annotations</span>
 <span class="c1"># are missing for input parameters and return type)</span>
-<span class="k">def</span> <span class="nf">my_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">func</span>
 
 <span class="c1"># Function with partially unknown type (because type is obscured</span>
 <span class="c1"># by untyped decorator)</span>
 <span class="nd">@my_decorator</span>
-<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">pass</span>
 
 
 <span class="c1"># Class with known type</span>
-<span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyClass</span><span class="p">:</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">age</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="o">...</span>
 
 <span class="c1"># Class with partially unknown type</span>
-<span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyClass</span><span class="p">:</span>
     <span class="c1"># Missing type annotation for class variable</span>
     <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># Missing input parameter annotations</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">):</span>
         <span class="c1"># Missing type annotation for instance variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="n">age</span>
 
     <span class="c1"># Missing return type annotation</span>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
 
 <span class="c1"># Class with partially unknown type</span>
-<span class="k">class</span> <span class="nc">BaseClass1</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseClass1</span><span class="p">:</span>
     <span class="c1"># Missing type annotation</span>
     <span class="n">height</span><span class="p">:</span> <span class="o">=</span> <span class="mf">2.0</span>
 
     <span class="c1"># Missing type annotation</span>
-    <span class="k">def</span> <span class="nf">get_stuff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stuff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
 
 <span class="c1"># Class with known type (because it overrides all symbols</span>
 <span class="c1"># exposed by BaseClass that have incomplete types)</span>
-<span class="k">class</span> <span class="nc">DerivedClass1</span><span class="p">(</span><span class="n">BaseClass1</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DerivedClass1</span><span class="p">(</span><span class="n">BaseClass1</span><span class="p">):</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">float</span>
 
-    <span class="k">def</span> <span class="nf">get_stuff</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stuff</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="o">...</span>
 
 <span class="c1"># Class with known type</span>
-<span class="k">class</span> <span class="nc">BaseClass2</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseClass2</span><span class="p">:</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
 
 <span class="c1"># Class with ambiguous type</span>
-<span class="k">class</span> <span class="nc">DerivedClass2</span><span class="p">(</span><span class="n">BaseClass2</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DerivedClass2</span><span class="p">(</span><span class="n">BaseClass2</span><span class="p">):</span>
     <span class="c1"># Missing type annotation, could be inferred as float or int</span>
     <span class="n">height</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="c1"># Class with partially unknown type because base class</span>
 <span class="c1"># (dict) is generic, and type arguments are not specified.</span>
-<span class="k">class</span> <span class="nc">DictSubclass</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DictSubclass</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="k">pass</span>
 </code></pre></div>
 <h3 id="verifying-type-completeness">Verifying Type Completeness</h3>
@@ -2227,22 +2227,22 @@
 <p>If a function or method can return multiple different types and those types can be determined based on the presence or types of certain parameters, use the <code>@overload</code> mechanism defined in <a href="https://www.python.org/dev/peps/pep-0484/#id45">PEP 484</a>. When overloads are used within a “.py” file, they must appear prior to the function implementation, which should not have an <code>@overload</code> decorator. </p>
 <h4 id="keyword-only-parameters">Keyword-only Parameters</h4>
 <p>If a function or method is intended to take parameters that are specified only by name, use the keyword-only separator ("*").</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_user</span><span class="p">(</span><span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dob</span><span class="p">:</span> <span class="n">date</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dob</span><span class="p">:</span> <span class="n">date</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="o">...</span>
 </code></pre></div>
 <h4 id="positional-only-parameters">Positional-only Parameters</h4>
 <p>If a function or method is intended to take parameters that are specified only by position, use the positional-only separator ("/") as documented in <a href="https://peps.python.org/pep-0570/">PEP 570</a>. If your library needs to run on versions of Python prior to 3.8, you can alternatively name the positional-only parameters with an identifier that begins with a double underscore.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">compare_values</span><span class="p">(</span><span class="n">value1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">value2</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compare_values</span><span class="p">(</span><span class="n">value1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">value2</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">compare_values</span><span class="p">(</span><span class="n">__value1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">__value2</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compare_values</span><span class="p">(</span><span class="n">__value1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">__value2</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="o">...</span>
 </code></pre></div>
 <h3 id="annotating-decorators">Annotating Decorators</h3>
 <p>Decorators modify the behavior of a class or a function. Providing annotations for decorators is straightforward if the decorator retains the original signature of the decorated function.</p>
 <div class="highlight"><pre><span></span><code><span class="n">_F</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;_F&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span>
 
-<span class="k">def</span> <span class="nf">simple_decorator</span><span class="p">(</span><span class="n">_func</span><span class="p">:</span> <span class="n">_F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_F</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">simple_decorator</span><span class="p">(</span><span class="n">_func</span><span class="p">:</span> <span class="n">_F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_F</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">     Simple decorators are invoked without parentheses like this:</span>
 <span class="sd">       @simple_decorator</span>
@@ -2250,7 +2250,7 @@
 <span class="sd">     &quot;&quot;&quot;</span>
    <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">complex_decorator</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">_F</span><span class="p">],</span> <span class="n">_F</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">complex_decorator</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">_F</span><span class="p">],</span> <span class="n">_F</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">     Complex decorators are invoked with arguments like this:</span>
 <span class="sd">       @complex_decorator(mode=&quot;easy&quot;)</span>
@@ -2278,17 +2278,17 @@
 </code></pre></div>
 <h4 id="abstract-classes-and-methods">Abstract Classes and Methods</h4>
 <p>Classes that must be subclassed should derive from <code>ABC</code>, and methods or properties that must be overridden should be decorated with the <code>@abstractmethod</code> decorator. This allows type checkers to validate that the required methods have been overridden and provide developers with useful error messages when they are not. It is customary to implement an abstract method by raising a <code>NotImplementedError</code> exception or subclass thereof.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 
-<span class="k">class</span> <span class="nc">Hashable</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Hashable</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
    <span class="nd">@property</span>
    <span class="nd">@abstractmethod</span>
-   <span class="k">def</span> <span class="nf">hash_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+   <span class="k">def</span><span class="w"> </span><span class="nf">hash_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">      </span><span class="sd">&quot;&quot;&quot;Subclasses must override&quot;&quot;&quot;</span>
       <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
    <span class="nd">@abstractmethod</span>
-   <span class="k">def</span> <span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+   <span class="k">def</span><span class="w"> </span><span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">      </span><span class="sd">&quot;&quot;&quot;Subclasses must override&quot;&quot;&quot;</span>
       <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 </code></pre></div>
@@ -2326,26 +2326,26 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># Older versions of Python do not support subscripting</span>
 <span class="c1"># for the OrderedDict type, so the annotation must be</span>
 <span class="c1"># enclosed in quotes.</span>
-<span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OrderedDict[str, str]&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OrderedDict[str, str]&quot;</span><span class="p">:</span>
    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
 </code></pre></div>
 <h3 id="type-comment-annotations">Type Comment Annotations</h3>
 <p>Python 3.0 introduced syntax for parameter and return type annotations, as specified in <a href="https://www.python.org/dev/peps/pep-0484/">PEP 484</a>. Python 3.6 introduced support for variable type annotations, as specified in <a href="https://www.python.org/dev/peps/pep-0526/">PEP 526</a>.</p>
 <p>If you need to support older versions of Python, type annotations can still be provided as “type comments”. These comments take the form <code># type: &lt;annotation&gt;</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
    <span class="c1"># Variable type comments go at the end of the line</span>
    <span class="c1"># where the variable is assigned.</span>
    <span class="n">timeout</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># type: int | None</span>
 
    <span class="c1"># Function type comments can be specified on the</span>
    <span class="c1"># line after the function signature.</span>
-   <span class="k">def</span> <span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+   <span class="k">def</span><span class="w"> </span><span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
       <span class="c1"># type: (str, int) -&gt; None</span>
       <span class="o">...</span>
 
    <span class="c1"># Function type comments can also specify the type</span>
    <span class="c1"># of each parameter on its own line.</span>
-   <span class="k">def</span> <span class="nf">receive_message</span><span class="p">(</span>
+   <span class="k">def</span><span class="w"> </span><span class="nf">receive_message</span><span class="p">(</span>
       <span class="bp">self</span><span class="p">,</span>
       <span class="n">name</span><span class="p">,</span> <span class="c1"># type: str</span>
       <span class="n">length</span> <span class="c1"># type: int</span>

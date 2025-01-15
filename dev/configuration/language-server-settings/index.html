@@ -1710,17 +1710,17 @@
 </code></pre></div>
 <h3 id="neovim">neovim</h3>
 <p>The language server can be configured in your neovim settings:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;lspconfig&quot;</span><span class="p">).</span><span class="n">basedpyright</span><span class="p">.</span><span class="n">setup</span> <span class="p">{</span>
-  <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">basedpyright</span> <span class="o">=</span> <span class="p">{</span>
-      <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">diagnosticMode</span> <span class="o">=</span> <span class="s2">&quot;openFilesOnly&quot;</span><span class="p">,</span>
-        <span class="n">inlayHints</span> <span class="o">=</span> <span class="p">{</span>
-          <span class="n">callArgumentNames</span> <span class="o">=</span> <span class="kc">true</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;lspconfig&quot;</span><span class="p">).</span><span class="nv">basedpyright</span><span class="p">.</span><span class="py">setup</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nv">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nv">basedpyright</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nv">analysis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">diagnosticMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;openFilesOnly&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">inlayHints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nv">callArgumentNames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="helix">helix</h3>
