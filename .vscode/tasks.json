@@ -86,6 +86,23 @@
             "clear": true
           },
           "problemMatcher": []
+        },
+        {
+            "label": "bump version",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": ["build/version.py", "${input:version}"],
+            "presentation": {
+              "clear": true
+            },
+            "problemMatcher": []
         }
+    ],
+    "inputs": [
+      {
+        "id": "version",
+        "type": "promptString",
+        "description": "input the version number for the next release"
+      }
     ]
 }
