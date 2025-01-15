@@ -55,7 +55,7 @@ wheels = [
 
 [[package]]
 name = "basedpyright"
-version = "1.23.2"
+version = "1.24.0"
 source = { editable = "." }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
