@@ -697,6 +697,22 @@ export class AnalyzerService {
         // only apply to the language server.
         this._applyLanguageServerOptions(configOptions, projectRoot, commandLineOptions.languageServerSettings);
 
+        // If project root metadata is found, try to fill missing venvPath or venv
+        if ((configFilePath || pyprojectFilePath) && (!configOptions.venvPath || !configOptions.venv)) {
+            // Use specified venv, or default to '.venv'
+            let venv: string;
+            if (configOptions.venv) {
+                venv = configOptions.venv;
+            } else {
+                venv = '.venv';
+            }
+            const venvUri = projectRoot.resolvePaths(venv);
+            if (this.fs.existsSync(venvUri) && isDirectory(this.fs, venvUri)) {
+                configOptions.venvPath = configOptions.venvPath ?? projectRoot;
+                configOptions.venv = configOptions.venv ?? venv;
+            }
+        }
+
         // Ensure that if no command line or config options were applied, we have some defaults.
         this._ensureDefaultOptions(host, configOptions, projectRoot, executionRoot, commandLineOptions);
 
