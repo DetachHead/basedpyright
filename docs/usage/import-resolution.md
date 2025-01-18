@@ -15,7 +15,7 @@ For absolute (non-relative) imports, Pyright employs the following resolution or
 
     * If no execution environment is configured, try to resolve using the **local directory `src`**. It is common for Python projects to place local source files within a directory of this name.
 
-3. Try to resolve using **stubs or inlined types found within installed packages**. Pyright uses the configured Python environment to determine whether a package has been installed. For more details about how to configure your Python environment for Pyright, see below. If a Python environment is configured, Pyright looks in the `lib/site-packages`, `Lib/site-packages`, or `python*/site-packages` subdirectory. If no site-packages directory can be found, Pyright attempts to run the configured Python interpreter and ask it for its search paths. If no Python environment is configured, Pyright will use the default Python interpreter by invoking `python`.
+3. Try to resolve using **stubs or inlined types found within installed packages**. Pyright uses the configured Python environment to determine whether a package has been installed. For more details about how to configure your Python environment for Pyright, [see below](#configuring-your-python-environment). If a Python environment is configured, Pyright looks in the `lib/site-packages`, `Lib/site-packages`, or `python*/site-packages` subdirectory. If no site-packages directory can be found, Pyright attempts to run the configured Python interpreter and ask it for its search paths. If no Python environment is configured, Pyright will use the default Python interpreter by invoking `python`.
     
     * For a given package, try to resolve first using a **stub package**. Stub packages, as defined in [PEP 561](https://www.python.org/dev/peps/pep-0561/#type-checker-module-resolution-order), are named the same as the original package but with “-stubs” appended.
     * Try to resolve using an **inline stub**, a “.pyi” file that ships within the package.
@@ -26,11 +26,42 @@ For absolute (non-relative) imports, Pyright employs the following resolution or
 
 5. Try to resolve using a **third-party typeshed** stub. If the `typeshedPath` is configured, use this instead of the typeshed stubs that are packaged with Pyright. This allows for the use of a newer or a patched version of the typeshed third-party stubs.
 
-6. For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory.
+6. For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory. basedpyright's [`reportImplicitRelativeImport`](../benefits-over-pyright/new-diagnostic-rules.md#reportimplicitrelativeimport) rule bans usages of imports that are resolved this way.
 
 
 ### Configuring Your Python Environment
-Pyright does not require a Python environment to be configured if all imports can be resolved using local files and type stubs. If a Python environment is configured, it will attempt to use the packages installed in the `site-packages` subdirectory during import resolution.
+
+the environment configuration in pyright is quite confusing. the correct setup will be different depending on your situation. hopefully this will help:
+
+```mermaid
+flowchart TD
+    A{{"are you using vscode?"}} -- YES --> B["use the environment picker in the python extension"]
+    A -- NO --> C{{"are you using a virtual environment?"}}
+    C -- NO --> E["it should use the correct python interpreter by default, no config required"]
+    C -- YES --> D{{"are you launching basedpyright from inside the virtual environment?"}}
+    D -- YES --> E
+    D -- NO --> F{{"are there other developers working on your project?"}}
+    F -- YES --> G{{"is the virtual environment located in the same place on each developer's machine?"}}
+    F -- NO --> H["set \`venv\` and \`venvPath\` in \`pyproject.toml\` or \`pyrightconfig.json\`"]
+    G -- YES --> H
+    G -- NO --> I{{"are you using the CLI or the language server?"}}
+    I -- CLI --> J["use the \`--pythonpath\` CLI argument"]
+    I -- language server --> K["set \`python.pythonPath\` in your language server config"]
+```
+
+#### Example usage of `venv` and `venvPath`
+
+if [the above diagram](#configuring-your-python-environment) told you use the `venv` and `venvPath` settings, here's an example of what that might look like:
+
+```toml title="pyproject.toml"
+[tool.basedpyright]
+venv = ".venv"
+venvPath = "./venvs"
+```
+
+in this example, the venv is located in `./venvs/.venv` relative to your project root. ideally this could be accomplished with one setting, but for some reason pyright splits it into two.
+
+#### Python environment resolution order
 
 Pyright uses the following mechanisms (in priority order) to determine which Python environment to use:
 
