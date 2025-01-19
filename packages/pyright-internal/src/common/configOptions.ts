@@ -412,6 +412,7 @@ export interface DiagnosticRuleSet {
      */
     failOnWarnings: boolean;
     strictGenericNarrowing: boolean;
+    strictContextManagerExitTypes: boolean;
     reportUnreachable: DiagnosticLevel;
     reportAny: DiagnosticLevel;
     reportExplicitAny: DiagnosticLevel;
@@ -444,6 +445,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
         DiagnosticRule.deprecateTypingAliases,
         DiagnosticRule.disableBytesTypePromotions,
         DiagnosticRule.strictGenericNarrowing,
+        DiagnosticRule.strictContextManagerExitTypes,
     ];
 
     if (includeNonOverridable) {
@@ -677,6 +679,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
+        strictContextManagerExitTypes: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -794,6 +797,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
+        strictContextManagerExitTypes: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -911,6 +915,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
+        strictContextManagerExitTypes: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',
@@ -1027,6 +1032,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportImplicitOverride: 'warning',
     failOnWarnings: true,
     strictGenericNarrowing: true,
+    strictContextManagerExitTypes: true,
     reportUnreachable: 'warning',
     reportAny: 'warning',
     reportExplicitAny: 'warning',
@@ -1140,6 +1146,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportImplicitOverride: 'error',
     failOnWarnings: true,
     strictGenericNarrowing: true,
+    strictContextManagerExitTypes: true,
     reportUnreachable: 'error',
     reportAny: 'error',
     reportExplicitAny: 'error',
@@ -1254,6 +1261,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
+        strictContextManagerExitTypes: false,
         reportUnreachable: 'hint',
         reportAny: 'none',
         reportExplicitAny: 'none',

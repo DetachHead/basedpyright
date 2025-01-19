@@ -170,6 +170,33 @@ test('With2', () => {
     TestUtils.validateResults(analysisResults, 3);
 });
 
+describe('context manager where __exit__ returns bool | None', () => {
+    test('strictContextManagerExitTypes=true', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.strictContextManagerExitTypes = true;
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withBased.py'], configOptions);
+        TestUtils.validateResultsButBased(analysisResults, {
+            hints: [
+                { code: DiagnosticRule.reportUnreachable, line: 45 },
+                { code: DiagnosticRule.reportUnreachable, line: 60 },
+            ],
+        });
+    });
+    test('strictContextManagerExitTypes=false', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.strictContextManagerExitTypes = false;
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withBased.py'], configOptions);
+        TestUtils.validateResultsButBased(analysisResults, {
+            hints: [
+                { code: DiagnosticRule.reportUnreachable, line: 16 },
+                { code: DiagnosticRule.reportUnreachable, line: 30 },
+                { code: DiagnosticRule.reportUnreachable, line: 45 },
+                { code: DiagnosticRule.reportUnreachable, line: 60 },
+            ],
+        });
+    });
+});
+
 test('With3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with3.py']);
 

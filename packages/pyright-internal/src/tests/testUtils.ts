@@ -264,7 +264,11 @@ export const validateResultsButBased = (allResults: FileAnalysisResult[], expect
                 baselined: result.baselined,
             })
         );
-        const expectedResult = expectedResults[diagnosticType] ?? [];
-        expect(new Set(actualResult)).toEqual(new Set(expectedResult.map(expect.objectContaining)));
+        const expectedResult = expectedResults[diagnosticType];
+        // if it's explicitly in the expected results as undefined, that means we don't care.
+        // if it's not in the expected results at all, then check it
+        if (!(diagnosticType in expectedResults) || expectedResult !== undefined) {
+            expect(new Set(actualResult)).toEqual(new Set((expectedResult ?? []).map(expect.objectContaining)));
+        }
     }
 };
