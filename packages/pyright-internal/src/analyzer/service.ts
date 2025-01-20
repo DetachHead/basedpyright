@@ -699,12 +699,17 @@ export class AnalyzerService {
 
         // If user didn't set venvPath, venv and pythonPath and project root root is found,
         // try to fill pythonPath with default value
-        if ((configOptions.venvPath && configOptions.venv && configOptions.pythonPath) && (configFilePath || pyprojectFilePath)) {
-            let checkingPythonPath1 = projectRoot.resolvePaths(".venv/bin/python");
-            let checkingPythonPath2 = projectRoot.resolvePaths(".venv/Scripts/python.exe");
+        if (
+            configOptions.venvPath &&
+            configOptions.venv &&
+            configOptions.pythonPath &&
+            (configFilePath || pyprojectFilePath)
+        ) {
+            let checkingPythonPath1 = projectRoot.resolvePaths('.venv/bin/python');
+            let checkingPythonPath2 = projectRoot.resolvePaths('.venv/Scripts/python.exe');
             if (this.fs.existsSync(checkingPythonPath1)) {
                 configOptions.pythonPath = checkingPythonPath1;
-            } else if (this.fs.existsSync(checkingPythonPath2)){
+            } else if (this.fs.existsSync(checkingPythonPath2)) {
                 configOptions.pythonPath = checkingPythonPath2;
             }
         }
