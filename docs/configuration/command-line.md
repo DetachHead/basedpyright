@@ -39,6 +39,8 @@ basedpyright can be run as either a language server or as a command-line tool. T
 (4) This feature is experimental. If thread count is > 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).
 
 (5) This option is the same as the language server setting `python.venvPath`. It used in conjunction with configuration file, which can refer to different virtual environments by name. For more details, refer to the [configuration](./config-files.md) and [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This allows a common config file to be checked in to the project and shared by everyone on the development team without making assumptions about the local paths to the venv directory on each developer’s computer.
+!!! note
+    `--venvpath` is discouraged in basedpyright. [more info](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath)
 
 (6) When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.
 

@@ -38,7 +38,9 @@ Pyright uses the following mechanisms (in priority order) to determine which Pyt
 
 2. Use the `python.pythonPath` setting. This setting is defined in the language server. if using VS Code, this can be configured using the Python extension’s environment picker interface. More recent versions of the Python extension no longer store the selected Python environment in the `python.pythonPath` setting and instead use a storage mechanism that is private to the extension. Pyright is able to access this through an API exposed by the Python extension.
 
-3. As a fallback, use the default Python environment (i.e. the one that is invoked when typing `python` in the shell).
+3. If a virtual environment exists in a `.venv` folder at the project root, its python interpreter its used as the default value for `python.pythonPath`. [more info](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath)
+
+4. As a fallback, use the default Python environment (i.e. the one that is invoked when typing `python` in the shell).
 
 ### Editable installs
 
