@@ -16,6 +16,7 @@
         "fix:prettier": "prettier --write .",
         "typecheck": "npm exec --workspaces -- tsc --noEmit",
         "run:cli": "npm run build:cli:dev && node packages/pyright/index.js",
+        "run:langserver": "npm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
         "jest": "cd packages/pyright-internal && jest",
         "update-python-deps": "uv sync --upgrade",
         "update-pyprojectx-lockfile": "python pw --lock",
