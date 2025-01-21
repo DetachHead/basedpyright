@@ -705,8 +705,8 @@ export class AnalyzerService {
             configOptions.pythonPath &&
             (configFilePath || pyprojectFilePath)
         ) {
-            let checkingPythonPath1 = projectRoot.resolvePaths('.venv/bin/python');
-            let checkingPythonPath2 = projectRoot.resolvePaths('.venv/Scripts/python.exe');
+            const checkingPythonPath1 = projectRoot.resolvePaths('.venv/bin/python');
+            const checkingPythonPath2 = projectRoot.resolvePaths('.venv/Scripts/python.exe');
             if (this.fs.existsSync(checkingPythonPath1)) {
                 configOptions.pythonPath = checkingPythonPath1;
             } else if (this.fs.existsSync(checkingPythonPath2)) {
