@@ -697,7 +697,7 @@ export class AnalyzerService {
         // only apply to the language server.
         this._applyLanguageServerOptions(configOptions, projectRoot, commandLineOptions.languageServerSettings);
 
-        // If user didn't set either (venvPath & venv) or pythonPath, and project root root is found,
+        // If user didn't set either (venvPath & venv) or pythonPath, and project root is found,
         // try to fill pythonPath with a default value
         if (
             !configOptions.venvPath &&
