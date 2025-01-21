@@ -879,6 +879,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#discouraged-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged settings
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -921,17 +930,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#discouraged-options" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#discouraged-settings_1" class="md-nav__link">
     <span class="md-ellipsis">
-      Discouraged options
+      Discouraged settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1637,6 +1646,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#discouraged-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged settings
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1679,17 +1697,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#discouraged-options" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#discouraged-settings_1" class="md-nav__link">
     <span class="md-ellipsis">
-      Discouraged options
+      Discouraged settings
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1820,16 +1838,6 @@ who haven't yet updated to >=1.18.1
 <p><strong>stubPath</strong> [path, optional]: Path to a directory that contains custom type stubs. Each package's type stub file(s) are expected to be in its own subdirectory. The default value of this setting is "./typings". (typingsPath is now deprecated)</p>
 </li>
 <li>
-<p><strong>venvPath</strong> [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a <strong>venv</strong> setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you are working on a project with other developers and not using a tool like <a href="https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default">uv</a> or <a href="https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation">pdm</a>, it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a <a href="../language-server-settings/">per-user setting</a>. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
-</div>
-</li>
-<li>
-<p><strong>venv</strong> [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This setting is ignored when using Pylance.</p>
-</li>
-<li>
 <p><strong>verboseOutput</strong> [boolean]: Specifies whether output logs should be verbose. This is useful when diagnosing certain problems like import resolution issues.</p>
 </li>
 <li>
@@ -1888,6 +1896,16 @@ who haven't yet updated to >=1.18.1
 <h3 id="basedpyright-exclusive-settings_1">basedpyright exclusive settings</h3>
 <ul>
 <li><a name="strictGenericNarrowing"></a> <strong>strictGenericNarrowing</strong> [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an <code>isinstance</code> check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of <code>Any</code>. <a href="../../benefits-over-pyright/improved-generic-narrowing/">more info</a></li>
+</ul>
+<h3 id="discouraged-settings">Discouraged settings</h3>
+<p>these settings are discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">see here for more info</a>.</p>
+<ul>
+<li>
+<p><strong>venvPath</strong> [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a <strong>venv</strong> setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.</p>
+</li>
+<li>
+<p><strong>venv</strong> [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This setting is ignored when using Pylance.</p>
+</li>
 </ul>
 <h2 id="diagnostic-categories">Diagnostic Categories</h2>
 <p>diagnostics can be configured to be reported as any of the following categories:</p>
@@ -2197,7 +2215,7 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunannotatedclassattribute">more info</a></p>
 </li>
 </ul>
-<h2 id="discouraged-options">Discouraged options</h2>
+<h3 id="discouraged-settings_1">Discouraged settings</h3>
 <p>there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
 <ul>
 <li>
@@ -2319,7 +2337,7 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p>basedpyright introduces two new diagnostic rulesets in addition to the ones in pyright: <code>"recommended"</code> and <code>"all"</code>. <code>"recommended"</code> enables all diagnostic rules as either <code>"warning"</code> or <code>"error"</code>, but sets <code>failOnWarnings</code> to <code>true</code> so that all diagnostics will still cause a non-zero exit code when run in the CLI. this means <code>"recommended"</code> is essentially the same as <code>"all"</code>, but makes it easier to differentiate errors that are likely to cause a runtime crash like an undefined variable from less serious warnings such as a missing type annotation.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>some settings which are enabled by default in pyright are disabled by default in basedpyright (even when <code>typeCheckingMode</code> is <code>"all"</code>). this is because these rules are <a href="#discouraged-options">discouraged</a>, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.</p>
+<p>some settings which are enabled by default in pyright are disabled by default in basedpyright (even when <code>typeCheckingMode</code> is <code>"all"</code>). this is because these rules are <a href="#discouraged-settings">discouraged</a>, but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.</p>
 </div>
 <table>
 <thead>

@@ -1671,8 +1671,8 @@
 <p><strong>python.pythonPath</strong> [path]: Path to Python interpreter. if you're using vscode, this setting is being deprecated by the VS Code Python extension in favor of a setting that is stored in the Python extension’s internal configuration store. Pyright supports both mechanisms but prefers the new one if both settings are present.</p>
 <p><strong>python.venvPath</strong> [path]: Path to folder with subdirectories that contain virtual environments. The <code>python.pythonPath</code> setting is recommended over this mechanism for most users. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
 <div class="admonition note">
-<p class="admonition-title">a note about <code>python.venvPath</code></p>
-<p>if your venv path is the same for all users working on your project (which should be the case if you're using <a href="https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default">uv</a> or <a href="https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation">pdm</a>), we recommend configuring <code>venvPath</code> in <a href="../config-files/">a config file</a> instead. see <a href="#discouraged-settings">discouraged settings</a> below for more information.</p>
+<p class="admonition-title">Note</p>
+<p><code>python.venvPath</code> is discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">more info</a></p>
 </div>
 <h3 id="based-settings">based settings</h3>
 <p>the following settings are exclusive to basedpyright</p>

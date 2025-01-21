@@ -432,6 +432,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#default-value-for-pythonpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      default value for pythonPath
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1450,6 +1459,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#default-value-for-pythonpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      default value for pythonPath
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1479,6 +1497,10 @@
 </ul>
 <h2 id="pythonplatform"><code>pythonPlatform</code></h2>
 <p>used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, <code>pythonPlatform</code> defaults to <code>All</code>, which assumes your code can run on any operating system.</p>
+<h2 id="default-value-for-pythonpath">default value for <code>pythonPath</code></h2>
+<p>configuring your python interpreter in pyright is needlessly confusing. if you aren't using vscode or you aren't running it from inside a virtual environment, you'll likely encounter errors for unresolved imports as a result of pyright using the wrong interpreter. to fix this you'd have to use the <code>venv</code> and <code>venvPath</code> settings which are unnecessarily difficult to use. for example <code>venv</code> can only be set in either <a href="../../configuration/config-files/">the config file</a> or <a href="../../configuration/language-server-settings/">the language server settings</a> but <code>venvPath</code> can only be set in the language server settings or <a href="../../configuration/command-line/">the command line</a>.</p>
+<p>most of the time your virtual environment is located in the same spot: a folder named <code>.venv</code> in your project root. this is the case if you're using <a href="https://docs.astral.sh/uv/">uv</a> (which you should be, it's far better than any alternative).</p>
+<p>so why not just check for this known common venv path and use that by default? that's exactly what basedpyright does. if neither <code>pythonPath</code> or <code>venvPath</code>/<code>venv</code> are set, basedpyright will check for a venv at <code>./.venv</code> and if it finds one, it will use its python interpreter as the value for <code>pythonPath</code>.</p>
 
 
 

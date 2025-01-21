@@ -1628,6 +1628,10 @@
 <p>(3) Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.</p>
 <p>(4) This feature is experimental. If thread count is &gt; 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).</p>
 <p>(5) This option is the same as the language server setting <code>python.venvPath</code>. It used in conjunction with configuration file, which can refer to different virtual environments by name. For more details, refer to the <a href="../config-files/">configuration</a> and <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This allows a common config file to be checked in to the project and shared by everyone on the development team without making assumptions about the local paths to the venv directory on each developer’s computer.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>--venvpath</code> is discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">more info</a></p>
+</div>
 <p>(6) When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.</p>
 <h2 id="pyright-exit-codes">Pyright Exit Codes</h2>
 <table>

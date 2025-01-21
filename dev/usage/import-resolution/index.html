@@ -1648,6 +1648,9 @@
 <p>Use the <code>python.pythonPath</code> setting. This setting is defined in the language server. if using VS Code, this can be configured using the Python extension’s environment picker interface. More recent versions of the Python extension no longer store the selected Python environment in the <code>python.pythonPath</code> setting and instead use a storage mechanism that is private to the extension. Pyright is able to access this through an API exposed by the Python extension.</p>
 </li>
 <li>
+<p>If a virtual environment exists in a <code>.venv</code> folder at the project root, its python interpreter its used as the default value for <code>python.pythonPath</code>. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">more info</a></p>
+</li>
+<li>
 <p>As a fallback, use the default Python environment (i.e. the one that is invoked when typing <code>python</code> in the shell).</p>
 </li>
 </ol>
