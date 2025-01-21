@@ -29,14 +29,6 @@ The following settings control the *environment* in which basedpyright will chec
 
 - **stubPath** [path, optional]: Path to a directory that contains custom type stubs. Each package's type stub file(s) are expected to be in its own subdirectory. The default value of this setting is "./typings". (typingsPath is now deprecated)
 
-- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
-
-    !!! note
-        If you are working on a project with other developers and not using a tool like [uv](https://docs.astral.sh/uv/pip/compatibility/#virtual-environments-by-default) or [pdm](https://pdm-project.org/en/latest/usage/venv/#virtualenv-auto-creation), it is best not to specify this setting in the config file, since this path will typically differ for each developer. Instead, it can be specified on the command line or in a [per-user setting](./language-server-settings.md). For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
-
-
-- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
-
 - **verboseOutput** [boolean]: Specifies whether output logs should be verbose. This is useful when diagnosing certain problems like import resolution issues.
 
 - **extraPaths** [array of strings, optional]: Additional search paths that will be used when searching for modules imported by files.
@@ -78,6 +70,14 @@ The following settings determine how different types should be evaluated.
 ### basedpyright exclusive settings
 
 - <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`. [more info](../benefits-over-pyright/improved-generic-narrowing.md)
+
+### Discouraged settings
+
+these settings are discouraged in basedpyright. [see here for more info](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath).
+
+- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
+
+- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
 
 ## Diagnostic Categories
 
@@ -293,7 +293,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
 
-## Discouraged options
+### Discouraged settings
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.
 
@@ -420,7 +420,7 @@ basedpyright introduces two new diagnostic rulesets in addition to the ones in p
 
 !!! note
 
-    some settings which are enabled by default in pyright are disabled by default in basedpyright (even when `typeCheckingMode` is `"all"`). this is because these rules are [discouraged](#discouraged-options), but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
+    some settings which are enabled by default in pyright are disabled by default in basedpyright (even when `typeCheckingMode` is `"all"`). this is because these rules are [discouraged](#discouraged-settings), but in the interest of backwards compatibility with pyright, they remain available to any users who still want to use them.
 <!--8<-- [end:before-table] -->
 
 <!-- the table is generated by a macro in configuration/config-files.md because macros don't work in snippets -->
