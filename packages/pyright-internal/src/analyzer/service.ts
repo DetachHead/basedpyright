@@ -700,9 +700,9 @@ export class AnalyzerService {
         // If user didn't set venvPath, venv and pythonPath and project root root is found,
         // try to fill pythonPath with default value
         if (
-            configOptions.venvPath &&
-            configOptions.venv &&
-            configOptions.pythonPath &&
+            !configOptions.venvPath &&
+            !configOptions.venv &&
+            !configOptions.pythonPath &&
             (configFilePath || pyprojectFilePath)
         ) {
             const checkingPythonPath1 = projectRoot.resolvePaths('.venv/bin/python');
