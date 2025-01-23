@@ -106,7 +106,7 @@ import { Diagnostic as AnalyzerDiagnostic, DiagnosticCategory } from './common/d
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
-import { FileWatcherEventType } from './common/fileWatcher';
+import { FileWatcherEventType, FileWatcherHandler } from './common/fileWatcher';
 import { Host } from './common/host';
 import {
     ClientCapabilities,
@@ -146,9 +146,10 @@ import { SemanticTokensProvider, SemanticTokensProviderLegend } from './language
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { BaselineHandler } from './baseline';
 import { assert } from './common/debug';
-import { WorkspaceFileWatcherProvider } from './common/realFileSystem';
 
-export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
+export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatcherHandler>
+    implements LanguageServerInterface, Disposable
+{
     // We support running only one "find all reference" at a time.
     private _pendingFindAllRefsCancellationSource: AbstractCancellationTokenSource | undefined;
 
@@ -200,7 +201,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     protected readonly dynamicFeatures = new DynamicFeatures();
 
-    constructor(protected serverOptions: ServerOptions, protected connection: Connection) {
+    constructor(protected serverOptions: ServerOptions<T>, protected connection: Connection) {
         // Stash the base directory into a global variable.
         // This must happen before fs.getModulePath().
         (global as any).__rootDirectory = serverOptions.rootDirectory.getFilePath();
@@ -595,8 +596,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     this.workspaceFactory
                 )
             );
-        } else if (this.serverOptions.fileWatcherHandler instanceof WorkspaceFileWatcherProvider) {
-            this.serverOptions.fileWatcherHandler.convertToChokidar(this.console);
         }
         const result: InitializeResult = {
             capabilities: {

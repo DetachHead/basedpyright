@@ -4,7 +4,7 @@
  * Implements pyright language server.
  */
 
-import { Connection } from 'vscode-languageserver';
+import { Connection, InitializeParams, InitializeResult } from 'vscode-languageserver';
 
 import { BackgroundAnalysis } from './backgroundAnalysis';
 import { BackgroundAnalysisBase } from './backgroundAnalysisBase';
@@ -18,7 +18,7 @@ import { Host } from './common/host';
 import { RealTempFile, WorkspaceFileWatcherProvider, createFromRealFileSystem } from './common/realFileSystem';
 import { RealLanguageServer } from './realLanguageServer';
 
-export class PyrightServer extends RealLanguageServer {
+export class PyrightServer extends RealLanguageServer<WorkspaceFileWatcherProvider> {
     constructor(connection: Connection, maxWorkers: number, realFileSystem?: FileSystem) {
         const tempFile = new RealTempFile();
         const console = new ConsoleWithLogLevel(connection.console);
@@ -42,6 +42,18 @@ export class PyrightServer extends RealLanguageServer {
         }
 
         return new BackgroundAnalysis(this.serverOptions.serviceProvider);
+    }
+
+    protected override initialize(
+        params: InitializeParams,
+        supportedCommands: string[],
+        supportedCodeActions: string[]
+    ): Promise<InitializeResult> {
+        const result = super.initialize(params, supportedCommands, supportedCodeActions);
+        if (!this.client.hasWatchFileCapability) {
+            this.serverOptions.fileWatcherHandler.convertToChokidar(this.console);
+        }
+        return result;
     }
 
     protected override createHost(): Host {
