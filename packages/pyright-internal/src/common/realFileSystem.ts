@@ -26,6 +26,8 @@ import { FileUri, FileUriSchema } from './uri/fileUri';
 import { Uri } from './uri/uri';
 import { getRootUri } from './uri/uriUtils';
 import { isMainThread } from './workersHost';
+import { ChokidarFileWatcherProvider } from './chokidarFileWatcherProvider';
+import { FSWatcher } from 'chokidar';
 
 // Automatically remove files created by tmp at process exit.
 tmp.setGracefulCleanup();
@@ -466,10 +468,37 @@ interface WorkspaceFileWatcher extends FileWatcher {
     eventHandler: FileWatcherEventHandler;
 }
 
+/**
+ * file watcher provider for lsp clients that support `capabilities.workspace.didChangeWatchedFiles.dynamicRegistration`.
+ *
+ * this class also contains functionality to convert its file watchers to chokidar ones. this is a bit gross but necessary
+ * because this class is created before we know which kid of file watcher the lsp client requires.
+ */
 export class WorkspaceFileWatcherProvider implements FileWatcherProvider, FileWatcherHandler {
     private _fileWatchers: WorkspaceFileWatcher[] = [];
+    private _chokidarFileWatchers?: FSWatcher[];
+    private _chokidarFileWatcherProvider?: ChokidarFileWatcherProvider;
+
+    /**
+     * converts all file watchers created with {@link createFileWatcher} to chokidar file watchers.
+     */
+    convertToChokidar = (console: ConsoleInterface) => {
+        if (this._chokidarFileWatchers) {
+            return;
+        }
+        this._chokidarFileWatcherProvider = new ChokidarFileWatcherProvider(console);
+        this._chokidarFileWatchers = this._fileWatchers.map((fileWatcher) => {
+            return this._chokidarFileWatcherProvider!.createFileWatcher(
+                fileWatcher.workspacePaths,
+                fileWatcher.eventHandler
+            );
+        });
+    };
 
     createFileWatcher(workspacePaths: string[], listener: FileWatcherEventHandler): FileWatcher {
+        if (this._chokidarFileWatcherProvider) {
+            return this._chokidarFileWatcherProvider.createFileWatcher(workspacePaths, listener);
+        }
         const self = this;
         const fileWatcher: WorkspaceFileWatcher = {
             close() {
@@ -487,6 +516,10 @@ export class WorkspaceFileWatcherProvider implements FileWatcherProvider, FileWa
     }
 
     onFileChange(eventType: FileWatcherEventType, fileUri: Uri): void {
+        if (this._chokidarFileWatchers) {
+            this._chokidarFileWatchers.forEach((fileWatcher) => fileWatcher.emit(eventType, fileUri.getFilePath()));
+            return;
+        }
         // Since file watcher is a server wide service, we don't know which watcher is
         // for which workspace (for multi workspace case), also, we don't know which watcher
         // is for source or library. so we need to solely rely on paths that can cause us
