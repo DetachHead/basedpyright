@@ -832,7 +832,7 @@
           <li class="md-nav__item">
   <a href="#prefer-pyrightignore-comments" class="md-nav__link">
     <span class="md-ellipsis">
-      prefer # pyright:ignore comments
+      Prefer # pyright:ignore comments
     </span>
   </a>
   
@@ -1469,7 +1469,7 @@
           <li class="md-nav__item">
   <a href="#prefer-pyrightignore-comments" class="md-nav__link">
     <span class="md-ellipsis">
-      prefer # pyright:ignore comments
+      Prefer # pyright:ignore comments
     </span>
   </a>
   
@@ -1499,9 +1499,9 @@
 
 
 <h1 id="comments">Comments</h1>
-<p>Some behaviors of pyright can be controlled through the use of comments within the source file.</p>
+<p>Some behaviors of Pyright can be controlled through the use of comments within the source file.</p>
 <h2 id="file-level-type-controls">File-level Type Controls</h2>
-<p>Strict type checking, where most supported type-checking switches generate errors, can be enabled for a file through the use of a special comment. Typically this comment is placed at or near the top of a code file on its own line.</p>
+<p>Strict type checking, where most supported type-checking switches generate errors, can be enabled for a file through the use of a special comment. Typically, this comment is placed at or near the top of a code file on its own line.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># pyright: strict</span>
 </code></pre></div>
 <p>Likewise, basic type checking can be enabled for a file. If you use <code># pyright: basic</code>, the settings for the file use the default “basic” settings, not any override settings specified in the configuration file or language server settings. You can override the basic default settings within the file by specifying them individually (see below).</p>
@@ -1514,21 +1514,21 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># pyright: reportPrivateUsage=warning, reportOptionalCall=error</span>
 </code></pre></div>
 <h2 id="line-level-diagnostic-suppression">Line-level Diagnostic Suppression</h2>
-<p>PEP 484 defines a special comment <code># type: ignore</code> that can be used at the end of a line to suppress all diagnostics emitted by a type checker on that line. Pyright supports this mechanism. this is disabled by default in basedpyright. <a href="#prefer-pyrightignore-comments">see below</a> for more information.</p>
+<p>PEP 484 defines a special comment <code># type: ignore</code> that can be used at the end of a line to suppress all diagnostics emitted by a type checker on that line. Pyright supports this mechanism. This is disabled by default in basedpyright. <a href="#prefer-pyrightignore-comments">See below</a> for more information.</p>
 <p>Pyright also supports a <code># pyright: ignore</code> comment at the end of a line to suppress all Pyright diagnostics on that line. This can be useful if you use multiple type checkers on your source base and want to limit suppression of diagnostics to Pyright only.</p>
 <p>The <code># pyright: ignore</code> comment accepts an optional list of comma-delimited diagnostic rule names surrounded by square brackets. If such a list is present, only diagnostics within those diagnostic rule categories are suppressed on that line. For example, <code># pyright: ignore [reportPrivateUsage, reportGeneralTypeIssues]</code> would suppress diagnostics related to those two categories but no others.</p>
 <p>If the <code>reportUnnecessaryTypeIgnoreComment</code> configuration option is enabled, any unnecessary <code># type: ignore</code> and <code># pyright: ignore</code> comments will be reported so they can be removed.</p>
-<h3 id="prefer-pyrightignore-comments">prefer <code># pyright:ignore</code> comments</h3>
-<p><code># pyright:ignore</code> comments are preferred over <code># type:ignore</code> comments because they are more strict than <code>#type:ignore</code> comments:</p>
+<h3 id="prefer-pyrightignore-comments">Prefer <code># pyright:ignore</code> comments</h3>
+<p><code># pyright:ignore</code> comments are preferred over <code># type:ignore</code> comments because they are more strict than <code># type:ignore</code> comments:</p>
 <ul>
-<li><code># type:ignore</code> comments will always suppress all errors on the line, regardless of what diagnostic rules are specified in brackets</li>
-<li><code># type:ignore</code> comments are not checked to ensure that the specified rule is valud:
-  <div class="highlight"><pre><span></span><code><span class="c1"># no error here, even though you are suppressing an invalid diagnostic code.</span>
+<li><code># type:ignore</code> comments will always suppress all errors on the line, regardless of what diagnostic rules are specified in brackets.</li>
+<li><code># type:ignore</code> comments are not checked to ensure that the specified rule is valid:
+  <div class="highlight"><pre><span></span><code><span class="c1"># No error here, even though you are suppressing an invalid diagnostic code.</span>
 <span class="mi">1</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span> <span class="c1"># type:ignore[asdf]</span>
 </code></pre></div>
-  this decision was probably made to support other type checkers like mypy which use different codes to pyright, but in that case you should just disable <code>enableTypeIgnoreComments</code> to prevent pyright from looking at them.</li>
+  This decision was probably made to support other type checkers like mypy which use different codes to Pyright, but in that case, you should just disable <code>enableTypeIgnoreComments</code> to prevent Pyright from looking at them.</li>
 </ul>
-<p>in basedpyright, <code>enableTypeIgnoreComments</code> is disabled by default to avoid these issues.</p>
+<p>In basedpyright, <code>enableTypeIgnoreComments</code> is disabled by default to avoid these issues.</p>
 
 
 
