@@ -40,9 +40,6 @@ dev = [
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
-    # transient dependency of libcst. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
-    "libcst==1.1.0 ; python_version<'3.9'",
-    "libcst>=1.5.0 ; python_version>='3.9'",
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
@@ -71,6 +68,8 @@ main = ["uv"]
 
 [tool.uv]
 default-groups = ["dev", "docstubs", "lochelper"]
+# transient dependency of docify. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
+no-build-package = ["libcst"]
 
 [tool.pdm.version]
 source = "call"
