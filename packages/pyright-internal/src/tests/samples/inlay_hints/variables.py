@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Literal
+from pathlib import Path
+from typing import Awaitable, Iterable, Literal
 from typing_extensions import TypeVar, ParamSpec
 
 sss = str(1)  # inlay hint
@@ -10,12 +11,13 @@ P = ParamSpec(name="P") # no inlay hint because paramspec
 _ = str(1)  # no inlay hint because underscore only variable
 Foo = int  # inlay hint of "TypeAlias"
 type Bar = str  # no inlay hint
-def asdf(a: Foo, b: type[Foo], c: int | str, d: Literal[1, 2], e: type[int]) -> None:
+def asdf(a: Foo, b: type[Foo], c: int | str, d: Literal[1, 2], e: type[int], f: Iterable[Path] | Awaitable[int]) -> None:
     foo = a # inlay hint
     bar = b # inlay hint (type, but not TypeAlias)
     baz = c # inlay hint
     qux = d # inlay hint
     quxx = e # inlay hint (type, but not TypeAlias)
+    quxxx = f
 
 class Baz(Enum):
     a = 1 # no inlay hint

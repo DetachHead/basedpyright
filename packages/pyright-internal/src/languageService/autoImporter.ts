@@ -35,7 +35,7 @@ import { stripFileExtension } from '../common/pathUtils';
 import * as StringUtils from '../common/stringUtils';
 import { Position } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { ParseNodeType } from '../parser/parseNodes';
+import { ImportFromAsNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CompletionItemData, CompletionMap } from './completionProvider';
 import { IndexAliasData } from './symbolIndexer';
@@ -216,6 +216,73 @@ export class AutoImporter {
         return results;
     }
 
+    // TODO: the logic here is mostly copied from _getTextEditsForAutoImportByFilePath. this is gross
+    // but that function had a bunch of logic that's not relevant when inserting inlay hints, and didn't
+    // support passing multiple names to import at a time
+    getTextEditsForMultipleAutoImport = (
+        importNames: ImportNameInfo[],
+        moduleNameInfo: ModuleNameInfo,
+        importGroup: ImportGroup,
+        fileUri: Uri
+    ): TextEditAction[] => {
+        if (this.options.lazyEdit) {
+            // TODO: whats lazyEdit and is it even relevant here?
+            return [];
+        }
+        const importStatement = this._importStatements.mapByFilePath.get(fileUri.key);
+        /** filter out any imports that already exist. */
+        const filterImports = (imports: ImportFromAsNode[]) =>
+            importNames.filter((importNameInfo) => !imports.some((i) => i.d.name.d.value === importNameInfo.name));
+
+        if (importStatement) {
+            // Does an 'import from' statement already exist?
+            if (
+                importStatement.node.nodeType === ParseNodeType.ImportFrom &&
+                !importStatement.node.d.isWildcardImport
+            ) {
+                // If not, add what we want at the existing 'import from' statement as long as
+                // what is imported is not module itself.
+                // ex) don't add "path" to existing "from os.path import dirname" statement.
+                if (moduleNameInfo.name === importStatement.moduleName) {
+                    const importFromAsNodes = importStatement.node.d.imports;
+                    return getTextEditsForAutoImportSymbolAddition(
+                        filterImports(importFromAsNodes),
+                        importStatement,
+                        this.parseResults
+                    );
+                }
+            }
+        } else {
+            // If it is the module itself that got imported, make sure we don't import it again.
+            // ex) from module import submodule
+            const imported = this._importStatements.orderedImports.find((i) => i.moduleName === moduleNameInfo.name);
+            if (imported && imported.node.nodeType === ParseNodeType.ImportFrom && !imported.node.d.isWildcardImport) {
+                // If not, add what we want at the existing import from statement.
+                return getTextEditsForAutoImportSymbolAddition(
+                    filterImports(imported.node.d.imports),
+                    imported,
+                    this.parseResults
+                );
+            }
+
+            // Check whether it is one of implicit imports
+            if (this._importStatements.implicitImports?.get(fileUri.key)) {
+                // For now, we don't check whether alias or moduleName got overwritten at
+                // given position
+                return [];
+            }
+        }
+
+        return getTextEditsForAutoImportInsertion(
+            importNames,
+            moduleNameInfo,
+            this._importStatements,
+            importGroup,
+            this.parseResults,
+            this._invocationPosition
+        );
+    };
+
     protected get importResolver(): ImportResolver {
         return this.program.importResolver;
     }
@@ -317,7 +384,7 @@ export class AutoImporter {
                     return;
                 }
 
-                const autoImportTextEdits = this.getTextEditsForAutoImportByFilePath(
+                const autoImportTextEdits = this._getTextEditsForAutoImportByFilePath(
                     { name: importAliasData.importParts.symbolName, alias: abbrFromUsers },
                     {
                         name: importAliasData.importParts.importFrom ?? importAliasData.importParts.importName,
@@ -408,7 +475,7 @@ export class AutoImporter {
             }
 
             const nameForImportFrom = this.getNameForImportFrom(/* library */ !fileProperties.isUserCode, moduleUri);
-            const autoImportTextEdits = this.getTextEditsForAutoImportByFilePath(
+            const autoImportTextEdits = this._getTextEditsForAutoImportByFilePath(
                 { name, alias: abbrFromUsers },
                 { name: importSource, nameForImportFrom },
                 name,
@@ -650,8 +717,7 @@ export class AutoImporter {
         return this.importResolver.getModuleNameForImport(uri, this.execEnvironment);
     }
 
-    // eslint-disable-next-line @typescript-eslint/member-ordering -- this is private upstream and to minimize conflicts im not moving it
-    getTextEditsForAutoImportByFilePath(
+    private _getTextEditsForAutoImportByFilePath(
         importNameInfo: ImportNameInfo,
         moduleNameInfo: ModuleNameInfo,
         insertionText: string,
