@@ -35,7 +35,7 @@ export interface ImportedModuleDescriptor {
     leadingDots: number;
     nameParts: string[];
     hasTrailingDot?: boolean | undefined;
-    importedSymbols: Set<string> | undefined;
+    importedSymbols: ReadonlySet<string> | undefined;
 }
 
 export interface ModuleNameAndType {
@@ -801,7 +801,7 @@ export class ImportResolver {
     // implicit import entries. Only the imported symbols should be included.
     protected filterImplicitImports(
         importResult: ImportResult,
-        importedSymbols: Set<string> | undefined
+        importedSymbols: ReadonlySet<string> | undefined
     ): ImportResult {
         if (importedSymbols === undefined) {
             const newImportResult = Object.assign({}, importResult);

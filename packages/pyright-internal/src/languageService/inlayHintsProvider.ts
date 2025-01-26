@@ -35,12 +35,10 @@ export class InlayHintsProvider {
             const textEdits: TextEdit[] = [{ newText: item.value, range: { start: position, end: position } }];
             if (item.imports) {
                 for (const module of item.imports.imports) {
-                    textEdits.push(...this._createTextEditsForImport(module, undefined));
+                    textEdits.push(...this._createTextEditsForImport(module, new Set()));
                 }
                 for (const [module, names] of item.imports.importFroms) {
-                    for (const name of names) {
-                        textEdits.push(...this._createTextEditsForImport(module, name));
-                    }
+                    textEdits.push(...this._createTextEditsForImport(module, names));
                 }
             }
             return {
@@ -53,22 +51,21 @@ export class InlayHintsProvider {
         });
     }
 
-    private _createTextEditsForImport = (module: string, name: string | undefined) => {
-        const result = this._autoImporter?.getTextEditsForAutoImportByFilePath(
-            { name },
+    private _createTextEditsForImport = (module: string, names: ReadonlySet<string>) => {
+        const result = this._autoImporter?.getTextEditsForMultipleAutoImport(
+            Array.from(names).map((name) => ({ name })),
             { name: module },
-            name ?? module,
             ImportGroup.BuiltIn, // TODO: figure out the correct import group
             this._program.importResolver.resolveImport(
                 this._fileUri,
                 this._program.configOptions.findExecEnvironment(this._fileUri),
                 {
                     nameParts: module.split('.'),
-                    importedSymbols: name ? new Set([name]) : undefined,
+                    importedSymbols: names,
                     leadingDots: 0,
                 }
             ).resolvedUris[0]
         );
-        return result?.edits ? convertToTextEdits(result.edits) : [];
+        return convertToTextEdits(result ?? []);
     };
 }

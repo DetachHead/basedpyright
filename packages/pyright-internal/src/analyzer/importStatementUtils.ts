@@ -74,6 +74,7 @@ export interface ImportNameWithModuleInfo extends ImportNameInfo {
 
 export interface ModuleNameInfo {
     name: string;
+    /** always `undefined` in pyright as far as i can tell. probably only used in pylance */
     nameForImportFrom?: string;
 }
 

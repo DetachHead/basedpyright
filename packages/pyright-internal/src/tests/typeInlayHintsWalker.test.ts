@@ -11,45 +11,57 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         tExpect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 102,
+                position: 148,
                 value: ': str',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 408,
+                position: 454,
                 value: ': TypeAlias',
                 imports: { importFroms: new Map([['typing', new Set(['TypeAlias'])]]), imports: new Set() },
             },
             {
                 inlayHintType: 'variable',
-                position: 569,
+                position: 651,
                 value: ': Foo',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 594,
+                position: 676,
                 value: ': type[int]',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 645,
+                position: 727,
                 value: ': int | str',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 670,
+                position: 752,
                 value: ': Literal[1, 2]',
                 imports: { importFroms: new Map([['typing', new Set(['Literal'])]]), imports: new Set() },
             },
             {
                 inlayHintType: 'variable',
-                position: 696,
+                position: 778,
                 value: ': type[int]',
                 imports: noImports,
+            },
+            {
+                inlayHintType: 'variable',
+                position: 831,
+                value: ': Iterable[Path] | Awaitable[int]',
+                imports: {
+                    importFroms: new Map([
+                        ['typing', new Set(['Iterable', 'Awaitable'])],
+                        ['pathlib', new Set(['Path'])],
+                    ]),
+                    imports: new Set(),
+                },
             },
         ]);
     });
@@ -88,7 +100,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         tExpect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 102,
+                position: 148,
                 value: ': str',
                 imports: noImports,
             },
