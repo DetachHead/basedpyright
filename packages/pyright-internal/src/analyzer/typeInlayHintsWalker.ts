@@ -147,8 +147,10 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             !isUnderscoreOnlyName(node.d.value) &&
             !this._variablesThatShouldntHaveInlayHints.has(node)
         ) {
-            const type = this._program.evaluator?.getType(node);
+            const evaluator = this._program.evaluator;
+            const type = evaluator?.getType(node);
             if (
+                evaluator &&
                 type &&
                 !isAny(type) &&
                 !(isClass(type) && isLiteralType(type)) &&
@@ -164,10 +166,10 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                     getTypeAliasInfo(type)?.shared.name === node.d.value
                 ) {
                     inlayHintValue = 'TypeAlias';
-                    importTracker = new ImportTracker(this._fileUri);
-                    importTracker.add('typing', inlayHintValue);
+                    importTracker = new ImportTracker(this._fileUri, (name) => evaluator.getTypingType(node, name));
+                    importTracker.addTypingImport(inlayHintValue);
                 } else {
-                    const result = this._printType(type);
+                    const result = this._printType(node, type);
                     inlayHintValue = result.value;
                     importTracker = result.imports;
                 }
@@ -196,7 +198,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             if (functionType !== undefined && !functionType.shared.declaredReturnType) {
                 const inferredReturnType = evaluator?.getInferredReturnType(functionType);
                 if (inferredReturnType) {
-                    const { imports, value } = this._printType(inferredReturnType);
+                    const { imports, value } = this._printType(node, inferredReturnType);
                     this.featureItems.push({
                         inlayHintType: 'functionReturn',
                         position: node.d.suite.start,
@@ -222,7 +224,7 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 ) {
                     const valueType = evaluator.getType(node.d.valueExpr);
                     if (valueType) {
-                        const { value, imports } = this._printType(valueType);
+                        const { value, imports } = this._printType(node, valueType);
                         this.featureItems.push({
                             inlayHintType: 'generic',
                             position: this._endOfNode(node),
@@ -268,8 +270,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             ) {
                 const printedTypeArgs = returnType.priv.typeArgs.flatMap((typeArg) =>
                     isClass(typeArg) && typeArg.priv.tupleTypeArgs && typeArg.priv.isUnpacked
-                        ? typeArg.priv.tupleTypeArgs.map((tupleTypeArg) => this._printType(tupleTypeArg.type))
-                        : this._printType(typeArg)
+                        ? typeArg.priv.tupleTypeArgs.map((tupleTypeArg) => this._printType(node, tupleTypeArg.type))
+                        : this._printType(node, typeArg)
                 );
                 const imports = printedTypeArgs.map((inlayHintInfo) => inlayHintInfo.imports);
                 const values = printedTypeArgs.map((inlayHintInfo) => inlayHintInfo.value);
@@ -352,8 +354,10 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
 
     private _endOfNode = (node: ParseNode) => node.start + node.length;
 
-    private _printType = (type: Type): { value: string; imports: ImportTracker } => {
-        const importTracker = new ImportTracker(this._fileUri);
+    private _printType = (node: ParseNode, type: Type): { value: string; imports: ImportTracker } => {
+        const importTracker = new ImportTracker(this._fileUri, (name) =>
+            this._program.evaluator!.getTypingType(node, name)
+        );
         return {
             value: this._program.evaluator!.printType(type, { enforcePythonSyntax: true, importTracker }),
             imports: importTracker,

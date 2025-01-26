@@ -155,7 +155,7 @@ export function printLiteralValueTruncated(type: ClassType, importTracker: Impor
 
     assert(type.shared.name === 'str');
     const name = 'LiteralString';
-    importTracker?.add('typing', name);
+    importTracker?.addTypingImport(name);
     return name;
 }
 
@@ -219,7 +219,7 @@ export class ImportTracker {
     private readonly _importFroms = new Map<string, Set<string>>();
     readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
 
-    constructor(private _fileUri: Uri) {}
+    constructor(private _fileUri: Uri, private _getTypingType: (name: string) => Type | undefined) {}
 
     /**
      * @param module the name of the module being imported. if it's possible for the module to be the same as the current module, you should
@@ -246,6 +246,15 @@ export class ImportTracker {
             this._imports.add(module);
         }
     };
+
+    /**
+     * use this instead of {@link add} when importing something from `typing`, since it may need to import from `typing_extensions` instead
+     * depending on the python version
+     */
+    addTypingImport = (name: string) => {
+        const module = this._getTypingType(name);
+        this.add(module?.category === TypeCategory.Class ? module.shared.moduleName : 'typing', name);
+    };
 }
 
 function printTypeInternal(
@@ -259,7 +268,7 @@ function printTypeInternal(
 ): string {
     if (recursionCount > maxTypeRecursionCount) {
         if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-            importTracker?.add('typing', 'Any');
+            importTracker?.addTypingImport('Any');
             return 'Any';
         }
         return '<Recursive>';
@@ -459,7 +468,7 @@ function printTypeInternal(
         switch (type.category) {
             case TypeCategory.Unbound: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-                    importTracker?.add('typing', 'Any');
+                    importTracker?.addTypingImport('Any');
                     return 'Any';
                 }
                 return 'Unbound';
@@ -467,7 +476,7 @@ function printTypeInternal(
 
             case TypeCategory.Unknown: {
                 if (printTypeFlags & (PrintTypeFlags.PythonSyntax | PrintTypeFlags.PrintUnknownWithAny)) {
-                    importTracker?.add('typing', 'Any');
+                    importTracker?.addTypingImport('Any');
                     return 'Any';
                 }
                 return 'Unknown';
@@ -475,7 +484,7 @@ function printTypeInternal(
 
             case TypeCategory.Module: {
                 if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
-                    importTracker?.add('typing', 'Any');
+                    importTracker?.addTypingImport('Any');
                     return 'Any';
                 }
                 return `Module("${type.priv.moduleName}")`;
@@ -487,7 +496,7 @@ function printTypeInternal(
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             return printLiteralValueTruncated(type, importTracker);
                         } else {
-                            importTracker?.add('typing', 'Literal');
+                            importTracker?.addTypingImport('Literal');
                             return `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
                     }
@@ -508,7 +517,7 @@ function printTypeInternal(
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             typeToWrap = printLiteralValueTruncated(type, importTracker);
                         } else {
-                            importTracker?.add('typing', 'Literal');
+                            importTracker?.addTypingImport('Literal');
                             typeToWrap = `Literal[${printLiteralValue(type, "'", importTracker)}]`;
                         }
 
@@ -582,8 +591,8 @@ function printTypeInternal(
                 );
 
                 if ((printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    importTracker?.add('typing', 'Callable');
-                    importTracker?.add('typing', 'Any');
+                    importTracker?.addTypingImport('Callable');
+                    importTracker?.addTypingImport('Any');
                     return 'Callable[..., Any]';
                 }
 
@@ -675,7 +684,7 @@ function printTypeInternal(
                             ) {
                                 boundTypeString = `Self@${boundTypeString}`;
                             } else {
-                                importTracker?.add('typing', 'Self');
+                                importTracker?.addTypingImport('Self');
                                 boundTypeString = `Self`;
                             }
                         }
@@ -687,7 +696,7 @@ function printTypeInternal(
                         return boundTypeString;
                     }
                     if ((printTypeFlags & (PrintTypeFlags.PrintUnknownWithAny | PrintTypeFlags.PythonSyntax)) !== 0) {
-                        importTracker?.add('typing', 'Self');
+                        importTracker?.addTypingImport('Self');
                         return 'Any';
                     } else {
                         return 'Unknown';
@@ -718,7 +727,7 @@ function printTypeInternal(
                 }
 
                 if (isTypeVarTuple(type) && type.priv.isInUnion) {
-                    importTracker?.add('typing', 'Union');
+                    importTracker?.addTypingImport('Union');
                     typeVarName = `Union[${typeVarName}]`;
                 }
 
@@ -738,7 +747,7 @@ function printTypeInternal(
 
             case TypeCategory.Never: {
                 const result = type.priv.isNoReturn ? 'NoReturn' : 'Never';
-                importTracker?.add('typing', result);
+                importTracker?.addTypingImport(result);
                 return result;
             }
 
@@ -747,7 +756,7 @@ function printTypeInternal(
                 if (anyType.priv.isEllipsis) {
                     return '...';
                 }
-                importTracker?.add('typing', 'Any');
+                importTracker?.addTypingImport('Any');
                 return 'Any';
             }
         }
@@ -850,7 +859,7 @@ function printUnionType(
             return unionString;
         }
 
-        importTracker?.add('typing', 'Optional');
+        importTracker?.addTypingImport('Optional');
         return 'Optional[' + optionalType + ']';
     }
 
@@ -892,14 +901,14 @@ function printUnionType(
     if (literalObjectStrings.size > 0) {
         const literalStrings: string[] = [];
         literalObjectStrings.forEach((s) => literalStrings.push(s));
-        importTracker?.add('typing', 'Literal');
+        importTracker?.addTypingImport('Literal');
         dedupedSubtypeStrings.push(`Literal[${literalStrings.join(', ')}]`);
     }
 
     if (literalClassStrings.size > 0) {
         const literalStrings: string[] = [];
         literalClassStrings.forEach((s) => literalStrings.push(s));
-        importTracker?.add('typing', 'Literal');
+        importTracker?.addTypingImport('Literal');
         dedupedSubtypeStrings.push(`type[Literal[${literalStrings.join(', ')}]]`);
     }
 
@@ -914,7 +923,7 @@ function printUnionType(
         }
         return unionString;
     }
-    importTracker?.add('typing', 'Union');
+    importTracker?.addTypingImport('Union');
     return `Union[${dedupedSubtypeStrings.join(', ')}]`;
 }
 
@@ -958,7 +967,7 @@ function printFunctionType(
                 importTracker
             );
         } else {
-            importTracker?.add('typing', 'Any');
+            importTracker?.addTypingImport('Any');
         }
 
         let result: string;
@@ -981,7 +990,7 @@ function printFunctionType(
                             )
                         );
                     } else {
-                        importTracker?.add('typing', 'Any');
+                        importTracker?.addTypingImport('Any');
                         paramTypes.push('Any');
                     }
                 }
@@ -989,7 +998,7 @@ function printFunctionType(
 
             if (paramSpec) {
                 if (paramTypes.length > 0) {
-                    importTracker?.add('typing', 'Concatenate');
+                    importTracker?.addTypingImport('Concatenate');
                     result = `Concatenate[${paramTypes.join(', ')}, ${paramSpec.shared.name}]`;
                 } else {
                     result = paramSpec.shared.name;
@@ -1002,7 +1011,7 @@ function printFunctionType(
             // a "catch all" Callable.
             result = '...';
         }
-        importTracker?.add('typing', 'Callable');
+        importTracker?.addTypingImport('Callable');
         return FunctionType.isParamSpecValue(type) ? result : `Callable[${result}, ${returnTypeString}]`;
     } else {
         const parts = printFunctionPartsInternal(
