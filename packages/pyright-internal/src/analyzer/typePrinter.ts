@@ -957,6 +957,8 @@ function printFunctionType(
                 recursionCount,
                 importTracker
             );
+        } else {
+            importTracker?.add('typing', 'Any');
         }
 
         let result: string;
@@ -979,6 +981,7 @@ function printFunctionType(
                             )
                         );
                     } else {
+                        importTracker?.add('typing', 'Any');
                         paramTypes.push('Any');
                     }
                 }
@@ -986,6 +989,7 @@ function printFunctionType(
 
             if (paramSpec) {
                 if (paramTypes.length > 0) {
+                    importTracker?.add('typing', 'Concatenate');
                     result = `Concatenate[${paramTypes.join(', ')}, ${paramSpec.shared.name}]`;
                 } else {
                     result = paramSpec.shared.name;
@@ -998,6 +1002,7 @@ function printFunctionType(
             // a "catch all" Callable.
             result = '...';
         }
+        importTracker?.add('typing', 'Callable');
         return FunctionType.isParamSpecValue(type) ? result : `Callable[${result}, ${returnTypeString}]`;
     } else {
         const parts = printFunctionPartsInternal(

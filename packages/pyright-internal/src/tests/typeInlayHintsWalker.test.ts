@@ -11,53 +11,65 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         tExpect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 148,
+                position: 158,
                 value: ': str',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 454,
+                position: 464,
                 value: ': TypeAlias',
                 imports: { importFroms: new Map([['typing', new Set(['TypeAlias'])]]), imports: new Set() },
             },
             {
                 inlayHintType: 'variable',
-                position: 651,
+                position: 684,
                 value: ': Foo',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 676,
+                position: 709,
                 value: ': type[int]',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 727,
+                position: 760,
                 value: ': int | str',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 752,
+                position: 785,
                 value: ': Literal[1, 2]',
                 imports: { importFroms: new Map([['typing', new Set(['Literal'])]]), imports: new Set() },
             },
             {
                 inlayHintType: 'variable',
-                position: 778,
+                position: 811,
                 value: ': type[int]',
                 imports: noImports,
             },
             {
                 inlayHintType: 'variable',
-                position: 831,
+                position: 864,
                 value: ': Iterable[Path] | Awaitable[int]',
                 imports: {
                     importFroms: new Map([
                         ['typing', new Set(['Iterable', 'Awaitable'])],
+                        ['pathlib', new Set(['Path'])],
+                    ]),
+                    imports: new Set(),
+                },
+            },
+            {
+                inlayHintType: 'variable',
+                position: 879,
+                value: ': Callable[[], Path]',
+                imports: {
+                    importFroms: new Map([
+                        ['typing', new Set(['Callable'])],
                         ['pathlib', new Set(['Path'])],
                     ]),
                     imports: new Set(),
@@ -100,7 +112,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         tExpect(result).toStrictEqual([
             {
                 inlayHintType: 'variable',
-                position: 148,
+                position: 158,
                 value: ': str',
                 imports: noImports,
             },
