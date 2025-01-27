@@ -160,7 +160,6 @@ enable = [
     "preferred-module",
     "raising-format-tuple",
     "redefined-outer-name",
-    "redefined-slots-in-subclass",
     "redundant-returns-doc",
     "redundant-yields-doc",
     "useless-param-doc",
