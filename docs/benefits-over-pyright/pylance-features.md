@@ -31,6 +31,10 @@ initial implementation of the semantic highlighting provider was adapted from th
 
 basedpyright contains several improvements and bug fixes to the original implementation adapted from [pyright-inlay-hints](https://github.com/jbradaric/pyright-inlay-hints).
 
+basedpyright also supports double-clicking to insert inlay hints. unlike pylance, this also works on `Callable` types:
+
+![](./double-click-inlay-hint.gif)
+
 ## docstrings for compiled builtin modules
 
 many of the builtin modules are written in c, meaning the pyright language server cannot statically inspect and display their docstrings to the user. unfortunately they are also not available in the `.pyi` stubs for these modules, as [the typeshed maintainers consider it to be too much of a maintanance nightmare](https://github.com/python/typeshed/issues/4881#issuecomment-1275775973).
