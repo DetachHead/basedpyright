@@ -31,7 +31,6 @@ dev = [
     "typing_extensions>=4.12.2",
     "pytest>=8.2.2",
     "pytest-github-actions-annotate-failures>=0.2.0",
-    "basedtyping>=0.1.4",
     "mkdocs-material>=9.5.37",
     "mkdocs-awesome-pages-plugin>=2.9.2",
     "mike>=2.1.3",

@@ -62,8 +62,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "basedtyping", version = "0.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "basedtyping", version = "0.1.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "mike" },
     { name = "mkdocs-awesome-pages-plugin", version = "2.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8.1'" },
     { name = "mkdocs-awesome-pages-plugin", version = "2.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8.1'" },
@@ -92,7 +90,6 @@ requires-dist = [{ name = "nodejs-wheel-binaries", specifier = ">=20.13.1" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "basedtyping", specifier = ">=0.1.4" },
     { name = "mike", specifier = ">=2.1.3" },
     { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.9.2" },
     { name = "mkdocs-macros-plugin", specifier = ">=1.2.0" },
@@ -109,39 +106,6 @@ docstubs = [{ name = "docify", specifier = ">=1.0.0" }]
 lochelper = [
     { name = "rich", specifier = ">=13.0" },
     { name = "textual", specifier = ">=0.70.0" },
-]
-
-[[package]]
-name = "basedtyping"
-version = "0.1.4"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.8.1' and python_full_version < '3.9'",
-    "python_full_version < '3.8.1'",
-]
-dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/22/f0d1bbd34766de14a6ed5b4d3a09ab9d5de12376655b4d9df9e05d90c5a3/basedtyping-0.1.4.tar.gz", hash = "sha256:8a3ba80d4628eb2f6a205759a8151e6df7341ceba03e5daf6b395fcc873a7967", size = 9776 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/5f/c1864efc5423ba25e512bfa7589eb1135885650e116de4eef39078b7ce82/basedtyping-0.1.4-py3-none-any.whl", hash = "sha256:d4832ab7af178e6a5394199725dc55f26e36e1ad5fae68db41b956c1cb99a0d2", size = 9637 },
-]
-
-[[package]]
-name = "basedtyping"
-version = "0.1.10"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.12'",
-    "python_full_version == '3.11.*'",
-    "python_full_version >= '3.9' and python_full_version < '3.11'",
-]
-dependencies = [
-    { name = "typing-extensions", marker = "python_full_version >= '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/99/36/7ba70ab751f08f8619c9c1985899cc75223fef6b9583159414e08a1240f3/basedtyping-0.1.10.tar.gz", hash = "sha256:d7600917ec9f232c9eb4266916c2ea5a4719ffca59fb7902fc96fd59a4678110", size = 14672 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/4a/76fe7ddbb90aadaeb298dbb57e562a365f21a6fa17d3c69e73cb3c0c84e8/basedtyping-0.1.10-py3-none-any.whl", hash = "sha256:8952416f8fd196d25c1f6d6bb556223183e928c944bee4bd0c49af659677dea9", size = 15045 },
 ]
 
 [[package]]
