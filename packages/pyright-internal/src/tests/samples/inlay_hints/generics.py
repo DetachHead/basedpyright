@@ -33,3 +33,9 @@ class Qux(Bar[int]):
         return super().foo()
 
 qux: list[tuple[int, str]] = list()
+
+class Quxx:
+    def __init__(self, value) -> None: ...
+
+
+_ = Quxx(value=1)
