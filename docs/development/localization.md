@@ -43,6 +43,7 @@ About the interface:
 -   basedpyright is maintained by developers who only speak English, so it would be helpful if you could get someone who also speaks your language to review your changes as well.
 -   new rules that are specific to basedpyright currently do not have any translations at all (see [this issue](https://github.com/DetachHead/basedpyright/issues/81)). Providing translations for those would be greatly appreciated.
 -   The initial translations from Pyright seem to be pretty low quality and low consistency. If you want to start a "renovation" for a particular language, it's a good idea to come up with a glossary of common terms so that the final translations will be consistent. Check if the https://docs.python.org has a translation for your language, and if it does, use that as a baseline.
+-   Some messages in the English localization file contain a `"comment"` field with formal specifiers like `Locked` and `StrContains`. Use your judgement as to whether they should be followed. It's usually better to apply common sense and the language-specific glossary to decide to which parts of the string should be translated.
 
 ## Specific languages
 
@@ -78,24 +79,6 @@ About the interface:
 | awaitable                  | awaitable (нет перевода) или: поддерживающий await |
 | positional-only            | только позиционный                                 |
 | keyword-only               | только именованный                                 |
-
-#### Формальные спецификаторы из `pyright`
-
-С определённого момента pyright начал поставлять формальные требования для некоторых сообщений:
-
-```
-        "noReturnContainsReturn": {
-            "message": "Function with declared return type \"NoReturn\" cannot include a return statement",
-            "comment": "{Locked='NoReturn','return'}"
-        },
-        "duplicateUnpack": {
-            "message": "Only one unpack operation allowed in list",
-            "comment": "{Locked='list'}"
-        },
-```
-
-Они оставлены в файлах локализации, чтобы было проще подтягивать изменения из pyright. Игнорируйте их.
-Часто они сами содержат смысловые ошибки (см. примеры выше). Для решения, переводить термин или нет, используйте глоссарий выше.
 
 ### Chinese
 
