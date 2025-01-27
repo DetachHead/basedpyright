@@ -260,7 +260,9 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             // don't show them on super calls because that's invalid.
             node.d.leftExpr.d.value !== 'super' &&
             // only show them on classes, because the index syntax to specify generics isn't valid on functions
-            isClass(callableType)
+            isClass(callableType) &&
+            // pseudo-generic classes aren't actually generic, so it's invalid to explicitly specify them
+            !ClassType.isPseudoGenericClass(callableType)
         ) {
             const returnType = evaluator.getType(node);
             if (
