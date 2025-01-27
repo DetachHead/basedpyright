@@ -1,4 +1,4 @@
-import { InlayHint, InlayHintLabelPart, InlayHintKind } from 'vscode-languageserver-protocol';
+import { InlayHint, InlayHintKind } from 'vscode-languageserver-protocol';
 import { ProgramView } from '../common/extensibility';
 import { convertOffsetToPosition } from '../common/positionUtils';
 
@@ -45,7 +45,7 @@ export class InlayHintsProvider {
                 }
             }
             return {
-                label: [InlayHintLabelPart.create(item.value)],
+                label: item.value,
                 position,
                 paddingLeft,
                 kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
