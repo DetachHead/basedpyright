@@ -63,6 +63,7 @@ About the interface:
 | Type annotation            | Аннотация типа                                     |
 | Comprehension              | Включение                                          |
 | set (встроенный тип)       | Множество                                          |
+| tuple                      | Кортеж                                             |
 | Type variable              | Переменная типа                                    |
 | Final                      | `Final` (как есть)                                 |
 | @final / final class       | `@final` (как есть)                                |
@@ -77,6 +78,24 @@ About the interface:
 | awaitable                  | awaitable (нет перевода) или: поддерживающий await |
 | positional-only            | только позиционный                                 |
 | keyword-only               | только именованный                                 |
+
+#### Формальные спецификаторы из `pyright`
+
+С определённого момента pyright начал поставлять формальные требования для некоторых сообщений:
+
+```
+        "noReturnContainsReturn": {
+            "message": "Function with declared return type \"NoReturn\" cannot include a return statement",
+            "comment": "{Locked='NoReturn','return'}"
+        },
+        "duplicateUnpack": {
+            "message": "Only one unpack operation allowed in list",
+            "comment": "{Locked='list'}"
+        },
+```
+
+Они оставлены в файлах локализации, чтобы было проще подтягивать изменения из pyright. Игнорируйте их.
+Часто они сами содержат смысловые ошибки (см. примеры выше). Для решения, переводить термин или нет, используйте глоссарий выше.
 
 ### Chinese
 
