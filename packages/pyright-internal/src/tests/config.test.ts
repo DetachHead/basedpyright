@@ -291,7 +291,10 @@ test('AutoSearchPathsOff', () => {
     const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/project_src'));
     const nullConsole = new NullConsole();
     const service = createAnalyzer(nullConsole);
-    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ false);
+    // setting fromLanguageServer to true prevents the cli-specific behavior of recursively searching parent
+    // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
+    // with the test
+    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
     commandLineOptions.configSettings.autoSearchPaths = false;
     service.setOptions(commandLineOptions);
 
@@ -304,7 +307,10 @@ test('AutoSearchPathsOnSrcIsPkg', () => {
     const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/project_src_is_pkg'));
     const nullConsole = new NullConsole();
     const service = createAnalyzer(nullConsole);
-    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ false);
+    // setting fromLanguageServer to true prevents the cli-specific behavior of recursively searching parent
+    // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
+    // with the test
+    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
     commandLineOptions.configSettings.autoSearchPaths = true;
     service.setOptions(commandLineOptions);
 
