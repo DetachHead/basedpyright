@@ -68,13 +68,13 @@
         "**/docstubs/*"
     ],
     "terminal.integrated.env.windows": {
-      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
+      "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH}"
     },
     "terminal.integrated.env.osx": {
-      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
+      "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH}"
     },
     "terminal.integrated.env.linux": {
-      "PATH": "${env:PATH};${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin"
+      "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH}"
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
