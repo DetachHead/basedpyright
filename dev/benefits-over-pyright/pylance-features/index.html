@@ -1667,6 +1667,8 @@
 <h2 id="inlay-hints">inlay hints</h2>
 <p><img alt="image" src="https://github.com/DetachHead/basedpyright/assets/57028336/41ed93e8-04e2-4163-a1be-c9ec8f3d90df" /></p>
 <p>basedpyright contains several improvements and bug fixes to the original implementation adapted from <a href="https://github.com/jbradaric/pyright-inlay-hints">pyright-inlay-hints</a>.</p>
+<p>basedpyright also supports double-clicking to insert inlay hints. unlike pylance, this also works on <code>Callable</code> types:</p>
+<p><img alt="" src="../double-click-inlay-hint.gif" /></p>
 <h2 id="docstrings-for-compiled-builtin-modules">docstrings for compiled builtin modules</h2>
 <p>many of the builtin modules are written in c, meaning the pyright language server cannot statically inspect and display their docstrings to the user. unfortunately they are also not available in the <code>.pyi</code> stubs for these modules, as <a href="https://github.com/python/typeshed/issues/4881#issuecomment-1275775973">the typeshed maintainers consider it to be too much of a maintanance nightmare</a>.</p>
 <p>pylance works around this problem by running a "docstring scraper" script on the user's machine, which imports compiled builtin modules, scrapes all the docstrings from them at runtime, then saves them so that the language server can read them. however this isn't ideal for a few reasons:</p>
