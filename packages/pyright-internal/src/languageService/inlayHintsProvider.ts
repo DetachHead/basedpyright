@@ -32,7 +32,10 @@ export class InlayHintsProvider {
 
         return this._walker.featureItems.map((item) => {
             const position = convertOffsetToPosition(item.position, parseResults.tokenizerOutput.lines);
-            const textEdits: TextEdit[] = [{ newText: item.value, range: { start: position, end: position } }];
+            const paddingLeft = item.inlayHintType === 'functionReturn';
+            const textEdits: TextEdit[] = [
+                { newText: `${paddingLeft ? ' ' : ''}${item.value}`, range: { start: position, end: position } },
+            ];
             if (item.imports) {
                 for (const module of item.imports.imports) {
                     textEdits.push(...this._createTextEditsForImport(module, new Set()));
@@ -44,7 +47,7 @@ export class InlayHintsProvider {
             return {
                 label: [InlayHintLabelPart.create(item.value)],
                 position,
-                paddingLeft: item.inlayHintType === 'functionReturn',
+                paddingLeft,
                 kind: item.inlayHintType === 'parameter' ? InlayHintKind.Parameter : InlayHintKind.Type,
                 textEdits,
             };
