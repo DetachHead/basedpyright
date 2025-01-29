@@ -29,10 +29,6 @@
          <lastmod>2025-01-29</lastmod>
     </url>
     <url>
-         <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/improved-completions/</loc>
-         <lastmod>2025-01-29</lastmod>
-    </url>
-    <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/improved-generic-narrowing/</loc>
          <lastmod>2025-01-29</lastmod>
     </url>
@@ -42,6 +38,10 @@
     </url>
     <url>
          <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/improved-translations/</loc>
+         <lastmod>2025-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/language-server-improvements/</loc>
          <lastmod>2025-01-29</lastmod>
     </url>
     <url>

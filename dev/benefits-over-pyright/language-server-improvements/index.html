@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/improved-completions/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/language-server-improvements/">
       
       
-        <link rel="prev" href="../improved-ci-integration/">
+        <link rel="prev" href="../improved-translations/">
       
       
-        <link rel="next" href="../improved-generic-narrowing/">
+        <link rel="next" href="../new-diagnostic-rules/">
       
       
       <link rel="icon" href="../../img/favicon.ico">
@@ -22,7 +22,7 @@
     
     
       
-        <title>improved completions - basedpyright</title>
+        <title>language server improvements - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#improved-completions" class="md-skip">
+        <a href="#language-server-improvements" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              improved completions
+              language server improvements
             
           </span>
         </div>
@@ -452,37 +452,6 @@
                 
   
   
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    improved completions
-  </span>
-  
-
-      </a>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
   
   
     <li class="md-nav__item">
@@ -537,6 +506,94 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    language server improvements
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    language server improvements
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#autocomplete-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      autocomplete improvements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#improved-diagnostic-severity-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved diagnostic severity system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fallback-file-watcher-for-lsp-clients-that-dont-support-capabilitiesworkspacedidchangewatchedfilesdynamicregistration" class="md-nav__link">
+    <span class="md-ellipsis">
+      fallback file watcher for LSP clients that don't support capabilities.workspace.didChangeWatchedFiles.dynamicRegistration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1401,6 +1458,41 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#autocomplete-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      autocomplete improvements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#improved-diagnostic-severity-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved diagnostic severity system
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fallback-file-watcher-for-lsp-clients-that-dont-support-capabilitiesworkspacedidchangewatchedfilesdynamicregistration" class="md-nav__link">
+    <span class="md-ellipsis">
+      fallback file watcher for LSP clients that don't support capabilities.workspace.didChangeWatchedFiles.dynamicRegistration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1417,9 +1509,28 @@
   
 
 
-<h1 id="improved-completions">improved completions</h1>
+<h1 id="language-server-improvements">language server improvements</h1>
+<p>in addition to the <a href="../pylance-features/">pylance exclusive features</a>, basedpyright also contains some additional improvements to the language server that aren't available in pyright or pylance.</p>
+<h2 id="autocomplete-improvements">autocomplete improvements</h2>
 <p>autocomplete suggestions for method overrides will automatically add the <code>@override</code> decorator:</p>
 <p><img alt="" src="../override-decorator-completions.gif" /></p>
+<h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
+<p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../new-diagnostic-rules/#reportunreachable">there is no diagnostic rule at all</a>).</p>
+<p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. diagnostics that are reported as a <code>"hint"</code> can have diagnostic tags (unused or deprecated) that change how they're displayed if supported by your IDE, if such a tag is relevant for that rule:</p>
+<div class="highlight"><span class="filename">pyproject.toml</span><pre><span></span><code><span class="k">[tool.basedpyright]</span>
+<span class="n">reportUnreachable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
+<span class="n">reportUnusedParameter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
+<span class="n">reportUnusedCallResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
+<span class="n">reportDeprecated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
+</code></pre></div>
+<p>here's how they look in vscode:</p>
+<p><img alt="" src="../diagnostic-tags.png" /></p>
+<h2 id="fallback-file-watcher-for-lsp-clients-that-dont-support-capabilitiesworkspacedidchangewatchedfilesdynamicregistration">fallback file watcher for LSP clients that don't support <code>capabilities.workspace.didChangeWatchedFiles.dynamicRegistration</code></h2>
+<p>pyright used to use its own server-side file watcher to detect when files change, but it was removed <a href="https://github.com/microsoft/pyright/issues/4635#issuecomment-1430177826">due to operating systems limiting the number of file watcher registrations</a>. however this file watcher is still used when running the CLI in <code>--watch</code> mode, so basedpyright will just fallback to it if the client does not support <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles"><code>capabilities.workspace.didChangeWatchedFiles.dynamicRegistration</code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>it's still recommended that the client implement its own file watcher. this fallback functionality is only intended to maximize compatibility with other editors.</p>
+</div>
 
 
 
