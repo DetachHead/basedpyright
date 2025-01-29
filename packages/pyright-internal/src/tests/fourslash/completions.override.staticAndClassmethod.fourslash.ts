@@ -1,7 +1,7 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: test.py
-//// class A:
+//// [|/*importMarker*/|]class A:
 ////     @staticmethod
 ////     def smethod(a, b):
 ////         pass
@@ -11,15 +11,28 @@
 ////         pass
 ////
 //// class B1(A):
-////     def [|m/*marker1*/|]
+////     [|/*overrideMarker1*/|]def [|m/*marker1*/|]
 ////
 //// class B2(A):
 ////     @staticmethod
-////     def [|m/*marker2*/|]
+////     [|/*overrideMarker2*/|]def [|m/*marker2*/|]
 ////
 //// class B3(A):
 ////     @classmethod
-////     def [|m/*marker3*/|]
+////     [|/*overrideMarker3*/|]def [|m/*marker3*/|]
+
+const overrideDecoratorText = '@override\n    ';
+
+const additionalTextEdits = (markerNumber: number) => [
+    {
+        range: helper.getPositionRange('importMarker'),
+        newText: 'from typing import override\n\n\n',
+    },
+    {
+        range: helper.getPositionRange(`overrideMarker${markerNumber}`),
+        newText: overrideDecoratorText,
+    },
+];
 
 {
     // @ts-ignore
@@ -33,6 +46,7 @@
                         range: helper.getPositionRange('marker2'),
                         newText: 'smethod(a, b):\n    return super().smethod(a, b)',
                     },
+                    additionalTextEdits: additionalTextEdits(2),
                 },
             ],
         },
@@ -45,6 +59,7 @@
                         range: helper.getPositionRange('marker3'),
                         newText: 'cmethod(cls, a):\n    return super().cmethod(a)',
                     },
+                    additionalTextEdits: additionalTextEdits(3),
                 },
             ],
         },

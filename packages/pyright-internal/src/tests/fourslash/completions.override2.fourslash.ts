@@ -1,8 +1,8 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: test.py
-//// class B(list):
-////     def [|append/*marker*/|]
+//// [|/*importMarker1*/|]class B(list):
+////     [|/*overrideMarker1*/|]def [|append/*marker*/|]
 
 // @filename: test1.py
 //// class A:
@@ -17,8 +17,19 @@
 ////     def [|__class__/*marker2*/|]
 
 // @filename: test3.py
-//// class A:
-////     def [|__call__/*marker3*/|]
+//// [|/*importMarker3*/|]class A:
+////     [|/*overrideMarker3*/|]def [|__call__/*marker3*/|]
+
+const additionalTextEdits = (markerNumber: number) => [
+    {
+        range: helper.getPositionRange(`importMarker${markerNumber}`),
+        newText: 'from typing import override\n\n\n',
+    },
+    {
+        range: helper.getPositionRange(`overrideMarker${markerNumber}`),
+        newText: '@override\n    ',
+    },
+];
 
 {
     helper.openFiles(helper.getMarkers().map((m) => m.fileName));
@@ -34,6 +45,7 @@
                         range: helper.getPositionRange('marker'),
                         newText: 'append(self, object: _T, /) -> None:\n    return super().append(object)',
                     },
+                    additionalTextEdits: additionalTextEdits(1),
                 },
             ],
         },
@@ -58,6 +70,7 @@
                         range: helper.getPositionRange('marker3'),
                         newText: '__call__(self, *args: Any, **kwds: Any) -> Any:\n    ${0:pass}',
                     },
+                    additionalTextEdits: additionalTextEdits(3),
                 },
             ],
         },

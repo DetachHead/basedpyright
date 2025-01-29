@@ -384,7 +384,7 @@ export class AutoImporter {
                     return;
                 }
 
-                const autoImportTextEdits = this._getTextEditsForAutoImportByFilePath(
+                const autoImportTextEdits = this.getTextEditsForAutoImportByFilePath(
                     { name: importAliasData.importParts.symbolName, alias: abbrFromUsers },
                     {
                         name: importAliasData.importParts.importFrom ?? importAliasData.importParts.importName,
@@ -475,7 +475,7 @@ export class AutoImporter {
             }
 
             const nameForImportFrom = this.getNameForImportFrom(/* library */ !fileProperties.isUserCode, moduleUri);
-            const autoImportTextEdits = this._getTextEditsForAutoImportByFilePath(
+            const autoImportTextEdits = this.getTextEditsForAutoImportByFilePath(
                 { name, alias: abbrFromUsers },
                 { name: importSource, nameForImportFrom },
                 name,
@@ -717,7 +717,8 @@ export class AutoImporter {
         return this.importResolver.getModuleNameForImport(uri, this.execEnvironment);
     }
 
-    private _getTextEditsForAutoImportByFilePath(
+    // eslint-disable-next-line @typescript-eslint/member-ordering -- this is private upstream but i'm not moving it to minimize merge conflicts
+    getTextEditsForAutoImportByFilePath(
         importNameInfo: ImportNameInfo,
         moduleNameInfo: ModuleNameInfo,
         insertionText: string,

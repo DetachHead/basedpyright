@@ -130,6 +130,8 @@ import {
 } from './completionProviderUtils';
 import { DocumentSymbolCollector } from './documentSymbolCollector';
 import { getAutoImportText, getDocumentationPartsForTypeAndDecl } from './tooltipUtils';
+import { ImportGroup } from '../analyzer/importStatementUtils';
+import { TextEditAction } from '../common/editAction';
 
 namespace Keywords {
     const base: string[] = [
@@ -419,7 +421,8 @@ export class CompletionProvider {
     protected getMethodOverrideCompletions(
         priorWord: string,
         partialName: NameNode,
-        decorators?: DecoratorNode[]
+        decorators: DecoratorNode[] | undefined,
+        priorText: string
     ): CompletionMap | undefined {
         const enclosingClass = ParseTreeUtils.getEnclosingClass(partialName, /* stopAtFunction */ true);
         if (!enclosingClass) {
@@ -505,12 +508,60 @@ export class CompletionProvider {
 
                     const textEdit = this.createReplaceEdits(priorWord, partialName, text);
 
+                    // add the @override decorator if neeed
+                    const additionalTextEdits: TextEditAction[] = [];
+                    if (!['__init__', '__new__'].includes(name)) {
+                        const overrideDecorator = this.evaluator.getTypingType(decl.node, 'override');
+                        if (
+                            // this should always be true, but just in case
+                            overrideDecorator?.category === TypeCategory.Function &&
+                            // check if the override decorator is already here
+                            !decorators?.some((decorator) => {
+                                const type = this.evaluator.getTypeOfExpression(decorator.d.expr).type;
+                                return isFunction(type) && FunctionType.isBuiltIn(type, 'override');
+                            })
+                        ) {
+                            const indent = priorText.match(/(^\s*)(async|def)\s/)?.[1];
+                            // this should always match, but it looks gross and hacky so just in case,
+                            // we just skip adding the override decorator if it can't figure out where to put it
+                            if (indent !== undefined) {
+                                const startNode = partialName.parent!.start;
+                                const position: Position = {
+                                    line:
+                                        // if there are any other decorators, make this the last one because some decorators can change the type
+                                        // such that the override decorator won't can't be placed above them
+                                        convertOffsetToPosition(startNode, this.parseResults.tokenizerOutput.lines)
+                                            .line + (decorators?.length ?? 0),
+                                    character: indent.length,
+                                };
+                                const importTextEditInfo = this.createAutoImporter(
+                                    completionMap,
+                                    this.options.lazyEdit
+                                ).getTextEditsForAutoImportByFilePath(
+                                    { name: 'override' },
+                                    { name: overrideDecorator.shared.moduleName },
+                                    'override',
+                                    ImportGroup.BuiltIn,
+                                    overrideDecorator.shared.declaration!.uri
+                                );
+                                if (importTextEditInfo.edits) {
+                                    additionalTextEdits.push(...importTextEditInfo.edits);
+                                }
+                                additionalTextEdits.push({
+                                    range: { start: position, end: position },
+                                    replacementText: `@${importTextEditInfo.insertionText}\n${indent}`,
+                                });
+                            }
+                        }
+                    }
+
                     this.addSymbol(name, symbol, partialName.d.value, completionMap, {
                         // method signature already contains ()
                         funcParensDisabled: true,
                         edits: {
                             format: this.options.snippet ? InsertTextFormat.Snippet : undefined,
                             textEdit,
+                            additionalTextEdits,
                         },
                     });
                 }
@@ -1597,7 +1648,7 @@ export class CompletionProvider {
 
                     // Determine if the partial name is a method that's overriding
                     // a method in a base class.
-                    return this.getMethodOverrideCompletions(priorWord, node.d.child, node.d.decorators);
+                    return this.getMethodOverrideCompletions(priorWord, node.d.child, node.d.decorators, priorText);
                 }
                 break;
             }

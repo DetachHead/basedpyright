@@ -1,7 +1,7 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: test.pyi
-//// class B:
+//// [|/*importMarker*/|]class B:
 ////     def method1(self, a: str = 'hello', b: int = 1234):
 ////         pass
 ////
@@ -12,7 +12,18 @@
 ////         pass
 ////
 //// class C(B):
-////     def [|method/*marker*/|]
+////     [|/*overrideMarker*/|]def [|method/*marker*/|]
+
+const additionalTextEdits = [
+    {
+        range: helper.getPositionRange('importMarker'),
+        newText: 'from typing import override\n\n\n',
+    },
+    {
+        range: helper.getPositionRange('overrideMarker'),
+        newText: '@override\n    ',
+    },
+];
 
 // @ts-ignore
 await helper.verifyCompletion('included', 'markdown', {
@@ -25,6 +36,7 @@ await helper.verifyCompletion('included', 'markdown', {
                     range: helper.getPositionRange('marker'),
                     newText: 'method1(self, a: str = ..., b: int = ...): ...',
                 },
+                additionalTextEdits,
             },
             {
                 label: 'method2',
@@ -33,6 +45,7 @@ await helper.verifyCompletion('included', 'markdown', {
                     range: helper.getPositionRange('marker'),
                     newText: 'method2(self, a=...): ...',
                 },
+                additionalTextEdits,
             },
             {
                 label: 'method3',
@@ -41,6 +54,7 @@ await helper.verifyCompletion('included', 'markdown', {
                     range: helper.getPositionRange('marker'),
                     newText: 'method3(self, a=..., b=...): ...',
                 },
+                additionalTextEdits,
             },
         ],
     },
