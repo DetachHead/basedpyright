@@ -79,6 +79,9 @@ About the interface:
 | awaitable                  | awaitable (нет перевода) или: поддерживающий await |
 | positional-only            | только позиционный                                 |
 | keyword-only               | только именованный                                 |
+| generic                    | обобщенный                                         |
+| type alias                 | псевдоним типа                                     |
+| generic type alias         | обобщенный псевдоним типа                          |
 
 ### Chinese
 
