@@ -81,7 +81,10 @@ export abstract class BackgroundThreadBase {
         }
 
         if (!this.serviceProvider.tryGet(ServiceKeys.caseSensitivityDetector)) {
-            this.serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile as TempFile & CaseSensitivityDetector);
+            this.serviceProvider.add(
+                ServiceKeys.caseSensitivityDetector,
+                tempFile as TempFile & CaseSensitivityDetector
+            );
         }
         this.realFs = this.createRealFileSystem();
         if (!this.serviceProvider.tryGet(ServiceKeys.fs)) {
@@ -100,7 +103,7 @@ export abstract class BackgroundThreadBase {
 
     // Hooks for Browser vs NodeJS file system.
     protected abstract createRealFileSystem(): FileSystem;
-    protected abstract createRealTempFile(): TempFile & CaseSensitivityDetector;
+    protected abstract createRealTempFile(tempFileName: string): TempFile & CaseSensitivityDetector;
 
     protected log(level: LogLevel, msg: string) {
         this.parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });

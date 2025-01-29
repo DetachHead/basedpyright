@@ -56,8 +56,8 @@ export class BackgroundAnalysisRunner extends BackgroundAnalysisRunnerBase {
         );
     }
 
-    protected override createRealTempFile() {
-        return new RealTempFile();
+    protected override createRealTempFile(tempFileName: string) {
+        return new RealTempFile(tempFileName);
     }
 
     protected override createHost(): Host {

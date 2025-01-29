@@ -133,7 +133,7 @@ export function typeAnalyzeSampleFiles(
     const results = getAnalysisResults(program, fileUris, program.configOptions);
 
     program.dispose();
-    serviceProvider.dispose();
+    program.serviceProvider.dispose();
 
     return results;
 }

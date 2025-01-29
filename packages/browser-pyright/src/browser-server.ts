@@ -22,6 +22,7 @@ import { getRootUri } from 'pyright-internal/common/uri/uriUtils';
 import { ServiceProvider } from 'pyright-internal/common/serviceProvider';
 import { DefaultCancellationProvider } from 'pyright-internal/common/cancellationUtils';
 import { nullFileWatcherHandler } from 'pyright-internal/common/fileWatcher';
+import { ServiceKeys } from 'pyright-internal/common/serviceKeys';
 
 type InitialFiles = Record<string, string>;
 
@@ -100,6 +101,7 @@ export class BrowserBackgroundAnalysis extends BackgroundAnalysisBase {
 
         const initialData: InitializationData = {
             rootUri: getRootUri(serviceProvider)?.toString() ?? '',
+            tempFileName: serviceProvider.get(ServiceKeys.tempFile).tmpdir().getFilePath(),
             serviceId: index.toString(),
             cancellationFolderName: undefined,
             runner: undefined,

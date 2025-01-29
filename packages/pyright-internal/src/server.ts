@@ -17,6 +17,7 @@ import { FullAccessHost } from './common/fullAccessHost';
 import { Host } from './common/host';
 import { RealTempFile, WorkspaceFileWatcherProvider, createFromRealFileSystem } from './common/realFileSystem';
 import { RealLanguageServer } from './realLanguageServer';
+import { Uri } from './common/uri/uri';
 
 export class PyrightServer extends RealLanguageServer<WorkspaceFileWatcherProvider> {
     constructor(connection: Connection, maxWorkers: number, realFileSystem?: FileSystem) {
