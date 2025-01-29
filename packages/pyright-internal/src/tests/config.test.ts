@@ -26,6 +26,7 @@ import { TestFileSystem } from './harness/vfs/filesystem';
 import { AnalysisResults } from '../analyzer/analysis';
 import { existsSync } from 'fs';
 import { NoAccessHost } from '../common/host';
+import { tExpect } from 'typed-jest-expect';
 
 class ErrorTrackingNullConsole extends NullConsole {
     errors = new Array<string>();
@@ -400,8 +401,11 @@ describe(`config test'}`, () => {
     });
 
     test('both pyright and basedpyright in pyproject.toml', () => {
-        const { configOptions, analysisResult } = setupPyprojectToml(
+        const { configOptions, analysisResult, consoleErrors } = setupPyprojectToml(
             'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
+        );
+        tExpect(consoleErrors[0]).toStrictEqual(
+            'Pyproject file parse attempt 1 Error: Pyproject file cannot have both `pyright` and `basedpyright` sections. pick one'
         );
         // ensure it defaults to the current python interpreter instead of the version from either section in the config.
         // https://github.com/microsoft/pyright/pull/9735
