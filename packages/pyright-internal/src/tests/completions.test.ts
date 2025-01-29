@@ -1002,10 +1002,10 @@ test('override generic nested', async () => {
 test('override __call__', async () => {
     const code = `
 // @filename: test.py
-//// from argparse import Action
+//// from argparse import Action[|/*importMarker*/|]
 //// 
 //// class MyAction(Action):
-////     def [|__call__/*marker*/|]
+////     [|/*overrideMarker*/|]def [|__call__/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1021,6 +1021,16 @@ test('override __call__', async () => {
                         newText:
                             '__call__(self, parser: ArgumentParser, namespace: Namespace, values: str | Sequence[Any] | None, option_string: str | None = None) -> None:\n    return super().__call__(parser, namespace, values, option_string)',
                     },
+                    additionalTextEdits: [
+                        {
+                            range: state.getPositionRange('importMarker'),
+                            newText: '\nfrom typing import override',
+                        },
+                        {
+                            range: state.getPositionRange('overrideMarker'),
+                            newText: '@override\n    ',
+                        },
+                    ],
                 },
             ],
         },
@@ -1030,7 +1040,7 @@ test('override __call__', async () => {
 test('override ParamSpec', async () => {
     const code = `
 // @filename: test.py
-//// from typing import Callable, ParamSpec
+//// from typing import Callable, ParamSpec[|/*importMarker*/|]
 ////
 //// P = ParamSpec("P")
 ////
@@ -1039,7 +1049,7 @@ test('override ParamSpec', async () => {
 ////         pass
 //// 
 //// class B(A):
-////     def [|foo/*marker*/|]
+////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1055,6 +1065,16 @@ test('override ParamSpec', async () => {
                         newText:
                             'foo(self, func: Callable[P, None], *args: P.args, **kwargs: P.kwargs):\n    return super().foo(func, *args, **kwargs)',
                     },
+                    additionalTextEdits: [
+                        {
+                            range: state.getPositionRange('importMarker'),
+                            newText: ', override',
+                        },
+                        {
+                            range: state.getPositionRange('overrideMarker'),
+                            newText: '@override\n    ',
+                        },
+                    ],
                 },
             ],
         },
@@ -1064,12 +1084,12 @@ test('override ParamSpec', async () => {
 test('annotation using comment', async () => {
     const code = `
 // @filename: test.py
-//// class A:
+//// [|/*importMarker*/|]class A:
 ////     def foo(self, a): # type: (int) -> None
 ////         pass
 //// 
 //// class B(A):
-////     def [|foo/*marker*/|]
+////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1084,6 +1104,16 @@ test('annotation using comment', async () => {
                         range: state.getPositionRange('marker'),
                         newText: 'foo(self, a: int) -> None:\n    return super().foo(a)',
                     },
+                    additionalTextEdits: [
+                        {
+                            range: state.getPositionRange('importMarker'),
+                            newText: 'from typing import override\n\n\n',
+                        },
+                        {
+                            range: state.getPositionRange('overrideMarker'),
+                            newText: '@override\n    ',
+                        },
+                    ],
                 },
             ],
         },
@@ -1105,10 +1135,10 @@ test('Complex type arguments', async () => {
 ////     pass
 
 // @filename: test1.py
-//// from test import B
+//// [|/*importMarker*/|]from test import B
 //// 
 //// class U(B):
-////     def [|foo/*marker*/|]
+////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1125,6 +1155,16 @@ test('Complex type arguments', async () => {
                         range: state.getPositionRange('marker'),
                         newText: 'foo(self, a: T) -> T:\n    return super().foo(a)',
                     },
+                    additionalTextEdits: [
+                        {
+                            range: state.getPositionRange('importMarker'),
+                            newText: 'from typing import override\n',
+                        },
+                        {
+                            range: state.getPositionRange('overrideMarker'),
+                            newText: '@override\n    ',
+                        },
+                    ],
                 },
             ],
         },

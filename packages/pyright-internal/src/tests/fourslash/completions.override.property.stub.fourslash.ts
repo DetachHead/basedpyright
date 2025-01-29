@@ -1,7 +1,7 @@
 /// <reference path="typings/fourslash.d.ts" />
 
 // @filename: test.pyi
-//// class B:
+//// [|/*importMarker*/|]class B:
 ////     @property
 ////     def prop(self):
 ////         return 1
@@ -12,7 +12,18 @@
 ////
 //// class C(B):
 ////     @property
-////     def [|pr/*marker*/|]
+////     [|/*overrideMarker*/|]def [|pr/*marker*/|]
+
+const additionalTextEdits = [
+    {
+        range: helper.getPositionRange('importMarker'),
+        newText: 'from typing import override\n\n\n',
+    },
+    {
+        range: helper.getPositionRange('overrideMarker'),
+        newText: '@override\n    ',
+    },
+];
 
 // @ts-ignore
 await helper.verifyCompletion('included', 'markdown', {
@@ -25,6 +36,7 @@ await helper.verifyCompletion('included', 'markdown', {
                     range: helper.getPositionRange('marker'),
                     newText: 'prop(self): ...',
                 },
+                additionalTextEdits,
             },
         ],
     },
