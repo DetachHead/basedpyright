@@ -252,8 +252,8 @@ export class ImportTracker {
      * depending on the python version
      */
     addTypingImport = (name: string) => {
-        const module = this._getTypingType(name);
-        this.add(module?.category === TypeCategory.Class ? module.shared.moduleName : 'typing', name);
+        const type = this._getTypingType(name);
+        this.add(type?.category === TypeCategory.Class ? type.shared.moduleName : 'typing', name);
     };
 }
 
