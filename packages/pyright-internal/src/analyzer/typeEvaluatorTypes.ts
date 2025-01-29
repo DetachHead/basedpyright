@@ -516,6 +516,7 @@ export interface PrintTypeOptions {
 export interface DeclaredSymbolTypeInfo {
     type: Type | undefined;
     isTypeAlias?: boolean;
+    exceedsMaxDecls?: boolean;
 }
 
 export interface ResolveAliasOptions {

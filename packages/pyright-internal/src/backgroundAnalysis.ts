@@ -31,6 +31,7 @@ export class BackgroundAnalysis extends BackgroundAnalysisBase {
         const index = ++BackgroundAnalysis._workerIndex;
         const initialData: InitializationData = {
             rootUri: getRootUri(serviceProvider)?.toString() ?? '',
+            tempFileName: serviceProvider.get(ServiceKeys.tempFile).tmpdir().getFilePath(),
             serviceId: index.toString(),
             cancellationFolderName: getCancellationFolderName(),
             runner: undefined,

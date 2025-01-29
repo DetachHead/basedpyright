@@ -174,7 +174,7 @@ import { evaluateStaticBoolExpression } from './staticExpressions';
 import { indeterminateSymbolId, Symbol, SymbolFlags, SynthesizedTypeInfo } from './symbol';
 import { isConstantName, isPrivateName, isPrivateOrProtectedName } from './symbolNameUtils';
 import { getLastTypedDeclarationForSymbol, isEffectivelyClassVar } from './symbolUtils';
-import { assignTupleTypeArgs, getSlicedTupleType, getTypeOfTuple, makeTupleObject } from './tuples';
+import { assignTupleTypeArgs, expandTuple, getSlicedTupleType, getTypeOfTuple, makeTupleObject } from './tuples';
 import { SpeculativeModeOptions, SpeculativeTypeTracker } from './typeCacheUtils';
 import {
     assignToTypedDict,
@@ -225,6 +225,7 @@ import {
     ValidateArgTypeParams,
     ValidateTypeArgsOptions,
 } from './typeEvaluatorTypes';
+import { enumerateLiteralsForType } from './typeGuards';
 import * as TypePrinter from './typePrinter';
 import {
     AnyType,
@@ -538,9 +539,9 @@ const maxDeclarationsToUseForInference = 64;
 // of a variable that has no type declaration.
 const maxEffectiveTypeEvaluationAttempts = 16;
 
-// Maximum number of combinatoric union type expansions allowed
+// Maximum number of combinatoric argument type expansions allowed
 // when resolving an overload.
-const maxOverloadUnionExpansionCount = 64;
+const maxOverloadArgTypeExpansionCount = 64;
 
 // Maximum number of recursive function return type inference attempts
 // that can be concurrently pending before we give up.
@@ -4482,7 +4483,7 @@ export function createTypeEvaluator(
             case ParseNodeType.TypeAnnotation: {
                 let annotationType: Type | undefined = getTypeOfAnnotation(target.d.annotation, {
                     varTypeAnnotation: true,
-                    allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(target.d.valueExpr),
+                    allowFinal: isFinalAllowedForAssignmentTarget(target.d.valueExpr),
                     allowClassVar: isClassVarAllowedForAssignmentTarget(target.d.valueExpr),
                 });
 
@@ -4557,18 +4558,34 @@ export function createTypeEvaluator(
     }
 
     function isClassVarAllowedForAssignmentTarget(targetNode: ExpressionNode): boolean {
+        // ClassVar is allowed only in a class body.
         const classNode = ParseTreeUtils.getEnclosingClass(targetNode, /* stopAtFunction */ true);
         if (!classNode) {
             return false;
         }
 
         // ClassVar is not allowed in a TypedDict or a NamedTuple class.
+        return !isInTypedDictOrNamedTuple(classNode);
+    }
+
+    function isFinalAllowedForAssignmentTarget(targetNode: ExpressionNode): boolean {
+        const classNode = ParseTreeUtils.getEnclosingClass(targetNode, /* stopAtFunction */ true);
+
+        // Final is not allowed in the body of a TypedDict or NamedTuple class.
+        if (classNode && isInTypedDictOrNamedTuple(classNode)) {
+            return false;
+        }
+
+        return ParseTreeUtils.isFinalAllowedForAssignmentTarget(targetNode);
+    }
+
+    function isInTypedDictOrNamedTuple(classNode: ClassNode): boolean {
         const classType = getTypeOfClass(classNode)?.classType;
         if (!classType) {
             return false;
         }
 
-        return !ClassType.isTypedDictClass(classType) && !classType.shared.namedTupleEntries;
+        return ClassType.isTypedDictClass(classType) || !!classType.shared.namedTupleEntries;
     }
 
     function verifyRaiseExceptionType(node: ExpressionNode, allowNone: boolean) {
@@ -4961,7 +4978,9 @@ export function createTypeEvaluator(
         }
 
         if (isTypeVar(type)) {
-            return true;
+            if (type.props?.specialForm || type.props?.typeAliasInfo) {
+                return true;
+            }
         }
 
         // Exempts class types that are created by calling NewType, NamedTuple, etc.
@@ -9525,7 +9544,7 @@ export function createTypeEvaluator(
 
         // Start by evaluating the types of the arguments without any expected
         // type. Also, filter the list of overloads based on the number of
-        // positional and named arguments that are present. We do all of this
+        // positional and keyword arguments that are present. We do all of this
         // speculatively because we don't want to record any types in the type
         // cache or record any diagnostics at this stage.
         useSpeculativeMode(speculativeNode, () => {
@@ -9686,10 +9705,10 @@ export function createTypeEvaluator(
                 });
             }
 
-            expandedArgTypes = expandArgUnionTypes(contextFreeArgTypes!, expandedArgTypes);
+            expandedArgTypes = expandArgTypes(contextFreeArgTypes!, expandedArgTypes);
 
             // Check for combinatoric explosion and break out of loop.
-            if (!expandedArgTypes || expandedArgTypes.length > maxOverloadUnionExpansionCount) {
+            if (!expandedArgTypes || expandedArgTypes.length > maxOverloadArgTypeExpansionCount) {
                 break;
             }
         }
@@ -9713,12 +9732,13 @@ export function createTypeEvaluator(
     }
 
     // Replaces each item in the expandedArgTypes with n items where n is
-    // the number of subtypes in a union. The contextFreeArgTypes parameter
-    // represents the types of the arguments evaluated with no bidirectional
-    // type inference (i.e. without the help of the corresponding parameter's
-    // expected type). If the function returns undefined, that indicates that
-    // all unions have been expanded, and no more expansion is possible.
-    function expandArgUnionTypes(
+    // the number of subtypes in a union or other expandable type.
+    // The contextFreeArgTypes parameter represents the types of the arguments
+    // evaluated with no bidirectional type inference (i.e. without the help of
+    // the corresponding parameter's expected type). If the function returns
+    // undefined, that indicates that all types have been expanded, and no
+    // more expansion is possible.
+    function expandArgTypes(
         contextFreeArgTypes: Type[],
         expandedArgTypes: (Type | undefined)[][]
     ): (Type | undefined)[][] | undefined {
@@ -9735,22 +9755,20 @@ export function createTypeEvaluator(
             return undefined;
         }
 
-        let unionToExpand: Type | undefined;
+        let expandedTypes: Type[] | undefined;
         while (indexToExpand < contextFreeArgTypes.length) {
             // Is this a union type? If so, we can expand it.
             const argType = contextFreeArgTypes[indexToExpand];
-            if (isUnion(argType)) {
-                unionToExpand = makeTopLevelTypeVarsConcrete(argType);
-                break;
-            } else if (isTypeVar(argType) && TypeVarType.hasConstraints(argType)) {
-                unionToExpand = makeTopLevelTypeVarsConcrete(argType);
+
+            expandedTypes = expandArgType(argType);
+            if (expandedTypes) {
                 break;
             }
             indexToExpand++;
         }
 
         // We have nothing left to expand.
-        if (!unionToExpand) {
+        if (!expandedTypes) {
             return undefined;
         }
 
@@ -9758,7 +9776,7 @@ export function createTypeEvaluator(
         const newExpandedArgTypes: (Type | undefined)[][] = [];
 
         expandedArgTypes.forEach((preExpandedTypes) => {
-            doForEachSubtype(unionToExpand!, (subtype) => {
+            expandedTypes.forEach((subtype) => {
                 const expandedTypes = [...preExpandedTypes];
                 expandedTypes[indexToExpand] = subtype;
                 newExpandedArgTypes.push(expandedTypes);
@@ -9766,6 +9784,35 @@ export function createTypeEvaluator(
         });
 
         return newExpandedArgTypes;
+    }
+
+    function expandArgType(type: Type): Type[] | undefined {
+        const expandedTypes: Type[] = [];
+
+        // Expand any top-level type variables with constraints.
+        type = makeTopLevelTypeVarsConcrete(type);
+
+        doForEachSubtype(type, (subtype) => {
+            if (isClassInstance(subtype)) {
+                // Expand any bool or Enum literals.
+                const expandedLiteralTypes = enumerateLiteralsForType(evaluatorInterface, subtype);
+                if (expandedLiteralTypes) {
+                    appendArray(expandedTypes, expandedLiteralTypes);
+                    return;
+                }
+
+                // Expand any fixed-size tuples.
+                const expandedTuples = expandTuple(subtype, maxOverloadArgTypeExpansionCount);
+                if (expandedTuples) {
+                    appendArray(expandedTypes, expandedTuples);
+                    return;
+                }
+            }
+
+            expandedTypes.push(subtype);
+        });
+
+        return expandedTypes.length > 1 ? expandedTypes : undefined;
     }
 
     // Validates that the arguments can be assigned to the call's parameter
@@ -11089,10 +11136,6 @@ export function createTypeEvaluator(
                         errorNode,
                         /* emitNotIterableError */ false
                     )?.type;
-
-                    if (paramInfo.param.category !== ParamCategory.ArgsList) {
-                        matchedUnpackedListOfUnknownLength = true;
-                    }
                 }
 
                 const funcArg: Arg | undefined = listElementType
@@ -20285,7 +20328,7 @@ export function createTypeEvaluator(
         } else {
             const annotationType = getTypeOfAnnotation(node.d.annotation, {
                 varTypeAnnotation: true,
-                allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(node.d.valueExpr),
+                allowFinal: isFinalAllowedForAssignmentTarget(node.d.valueExpr),
                 allowClassVar: isClassVarAllowedForAssignmentTarget(node.d.valueExpr),
             });
 
@@ -20437,7 +20480,7 @@ export function createTypeEvaluator(
                 if (annotationNode === annotationParent.d.annotationComment) {
                     getTypeOfAnnotation(annotationNode, {
                         varTypeAnnotation: true,
-                        allowFinal: ParseTreeUtils.isFinalAllowedForAssignmentTarget(annotationParent.d.leftExpr),
+                        allowFinal: isFinalAllowedForAssignmentTarget(annotationParent.d.leftExpr),
                         allowClassVar: isClassVarAllowedForAssignmentTarget(annotationParent.d.leftExpr),
                     });
                 } else {
@@ -20989,7 +21032,12 @@ export function createTypeEvaluator(
         }
 
         if (checkCodeFlowTooComplex(reference)) {
-            return FlowNodeTypeResult.create(/* type */ undefined, /* isIncomplete */ true);
+            return FlowNodeTypeResult.create(
+                /* type */ options?.typeAtStart && isUnbound(options.typeAtStart.type)
+                    ? UnknownType.create()
+                    : undefined,
+                /* isIncomplete */ true
+            );
         }
 
         // Is there an code flow analyzer cached for this execution scope?
@@ -22418,7 +22466,7 @@ export function createTypeEvaluator(
                                 ? declaration.node.parent
                                 : declaration.node;
                         const allowClassVar = isClassVarAllowedForAssignmentTarget(declNode);
-                        const allowFinal = ParseTreeUtils.isFinalAllowedForAssignmentTarget(declNode);
+                        const allowFinal = isFinalAllowedForAssignmentTarget(declNode);
                         const allowRequired =
                             ParseTreeUtils.isRequiredAllowedForAssignmentTarget(declNode) ||
                             !!declaration.isInInlinedTypedDict;
@@ -22951,13 +22999,21 @@ export function createTypeEvaluator(
             if (declaredType || !declaredTypeInfo.isTypeAlias) {
                 const typedDecls = symbol.getTypedDeclarations();
 
+                // If we received an undefined declared type, this can be caused by
+                // exceeding the max number of type declarations, speculative
+                // evaluation, or a recursive definition.
+                const isRecursiveDefinition =
+                    !declaredType &&
+                    !declaredTypeInfo.exceedsMaxDecls &&
+                    !speculativeTypeTracker.isSpeculative(/* node */ undefined);
+
                 const result: EffectiveTypeResult = {
                     type: declaredType ?? UnknownType.create(),
                     isIncomplete,
                     includesVariableDecl: includesVariableTypeDecl(typedDecls),
                     includesIllegalTypeAliasDecl: !typedDecls.every((decl) => isPossibleTypeAliasDeclaration(decl)),
                     includesSpeculativeResult: false,
-                    isRecursiveDefinition: !declaredType && !speculativeTypeTracker.isSpeculative(/* node */ undefined),
+                    isRecursiveDefinition,
                 };
 
                 return result;
@@ -23229,7 +23285,13 @@ export function createTypeEvaluator(
 
             type = combineTypes(typesToCombine);
         } else {
-            type = UnboundType.create();
+            // We can encounter this situation in the case of a bare ClassVar annotation.
+            if (symbol.isClassVar()) {
+                type = UnknownType.create();
+                isIncomplete = false;
+            } else {
+                type = UnboundType.create();
+            }
         }
 
         return { type, isIncomplete, includesSpeculativeResult, evaluationAttempts };
@@ -23267,12 +23329,14 @@ export function createTypeEvaluator(
         // reachable from the usage node (if specified). This can happen in
         // cases where a property symbol is redefined to add a setter, deleter,
         // etc.
+        let exceedsMaxDecls = false;
         if (usageNode && typedDecls.length > 1) {
             if (typedDecls.length > maxTypedDeclsPerSymbol) {
                 // If there are too many typed decls, don't bother filtering them
                 // because this can be very expensive. Simply use the last one
                 // in this case.
                 typedDecls = [typedDecls[typedDecls.length - 1]];
+                exceedsMaxDecls = true;
             } else {
                 const filteredTypedDecls = typedDecls.filter((decl) => {
                     if (decl.type !== DeclarationType.Alias) {
@@ -23338,7 +23402,7 @@ export function createTypeEvaluator(
             declIndex--;
         }
 
-        return { type: undefined };
+        return { type: undefined, exceedsMaxDecls };
     }
 
     function inferReturnTypeIfNecessary(type: Type) {
@@ -26862,42 +26926,60 @@ export function createTypeEvaluator(
                     !effectiveSrcParamSpec ||
                     !isTypeSame(effectiveSrcParamSpec, effectiveDestParamSpec, { ignoreTypeFlags: true })
                 ) {
-                    const remainingFunction = FunctionType.createInstance(
-                        '',
-                        '',
-                        '',
-                        effectiveSrcType.shared.flags | FunctionTypeFlags.SynthesizedMethod,
-                        effectiveSrcType.shared.docString
-                    );
-                    remainingFunction.shared.deprecatedMessage = effectiveSrcType.shared.deprecatedMessage;
-                    remainingFunction.shared.typeVarScopeId = effectiveSrcType.shared.typeVarScopeId;
-                    remainingFunction.priv.constructorTypeVarScopeId = effectiveSrcType.priv.constructorTypeVarScopeId;
-                    remainingFunction.shared.methodClass = effectiveSrcType.shared.methodClass;
-                    remainingParams.forEach((param) => {
-                        FunctionType.addParam(remainingFunction, param);
-                    });
-                    if (effectiveSrcParamSpec) {
-                        FunctionType.addParamSpecVariadics(remainingFunction, convertToInstance(effectiveSrcParamSpec));
-                    }
+                    const effectiveSrcPosCount = isContra ? destPositionalCount : srcPositionalCount;
+                    const effectiveDestPosCount = isContra ? srcPositionalCount : destPositionalCount;
 
-                    if (
-                        !assignType(effectiveDestParamSpec, remainingFunction, /* diag */ undefined, constraints, flags)
-                    ) {
-                        // If we couldn't assign the function to the ParamSpec, see if we can
-                        // assign only the ParamSpec. This is possible if there were no
-                        // remaining parameters.
+                    // If the src and dest both have ParamSpecs but the src has additional positional
+                    // parameters that have not been matched to dest positional parameters (probably due
+                    // to a Concatenate), don't attempt to assign the remaining parameters to the ParamSpec.
+                    if (!effectiveSrcParamSpec || effectiveSrcPosCount >= effectiveDestPosCount) {
+                        const remainingFunction = FunctionType.createInstance(
+                            '',
+                            '',
+                            '',
+                            effectiveSrcType.shared.flags | FunctionTypeFlags.SynthesizedMethod,
+                            effectiveSrcType.shared.docString
+                        );
+                        remainingFunction.shared.deprecatedMessage = effectiveSrcType.shared.deprecatedMessage;
+                        remainingFunction.shared.typeVarScopeId = effectiveSrcType.shared.typeVarScopeId;
+                        remainingFunction.priv.constructorTypeVarScopeId =
+                            effectiveSrcType.priv.constructorTypeVarScopeId;
+                        remainingFunction.shared.methodClass = effectiveSrcType.shared.methodClass;
+                        remainingParams.forEach((param) => {
+                            FunctionType.addParam(remainingFunction, param);
+                        });
+                        if (effectiveSrcParamSpec) {
+                            FunctionType.addParamSpecVariadics(
+                                remainingFunction,
+                                convertToInstance(effectiveSrcParamSpec)
+                            );
+                        }
+
                         if (
-                            remainingParams.length > 0 ||
-                            !effectiveSrcParamSpec ||
                             !assignType(
-                                convertToInstance(effectiveDestParamSpec),
-                                convertToInstance(effectiveSrcParamSpec),
+                                effectiveDestParamSpec,
+                                remainingFunction,
                                 /* diag */ undefined,
                                 constraints,
                                 flags
                             )
                         ) {
-                            canAssign = false;
+                            // If we couldn't assign the function to the ParamSpec, see if we can
+                            // assign only the ParamSpec. This is possible if there were no
+                            // remaining parameters.
+                            if (
+                                remainingParams.length > 0 ||
+                                !effectiveSrcParamSpec ||
+                                !assignType(
+                                    convertToInstance(effectiveDestParamSpec),
+                                    convertToInstance(effectiveSrcParamSpec),
+                                    /* diag */ undefined,
+                                    constraints,
+                                    flags
+                                )
+                            ) {
+                                canAssign = false;
+                            }
                         }
                     }
                 }

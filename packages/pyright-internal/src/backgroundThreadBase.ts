@@ -14,7 +14,7 @@ import {
 } from './common/cancellationUtils';
 import { BasedConfigOptions, ConfigOptions } from './common/configOptions';
 import { ConsoleInterface, LogLevel } from './common/console';
-import { Disposable, isThenable } from './common/core';
+import { isThenable } from './common/core';
 import * as debug from './common/debug';
 import { FileSystem, TempFile } from './common/fileSystem';
 import { ServiceKeys } from './common/serviceKeys';
@@ -74,13 +74,14 @@ export abstract class BackgroundThreadBase {
             this.serviceProvider.add(ServiceKeys.console, new BackgroundConsole(this.parentPort));
         }
 
-        let tempFile: (TempFile & CaseSensitivityDetector) | undefined = undefined;
-        if (!this.serviceProvider.tryGet(ServiceKeys.tempFile)) {
-            tempFile = this.createRealTempFile();
+        let tempFile = this.serviceProvider.tryGet(ServiceKeys.tempFile);
+        if (!tempFile) {
+            tempFile = this.createRealTempFile(data.tempFileName);
             this.serviceProvider.add(ServiceKeys.tempFile, tempFile);
         }
+
         if (!this.serviceProvider.tryGet(ServiceKeys.caseSensitivityDetector)) {
-            this.serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile ?? this.createRealTempFile());
+            this.serviceProvider.add(ServiceKeys.caseSensitivityDetector, tempFile as TempFile & CaseSensitivityDetector);
         }
         this.realFs = this.createRealFileSystem();
         if (!this.serviceProvider.tryGet(ServiceKeys.fs)) {
@@ -114,11 +115,7 @@ export abstract class BackgroundThreadBase {
     }
 
     protected handleShutdown() {
-        const tempFile = this.serviceProvider.tryGet(ServiceKeys.tempFile);
-        if (Disposable.is(tempFile)) {
-            tempFile.dispose();
-        }
-
+        this.serviceProvider.dispose();
         this.parentPort?.close();
     }
 }
@@ -258,6 +255,7 @@ export function getBackgroundWaiter<T>(port: MessagePort, deserializer: (v: any)
 
 export interface InitializationData {
     rootUri: string;
+    tempFileName: string;
     serviceId: string;
     workerIndex: number;
     cancellationFolderName: string | undefined;

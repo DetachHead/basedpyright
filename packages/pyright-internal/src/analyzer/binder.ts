@@ -160,7 +160,7 @@ interface NarrowExprOptions {
 // amount to the complexity factor. Without this, the complexity
 // calculation fails to take into account large numbers of non-cyclical
 // flow nodes. This number is somewhat arbitrary and is tuned empirically.
-const flowNodeComplexityContribution = 0.05;
+const flowNodeComplexityContribution = 0.025;
 
 export class Binder extends ParseTreeWalker {
     private readonly _fileInfo: AnalyzerFileInfo;
@@ -2619,6 +2619,11 @@ export class Binder extends ParseTreeWalker {
 
         AnalyzerNodeInfo.setFlowNode(node, this._currentFlowNode!);
 
+        let uriOfFirstSubmodule: Uri | undefined;
+        if (importInfo && importInfo.isImportFound && !importInfo.isNativeLib && importInfo.resolvedUris.length > 0) {
+            uriOfFirstSubmodule = importInfo.resolvedUris[0];
+        }
+
         // See if there's already a matching alias declaration for this import.
         // if so, we'll update it rather than creating a new one. This is required
         // to handle cases where multiple import statements target the same
@@ -2628,7 +2633,12 @@ export class Binder extends ParseTreeWalker {
         // python module loader.
         const existingDecl = symbol
             .getDeclarations()
-            .find((decl) => decl.type === DeclarationType.Alias && decl.firstNamePart === firstNamePartValue);
+            .find(
+                (decl) =>
+                    decl.type === DeclarationType.Alias &&
+                    decl.firstNamePart === firstNamePartValue &&
+                    (!uriOfFirstSubmodule || uriOfFirstSubmodule.equals(decl.uri))
+            );
         let newDecl: AliasDeclaration;
         let uriOfLastSubmodule: Uri;
         if (importInfo && importInfo.isImportFound && !importInfo.isNativeLib && importInfo.resolvedUris.length > 0) {
@@ -4127,17 +4137,25 @@ export class Binder extends ParseTreeWalker {
                 // a decorator that tells us otherwise.
                 isInstanceMember = true;
                 for (const decorator of methodNode.d.decorators) {
-                    if (decorator.d.expr.nodeType === ParseNodeType.Name) {
-                        const decoratorName = decorator.d.expr.d.value;
+                    let decoratorName: string | undefined;
 
-                        if (decoratorName === 'staticmethod') {
-                            // A static method doesn't have a "self" or "cls" parameter.
-                            return undefined;
-                        } else if (decoratorName === 'classmethod') {
-                            // A classmethod implies that the first parameter is "cls".
-                            isInstanceMember = false;
-                            break;
-                        }
+                    if (decorator.d.expr.nodeType === ParseNodeType.Name) {
+                        decoratorName = decorator.d.expr.d.value;
+                    } else if (
+                        decorator.d.expr.nodeType === ParseNodeType.MemberAccess &&
+                        decorator.d.expr.d.leftExpr.nodeType === ParseNodeType.Name &&
+                        decorator.d.expr.d.leftExpr.d.value === 'builtins'
+                    ) {
+                        decoratorName = decorator.d.expr.d.member.d.value;
+                    }
+
+                    if (decoratorName === 'staticmethod') {
+                        // A static method doesn't have a "self" or "cls" parameter.
+                        return undefined;
+                    } else if (decoratorName === 'classmethod') {
+                        // A classmethod implies that the first parameter is "cls".
+                        isInstanceMember = false;
+                        break;
                     }
                 }
             }

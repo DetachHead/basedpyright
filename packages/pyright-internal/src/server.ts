@@ -34,7 +34,7 @@ export class PyrightServer extends RealLanguageServer<WorkspaceFileWatcherProvid
         );
     }
 
-    override createBackgroundAnalysis(serviceId: string): BackgroundAnalysisBase | undefined {
+    override createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): BackgroundAnalysisBase | undefined {
         if (isDebugMode() || !getCancellationFolderName()) {
             // Don't do background analysis if we're in debug mode or an old client
             // is used where cancellation is not supported.
