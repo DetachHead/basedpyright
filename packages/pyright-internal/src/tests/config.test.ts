@@ -403,7 +403,9 @@ describe(`config test'}`, () => {
         const { configOptions, analysisResult } = setupPyprojectToml(
             'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
         );
-        assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
+        // ensure it defaults to the current python interpreter instead of the version from either section in the config.
+        // https://github.com/microsoft/pyright/pull/9735
+        assert.strictEqual(configOptions.defaultPythonVersion!, pythonVersion3_13);
         assert(!analysisResult?.fatalErrorOccurred);
     });
 
@@ -671,7 +673,8 @@ describe(`config test'}`, () => {
         const cwd = normalizePath(process.cwd());
         const nullConsole = new NullConsole();
         const service = createAnalyzer(nullConsole);
-        const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ false);
+        // fromLanguageServer to prevent the top-level pyproject.toml from interfering with the test
+        const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
         commandLineOptions.configFilePath = 'src/tests/samples/package1';
         service.setOptions(commandLineOptions);
 
