@@ -223,47 +223,47 @@ describe(`config test'}`, () => {
         const configOptions = service.test_getConfigOptions(commandLineOptions);
         assert.ok(configOptions.executionEnvironments[0]);
         assert.equal(configOptions.executionEnvironments[0].pythonPlatform, 'Linux');
-});
-
-describe('invalid config', () => {
-    test('unknown top-level option', () => {
-        const cwd = UriEx.file(normalizePath(process.cwd()));
-
-        const configOptions = new ConfigOptions(cwd);
-
-        const json = { asdf: 1 };
-
-        const fs = new TestFileSystem(/* ignoreCase */ false);
-        const console = new ErrorTrackingNullConsole();
-
-        const sp = createServiceProvider(fs, console);
-        configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-
-        assert.deepStrictEqual(console.errors, ['unknown config option: asdf']);
     });
-    test('unknown value for top-level option', () => {
-        const cwd = UriEx.file(normalizePath(process.cwd()));
 
-        const configOptions = new ConfigOptions(cwd);
+    describe('invalid config', () => {
+        test('unknown top-level option', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
 
-        const json = { typeCheckingMode: 'asdf' };
+            const configOptions = new ConfigOptions(cwd);
 
-        const fs = new TestFileSystem(/* ignoreCase */ false);
-        const console = new ErrorTrackingNullConsole();
+            const json = { asdf: 1 };
 
-        const sp = createServiceProvider(fs, console);
-        configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new ErrorTrackingNullConsole();
 
-        assert.deepStrictEqual(console.errors, [
-            'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
-        ]);
-    });
-    test('unknown value in execution environments', () => {
-        const { consoleErrors } = setupPyprojectToml(
-            'src/tests/samples/project_with_invalid_option_in_execution_environments'
-        );
-        assert.deepStrictEqual(consoleErrors, [`unknown config option in execution environment "foo": asdf`]);
-    });
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+            assert.deepStrictEqual(console.errors, ['unknown config option: asdf']);
+        });
+        test('unknown value for top-level option', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
+
+            const configOptions = new ConfigOptions(cwd);
+
+            const json = { typeCheckingMode: 'asdf' };
+
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new ErrorTrackingNullConsole();
+
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+            assert.deepStrictEqual(console.errors, [
+                'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
+            ]);
+        });
+        test('unknown value in execution environments', () => {
+            const { consoleErrors } = setupPyprojectToml(
+                'src/tests/samples/project_with_invalid_option_in_execution_environments'
+            );
+            assert.deepStrictEqual(consoleErrors, [`unknown config option in execution environment "foo": asdf`]);
+        });
     });
 
     test('AutoSearchPathsOn', () => {
@@ -276,8 +276,8 @@ describe('invalid config', () => {
         const commandLineOptions = new CommandLineOptions(cwd.getFilePath(), /* fromLanguageServer */ false);
         commandLineOptions.configSettings.autoSearchPaths = true;
         //hacky way to prevent it from detecting the pyproject.toml at the root of this project
-    commandLineOptions.fromLanguageServer = true;
-    service.setOptions(commandLineOptions);
+        commandLineOptions.fromLanguageServer = true;
+        service.setOptions(commandLineOptions);
 
         const configOptions = service.test_getConfigOptions(commandLineOptions);
 
@@ -290,9 +290,9 @@ describe('invalid config', () => {
         const nullConsole = new NullConsole();
         const service = createAnalyzer(nullConsole);
         // setting fromLanguageServer to true prevents the cli-specific behavior of recursively searching parent
-    // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
-    // with the test
-    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
+        // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
+        // with the test
+        const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
         commandLineOptions.configSettings.autoSearchPaths = false;
         service.setOptions(commandLineOptions);
 
@@ -306,9 +306,9 @@ describe('invalid config', () => {
         const nullConsole = new NullConsole();
         const service = createAnalyzer(nullConsole);
         // setting fromLanguageServer to true prevents the cli-specific behavior of recursively searching parent
-    // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
-    // with the test
-    const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
+        // directories for a config file, which would otherwise match the top-level pyproject.toml and interfere
+        // with the test
+        const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
         commandLineOptions.configSettings.autoSearchPaths = true;
         service.setOptions(commandLineOptions);
 
@@ -358,71 +358,73 @@ describe('invalid config', () => {
     });
 
     const setupPyprojectToml = (
-    projectPath: string
-): {
-    configOptions: ConfigOptions;
-    analysisResult: AnalysisResults | undefined;
-    consoleErrors: string[];
-} => {
+        projectPath: string
+    ): {
+        configOptions: ConfigOptions;
+        analysisResult: AnalysisResults | undefined;
+        consoleErrors: string[];
+    } => {
         const cwd = normalizePath(combinePaths(process.cwd(), projectPath));
-    assert(existsSync(cwd));
-    const console = new ErrorTrackingNullConsole();
+        assert(existsSync(cwd));
+        const console = new ErrorTrackingNullConsole();
         const service = createAnalyzer(console);
-    let analysisResult = undefined as AnalysisResults | undefined;
-    service.setCompletionCallback((result) => (analysisResult = result));
+        let analysisResult = undefined as AnalysisResults | undefined;
+        service.setCompletionCallback((result) => (analysisResult = result));
         const commandLineOptions = new CommandLineOptions(cwd, /* fromLanguageServer */ true);
 
         service.setOptions(commandLineOptions);
 
         return {
-        configOptions: service.getConfigOptions(),
-        consoleErrors: console.errors,
-        analysisResult,
+            configOptions: service.getConfigOptions(),
+            consoleErrors: console.errors,
+            analysisResult,
+        };
     };
-};
 
-test('BasicPyprojectTomlParsing', () => {
-    const { configOptions, analysisResult } = setupPyprojectToml('src/tests/samples/project_with_pyproject_toml');
-    assert.strictEqual(configOptions.defaultPythonVersion!.toString(), pythonVersion3_9.toString());
-    assert.strictEqual(configOptions.diagnosticRuleSet.reportMissingImports, 'error');
-    assert.strictEqual(configOptions.diagnosticRuleSet.reportUnusedClass, 'warning');
-    assert(analysisResult === undefined);
-});
+    test('BasicPyprojectTomlParsing', () => {
+        const { configOptions, analysisResult } = setupPyprojectToml('src/tests/samples/project_with_pyproject_toml');
+        assert.strictEqual(configOptions.defaultPythonVersion!.toString(), pythonVersion3_9.toString());
+        assert.strictEqual(configOptions.diagnosticRuleSet.reportMissingImports, 'error');
+        assert.strictEqual(configOptions.diagnosticRuleSet.reportUnusedClass, 'warning');
+        assert(analysisResult === undefined);
+    });
 
-test('basedPyprojectTomlParsing', () => {
-    const { configOptions, analysisResult } = setupPyprojectToml('src/tests/samples/based_project_with_pyproject_toml');
-    assert.strictEqual(configOptions.defaultPythonVersion!.toString(), pythonVersion3_9.toString());
-    assert.strictEqual(configOptions.diagnosticRuleSet.reportMissingImports, 'error');
-    assert.strictEqual(configOptions.diagnosticRuleSet.reportUnusedClass, 'warning');
-    assert(analysisResult === undefined);
-});
+    test('basedPyprojectTomlParsing', () => {
+        const { configOptions, analysisResult } = setupPyprojectToml(
+            'src/tests/samples/based_project_with_pyproject_toml'
+        );
+        assert.strictEqual(configOptions.defaultPythonVersion!.toString(), pythonVersion3_9.toString());
+        assert.strictEqual(configOptions.diagnosticRuleSet.reportMissingImports, 'error');
+        assert.strictEqual(configOptions.diagnosticRuleSet.reportUnusedClass, 'warning');
+        assert(analysisResult === undefined);
+    });
 
-test('both pyright and basedpyright in pyproject.toml', () => {
-    const { configOptions, analysisResult } = setupPyprojectToml(
-        'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
-    );
-    assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
-    assert(!analysisResult?.fatalErrorOccurred);
-});
+    test('both pyright and basedpyright in pyproject.toml', () => {
+        const { configOptions, analysisResult } = setupPyprojectToml(
+            'src/tests/samples/project_with_both_config_sections_in_pyproject_toml'
+        );
+        assert.strictEqual(configOptions.defaultPythonVersion!, undefined);
+        assert(!analysisResult?.fatalErrorOccurred);
+    });
 
-test('invalid option value in pyproject.toml', () => {
-    const { consoleErrors, analysisResult } = setupPyprojectToml(
-        'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
-    );
-    assert.deepStrictEqual(consoleErrors, [
-        'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
-    ]);
-    assert(!analysisResult?.fatalErrorOccurred);
-});
+    test('invalid option value in pyproject.toml', () => {
+        const { consoleErrors, analysisResult } = setupPyprojectToml(
+            'src/tests/samples/project_with_invalid_option_value_in_pyproject_toml'
+        );
+        assert.deepStrictEqual(consoleErrors, [
+            'invalid "typeCheckingMode" value: "asdf". expected: "off", "basic", "standard", "strict", "recommended", or "all"',
+        ]);
+        assert(!analysisResult?.fatalErrorOccurred);
+    });
 
-test('unknown option name in pyproject.toml', () => {
-    const { configOptions, analysisResult, consoleErrors } = setupPyprojectToml(
-        'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
-    );
-    assert(!('asdf' in configOptions));
-    assert.deepStrictEqual(consoleErrors, ['unknown config option: asdf']);
-    assert(!analysisResult?.fatalErrorOccurred);
-});
+    test('unknown option name in pyproject.toml', () => {
+        const { configOptions, analysisResult, consoleErrors } = setupPyprojectToml(
+            'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
+        );
+        assert(!('asdf' in configOptions));
+        assert.deepStrictEqual(consoleErrors, ['unknown config option: asdf']);
+        assert(!analysisResult?.fatalErrorOccurred);
+    });
 
     test('FindFilesInMemoryOnly', () => {
         const cwd = normalizePath(process.cwd());
@@ -502,9 +504,9 @@ test('unknown option name in pyproject.toml', () => {
 
         service.setOptions(commandLineOptions);
 
-    const configOptions = service.test_getConfigOptions(commandLineOptions);
-    assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'error');
-});
+        const configOptions = service.test_getConfigOptions(commandLineOptions);
+        assert.equal(configOptions.diagnosticRuleSet.reportPossiblyUnboundVariable, 'error');
+    });
 
     test('Include file paths are only set in the config file when using extension', () => {
         const cwd = normalizePath(combinePaths(process.cwd(), 'src/tests/samples/project1'));

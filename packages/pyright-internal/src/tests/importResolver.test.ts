@@ -571,14 +571,14 @@ describe('Import tests with fake venv', () => {
                 },
             ];
 
-        const importResult = getImportResult(files, ['file1']);
-        assert(importResult.isImportFound);
-        assert.strictEqual(
-            1,
-            importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/test', 'file1.py')).length
-        );
-        assert(importResult.isImplicitlyRelative);
-    });
+            const importResult = getImportResult(files, ['file1']);
+            assert(importResult.isImportFound);
+            assert.strictEqual(
+                1,
+                importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/test', 'file1.py')).length
+            );
+            assert(importResult.isImplicitlyRelative);
+        });
 
         test('import side by side file sub under src folder', () => {
             const files = [
@@ -592,14 +592,15 @@ describe('Import tests with fake venv', () => {
                 },
             ];
 
-        const importResult = getImportResult(files, ['file1']);
-        assert(importResult.isImportFound);
-        assert.strictEqual(
-            1,
-            importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/src/nested', 'file1.py')).length
-        );
-        assert(importResult.isImplicitlyRelative);
-    });
+            const importResult = getImportResult(files, ['file1']);
+            assert(importResult.isImportFound);
+            assert.strictEqual(
+                1,
+                importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/src/nested', 'file1.py'))
+                    .length
+            );
+            assert(importResult.isImplicitlyRelative);
+        });
 
         test('import file sub under containing folder', () => {
             const files = [
@@ -613,14 +614,15 @@ describe('Import tests with fake venv', () => {
                 },
             ];
 
-        const importResult = getImportResult(files, ['file1']);
-        assert(importResult.isImportFound);
-        assert.strictEqual(
-            1,
-            importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/src/nested', 'file1.py')).length
-        );
-        assert(importResult.isImplicitlyRelative);
-    });
+            const importResult = getImportResult(files, ['file1']);
+            assert(importResult.isImportFound);
+            assert.strictEqual(
+                1,
+                importResult.resolvedUris.filter((f) => f.getFilePath() === combinePaths('/src/nested', 'file1.py'))
+                    .length
+            );
+            assert(importResult.isImplicitlyRelative);
+        });
 
         test("don't walk up the root", () => {
             const files = [
