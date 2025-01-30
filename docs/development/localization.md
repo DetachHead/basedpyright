@@ -43,6 +43,7 @@ About the interface:
 -   basedpyright is maintained by developers who only speak English, so it would be helpful if you could get someone who also speaks your language to review your changes as well.
 -   new rules that are specific to basedpyright currently do not have any translations at all (see [this issue](https://github.com/DetachHead/basedpyright/issues/81)). Providing translations for those would be greatly appreciated.
 -   The initial translations from Pyright seem to be pretty low quality and low consistency. If you want to start a "renovation" for a particular language, it's a good idea to come up with a glossary of common terms so that the final translations will be consistent. Check if the https://docs.python.org has a translation for your language, and if it does, use that as a baseline.
+-   Some messages in the English localization file contain a `"comment"` field with formal specifiers like `Locked` and `StrContains`. Use your judgement as to whether they should be followed. It's usually better to apply common sense and the language-specific glossary to decide to which parts of the string should be translated.
 
 ## Specific languages
 
@@ -63,6 +64,7 @@ About the interface:
 | Type annotation            | Аннотация типа                                     |
 | Comprehension              | Включение                                          |
 | set (встроенный тип)       | Множество                                          |
+| tuple                      | Кортеж                                             |
 | Type variable              | Переменная типа                                    |
 | Final                      | `Final` (как есть)                                 |
 | @final / final class       | `@final` (как есть)                                |
@@ -77,6 +79,9 @@ About the interface:
 | awaitable                  | awaitable (нет перевода) или: поддерживающий await |
 | positional-only            | только позиционный                                 |
 | keyword-only               | только именованный                                 |
+| generic                    | обобщенный                                         |
+| type alias                 | псевдоним типа                                     |
+| generic type alias         | обобщенный псевдоним типа                          |
 
 ### Chinese
 
