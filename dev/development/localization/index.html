@@ -1719,6 +1719,7 @@ npm<span class="w"> </span>run<span class="w"> </span>localization-helper
 <li>basedpyright is maintained by developers who only speak English, so it would be helpful if you could get someone who also speaks your language to review your changes as well.</li>
 <li>new rules that are specific to basedpyright currently do not have any translations at all (see <a href="https://github.com/DetachHead/basedpyright/issues/81">this issue</a>). Providing translations for those would be greatly appreciated.</li>
 <li>The initial translations from Pyright seem to be pretty low quality and low consistency. If you want to start a "renovation" for a particular language, it's a good idea to come up with a glossary of common terms so that the final translations will be consistent. Check if the https://docs.python.org has a translation for your language, and if it does, use that as a baseline.</li>
+<li>Some messages in the English localization file contain a <code>"comment"</code> field with formal specifiers like <code>Locked</code> and <code>StrContains</code>. Use your judgement as to whether they should be followed. It's usually better to apply common sense and the language-specific glossary to decide to which parts of the string should be translated.</li>
 </ul>
 <h2 id="specific-languages">Specific languages</h2>
 <h3 id="russian">Russian</h3>
@@ -1750,6 +1751,10 @@ npm<span class="w"> </span>run<span class="w"> </span>localization-helper
 <tr>
 <td>set (встроенный тип)</td>
 <td>Множество</td>
+</tr>
+<tr>
+<td>tuple</td>
+<td>Кортеж</td>
 </tr>
 <tr>
 <td>Type variable</td>
@@ -1806,6 +1811,18 @@ npm<span class="w"> </span>run<span class="w"> </span>localization-helper
 <tr>
 <td>keyword-only</td>
 <td>только именованный</td>
+</tr>
+<tr>
+<td>generic</td>
+<td>обобщенный</td>
+</tr>
+<tr>
+<td>type alias</td>
+<td>псевдоним типа</td>
+</tr>
+<tr>
+<td>generic type alias</td>
+<td>обобщенный псевдоним типа</td>
 </tr>
 </tbody>
 </table>
