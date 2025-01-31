@@ -20,16 +20,24 @@ if TYPE_CHECKING:
 
 highlighter = ReprHighlighter()
 
-LOCFILES_BASE = (
-    Path(__file__).parent.parent / "packages" / "pyright-internal" / "src" / "localization"
-)
+# here we do find the project root dynamically.
+_project_root = Path(__file__).parent
+
+while all(entry.name != "pyproject.toml" for entry in _project_root.iterdir()):
+    _project_root = _project_root.parent
+
+LOCFILES_BASE = _project_root / "packages" / "pyright-internal" / "src" / "localization"
 
 ALL_LANGUAGES = [t for x in LOCFILES_BASE.iterdir() if (t := x.stem[12:])]
 
 
 class _LocMsgComment(TypedDict):
+    """Commented localization message, only exists in 'en-us' language."""
+
     message: str
-    comment: str
+    """Original message in English."""
+    comment: str | list[str]
+    """Informations for helping localizations."""
 
 
 LocMessages = Dict[str, Union[str, _LocMsgComment]]
@@ -135,13 +143,13 @@ class MsgDiffReport(Screen[None]):
 
     def compare(self, report: Label):
         if self.lang == "en-us":
-            report.renderable = "'en-us' is already the original file."
+            report.update("'en-us' is already the original file.")
             return
         data = read_locfile(self.lang)
         msgs: list[str] = []
         for origdom, origmsgs in LOCDATA_EN_US.items():
             msgs += ["", f"[{origdom}]", diff_keys(origmsgs, data.get(origdom, {}))]
-        report.renderable = "\n".join(msgs)
+        report.update("\n".join(msgs))
 
 
 @final
@@ -173,9 +181,7 @@ class HelperTUI(App[None]):
         keydiff = MsgDiffReport()
         tabs = self.query_one(Tabs)
         keydiff.lang = tabs.active_tab.label_text if tabs.active_tab else "en-us"
-        self.install_screen(keydiff, "keydiff")  # pyright: ignore[reportUnknownMemberType]
         await self.push_screen_wait(keydiff)
-        _ = self.uninstall_screen(keydiff)  # pyright: ignore[reportUnknownMemberType]
 
     def action_reload_tree(self) -> None:
         tree = self.query_one(LocDataTree)
