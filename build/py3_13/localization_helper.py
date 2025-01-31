@@ -37,7 +37,12 @@ class _LocMsgComment(TypedDict):
     message: str
     """Original message in English."""
     comment: str | list[str]
-    """Informations for helping localizations."""
+    """
+    Information used internally by microsoft's pylance team to tell their translators not to
+    translate certain words. Use your judgement as to whether they should be followed. see the
+    [localization docs](https://docs.basedpyright.com/dev/development/localization/#general-guidelines)
+    for more information
+    """
 
 
 LocMessages = Dict[str, Union[str, _LocMsgComment]]
