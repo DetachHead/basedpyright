@@ -22,7 +22,7 @@ import { AnalysisResults } from './analyzer/analysis';
 import { PackageTypeReport, TypeKnownStatus } from './analyzer/packageTypeReport';
 import { PackageTypeVerifier } from './analyzer/packageTypeVerifier';
 import { AnalyzerService } from './analyzer/service';
-import { maxSourceFileSize } from './analyzer/sourceFile';
+import { getCellIndex, maxSourceFileSize } from './analyzer/sourceFile';
 import { SourceFileInfo } from './analyzer/sourceFileInfo';
 import { initializeDependencies } from './common/asyncInitialization';
 import { ChokidarFileWatcherProvider } from './common/chokidarFileWatcherProvider';
@@ -124,6 +124,7 @@ interface PyrightPublicSymbolReport {
 // The schema for this object is publicly documented. Do not change it.
 interface PyrightJsonDiagnostic {
     file: string;
+    cell: number | undefined;
     severity: SeverityLevel;
     message: string;
     range?: Range | undefined;
@@ -960,7 +961,7 @@ function buildTypeCompletenessReport(
 
     // Add the general diagnostics.
     completenessReport.generalDiagnostics.forEach((diag) => {
-        const jsonDiag = convertDiagnosticToJson('', diag);
+        const jsonDiag = convertDiagnosticToJson(undefined, diag);
         if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
             report.generalDiagnostics.push(jsonDiag);
         }
@@ -1007,7 +1008,7 @@ function buildTypeCompletenessReport(
 
         // Convert and filter the diagnostics.
         symbol.diagnostics.forEach((diag) => {
-            const jsonDiag = convertDiagnosticToJson(diag.uri.getFilePath(), diag.diagnostic);
+            const jsonDiag = convertDiagnosticToJson(diag.uri, diag.diagnostic);
             if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
                 diagnostics.push(jsonDiag);
             }
@@ -1232,7 +1233,7 @@ function reportDiagnosticsAsJsonWithoutLogging(
                 diag.category === DiagnosticCategory.Warning ||
                 diag.category === DiagnosticCategory.Information
             ) {
-                const jsonDiag = convertDiagnosticToJson(fileDiag.fileUri.getFilePath(), diag);
+                const jsonDiag = convertDiagnosticToJson(fileDiag.fileUri, diag);
                 if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
                     report.generalDiagnostics.push(jsonDiag);
                 }
@@ -1299,9 +1300,10 @@ function convertDiagnosticCategoryToSeverity(category: DiagnosticCategory): Seve
     }
 }
 
-function convertDiagnosticToJson(filePath: string, diag: Diagnostic): PyrightJsonDiagnostic {
+function convertDiagnosticToJson(fileUri: Uri | undefined, diag: Diagnostic): PyrightJsonDiagnostic {
     return {
-        file: filePath,
+        file: fileUri?.getFilePath() ?? '',
+        cell: fileUri?.fragment ? getCellIndex(fileUri) : undefined,
         severity: convertDiagnosticCategoryToSeverity(diag.category),
         message: diag.message,
         range: isEmptyRange(diag.range) ? undefined : diag.range,
@@ -1337,9 +1339,15 @@ function reportDiagnosticsAsText(
         );
 
         if (fileErrorsAndWarnings.length > 0) {
-            console.info(`${fileDiagnostics.fileUri.toUserVisibleString()}`);
-            fileErrorsAndWarnings.forEach((diag) => {
-                const jsonDiag = convertDiagnosticToJson(fileDiagnostics.fileUri.getFilePath(), diag);
+            fileErrorsAndWarnings.forEach((diag, index) => {
+                const jsonDiag = convertDiagnosticToJson(fileDiagnostics.fileUri, diag);
+                if (index === 0) {
+                    // only log this once per file. this is only in the for loop because we need to get the cell index from one of the diagnostics
+                    console.info(
+                        fileDiagnostics.fileUri.toUserVisibleString() +
+                            (jsonDiag.cell === undefined ? '' : ` - cell ${jsonDiag.cell + 1}`)
+                    );
+                }
                 logDiagnosticToConsole(jsonDiag);
 
                 if (diag.category === DiagnosticCategory.Error) {
@@ -1445,6 +1453,9 @@ function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
     let message = prefix;
     if (diag.file) {
         message += `${diag.file}:`;
+    }
+    if (diag.cell !== undefined) {
+        message += chalk.yellow(`${diag.cell + 1}`) + ':';
     }
     if (diag.range && !isEmptyRange(diag.range)) {
         message +=

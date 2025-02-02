@@ -40,7 +40,7 @@ import { ImportResult, ImportType } from './importResult';
 import { getDocString } from './parseTreeUtils';
 import { ISourceFileFactory } from './programTypes';
 import { Scope } from './scope';
-import { IPythonMode, SourceFile } from './sourceFile';
+import { getIPythonCells, IPythonMode, SourceFile } from './sourceFile';
 import { SourceFileInfo } from './sourceFileInfo';
 import { createChainedByList, isUserCode, verifyNoCyclesInChainedFiles } from './sourceFileInfoUtils';
 import { SourceMapper } from './sourceMapper';
@@ -332,47 +332,73 @@ export class Program {
         return fileInfo;
     }
 
-    addTrackedFile(
-        fileUri: Uri,
-        isThirdPartyImport = false,
-        isInPyTypedPackage = false,
-        isTypeshedFile = false
-    ): SourceFile {
-        let sourceFileInfo = this.getSourceFileInfo(fileUri);
-        const moduleImportInfo = this._getModuleImportInfoForFile(fileUri);
-        const importName = moduleImportInfo.moduleName;
-
-        if (sourceFileInfo) {
-            // The module name may have changed based on updates to the
-            // search paths, so update it here.
-            sourceFileInfo.sourceFile.setModuleName(importName);
-            sourceFileInfo.isTracked = true;
-            return sourceFileInfo.sourceFile;
+    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false, isTypeshedFile = false) {
+        const cells = getIPythonCells(this.fileSystem, fileUri, this.console);
+        const sourceFileInfos: SourceFileInfo[] = [];
+        if (cells) {
+            cells.forEach((_, index) => {
+                const cellUri = fileUri.withFragment(index.toString());
+                const importName = this._getImportNameForNewSourceFile(cellUri);
+                if (importName === undefined) {
+                    return; // continue
+                }
+                const sourceFile = this._sourceFileFactory.createSourceFile(
+                    this.serviceProvider,
+                    cellUri,
+                    importName,
+                    isThirdPartyImport,
+                    isInPyTypedPackage,
+                    this.baselineHandler,
+                    this._editModeTracker,
+                    this._console,
+                    this._logTracker,
+                    IPythonMode.CellDocs
+                );
+                sourceFileInfos.push(
+                    new SourceFileInfo(
+                        sourceFile,
+                        isTypeshedFile,
+                        isThirdPartyImport,
+                        isInPyTypedPackage,
+                        this._editModeTracker,
+                        {
+                            isTracked: true,
+                            chainedSourceFile: sourceFileInfos[index - 1],
+                        }
+                    )
+                );
+            });
+        } else {
+            const importName = this._getImportNameForNewSourceFile(fileUri);
+            if (importName === undefined) {
+                return;
+            }
+            const sourceFile = this._sourceFileFactory.createSourceFile(
+                this.serviceProvider,
+                fileUri,
+                importName,
+                isThirdPartyImport,
+                isInPyTypedPackage,
+                this.baselineHandler,
+                this._editModeTracker,
+                this._console,
+                this._logTracker
+            );
+            sourceFileInfos.push(
+                new SourceFileInfo(
+                    sourceFile,
+                    isTypeshedFile,
+                    isThirdPartyImport,
+                    isInPyTypedPackage,
+                    this._editModeTracker,
+                    {
+                        isTracked: true,
+                    }
+                )
+            );
         }
 
-        const sourceFile = this._sourceFileFactory.createSourceFile(
-            this.serviceProvider,
-            fileUri,
-            importName,
-            isThirdPartyImport,
-            isInPyTypedPackage,
-            this.baselineHandler,
-            this._editModeTracker,
-            this._console,
-            this._logTracker
-        );
-        sourceFileInfo = new SourceFileInfo(
-            sourceFile,
-            isTypeshedFile,
-            isThirdPartyImport,
-            isInPyTypedPackage,
-            this._editModeTracker,
-            {
-                isTracked: true,
-            }
-        );
-        this._addToSourceFileListAndMap(sourceFileInfo);
-        return sourceFile;
+        sourceFileInfos.forEach((sourceFileInfo) => this._addToSourceFileListAndMap(sourceFileInfo));
     }
 
     setFileOpened(fileUri: Uri, version: number | null, contents: string, options?: OpenFileOptions) {
@@ -1026,6 +1052,24 @@ export class Program {
 
         this.serviceProvider.tryGet(ServiceKeys.stateMutationListeners)?.forEach((l) => l.onClearCache?.());
     }
+
+    /**
+     * @returns `undefined` if the source file is already tracked
+     */
+    private _getImportNameForNewSourceFile = (fileUri: Uri): string | undefined => {
+        const sourceFileInfo = this.getSourceFileInfo(fileUri);
+        const moduleImportInfo = this._getModuleImportInfoForFile(fileUri);
+        const importName = moduleImportInfo.moduleName;
+
+        if (sourceFileInfo) {
+            // The module name may have changed based on updates to the
+            // search paths, so update it here.
+            sourceFileInfo.sourceFile.setModuleName(importName);
+            sourceFileInfo.isTracked = true;
+            return undefined;
+        }
+        return importName;
+    };
 
     private _handleMemoryHighUsage() {
         const cacheUsage = this._cacheManager.getCacheUsage();
