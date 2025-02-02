@@ -72,10 +72,14 @@ import {
     WorkspaceSymbolParams,
 } from 'vscode-languageserver';
 import {
+    DidChangeNotebookDocumentParams,
+    DidCloseNotebookDocumentParams,
+    DidOpenNotebookDocumentParams,
     InlayHint,
     InlayHintParams,
     SemanticTokens,
     SemanticTokensParams,
+    TextDocumentItem,
     WillSaveTextDocumentParams,
 } from 'vscode-languageserver-protocol';
 import { ResultProgressReporter } from 'vscode-languageserver';
@@ -525,6 +529,15 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         this.connection.onDidOpenTextDocument(async (params) => this.onDidOpenTextDocument(params));
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
         this.connection.onDidCloseTextDocument(async (params) => this.onDidCloseTextDocument(params));
+        this.connection.notebooks.synchronization.onDidOpenNotebookDocument((params) =>
+            this.onDidOpenNotebookDocument(params)
+        );
+        this.connection.notebooks.synchronization.onDidChangeNotebookDocument((params) =>
+            this.onDidChangeNotebookDocument(params)
+        );
+        this.connection.notebooks.synchronization.onDidCloseNotebookDocument((params) =>
+            this.onDidCloseNotebookDocument(params)
+        );
         this.connection.onDidChangeWatchedFiles((params) => this.onDidChangeWatchedFiles(params));
         this.connection.workspace.onWillRenameFiles(this.onRenameFiles);
         this.connection.onWillSaveTextDocument(this.onSaveTextDocument);
@@ -604,6 +617,14 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         const result: InitializeResult = {
             capabilities: {
                 textDocumentSync: { willSave: true, change: TextDocumentSyncKind.Incremental, openClose: true },
+                notebookDocumentSync: {
+                    notebookSelector: [
+                        {
+                            notebook: { scheme: 'file', notebookType: 'jupyter-notebook' },
+                            cells: [{ language: 'python' }],
+                        },
+                    ],
+                },
                 definitionProvider: { workDoneProgress: true },
                 declarationProvider: { workDoneProgress: true },
                 typeDefinitionProvider: { workDoneProgress: true },
@@ -1105,7 +1126,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         }, token);
     }
 
-    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams, ipythonMode = IPythonMode.None) {
+    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams, chainedFile?: TextDocumentItem) {
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
 
         let doc = this.openFileMap.get(uri.key);
@@ -1122,13 +1143,29 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
             );
         }
         this.openFileMap.set(uri.key, doc);
+        const chainedFileUri = chainedFile ? Uri.parse(chainedFile.uri, this.serviceProvider) : undefined;
 
         // Send this open to all the workspaces that might contain this file.
         const workspaces = await this.getContainingWorkspacesForFile(uri);
         workspaces.forEach((w) => {
-            w.service.setFileOpened(uri, params.textDocument.version, params.textDocument.text, ipythonMode);
+            w.service.setFileOpened(
+                uri,
+                params.textDocument.version,
+                params.textDocument.text,
+                chainedFileUri ? IPythonMode.CellDocs : IPythonMode.None,
+                chainedFileUri
+            );
         });
     }
+
+    protected onDidOpenNotebookDocument = async (params: DidOpenNotebookDocumentParams) => {
+        await Promise.all(
+            params.cellTextDocuments.map((textDocument, index) =>
+                // the previous cell is the chained document
+                this.onDidOpenTextDocument({ textDocument }, params.cellTextDocuments[index - 1])
+            )
+        );
+    };
 
     protected async onDidChangeTextDocument(params: DidChangeTextDocumentParams, ipythonMode = IPythonMode.None) {
         this.recordUserInteractionTime();
@@ -1151,6 +1188,60 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         });
     }
 
+    protected onDidChangeNotebookDocument = async (params: DidChangeNotebookDocumentParams) => {
+        const changeStructure = params.change.cells?.structure;
+        // open any new documents first before we action the cell changes, because that's where we attach
+        // chained documents and if we try to do that before the document is opened it won't work
+        if (changeStructure?.didOpen) {
+            await Promise.all(
+                changeStructure.didOpen.map((textDocument) => this.onDidOpenTextDocument({ textDocument }))
+            );
+        }
+        // the rest of these methods can be executed in any order so we collect all their promises and await
+        // them at the end
+        const promises: Promise<void>[] = [];
+        if (changeStructure?.didClose) {
+            promises.push(
+                ...changeStructure.didClose.map((textDocument) => this.onDidCloseTextDocument({ textDocument }))
+            );
+        }
+        const cellChanges = changeStructure?.array.cells;
+        if (cellChanges) {
+            promises.push(
+                ...cellChanges.map(async (cell, index) => {
+                    const uri = this.convertLspUriStringToUri(cell.document);
+                    const doc = this.openFileMap.get(uri.key);
+                    if (!doc) {
+                        // We shouldn't get a change text request for a closed doc.
+                        this.console.error(`Received change notebook document command for closed cell ${uri}`);
+                        return;
+                    }
+                    // Send this change to all the workspaces that might contain this file.
+                    const workspaces = await this.getContainingWorkspacesForFile(uri);
+                    const previousCell = cellChanges[index - 1]?.document;
+                    const previousCellUri = previousCell ? Uri.parse(previousCell, this.serviceProvider) : undefined;
+                    workspaces.forEach((w) => {
+                        w.service.updateChainedUri(uri, previousCellUri);
+                    });
+                })
+            );
+        }
+        if (params.change.cells?.textContent) {
+            promises.push(
+                ...params.change.cells.textContent.map((textContentChange) =>
+                    this.onDidChangeTextDocument(
+                        {
+                            textDocument: textContentChange.document,
+                            contentChanges: textContentChange.changes,
+                        },
+                        IPythonMode.CellDocs
+                    )
+                )
+            );
+        }
+        await Promise.all(promises);
+    };
+
     protected async onDidCloseTextDocument(params: DidCloseTextDocumentParams) {
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
 
@@ -1162,6 +1253,12 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
 
         this.openFileMap.delete(uri.key);
     }
+
+    protected onDidCloseNotebookDocument = async (params: DidCloseNotebookDocumentParams) => {
+        await Promise.all(
+            params.cellTextDocuments.map((textDocument) => this.onDidCloseTextDocument({ textDocument }))
+        );
+    };
 
     protected onDidChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
         params.changes.forEach((change) => {
