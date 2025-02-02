@@ -31,7 +31,7 @@ export interface FileSpec {
     hasDirectoryWildcard: boolean;
 }
 
-const _includeFileRegex = /\.pyi?$/;
+export const includeFileRegex = /\.(pyi?|ipynb)$/;
 
 export namespace FileSpec {
     export function is(value: any): value is FileSpec {
@@ -43,7 +43,7 @@ export namespace FileSpec {
     }
 
     export function matchesIncludeFileRegex(filePath: string, isFile = true) {
-        return isFile ? _includeFileRegex.test(filePath) : true;
+        return isFile ? includeFileRegex.test(filePath) : true;
     }
 
     export function matchIncludeFileSpec(includeRegExp: RegExp, exclude: FileSpec[], filePath: string, isFile = true) {

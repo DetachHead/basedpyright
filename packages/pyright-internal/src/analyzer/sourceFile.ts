@@ -54,6 +54,7 @@ import { SymbolTable } from './symbol';
 import { TestWalker } from './testWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
 import { BaselineHandler } from '../baseline';
+import { INotebookContent } from '@jupyterlab/nbformat';
 
 // Limit the number of import cycles tracked per source file.
 const _maxImportCyclesPerFile = 4;
@@ -76,6 +77,61 @@ export enum IPythonMode {
     // Each cell is its own document.
     CellDocs,
 }
+
+/**
+ * gets the content of a file. if it's a notebook, the whole notebook json is returned as it appears in the file
+ */
+const getFileContent = (fileSystem: FileSystem, uri: Uri, console: ConsoleInterface): string | undefined => {
+    try {
+        // Check the file's length before attempting to read its full contents.
+        const fileStat = fileSystem.statSync(uri);
+        if (fileStat.size > maxSourceFileSize) {
+            console.error(
+                `File length of "${uri}" is ${fileStat.size} ` +
+                    `which exceeds the maximum supported file size of ${maxSourceFileSize}`
+            );
+            throw new Error('File larger than max');
+        }
+
+        return fileSystem.readFileSync(uri, 'utf8');
+    } catch (error) {
+        return undefined;
+    }
+};
+
+/**
+ * if this is a notebook, gets the cells in this file that contain python code.
+ * note that each {@link SourceFile} is an individual cell, but this function returns
+ * all of them
+ * @returns `undefined` if not a notebook
+ */
+export const getIPythonCells = (fileSystem: FileSystem, uri: Uri, console: ConsoleInterface) => {
+    if (!uri.hasExtension('.ipynb')) {
+        return undefined;
+    }
+    const fileContent = getFileContent(fileSystem, uri, console);
+    if (!fileContent) {
+        return undefined;
+    }
+    const parsedNotebook = JSON.parse(fileContent) as INotebookContent;
+    return parsedNotebook.cells.filter(
+        (cell) =>
+            cell.cell_type === 'code' &&
+            // i guess there's no standard way to specify the language of individual cells? so we check the metadata vscode adds for
+            // cells that have a different language to the notebook's language. idk if this is supported in any other editor tho
+            (typeof cell.metadata.vscode !== 'object' ||
+                cell.metadata.vscode === null ||
+                !('languageId' in cell.metadata.vscode) ||
+                // i don't think vscode ever sets the language to python, or maybe it does for python cells in non-python notebooks?
+                cell.metadata.vscode.languageId === 'python')
+    );
+};
+
+/**
+ * gets the cell index from a notebook uri. must have a fragment containing the index. not used by the language server because
+ * it has its own fake notebook uri format
+ */
+export const getCellIndex = (uri: Uri): number => Number(uri.fragment);
 
 // A monotonically increasing number used to create unique file IDs.
 let nextUniqueFileId = 1;
@@ -403,8 +459,9 @@ export class SourceFile {
         // that of the previous contents.
         try {
             // Read the file's contents.
-            if (this.fileSystem.existsSync(this._uri)) {
-                const fileContents = this.fileSystem.readFileSync(this._uri, 'utf8');
+            const uri = this._getRealUri();
+            if (this.fileSystem.existsSync(uri)) {
+                const fileContents = this.fileSystem.readFileSync(uri, 'utf8');
 
                 if (fileContents.length !== this._writableData.lastFileContentLength) {
                     return true;
@@ -483,29 +540,23 @@ export class SourceFile {
         return this._writableData.clientDocumentContents;
     }
 
+    /**
+     * gets the content of the source file. if it's a notebook, the content of this source file's {@link _ipythonCellIndex} is returned
+     */
     getFileContent(): string | undefined {
-        // Get current buffer content if the file is opened.
-        const openFileContent = this.getOpenFileContents();
-        if (openFileContent !== undefined) {
-            return openFileContent;
-        }
-
-        // Otherwise, get content from file system.
-        try {
-            // Check the file's length before attempting to read its full contents.
-            const fileStat = this.fileSystem.statSync(this._uri);
-            if (fileStat.size > maxSourceFileSize) {
-                this._console.error(
-                    `File length of "${this._uri}" is ${fileStat.size} ` +
-                        `which exceeds the maximum supported file size of ${maxSourceFileSize}`
-                );
-                throw new Error('File larger than max');
+        if (this._ipythonMode === IPythonMode.None) {
+            // Get current buffer content if the file is opened.
+            const openFileContent = this.getOpenFileContents();
+            if (openFileContent !== undefined) {
+                return openFileContent;
             }
-
-            return this.fileSystem.readFileSync(this._uri, 'utf8');
-        } catch (error) {
-            return undefined;
+            // Otherwise, get content from file system.
+            return getFileContent(this.fileSystem, this._uri, this._console);
         }
+        //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
+        const source = getIPythonCells(this.fileSystem, this._getRealUri(), this._console)?.[getCellIndex(this._uri)]
+            .source;
+        return typeof source === 'string' ? source : source?.join('');
     }
 
     setClientVersion(version: number | null, contents: string): void {
@@ -673,7 +724,7 @@ export class SourceFile {
                     configOptions,
                     this._uri,
                     fileContents!,
-                    this._ipythonMode,
+                    this.getIPythonMode(),
                     diagSink
                 );
 
@@ -964,6 +1015,15 @@ export class SourceFile {
     protected createTextRangeDiagnosticSink(lines: TextRangeCollection<TextRange>): TextRangeDiagnosticSink {
         return new TextRangeDiagnosticSink(lines);
     }
+
+    /**
+     * if this source file represents an ipython cell and we're in the cli instead of the language server,
+     * we need to create a fake uri to distinguish between them.
+     */
+    private _getRealUri = () =>
+        // when using the language server, a fake uri is assigned automatically and this method *should* never get called
+        // because we don't read the files from the disk directly, but we check this anyway just in case
+        this._writableData.clientDocumentContents ? this._uri : this._uri.withFragment('');
 
     // Creates a short string that can be used to uniquely identify
     // this file from all other files. It is used in the type evaluator

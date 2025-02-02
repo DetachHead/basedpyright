@@ -11,6 +11,7 @@ import type { Dirent } from 'fs';
 import { FileSystem, ReadOnlyFileSystem, Stats } from '../fileSystem';
 import {
     getRegexEscapedSeparator,
+    includeFileRegex,
     isDirectoryWildcardPatternPresent,
     stripTrailingDirectorySeparator,
 } from '../pathUtils';
@@ -35,8 +36,7 @@ export interface FileSpec {
     hasDirectoryWildcard: boolean;
 }
 
-const _includeFileRegex = /\.pyi?$/;
-
+//TODO: why are there 2 different copies of this class? one in pathUtils that takes strings instead of Uri's
 export namespace FileSpec {
     export function is(value: any): value is FileSpec {
         const candidate: FileSpec = value as FileSpec;
@@ -47,7 +47,7 @@ export namespace FileSpec {
     }
 
     export function matchesIncludeFileRegex(uri: Uri, isFile = true) {
-        return isFile ? uri.matchesRegex(_includeFileRegex) : true;
+        return isFile ? uri.matchesRegex(includeFileRegex) : true;
     }
 
     export function matchIncludeFileSpec(includeRegExp: RegExp, exclude: FileSpec[], uri: Uri, isFile = true) {
