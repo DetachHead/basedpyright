@@ -121,6 +121,7 @@ export class BackgroundAnalysisProgram {
     updateChainedUri(fileUri: Uri, chainedUri: Uri | undefined) {
         this._backgroundAnalysis?.updateChainedUri(fileUri, chainedUri);
         this._program.updateChainedUri(fileUri, chainedUri);
+        this.markFilesDirty([fileUri], true);
     }
 
     initializeFileSystem(files: Record<string, string>) {
