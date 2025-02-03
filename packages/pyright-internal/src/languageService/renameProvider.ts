@@ -21,6 +21,7 @@ import { convertToWorkspaceEdit } from '../common/workspaceEditUtils';
 import { ReferencesProvider, ReferencesResult } from '../languageService/referencesProvider';
 import { ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
+import { IPythonMode } from '../analyzer/sourceFile';
 
 export class RenameProvider {
     private readonly _parseResults: ParseFileResults | undefined;
@@ -91,9 +92,13 @@ export class RenameProvider {
                     // from accidentally changing third party library or type stub.
                     if (isUserCode(curSourceFileInfo)) {
                         // Make sure searching symbol name exists in the file.
-                        const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
-                        if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
-                            continue;
+                        // TODO: why is this here? source files shouldnt be read from disk directly when using the language server.
+                        // for now we just disable this check in notebooks because they use a different file uri in the lsp
+                        if (curSourceFileInfo.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
+                            const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
+                            if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
+                                continue;
+                            }
                         }
 
                         referenceProvider.addReferencesToResult(
@@ -168,6 +173,9 @@ export class RenameProvider {
         // and Multi file mode.
         // 1. rename public symbols defined in user files on regular workspace (ex, open folder mode).
         const userFile = isUserCode(sourceFileInfo);
+        if (sourceFileInfo.sourceFile.getIPythonMode() === IPythonMode.CellDocs) {
+            return 'multiFileMode';
+        }
         if (
             isDefaultWorkspace ||
             (userFile && !referencesResult.requiresGlobalSearch) ||
