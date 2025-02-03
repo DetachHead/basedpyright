@@ -1126,7 +1126,18 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         }, token);
     }
 
-    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams, chainedFile?: TextDocumentItem) {
+    // these overloads ban specifying chainedFile unless iPythonMode is CellDocs
+    protected async onDidOpenTextDocument(
+        params: DidOpenTextDocumentParams,
+        iPythonMode: IPythonMode.CellDocs,
+        chainedFile?: TextDocumentItem
+    ): Promise<void>;
+    protected async onDidOpenTextDocument(params: DidOpenTextDocumentParams, iPythonMode?: IPythonMode): Promise<void>;
+    protected async onDidOpenTextDocument(
+        params: DidOpenTextDocumentParams,
+        iPythonMode = IPythonMode.None,
+        chainedFile?: TextDocumentItem
+    ) {
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
 
         let doc = this.openFileMap.get(uri.key);
@@ -1152,7 +1163,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                 uri,
                 params.textDocument.version,
                 params.textDocument.text,
-                chainedFileUri ? IPythonMode.CellDocs : IPythonMode.None,
+                iPythonMode,
                 chainedFileUri
             );
         });
@@ -1162,7 +1173,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         await Promise.all(
             params.cellTextDocuments.map((textDocument, index) =>
                 // the previous cell is the chained document
-                this.onDidOpenTextDocument({ textDocument }, params.cellTextDocuments[index - 1])
+                this.onDidOpenTextDocument({ textDocument }, IPythonMode.CellDocs, params.cellTextDocuments[index - 1])
             )
         );
     };
@@ -1194,7 +1205,9 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         // chained documents and if we try to do that before the document is opened it won't work
         if (changeStructure?.didOpen) {
             await Promise.all(
-                changeStructure.didOpen.map((textDocument) => this.onDidOpenTextDocument({ textDocument }))
+                changeStructure.didOpen.map((textDocument) =>
+                    this.onDidOpenTextDocument({ textDocument }, IPythonMode.CellDocs)
+                )
             );
         }
         // the rest of these methods can be executed in any order so we collect all their promises and await
