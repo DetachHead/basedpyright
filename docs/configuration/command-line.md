@@ -59,8 +59,8 @@ basedpyright can be run as either a language server or as a command-line tool. T
 ## JSON Output
 
 If the “--outputjson” option is specified on the command line, diagnostics are output in JSON format. The JSON structure is as follows:
-```javascript
-{
+```ts
+interface PyrightJsonResults {
     version: string,
     time: string,
     generalDiagnostics: Diagnostic[],
@@ -76,9 +76,10 @@ If the “--outputjson” option is specified on the command line, diagnostics a
 
 Each Diagnostic is output in the following format:
 
-```javascript
-{
+```ts
+interface Diagnostic {
     file: string,
+    cell?: string // if the file is a jupyter notebook
     severity: 'error' | 'warning' | 'information',
     message: string,
     rule?: string,
