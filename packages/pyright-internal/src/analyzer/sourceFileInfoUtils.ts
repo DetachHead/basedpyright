@@ -12,7 +12,12 @@ import { ServiceKeys } from '../common/serviceKeys';
 import { IPythonMode } from './sourceFile';
 
 export function isUserCode(fileInfo: SourceFileInfo | undefined) {
-    return !!fileInfo && fileInfo.isTracked && !fileInfo.isThirdPartyImport && !fileInfo.isTypeshedFile;
+    return (
+        !!fileInfo &&
+        ((fileInfo.isTracked && !fileInfo.isThirdPartyImport && !fileInfo.isTypeshedFile) ||
+            // notebooks are always user code (source: a comment on AnalyzerService.setFileOpened)
+            fileInfo.sourceFile.getIPythonMode() === IPythonMode.CellDocs)
+    );
 }
 
 export function collectImportedByCells<T extends SourceFileInfo>(program: ProgramView, fileInfo: T): Set<T> {
