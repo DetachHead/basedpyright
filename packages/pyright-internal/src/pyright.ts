@@ -40,7 +40,7 @@ import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
 import { createServiceProvider } from './common/serviceProviderExtensions';
 import { getStdin } from './common/streamUtils';
-import { Range, isEmptyRange } from './common/textRange';
+import { Position, Range, isEmptyRange } from './common/textRange';
 import { Uri } from './common/uri/uri';
 import { getFileSpec, tryStat } from './common/uri/uriUtils';
 import { PyrightFileSystem } from './pyrightFileSystem';
@@ -1396,6 +1396,20 @@ const diagnosticToString = (diagnostic: PyrightJsonDiagnostic, forCommand: boole
     return message;
 };
 
+/**
+ * if it's a notebook we have no easy way to figure out what line the diagnostic is on in the raw json,
+ * so we just put them all on the first line
+ */
+const convertDiagnosticsForCiOutput = (generalDiagnostics: readonly PyrightJsonDiagnostic[]): PyrightJsonDiagnostic[] =>
+    generalDiagnostics.map((diagnostic) => {
+        if (diagnostic.cell === undefined) {
+            return diagnostic;
+        } else {
+            const position: Position = { line: 0, character: 0 };
+            return { ...diagnostic, range: { start: position, end: position } };
+        }
+    });
+
 const reportDiagnosticsAsGithubActionsCommands = (
     fileDiagnostics: readonly FileDiagnostics[],
     minSeverityLevel: SeverityLevel,
@@ -1403,7 +1417,7 @@ const reportDiagnosticsAsGithubActionsCommands = (
     timeInSec: number
 ): DiagnosticResult => {
     const report = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
-    for (const diagnostic of report.generalDiagnostics) {
+    for (const diagnostic of convertDiagnosticsForCiOutput(report.generalDiagnostics)) {
         core.info(diagnosticToString(diagnostic, /* forCommand */ false));
 
         if (!isDiagnosticIncluded(diagnostic.severity, minSeverityLevel)) {
@@ -1446,7 +1460,7 @@ const createGitlabCodeQualityReport = (
     timeInSec: number
 ) => {
     const report = reportDiagnosticsAsJsonWithoutLogging(fileDiagnostics, minSeverityLevel, filesInProgram, timeInSec);
-    return convertDiagnostics(report.generalDiagnostics, path.resolve('.'));
+    return convertDiagnostics(convertDiagnosticsForCiOutput(report.generalDiagnostics), path.resolve('.'));
 };
 
 function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
