@@ -350,7 +350,7 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.updateOpenFileContents(uri, version, contents, {
             isTracked: this.isTracked(uri),
             ipythonMode,
-            chainedFileUri: undefined,
+            chainedFileUri: this.getChainedUri(uri),
         });
         this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
     }
