@@ -33,6 +33,7 @@ import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeIn
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
 import { InlayHintSettings } from '../workspaceFactory';
+import { getCellIndex } from '../analyzer/sourceFile';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -42,6 +43,7 @@ import { InlayHintSettings } from '../workspaceFactory';
 
 export interface FileAnalysisResult {
     fileUri: Uri;
+    cell?: number | undefined;
     parseResults?: ParseFileResults | undefined;
     errors: Diagnostic[];
     warnings: Diagnostic[];
@@ -180,12 +182,21 @@ export function getAnalysisResults(
         // specifying a timeout, it should complete the first time.
     }
 
-    const sourceFiles = fileUris.map((filePath) => program.getSourceFile(filePath));
+    const sourceFiles = fileUris
+        .flatMap((filePath) =>
+            program
+                .getSourceFileInfoList()
+                // find notebook cells
+                .filter((sourceFileInfo) => sourceFileInfo.sourceFile.getRealUri().equals(filePath))
+        )
+        .map((sourceFile) => sourceFile.sourceFile);
     return sourceFiles.map((sourceFile, index) => {
         if (sourceFile) {
             const diagnostics = sourceFile.getDiagnostics(configOptions) || [];
+            const fileUri = sourceFile.getUri();
             const analysisResult: FileAnalysisResult = {
-                fileUri: sourceFile.getUri(),
+                fileUri,
+                cell: getCellIndex(fileUri),
                 parseResults: sourceFile.getParseResults(),
                 errors: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Error),
                 warnings: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Warning),
@@ -251,11 +262,20 @@ export type ExpectedResults = {
     [key in Exclude<keyof FileAnalysisResult, 'fileUri' | 'parseResults'>]?: ExpectedResult[];
 };
 
-export const validateResultsButBased = (allResults: FileAnalysisResult[], expectedResults: ExpectedResults) => {
-    assert.strictEqual(allResults.length, 1);
-    const result = allResults[0];
+export const validateResultsButBased = (
+    allResults: FileAnalysisResult | FileAnalysisResult[],
+    expectedResults: ExpectedResults
+) => {
+    let result: FileAnalysisResult;
+    if (Array.isArray(allResults)) {
+        assert.strictEqual(allResults.length, 1);
+        result = allResults[0];
+    } else {
+        result = allResults;
+    }
     for (const [diagnosticType] of entries(result)) {
-        if (diagnosticType === 'fileUri' || diagnosticType === 'parseResults') {
+        // TODO: this is gross, also update it so that you can specify expected notebook cells
+        if (diagnosticType === 'fileUri' || diagnosticType === 'parseResults' || diagnosticType === 'cell') {
             continue;
         }
         const actualResult = result[diagnosticType].map(

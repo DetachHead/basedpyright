@@ -459,7 +459,7 @@ export class SourceFile {
         // that of the previous contents.
         try {
             // Read the file's contents.
-            const uri = this._getRealUri();
+            const uri = this.getRealUri();
             if (this.fileSystem.existsSync(uri)) {
                 const fileContents = this.fileSystem.readFileSync(uri, 'utf8');
 
@@ -554,7 +554,7 @@ export class SourceFile {
             return getFileContent(this.fileSystem, this._uri, this._console);
         }
         //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
-        const source = getIPythonCells(this.fileSystem, this._getRealUri(), this._console)?.[getCellIndex(this._uri)]
+        const source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[getCellIndex(this._uri)]
             .source;
         return typeof source === 'string' ? source : source?.join('');
     }
@@ -1004,6 +1004,15 @@ export class SourceFile {
         });
     }
 
+    /**
+     * if this source file represents an ipython cell and we're in the cli instead of the language server,
+     * we need to create a fake uri to distinguish between them.
+     */
+    getRealUri = () =>
+        // when using the language server, a fake uri is assigned automatically and this method *should* never get called
+        // because we don't read the files from the disk directly, but we check this anyway just in case
+        this._writableData.clientDocumentContents ? this._uri : this._uri.withFragment('');
+
     test_enableIPythonMode(enable: boolean) {
         this._ipythonMode = enable ? IPythonMode.CellDocs : IPythonMode.None;
     }
@@ -1015,15 +1024,6 @@ export class SourceFile {
     protected createTextRangeDiagnosticSink(lines: TextRangeCollection<TextRange>): TextRangeDiagnosticSink {
         return new TextRangeDiagnosticSink(lines);
     }
-
-    /**
-     * if this source file represents an ipython cell and we're in the cli instead of the language server,
-     * we need to create a fake uri to distinguish between them.
-     */
-    private _getRealUri = () =>
-        // when using the language server, a fake uri is assigned automatically and this method *should* never get called
-        // because we don't read the files from the disk directly, but we check this anyway just in case
-        this._writableData.clientDocumentContents ? this._uri : this._uri.withFragment('');
 
     // Creates a short string that can be used to uniquely identify
     // this file from all other files. It is used in the type evaluator
