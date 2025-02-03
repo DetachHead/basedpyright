@@ -4,6 +4,25 @@ basedpyright re-implements some of the features that microsoft made exclusive to
 
 the following features have been re-implemented in basedpyright's language server, meaning they are no longer exclusive to vscode. you can use any editor that supports the [language server protocol](https://microsoft.github.io/language-server-protocol/). for more information on installing pyright in your editor of choice, see [the installation instructions](../installation/ides.md).
 
+## jupyter notebooks
+
+just like pylance, the basedpyright language server works with jupyter notebooks:
+
+![](jupyter.png)
+
+however unlike pylance, basedpyright also supports type-checking them using the CLI:
+
+```
+>basedpyright
+c:\project\asdf.ipynb - cell 1
+  c:\project\asdf.ipynb:1:1:12 - error: Type "Literal['']" is not assignable to declared type "int"
+    "Literal['']" is not assignable to "int" (reportAssignmentType)
+c:\project\asdf.ipynb - cell 2
+  c:\project\asdf.ipynb:2:1:12 - error: Type "int" is not assignable to declared type "str"
+    "int" is not assignable to "str" (reportAssignmentType)
+2 errors, 0 warnings, 0 notes
+```
+
 ## import suggestion code actions
 
 pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see [this issue](https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645)).
