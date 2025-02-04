@@ -33,7 +33,6 @@ import { TypeInlayHintsItemType, TypeInlayHintsWalker } from '../analyzer/typeIn
 import { Range } from 'vscode-languageserver-types';
 import { ServiceProvider } from '../common/serviceProvider';
 import { InlayHintSettings } from '../workspaceFactory';
-import { getCellIndex } from '../analyzer/sourceFile';
 
 // This is a bit gross, but it's necessary to allow the fallback typeshed
 // directory to be located when running within the jest environment. This
@@ -182,21 +181,20 @@ export function getAnalysisResults(
         // specifying a timeout, it should complete the first time.
     }
 
-    const sourceFiles = fileUris
-        .flatMap((filePath) =>
-            program
-                .getSourceFileInfoList()
-                // find notebook cells
-                .filter((sourceFileInfo) => sourceFileInfo.sourceFile.getRealUri().equals(filePath))
-        )
-        .map((sourceFile) => sourceFile.sourceFile);
-    return sourceFiles.map((sourceFile, index) => {
+    const sourceFileInfos = fileUris.flatMap((filePath) =>
+        program
+            .getSourceFileInfoList()
+            // find notebook cells
+            .filter((sourceFileInfo) => sourceFileInfo.sourceFile.getRealUri().equals(filePath))
+    );
+    return sourceFileInfos.map((sourceFileInfo, index) => {
+        const sourceFile = sourceFileInfo.sourceFile;
         if (sourceFile) {
             const diagnostics = sourceFile.getDiagnostics(configOptions) || [];
             const fileUri = sourceFile.getUri();
             const analysisResult: FileAnalysisResult = {
                 fileUri,
-                cell: getCellIndex(fileUri),
+                cell: sourceFileInfo.cellIndex(),
                 parseResults: sourceFile.getParseResults(),
                 errors: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Error),
                 warnings: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Warning),

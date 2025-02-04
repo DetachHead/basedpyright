@@ -67,6 +67,7 @@ export interface DiagnosticAction {
 
 export interface DiagnosticWithinFile {
     uri: Uri;
+    cell: number | undefined;
     diagnostic: Diagnostic;
 }
 

@@ -127,12 +127,6 @@ export const getIPythonCells = (fileSystem: FileSystem, uri: Uri, console: Conso
     );
 };
 
-/**
- * gets the cell index from a notebook uri. must have a fragment containing the index. not used by the language server because
- * it has its own fake notebook uri format
- */
-export const getCellIndex = (uri: Uri): number => Number(uri.fragment);
-
 // A monotonically increasing number used to create unique file IDs.
 let nextUniqueFileId = 1;
 
@@ -208,6 +202,11 @@ class WriteableData {
     isFileDeleted = false;
 
     parserOutput: ParserOutput | undefined;
+
+    /**
+     * this is only writable in the language server because when the user moves cells around, the index changes
+     */
+    cellIndex: number | undefined;
 
     constructor() {
         // Empty
@@ -540,6 +539,10 @@ export class SourceFile {
         return this._writableData.clientDocumentContents;
     }
 
+    // TODO: this sucks. ideally SourceFile would just have access to its chained source files, but there's a bunch of machinery
+    // around writable data that i'm too scared to touch
+    setCellIndex = (value: number) => (this._writableData.cellIndex = value);
+
     /**
      * gets the content of the source file. if it's a notebook, the content of this source file's {@link _ipythonCellIndex} is returned
      */
@@ -553,9 +556,12 @@ export class SourceFile {
             // Otherwise, get content from file system.
             return getFileContent(this.fileSystem, this._uri, this._console);
         }
+        const cellIndex = this._writableData.cellIndex;
+        if (cellIndex === undefined) {
+            throw new Error(`something went wrong, failed to get cell index for ${this._uri}`);
+        }
         //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
-        const source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[getCellIndex(this._uri)]
-            .source;
+        const source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex].source;
         return typeof source === 'string' ? source : source?.join('');
     }
 
@@ -1308,7 +1314,11 @@ export class SourceFile {
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
-        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, diagList);
+        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(
+            this._uri,
+            this._writableData.cellIndex,
+            diagList
+        );
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code

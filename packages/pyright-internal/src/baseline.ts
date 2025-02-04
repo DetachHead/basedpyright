@@ -176,7 +176,19 @@ export class BaselineHandler {
         return new BaselineDiff(this.configOptions.projectRoot, { files: previousBaselineFiles }, result, force);
     };
 
-    sortDiagnosticsAndMatchBaseline = (moduleUri: Uri, diagnostics: Diagnostic[]): Diagnostic[] => {
+    sortDiagnosticsAndMatchBaseline = (
+        moduleUri: Uri,
+        cell: number | undefined,
+        diagnostics: Diagnostic[]
+    ): Diagnostic[] => {
+        // if a cell is provided, even if it's already in the url as a fragment, we need to replace it anyway because the cell may have been moved
+        // if running with the lanbguage server so we need to update its index in the url.
+        // treating each cell as its own file may not be the best matching strategy, but i dont use notebooks so i don't know how common it is to
+        // re-order cells (which would resurface errors in all cells when we do it this way). so we'll just do this for now and see if there's any
+        // user feedback about it
+        if (cell !== undefined) {
+            moduleUri = moduleUri.withFragment(cell.toString());
+        }
         diagnostics.sort(compareDiagnostics);
         const baselinedErrorsForFile = this._getBaselinedErrorsForFile(moduleUri);
         if (!baselinedErrorsForFile) {
@@ -258,8 +270,17 @@ export class BaselineHandler {
         this._cache = { projectRoot: this.configOptions.projectRoot, content };
     };
 
-    private _getBaselinedErrorsForFile = (file: Uri): BaselinedDiagnostic[] => {
+    private _formatUriForBaseline = (file: Uri) => {
         const relativePath = this.configOptions.projectRoot.getRelativePath(file);
+        const fragment = file.fragment;
+        if (fragment) {
+            return `${relativePath}#${fragment}`;
+        }
+        return relativePath;
+    };
+
+    private _getBaselinedErrorsForFile = (file: Uri): BaselinedDiagnostic[] => {
+        const relativePath = this._formatUriForBaseline(file);
         let result;
         // if this is undefined it means the file isn't in the workspace
         if (relativePath) {
@@ -274,7 +295,7 @@ export class BaselineHandler {
         };
         const failedFiles = [];
         for (const fileWithDiagnostics of filesWithDiagnostics) {
-            const filePath = this.configOptions.projectRoot.getRelativePath(fileWithDiagnostics.fileUri)?.toString();
+            const filePath = this._formatUriForBaseline(fileWithDiagnostics.fileUri);
             if (filePath === undefined) {
                 failedFiles.push(fileWithDiagnostics.fileUri.toUserVisibleString());
                 continue;

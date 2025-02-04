@@ -1512,6 +1512,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                 }
                 this.sendDiagnostics(this.fs, {
                     fileUri: fileWithDiagnostics.fileUri,
+                    cell: fileWithDiagnostics.cell,
                     diagnostics: fileWithDiagnostics.diagnostics,
                     version: undefined,
                     reason: 'tracking',

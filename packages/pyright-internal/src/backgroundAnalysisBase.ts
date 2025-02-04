@@ -777,6 +777,7 @@ function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
     result.diagnostics = result.diagnostics.map((f: FileDiagnostics) => {
         return {
             fileUri: Uri.fromJsonObj(f.fileUri),
+            cell: f.cell,
             version: f.version,
             diagnostics: convertDiagnostics(f.diagnostics),
             reason: f.reason,
