@@ -6,7 +6,7 @@
  * Class that represents information around single source file.
  */
 
-import { SourceFile } from './sourceFile';
+import { IPythonMode, SourceFile } from './sourceFile';
 
 // Tracks information about each source file in a program,
 // including the reason it was added to the program and any
@@ -108,6 +108,24 @@ export class SourceFileInfo {
         this._cachePreEditState();
         this._writableData.isOpenByClient = value;
     }
+
+    /**
+     * if this source file is a notebook cell, calculates which index it is based on how many chained source files there are.
+     * also updates {@link SourceFile}'s cached `getCellIndex` value
+     */
+    cellIndex = () => {
+        if (this.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
+            return undefined;
+        }
+        let result = 0;
+        let chainedFile = this.chainedSourceFile;
+        while (chainedFile) {
+            result++;
+            chainedFile = chainedFile.chainedSourceFile;
+        }
+        this.sourceFile.setCellIndex(result);
+        return result;
+    };
 
     mutate(callback: (s: WriteableData) => void) {
         this._cachePreEditState();

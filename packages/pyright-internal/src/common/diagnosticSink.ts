@@ -20,6 +20,7 @@ import { Uri } from './uri/uri';
 // Represents a collection of diagnostics within a file.
 export interface FileDiagnostics {
     fileUri: Uri;
+    cell: number | undefined;
     version: number | undefined;
     diagnostics: Diagnostic[];
     reason: 'analysis' | 'tracking';
@@ -29,6 +30,7 @@ export namespace FileDiagnostics {
     export function toJsonObj(fileDiag: FileDiagnostics): any {
         return {
             fileUri: fileDiag.fileUri.toJsonObj(),
+            cell: fileDiag.cell,
             version: fileDiag.version,
             diagnostics: fileDiag.diagnostics.map((d) => d.toJsonObj()),
             reason: fileDiag.reason,
@@ -38,6 +40,7 @@ export namespace FileDiagnostics {
     export function fromJsonObj(fileDiagObj: any): FileDiagnostics {
         return {
             fileUri: Uri.fromJsonObj(fileDiagObj.fileUri),
+            cell: fileDiagObj.cell,
             version: fileDiagObj.version,
             diagnostics: fileDiagObj.diagnostics.map((d: any) => Diagnostic.fromJsonObj(d)),
             reason: fileDiagObj.reason,

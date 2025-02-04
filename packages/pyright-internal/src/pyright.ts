@@ -22,7 +22,7 @@ import { AnalysisResults } from './analyzer/analysis';
 import { PackageTypeReport, TypeKnownStatus } from './analyzer/packageTypeReport';
 import { PackageTypeVerifier } from './analyzer/packageTypeVerifier';
 import { AnalyzerService } from './analyzer/service';
-import { getCellIndex, maxSourceFileSize } from './analyzer/sourceFile';
+import { maxSourceFileSize } from './analyzer/sourceFile';
 import { SourceFileInfo } from './analyzer/sourceFileInfo';
 import { initializeDependencies } from './common/asyncInitialization';
 import { ChokidarFileWatcherProvider } from './common/chokidarFileWatcherProvider';
@@ -961,7 +961,7 @@ function buildTypeCompletenessReport(
 
     // Add the general diagnostics.
     completenessReport.generalDiagnostics.forEach((diag) => {
-        const jsonDiag = convertDiagnosticToJson(undefined, diag);
+        const jsonDiag = convertDiagnosticToJson(undefined, undefined, diag);
         if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
             report.generalDiagnostics.push(jsonDiag);
         }
@@ -1008,7 +1008,7 @@ function buildTypeCompletenessReport(
 
         // Convert and filter the diagnostics.
         symbol.diagnostics.forEach((diag) => {
-            const jsonDiag = convertDiagnosticToJson(diag.uri, diag.diagnostic);
+            const jsonDiag = convertDiagnosticToJson(diag.uri, diag.cell, diag.diagnostic);
             if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
                 diagnostics.push(jsonDiag);
             }
@@ -1233,7 +1233,7 @@ function reportDiagnosticsAsJsonWithoutLogging(
                 diag.category === DiagnosticCategory.Warning ||
                 diag.category === DiagnosticCategory.Information
             ) {
-                const jsonDiag = convertDiagnosticToJson(fileDiag.fileUri, diag);
+                const jsonDiag = convertDiagnosticToJson(fileDiag.fileUri, fileDiag.cell, diag);
                 if (isDiagnosticIncluded(jsonDiag.severity, minSeverityLevel)) {
                     report.generalDiagnostics.push(jsonDiag);
                 }
@@ -1300,10 +1300,14 @@ function convertDiagnosticCategoryToSeverity(category: DiagnosticCategory): Seve
     }
 }
 
-function convertDiagnosticToJson(fileUri: Uri | undefined, diag: Diagnostic): PyrightJsonDiagnostic {
+function convertDiagnosticToJson(
+    fileUri: Uri | undefined,
+    cell: number | undefined,
+    diag: Diagnostic
+): PyrightJsonDiagnostic {
     return {
         file: fileUri?.getFilePath() ?? '',
-        cell: fileUri?.fragment ? getCellIndex(fileUri) : undefined,
+        cell,
         severity: convertDiagnosticCategoryToSeverity(diag.category),
         message: diag.message,
         range: isEmptyRange(diag.range) ? undefined : diag.range,
@@ -1340,7 +1344,7 @@ function reportDiagnosticsAsText(
 
         if (fileErrorsAndWarnings.length > 0) {
             fileErrorsAndWarnings.forEach((diag, index) => {
-                const jsonDiag = convertDiagnosticToJson(fileDiagnostics.fileUri, diag);
+                const jsonDiag = convertDiagnosticToJson(fileDiagnostics.fileUri, fileDiagnostics.cell, diag);
                 if (index === 0) {
                     // only log this once per file. this is only in the for loop because we need to get the cell index from one of the diagnostics
                     console.info(

@@ -354,6 +354,7 @@ export class Program {
                     this._logTracker,
                     IPythonMode.CellDocs
                 );
+                sourceFile.setCellIndex(index);
                 sourceFileInfos.push(
                     new SourceFileInfo(
                         sourceFile,
@@ -939,6 +940,7 @@ export class Program {
                     fileDiagnostics.push({
                         fileUri: sourceFileInfo.sourceFile.getUri(),
                         version: sourceFileInfo.sourceFile.getClientVersion(),
+                        cell: sourceFileInfo.cellIndex(),
                         diagnostics,
                         reason: 'analysis',
                     });
@@ -957,6 +959,7 @@ export class Program {
                 fileDiagnostics.push({
                     fileUri: sourceFileInfo.sourceFile.getUri(),
                     version: sourceFileInfo.sourceFile.getClientVersion(),
+                    cell: sourceFileInfo.cellIndex(),
                     diagnostics: [],
                     reason: 'tracking',
                 });
@@ -1141,6 +1144,7 @@ export class Program {
                     fileDiagnostics.push({
                         fileUri: fileInfo.sourceFile.getUri(),
                         version: fileInfo.sourceFile.getClientVersion(),
+                        cell: fileInfo.cellIndex(),
                         diagnostics: [],
                         reason: 'tracking',
                     });
@@ -1170,6 +1174,7 @@ export class Program {
                                 fileDiagnostics.push({
                                     fileUri: importedFile.sourceFile.getUri(),
                                     version: importedFile.sourceFile.getClientVersion(),
+                                    cell: importedFile.cellIndex(),
                                     diagnostics: [],
                                     reason: 'tracking',
                                 });
@@ -1194,6 +1199,7 @@ export class Program {
                     fileDiagnostics.push({
                         fileUri: fileInfo.sourceFile.getUri(),
                         version: fileInfo.sourceFile.getClientVersion(),
+                        cell: fileInfo.cellIndex(),
                         diagnostics: [],
                         reason: 'tracking',
                     });

@@ -1558,6 +1558,7 @@ export class PackageTypeVerifier {
         symbolInfo.diagnostics.push({
             diagnostic: new Diagnostic(DiagnosticCategory.Error, message, declRange),
             uri: declUri,
+            cell: undefined,
         });
     }
 
@@ -1565,6 +1566,7 @@ export class PackageTypeVerifier {
         symbolInfo.diagnostics.push({
             diagnostic: new Diagnostic(DiagnosticCategory.Warning, message, declRange),
             uri: declUri,
+            cell: undefined,
         });
     }
 
