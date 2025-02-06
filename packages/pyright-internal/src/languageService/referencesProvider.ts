@@ -32,6 +32,7 @@ import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
 import { convertDocumentRangesToLocation } from './navigationUtils';
+import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export type ReferenceCallback = (locations: DocumentRange[]) => void;
 
@@ -185,6 +186,7 @@ export class FindReferencesTreeWalker {
 
 export class ReferencesProvider {
     constructor(
+        private _ls: LanguageServerInterface,
         private _program: ProgramView,
         private _token: CancellationToken,
         private readonly _createDocumentRange?: (
@@ -192,7 +194,11 @@ export class ReferencesProvider {
             result: CollectionResult,
             parseResults: ParseFileResults
         ) => DocumentRange,
-        private readonly _convertToLocation?: (fs: ReadOnlyFileSystem, ranges: DocumentRange) => Location | undefined
+        private readonly _convertToLocation?: (
+            ls: LanguageServerInterface,
+            fs: ReadOnlyFileSystem,
+            ranges: DocumentRange
+        ) => Location | undefined
     ) {
         // empty
     }
@@ -217,12 +223,22 @@ export class ReferencesProvider {
         const reporter: ReferenceCallback = resultReporter
             ? (range) =>
                   resultReporter.report(
-                      convertDocumentRangesToLocation(this._program.fileSystem, range, this._convertToLocation)
+                      convertDocumentRangesToLocation(
+                          this._ls,
+                          this._program.fileSystem,
+                          range,
+                          this._convertToLocation
+                      )
                   )
             : (range) =>
                   appendArray(
                       locations,
-                      convertDocumentRangesToLocation(this._program.fileSystem, range, this._convertToLocation)
+                      convertDocumentRangesToLocation(
+                          this._ls,
+                          this._program.fileSystem,
+                          range,
+                          this._convertToLocation
+                      )
                   );
 
         const invokedFromUserFile = isUserCode(sourceFileInfo);

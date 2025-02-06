@@ -23,6 +23,7 @@ import { convertOffsetToPosition, convertPositionToOffset } from '../common/posi
 import { findNodeByOffset } from '../analyzer/parseTreeUtils';
 import { ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
+import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -39,7 +40,8 @@ export class CodeActionProvider {
         fileUri: Uri,
         range: Range,
         kinds: CodeActionKind[] | undefined,
-        token: CancellationToken
+        token: CancellationToken,
+        ls: LanguageServerInterface
     ) {
         throwIfCancellationRequested(token);
 
@@ -113,6 +115,7 @@ export class CodeActionProvider {
                     continue;
                 }
                 const workspaceEdit = convertToWorkspaceEdit(
+                    ls,
                     completer.importResolver.fileSystem,
                     convertToFileTextEdits(fileUri, convertToTextEditActions(textEdits))
                 );
@@ -178,7 +181,7 @@ export class CodeActionProvider {
                         },
                     ],
                 };
-                const workspaceEdit = convertToWorkspaceEdit(workspace.service.fs, editActions);
+                const workspaceEdit = convertToWorkspaceEdit(ls, workspace.service.fs, editActions);
                 const renameAction = CodeAction.create(title, workspaceEdit, CodeActionKind.QuickFix);
                 codeActions.push(renameAction);
             }

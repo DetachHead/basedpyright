@@ -32,7 +32,11 @@ export class QuickActionCommand implements ServerCommand {
                 return performQuickAction(p, docUri, params.command, otherArgs, token);
             }, token);
 
-            return convertToWorkspaceEdit(workspace.service.fs, convertToFileTextEdits(docUri, editActions ?? []));
+            return convertToWorkspaceEdit(
+                this._ls,
+                workspace.service.fs,
+                convertToFileTextEdits(docUri, editActions ?? [])
+            );
         }
     }
 }

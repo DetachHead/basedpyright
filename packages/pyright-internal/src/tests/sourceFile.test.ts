@@ -34,7 +34,8 @@ test('Empty', () => {
         {
             isEditMode: false,
         },
-        new BaselineHandler(fs, configOptions, undefined)
+        new BaselineHandler(fs, configOptions, undefined),
+        () => undefined
     );
     const sp = createServiceProvider(fs);
     const importResolver = new ImportResolver(sp, configOptions, new FullAccessHost(sp));

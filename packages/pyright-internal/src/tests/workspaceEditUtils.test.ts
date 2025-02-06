@@ -295,7 +295,13 @@ test('test generateWorkspaceEdits', async () => {
 
     assert.strictEqual(fileChanged.size, 2);
 
-    const actualEdits = generateWorkspaceEdit(state.workspace.service.fs, state.workspace.service, cloned, fileChanged);
+    const actualEdits = generateWorkspaceEdit(
+        new TestLanguageService(state.workspace, state.console, state.workspace.service.fs),
+        state.workspace.service.fs,
+        state.workspace.service,
+        cloned,
+        fileChanged
+    );
     verifyWorkspaceEdit(
         {
             changes: {

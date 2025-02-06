@@ -14,9 +14,9 @@ import { appendArray } from '../common/collectionUtils';
 import { ProgramView } from '../common/extensibility';
 import * as StringUtils from '../common/stringUtils';
 import { Uri } from '../common/uri/uri';
-import { convertUriToLspUriString } from '../common/uri/uriUtils';
 import { Workspace } from '../workspaceFactory';
 import { IndexSymbolData, SymbolIndexer } from './symbolIndexer';
+import { LanguageServerInterface } from '../common/languageServerInterface';
 
 type WorkspaceSymbolCallback = (symbols: SymbolInformation[]) => void;
 
@@ -28,7 +28,8 @@ export class WorkspaceSymbolProvider {
         private readonly _workspaces: Workspace[],
         resultReporter: ResultProgressReporter<SymbolInformation[]> | undefined,
         private readonly _query: string,
-        private readonly _token: CancellationToken
+        private readonly _token: CancellationToken,
+        private _ls: LanguageServerInterface
     ) {
         this._reporter = resultReporter
             ? (symbols) => resultReporter.report(symbols)
@@ -100,7 +101,7 @@ export class WorkspaceSymbolProvider {
 
             if (StringUtils.isPatternInSymbol(this._query, symbolData.name)) {
                 const location: Location = {
-                    uri: convertUriToLspUriString(program.fileSystem, fileUri),
+                    uri: this._ls.convertUriToLspUriString(program.fileSystem, fileUri),
                     range: symbolData.selectionRange!,
                 };
 

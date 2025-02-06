@@ -348,26 +348,25 @@ export class Program {
                     importName,
                     isThirdPartyImport,
                     isInPyTypedPackage,
-                    this.baselineHandler,
                     this._editModeTracker,
+                    this.baselineHandler,
+                    () => sourceFileInfo.cellIndex(),
                     this._console,
                     this._logTracker,
                     IPythonMode.CellDocs
                 );
-                sourceFile.setCellIndex(index);
-                sourceFileInfos.push(
-                    new SourceFileInfo(
-                        sourceFile,
-                        isTypeshedFile,
-                        isThirdPartyImport,
-                        isInPyTypedPackage,
-                        this._editModeTracker,
-                        {
-                            isTracked: true,
-                            chainedSourceFile: sourceFileInfos[index - 1],
-                        }
-                    )
+                const sourceFileInfo = new SourceFileInfo(
+                    sourceFile,
+                    isTypeshedFile,
+                    isThirdPartyImport,
+                    isInPyTypedPackage,
+                    this._editModeTracker,
+                    {
+                        isTracked: true,
+                        chainedSourceFile: sourceFileInfos[index - 1],
+                    }
                 );
+                sourceFileInfos.push(sourceFileInfo);
             });
         } else {
             const importName = this._getImportNameForNewSourceFile(fileUri);
@@ -380,8 +379,9 @@ export class Program {
                 importName,
                 isThirdPartyImport,
                 isInPyTypedPackage,
-                this.baselineHandler,
                 this._editModeTracker,
+                this.baselineHandler,
+                () => undefined,
                 this._console,
                 this._logTracker
             );
@@ -412,8 +412,9 @@ export class Program {
                 moduleImportInfo.moduleName,
                 /* isThirdPartyImport */ false,
                 moduleImportInfo.isThirdPartyPyTypedPresent,
-                this.baselineHandler,
                 this._editModeTracker,
+                this.baselineHandler,
+                () => sourceFileInfo?.cellIndex(),
                 this._console,
                 this._logTracker,
                 options?.ipythonMode ?? IPythonMode.None
@@ -1536,8 +1537,9 @@ export class Program {
                         moduleImportInfo.moduleName,
                         importInfo.isThirdPartyImport,
                         importInfo.isPyTypedPresent,
-                        this.baselineHandler,
                         this._editModeTracker,
+                        this.baselineHandler,
+                        () => importedFileInfo?.cellIndex(),
                         this._console,
                         this._logTracker
                     );
@@ -1679,8 +1681,9 @@ export class Program {
             moduleImportInfo.moduleName,
             /* isThirdPartyImport */ false,
             /* isInPyTypedPackage */ false,
-            this.baselineHandler,
             this._editModeTracker,
+            this.baselineHandler,
+            () => sourceFileInfo.cellIndex(),
             this._console,
             this._logTracker
         );

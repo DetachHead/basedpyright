@@ -15,7 +15,7 @@ import { DiagnosticBooleanOverridesMap, DiagnosticSeverityOverridesMap } from '.
 import { SignatureDisplayType } from './configOptions';
 import { ConsoleInterface, LogLevel } from './console';
 import { TaskListToken } from './diagnostic';
-import { FileSystem } from './fileSystem';
+import { FileSystem, ReadOnlyFileSystem } from './fileSystem';
 import { FileWatcherHandler } from './fileWatcher';
 import { ServiceProvider } from './serviceProvider';
 import { Uri } from './uri/uri';
@@ -138,6 +138,7 @@ export interface LanguageServerBaseInterface {
 
 export interface LanguageServerInterface extends LanguageServerBaseInterface {
     getWorkspaceForFile(fileUri: Uri, pythonPath?: Uri): Promise<Workspace>;
+    convertUriToLspUriString: (fs: ReadOnlyFileSystem, uri: Uri) => string;
     readonly documentsWithDiagnostics: Record<string, FileDiagnostics>;
 }
 
