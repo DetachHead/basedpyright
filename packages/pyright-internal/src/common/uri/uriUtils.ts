@@ -276,7 +276,7 @@ export function getWildcardRoot(root: Uri, fileSpec: string): Uri {
 }
 
 export function hasPythonExtension(uri: Uri) {
-    return uri.hasExtension('.py') || uri.hasExtension('.pyi');
+    return uri.hasExtension('.py') || uri.hasExtension('.pyi') || uri.hasExtension('.ipynb');
 }
 
 export function getFileSpec(root: Uri, fileSpec: string): FileSpec {
@@ -384,11 +384,6 @@ export function getRootUri(csdOrSp: CaseSensitivityDetector | ServiceProvider): 
     }
 
     return undefined;
-}
-
-export function convertUriToLspUriString(fs: ReadOnlyFileSystem, uri: Uri): string {
-    // Convert to a URI string that the LSP client understands (mapped files are only local to the server).
-    return fs.getOriginalUri(uri).toString();
 }
 
 export namespace UriEx {

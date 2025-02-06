@@ -15,19 +15,20 @@ import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { ProgramView } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
 import { Uri } from '../common/uri/uri';
-import { convertUriToLspUriString } from '../common/uri/uriUtils';
 import { ParseFileResults } from '../parser/parser';
 import { IndexOptions, IndexSymbolData, SymbolIndexer } from './symbolIndexer';
+import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export function convertToFlatSymbols(
     program: ProgramView,
     uri: Uri,
-    symbolList: DocumentSymbol[]
+    symbolList: DocumentSymbol[],
+    ls: LanguageServerInterface
 ): SymbolInformation[] {
     const flatSymbols: SymbolInformation[] = [];
 
     for (const symbol of symbolList) {
-        _appendToFlatSymbolsRecursive(program.fileSystem, flatSymbols, uri, symbol);
+        _appendToFlatSymbolsRecursive(ls, program.fileSystem, flatSymbols, uri, symbol);
     }
 
     return flatSymbols;
@@ -41,7 +42,8 @@ export class DocumentSymbolProvider {
         protected readonly uri: Uri,
         private readonly _supportHierarchicalDocumentSymbol: boolean,
         private readonly _indexOptions: IndexOptions,
-        private readonly _token: CancellationToken
+        private readonly _token: CancellationToken,
+        private readonly _ls: LanguageServerInterface
     ) {
         this._parseResults = this.program.getParseResults(this.uri);
     }
@@ -56,7 +58,7 @@ export class DocumentSymbolProvider {
             return symbolList;
         }
 
-        return convertToFlatSymbols(this.program, this.uri, symbolList);
+        return convertToFlatSymbols(this.program, this.uri, symbolList, this._ls);
     }
 
     protected getHierarchicalSymbols() {
@@ -116,6 +118,7 @@ export class DocumentSymbolProvider {
 }
 
 function _appendToFlatSymbolsRecursive(
+    ls: LanguageServerInterface,
     fs: ReadOnlyFileSystem,
     flatSymbols: SymbolInformation[],
     documentUri: Uri,
@@ -125,7 +128,7 @@ function _appendToFlatSymbolsRecursive(
     const flatSymbol: SymbolInformation = {
         name: symbol.name,
         kind: symbol.kind,
-        location: Location.create(convertUriToLspUriString(fs, documentUri), symbol.range),
+        location: Location.create(ls.convertUriToLspUriString(fs, documentUri), symbol.range),
     };
 
     if (symbol.tags) {
@@ -140,7 +143,7 @@ function _appendToFlatSymbolsRecursive(
 
     if (symbol.children) {
         for (const child of symbol.children) {
-            _appendToFlatSymbolsRecursive(fs, flatSymbols, documentUri, child, symbol);
+            _appendToFlatSymbolsRecursive(ls, fs, flatSymbols, documentUri, child, symbol);
         }
     }
 }

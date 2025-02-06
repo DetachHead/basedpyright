@@ -280,7 +280,14 @@ export abstract class RealLanguageServer<
 
         const uri = Uri.parse(params.textDocument.uri, this.serverOptions.serviceProvider);
         const workspace = await this.getWorkspaceForFile(uri);
-        return CodeActionProvider.getCodeActionsForPosition(workspace, uri, params.range, params.context.only, token);
+        return CodeActionProvider.getCodeActionsForPosition(
+            workspace,
+            uri,
+            params.range,
+            params.context.only,
+            token,
+            this
+        );
     }
 
     protected createProgressReporter(): ProgressReporter {

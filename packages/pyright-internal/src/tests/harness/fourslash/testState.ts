@@ -110,6 +110,7 @@ export interface HostSpecificFeatures {
     backgroundAnalysisProgramFactory: BackgroundAnalysisProgramFactory;
 
     getCodeActionsForPosition(
+        ls: LanguageServerInterface,
         workspace: Workspace,
         fileUri: Uri,
         range: PositionRange,
@@ -699,6 +700,8 @@ export class TestState {
             }
         }
 
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
+
         // Local copy to use in capture.
         const serviceProvider = this.serviceProvider;
         for (const range of this.getRanges()) {
@@ -714,7 +717,7 @@ export class TestState {
             }
             const diagnostics = sourceFile.getDiagnostics(this.configOptions) || [];
 
-            const codeActions = await this._getCodeActions(range);
+            const codeActions = await this._getCodeActions(range, ls);
             if (verifyMode === 'exact') {
                 if (codeActions.length !== map[name].codeActions.length) {
                     this.raiseError(
@@ -856,7 +859,7 @@ export class TestState {
 
             const ls = new TestLanguageService(this.workspace, this.console, this.fs);
 
-            const codeActions = await this._getCodeActions(range);
+            const codeActions = await this._getCodeActions(range, ls);
             if (verifyCodeActionCount) {
                 if (codeActions.length !== Object.keys(map).length) {
                     this.raiseError(
@@ -1200,10 +1203,14 @@ export class TestState {
             };
         },
         createDocumentRange?: (fileUri: Uri, result: CollectionResult, parseResults: ParseFileResults) => DocumentRange,
-        convertToLocation?: (fs: ReadOnlyFileSystem, ranges: DocumentRange) => Location | undefined
+        convertToLocation?: (
+            ls: LanguageServerInterface,
+            fs: ReadOnlyFileSystem,
+            ranges: DocumentRange
+        ) => Location | undefined
     ) {
         this.analyze();
-
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
         for (const name of this.getMarkerNames()) {
             const marker = this.getMarkerByName(name);
             const fileName = marker.fileName;
@@ -1223,6 +1230,7 @@ export class TestState {
             const position = this.convertOffsetToPosition(fileName, marker.position);
 
             const actual = new ReferencesProvider(
+                ls,
                 this.program,
                 CancellationToken.None,
                 createDocumentRange,
@@ -1230,7 +1238,7 @@ export class TestState {
             ).reportReferences(Uri.file(fileName, this.serviceProvider), position, /* includeDeclaration */ true);
             assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
 
-            for (const r of convertDocumentRangesToLocation(this.program.fileSystem, expected, convertToLocation)) {
+            for (const r of convertDocumentRangesToLocation(ls, this.program.fileSystem, expected, convertToLocation)) {
                 assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
             }
         }
@@ -1242,7 +1250,7 @@ export class TestState {
         };
     }) {
         this.analyze();
-
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
         for (const marker of this.getMarkers()) {
             const fileName = marker.fileName;
             const name = this.getMarkerName(marker);
@@ -1260,7 +1268,8 @@ export class TestState {
                 this.program,
                 Uri.file(fileName, this.serviceProvider),
                 position,
-                CancellationToken.None
+                CancellationToken.None,
+                ls
             ).getIncomingCalls();
 
             assert.strictEqual(actual?.length ?? 0, expectedFilePath.length, `${name} has failed`);
@@ -1287,7 +1296,7 @@ export class TestState {
         };
     }) {
         this.analyze();
-
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
         for (const marker of this.getMarkers()) {
             const fileName = marker.fileName;
             const name = this.getMarkerName(marker);
@@ -1305,7 +1314,8 @@ export class TestState {
                 this.program,
                 Uri.file(fileName, this.serviceProvider),
                 position,
-                CancellationToken.None
+                CancellationToken.None,
+                ls
             ).getOutgoingCalls();
 
             assert.strictEqual(actual?.length ?? 0, expectedFilePath.length, `${name} has failed`);
@@ -1477,7 +1487,7 @@ export class TestState {
         isUntitled = false
     ) {
         this.analyze();
-
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
         for (const marker of this.getMarkers()) {
             const fileName = marker.fileName;
             const name = this.getMarkerName(marker);
@@ -1501,11 +1511,12 @@ export class TestState {
                     ? Uri.parse(`untitled:${fileName.replace(/\\/g, '/')}`, this.serviceProvider)
                     : Uri.file(fileName, this.serviceProvider),
                 position,
-                CancellationToken.None
+                CancellationToken.None,
+                ls
             ).renameSymbol(expected.newName, /* isDefaultWorkspace */ false, isUntitled);
 
             verifyWorkspaceEdit(
-                convertToWorkspaceEdit(this.program.fileSystem, { edits: expected.changes, fileOperations: [] }),
+                convertToWorkspaceEdit(ls, this.program.fileSystem, { edits: expected.changes, fileOperations: [] }),
                 actual ?? { documentChanges: [] }
             );
         }
@@ -2016,7 +2027,7 @@ export class TestState {
         }
     }
 
-    private _getCodeActions(range: Range) {
+    private _getCodeActions(range: Range, ls: LanguageServerInterface) {
         const file = range.fileName;
         const textRange = {
             start: this.convertOffsetToPosition(file, range.pos),
@@ -2024,6 +2035,7 @@ export class TestState {
         };
 
         return this._hostSpecificFeatures.getCodeActionsForPosition(
+            ls,
             this.workspace,
             range.fileUri,
             textRange,

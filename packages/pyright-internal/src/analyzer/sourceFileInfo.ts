@@ -123,7 +123,6 @@ export class SourceFileInfo {
             result++;
             chainedFile = chainedFile.chainedSourceFile;
         }
-        this.sourceFile.setCellIndex(result);
         return result;
     };
 

@@ -105,8 +105,9 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
         moduleName: string,
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
-        baselineHandler: BaselineHandler,
         editMode: SourceFileEditMode,
+        baselineHandler: BaselineHandler,
+        getCellIndex: () => number | undefined,
         console?: ConsoleInterface,
         logTracker?: LogTracker,
         ipythonMode?: IPythonMode
@@ -119,6 +120,7 @@ const DefaultSourceFileFactory: ISourceFileFactory = {
             isThirdPartyPyTypedPresent,
             editMode,
             baselineHandler,
+            getCellIndex,
             console,
             logTracker,
             ipythonMode

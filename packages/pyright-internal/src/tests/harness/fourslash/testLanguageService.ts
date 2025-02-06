@@ -20,7 +20,7 @@ import { CommandController } from '../../../commands/commandController';
 import { ConfigOptions } from '../../../common/configOptions';
 import { ConsoleInterface } from '../../../common/console';
 import * as debug from '../../../common/debug';
-import { FileSystem } from '../../../common/fileSystem';
+import { FileSystem, ReadOnlyFileSystem } from '../../../common/fileSystem';
 import { ServiceProvider } from '../../../common/serviceProvider';
 import { Range } from '../../../common/textRange';
 import { Uri } from '../../../common/uri/uri';
@@ -57,12 +57,13 @@ export class TestFeatures implements HostSpecificFeatures {
         );
 
     getCodeActionsForPosition(
+        ls: LanguageServerInterface,
         workspace: Workspace,
         fileUri: Uri,
         range: Range,
         token: CancellationToken
     ): Promise<CodeAction[]> {
-        return CodeActionProvider.getCodeActionsForPosition(workspace, fileUri, range, undefined, token);
+        return CodeActionProvider.getCodeActionsForPosition(workspace, fileUri, range, undefined, token, ls);
     }
     execute(ls: LanguageServerInterface, params: ExecuteCommandParams, token: CancellationToken): Promise<any> {
         const controller = new CommandController(ls);
@@ -111,6 +112,8 @@ export class TestLanguageService implements LanguageServerInterface {
             searchPathsToWatch: [],
         };
     }
+    /** unlike the real one, this test implementation doesn't support notebook cells. TODO: language server tests for notebook cells */
+    convertUriToLspUriString = (fs: ReadOnlyFileSystem, uri: Uri) => fs.getOriginalUri(uri).toString();
 
     getWorkspaces(): Promise<Workspace[]> {
         return Promise.resolve([this._workspace, this._defaultWorkspace]);

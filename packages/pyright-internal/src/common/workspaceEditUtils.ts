@@ -28,7 +28,7 @@ import { convertRangeToTextRange, convertTextRangeToRange } from './positionUtil
 import { TextRange } from './textRange';
 import { TextRangeCollection } from './textRangeCollection';
 import { Uri } from './uri/uri';
-import { convertUriToLspUriString } from './uri/uriUtils';
+import { LanguageServerInterface } from './languageServerInterface';
 
 export function convertToTextEdits(editActions: TextEditAction[]): TextEdit[] {
     return editActions.map((editAction) => ({
@@ -47,9 +47,18 @@ export function convertToFileTextEdits(fileUri: Uri, editActions: TextEditAction
     return editActions.map((a) => ({ fileUri, ...a }));
 }
 
-export function convertToWorkspaceEdit(fs: ReadOnlyFileSystem, edits: FileEditAction[]): WorkspaceEdit;
-export function convertToWorkspaceEdit(fs: ReadOnlyFileSystem, edits: FileEditActions): WorkspaceEdit;
 export function convertToWorkspaceEdit(
+    ls: LanguageServerInterface,
+    fs: ReadOnlyFileSystem,
+    edits: FileEditAction[]
+): WorkspaceEdit;
+export function convertToWorkspaceEdit(
+    ls: LanguageServerInterface,
+    fs: ReadOnlyFileSystem,
+    edits: FileEditActions
+): WorkspaceEdit;
+export function convertToWorkspaceEdit(
+    ls: LanguageServerInterface,
     fs: ReadOnlyFileSystem,
     edits: FileEditActions,
     changeAnnotations: {
@@ -58,6 +67,7 @@ export function convertToWorkspaceEdit(
     defaultAnnotationId: string
 ): WorkspaceEdit;
 export function convertToWorkspaceEdit(
+    ls: LanguageServerInterface,
     fs: ReadOnlyFileSystem,
     edits: FileEditActions | FileEditAction[],
     changeAnnotations?: {
@@ -66,15 +76,20 @@ export function convertToWorkspaceEdit(
     defaultAnnotationId = 'default'
 ): WorkspaceEdit {
     if (isArray(edits)) {
-        return _convertToWorkspaceEditWithChanges(fs, edits);
+        return _convertToWorkspaceEditWithChanges(ls, fs, edits);
     }
 
-    return _convertToWorkspaceEditWithDocumentChanges(fs, edits, changeAnnotations, defaultAnnotationId);
+    return _convertToWorkspaceEditWithDocumentChanges(ls, fs, edits, changeAnnotations, defaultAnnotationId);
 }
 
-export function appendToWorkspaceEdit(fs: ReadOnlyFileSystem, edits: FileEditAction[], workspaceEdit: WorkspaceEdit) {
+export function appendToWorkspaceEdit(
+    ls: LanguageServerInterface,
+    fs: ReadOnlyFileSystem,
+    edits: FileEditAction[],
+    workspaceEdit: WorkspaceEdit
+) {
     edits.forEach((edit) => {
-        const uri = convertUriToLspUriString(fs, edit.fileUri);
+        const uri = ls.convertUriToLspUriString(fs, edit.fileUri);
         workspaceEdit.changes![uri] = workspaceEdit.changes![uri] || [];
         workspaceEdit.changes![uri].push({ range: edit.range, newText: edit.replacementText });
     });
@@ -167,6 +182,7 @@ export function applyDocumentChanges(program: EditableProgram, fileInfo: SourceF
 }
 
 export function generateWorkspaceEdit(
+    ls: LanguageServerInterface,
     fs: ReadOnlyFileSystem,
     originalService: AnalyzerService,
     clonedService: AnalyzerService,
@@ -191,7 +207,7 @@ export function generateWorkspaceEdit(
             continue;
         }
 
-        edits.changes![convertUriToLspUriString(fs, uri)] = [
+        edits.changes![ls.convertUriToLspUriString(fs, uri)] = [
             {
                 range: convertTextRangeToRange(parseResults.parserOutput.parseTree, parseResults.tokenizerOutput.lines),
                 newText: final.getFileContent() ?? '',
@@ -202,16 +218,21 @@ export function generateWorkspaceEdit(
     return edits;
 }
 
-function _convertToWorkspaceEditWithChanges(fs: ReadOnlyFileSystem, edits: FileEditAction[]) {
+function _convertToWorkspaceEditWithChanges(
+    ls: LanguageServerInterface,
+    fs: ReadOnlyFileSystem,
+    edits: FileEditAction[]
+) {
     const workspaceEdit: WorkspaceEdit = {
         changes: {},
     };
 
-    appendToWorkspaceEdit(fs, edits, workspaceEdit);
+    appendToWorkspaceEdit(ls, fs, edits, workspaceEdit);
     return workspaceEdit;
 }
 
 function _convertToWorkspaceEditWithDocumentChanges(
+    ls: LanguageServerInterface,
     fs: ReadOnlyFileSystem,
     editActions: FileEditActions,
     changeAnnotations?: {
@@ -231,7 +252,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'create':
                 workspaceEdit.documentChanges!.push(
                     CreateFile.create(
-                        convertUriToLspUriString(fs, operation.fileUri),
+                        ls.convertUriToLspUriString(fs, operation.fileUri),
                         /* options */ undefined,
                         defaultAnnotationId
                     )
@@ -246,7 +267,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
     }
 
     // Text edit's file path must refer to original file paths unless it is a new file just created.
-    const mapPerFile = createMapFromItems(editActions.edits, (e) => convertUriToLspUriString(fs, e.fileUri));
+    const mapPerFile = createMapFromItems(editActions.edits, (e) => ls.convertUriToLspUriString(fs, e.fileUri));
     for (const [uri, value] of mapPerFile) {
         workspaceEdit.documentChanges!.push(
             TextDocumentEdit.create(
@@ -269,8 +290,8 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'rename':
                 workspaceEdit.documentChanges!.push(
                     RenameFile.create(
-                        convertUriToLspUriString(fs, operation.oldFileUri),
-                        convertUriToLspUriString(fs, operation.newFileUri),
+                        ls.convertUriToLspUriString(fs, operation.oldFileUri),
+                        ls.convertUriToLspUriString(fs, operation.newFileUri),
                         /* options */ undefined,
                         defaultAnnotationId
                     )
@@ -279,7 +300,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'delete':
                 workspaceEdit.documentChanges!.push(
                     DeleteFile.create(
-                        convertUriToLspUriString(fs, operation.fileUri),
+                        ls.convertUriToLspUriString(fs, operation.fileUri),
                         /* options */ undefined,
                         defaultAnnotationId
                     )

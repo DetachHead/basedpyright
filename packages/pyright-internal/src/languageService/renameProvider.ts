@@ -22,6 +22,7 @@ import { ReferencesProvider, ReferencesResult } from '../languageService/referen
 import { ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { IPythonMode } from '../analyzer/sourceFile';
+import { LanguageServerInterface } from '../common/languageServerInterface';
 
 export class RenameProvider {
     private readonly _parseResults: ParseFileResults | undefined;
@@ -30,7 +31,8 @@ export class RenameProvider {
         private _program: ProgramView,
         private _fileUri: Uri,
         private _position: Position,
-        private _token: CancellationToken
+        private _token: CancellationToken,
+        private _ls: LanguageServerInterface
     ) {
         this._parseResults = this._program.getParseResults(this._fileUri);
     }
@@ -72,7 +74,7 @@ export class RenameProvider {
             return null;
         }
 
-        const referenceProvider = new ReferencesProvider(this._program, this._token);
+        const referenceProvider = new ReferencesProvider(this._ls, this._program, this._token);
         const renameMode = RenameProvider.getRenameSymbolMode(
             this._program,
             this._fileUri,
@@ -92,13 +94,9 @@ export class RenameProvider {
                     // from accidentally changing third party library or type stub.
                     if (isUserCode(curSourceFileInfo)) {
                         // Make sure searching symbol name exists in the file.
-                        // TODO: why is this here? source files shouldnt be read from disk directly when using the language server.
-                        // for now we just disable this check in notebooks because they use a different file uri in the lsp
-                        if (curSourceFileInfo.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
-                            const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
-                            if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
-                                continue;
-                            }
+                        const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
+                        if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
+                            continue;
                         }
 
                         referenceProvider.addReferencesToResult(
@@ -152,7 +150,7 @@ export class RenameProvider {
             });
         });
 
-        return convertToWorkspaceEdit(this._program.fileSystem, { edits, fileOperations: [] });
+        return convertToWorkspaceEdit(this._ls, this._program.fileSystem, { edits, fileOperations: [] });
     }
 
     static getRenameSymbolMode(

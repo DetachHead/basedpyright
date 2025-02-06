@@ -203,11 +203,6 @@ class WriteableData {
 
     parserOutput: ParserOutput | undefined;
 
-    /**
-     * this is only writable in the language server because when the user moves cells around, the index changes
-     */
-    cellIndex: number | undefined;
-
     constructor() {
         // Empty
     }
@@ -317,6 +312,9 @@ export class SourceFile {
         isThirdPartyPyTypedPresent: boolean,
         editMode: SourceFileEditMode,
         private _baselineHandler: BaselineHandler,
+        // this is kinda weird but it's necessary because the chained file is stored on SourceFileInfo and
+        // accessing it from here would cause a circular dependency
+        private _getCellIndex: () => number | undefined,
         console?: ConsoleInterface,
         logTracker?: LogTracker,
         ipythonMode?: IPythonMode
@@ -539,10 +537,6 @@ export class SourceFile {
         return this._writableData.clientDocumentContents;
     }
 
-    // TODO: this sucks. ideally SourceFile would just have access to its chained source files, but there's a bunch of machinery
-    // around writable data that i'm too scared to touch
-    setCellIndex = (value: number) => (this._writableData.cellIndex = value);
-
     /**
      * gets the content of the source file. if it's a notebook, the content of this source file's {@link _ipythonCellIndex} is returned
      */
@@ -556,7 +550,7 @@ export class SourceFile {
             // Otherwise, get content from file system.
             return getFileContent(this.fileSystem, this._uri, this._console);
         }
-        const cellIndex = this._writableData.cellIndex;
+        const cellIndex = this._getCellIndex();
         if (cellIndex === undefined) {
             throw new Error(`something went wrong, failed to get cell index for ${this._uri}`);
         }
@@ -1314,11 +1308,7 @@ export class SourceFile {
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
-        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(
-            this._uri,
-            this._writableData.cellIndex,
-            diagList
-        );
+        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, this._getCellIndex(), diagList);
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
