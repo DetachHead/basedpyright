@@ -94,9 +94,13 @@ export class RenameProvider {
                     // from accidentally changing third party library or type stub.
                     if (isUserCode(curSourceFileInfo)) {
                         // Make sure searching symbol name exists in the file.
-                        const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
-                        if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
-                            continue;
+                        // TODO: why is this here? source files shouldnt be read from disk directly when using the language server.
+                        // for now we just disable this check in notebooks because they use a different file uri in the lsp
+                        if (curSourceFileInfo.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
+                            const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
+                            if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
+                                continue;
+                            }
                         }
 
                         referenceProvider.addReferencesToResult(
