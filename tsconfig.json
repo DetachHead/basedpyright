@@ -3,7 +3,7 @@
         "target": "es2021",
         "module": "node16",
         "lib": [
-            "es2021"
+            "es2023"
         ],
         "skipLibCheck": true,
         "esModuleInterop": true,
