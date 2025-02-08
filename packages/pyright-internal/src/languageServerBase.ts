@@ -196,7 +196,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
 
     protected readonly workspaceFactory: WorkspaceFactory;
     protected readonly openFileMap = new Map<string, TextDocument>();
-    private readonly _openCells = new Map<string, TextDocument[]>();
+    private readonly _openCells = new Map<string, readonly TextDocument[]>();
     protected readonly fs: FileSystem;
     protected readonly caseSensitiveDetector: CaseSensitivityDetector;
 
@@ -1228,7 +1228,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
         const changeStructure = params.change.cells?.structure;
         if (changeStructure) {
             const previousCells = [...openCells];
-            openCells.splice(
+            const newCells = openCells.toSpliced(
                 changeStructure.array.start,
                 changeStructure.array.deleteCount,
                 ...(changeStructure.array.cells?.map((changedTextDocumentItem) => {
@@ -1253,7 +1253,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                 }) ?? [])
             );
             await Promise.all(
-                zip(previousCells, openCells).map(async ([previousCell, newCell], index) => {
+                zip(previousCells, newCells).map(async ([previousCell, newCell], index) => {
                     if (previousCell?.uri === newCell?.uri) {
                         return;
                     }
@@ -1300,6 +1300,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                     }
                 })
             );
+            this._openCells.set(uri.key, newCells);
         }
         if (params.change.cells?.textContent) {
             await Promise.all(
@@ -1347,8 +1348,6 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
             this.console.error(`onDidCloseNotebookDocument failed to find open cells for ${uri}`);
             return;
         }
-        openCells.length = 0;
-        this._openCells.delete(uri.key);
         await Promise.all(
             params.cellTextDocuments.map(async (textDocument) => {
                 const cellUri = this.convertLspUriStringToUri(textDocument.uri);
@@ -1357,6 +1356,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
                 workspaces.forEach((w) => w.service.setFileClosed(cellUri));
             })
         );
+        this._openCells.delete(uri.key);
     };
 
     protected onDidChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
