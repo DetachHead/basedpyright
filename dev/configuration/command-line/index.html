@@ -1734,33 +1734,34 @@
 </table>
 <h2 id="json-output">JSON Output</h2>
 <p>If the “--outputjson” option is specified on the command line, diagnostics are output in JSON format. The JSON structure is as follows:
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nx">version</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">time</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">generalDiagnostics</span><span class="o">:</span><span class="w"> </span><span class="nx">Diagnostic</span><span class="p">[],</span>
+<div class="highlight"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">PyrightJsonResults</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">version</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">time</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">generalDiagnostics</span><span class="o">:</span><span class="w"> </span><span class="kt">Diagnostic</span><span class="p">[],</span>
 <span class="w">    </span><span class="nx">summary</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">filesAnalyzed</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">errorCount</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">warningCount</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">informationCount</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">timeInSec</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span>
+<span class="w">        </span><span class="nx">filesAnalyzed</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">errorCount</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">warningCount</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">informationCount</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">timeInSec</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div></p>
 <p>Each Diagnostic is output in the following format:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">Diagnostic</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">cell?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="c1">// if the file is a jupyter notebook</span>
 <span class="w">    </span><span class="nx">severity</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;warning&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;information&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">rule</span><span class="o">?:</span><span class="w"> </span><span class="nx">string</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">rule?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">range</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">start</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">line</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">character</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span>
+<span class="w">            </span><span class="nx">line</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">character</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nx">end</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">line</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">character</span><span class="o">:</span><span class="w"> </span><span class="nx">number</span>
+<span class="w">            </span><span class="nx">line</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">character</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>

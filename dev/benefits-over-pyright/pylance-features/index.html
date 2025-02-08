@@ -620,6 +620,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#jupyter-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      jupyter notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#import-suggestion-code-actions" class="md-nav__link">
     <span class="md-ellipsis">
       import suggestion code actions
@@ -1584,6 +1593,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#jupyter-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      jupyter notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#import-suggestion-code-actions" class="md-nav__link">
     <span class="md-ellipsis">
       import suggestion code actions
@@ -1707,6 +1725,19 @@
 <h1 id="pylance-features">pylance features</h1>
 <p>basedpyright re-implements some of the features that microsoft made exclusive to pylance, which is microsoft's closed-source vscode extension built on top of the pyright language server with some additional exclusive functionality (<a href="https://github.com/microsoft/pylance-release/blob/main/FAQ.md#what-features-are-in-pylance-but-not-in-pyright-what-is-the-difference-exactly">see the pylance FAQ for more information</a>).</p>
 <p>the following features have been re-implemented in basedpyright's language server, meaning they are no longer exclusive to vscode. you can use any editor that supports the <a href="https://microsoft.github.io/language-server-protocol/">language server protocol</a>. for more information on installing pyright in your editor of choice, see <a href="../../installation/ides/">the installation instructions</a>.</p>
+<h2 id="jupyter-notebooks">jupyter notebooks</h2>
+<p>just like pylance, the basedpyright language server works with jupyter notebooks:</p>
+<p><img alt="" src="../jupyter.png" /></p>
+<p>however unlike pylance, basedpyright also supports type-checking them using the CLI:</p>
+<div class="highlight"><pre><span></span><code>&gt;basedpyright
+c:\project\asdf.ipynb - cell 1
+  c:\project\asdf.ipynb:1:1:12 - error: Type &quot;Literal[&#39;&#39;]&quot; is not assignable to declared type &quot;int&quot;
+    &quot;Literal[&#39;&#39;]&quot; is not assignable to &quot;int&quot; (reportAssignmentType)
+c:\project\asdf.ipynb - cell 2
+  c:\project\asdf.ipynb:2:1:12 - error: Type &quot;int&quot; is not assignable to declared type &quot;str&quot;
+    &quot;int&quot; is not assignable to &quot;str&quot; (reportAssignmentType)
+2 errors, 0 warnings, 0 notes
+</code></pre></div>
 <h2 id="import-suggestion-code-actions">import suggestion code actions</h2>
 <p>pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see <a href="https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645">this issue</a>).</p>
 <p>basedpyright re-implements pylance's import suggestion code actions:</p>
