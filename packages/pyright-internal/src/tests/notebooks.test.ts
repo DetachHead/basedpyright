@@ -1,6 +1,6 @@
 import { tExpect } from 'typed-jest-expect';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
+import { ErrorTrackingNullConsole, typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
 
 test('symbol from previous cell', () => {
     const analysisResults = typeAnalyzeSampleFiles(['notebook.ipynb']);
@@ -23,4 +23,14 @@ test('symbol from previous cell', () => {
 test('non-python cell', () => {
     const analysisResults = typeAnalyzeSampleFiles(['notebook2.ipynb']);
     tExpect(analysisResults.length).toStrictEqual(0);
+});
+
+test('invalid notebook file', () => {
+    const console = new ErrorTrackingNullConsole();
+    typeAnalyzeSampleFiles(['notebook3.ipynb'], undefined, console);
+    tExpect(console.errors.length).toStrictEqual(1);
+    tExpect(console.errors[0]).toMatch(
+        // .* at the end because the error message is slightly different on windows and linux
+        /failed to parse jupyter notebook .* - SyntaxError: Unexpected token .*/
+    );
 });

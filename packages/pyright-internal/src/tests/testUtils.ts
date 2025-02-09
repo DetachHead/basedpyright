@@ -16,7 +16,7 @@ import { Program } from '../analyzer/program';
 import { NameTypeWalker } from '../analyzer/testWalker';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
-import { ConsoleWithLogLevel, NullConsole } from '../common/console';
+import { ConsoleInterface, NullConsole } from '../common/console';
 import { fail } from '../common/debug';
 import { Diagnostic, DiagnosticCategory } from '../common/diagnostic';
 import { DiagnosticSink } from '../common/diagnosticSink';
@@ -39,6 +39,15 @@ import { InlayHintSettings } from '../workspaceFactory';
 // assumes that the working directory has been set appropriately before
 // running the tests.
 (global as any).__rootDirectory = path.resolve();
+
+export class ErrorTrackingNullConsole extends NullConsole {
+    errors = new Array<string>();
+
+    override error(message: string) {
+        this.errors.push(message);
+        super.error(message);
+    }
+}
 
 export interface FileAnalysisResult {
     fileUri: Uri;
@@ -99,7 +108,7 @@ type ConfigOptionsArg = ConfigOptions | ((serviceProvider: ServiceProvider) => C
 
 const createProgram = (
     configOptions: ConfigOptionsArg = new ConfigOptions(Uri.empty()),
-    console?: ConsoleWithLogLevel
+    console?: ConsoleInterface
 ) => {
     const tempFile = new RealTempFile();
     const fs = createFromRealFileSystem(tempFile);
@@ -117,7 +126,7 @@ const createProgram = (
 export function typeAnalyzeSampleFiles(
     fileNames: string[],
     configOptions: ConfigOptionsArg = new ConfigOptions(Uri.empty()),
-    console?: ConsoleWithLogLevel
+    console?: ConsoleInterface
 ): FileAnalysisResult[] {
     const program = createProgram(configOptions, console);
     const fileUris = fileNames.map((name) => UriEx.file(resolveSampleFilePath(name)));

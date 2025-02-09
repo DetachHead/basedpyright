@@ -27,15 +27,7 @@ import { AnalysisResults } from '../analyzer/analysis';
 import { existsSync } from 'fs';
 import { NoAccessHost } from '../common/host';
 import { tExpect } from 'typed-jest-expect';
-
-class ErrorTrackingNullConsole extends NullConsole {
-    errors = new Array<string>();
-
-    override error(message: string) {
-        this.errors.push(message);
-        super.error(message);
-    }
-}
+import { ErrorTrackingNullConsole } from './testUtils';
 
 describe(`config test'}`, () => {
     const tempFile = new RealTempFile();
