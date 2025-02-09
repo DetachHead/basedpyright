@@ -102,29 +102,33 @@ const getFileContent = (fileSystem: FileSystem, uri: Uri, console: ConsoleInterf
 /**
  * if this is a notebook, gets the cells in this file that contain python code.
  * note that each {@link SourceFile} is an individual cell, but this function returns
- * all of them
+ * all of them. throws an exception if the contents of the notebook are invalid (eg. not json)
  * @returns `undefined` if not a notebook
  */
 export const getIPythonCells = (fileSystem: FileSystem, uri: Uri, console: ConsoleInterface) => {
     if (!uri.hasExtension('.ipynb')) {
-        return undefined;
+        return;
     }
     const fileContent = getFileContent(fileSystem, uri, console);
     if (!fileContent) {
-        return undefined;
+        return;
     }
-    const parsedNotebook = JSON.parse(fileContent) as INotebookContent;
-    return parsedNotebook.cells.filter(
-        (cell) =>
-            cell.cell_type === 'code' &&
-            // i guess there's no standard way to specify the language of individual cells? so we check the metadata vscode adds for
-            // cells that have a different language to the notebook's language. idk if this is supported in any other editor tho
-            (typeof cell.metadata.vscode !== 'object' ||
-                cell.metadata.vscode === null ||
-                !('languageId' in cell.metadata.vscode) ||
-                // i don't think vscode ever sets the language to python, or maybe it does for python cells in non-python notebooks?
-                cell.metadata.vscode.languageId === 'python')
-    );
+    try {
+        const parsedNotebook = JSON.parse(fileContent) as INotebookContent;
+        return parsedNotebook.cells.filter(
+            (cell) =>
+                cell.cell_type === 'code' &&
+                // i guess there's no standard way to specify the language of individual cells? so we check the metadata vscode adds for
+                // cells that have a different language to the notebook's language. idk if this is supported in any other editor tho
+                (typeof cell.metadata.vscode !== 'object' ||
+                    cell.metadata.vscode === null ||
+                    !('languageId' in cell.metadata.vscode) ||
+                    // i don't think vscode ever sets the language to python, or maybe it does for python cells in non-python notebooks?
+                    cell.metadata.vscode.languageId === 'python')
+        );
+    } catch (e) {
+        throw new Error(`failed to parse jupyter notebook ${uri.toUserVisibleString()} - ${e}`);
+    }
 };
 
 // A monotonically increasing number used to create unique file IDs.
@@ -554,8 +558,13 @@ export class SourceFile {
         if (cellIndex === undefined) {
             throw new Error(`something went wrong, failed to get cell index for ${this._uri}`);
         }
-        //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
-        const source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex].source;
+        let source;
+        try {
+            //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
+            source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex].source;
+        } catch (e) {
+            this._console.error(e instanceof Error ? e.message : String(e));
+        }
         return typeof source === 'string' ? source : source?.join('');
     }
 

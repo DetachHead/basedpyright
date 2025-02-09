@@ -333,7 +333,13 @@ export class Program {
     }
 
     addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false, isTypeshedFile = false) {
-        const cells = getIPythonCells(this.fileSystem, fileUri, this.console);
+        let cells;
+        try {
+            cells = getIPythonCells(this.fileSystem, fileUri, this.console);
+        } catch (e) {
+            this.console.error(e instanceof Error ? e.message : String(e));
+            return;
+        }
         const sourceFileInfos: SourceFileInfo[] = [];
         if (cells) {
             cells.forEach((_, index) => {
