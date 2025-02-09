@@ -24,6 +24,7 @@ jobs:
     strategy:
       matrix:
         index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,5 +68,5 @@ jobs:
         run: uv build --config-setting regenerate_docstubs=false
       - uses: actions/upload-artifact@v4
         with:
-          name: dist${{ matrix.os }}
+          name: dist${{ matrix.index }}
           path: dist
