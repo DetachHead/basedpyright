@@ -25,11 +25,3 @@ reportDeprecated = 'hint'
 here's how they look in vscode:
 
 ![](diagnostic-tags.png)
-
-## fallback file watcher for LSP clients that don't support `capabilities.workspace.didChangeWatchedFiles.dynamicRegistration`
-
-pyright used to use its own server-side file watcher to detect when files change, but it was removed [due to operating systems limiting the number of file watcher registrations](https://github.com/microsoft/pyright/issues/4635#issuecomment-1430177826). however this file watcher is still used when running the CLI in `--watch` mode, so basedpyright will just fallback to it if the client does not support [`capabilities.workspace.didChangeWatchedFiles.dynamicRegistration`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles).
-
-!!! note
-
-     it's still recommended that the client implement its own file watcher. this fallback functionality is only intended to maximize compatibility with other editors.
