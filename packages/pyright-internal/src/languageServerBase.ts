@@ -110,7 +110,7 @@ import { Diagnostic as AnalyzerDiagnostic, DiagnosticCategory } from './common/d
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
 import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
-import { FileWatcherEventType, FileWatcherHandler } from './common/fileWatcher';
+import { FileWatcherEventType } from './common/fileWatcher';
 import { Host } from './common/host';
 import {
     ClientCapabilities,
@@ -152,9 +152,7 @@ import { assert } from './common/debug';
 import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 import { zip } from 'lodash';
 
-export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatcherHandler>
-    implements LanguageServerInterface, Disposable
-{
+export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
     private _pendingFindAllRefsCancellationSource: AbstractCancellationTokenSource | undefined;
 
@@ -207,7 +205,7 @@ export abstract class LanguageServerBase<T extends FileWatcherHandler = FileWatc
 
     protected readonly dynamicFeatures = new DynamicFeatures();
 
-    constructor(protected serverOptions: ServerOptions<T>, protected connection: Connection) {
+    constructor(protected serverOptions: ServerOptions, protected connection: Connection) {
         // Stash the base directory into a global variable.
         // This must happen before fs.getModulePath().
         (global as any).__rootDirectory = serverOptions.rootDirectory.getFilePath();

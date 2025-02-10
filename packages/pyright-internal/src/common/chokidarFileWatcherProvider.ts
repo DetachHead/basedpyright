@@ -9,7 +9,7 @@
 import * as chokidar from 'chokidar';
 
 import { ConsoleInterface } from './console';
-import { FileWatcherEventHandler, FileWatcherProvider } from './fileWatcher';
+import { FileWatcher, FileWatcherEventHandler, FileWatcherProvider } from './fileWatcher';
 
 const _isMacintosh = process.platform === 'darwin';
 const _isLinux = process.platform === 'linux';
@@ -17,7 +17,7 @@ const _isLinux = process.platform === 'linux';
 export class ChokidarFileWatcherProvider implements FileWatcherProvider {
     constructor(private _console?: ConsoleInterface) {}
 
-    createFileWatcher(paths: string[], listener: FileWatcherEventHandler): chokidar.FSWatcher {
+    createFileWatcher(paths: string[], listener: FileWatcherEventHandler): FileWatcher {
         return this._createFileSystemWatcher(paths).on('all', listener);
     }
 
@@ -56,8 +56,8 @@ export class ChokidarFileWatcherProvider implements FileWatcherProvider {
         watcherOptions.ignored = excludes;
 
         const watcher = chokidar.watch(paths, watcherOptions);
-        watcher.on('error', (e) => {
-            this._console?.error(`Error returned from file system watcher: ${e}`);
+        watcher.on('error', (_) => {
+            this._console?.error('Error returned from file system watcher.');
         });
 
         // Detect if for some reason the native watcher library fails to load

@@ -56,9 +56,7 @@ class ErrorNotificationConsole extends ConsoleWithLogLevel {
 }
 
 //TODO: better name. this class is used by both the node and web language server, but not the test one
-export abstract class RealLanguageServer<
-    T extends FileWatcherHandler = FileWatcherHandler
-> extends LanguageServerBase<T> {
+export abstract class RealLanguageServer extends LanguageServerBase {
     protected controller: CommandController;
     constructor(
         connection: Connection,
@@ -66,7 +64,7 @@ export abstract class RealLanguageServer<
         realFileSystem: FileSystem,
         cancellationProvider: CancellationProvider,
         tempFile: TempFile,
-        fileWatcherProvider: T
+        fileWatcherProvider: FileWatcherHandler
     ) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const version = require('../package.json').version || '';

@@ -84,13 +84,13 @@ export interface WorkspaceServices {
     backgroundAnalysis: BackgroundAnalysisBase | undefined;
 }
 
-export interface ServerOptions<T extends FileWatcherHandler = FileWatcherHandler> {
+export interface ServerOptions {
     productName: string;
     rootDirectory: Uri;
     version: string;
     cancellationProvider: CancellationProvider;
     serviceProvider: ServiceProvider;
-    fileWatcherHandler: T;
+    fileWatcherHandler: FileWatcherHandler;
     maxAnalysisTimeInForeground?: MaxAnalysisTime;
     disableChecker?: boolean;
     supportedCommands?: string[];
