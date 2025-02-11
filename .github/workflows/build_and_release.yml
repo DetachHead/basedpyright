@@ -179,8 +179,7 @@ jobs:
         run: npm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --workspaces --no-git-tag-version
 
       - name: build package - pypi
-        # try twice due to https://github.com/astral-sh/uv/issues/2235
-        run: uv build --config-setting regenerate_docstubs=false || uv build --config-setting regenerate_docstubs=false
+        run: uv build --config-setting regenerate_docstubs=false
       - uses: actions/upload-artifact@v4
         with:
           name: dist
