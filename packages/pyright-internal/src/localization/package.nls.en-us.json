@@ -851,6 +851,10 @@
             "message": "\"{name}\" was already declared nonlocal",
             "comment": "{Locked='nonlocal'}"
         },
+        "nonlocalTypeParam": {
+            "message": "Nonlocal binding is not allowed for type parameter \"{name}\"",
+            "comment": ["{StrContains=i'nonlocal'}", "'nonlocal' is a keyword and should not be localized. It is only capitalized here because it is the first word in the sentence"]
+        },
         "noneNotCallable": {
             "message": "Object of type \"None\" cannot be called",
             "comment": "{Locked='None'}"
@@ -1482,7 +1486,7 @@
             "comment": "{Locked='True','False'}"
         },
         "typedDictClosedExtras": {
-            "message": "Base class \"{name}\" is a closed TypedDict; extra items must be type \"{type}\"",
+            "message": "Base class \"{name}\" is a TypedDict that limits the type of extra items to type \"{type}\"",
             "comment": "{Locked='closed','TypedDict'}"
         },
         "typedDictClosedNoExtras": {
@@ -1504,8 +1508,8 @@
             "comment": "{Locked='TypedDict'}"
         },
         "typedDictExtraItemsClosed": {
-            "message": "A TypedDict cannot be closed if it supports extra items",
-            "comment": "{Locked='TypedDict','closed'}"
+            "message": "TypedDict can use either \"closed\" or \"extra_items\" but not both",
+            "comment": "{Locked='TypedDict','closed','extra_items'}"
         },
         "typedDictFieldNotRequiredRedefinition": {
             "message": "TypedDict item \"{name}\" cannot be redefined as NotRequired",
@@ -2083,10 +2087,6 @@
         "typedDictFieldRequired": "\"{name}\" is required in \"{type}\"",
         "typedDictFieldTypeMismatch": "Type \"{type}\" is not assignable to item \"{name}\"",
         "typedDictFieldUndefined": "\"{name}\" is an undefined item in type \"{type}\"",
-        "typedDictFinalMismatch": {
-            "message": "\"{sourceType}\" is incompatible with \"{destType}\" because of a @final mismatch",
-            "comment": "{Locked='@final'}"
-        },
         "typedDictKeyAccess": {
             "message": "Use [\"{name}\"] to reference item in TypedDict",
             "comment": "{Locked='TypedDict'}"

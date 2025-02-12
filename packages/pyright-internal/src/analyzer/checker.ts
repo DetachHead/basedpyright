@@ -835,7 +835,10 @@ export class Checker extends ParseTreeWalker {
                         node
                     );
 
-                    if (isClassInstance(returnType) && ClassType.isBuiltIn(returnType, 'Coroutine')) {
+                    if (
+                        isClassInstance(returnType) &&
+                        ClassType.isBuiltIn(returnType, ['Coroutine', 'CoroutineType'])
+                    ) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportUnusedCoroutine,
                             LocMessage.unusedCoroutine(),
@@ -1090,7 +1093,7 @@ export class Checker extends ParseTreeWalker {
         let yieldType: Type | undefined;
         let sendType: Type | undefined;
 
-        if (isClassInstance(yieldFromType) && ClassType.isBuiltIn(yieldFromType, 'Coroutine')) {
+        if (isClassInstance(yieldFromType) && ClassType.isBuiltIn(yieldFromType, ['Coroutine', 'CoroutineType'])) {
             // Handle the case of old-style (pre-await) coroutines.
             yieldType = UnknownType.create();
         } else {
@@ -1466,6 +1469,8 @@ export class Checker extends ParseTreeWalker {
                 this._evaluator.getType(name);
 
                 this.walk(name);
+
+                this._validateNonlocalTypeParam(name);
             });
         });
 
@@ -1870,7 +1875,7 @@ export class Checker extends ParseTreeWalker {
                 isExprFunction = false;
             }
 
-            if (!isClassInstance(subtype) || !ClassType.isBuiltIn(subtype, 'Coroutine')) {
+            if (!isClassInstance(subtype) || !ClassType.isBuiltIn(subtype, ['Coroutine', 'CoroutineType'])) {
                 isCoroutine = false;
             }
         });
@@ -1937,6 +1942,22 @@ export class Checker extends ParseTreeWalker {
         if (reportAsUnused) {
             this._evaluator.addDiagnostic(DiagnosticRule.reportUnusedExpression, LocMessage.unusedExpression(), node);
         }
+    }
+
+    // Verifies that the target of a nonlocal statement is not a PEP 695-style
+    // TypeParameter. This situation results in a runtime exception.
+    private _validateNonlocalTypeParam(node: NameNode) {
+        // Look up the symbol to see if it's a type parameter.
+        const symbolWithScope = this._evaluator.lookUpSymbolRecursive(node, node.d.value, /* honorCodeFlow */ false);
+        if (!symbolWithScope || symbolWithScope.scope.type !== ScopeType.TypeParameter) {
+            return;
+        }
+
+        this._evaluator.addDiagnostic(
+            DiagnosticRule.reportGeneralTypeIssues,
+            LocMessage.nonlocalTypeParam().format({ name: node.d.value }),
+            node
+        );
     }
 
     private _validateExhaustiveMatch(node: MatchNode) {
@@ -3062,6 +3083,8 @@ export class Checker extends ParseTreeWalker {
         }
 
         if (!implementation) {
+            // If this is a method within a protocol class, don't require that
+            // there is an implementation.
             const containingClassNode = ParseTreeUtils.getEnclosingClassOrFunction(primaryDecl.node);
             if (containingClassNode && containingClassNode.nodeType === ParseNodeType.Class) {
                 const classType = this._evaluator.getTypeOfClass(containingClassNode);
@@ -3083,8 +3106,13 @@ export class Checker extends ParseTreeWalker {
                 }
             }
 
-            // If this is a method within a protocol class, don't require that
-            // there is an implementation.
+            // If the declaration isn't associated with any of the overloads in the
+            // type, the overloads came from a decorator that captured the overload
+            // from somewhere else.
+            if (!overloads.find((overload) => overload.shared.declaration === primaryDecl)) {
+                return;
+            }
+
             this._evaluator.addDiagnostic(
                 DiagnosticRule.reportNoOverloadImplementation,
                 LocMessage.overloadWithoutImplementation().format({
@@ -6770,27 +6798,7 @@ export class Checker extends ParseTreeWalker {
             const diagAddendum = new DiagnosticAddendum();
 
             // Determine whether this is an attempt to override a method marked @final.
-            let reportFinalMethodOverride = false;
-
-            // Private names (starting with double underscore) are exempt from this check.
-            if (!SymbolNameUtils.isPrivateName(memberName)) {
-                if (isFunction(baseType) && FunctionType.isFinal(baseType)) {
-                    reportFinalMethodOverride = true;
-                } else if (isOverloaded(baseType)) {
-                    const overloads = OverloadedType.getOverloads(baseType);
-                    const impl = OverloadedType.getImplementation(baseType);
-
-                    if (overloads.some((overload) => FunctionType.isFinal(overload))) {
-                        reportFinalMethodOverride = true;
-                    }
-
-                    if (impl && isFunction(impl) && FunctionType.isFinal(impl)) {
-                        reportFinalMethodOverride = true;
-                    }
-                }
-            }
-
-            if (reportFinalMethodOverride) {
+            if (this._isFinalFunction(memberName, baseType)) {
                 const decl = getLastTypedDeclarationForSymbol(overrideSymbol);
                 if (decl && decl.type === DeclarationType.Function) {
                     const diag = this._evaluator.addDiagnostic(
@@ -7091,6 +7099,31 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
+    private _isFinalFunction(name: string, type: Type) {
+        if (SymbolNameUtils.isPrivateName(name)) {
+            return false;
+        }
+
+        if (isFunction(type) && FunctionType.isFinal(type)) {
+            return true;
+        }
+
+        if (isOverloaded(type)) {
+            const overloads = OverloadedType.getOverloads(type);
+            const impl = OverloadedType.getImplementation(type);
+
+            if (overloads.some((overload) => FunctionType.isFinal(overload))) {
+                return true;
+            }
+
+            if (impl && isFunction(impl) && FunctionType.isFinal(impl)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private _validatePropertyOverride(
         baseClassType: ClassType,
         childClassType: ClassType,
@@ -7151,6 +7184,18 @@ export class Checker extends ParseTreeWalker {
                     }
 
                     return;
+                } else if (this._isFinalFunction(methodName, baseClassPropMethod)) {
+                    const decl = getLastTypedDeclarationForSymbol(overrideSymbol);
+                    if (decl && decl.type === DeclarationType.Function) {
+                        this._evaluator.addDiagnostic(
+                            DiagnosticRule.reportIncompatibleMethodOverride,
+                            LocMessage.finalMethodOverride().format({
+                                name: memberName,
+                                className: baseClassType.shared.name,
+                            }),
+                            decl.node.d.name
+                        );
+                    }
                 }
 
                 const subclassMethodType = partiallySpecializeType(

@@ -714,15 +714,17 @@ export namespace Localizer {
             new ParameterizedString<{ operator: string }>(getRawString('Diagnostic.noneOperator'));
         export const noneUnknownMember = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.noneUnknownMember'));
+        export const nonLocalInModule = () => getRawString('Diagnostic.nonLocalInModule');
         export const nonLocalNoBinding = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.nonLocalNoBinding'));
         export const nonLocalReassignment = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.nonLocalReassignment'));
         export const nonLocalRedefinition = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.nonLocalRedefinition'));
-        export const nonLocalInModule = () => getRawString('Diagnostic.nonLocalInModule');
         export const noOverload = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.noOverload'));
+        export const nonlocalTypeParam = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.nonlocalTypeParam'));
         export const noReturnContainsReturn = () => getRawString('Diagnostic.noReturnContainsReturn');
         export const noReturnContainsYield = () => getRawString('Diagnostic.noReturnContainsYield');
         export const noReturnReturnsNone = () => getRawString('Diagnostic.noReturnReturnsNone');
@@ -1590,10 +1592,6 @@ export namespace Localizer {
         export const typedDictFieldUndefined = () =>
             new ParameterizedString<{ name: string; type: string }>(
                 getRawString('DiagnosticAddendum.typedDictFieldUndefined')
-            );
-        export const typedDictFinalMismatch = () =>
-            new ParameterizedString<{ sourceType: string; destType: string }>(
-                getRawString('DiagnosticAddendum.typedDictFinalMismatch')
             );
         export const typedDictKeyAccess = () =>
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.typedDictKeyAccess'));

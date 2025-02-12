@@ -692,7 +692,7 @@ test('TypedDict11', () => {
 test('TypedDict12', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict12.py']);
 
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('TypedDict13', () => {
@@ -716,7 +716,7 @@ test('TypedDict15', () => {
 test('TypedDict16', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict16.py']);
 
-    TestUtils.validateResults(analysisResults, 9);
+    TestUtils.validateResults(analysisResults, 7);
 });
 
 test('TypedDict17', () => {
@@ -765,6 +765,12 @@ test('TypedDict24', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict24.py']);
 
     TestUtils.validateResults(analysisResults, 1);
+});
+
+test('TypedDict25', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict25.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('TypedDictInline1', () => {

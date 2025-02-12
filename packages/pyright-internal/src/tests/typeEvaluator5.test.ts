@@ -18,7 +18,7 @@ test('TypeParams1', () => {
     configOptions.defaultPythonVersion = pythonVersion3_12;
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeParams1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 6);
+    TestUtils.validateResults(analysisResults, 8);
 });
 
 test('TypeParams2', () => {
@@ -357,7 +357,7 @@ test('TypedDictClosed1', () => {
     configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDictClosed1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 6);
+    TestUtils.validateResults(analysisResults, 7);
 });
 
 test('TypedDictClosed2', () => {
@@ -365,7 +365,7 @@ test('TypedDictClosed2', () => {
     configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
 
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDictClosed2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('TypedDictClosed3', () => {
