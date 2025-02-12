@@ -5336,7 +5336,11 @@ export class Checker extends ParseTreeWalker {
                     if (!containingClass) {
                         return true;
                     }
-
+                    // if it's an augmented assignment that doesn't count because it needs to have been assigned to already
+                    // otherwise it will crash at runtime
+                    if (ParseTreeUtils.isNodeContainedWithinNodeType(decl.node, ParseNodeType.AugmentedAssignment)) {
+                        return false;
+                    }
                     if (containingClass.nodeType === ParseNodeType.Class) {
                         // If this is part of an assignment statement, assume it has been
                         // initialized as a class variable.
