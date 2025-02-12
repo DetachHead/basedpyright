@@ -1151,7 +1151,15 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         let doc = this.openFileMap.get(uri.key);
         if (doc) {
             // We shouldn't get an open text document request for an already-opened doc.
-            this.console.error(`Received redundant open text document command for ${uri}`);
+            const message = `Received redundant open text document command for ${uri}`;
+            // for some reason if a new notebook is opened that doesn't yet exist on disk (eg. when running "Create: New Jupyter Notebook"),
+            // didClose never gets called if it's closed without being saved. this might be a bug in vscode's lsp client but idk, so we warn
+            // instead of error so it doesn't show up to the user
+            if (uri.scheme === 'vscode-notebook-cell') {
+                this.console.warn(message);
+            } else {
+                this.console.error(message);
+            }
             TextDocument.update(doc, [{ text: params.textDocument.text }], params.textDocument.version);
         } else {
             doc = TextDocument.create(
