@@ -1699,7 +1699,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 const notebookUri = Uri.file(parsedUri.getPath(), this.serviceProvider);
                 cellIndex = this._openCells.get(notebookUri.key)?.findIndex((cell) => cell.uri === uri);
                 if (cellIndex === undefined) {
-                    throw new Error(`failed to find cell index when converting uri ${uri}`);
+                    // can happen if it's a newly created notebook that hasn't been saved to disk yet or if it's an
+                    // interactive cell
+                    return parsedUri;
                 }
             }
             // remove the vscode-notebook-cell:// scheme
