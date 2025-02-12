@@ -1644,7 +1644,14 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected abstract createProgressReporter(): ProgressReporter;
 
     protected canNavigateToFile(path: Uri, fs: FileSystem): boolean {
-        return canNavigateToFile(fs, path);
+        return (
+            canNavigateToFile(fs, path) &&
+            // if it's a notebook but the user hasn't opened it yet (should only happen when diagnosticMode is "workspace"),
+            // there's no way for us to know the cell URI. see https://github.com/microsoft/language-server-protocol/issues/2097.
+            // this isn't ideal because it means the "workspace" diagnostic mode doesn't work on notebooks so the user always
+            // has to open them before diagnostics are reported for them, but pylance seems to behave the same way so whatever
+            (!path.fragment || this._openCells.has(path.withFragment('').key))
+        );
     }
 
     protected async getProgressReporter(reporter: WorkDoneProgressReporter, title: string, token: CancellationToken) {
