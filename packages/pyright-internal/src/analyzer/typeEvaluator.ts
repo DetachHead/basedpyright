@@ -10703,7 +10703,7 @@ export function createTypeEvaluator(
 
                 rightSubtype = makeTopLevelTypeVarsConcrete(rightSubtype);
 
-                if (_isTypeComparable(leftSubtype, rightSubtype, checkEq)) {
+                if (isTypeComparable(leftSubtype, rightSubtype, checkEq)) {
                     isComparable = true;
                 }
 
@@ -10713,94 +10713,6 @@ export function createTypeEvaluator(
             return leftSubtype;
         });
         return isComparable;
-    };
-
-    // Determines whether the two types are potentially comparable -- i.e.
-    // their types overlap in such a way that it makes sense for them to
-    // be compared with an == or != operator.
-    const _isTypeComparable = (leftType: Type, rightType: Type, checkEq: boolean) => {
-        if (isAnyOrUnknown(leftType) || isAnyOrUnknown(rightType)) {
-            return true;
-        }
-
-        if (isNever(leftType) || isNever(rightType)) {
-            return false;
-        }
-
-        if (isModule(leftType) || isModule(rightType)) {
-            return isTypeSame(leftType, rightType, { ignoreConditions: true });
-        }
-
-        const isLeftCallable = isFunction(leftType) || isOverloaded(leftType);
-        const isRightCallable = isFunction(rightType) || isOverloaded(rightType);
-        if (isLeftCallable !== isRightCallable) {
-            return false;
-        }
-
-        if (
-            checkEq &&
-            (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type')))
-        ) {
-            if (
-                isInstantiableClass(rightType) ||
-                (isClassInstance(rightType) && ClassType.isBuiltIn(rightType, 'type'))
-            ) {
-                const genericLeftType = ClassType.specialize(leftType, /* typeArgs */ undefined);
-                const genericRightType = ClassType.specialize(rightType, /* typeArgs */ undefined);
-
-                if (assignType(genericLeftType, genericRightType) || assignType(genericRightType, genericLeftType)) {
-                    return true;
-                }
-            }
-            // Does the class have an operator overload for eq?
-            const metaclass = leftType.shared.effectiveMetaclass;
-            if (metaclass && isClass(metaclass)) {
-                if (lookUpClassMember(metaclass, '__eq__', MemberAccessFlags.SkipObjectBaseClass)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if (isClassInstance(leftType)) {
-            if (isClass(rightType)) {
-                const genericLeftType = ClassType.specialize(leftType, /* typeArgs */ undefined);
-                const genericRightType = ClassType.specialize(rightType, /* typeArgs */ undefined);
-
-                if (assignType(genericLeftType, genericRightType) || assignType(genericRightType, genericLeftType)) {
-                    return true;
-                }
-
-                // Assume that if the types are disjoint and built-in classes that they
-                // will never be comparable.
-                if (ClassType.isBuiltIn(leftType) && ClassType.isBuiltIn(rightType) && TypeBase.isInstance(rightType)) {
-                    return false;
-                }
-            }
-            if (checkEq) {
-                // Does the class have an operator overload for eq?
-                const eqMethod = lookUpClassMember(
-                    ClassType.cloneAsInstantiable(leftType),
-                    '__eq__',
-                    MemberAccessFlags.SkipObjectBaseClass
-                );
-
-                if (eqMethod) {
-                    // If this is a synthesized method for a dataclass, we can assume
-                    // that other dataclass types will not be comparable.
-                    if (ClassType.isDataClass(leftType) && eqMethod.symbol.getSynthesizedType()) {
-                        return false;
-                    }
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        return true;
     };
 
     // Expands any unpacked tuples within an argument list.
@@ -25817,7 +25729,7 @@ export function createTypeEvaluator(
     // Determines whether the two types are potentially comparable -- i.e.
     // their types overlap in such a way that it makes sense for them to
     // be compared with an == or != operator.
-    function isTypeComparable(leftType: Type, rightType: Type) {
+    function isTypeComparable(leftType: Type, rightType: Type, checkEq: boolean) {
         if (isAnyOrUnknown(leftType) || isAnyOrUnknown(rightType)) {
             return true;
         }
@@ -25836,7 +25748,10 @@ export function createTypeEvaluator(
             return false;
         }
 
-        if (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type'))) {
+        if (
+            checkEq &&
+            (isInstantiableClass(leftType) || (isClassInstance(leftType) && ClassType.isBuiltIn(leftType, 'type')))
+        ) {
             if (
                 isInstantiableClass(rightType) ||
                 (isClassInstance(rightType) && ClassType.isBuiltIn(rightType, 'type'))
@@ -25872,54 +25787,57 @@ export function createTypeEvaluator(
                 // Assume that if the types are disjoint and built-in classes that they
                 // will never be comparable.
                 if (ClassType.isBuiltIn(leftType) && ClassType.isBuiltIn(rightType) && TypeBase.isInstance(rightType)) {
-                    // We need to be careful with bool and int literals because
-                    // they are comparable under certain circumstances.
-                    let boolType: ClassType | undefined;
-                    let intType: ClassType | undefined;
-                    if (ClassType.isBuiltIn(leftType, 'bool') && ClassType.isBuiltIn(rightType, 'int')) {
-                        boolType = leftType;
-                        intType = rightType;
-                    } else if (ClassType.isBuiltIn(rightType, 'bool') && ClassType.isBuiltIn(leftType, 'int')) {
-                        boolType = rightType;
-                        intType = leftType;
-                    }
-
-                    if (boolType && intType) {
-                        const intVal = intType.priv?.literalValue as number | BigInt | undefined;
-                        if (intVal === undefined) {
-                            return true;
-                        }
-                        if (intVal !== 0 && intVal !== 1) {
-                            return false;
+                    if (checkEq) {
+                        // We need to be careful with bool and int literals because
+                        // they are comparable under certain circumstances.
+                        let boolType: ClassType | undefined;
+                        let intType: ClassType | undefined;
+                        if (ClassType.isBuiltIn(leftType, 'bool') && ClassType.isBuiltIn(rightType, 'int')) {
+                            boolType = leftType;
+                            intType = rightType;
+                        } else if (ClassType.isBuiltIn(rightType, 'bool') && ClassType.isBuiltIn(leftType, 'int')) {
+                            boolType = rightType;
+                            intType = leftType;
                         }
 
-                        const boolVal = boolType.priv?.literalValue as boolean | undefined;
-                        if (boolVal === undefined) {
-                            return true;
-                        }
+                        if (boolType && intType) {
+                            const intVal = intType.priv?.literalValue as number | BigInt | undefined;
+                            if (intVal === undefined) {
+                                return true;
+                            }
+                            if (intVal !== 0 && intVal !== 1) {
+                                return false;
+                            }
 
-                        return boolVal === (intVal === 1);
+                            const boolVal = boolType.priv?.literalValue as boolean | undefined;
+                            if (boolVal === undefined) {
+                                return true;
+                            }
+
+                            return boolVal === (intVal === 1);
+                        }
                     }
 
                     return false;
                 }
             }
+            if (checkEq) {
+                // Does the class have an operator overload for eq?
+                const eqMethod = lookUpClassMember(
+                    ClassType.cloneAsInstantiable(leftType),
+                    '__eq__',
+                    MemberAccessFlags.SkipObjectBaseClass
+                );
 
-            // Does the class have an operator overload for eq?
-            const eqMethod = lookUpClassMember(
-                ClassType.cloneAsInstantiable(leftType),
-                '__eq__',
-                MemberAccessFlags.SkipObjectBaseClass
-            );
+                if (eqMethod) {
+                    // If this is a synthesized method for a dataclass, we can assume
+                    // that other dataclass types will not be comparable.
+                    if (ClassType.isDataClass(leftType) && eqMethod.symbol.getSynthesizedType()) {
+                        return false;
+                    }
 
-            if (eqMethod) {
-                // If this is a synthesized method for a dataclass, we can assume
-                // that other dataclass types will not be comparable.
-                if (ClassType.isDataClass(leftType) && eqMethod.symbol.getSynthesizedType()) {
-                    return false;
+                    return true;
                 }
-
-                return true;
             }
 
             return false;

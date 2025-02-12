@@ -2152,7 +2152,7 @@ export function narrowTypeForContainerElementType(evaluator: TypeEvaluator, refe
             }
 
             // If the two types are disjoint (i.e. are not comparable), eliminate this subtype.
-            if (!evaluator.isTypeComparable(elementSubtype, referenceSubtype)) {
+            if (!evaluator.isTypeComparable(elementSubtype, referenceSubtype, true)) {
                 return undefined;
             }
 
