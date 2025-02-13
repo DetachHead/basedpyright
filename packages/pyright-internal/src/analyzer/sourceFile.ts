@@ -561,7 +561,7 @@ export class SourceFile {
         let source;
         try {
             //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
-            source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex].source;
+            source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex]?.source;
         } catch (e) {
             this._console.error(e instanceof Error ? e.message : String(e));
         }
