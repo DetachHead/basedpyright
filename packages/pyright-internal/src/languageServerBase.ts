@@ -1288,7 +1288,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         const workspaces = await this.getContainingWorkspacesForFile(cellUri);
                         if (newCell === undefined) {
                             // a cell was deleted and there's no longer a cell at this index so we need to close it
-                            // Send this close to all the workspaces that might contain this file.
+                            // Send this close to all the workspaces that might contain this file. note that we also
+                            // need to clear diagnostics for the vscode cell uri that no longer exists, which is done
+                            // below using didClose
                             workspaces.forEach((w) => w.service.setFileClosed(cellUri));
                         } else {
                             // this index now has a different cell than it did before (ie. order was changed) so we have to update the already opened cell
@@ -1308,6 +1310,17 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     }
                 })
             );
+            if (changeStructure.didClose) {
+                await Promise.all(
+                    changeStructure.didClose.map((document) =>
+                        // the setFileClosed above will just remove the diagnostics for the underlying cell at the index that
+                        // no longer exists, but we need to also clear diagnostics for the vscode cell uri even if it
+                        // was replaced with a different cell at the same index, bwcause vscode will assign it a
+                        // different uri
+                        this.connection.sendDiagnostics({ diagnostics: [], uri: document.uri })
+                    )
+                );
+            }
             this._openCells.set(uri.key, newCells);
         }
         if (params.change.cells?.textContent) {
