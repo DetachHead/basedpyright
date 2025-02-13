@@ -685,6 +685,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     },
                 },
             },
+            serverInfo: {
+                name: 'basedpyright',
+                version: this.serverOptions.version,
+            },
         };
 
         return result;
