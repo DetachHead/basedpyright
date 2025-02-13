@@ -391,14 +391,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     convertUriToLspUriString = (fs: ReadOnlyFileSystem, uri: Uri): string => {
         // Convert to a URI string that the LSP client understands (mapped files are only local to the server).
-        if (uri.fragment && uri.scheme !== 'vscode-notebook-cell') {
+        if (this._isNotebookUri(uri)) {
             // if it's a notebook cell we need to figure out the open uri matching the index, because it changes
             // when cells are rearranged
-            const result = this._openCells.get(uri.withFragment('').key)?.[Number(uri.fragment)];
-            if (!result) {
-                throw new Error(`failed to get lsp uri for cell at index ${uri.fragment} or ${uri}`);
+            const result = this._convertUriToLspNotebookCellUri(uri);
+            // result can be undefined if the cell has been deleted and running in background analysis mode which
+            // causes this._openCells to get cleared before this method is called, in which case fall back to the
+            // normal uri
+            if (result) {
+                return result.uri;
             }
-            return result.uri;
         }
         return fs.getOriginalUri(uri).toString();
     };
@@ -1658,7 +1660,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             // there's no way for us to know the cell URI. see https://github.com/microsoft/language-server-protocol/issues/2097.
             // this isn't ideal because it means the "workspace" diagnostic mode doesn't work on notebooks so the user always
             // has to open them before diagnostics are reported for them, but pylance seems to behave the same way so whatever
-            (!path.fragment || this._openCells.has(path.withFragment('').key))
+            (!this._isNotebookUri(path) || this._convertUriToLspNotebookCellUri(path) !== undefined)
         );
     }
 
@@ -1729,6 +1731,23 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
      */
     private _getChainedFileUri = (cell: { uri: string }, index: number) =>
         index ? this.convertLspUriStringToUri(cell.uri, index - 1) : undefined;
+
+    /**
+     * converts the uri for a notebook cell from our format to vscode's for the language server.
+     * @returns `undefined` if the cell is not open or if it's not a notebook cell uri
+     */
+    private _convertUriToLspNotebookCellUri = (uri: Uri) =>
+        this._openCells.get(uri.withFragment('').key)?.[Number(uri.fragment)];
+
+    /**
+     * whether the uri is for a notebook cell (our format, not the format used by vscode)
+     */
+    private _isNotebookUri = (uri: Uri) => !!uri.fragment && !this._isLspNotebookUri(uri);
+
+    /**
+     * whether the uri is vscode's representation of a notebook cell
+     */
+    private _isLspNotebookUri = (uri: Uri) => uri.scheme === 'vscode-notebook-cell';
 
     private _getCompatibleMarkupKind(clientSupportedFormats: MarkupKind[] | undefined) {
         const serverSupportedFormats = [MarkupKind.PlainText, MarkupKind.Markdown];
