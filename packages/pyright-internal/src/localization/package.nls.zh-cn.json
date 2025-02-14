@@ -584,7 +584,7 @@
         "typedDictEntryName": "字典项名称应为字符串字面量",
         "typedDictEntryUnique": "字典项名称必须唯一",
         "typedDictExtraArgs": "不支持额外的 `TypedDict` 参数",
-        "typedDictExtraItemsClosed": "`TypedDict` 无法同时使用 \"closed\" 或 \"extra_items\"",
+        "typedDictExtraItemsClosed": "`TypedDict` 无法同时使用 \"closed\" 和 \"extra_items\"",
         "typedDictFieldNotRequiredRedefinition": "无法将 `TypedDict` 项 \"{name}\" 重新定义为 `NotRequired`",
         "typedDictFieldReadOnlyRedefinition": "无法将 `TypedDict` 项 \"{name}\" 重新定义为 `ReadOnly`",
         "typedDictFieldRequiredRedefinition": "无法将 `TypedDict` 项 \"{name}\" 重新定义为 `Required`",
