@@ -41,6 +41,7 @@ import { WellKnownWorkspaceKinds, Workspace } from './workspaceFactory';
 import { toolName } from './constants';
 import { CancellationProvider } from './common/cancellationUtils';
 import { FileWatcherHandler } from './common/fileWatcher';
+import version from './version.json';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
@@ -66,9 +67,6 @@ export abstract class RealLanguageServer extends LanguageServerBase {
         tempFile: TempFile,
         fileWatcherProvider: FileWatcherHandler
     ) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const version = require('../package.json').version || '';
-
         const console = new ErrorNotificationConsole(connection);
         const pyrightFs = new PyrightFileSystem(realFileSystem);
         const cacheManager = new CacheManager(maxWorkers);
