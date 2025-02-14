@@ -12,6 +12,7 @@ import {
     CancellationToken,
     CompletionItem,
     CompletionItemKind,
+    CompletionItemTag,
     CompletionList,
     InsertTextFormat,
     MarkupKind,
@@ -721,6 +722,10 @@ export class CompletionProvider {
             if (!type) {
                 // Can't resolve. so bail out.
                 return;
+            }
+
+            if ((isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined) {
+                this.itemToResolve.tags = [CompletionItemTag.Deprecated];
             }
 
             const typeDetail = getTypeDetail(
