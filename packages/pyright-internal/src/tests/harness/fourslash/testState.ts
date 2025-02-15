@@ -99,6 +99,7 @@ import {
 } from './testStateUtils';
 import { verifyWorkspaceEdit } from './workspaceEditTestUtils';
 import { Host } from '../../../common/host';
+import { tExpect } from 'typed-jest-expect';
 
 export interface TextChange {
     span: TextRange;
@@ -1061,10 +1062,11 @@ export class TestState {
 
                         const actual: CompletionItem = results.items[actualIndex];
 
-                        if (expected.additionalTextEdits !== undefined) {
-                            if (actual.additionalTextEdits === undefined) {
-                                provider.resolveCompletionItem(actual);
-                            }
+                        if (
+                            (expected.additionalTextEdits !== undefined && actual.additionalTextEdits === undefined) ||
+                            (expected.tags !== undefined && actual.tags === undefined)
+                        ) {
+                            provider.resolveCompletionItem(actual);
                         }
 
                         this.verifyCompletionItem(expected, actual);
@@ -1710,6 +1712,7 @@ export class TestState {
         assert.strictEqual(actual.label, expected.label);
         assert.strictEqual(actual.detail, expected.detail);
         assert.strictEqual(actual.kind, expected.kind);
+        tExpect(actual.tags).toStrictEqual(expected.tags);
 
         assert.strictEqual(actual.insertText, expected.insertionText);
         this._verifyEdit(actual.textEdit as TextEdit, expected.textEdit);
