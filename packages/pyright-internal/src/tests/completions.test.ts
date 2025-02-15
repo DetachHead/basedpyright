@@ -6,7 +6,7 @@
 
 import assert from 'assert';
 import { CancellationToken } from 'vscode-languageserver';
-import { CompletionItemKind, MarkupKind } from 'vscode-languageserver-types';
+import { CompletionItemKind, CompletionItemTag, MarkupKind } from 'vscode-languageserver-types';
 
 import { Uri } from '../common/uri/uri';
 import { CompletionOptions, CompletionProvider } from '../languageService/completionProvider';
@@ -1492,6 +1492,33 @@ test('dataclass field alias with invalid python identifier', async () => {
                 {
                     label: 'foo bar=',
                     kind: CompletionItemKind.Variable,
+                },
+            ],
+        },
+    });
+});
+
+test('deprecated', async () => {
+    const code = `
+// @filename: test.py
+//// from typing_extensions import deprecated
+//// 
+//// 
+//// @deprecated('asdf')
+//// def asdfasdf(): ...
+//// 
+//// asdfasd[|/*marker*/|]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['marker']: {
+            completions: [
+                {
+                    label: 'asdfasdf',
+                    kind: CompletionItemKind.Function,
+                    tags: [CompletionItemTag.Deprecated],
                 },
             ],
         },

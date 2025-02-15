@@ -22,6 +22,9 @@
  * and hit F5.
  */
 
+// TODO: use declare global and just re-export the types from vscode-languageserver-types instead of duplicating them
+// but that might be annoying for upstream merges because it involves indenting everything
+
 declare namespace _ {
     type CompletionItemKind =
         | 1
@@ -51,6 +54,9 @@ declare namespace _ {
         | 25;
 
     type FourSlashVerificationMode = 'exact' | 'included' | 'excluded';
+
+    type CompletionItemTag = 1;
+
     interface FourSlashCompletionItem {
         label: string;
         kind: CompletionItemKind | undefined;
@@ -61,6 +67,7 @@ declare namespace _ {
         additionalTextEdits?: TextEdit[];
         detailDescription?: string;
         commitCharacters?: string[];
+        tags?: CompletionItemTag[];
     }
 
     interface FourSlashCallHierarchyItem {
