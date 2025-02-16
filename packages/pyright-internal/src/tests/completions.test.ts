@@ -807,6 +807,7 @@ test('completion quote trigger', async () => {
         snippet: false,
         lazyEdit: false,
         triggerCharacter: '"',
+        checkDeprecatedWhenResolving: false,
     };
 
     const result = new CompletionProvider(
@@ -846,6 +847,7 @@ test('completion quote trigger - middle', async () => {
         snippet: false,
         lazyEdit: false,
         triggerCharacter: "'",
+        checkDeprecatedWhenResolving: false,
     };
 
     const result = new CompletionProvider(
@@ -892,6 +894,7 @@ test('auto import sort text', async () => {
         format: 'markdown',
         snippet: false,
         lazyEdit: false,
+        checkDeprecatedWhenResolving: false,
     };
 
     const result = new CompletionProvider(
@@ -1498,8 +1501,9 @@ test('dataclass field alias with invalid python identifier', async () => {
     });
 });
 
-test('deprecated', async () => {
-    const code = `
+describe('deprecated', () => {
+    test('completionItem/resolve supported', async () => {
+        const code = `
 // @filename: test.py
 //// from typing_extensions import deprecated
 //// 
@@ -1510,17 +1514,86 @@ test('deprecated', async () => {
 //// asdfasd[|/*marker*/|]
     `;
 
-    const state = parseAndGetTestState(code).state;
+        const state = parseAndGetTestState(code).state;
 
-    await state.verifyCompletion('included', 'markdown', {
-        ['marker']: {
-            completions: [
-                {
-                    label: 'asdfasdf',
-                    kind: CompletionItemKind.Function,
-                    tags: [CompletionItemTag.Deprecated],
+        await state.verifyCompletion(
+            'included',
+            'markdown',
+            {
+                ['marker']: {
+                    completions: [
+                        {
+                            label: 'asdfasdf',
+                            kind: CompletionItemKind.Function,
+                            tags: [CompletionItemTag.Deprecated],
+                        },
+                    ],
                 },
-            ],
-        },
+            },
+            undefined,
+            true
+        );
+    });
+    test('completionItem/resolve not supported', async () => {
+        const code = `
+// @filename: test.py
+//// from typing_extensions import deprecated
+//// 
+//// 
+//// @deprecated('asdf')
+//// def asdfasdf(): ...
+//// 
+//// asdfasd[|/*marker*/|]
+    `;
+
+        const state = parseAndGetTestState(code).state;
+
+        await state.verifyCompletion('included', 'markdown', {
+            ['marker']: {
+                completions: [
+                    {
+                        label: 'asdfasdf',
+                        kind: CompletionItemKind.Function,
+                        tags: [CompletionItemTag.Deprecated],
+                    },
+                ],
+            },
+        });
+    });
+    test('deprecated typing aliases', async () => {
+        const code = `
+// @filename: pyrightconfig.json
+//// {
+////   "deprecateTypingAliases": true
+//// }
+
+// @filename: test.py
+//// [|/*importMarker*/|][|Lis/*marker*/|]
+    `;
+
+        const state = parseAndGetTestState(code).state;
+
+        await state.verifyCompletion('included', 'markdown', {
+            ['marker']: {
+                completions: [
+                    {
+                        label: 'List',
+                        kind: CompletionItemKind.Variable,
+                        tags: [CompletionItemTag.Deprecated],
+                        detail: 'Auto-import',
+                        textEdit: {
+                            range: state.getPositionRange('marker'),
+                            newText: 'List',
+                        },
+                        additionalTextEdits: [
+                            {
+                                range: state.getPositionRange('importMarker'),
+                                newText: 'from typing import List\n\n\n',
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
     });
 });

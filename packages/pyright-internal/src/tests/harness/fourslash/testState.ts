@@ -1013,7 +1013,8 @@ export class TestState {
                 readonly importFrom?: string;
                 readonly importName: string;
             };
-        }
+        },
+        resolveTags = false
     ): Promise<void> {
         this.analyze();
 
@@ -1026,7 +1027,7 @@ export class TestState {
             this.lastKnownMarker = markerName;
 
             const expectedCompletions = map[markerName].completions;
-            const provider = this.getCompletionResults(this, marker, docFormat, abbrMap);
+            const provider = this.getCompletionResults(this, marker, docFormat, resolveTags, abbrMap);
             const results = provider.getCompletions();
             if (results) {
                 if (verifyMode === 'exact') {
@@ -1064,7 +1065,7 @@ export class TestState {
 
                         if (
                             (expected.additionalTextEdits !== undefined && actual.additionalTextEdits === undefined) ||
-                            (expected.tags !== undefined && actual.tags === undefined)
+                            (resolveTags && expected.tags !== undefined && actual.tags === undefined)
                         ) {
                             provider.resolveCompletionItem(actual);
                         }
@@ -1613,6 +1614,7 @@ export class TestState {
         state: TestState,
         marker: Marker,
         docFormat: MarkupKind,
+        resolveTags: boolean,
         abbrMap?: {
             [abbr: string]: {
                 readonly importFrom?: string;
@@ -1627,6 +1629,7 @@ export class TestState {
             format: docFormat,
             snippet: true,
             lazyEdit: false,
+            checkDeprecatedWhenResolving: resolveTags,
         };
 
         const provider = new CompletionProvider(
