@@ -120,6 +120,7 @@ export interface ClientCapabilities {
     supportsUnnecessaryDiagnosticTag: boolean;
     supportsTaskItemDiagnosticTag: boolean;
     completionItemResolveSupportsAdditionalTextEdits: boolean;
+    completionItemResolveSupportsTags: boolean;
 }
 
 export interface LanguageServerBaseInterface {

@@ -188,6 +188,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         supportsUnnecessaryDiagnosticTag: false,
         supportsTaskItemDiagnosticTag: false,
         completionItemResolveSupportsAdditionalTextEdits: false,
+        completionItemResolveSupportsTags: false,
     };
 
     protected defaultClientConfig: any;
@@ -610,10 +611,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.client.supportsTaskItemDiagnosticTag = this.client.hasVisualStudioExtensionsCapability;
         this.client.hasWindowProgressCapability = !!capabilities.window?.workDoneProgress;
         this.client.hasGoToDeclarationCapability = !!capabilities.textDocument?.declaration;
+        const completionResolveProperties =
+            capabilities.textDocument?.completion?.completionItem?.resolveSupport?.properties ?? [];
         this.client.completionItemResolveSupportsAdditionalTextEdits =
-            !!capabilities.textDocument?.completion?.completionItem?.resolveSupport?.properties.some(
-                (p) => p === 'additionalTextEdits'
-            );
+            completionResolveProperties.includes('additionalTextEdits');
+        this.client.completionItemResolveSupportsTags = completionResolveProperties.includes('tags');
 
         // Create a service instance for each of the workspace folders.
         this.workspaceFactory.handleInitialize(params);
@@ -976,6 +978,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     snippet: this.client.completionSupportsSnippet,
                     lazyEdit: false,
                     triggerCharacter: params?.context?.triggerCharacter,
+                    checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                 },
                 token,
                 false
@@ -1006,6 +1009,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         format: this.client.completionDocFormat,
                         snippet: this.client.completionSupportsSnippet,
                         lazyEdit: false,
+                        checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                     },
                     token,
                     false

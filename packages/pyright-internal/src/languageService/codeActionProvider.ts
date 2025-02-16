@@ -78,6 +78,9 @@ export class CodeActionProvider {
                     format: 'plaintext',
                     lazyEdit: false,
                     snippet: false,
+                    // we don't care about deprecations here so make sure they don't get evaluated unnecessarily
+                    // (we don't call resolveCompletionItem)
+                    checkDeprecatedWhenResolving: true,
                 },
                 token,
                 true
