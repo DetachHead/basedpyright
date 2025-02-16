@@ -99,7 +99,6 @@ import { getBoundCallMethod, getBoundInitMethod, getBoundNewMethod } from './con
 import { addInheritedDataClassEntries } from './dataClasses';
 import { Declaration, DeclarationType, isAliasDeclaration, isVariableDeclaration } from './declaration';
 import { getNameNodeForDeclaration, hasTypeForDeclaration } from './declarationUtils';
-import { deprecatedAliases, deprecatedSpecialForms } from './deprecatedSymbols';
 import { getEnumDeclaredValueType, isEnumClassWithMembers, transformTypeForEnumMember } from './enums';
 import { ImportResolver, ImportedModuleDescriptor, createImportedModuleDescriptor } from './importResolver';
 import { ImportResult, ImportType } from './importResult';
@@ -4318,33 +4317,21 @@ export class Checker extends ParseTreeWalker {
             this._reportDeprecatedDiagnostic(node, errorMessage, deprecatedMessage);
         }
 
-        if (this._fileInfo.diagnosticRuleSet.deprecateTypingAliases) {
-            const deprecatedForm = deprecatedAliases.get(node.d.value) ?? deprecatedSpecialForms.get(node.d.value);
-
-            if (deprecatedForm) {
-                if (
-                    (isInstantiableClass(type) && type.shared.fullName === deprecatedForm.fullName) ||
-                    type.props?.typeAliasInfo?.shared.fullName === deprecatedForm.fullName
-                ) {
-                    if (
-                        PythonVersion.isGreaterOrEqualTo(
-                            this._fileInfo.executionEnvironment.pythonVersion,
-                            deprecatedForm.version
-                        )
-                    ) {
-                        if (!deprecatedForm.typingImportOnly || isImportFromTyping) {
-                            this._evaluator.addDiagnostic(
-                                DiagnosticRule.reportDeprecated,
-                                LocMessage.deprecatedType().format({
-                                    version: PythonVersion.toString(deprecatedForm.version),
-                                    replacement: deprecatedForm.replacementText,
-                                }),
-                                node
-                            );
-                        }
-                    }
-                }
-            }
+        const deprecatedForm = this._evaluator.deprecatedTypingAlias(
+            this._fileInfo,
+            node.d.value,
+            type,
+            isImportFromTyping
+        );
+        if (deprecatedForm) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportDeprecated,
+                LocMessage.deprecatedType().format({
+                    version: PythonVersion.toString(deprecatedForm.version),
+                    replacement: deprecatedForm.replacementText,
+                }),
+                node
+            );
         }
     }
 

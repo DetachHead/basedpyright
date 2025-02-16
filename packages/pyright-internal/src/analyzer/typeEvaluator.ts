@@ -376,6 +376,7 @@ import {
 } from './typeUtils';
 import { Commands } from '../commands/commands';
 import { moduleIsInList } from './pythonPathUtils';
+import { deprecatedAliases, DeprecatedForm, deprecatedSpecialForms } from './deprecatedSymbols';
 
 interface GetTypeArgsOptions {
     isAnnotatedClass?: boolean;
@@ -28577,6 +28578,36 @@ export function createTypeEvaluator(
     // Track these apis internal usages when logging is on. otherwise, it should be noop.
     const getInferredReturnType = wrapWithLogger(_getInferredReturnType);
 
+    const deprecatedTypingAlias = (
+        fileInfo: AnalyzerFileInfo,
+        name: string,
+        type: Type,
+        isImportFromTyping: boolean
+    ): DeprecatedForm | undefined => {
+        if (fileInfo.diagnosticRuleSet.deprecateTypingAliases) {
+            const deprecatedForm = deprecatedAliases.get(name) ?? deprecatedSpecialForms.get(name);
+
+            if (deprecatedForm) {
+                if (
+                    (isInstantiableClass(type) && type.shared.fullName === deprecatedForm.fullName) ||
+                    type.props?.typeAliasInfo?.shared.fullName === deprecatedForm.fullName
+                ) {
+                    if (
+                        PythonVersion.isGreaterOrEqualTo(
+                            fileInfo.executionEnvironment.pythonVersion,
+                            deprecatedForm.version
+                        )
+                    ) {
+                        if (!deprecatedForm.typingImportOnly || isImportFromTyping) {
+                            return deprecatedForm;
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    };
+
     const evaluatorInterface: TypeEvaluator = {
         runWithCancellationToken,
         getType,
@@ -28689,6 +28720,7 @@ export function createTypeEvaluator(
         printControlFlowGraph,
         typesOverlap,
         markParamAccessed,
+        deprecatedTypingAlias,
     };
 
     const codeFlowEngine = getCodeFlowEngine(evaluatorInterface, speculativeTypeTracker);

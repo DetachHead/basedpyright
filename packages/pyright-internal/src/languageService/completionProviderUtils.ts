@@ -58,6 +58,7 @@ export interface CompletionDetail extends CommonDetail {
     sortText?: string;
     itemDetail?: string;
     moduleUri?: Uri;
+    deprecated?: boolean;
 }
 
 export function getTypeDetail(

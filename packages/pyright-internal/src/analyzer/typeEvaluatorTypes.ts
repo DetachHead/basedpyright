@@ -53,6 +53,7 @@ import {
     Variance,
 } from './types';
 import { ApplyTypeVarOptions, ClassMember, InferenceContext, MemberAccessFlags } from './typeUtils';
+import { DeprecatedForm } from './deprecatedSymbols';
 
 // Maximum number of unioned subtypes for an inferred type (e.g.
 // a list) before the type is considered an "Any".
@@ -894,4 +895,10 @@ export interface TypeEvaluator {
     ) => void;
     typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
     markParamAccessed: (param: ParameterNode) => void;
+    deprecatedTypingAlias: (
+        fileInfo: AnalyzerFileInfo,
+        name: string,
+        type: Type,
+        isImportFromTyping: boolean
+    ) => DeprecatedForm | undefined;
 }
