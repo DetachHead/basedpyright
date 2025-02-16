@@ -57,6 +57,7 @@ test('check chained files', () => {
             format: MarkupKind.Markdown,
             lazyEdit: false,
             snippet: false,
+            checkDeprecatedWhenResolving: false,
         },
         CancellationToken.None,
         false
@@ -105,6 +106,7 @@ test('modify chained files', () => {
             format: MarkupKind.Markdown,
             lazyEdit: false,
             snippet: false,
+            checkDeprecatedWhenResolving: false,
         },
         CancellationToken.None,
         false
