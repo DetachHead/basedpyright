@@ -251,6 +251,7 @@ export interface CompletionOptions {
     readonly snippet: boolean;
     readonly lazyEdit: boolean;
     readonly triggerCharacter?: string;
+    readonly checkDeprecatedWhenResolving: boolean;
 }
 
 interface RecentCompletionInfo {
@@ -665,6 +666,21 @@ export class CompletionProvider {
         return true;
     }
 
+    protected checkIfDeprecated = (
+        type: Type,
+        primaryDecl: Declaration | undefined,
+        name: string,
+        detail: SymbolDetail
+    ): boolean =>
+        ((isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined) ||
+        (!!primaryDecl &&
+            !!this.evaluator.deprecatedTypingAlias(
+                AnalyzerNodeInfo.getFileInfo(primaryDecl.node),
+                name,
+                type,
+                detail.autoImportSource === 'typing'
+            ));
+
     protected addSymbol(
         name: string,
         symbol: Symbol,
@@ -695,24 +711,7 @@ export class CompletionProvider {
             ? this.getAutoImportText(name, detail.autoImportSource, detail.autoImportAlias)
             : undefined;
 
-        // This call can be expensive to perform on every completion item
-        // that we return, so we used to do it lazily in the "resolve" callback
-        // but unfortunately it needs to be done here to check whether a symbol
-        // is deprecated because most clients don't support tags in completionItem/resolve.
-        // see these issues:
-        // https://github.com/microsoft/vscode/issues/240863
-        // https://github.com/Saghen/blink.cmp/issues/1221
-        const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
-
-        const isDeprecated =
-            ((isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined) ||
-            (primaryDecl &&
-                !!this.evaluator.deprecatedTypingAlias(
-                    AnalyzerNodeInfo.getFileInfo(primaryDecl.node),
-                    name,
-                    type,
-                    detail.autoImportSource === 'typing'
-                ));
+        let isDeprecated: boolean;
 
         // Are we resolving a completion item? If so, see if this symbol
         // is the one that we're trying to match.
@@ -735,9 +734,16 @@ export class CompletionProvider {
                 return;
             }
 
+            const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
+
             if (!type) {
                 // Can't resolve. so bail out.
                 return;
+            }
+
+            // if resolveTags is false then this check has already happened so we don't need to do it again
+            if (this.options.checkDeprecatedWhenResolving && this.checkIfDeprecated(type, primaryDecl, name, detail)) {
+                this.itemToResolve.tags = [CompletionItemTag.Deprecated];
             }
 
             const typeDetail = getTypeDetail(
@@ -774,6 +780,19 @@ export class CompletionProvider {
 
             // Bail out. We don't need to add items to completion.
             return;
+        } else if (!this.options.checkDeprecatedWhenResolving) {
+            // This call can be expensive to perform on every completion item
+            // that we return, so we would ideally always do it lazily in the "resolve" callback
+            // but unfortunately it often needs to be done here to check whether a symbol
+            // is deprecated because most clients don't support tags in completionItem/resolve.
+            // see these issues:
+            // https://github.com/microsoft/vscode/issues/240863
+            // https://github.com/Saghen/blink.cmp/issues/1221
+            const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
+            isDeprecated = this.checkIfDeprecated(type, primaryDecl, name, detail);
+        } else {
+            // this will be determined later when this.itemToResolve is set
+            isDeprecated = false;
         }
 
         if (primaryDecl) {
