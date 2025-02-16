@@ -1786,33 +1786,25 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             const code = this.getDiagCode(diag, rule);
             const vsDiag = Diagnostic.create(diag.range, diag.message, severity, code, this.serverOptions.productName);
 
-            if (diag.category === DiagnosticCategory.Hint) {
-                if (diag.baselined) {
-                    vsDiag.message = `Baselined: ${vsDiag.message}`;
-                }
-                if (deprecatedDiagnosticRules().includes(rule)) {
-                    // If the client doesn't support "deprecated" tags, don't report deprecated diagnostics unless it's a baselined error.
-                    if (!this.client.supportsDeprecatedDiagnosticTag && !diag.baselined) {
-                        return;
-                    }
-                    vsDiag.tags = [DiagnosticTag.Deprecated];
-                } else if ([...unreachableDiagnosticRules(), ...unusedDiagnosticRules()].includes(rule)) {
-                    // If the client doesn't support "unnecessary" tags, don't report unused code unless it's a baselined error.
-                    if (!this.client.supportsUnnecessaryDiagnosticTag && !diag.baselined) {
-                        return;
-                    }
-                    vsDiag.tags = [DiagnosticTag.Unnecessary];
-                }
-                vsDiag.severity = DiagnosticSeverity.Hint;
-            } else {
-                assert(
-                    !diag.baselined,
-                    `a baselined diagnostic somehow had the wrong diagnostic category: ${diag.message} (${diag.category})`
-                );
-                if (diag.category === DiagnosticCategory.TaskItem) {
-                    // TaskItem is not supported.
+            if (diag.category === DiagnosticCategory.TaskItem) {
+                // TaskItem is not supported.
+                return;
+            }
+            if (diag.baselined) {
+                vsDiag.message = `Baselined: ${vsDiag.message}`;
+            }
+            if (deprecatedDiagnosticRules().includes(rule)) {
+                // If the client doesn't support "deprecated" tags, don't report deprecated diagnostics unless it's a baselined error.
+                if (!this.client.supportsDeprecatedDiagnosticTag && !diag.baselined) {
                     return;
                 }
+                vsDiag.tags = [DiagnosticTag.Deprecated];
+            } else if ([...unreachableDiagnosticRules(), ...unusedDiagnosticRules()].includes(rule)) {
+                // If the client doesn't support "unnecessary" tags, don't report unused code unless it's a baselined error.
+                if (!this.client.supportsUnnecessaryDiagnosticTag && !diag.baselined) {
+                    return;
+                }
+                vsDiag.tags = [DiagnosticTag.Unnecessary];
             }
             if (rule) {
                 const ruleDocUrl = this.getDocumentationUrlForDiagnostic(diag);
