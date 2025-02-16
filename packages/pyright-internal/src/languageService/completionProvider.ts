@@ -704,7 +704,15 @@ export class CompletionProvider {
         // https://github.com/Saghen/blink.cmp/issues/1221
         const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
 
-        const isDeprecated = (isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined;
+        const isDeprecated =
+            ((isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined) ||
+            (primaryDecl &&
+                !!this.evaluator.deprecatedTypingAlias(
+                    AnalyzerNodeInfo.getFileInfo(primaryDecl.node),
+                    name,
+                    type,
+                    detail.autoImportSource === 'typing'
+                ));
 
         // Are we resolving a completion item? If so, see if this symbol
         // is the one that we're trying to match.
