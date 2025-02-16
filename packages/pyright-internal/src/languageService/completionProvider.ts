@@ -695,6 +695,17 @@ export class CompletionProvider {
             ? this.getAutoImportText(name, detail.autoImportSource, detail.autoImportAlias)
             : undefined;
 
+        // This call can be expensive to perform on every completion item
+        // that we return, so we used to do it lazily in the "resolve" callback
+        // but unfortunately it needs to be done here to check whether a symbol
+        // is deprecated because most clients don't support tags in completionItem/resolve.
+        // see these issues:
+        // https://github.com/microsoft/vscode/issues/240863
+        // https://github.com/Saghen/blink.cmp/issues/1221
+        const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
+
+        const isDeprecated = (isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined;
+
         // Are we resolving a completion item? If so, see if this symbol
         // is the one that we're trying to match.
         if (this.itemToResolve) {
@@ -716,16 +727,9 @@ export class CompletionProvider {
                 return;
             }
 
-            // This call can be expensive to perform on every completion item
-            // that we return, so we do it lazily in the "resolve" callback.
-            const type = this.evaluator.getEffectiveTypeOfSymbol(symbol);
             if (!type) {
                 // Can't resolve. so bail out.
                 return;
-            }
-
-            if ((isFunction(type) || isClass(type)) && type.shared.deprecatedMessage !== undefined) {
-                this.itemToResolve.tags = [CompletionItemTag.Deprecated];
             }
 
             const typeDetail = getTypeDetail(
@@ -779,6 +783,7 @@ export class CompletionProvider {
                 extraCommitChars: detail.extraCommitChars,
                 funcParensDisabled: detail.funcParensDisabled,
                 edits: detail.edits,
+                deprecated: isDeprecated,
             });
         } else {
             // Does the symbol have no declaration but instead has a synthesized type?
@@ -789,6 +794,7 @@ export class CompletionProvider {
                     extraCommitChars: detail.extraCommitChars,
                     funcParensDisabled: detail.funcParensDisabled,
                     edits: detail.edits,
+                    deprecated: isDeprecated,
                 });
             }
         }
@@ -971,6 +977,10 @@ export class CompletionProvider {
 
         const completionItem = CompletionItem.create(name);
         completionItem.kind = itemKind;
+
+        if (detail?.deprecated) {
+            completionItem.tags = [CompletionItemTag.Deprecated];
+        }
 
         if (detail?.extraCommitChars) {
             this.addExtraCommitChar(completionItem);
