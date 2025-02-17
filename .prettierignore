@@ -5,7 +5,6 @@
 docstubs
 
 *.json
-**/.github/ISSUE_TEMPLATE/**
 
 # ignore markdown files that we haven't really touched to avoid unnecessary upstream conflicts
 docs/configuration.md
