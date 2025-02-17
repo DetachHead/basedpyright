@@ -25,3 +25,13 @@ reportDeprecated = 'hint'
 here's how they look in vscode:
 
 ![](diagnostic-tags.png)
+
+## deprecated completions
+
+pyright/pylance supports strikethrough diagnostic tags on usages of deprecated symbols:
+
+![](deprecated-diagnostic-tag.png)
+
+but basedpyright also shows them in completions:
+
+![](deprecated-completion.png)
