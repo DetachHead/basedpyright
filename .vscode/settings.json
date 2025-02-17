@@ -104,5 +104,9 @@
     "npm.exclude": "**/basedpyright/*",
     "git.blame.editorDecoration.enabled": true,
     "git.blame.statusBarItem.enabled": true,
-    "chat.commandCenter.enabled": false
+    "chat.commandCenter.enabled": false,
+    "yaml.schemas": {
+        // https://github.com/redhat-developer/vscode-yaml/issues/1022
+        "https://json.schemastore.org/github-issue-config.json": "./.github/ISSUE_TEMPLATE/config.yml"
+    }
 }
