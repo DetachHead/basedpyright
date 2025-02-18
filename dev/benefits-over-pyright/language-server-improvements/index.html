@@ -1561,7 +1561,7 @@
 <p><img alt="" src="../override-decorator-completions.gif" /></p>
 <h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
 <p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../new-diagnostic-rules/#reportunreachable">there is no diagnostic rule at all</a>).</p>
-<p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. diagnostics that are reported as a <code>"hint"</code> can have diagnostic tags (unused or deprecated) that change how they're displayed if supported by your IDE, if such a tag is relevant for that rule:</p>
+<p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. some diagnostics use a diagnostic tag (unused or deprecated) if your IDE supports them:</p>
 <div class="highlight"><span class="filename">pyproject.toml</span><pre><span></span><code><span class="k">[tool.basedpyright]</span>
 <span class="n">reportUnreachable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
 <span class="n">reportUnusedParameter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>
@@ -1570,6 +1570,7 @@
 </code></pre></div>
 <p>here's how they look in vscode:</p>
 <p><img alt="" src="../diagnostic-tags.png" /></p>
+<p>these diagnostic tags will still be present if the rule's diagnostic category is set to <code>"warning"</code>, <code>"error"</code> or <code>"information"</code>, but unlike pyright, they are disabled entirely if the rule's diagnostic category is set to <code>"none"</code>.</p>
 <h2 id="deprecated-completions">deprecated completions</h2>
 <p>pyright/pylance supports strikethrough diagnostic tags on usages of deprecated symbols:</p>
 <p><img alt="" src="../deprecated-diagnostic-tag.png" /></p>
