@@ -150,6 +150,7 @@ import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { BaselineHandler } from './baseline';
 import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 import { zip } from 'lodash';
+import { assert } from './common/debug';
 
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
@@ -1786,6 +1787,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             }
             if (diag.baselined) {
                 vsDiag.message = `Baselined: ${vsDiag.message}`;
+                assert(
+                    diag.category === DiagnosticCategory.Hint,
+                    `a baselined diagnostic somehow had the wrong diagnostic category: ${diag.message} (${diag.category})`
+                );
             }
             if (deprecatedDiagnosticRules().includes(rule)) {
                 vsDiag.tags = [DiagnosticTag.Deprecated];
