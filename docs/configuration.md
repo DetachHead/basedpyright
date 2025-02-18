@@ -87,12 +87,13 @@ diagnostics can be configured to be reported as any of the following categories:
 - `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#failOnWarnings) is enabled or the [`--warnings`](./command-line.md#command-line) argument is used
 - `"information"` - never causes the CLI to fail
 - `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](../benefits-over-pyright/baseline.md) are reported as hints
+- `"none"` - disables the diagnostic entirely
 
-!!! note
-    the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
+!!! info "deprecated diagnostic categories"
+    as of basedpyright 1.21.0, the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
     to report them as "unnecessary" or "deprecated" [as mentioned in the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity) are still reported as such, the configuration to do so has just been simplified.
 
-    the `"hint"` diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. [baselined diagnostics](../benefits-over-pyright/baseline.md) are now all reported as a hint, instead of just the ones that supported one of the specific diagnostic tag categories.
+    the `"hint"` diagnostic category is more flexible as it can be used on rules that don't refer to something that's unused, unreachable or deprecated. [baselined diagnostics](../benefits-over-pyright/baseline.md) are now all reported as hints, even ones that don't support diagnostic tags.
 
     for backwards compatibility, setting a diagnostic rule to any of these three deprecated categories will act as an alias for the `"hint"` category, however they may be removed entirely in a future release.
 
