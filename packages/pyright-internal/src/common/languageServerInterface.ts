@@ -116,8 +116,6 @@ export interface ClientCapabilities {
     completionDocFormat: MarkupKind;
     completionSupportsSnippet: boolean;
     signatureDocFormat: MarkupKind;
-    supportsDeprecatedDiagnosticTag: boolean;
-    supportsUnnecessaryDiagnosticTag: boolean;
     supportsTaskItemDiagnosticTag: boolean;
     completionItemResolveSupportsAdditionalTextEdits: boolean;
 }

@@ -183,8 +183,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         completionDocFormat: MarkupKind.PlainText,
         completionSupportsSnippet: false,
         signatureDocFormat: MarkupKind.PlainText,
-        supportsDeprecatedDiagnosticTag: false,
-        supportsUnnecessaryDiagnosticTag: false,
         supportsTaskItemDiagnosticTag: false,
         completionItemResolveSupportsAdditionalTextEdits: false,
     };
@@ -597,13 +595,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.client.completionSupportsSnippet = !!capabilities.textDocument?.completion?.completionItem?.snippetSupport;
         this.client.signatureDocFormat = this._getCompatibleMarkupKind(
             capabilities.textDocument?.signatureHelp?.signatureInformation?.documentationFormat
-        );
-        const supportedDiagnosticTags = capabilities.textDocument?.publishDiagnostics?.tagSupport?.valueSet || [];
-        this.client.supportsUnnecessaryDiagnosticTag = supportedDiagnosticTags.some(
-            (tag) => tag === DiagnosticTag.Unnecessary
-        );
-        this.client.supportsDeprecatedDiagnosticTag = supportedDiagnosticTags.some(
-            (tag) => tag === DiagnosticTag.Deprecated
         );
         // if the client is running in VS, it always supports task item diagnostics
         this.client.supportsTaskItemDiagnosticTag = this.client.hasVisualStudioExtensionsCapability;
@@ -1793,16 +1784,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 vsDiag.message = `Baselined: ${vsDiag.message}`;
             }
             if (deprecatedDiagnosticRules().includes(rule)) {
-                // If the client doesn't support "deprecated" tags, don't report deprecated diagnostics unless it's a baselined error.
-                if (!this.client.supportsDeprecatedDiagnosticTag && !diag.baselined) {
-                    return;
-                }
                 vsDiag.tags = [DiagnosticTag.Deprecated];
             } else if ([...unreachableDiagnosticRules(), ...unusedDiagnosticRules()].includes(rule)) {
-                // If the client doesn't support "unnecessary" tags, don't report unused code unless it's a baselined error.
-                if (!this.client.supportsUnnecessaryDiagnosticTag && !diag.baselined) {
-                    return;
-                }
                 vsDiag.tags = [DiagnosticTag.Unnecessary];
             }
             if (rule) {
