@@ -1559,6 +1559,19 @@
 <h2 id="autocomplete-improvements">autocomplete improvements</h2>
 <p>autocomplete suggestions for method overrides will automatically add the <code>@override</code> decorator:</p>
 <p><img alt="" src="../override-decorator-completions.gif" /></p>
+<div class="admonition info">
+<p class="admonition-title">for users targeting python &lt;=3.11</p>
+<p>since the <code>@typing.override</code> decorator was introduced in python 3.12, this functionality is only enabled if either:</p>
+<ul>
+<li>you are targeting python 3.12 or above (see <a href="../../configuration/config-files/#environment-options"><code>pythonVersion</code></a>)</li>
+<li>you have enabled <a href="../../configuration/language-server-settings/#based-settings"><code>basedpyright.analysis.useTypingExtensions</code></a></li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">important information for library developers</p>
+<p>using <code>typing_extensions</code> creates a runtime dependency on the <a href="https://pypi.org/project/typing-extensions/"><code>typing_extensions</code></a> pypi package, so you must declare it as a project dependency. this is why <code>basedpyright.analysis.useTypingExtensions</code> is disabled by default to prevent users from unknowingly adding a new dependency to their project.</p>
+<p>such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using <a href="https://docs.gauge.sh/usage/commands#tach-check-external">tach</a> to detect issues like these)</p>
+</div>
 <h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
 <p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../new-diagnostic-rules/#reportunreachable">there is no diagnostic rule at all</a>).</p>
 <p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. some diagnostics use a diagnostic tag (unused or deprecated) if your IDE supports them:</p>
