@@ -209,6 +209,7 @@ export class TestState {
             disableWorkspaceSymbol: false,
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
+            useTypingExtensions: false,
         };
 
         if (!delayFileInitialization) {
@@ -1014,7 +1015,8 @@ export class TestState {
                 readonly importName: string;
             };
         },
-        resolveTags = false
+        resolveTags = false,
+        useTypingExtensions = false
     ): Promise<void> {
         this.analyze();
 
@@ -1027,7 +1029,14 @@ export class TestState {
             this.lastKnownMarker = markerName;
 
             const expectedCompletions = map[markerName].completions;
-            const provider = this.getCompletionResults(this, marker, docFormat, resolveTags, abbrMap);
+            const provider = this.getCompletionResults(
+                this,
+                marker,
+                docFormat,
+                resolveTags,
+                useTypingExtensions,
+                abbrMap
+            );
             const results = provider.getCompletions();
             if (results) {
                 if (verifyMode === 'exact') {
@@ -1615,6 +1624,7 @@ export class TestState {
         marker: Marker,
         docFormat: MarkupKind,
         resolveTags: boolean,
+        useTypingExtensions: boolean,
         abbrMap?: {
             [abbr: string]: {
                 readonly importFrom?: string;
@@ -1630,6 +1640,7 @@ export class TestState {
             snippet: true,
             lazyEdit: false,
             checkDeprecatedWhenResolving: resolveTags,
+            useTypingExtensions,
         };
 
         const provider = new CompletionProvider(

@@ -110,6 +110,7 @@ export class TestLanguageService implements LanguageServerInterface {
             disableWorkspaceSymbol: false,
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
+            useTypingExtensions: false,
         };
     }
     /** unlike the real one, this test implementation doesn't support notebook cells. TODO: language server tests for notebook cells */

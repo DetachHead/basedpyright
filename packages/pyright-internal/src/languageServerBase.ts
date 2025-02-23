@@ -371,6 +371,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.disableTaggedHints = !!serverSettings.disableTaggedHints;
             workspace.disableOrganizeImports = !!serverSettings.disableOrganizeImports;
             workspace.inlayHints = serverSettings.inlayHints;
+            workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -970,6 +971,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     lazyEdit: false,
                     triggerCharacter: params?.context?.triggerCharacter,
                     checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
+                    useTypingExtensions: workspace.useTypingExtensions,
                 },
                 token,
                 false
@@ -1001,6 +1003,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         snippet: this.client.completionSupportsSnippet,
                         lazyEdit: false,
                         checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
+                        useTypingExtensions: workspace.useTypingExtensions,
                     },
                     token,
                     false

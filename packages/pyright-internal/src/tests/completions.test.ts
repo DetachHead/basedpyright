@@ -808,6 +808,7 @@ test('completion quote trigger', async () => {
         lazyEdit: false,
         triggerCharacter: '"',
         checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
     const result = new CompletionProvider(
@@ -848,6 +849,7 @@ test('completion quote trigger - middle', async () => {
         lazyEdit: false,
         triggerCharacter: "'",
         checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
     const result = new CompletionProvider(
@@ -895,6 +897,7 @@ test('auto import sort text', async () => {
         snippet: false,
         lazyEdit: false,
         checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
     const result = new CompletionProvider(
@@ -1594,6 +1597,190 @@ describe('deprecated', () => {
                     },
                 ],
             },
+        });
+    });
+});
+
+describe('useTypingExtensions', () => {
+    describe('python <3.12', () => {
+        test('@override decorator useTypingExtensions=true', async () => {
+            const code = `
+// @filename: pyrightconfig.json
+//// { "pythonVersion": "3.9" }
+// @filename: test.py
+//// [|/*importMarker*/|]class Foo:
+////     def foo(self): ...
+//// 
+//// class Bar(Foo):
+////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
+    `;
+
+            const state = parseAndGetTestState(code).state;
+
+            await state.verifyCompletion(
+                'included',
+                'markdown',
+                {
+                    ['marker']: {
+                        completions: [
+                            {
+                                label: 'foo',
+                                kind: CompletionItemKind.Method,
+                                textEdit: {
+                                    range: state.getPositionRange('marker'),
+                                    newText: 'foo(self):\n    return super().foo()',
+                                },
+                                additionalTextEdits: [
+                                    {
+                                        range: state.getPositionRange('importMarker'),
+                                        newText: 'from typing_extensions import override\n\n\n',
+                                    },
+                                    {
+                                        range: state.getPositionRange('overrideMarker'),
+                                        newText: '@override\n    ',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+                undefined,
+                undefined,
+                true
+            );
+        });
+
+        test('@override decorator useTypingExtensions=false', async () => {
+            const code = `
+// @filename: pyrightconfig.json
+//// { "pythonVersion": "3.9" }
+// @filename: test.py
+//// [|/*importMarker*/|]class Foo:
+////     def foo(self): ...
+//// 
+//// class Bar(Foo):
+////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
+    `;
+
+            const state = parseAndGetTestState(code).state;
+
+            await state.verifyCompletion(
+                'included',
+                'markdown',
+                {
+                    ['marker']: {
+                        completions: [
+                            {
+                                label: 'foo',
+                                kind: CompletionItemKind.Method,
+                                textEdit: {
+                                    range: state.getPositionRange('marker'),
+                                    newText: 'foo(self):\n    return super().foo()',
+                                },
+                                additionalTextEdits: [],
+                            },
+                        ],
+                    },
+                },
+                undefined,
+                undefined,
+                false
+            );
+        });
+    });
+    describe('python >=3.12', () => {
+        test('@override decorator useTypingExtensions=true', async () => {
+            const code = `
+// @filename: pyrightconfig.json
+//// { "pythonVersion": "3.13" }
+// @filename: test.py
+//// [|/*importMarker*/|]class Foo:
+////     def foo(self): ...
+//// 
+//// class Bar(Foo):
+////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
+    `;
+
+            const state = parseAndGetTestState(code).state;
+
+            await state.verifyCompletion(
+                'included',
+                'markdown',
+                {
+                    ['marker']: {
+                        completions: [
+                            {
+                                label: 'foo',
+                                kind: CompletionItemKind.Method,
+                                textEdit: {
+                                    range: state.getPositionRange('marker'),
+                                    newText: 'foo(self):\n    return super().foo()',
+                                },
+                                additionalTextEdits: [
+                                    {
+                                        range: state.getPositionRange('importMarker'),
+                                        newText: 'from typing import override\n\n\n',
+                                    },
+                                    {
+                                        range: state.getPositionRange('overrideMarker'),
+                                        newText: '@override\n    ',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+                undefined,
+                undefined,
+                true
+            );
+        });
+
+        test('@override decorator useTypingExtensions=false', async () => {
+            const code = `
+// @filename: pyrightconfig.json
+//// { "pythonVersion": "3.13" }
+// @filename: test.py
+//// [|/*importMarker*/|]class Foo:
+////     def foo(self): ...
+//// 
+//// class Bar(Foo):
+////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
+    `;
+
+            const state = parseAndGetTestState(code).state;
+
+            await state.verifyCompletion(
+                'included',
+                'markdown',
+                {
+                    ['marker']: {
+                        completions: [
+                            {
+                                label: 'foo',
+                                kind: CompletionItemKind.Method,
+                                textEdit: {
+                                    range: state.getPositionRange('marker'),
+                                    newText: 'foo(self):\n    return super().foo()',
+                                },
+                                additionalTextEdits: [
+                                    {
+                                        range: state.getPositionRange('importMarker'),
+                                        newText: 'from typing import override\n\n\n',
+                                    },
+                                    {
+                                        range: state.getPositionRange('overrideMarker'),
+                                        newText: '@override\n    ',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+                undefined,
+                undefined,
+                false
+            );
         });
     });
 });

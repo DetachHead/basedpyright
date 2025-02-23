@@ -205,7 +205,7 @@ describe('expandPathVariables', () => {
     });
 });
 
-function createWorkspace(rootUri: Uri | undefined) {
+function createWorkspace(rootUri: Uri | undefined): Workspace {
     const fs = new TestFileSystem(false);
     return {
         workspaceName: '',
@@ -223,5 +223,6 @@ function createWorkspace(rootUri: Uri | undefined) {
         disableWorkspaceSymbol: false,
         isInitialized: createInitStatus(),
         searchPathsToWatch: [],
+        useTypingExtensions: false,
     };
 }
