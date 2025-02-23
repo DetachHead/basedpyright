@@ -55,6 +55,8 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.genericTypes.png)
 
+**basedpyright.analysis.useTypingExtensions** [boolean]: Whether to rely on imports from the `typing_extensions` module when targeting older versions of python that do not include certain typing features such as the `@override` decorator. Defaults to `false`. [more info](../benefits-over-pyright/language-server-improvements.md#autocomplete-improvements)
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:

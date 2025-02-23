@@ -252,6 +252,7 @@ export interface CompletionOptions {
     readonly lazyEdit: boolean;
     readonly triggerCharacter?: string;
     readonly checkDeprecatedWhenResolving: boolean;
+    readonly useTypingExtensions: boolean;
 }
 
 interface RecentCompletionInfo {
@@ -518,17 +519,9 @@ export class CompletionProvider {
                             // this should always be true, but just in case
                             overrideDecorator?.category === TypeCategory.Function &&
                             // if targeting a python version that doesn't have typing.override, we don't want to insert the decorator unless
-                            // the user has actually installed the typing_extensions package
+                            // the user has explicitly enabled `basedpyright.analysis.useTypingExtensions`
                             (overrideDecorator.shared.moduleName !== 'typing_extensions' ||
-                                !!this.importResolver.resolveImport(
-                                    this.fileUri,
-                                    this.configOptions.findExecEnvironment(this.fileUri),
-                                    {
-                                        leadingDots: 0,
-                                        nameParts: ['typing_extensions'],
-                                        importedSymbols: undefined,
-                                    }
-                                ).nonStubImportResult?.resolvedUris.length) &&
+                                this.options.useTypingExtensions) &&
                             // check if the override decorator is already here
                             !decorators?.some((decorator) => {
                                 const type = this.evaluator.getTypeOfExpression(decorator.d.expr).type;

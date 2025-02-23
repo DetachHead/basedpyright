@@ -50,6 +50,7 @@ export interface ServerSettings {
     taskListTokens?: TaskListToken[];
     functionSignatureDisplay?: SignatureDisplayType | undefined;
     inlayHints?: InlayHintSettings;
+    useTypingExtensions?: boolean;
 }
 
 export interface MessageAction {

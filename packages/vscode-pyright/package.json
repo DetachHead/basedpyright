@@ -1866,6 +1866,12 @@
                     "default": false,
                     "description": "Whether to show inlay hints on inferred generic types.",
                     "scope": "resource"
+                },
+                "basedpyright.analysis.useTypingExtensions": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Whether to rely on imports from the `typing_extensions` module when targeting older versions of python that do not include certain typing features such as the `@override` decorator.",
+                    "scope": "resource"
                 }
             }
         },

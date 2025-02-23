@@ -117,6 +117,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 variableTypes: true,
                 genericTypes: false,
             },
+            useTypingExtensions: false,
         };
 
         try {
@@ -208,6 +209,9 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 const inlayHintSection = pythonAnalysisSection.inlayHints;
                 if (inlayHintSection) {
                     serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };
+                }
+                if (pythonAnalysisSection.useTypingExtensions) {
+                    serverSettings.useTypingExtensions = pythonAnalysisSection.useTypingExtensions;
                 }
             } else {
                 serverSettings.autoSearchPaths = true;

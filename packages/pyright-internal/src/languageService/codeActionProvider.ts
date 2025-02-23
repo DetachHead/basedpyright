@@ -81,6 +81,7 @@ export class CodeActionProvider {
                     // we don't care about deprecations here so make sure they don't get evaluated unnecessarily
                     // (we don't call resolveCompletionItem)
                     checkDeprecatedWhenResolving: true,
+                    useTypingExtensions: workspace.useTypingExtensions,
                 },
                 token,
                 true

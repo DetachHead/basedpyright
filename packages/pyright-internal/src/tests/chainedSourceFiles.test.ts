@@ -58,6 +58,7 @@ test('check chained files', () => {
             lazyEdit: false,
             snippet: false,
             checkDeprecatedWhenResolving: false,
+            useTypingExtensions: true,
         },
         CancellationToken.None,
         false
@@ -107,6 +108,7 @@ test('modify chained files', () => {
             lazyEdit: false,
             snippet: false,
             checkDeprecatedWhenResolving: false,
+            useTypingExtensions: true,
         },
         CancellationToken.None,
         false
