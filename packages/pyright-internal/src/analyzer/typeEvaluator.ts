@@ -22299,39 +22299,52 @@ export function createTypeEvaluator(
                             : UnknownType.create(),
                     };
                 }
-
-                const strType = getBuiltInObject(declaration.node, 'str');
-                const intType = getBuiltInObject(declaration.node, 'int');
-                if (isClassInstance(intType) && isClassInstance(strType)) {
-                    if (declaration.intrinsicType === 'str') {
-                        return { type: strType };
-                    }
-
-                    if (declaration.intrinsicType === 'str | None') {
-                        return { type: combineTypes([strType, getNoneType()]) };
-                    }
-
-                    if (declaration.intrinsicType === 'int') {
-                        return { type: intType };
-                    }
-
-                    if (declaration.intrinsicType === 'Iterable[str]') {
-                        const iterableType = getBuiltInType(declaration.node, 'Iterable');
-                        if (isInstantiableClass(iterableType)) {
-                            return {
-                                type: ClassType.cloneAsInstance(ClassType.specialize(iterableType, [strType])),
-                            };
+                if (declaration.intrinsicType === 'IPython.display.display') {
+                    const fileInfo = AnalyzerNodeInfo.getFileInfo(declaration.node);
+                    const lookupResult = fileInfo.importLookup({
+                        importingFileUri: fileInfo.fileUri,
+                        nameParts: ['IPython', 'display'],
+                    });
+                    if (lookupResult) {
+                        const symbol = lookupResult.symbolTable.get('display');
+                        if (symbol) {
+                            return { type: getEffectiveTypeOfSymbol(symbol) };
                         }
                     }
+                } else {
+                    const strType = getBuiltInObject(declaration.node, 'str');
+                    const intType = getBuiltInObject(declaration.node, 'int');
+                    if (isClassInstance(intType) && isClassInstance(strType)) {
+                        if (declaration.intrinsicType === 'str') {
+                            return { type: strType };
+                        }
 
-                    if (declaration.intrinsicType === 'Dict[str, Any]') {
-                        const dictType = getBuiltInType(declaration.node, 'dict');
-                        if (isInstantiableClass(dictType)) {
-                            return {
-                                type: ClassType.cloneAsInstance(
-                                    ClassType.specialize(dictType, [strType, AnyType.create()])
-                                ),
-                            };
+                        if (declaration.intrinsicType === 'str | None') {
+                            return { type: combineTypes([strType, getNoneType()]) };
+                        }
+
+                        if (declaration.intrinsicType === 'int') {
+                            return { type: intType };
+                        }
+
+                        if (declaration.intrinsicType === 'Iterable[str]') {
+                            const iterableType = getBuiltInType(declaration.node, 'Iterable');
+                            if (isInstantiableClass(iterableType)) {
+                                return {
+                                    type: ClassType.cloneAsInstance(ClassType.specialize(iterableType, [strType])),
+                                };
+                            }
+                        }
+
+                        if (declaration.intrinsicType === 'Dict[str, Any]') {
+                            const dictType = getBuiltInType(declaration.node, 'dict');
+                            if (isInstantiableClass(dictType)) {
+                                return {
+                                    type: ClassType.cloneAsInstance(
+                                        ClassType.specialize(dictType, [strType, AnyType.create()])
+                                    ),
+                                };
+                            }
                         }
                     }
                 }

@@ -34,3 +34,10 @@ test('invalid notebook file', () => {
         /failed to parse jupyter notebook .* - SyntaxError: Unexpected token .*/
     );
 });
+
+test('IPython.display.display automatically imported', () => {
+    const analysisResults = typeAnalyzeSampleFiles(['ipython_display_import/notebook.ipynb']);
+    validateResultsButBased(analysisResults, {
+        errors: [{ code: DiagnosticRule.reportUndefinedVariable, line: 4 }],
+    });
+});

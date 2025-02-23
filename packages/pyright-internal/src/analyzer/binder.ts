@@ -123,6 +123,7 @@ import * as ParseTreeUtils from './parseTreeUtils';
 import { ParseTreeWalker } from './parseTreeWalker';
 import { moduleIsInList } from './pythonPathUtils';
 import { NameBindingType, Scope, ScopeType } from './scope';
+import { IPythonMode } from './sourceFile';
 import * as StaticExpressions from './staticExpressions';
 import { Symbol, SymbolFlags, indeterminateSymbolId } from './symbol';
 import { isConstantName, isPrivateName, isPrivateOrProtectedName } from './symbolNameUtils';
@@ -294,6 +295,11 @@ export class Binder extends ParseTreeWalker {
                 this._addImplicitSymbolToCurrentScope('__annotations__', node, 'Dict[str, Any]');
                 this._addImplicitSymbolToCurrentScope('__builtins__', node, 'Any');
                 this._addImplicitSymbolToCurrentScope('__doc__', node, 'str | None');
+                if (this._fileInfo.ipythonMode === IPythonMode.CellDocs) {
+                    // this function is automatically available globally inside notebooks.
+                    // https://ipython.readthedocs.io/en/stable/api/generated/IPython.display.html#IPython.display.display
+                    this._addImplicitSymbolToCurrentScope('display', node, 'IPython.display.display');
+                }
 
                 // Create a start node for the module.
                 this._currentFlowNode = this._createStartFlowNode();
