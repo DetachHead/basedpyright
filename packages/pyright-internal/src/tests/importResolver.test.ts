@@ -38,6 +38,7 @@ describe('Import tests with fake venv', () => {
     afterAll(() => tempFile.dispose());
 
     if (!usingTrueVenv()) {
+        // TODO: investigate these tests. idk why it says they cant run in a venv because they seem to pass either way
         describe('Import tests that cannot run in a true venv', () => {
             test('partial stub file exists', () => {
                 const files = [
