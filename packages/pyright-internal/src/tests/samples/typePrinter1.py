@@ -19,7 +19,7 @@ def func1(v: A.Inner | None):
 
 
 def func2(v: A.Inner | B.Inner | None):
-    reveal_type(v, expected_text="typePrinter1.A.Inner | typePrinter1.B.Inner | None")
+    reveal_type(v, expected_text="packages.pyright-internal.src.tests.samples.typePrinter1.A.Inner | packages.pyright-internal.src.tests.samples.typePrinter1.B.Inner | None")
 
 
 class IntOrStr:
