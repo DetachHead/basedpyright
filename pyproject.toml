@@ -20,13 +20,13 @@ requires-python = ">=3.8"
 dependencies = [
     # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
     # since the user shouldn't have a node/npm binary unknowingly added to their PATH
-    "nodejs-wheel-binaries>=20.13.1",
+    "nodejs-wheel-binaries>=22.0.0",
 ]
 [dependency-groups]
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
-    "nodejs-wheel>=20.13.1",
+    "nodejs-wheel>=22.0.0",
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
     "pytest>=8.2.2",

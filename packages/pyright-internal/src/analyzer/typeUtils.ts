@@ -2540,7 +2540,30 @@ export function convertToInstantiable(type: Type, includeSubclasses = true): Typ
     return result;
 }
 
-export function getMembersForClass(classType: ClassType, symbolTable: SymbolTable, includeInstanceVars: boolean) {
+// TODO: this is kinda gross. maybe this info can be a flag on the symbol instead?
+/**
+ * @returns member names that came from the metaclass
+ */
+export function getMembersForClass(
+    classType: ClassType,
+    symbolTable: SymbolTable,
+    includeInstanceVars: false
+): Set<string>;
+export function getMembersForClass(
+    classType: ClassType,
+    symbolTable: SymbolTable,
+    includeInstanceVars: true
+): undefined;
+export function getMembersForClass(
+    classType: ClassType,
+    symbolTable: SymbolTable,
+    includeInstanceVars: boolean
+): Set<string> | undefined;
+export function getMembersForClass(
+    classType: ClassType,
+    symbolTable: SymbolTable,
+    includeInstanceVars: boolean
+): Set<string> | undefined {
     classType.shared.mro.forEach((mroClass) => {
         if (isInstantiableClass(mroClass)) {
             // Add any new member variables from this class.
@@ -2566,7 +2589,10 @@ export function getMembersForClass(classType: ClassType, symbolTable: SymbolTabl
     });
 
     // Add members of the metaclass as well.
-    if (!includeInstanceVars) {
+    if (includeInstanceVars) {
+        return undefined;
+    } else {
+        const metaclassMembers = new Set<string>();
         const metaclass = classType.shared.effectiveMetaclass;
         if (metaclass && isInstantiableClass(metaclass)) {
             for (const mroClass of metaclass.shared.mro) {
@@ -2574,12 +2600,14 @@ export function getMembersForClass(classType: ClassType, symbolTable: SymbolTabl
                     ClassType.getSymbolTable(mroClass).forEach((symbol, name) => {
                         const existingSymbol = symbolTable.get(name);
 
-                        if (!existingSymbol) {
-                            symbolTable.set(name, symbol);
-                        } else if (!existingSymbol.hasTypedDeclarations() && symbol.hasTypedDeclarations()) {
+                        if (
+                            !existingSymbol ||
                             // If the existing symbol is unannotated but a parent class
                             // has an annotation for the symbol, use the parent type instead.
+                            (!existingSymbol.hasTypedDeclarations() && symbol.hasTypedDeclarations())
+                        ) {
                             symbolTable.set(name, symbol);
+                            metaclassMembers.add(name);
                         }
                     });
                 } else {
@@ -2587,6 +2615,7 @@ export function getMembersForClass(classType: ClassType, symbolTable: SymbolTabl
                 }
             }
         }
+        return metaclassMembers;
     }
 }
 

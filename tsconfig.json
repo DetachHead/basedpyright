@@ -3,7 +3,8 @@
         "target": "es2021",
         "module": "node16",
         "lib": [
-            "es2023"
+            // when updating this, remember to also update the one in browser-pyright
+            "ESNext"
         ],
         "skipLibCheck": true,
         "esModuleInterop": true,

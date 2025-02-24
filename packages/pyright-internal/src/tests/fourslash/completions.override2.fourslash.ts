@@ -70,7 +70,6 @@ const additionalTextEdits = (markerNumber: number) => [
                         range: helper.getPositionRange('marker3'),
                         newText: '__call__(self, *args: Any, **kwds: Any) -> Any:\n    ${0:pass}',
                     },
-                    additionalTextEdits: additionalTextEdits(3),
                 },
             ],
         },
