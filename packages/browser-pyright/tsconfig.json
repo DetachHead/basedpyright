@@ -3,7 +3,7 @@
     "compilerOptions": {
         "outDir": "./out",
         "lib": [
-            "es2023",
+            "esnext",
             "WebWorker",
             "ScriptHost"
         ],

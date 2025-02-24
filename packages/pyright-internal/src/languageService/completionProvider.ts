@@ -133,6 +133,7 @@ import { DocumentSymbolCollector } from './documentSymbolCollector';
 import { getAutoImportText, getDocumentationPartsForTypeAndDecl } from './tooltipUtils';
 import { ImportGroup } from '../analyzer/importStatementUtils';
 import { TextEditAction } from '../common/editAction';
+import { isMethodExemptFromLsp } from '../analyzer/constructors';
 
 namespace Keywords {
     const base: string[] = [
@@ -438,10 +439,13 @@ export class CompletionProvider {
         }
 
         const symbolTable = new Map<string, Symbol>();
+        let metaclassMemberNames = new Set<string>();
         for (let i = 1; i < classResults.classType.shared.mro.length; i++) {
             const mroClass = classResults.classType.shared.mro[i];
             if (isInstantiableClass(mroClass)) {
-                getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false);
+                metaclassMemberNames = metaclassMemberNames.union(
+                    getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false)
+                );
             }
         }
 
@@ -513,7 +517,13 @@ export class CompletionProvider {
 
                     // add the @override decorator if neeed
                     const additionalTextEdits: TextEditAction[] = [];
-                    if (!['__init__', '__new__'].includes(name)) {
+
+                    if (
+                        // constructors don't need the override decorator
+                        !isMethodExemptFromLsp(name) &&
+                        // metaclass members should not have the override decorator because they aren't present on the instance
+                        !metaclassMemberNames.has(name)
+                    ) {
                         const overrideDecorator = this.evaluator.getTypingType(decl.node, 'override');
                         if (
                             // this should always be true, but just in case
