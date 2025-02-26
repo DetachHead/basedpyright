@@ -73,6 +73,9 @@ export interface IBackgroundAnalysis extends Disposable {
     invalidateAndForceReanalysis(reason: InvalidatedReason): void;
     restart(): void;
     shutdown(): void;
+    createFile(params: CreateFile): void;
+    deleteFile(params: DeleteFile): void;
+    initializeFileSystem(params: Record<string, string>): void;
 }
 
 export class BackgroundAnalysisBase implements IBackgroundAnalysis {
