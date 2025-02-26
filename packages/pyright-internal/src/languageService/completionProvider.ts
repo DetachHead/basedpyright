@@ -439,12 +439,13 @@ export class CompletionProvider {
         }
 
         const symbolTable = new Map<string, Symbol>();
-        let metaclassMemberNames = new Set<string>();
+        const metaclassMemberNames = new Set<string>();
         for (let i = 1; i < classResults.classType.shared.mro.length; i++) {
             const mroClass = classResults.classType.shared.mro[i];
             if (isInstantiableClass(mroClass)) {
-                metaclassMemberNames = metaclassMemberNames.union(
-                    getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false)
+                // would ideally use Set.union here https://github.com/DetachHead/basedpyright/issues/1106
+                getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false).forEach((member) =>
+                    metaclassMemberNames.add(member)
                 );
             }
         }
