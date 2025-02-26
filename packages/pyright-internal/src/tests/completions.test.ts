@@ -1460,23 +1460,49 @@ test('enum with regular base type', async () => {
     });
 });
 
+test('import statements with implicit import', async () => {
+    const code = `
+// @filename: test.py
+//// from lib import /*marker*/
+
+// @filename: lib/__init__.py
+//// from . import api as api
+
+// @filename: lib/api.py
+//// # Empty
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['marker']: {
+            completions: [
+                {
+                    label: 'api',
+                    kind: CompletionItemKind.Module,
+                },
+            ],
+        },
+    });
+});
+
 test('dataclass field alias with invalid python identifier', async () => {
     const code = `
 // @filename: test.py
 //// from typing import dataclass_transform
-//// 
-//// 
+////
+////
 //// def field[T](*, init: bool = True, default: T | None = None, alias: str | None = None) -> T: ...
-//// 
+////
 //// @dataclass_transform(field_specifiers=(field,))
 //// class Foo(type):...
-//// 
+////
 //// class Bar(metaclass=Foo):...
-//// 
+////
 //// class Baz(Bar):
 ////     a: int = field(alias='foo bar')
 ////     b: str = field(alias='baz')
-//// 
+////
 //// Baz([|/*marker*/|])
     `;
 
@@ -1509,11 +1535,11 @@ describe('deprecated', () => {
         const code = `
 // @filename: test.py
 //// from typing_extensions import deprecated
-//// 
-//// 
+////
+////
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
-//// 
+////
 //// asdfasd[|/*marker*/|]
     `;
 
@@ -1541,11 +1567,11 @@ describe('deprecated', () => {
         const code = `
 // @filename: test.py
 //// from typing_extensions import deprecated
-//// 
-//// 
+////
+////
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
-//// 
+////
 //// asdfasd[|/*marker*/|]
     `;
 
@@ -1610,7 +1636,7 @@ describe('useTypingExtensions', () => {
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
-//// 
+////
 //// class Bar(Foo):
 ////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
     `;
@@ -1657,7 +1683,7 @@ describe('useTypingExtensions', () => {
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
-//// 
+////
 //// class Bar(Foo):
 ////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
     `;
@@ -1696,7 +1722,7 @@ describe('useTypingExtensions', () => {
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
-//// 
+////
 //// class Bar(Foo):
 ////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
     `;
@@ -1743,7 +1769,7 @@ describe('useTypingExtensions', () => {
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
-//// 
+////
 //// class Bar(Foo):
 ////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
     `;

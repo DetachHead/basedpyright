@@ -233,7 +233,15 @@ export function run<T = any>(
     }
 }
 
-export function getBackgroundWaiter<T>(port: MessagePort, deserializer: (v: any) => T = deserialize): Promise<T> {
+export type BackgroundDataHandler = (data: any, port: MessagePort) => void;
+
+export function getBackgroundWaiter<T>(
+    port: MessagePort,
+    options?: { deserializer?: (v: any) => T; dataHandler?: BackgroundDataHandler }
+): Promise<T> {
+    const deserializer = options?.deserializer ?? deserialize;
+    const dataHandler = options?.dataHandler ?? (() => {});
+
     return new Promise((resolve, reject) => {
         port.on('message', (m: RequestResponse) => {
             switch (m.kind) {
@@ -247,6 +255,11 @@ export function getBackgroundWaiter<T>(port: MessagePort, deserializer: (v: any)
 
                 case 'failed':
                     reject(m.data);
+                    break;
+
+                case 'data':
+                    // Handle streaming data from the background thread
+                    dataHandler(m.data, port);
                     break;
 
                 default:
@@ -266,7 +279,7 @@ export interface InitializationData {
 }
 
 export interface RequestResponse {
-    kind: 'ok' | 'failed' | 'cancelled';
+    kind: 'ok' | 'failed' | 'cancelled' | 'data';
     data: any;
 }
 

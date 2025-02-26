@@ -91,7 +91,7 @@ import { ImportResolver } from './analyzer/importResolver';
 import { MaxAnalysisTime } from './analyzer/program';
 import { AnalyzerService, LibraryReanalysisTimeProvider, getNextServiceId } from './analyzer/service';
 import { IPythonMode } from './analyzer/sourceFile';
-import type { BackgroundAnalysisBase } from './backgroundAnalysisBase';
+import type { IBackgroundAnalysis } from './backgroundAnalysisBase';
 import { CommandResult } from './commands/commandResult';
 import { CancelAfter } from './common/cancellationUtils';
 import { CaseSensitivityDetector } from './common/caseSensitivityDetector';
@@ -113,7 +113,6 @@ import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
 import { FileWatcherEventType } from './common/fileWatcher';
 import { Host } from './common/host';
 import {
-    ClientCapabilities,
     LanguageServerInterface,
     ServerOptions,
     ServerSettings,
@@ -144,6 +143,7 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseFileResults } from './parser/parser';
 import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
+import { ClientCapabilities } from './types';
 import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
@@ -186,6 +186,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         signatureDocFormat: MarkupKind.PlainText,
         supportsTaskItemDiagnosticTag: false,
         completionItemResolveSupportsAdditionalTextEdits: false,
+        hasPullDiagnosticsCapability: false,
+        hasPullRelatedInformationCapability: false,
         completionItemResolveSupportsTags: false,
     };
 
@@ -270,7 +272,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this._workspaceFoldersChangedDisposable?.dispose();
     }
 
-    abstract createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): BackgroundAnalysisBase | undefined;
+    abstract createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): IBackgroundAnalysis | undefined;
 
     abstract getSettings(workspace: Workspace): Promise<ServerSettings>;
 
@@ -481,7 +483,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         serviceProvider: ServiceProvider,
         configOptions: ConfigOptions,
         importResolver: ImportResolver,
-        backgroundAnalysis?: BackgroundAnalysisBase,
+        backgroundAnalysis?: IBackgroundAnalysis,
         maxAnalysisTime?: MaxAnalysisTime
     ): BackgroundAnalysisProgram {
         return new BackgroundAnalysisProgram(

@@ -7,7 +7,7 @@
 import { Connection } from 'vscode-languageserver';
 
 import { BackgroundAnalysis } from './backgroundAnalysis';
-import { BackgroundAnalysisBase } from './backgroundAnalysisBase';
+import { IBackgroundAnalysis } from './backgroundAnalysisBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConsoleWithLogLevel } from './common/console';
 import { isDebugMode } from './common/core';
@@ -35,7 +35,7 @@ export class PyrightServer extends RealLanguageServer {
         );
     }
 
-    override createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): BackgroundAnalysisBase | undefined {
+    override createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): IBackgroundAnalysis | undefined {
         if (isDebugMode() || !getCancellationFolderName()) {
             // Don't do background analysis if we're in debug mode or an old client
             // is used where cancellation is not supported.

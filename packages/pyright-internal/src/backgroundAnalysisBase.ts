@@ -6,7 +6,7 @@
  * run analyzer from background thread
  */
 
-import { CancellationToken, CreateFile, DeleteFile } from 'vscode-languageserver';
+import { CancellationToken, CreateFile, DeleteFile, Disposable } from 'vscode-languageserver';
 
 import {
     AnalysisCompleteCallback,
@@ -47,10 +47,38 @@ import { Uri } from './common/uri/uri';
 import { ProgramView } from './common/extensibility';
 import { TestFileSystem } from './tests/harness/vfs/filesystem';
 
-export class BackgroundAnalysisBase {
+export interface IBackgroundAnalysis extends Disposable {
+    setProgramView(program: Program): void;
+    setCompletionCallback(callback?: AnalysisCompleteCallback): void;
+    setImportResolver(importResolver: ImportResolver): void;
+    setConfigOptions(configOptions: ConfigOptions): void;
+    setTrackedFiles(fileUris: Uri[]): void;
+    setAllowedThirdPartyImports(importNames: string[]): void;
+    ensurePartialStubPackages(executionRoot: string | undefined): void;
+    setFileOpened(fileUri: Uri, version: number | null, contents: string, options: OpenFileOptions): void;
+    updateChainedUri(fileUri: Uri, chainedUri: Uri | undefined): void;
+    setFileClosed(fileUri: Uri, isTracked?: boolean): void;
+    addInterimFile(fileUri: Uri): void;
+    markAllFilesDirty(evenIfContentsAreSame: boolean): void;
+    markFilesDirty(fileUris: Uri[], evenIfContentsAreSame: boolean): void;
+    startAnalysis(token: CancellationToken): void;
+    analyzeFile(fileUri: Uri, token: CancellationToken): Promise<boolean>;
+    getDiagnosticsForRange(fileUri: Uri, range: Range, token: CancellationToken): Promise<Diagnostic[]>;
+    writeTypeStub(
+        targetImportPath: Uri,
+        targetIsSingleFile: boolean,
+        stubPath: Uri,
+        token: CancellationToken
+    ): Promise<any>;
+    invalidateAndForceReanalysis(reason: InvalidatedReason): void;
+    restart(): void;
+    shutdown(): void;
+}
+
+export class BackgroundAnalysisBase implements IBackgroundAnalysis {
     private _worker: Worker | undefined;
     private _onAnalysisCompletion: AnalysisCompleteCallback = nullCallback;
-    private _analysisCancellationToken: CancellationToken | undefined = undefined;
+    private _analysisCancellationTokenId: string | undefined = undefined;
     private _messageChannel: MessageChannel;
     protected program: ProgramView | undefined;
 
@@ -154,10 +182,10 @@ export class BackgroundAnalysisBase {
     }
 
     startAnalysis(token: CancellationToken) {
-        this._analysisCancellationToken = token;
+        this._analysisCancellationTokenId = getCancellationTokenId(token);
         this.enqueueRequest({
             requestType: 'analyze',
-            data: serialize(token),
+            data: serialize(this._analysisCancellationTokenId),
         });
     }
 
@@ -307,16 +335,16 @@ export class BackgroundAnalysisBase {
                 // analyze, so queue another message to resume later.
                 this.enqueueRequest({
                     requestType: 'resumeAnalysis',
-                    data: serialize(this._analysisCancellationToken || CancellationToken.None),
+                    data: serialize(this._analysisCancellationTokenId),
                 });
                 break;
             }
 
             case 'analysisDone': {
-                if (this._analysisCancellationToken) {
-                    disposeCancellationToken(this._analysisCancellationToken);
+                if (this._analysisCancellationTokenId) {
+                    disposeCancellationToken(getCancellationTokenFromId(this._analysisCancellationTokenId));
                 }
-                this._analysisCancellationToken = undefined;
+                this._analysisCancellationTokenId = undefined;
                 break;
             }
 
@@ -416,13 +444,16 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             }
 
             case 'analyze': {
-                const token = deserialize(msg.data);
+                const data = deserialize(msg.data);
+                const token = getCancellationTokenFromId(data);
                 this.handleAnalyze(this.responsePort, token);
                 break;
             }
 
             case 'resumeAnalysis': {
-                const token = deserialize(msg.data);
+                const data = deserialize(msg.data);
+                const token = getCancellationTokenFromId(data);
+
                 this.handleResumeAnalysis(this.responsePort, token);
                 break;
             }
@@ -585,7 +616,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             // then queue up a message to resume the analysis.
             this._analysisPaused(port, token);
         } else {
-            this.analysisDone(port, token);
+            this.analysisDone(port, getCancellationTokenId(token) || '');
         }
     }
 
@@ -719,8 +750,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         super.handleShutdown();
     }
 
-    protected analysisDone(port: MessagePort, token: CancellationToken) {
-        port.postMessage({ requestType: 'analysisDone', data: serialize(token) });
+    protected analysisDone(port: MessagePort, tokenId: string) {
+        port.postMessage({ requestType: 'analysisDone', data: tokenId });
     }
 
     protected onAnalysisCompletion(port: MessagePort, result: AnalysisResults) {

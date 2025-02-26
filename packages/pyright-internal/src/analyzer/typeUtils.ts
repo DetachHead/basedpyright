@@ -3099,7 +3099,7 @@ function _requiresSpecialization(type: Type, options?: RequiresSpecializationOpt
                     return true;
                 }
             } else if (type.priv.inferredReturnType) {
-                if (requiresSpecialization(type.priv.inferredReturnType, options, recursionCount)) {
+                if (requiresSpecialization(type.priv.inferredReturnType?.type, options, recursionCount)) {
                     return true;
                 }
             }
@@ -3968,8 +3968,8 @@ export class TypeVarTransformer {
 
             let specializedInferredReturnType: Type | undefined;
             if (functionType.priv.inferredReturnType) {
-                specializedInferredReturnType = this.apply(functionType.priv.inferredReturnType, recursionCount);
-                if (specializedInferredReturnType !== functionType.priv.inferredReturnType) {
+                specializedInferredReturnType = this.apply(functionType.priv.inferredReturnType?.type, recursionCount);
+                if (specializedInferredReturnType !== functionType.priv.inferredReturnType?.type) {
                     typesRequiredSpecialization = true;
                 }
             }

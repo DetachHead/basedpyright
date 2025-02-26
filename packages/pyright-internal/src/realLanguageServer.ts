@@ -42,6 +42,7 @@ import { toolName } from './constants';
 import { CancellationProvider } from './common/cancellationUtils';
 import { FileWatcherHandler } from './common/fileWatcher';
 import version from './version.json';
+import { PartialStubService } from './partialStubService';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
@@ -70,8 +71,9 @@ export abstract class RealLanguageServer extends LanguageServerBase {
         const console = new ErrorNotificationConsole(connection);
         const pyrightFs = new PyrightFileSystem(realFileSystem);
         const cacheManager = new CacheManager(maxWorkers);
+        const partialStubService = new PartialStubService(pyrightFs);
 
-        const serviceProvider = createServiceProvider(pyrightFs, tempFile, console, cacheManager);
+        const serviceProvider = createServiceProvider(pyrightFs, tempFile, console, cacheManager, partialStubService);
 
         // When executed from CLI command (pyright-langserver), __rootDirectory is
         // already defined. When executed from VSCode extension, rootDirectory should
