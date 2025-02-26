@@ -12,7 +12,7 @@ import * as JSONC from 'jsonc-parser';
 import { AbstractCancellationTokenSource, CancellationToken } from 'vscode-languageserver';
 import { parse } from '../common/tomlUtils';
 
-import { BackgroundAnalysisBase, RefreshOptions } from '../backgroundAnalysisBase';
+import { IBackgroundAnalysis, RefreshOptions } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import {
     CommandLineConfigOptions,
@@ -84,7 +84,7 @@ export interface AnalyzerServiceOptions {
     hostFactory?: HostFactory;
     importResolverFactory?: ImportResolverFactory;
     configOptions?: ConfigOptions;
-    backgroundAnalysis?: BackgroundAnalysisBase;
+    backgroundAnalysis?: IBackgroundAnalysis;
     maxAnalysisTime?: MaxAnalysisTime;
     backgroundAnalysisProgramFactory?: BackgroundAnalysisProgramFactory;
     cancellationProvider?: CancellationProvider;
@@ -221,7 +221,7 @@ export class AnalyzerService {
     clone(
         instanceName: string,
         serviceId: string,
-        backgroundAnalysis?: BackgroundAnalysisBase,
+        backgroundAnalysis?: IBackgroundAnalysis,
         fileSystem?: FileSystem
     ): AnalyzerService {
         const service = new AnalyzerService(instanceName, this._serviceProvider, {
@@ -317,6 +317,10 @@ export class AnalyzerService {
 
     getOpenFiles() {
         return this._program.getOpened().map((i) => i.sourceFile.getUri());
+    }
+
+    getOwnedFiles() {
+        return this._program.getOwnedFiles().map((i) => i.sourceFile.getUri());
     }
 
     setFileOpened(
@@ -486,7 +490,6 @@ export class AnalyzerService {
     };
 
     protected runAnalysis(token: CancellationToken) {
-        // This creates a cancellation source only if it actually gets used.
         const moreToAnalyze = this._backgroundAnalysisProgram.startAnalysis(token);
         if (moreToAnalyze) {
             this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);

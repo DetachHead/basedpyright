@@ -29,8 +29,20 @@ export function collectImportedByCells<T extends SourceFileInfo>(program: Progra
     _parseAllOpenCells(program);
 
     const importedByCells = new Set<T>();
-    _collectImportedByCells(fileInfo, importedByCells);
+    collectImportedByRecursively(fileInfo, importedByCells);
     return importedByCells;
+}
+
+export function collectImportedByRecursively(fileInfo: SourceFileInfo, importedBy: Set<SourceFileInfo>) {
+    fileInfo.importedBy.forEach((dep) => {
+        if (importedBy.has(dep)) {
+            // Already visited.
+            return;
+        }
+
+        importedBy.add(dep);
+        collectImportedByRecursively(dep, importedBy);
+    });
 }
 
 export function verifyNoCyclesInChainedFiles<T extends SourceFileInfo>(program: ProgramView, fileInfo: T): void {
@@ -98,16 +110,4 @@ function _parseAllOpenCells(program: ProgramView): void {
         program.getParserOutput(file.sourceFile.getUri());
         program.handleMemoryHighUsage();
     }
-}
-
-function _collectImportedByCells(fileInfo: SourceFileInfo, importedByCells: Set<SourceFileInfo>) {
-    fileInfo.importedBy.forEach((dep) => {
-        if (importedByCells.has(dep)) {
-            // Already visited.
-            return;
-        }
-
-        importedByCells.add(dep);
-        _collectImportedByCells(dep, importedByCells);
-    });
 }

@@ -162,6 +162,7 @@ class WriteableData {
     parsedFileContents: string | undefined;
     tokenizerLines: TextRangeCollection<TextRange> | undefined;
     tokenizerOutput: TokenizerOutput | undefined;
+    lineCount: number | undefined;
 
     moduleSymbolTable: SymbolTable | undefined;
 
@@ -502,6 +503,7 @@ export class SourceFile {
         this._writableData.isCheckingNeeded = true;
         this._writableData.isBindingNeeded = true;
         this._writableData.moduleSymbolTable = undefined;
+        this._writableData.lineCount = undefined;
 
         this._fireFileDirtyEvent();
     }
@@ -535,6 +537,10 @@ export class SourceFile {
 
     getClientVersion() {
         return this._writableData.clientDocumentVersion;
+    }
+
+    getRange() {
+        return { start: { line: 0, character: 0 }, end: { line: this._writableData.lineCount ?? 0, character: 0 } };
     }
 
     getOpenFileContents() {
@@ -744,6 +750,7 @@ export class SourceFile {
                 this._writableData.typeIgnoreLines = parseFileResults.tokenizerOutput.typeIgnoreLines;
                 this._writableData.typeIgnoreAll = parseFileResults.tokenizerOutput.typeIgnoreAll;
                 this._writableData.pyrightIgnoreLines = parseFileResults.tokenizerOutput.pyrightIgnoreLines;
+                this._writableData.lineCount = parseFileResults.tokenizerOutput.lines.length;
 
                 // Cache the tokenizer output only if this file is open.
                 if (this._writableData.clientDocumentContents !== undefined) {
@@ -944,6 +951,7 @@ export class SourceFile {
 
     check(
         configOptions: ConfigOptions,
+        importLookup: ImportLookup,
         importResolver: ImportResolver,
         evaluator: TypeEvaluator,
         sourceMapper: SourceMapper,

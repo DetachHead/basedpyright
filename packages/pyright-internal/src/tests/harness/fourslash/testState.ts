@@ -99,6 +99,7 @@ import {
 } from './testStateUtils';
 import { verifyWorkspaceEdit } from './workspaceEditTestUtils';
 import { Host } from '../../../common/host';
+import { PartialStubService } from '../../../partialStubService';
 import { tExpect } from 'typed-jest-expect';
 
 export interface TextChange {
@@ -172,7 +173,8 @@ export class TestState {
 
         this.fs = new PyrightFileSystem(this.testFS);
         this.console = new ConsoleWithLogLevel(new NullConsole(), 'test');
-        this.serviceProvider = createServiceProvider(this.testFS, this.fs, this.console);
+        const ps = new PartialStubService(this.fs);
+        this.serviceProvider = createServiceProvider(this.testFS, this.fs, this.console, ps);
 
         this._cancellationToken = new TestCancellationToken();
         this._hostSpecificFeatures = hostSpecificFeatures ?? new TestFeatures();

@@ -284,6 +284,8 @@ export namespace Localizer {
         export const baseClassUnknown = () => getRawString('Diagnostic.baseClassUnknown');
         export const baseClassAny = () => getRawString('Diagnostic.baseClassAny');
         export const binaryOperationNotAllowed = () => getRawString('Diagnostic.binaryOperationNotAllowed');
+        export const bindParamMissing = () =>
+            new ParameterizedString<{ methodName: string }>(getRawString('Diagnostic.bindParamMissing'));
         export const bindTypeMismatch = () =>
             new ParameterizedString<{ type: string; methodName: string; paramName: string }>(
                 getRawString('Diagnostic.bindTypeMismatch')
@@ -965,6 +967,7 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeAliasRedeclared'));
         export const typeAliasStatementIllegal = () => getRawString('Diagnostic.typeAliasStatementIllegal');
         export const typeAliasStatementBadScope = () => getRawString('Diagnostic.typeAliasStatementBadScope');
+        export const typeAliasTypeBadScope = () => getRawString('Diagnostic.typeAliasTypeBadScope');
         export const typeAliasTypeBaseClass = () => getRawString('Diagnostic.typeAliasTypeBaseClass');
         export const typeAliasTypeMustBeAssigned = () => getRawString('Diagnostic.typeAliasTypeMustBeAssigned');
         export const typeAliasTypeNameArg = () => getRawString('Diagnostic.typeAliasTypeNameArg');

@@ -1010,7 +1010,7 @@ export class CompletionProvider {
         if (
             completionMap.has(
                 name,
-                (i) => CompletionMap.matchKindAndImportText(i, this.getCompletionItemData.bind(this)),
+                (i) => CompletionMap.matchKindAndImportText(i, this.getCompletionItemData.bind(this), itemKind),
                 itemKind,
                 detail?.autoImportText?.importText
             )
