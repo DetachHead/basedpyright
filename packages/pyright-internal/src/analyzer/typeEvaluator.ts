@@ -11704,8 +11704,13 @@ export function createTypeEvaluator(
                     const param = paramInfo.param;
                     if (param.category === ParamCategory.Simple && param.name) {
                         const entry = paramMap.get(param.name);
-
-                        if (entry && entry.argsNeeded === 0 && entry.argsReceived === 0 && paramInfo.defaultType) {
+                        if (
+                            entry &&
+                            entry.argsNeeded === 0 &&
+                            entry.argsReceived === 0 &&
+                            paramInfo.defaultType &&
+                            !isEllipsisType(paramInfo.defaultType)
+                        ) {
                             validateArgTypeParams.push({
                                 paramCategory: param.category,
                                 paramType: paramInfo.type,
