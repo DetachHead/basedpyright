@@ -3,8 +3,8 @@
         "target": "es2021",
         "module": "node16",
         "lib": [
-            // when updating this, remember to also update the one in browser-pyright
-            "ESNext"
+            // TODO: change this back to match upstream (es2020) or figure out a good way to polyfill https://github.com/DetachHead/basedpyright/issues/1106
+            "es2023"
         ],
         "skipLibCheck": true,
         "esModuleInterop": true,
