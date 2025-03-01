@@ -2163,7 +2163,7 @@
 </code></pre></div>
 <h3 id="variable-type-declarations">Variable Type Declarations</h3>
 <p>Pyright treats variable type annotations as type declarations. If a variable is not annotated, pyright allows any value to be assigned to that variable, and its type is inferred to be the union of all assigned types.</p>
-<p>Mypy’s behavior for variables depends on whether the <a href="https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-allow-redefinition"><code>--allow-redefinition</code></a> is specified. If redefinitions are not allowed, then mypy typically treats the first assignment (the one with the smallest line number) as though it is an implicit type declaration.</p>
+<p>Mypy’s behavior for variables depends on whether <a href="https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-allow-redefinition"><code>--allow-redefinition</code></a> is specified. If redefinitions are not allowed, then mypy typically treats the first assignment (the one with the smallest line number) as though it is an implicit type declaration.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">condition</span><span class="p">:</span>
         <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1"># Mypy treats this as an implicit type declaration</span>
