@@ -32,7 +32,7 @@ basedpyright can be run as either a language server or as a command-line tool. T
 
 [^1]: If specific files are specified on the command line, it overrides the files or directories specified in the pyrightconfig.json or pyproject.toml file.
 
-[^2]: This option is the same as the language server setting `python.pythonPath`. It cannot be used with --venvpath. The --pythonpath options is recommended over --venvpath in most cases. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
+[^2]: This option is the same as the language server setting `python.pythonPath`. It cannot be used with `--venvpath`. The `--pythonpath` option is recommended over `--venvpath` in most cases. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
 
 [^3]: Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.
 
