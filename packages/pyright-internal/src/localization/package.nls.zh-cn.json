@@ -60,6 +60,7 @@
         "baseClassUnknown": "未知类型的基类覆盖了子类的类型",
         "baseClassVariableTypeIncompatible": "变量 \"{name}\" 的定义与 \"{classType}\" 类的基类不兼容",
         "binaryOperationNotAllowed": "类型表达式中不允许使用二元运算符",
+        "bindParamMissing": "无法绑定方法“{methodName}”，因为它缺少 “self” 或 “cls” 参数",
         "bindTypeMismatch": "无法绑定方法 \"{methodName}\"，因为 \"{type}\" 不能赋值给 \"{paramName}\" 参数",
         "breakInExceptionGroup": "不允许在 `except*` 语句块中使用 `break`",
         "breakOutsideLoop": "`break` 只能在循环中使用",
