@@ -1,6 +1,6 @@
 <h1><img src="https://docs.basedpyright.com/latest/img/readme_logo.png"> basedpyright</h1>
 
-basedpyright is a pyright fork with various type checking improvements, improved vscode support and pylance features built into the language server.
+Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, pylance features and more.
 
 **[full documentation](https://docs.basedpyright.com)**
 
