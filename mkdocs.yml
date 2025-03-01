@@ -45,6 +45,7 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - footnotes
 plugins:
   - search
   - awesome-pages
