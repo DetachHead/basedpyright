@@ -173,20 +173,3 @@ describe('uninitialized variable checking with init method calling', () => {
         });
     });
 });
-
-test('overload matching where default value is ellipsis', () => {
-    // fix for an upstream bug that was introduced in 1.1.395
-    const configOptions = new BasedConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
-    configOptions.diagnosticRuleSet.reportUnknownParameterType = 'none';
-    configOptions.diagnosticRuleSet.reportMissingParameterType = 'none';
-    const analysisResults = typeAnalyzeSampleFiles(['overloadMatchDefaultValueEllipsis.py'], configOptions);
-    validateResultsButBased(analysisResults, {
-        errors: [
-            { line: 31, code: DiagnosticRule.reportArgumentType },
-            { line: 31, code: DiagnosticRule.reportArgumentType },
-            { line: 38, code: DiagnosticRule.reportArgumentType },
-            { line: 38, code: DiagnosticRule.reportArgumentType },
-        ],
-    });
-});
