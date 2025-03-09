@@ -15,7 +15,7 @@ body:
         - if you're interested in fixing the issue yourself, we've tried our best to make the process to get set up for local development as easy as possible. [see the contributing instructions for more info](https://docs.basedpyright.com/latest/development/contributing/#building)
   - type: textarea
     validations:
-      required: true
+      required: false
     attributes:
       label: Description
       description: A description of the issue
