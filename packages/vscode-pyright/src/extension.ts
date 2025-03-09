@@ -137,7 +137,9 @@ export async function activate(context: ExtensionContext) {
                 copiedExecutablePath = executablePath;
             }
             serverOptions = {
-                command: copiedExecutablePath,
+                // quotes are needed in case there's a space in the path. ideally we shouldnt need to do this
+                // but it's necessary because we use `shell: true`, see comment below
+                command: `"${copiedExecutablePath}"`,
                 transport: TransportKind.stdio,
                 args: cancellationStrategy.getCommandLineArguments(),
                 options: {
