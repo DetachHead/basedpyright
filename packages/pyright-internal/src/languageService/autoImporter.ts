@@ -234,22 +234,30 @@ export class AutoImporter {
         const filterImports = (imports: ImportFromAsNode[]) =>
             importNames.filter((importNameInfo) => !imports.some((i) => i.d.name.d.value === importNameInfo.name));
 
+        let needsModuleImport = false;
         if (importStatement) {
-            // Does an 'import from' statement already exist?
-            if (
-                importStatement.node.nodeType === ParseNodeType.ImportFrom &&
-                !importStatement.node.d.isWildcardImport
-            ) {
-                // If not, add what we want at the existing 'import from' statement as long as
-                // what is imported is not module itself.
-                // ex) don't add "path" to existing "from os.path import dirname" statement.
-                if (moduleNameInfo.name === importStatement.moduleName) {
-                    const importFromAsNodes = importStatement.node.d.imports;
-                    return getTextEditsForAutoImportSymbolAddition(
-                        filterImports(importFromAsNodes),
-                        importStatement,
-                        this.parseResults
-                    );
+            if (importNames.length) {
+                // Does an 'import from' statement already exist?
+                if (
+                    importStatement.node.nodeType === ParseNodeType.ImportFrom &&
+                    !importStatement.node.d.isWildcardImport
+                ) {
+                    // If not (filtered in filterImports), add what we want at the existing 'import from' statement as long as
+                    // what is imported is not module itself.
+                    // ex) don't add "path" to existing "from os.path import dirname" statement.
+                    if (moduleNameInfo.name === importStatement.moduleName) {
+                        const importFromAsNodes = importStatement.node.d.imports;
+                        return getTextEditsForAutoImportSymbolAddition(
+                            filterImports(importFromAsNodes),
+                            importStatement,
+                            this.parseResults
+                        );
+                    }
+                }
+            } else {
+                if (importStatement.node.nodeType !== ParseNodeType.Import) {
+                    // an import statement exists but it's not an import of the module itself
+                    needsModuleImport = true;
                 }
             }
         } else {

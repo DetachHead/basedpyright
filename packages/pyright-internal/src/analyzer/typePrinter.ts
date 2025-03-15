@@ -210,6 +210,16 @@ export interface ImportTrackerResults {
     importFroms: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
+// class PrintedTypeToken {
+//     // constructor(public position: number, public value: string, public importDetails?: ) {}
+// }
+
+// class ImportToken extends PrintedTypeToken {}
+
+// class ImportFromToken extends PrintedTypeToken {
+//     constructor(position: number, value: string, importFromModule: string) {}
+// }
+
 /**
  * tracks imports that would be required if the printed type were to be converted to real life (eg. when double clicking
  * an inlay hint)
@@ -218,9 +228,12 @@ export class ImportTracker {
     static importModule = Symbol();
     private readonly _imports = new Set<string>();
     private readonly _importFroms = new Map<string, Set<string>>();
+    // private readonly _tokens = new
     readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
 
     constructor(private _fileUri: Uri, private _getTypingType: (name: string) => Type | undefined) {}
+
+    // addToken = (value: string) =>
 
     /**
      * @param module the name of the module being imported. if it's possible for the module to be the same as the current module, you should
@@ -1061,14 +1074,12 @@ function printObjectTypeForClassInternal(
     // Special-case NoneType to convert it to None.
     if (ClassType.isBuiltIn(type, 'NoneType')) {
         objName = 'None';
-    } else {
-        importTracker?.add(type.shared, objName);
-    }
-
-    // Use the fully-qualified name if the name isn't unique.
-    if (!uniqueNameMap.isUnique(objName)) {
+    } else if (!uniqueNameMap.isUnique(objName)) {
+        // Use the fully-qualified name if the name isn't unique.
         importTracker?.add(type.shared);
         objName = type.shared.fullName;
+    } else {
+        importTracker?.add(type.shared, objName);
     }
 
     // If this is a pseudo-generic class, don't display the type arguments
