@@ -74,9 +74,9 @@ The following settings determine how different types should be evaluated.
 
 these settings are discouraged in basedpyright. [see here for more info](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath).
 
-- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter. This setting is ignored when using Pylance. VS Code's python interpreter path is used instead.
+- **venvPath** [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a **venv** setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter.
 
-- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This setting is ignored when using Pylance.
+- **venv** [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
 
 ## Diagnostic Categories
 
