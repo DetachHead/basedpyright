@@ -577,13 +577,13 @@ export class AutoImporter {
     }
 
     protected shouldIncludeVariable(autoSymbol: AutoImportSymbol, isStub: boolean) {
-        // If it is not a stub file, is not in __all__ and symbol is Variable, we only include it if
-        // name is public constant or type alias
-        if (isStub || autoSymbol.kind !== SymbolKind.Variable || autoSymbol.inDunderAll) {
+        // Always include stub and non-variable symbols
+        if (isStub || autoSymbol.kind !== SymbolKind.Variable) {
             return true;
         }
 
-        return SymbolNameUtils.isPublicConstantOrTypeAlias(autoSymbol.name);
+        // And for variables, exclude those with a private/protected name
+        return !SymbolNameUtils.isPrivateOrProtectedName(autoSymbol.name);
     }
 
     private _addToImportAliasMap(
