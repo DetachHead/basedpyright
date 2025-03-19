@@ -1761,13 +1761,14 @@ export class Checker extends ParseTreeWalker {
                 let textRange: TextRange = { start: nameParts[0].start, length: nameParts[0].length };
                 textRange = TextRange.extend(textRange, nameParts[nameParts.length - 1]);
 
-                this._evaluator.addDiagnosticForTextRange(
-                    this._fileInfo,
-                    DiagnosticRule.reportUnusedImport,
-                    LocMessage.unaccessedImport().format({ name: multipartName }),
-                    textRange
-                )
-                ?.addAction({ action: Commands.unusedImport });
+                this._evaluator
+                    .addDiagnosticForTextRange(
+                        this._fileInfo,
+                        DiagnosticRule.reportUnusedImport,
+                        LocMessage.unaccessedImport().format({ name: multipartName }),
+                        textRange
+                    )
+                    ?.addAction({ action: Commands.unusedImport });
             }
         });
     }
