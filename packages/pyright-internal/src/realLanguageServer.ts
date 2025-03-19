@@ -138,7 +138,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
             }
 
-            const pythonAnalysisSection = await this.getConfiguration(workspace.rootUri, 'basedpyright.analysis');
+            const pythonAnalysisSection =
+                (await this.getConfiguration(workspace.rootUri, 'basedpyright.analysis')) ||
+                // this is undocumented, but we support the old section names for backwards compatibility with the pycharm pyright plugin
+                (await this.getConfiguration(workspace.rootUri, 'python.analysis'));
             if (pythonAnalysisSection) {
                 const typeshedPaths = pythonAnalysisSection.typeshedPaths;
                 if (typeshedPaths && Array.isArray(typeshedPaths) && typeshedPaths.length > 0) {
@@ -219,7 +222,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 serverSettings.autoSearchPaths = true;
             }
 
-            const pyrightSection = await this.getConfiguration(workspace.rootUri, 'basedpyright');
+            const pyrightSection =
+                (await this.getConfiguration(workspace.rootUri, 'basedpyright')) ||
+                // this is undocumented, but we support the old section names for backwards compatibility with the pycharm pyright plugin
+                (await this.getConfiguration(workspace.rootUri, 'pyright'));
             if (pyrightSection) {
                 if (pyrightSection.openFilesOnly !== undefined) {
                     serverSettings.openFilesOnly = !!pyrightSection.openFilesOnly;
