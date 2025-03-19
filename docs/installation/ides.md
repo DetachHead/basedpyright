@@ -134,10 +134,6 @@ Emacs users have 3 options:
     3. set "Running mode" to "Native LSP client":\
         ![](./native-lsp.png)
 
-!!! warning
-
-    configuring [language server settings](../configuration/language-server-settings.md) in this plugin does not work with basedpyright, so you will need to use [a config file instead](../configuration/config-files.md). see [this issue](https://github.com/DetachHead/basedpyright/issues/801) for more information
-
 ## Helix
 
 Install the LSP server itself, using the [pypi package installation method](./command-line-and-language-server.md) (as mentioned previously in this section).
