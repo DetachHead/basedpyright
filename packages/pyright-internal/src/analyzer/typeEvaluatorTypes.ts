@@ -352,6 +352,7 @@ export interface ArgBase {
     typeResult?: TypeResult | undefined;
     valueExpression?: ExpressionNode | undefined;
     active?: boolean | undefined;
+    enforceIterable?: boolean | undefined;
 }
 
 export interface ArgWithType extends ArgBase {

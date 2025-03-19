@@ -92,6 +92,8 @@ export interface AnalyzerServiceOptions {
     serviceId?: string;
     skipScanningUserFiles?: boolean;
     fileSystem?: FileSystem;
+    usingPullDiagnostics?: boolean;
+    onInvalidated?: (reason: InvalidatedReason) => void;
 }
 
 interface ConfigFileContents {
@@ -230,6 +232,7 @@ export class AnalyzerService {
             backgroundAnalysis,
             skipScanningUserFiles: true,
             fileSystem,
+            usingPullDiagnostics: this.options.usingPullDiagnostics,
         });
 
         // Cloned service will use whatever user files the service currently has.
@@ -472,6 +475,10 @@ export class AnalyzerService {
     }
 
     invalidateAndForceReanalysis(reason: InvalidatedReason) {
+        if (this.options.onInvalidated) {
+            this.options.onInvalidated(reason);
+        }
+
         this._backgroundAnalysisProgram.invalidateAndForceReanalysis(reason);
     }
 
@@ -490,13 +497,21 @@ export class AnalyzerService {
     };
 
     protected runAnalysis(token: CancellationToken) {
-        const moreToAnalyze = this._backgroundAnalysisProgram.startAnalysis(token);
-        if (moreToAnalyze) {
-            this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
+        // In pull diagnostics mode, the service doesn't perform analysis on its own.
+        // Instead the client deliberately asks for diagnostics on a file-by-file basis.
+        if (!this.options.usingPullDiagnostics) {
+            const moreToAnalyze = this._backgroundAnalysisProgram.startAnalysis(token);
+            if (moreToAnalyze) {
+                this._scheduleReanalysis(/* requireTrackedFileUpdate */ false);
+            }
         }
     }
 
     protected applyConfigOptions(host: Host) {
+        // Indicate that we are about to reanalyze because of this config change.
+        if (this.options.onInvalidated) {
+            this.options.onInvalidated(InvalidatedReason.Reanalyzed);
+        }
         // Allocate a new import resolver because the old one has information
         // cached based on the previous config options.
         const importResolver = this._importResolverFactory(

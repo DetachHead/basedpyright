@@ -51,7 +51,7 @@ export type IntrinsicType =
     | 'str'
     | 'str | None'
     | 'int'
-    | 'Iterable[str]'
+    | 'MutableSequence[str]'
     | 'type[self]'
     | 'Dict[str, Any]'
     | 'IPython.display.display';

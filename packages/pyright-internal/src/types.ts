@@ -27,7 +27,12 @@ export interface ClientCapabilities {
     signatureDocFormat: MarkupKind;
     supportsTaskItemDiagnosticTag: boolean;
     completionItemResolveSupportsAdditionalTextEdits: boolean;
-    hasPullDiagnosticsCapability: boolean;
-    hasPullRelatedInformationCapability: boolean;
+    usingPullDiagnostics: boolean;
+    requiresPullRelatedInformationCapability: boolean;
     completionItemResolveSupportsTags: boolean;
 }
+
+export type InitializationOptions = {
+    diagnosticMode?: string;
+    disablePullDiagnostics?: boolean;
+};

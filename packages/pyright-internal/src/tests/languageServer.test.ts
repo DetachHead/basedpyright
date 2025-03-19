@@ -46,7 +46,8 @@ describe(`Basic language server tests`, () => {
         callInitialize = true,
         extraSettings?: { item: ConfigurationItem; value: any }[],
         pythonVersion: PythonVersion = pythonVersion3_10,
-        supportsBackgroundThread?: boolean
+        supportsBackgroundThread?: boolean,
+        supportsPullDiagnostics?: boolean
     ) {
         const result = await runPyrightServer(
             projectRoots,
@@ -54,7 +55,8 @@ describe(`Basic language server tests`, () => {
             callInitialize,
             extraSettings,
             pythonVersion,
-            supportsBackgroundThread
+            supportsBackgroundThread,
+            supportsPullDiagnostics
         );
         serverInfo = result;
         return result;
@@ -73,7 +75,7 @@ describe(`Basic language server tests`, () => {
 // @filename: test.py
 //// # empty file
         `;
-        const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, /* callInitialize */ false);
+        serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, /* callInitialize */ false);
 
         const initializeResult = await initializeLanguageServer(serverInfo);
 
@@ -165,92 +167,143 @@ describe(`Basic language server tests`, () => {
         assert(completionItem);
     });
 
-    test('background thread diagnostics', async () => {
-        const code = `
+    [false, true].forEach((supportsPullDiagnostics) => {
+        describe(`Diagnostics ${supportsPullDiagnostics ? 'pull' : 'push'}`, () => {
+            // Background analysis takes longer than 5 seconds sometimes, so we need to
+            // increase the timeout.
+            jest.setTimeout(15000);
+            test('background thread diagnostics', async () => {
+                const code = `
 // @filename: root/test.py
 //// from math import cos, sin
 //// import sys
 //// [|/*marker*/|]
         `;
-        const settings = [
-            {
-                item: {
-                    scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
-                },
-                value: {
-                    typeCheckingMode: 'strict',
-                    diagnosticMode: 'workspace',
-                },
-            },
-        ];
+                const settings = [
+                    {
+                        item: {
+                            scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                            section: 'basedpyright.analysis',
+                        },
+                        value: {
+                            typeCheckingMode: 'strict',
+                            diagnosticMode: 'workspace',
+                        },
+                    },
+                ];
 
-        const info = await runLanguageServer(
-            DEFAULT_WORKSPACE_ROOT,
-            code,
-            /* callInitialize */ true,
-            settings,
-            undefined,
-            /* supportsBackgroundThread */ true
-        );
+                const info = await runLanguageServer(
+                    DEFAULT_WORKSPACE_ROOT,
+                    code,
+                    /* callInitialize */ true,
+                    settings,
+                    undefined,
+                    /* supportsBackgroundThread */ true,
+                    supportsPullDiagnostics
+                );
 
-        // get the file containing the marker that also contains our task list comments
-        await openFile(info, 'marker');
+                // get the file containing the marker that also contains our task list comments
+                await openFile(info, 'marker');
 
-        // Wait for the diagnostics to publish
-        const diagnostics = await waitForDiagnostics(info);
-        const diagnostic = diagnostics.find((d) => d.uri.includes('root/test.py'));
-        assert(diagnostic);
-        assert.equal(diagnostic.diagnostics.length, 3);
+                // Wait for the diagnostics to publish
+                const diagnostics = await waitForDiagnostics(info);
+                const diagnostic = diagnostics.find((d) => d.uri.includes('root/test.py'));
+                assert(diagnostic);
+                assert.equal(diagnostic.diagnostics.length, 3);
 
-        // Make sure the error has a special rule
-        assert.equal(diagnostic.diagnostics[0].code, 'reportUnusedImport');
-        assert.equal(diagnostic.diagnostics[1].code, 'reportUnusedImport');
-        assert.equal(diagnostic.diagnostics[2].code, 'reportUnusedImport');
-    });
+                // Make sure the error has a special rule
+                assert.equal(diagnostic.diagnostics[0].code, 'reportUnusedImport');
+                assert.equal(diagnostic.diagnostics[1].code, 'reportUnusedImport');
+                assert.equal(diagnostic.diagnostics[2].code, 'reportUnusedImport');
+            });
 
-    test('Diagnostic severity overrides test', async () => {
-        const code = `
+            test('background thread diagnostics open mode', async () => {
+                const code = `
+// @filename: root/test.py
+//// from math import cos, sin
+//// import sys
+//// [|/*marker*/|]
+        `;
+                const settings = [
+                    {
+                        item: {
+                            scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                            section: 'python.analysis',
+                        },
+                        value: {
+                            typeCheckingMode: 'strict',
+                        },
+                    },
+                ];
+
+                const info = await runLanguageServer(
+                    DEFAULT_WORKSPACE_ROOT,
+                    code,
+                    /* callInitialize */ true,
+                    settings,
+                    undefined,
+                    /* supportsBackgroundThread */ true,
+                    supportsPullDiagnostics
+                );
+
+                // get the file containing the marker that also contains our task list comments
+                await openFile(info, 'marker');
+
+                // Wait for the diagnostics to publish
+                const diagnostics = await waitForDiagnostics(info);
+                const diagnostic = diagnostics.find((d) => d.uri.includes('root/test.py'));
+                assert(diagnostic);
+                assert.equal(diagnostic.diagnostics.length, 3);
+
+                // Make sure the error has a special rule
+                assert.equal(diagnostic.diagnostics[0].code, 'reportUnusedImport');
+                assert.equal(diagnostic.diagnostics[1].code, 'reportUnusedImport');
+                assert.equal(diagnostic.diagnostics[2].code, 'reportUnusedImport');
+            });
+
+            test('Diagnostic severity overrides test', async () => {
+                const code = `
 // @filename: test.py
 //// def _test([|/*marker*/x|]): ...
 //// 
 // @filename: pyproject.toml
 //// 
     `;
-        const settings = [
-            {
-                item: {
-                    scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
-                    section: 'basedpyright.analysis',
-                },
-                value: {
-                    diagnosticSeverityOverrides: {
-                        reportUnknownParameterType: 'warning',
+                const settings = [
+                    {
+                        item: {
+                            scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                            section: 'basedpyright.analysis',
+                        },
+                        value: {
+                            diagnosticSeverityOverrides: {
+                                reportUnknownParameterType: 'warning',
                         reportUnusedFunction: 'unused',
+                            },
+                        },
                     },
-                },
-            },
-        ];
+                ];
 
-        const info = await runLanguageServer(
-            DEFAULT_WORKSPACE_ROOT,
-            code,
-            /* callInitialize */ true,
-            settings,
-            undefined,
-            /* supportsBackgroundThread */ true
-        );
+                const info = await runLanguageServer(
+                    DEFAULT_WORKSPACE_ROOT,
+                    code,
+                    /* callInitialize */ true,
+                    settings,
+                    undefined,
+                    /* supportsBackgroundThread */ true,
+                    supportsPullDiagnostics
+                );
 
-        // get the file containing the marker that also contains our task list comments
-        await openFile(info, 'marker');
+                // get the file containing the marker that also contains our task list comments
+                await openFile(info, 'marker');
 
-        // Wait for the diagnostics to publish
-        const diagnostics = await waitForDiagnostics(info);
-        const file = diagnostics.find((d) => d.uri.includes('test.py'));
-        assert(file);
+                // Wait for the diagnostics to publish
+                const diagnostics = await waitForDiagnostics(info);
+                const file = diagnostics.find((d) => d.uri.includes('test.py'));
+                assert(file);
 
-        // Make sure the error has a special rule
-        assert.equal(file.diagnostics[1].code, 'reportUnknownParameterType');
+                // Make sure the error has a special rule
+                assert.equal(file.diagnostics[1].code, 'reportUnknownParameterType');
 
         // make sure additional diagnostic severities work
         assert.equal(
@@ -264,11 +317,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo.bar
 //// foo.bar
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -330,11 +383,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo.bar as qux
 //// qux
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -383,11 +436,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo.bar
 //// foo.bar
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -449,11 +502,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar/baz.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo.bar.baz
 //// foo.bar.baz
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -516,11 +569,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/__init__.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo
 //// foo
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -540,11 +593,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// import foo
 //// foo
-//// 
+////
 `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -581,11 +634,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from foo import bar
 //// bar
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -629,11 +682,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from foo import bar as qux
 //// qux
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -673,11 +726,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from . import bar
 //// bar
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -721,11 +774,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: bar.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from . import bar as qux
 //// qux
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -765,11 +818,11 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar.py
 //// baz = 1 [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from foo.bar import baz
 //// baz
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -809,10 +862,10 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar/baz.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from foo.bar import baz
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -852,10 +905,10 @@ describe(`Basic language server tests`, () => {
                 const code = `
 // @filename: foo/bar/baz.py
 //// # empty file [|/*marker*/|]
-//// 
+////
 // @filename: baz.py
 //// from foo.bar import baz
-//// 
+////
     `;
                 const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
                 openFile(serverInfo, 'marker');
@@ -897,11 +950,11 @@ describe(`Basic language server tests`, () => {
     test('error on invalid config - config file', async () => {
         const code = `
 // @filename: test.py
-//// 
+////
 // @filename: pyproject.toml
 //// [tool.basedpyright]
 //// typeCheckingMode = 'asdf'
-//// 
+////
     `;
         const settings = [
             {
@@ -932,7 +985,7 @@ describe(`Basic language server tests`, () => {
     test('error on invalid config - lsp settings', async () => {
         const code = `
 // @filename: test.py
-//// 
+////
     `;
         const settings = [
             {
@@ -961,5 +1014,7 @@ describe(`Basic language server tests`, () => {
             info.notifications[0].message ===
                 'invalid diagnosticMode: "asdf". valid options are "workspace" or "openFilesOnly"'
         );
+            });
+        });
     });
 });

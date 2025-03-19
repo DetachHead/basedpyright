@@ -488,7 +488,12 @@ const outputResults = (
     if (baselineDiffMessage) {
         console.info(baselineDiffMessage);
     }
-    const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(results.diagnostics);
+    // Sort all file diagnostics by the file URI so
+    // we have a deterministic ordering.
+    const fileDiagnostics = results.diagnostics.sort((a, b) =>
+        a.fileUri.toString() < b.fileUri.toString() ? -1 : 1
+    );
+    const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(fileDiagnostics);
 
     const treatWarningsAsErrors =
         !!args.warnings ||
@@ -674,7 +679,7 @@ async function runMultiThreaded(
     output.info(`Found ${sourceFilesToAnalyze.length} files to analyze`);
     output.info(`Using ${workerCount} threads`);
 
-    const fileDiagnostics: FileDiagnostics[] = [];
+    let fileDiagnostics: FileDiagnostics[] = [];
     let pendingAnalysisCount = 0;
 
     const sendMessageToWorker = (worker: ChildProcess, message: string, data: any) => {
