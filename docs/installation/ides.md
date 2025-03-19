@@ -8,35 +8,35 @@ for information on how to configure the language server in your IDE, [see here](
 
 ## VSCode / VSCodium
 
-### VSCode
+=== "VSCode"
 
-install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
+    install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 
-??? "using basedpyright with pylance (not recommended)"
+    ??? "using basedpyright with pylance (not recommended)"
 
-    unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
+        unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
 
-    if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.
+        if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.
 
-    if basedpyright detects that pylance is installed, you will see a popup prompting you to choose whether to uninstall pylance or fix your settings to allow both extensions to work without overlapping functionality:
+        if basedpyright detects that pylance is installed, you will see a popup prompting you to choose whether to uninstall pylance or fix your settings to allow both extensions to work without overlapping functionality:
 
-    ![](pylance.png)
+        ![](pylance.png)
 
-    clicking "Fix settings & keep both extensions" will set the following settings for you automatically:
+        clicking "Fix settings & keep both extensions" will set the following settings for you automatically:
 
-    ```json title=".vscode/settings.json"
-    {
-        // disable pylance's type checking and only use its language server
-        "python.analysis.typeCheckingMode": "off",
+        ```json title=".vscode/settings.json"
+        {
+            // disable pylance's type checking and only use its language server
+            "python.analysis.typeCheckingMode": "off",
 
-        // disable basedpyright's language server and only use its type checking
-        "basedpyright.disableLanguageServices": true
-    }
-    ```
+            // disable basedpyright's language server and only use its type checking
+            "basedpyright.disableLanguageServices": true
+        }
+        ```
 
-### VSCodium
+=== "VSCodium"
 
-install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
+    install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
 ### usage
 
@@ -93,27 +93,27 @@ Sublime text users can install both [LSP](https://packagecontrol.io/packages/LSP
 
 Emacs users have 3 options:
 
-### [lsp-bridge](https://github.com/manateelazycat/lsp-bridge)
+=== "lsp-bridge"
 
-basedpyright is the default language server for python in lsp-bridge, so no additional configuration is required.
+    basedpyright is the default language server for python in [lsp-bridge](https://github.com/manateelazycat/lsp-bridge), so no additional configuration is required.
 
-### [eglot](https://github.com/joaotavora/eglot)
+=== "eglot"
 
-add the following to your emacs config:
+    add the following to your emacs config:
 
-```emacs-lisp
-(add-to-list 'eglot-server-programs
-             '((python-mode python-ts-mode)
-               "basedpyright-langserver" "--stdio"))
-```
+    ```emacs-lisp
+    (add-to-list 'eglot-server-programs
+                '((python-mode python-ts-mode)
+                "basedpyright-langserver" "--stdio"))
+    ```
 
-### [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
+=== "lsp-mode"
 
-with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: `0c0d72a`, update the package if you encounter errors), add the following to your emacs config:
+    with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: `0c0d72a`, update the package if you encounter errors), add the following to your emacs config:
 
-```emacs-lisp
-(setq lsp-pyright-langserver-command "basedpyright")
-```
+    ```emacs-lisp
+    (setq lsp-pyright-langserver-command "basedpyright")
+    ```
 
 ## PyCharm
 
