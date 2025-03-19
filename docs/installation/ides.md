@@ -117,11 +117,26 @@ with [lsp-pyright](https://github.com/emacs-lsp/lsp-pyright) (any commit after: 
 
 ## PyCharm
 
-install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
+=== "PyCharm Community"
 
-configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable and set "Running mode" to "LSP4IJ":
+    1. install the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin
+    2. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
+    3. configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable:\
+        ![](./pycharm-lsp-exe.png)
+    4. set "Running mode" to "LSP4IJ":\
+        ![](./lsp4ij.png)
 
-![](https://github.com/user-attachments/assets/accfc498-825c-4c39-9e2c-35195c41fd67)
+=== "PyCharm Professional / IntelliJ IDEA Ultimate"
+
+    1. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
+    2. configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable:\
+        ![](./pycharm-lsp-exe.png)
+    3. set "Running mode" to "Native LSP client":\
+        ![](./native-lsp.png)
+
+!!! warning
+
+    configuring [language server settings](../configuration/language-server-settings.md) in this plugin does not work with basedpyright, so you will need to use [a config file instead](../configuration/config-files.md). see [this issue](https://github.com/DetachHead/basedpyright/issues/801) for more information
 
 ## Helix
 
