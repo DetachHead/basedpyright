@@ -6,7 +6,6 @@
 [![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 [![open VSX](https://img.shields.io/open-vsx/dt/detachhead/basedpyright?logo=vscodium&color=2F80ED)](https://open-vsx.org/extension/detachhead/basedpyright)
 [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
-[![pycharm](https://img.shields.io/jetbrains/plugin/v/24145?logo=pycharm)](https://plugins.jetbrains.com/plugin/24145)
 [![homebrew](https://img.shields.io/homebrew/installs/dm/basedpyright?logo=homebrew&color=fbb040)](https://formulae.brew.sh/formula/basedpyright)
 [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
 [![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://docs.basedpyright.com)

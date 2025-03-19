@@ -45,6 +45,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.escapeall:
+      hardbreak: true
   - footnotes
   - attr_list
   - md_in_html
