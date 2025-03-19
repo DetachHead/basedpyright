@@ -577,9 +577,9 @@ export class AutoImporter {
     }
 
     protected shouldIncludeVariable(autoSymbol: AutoImportSymbol, isStub: boolean) {
-        // If it is not a stub file and symbol is Variable, we only include it if
+        // If it is not a stub file, is not in __all__ and symbol is Variable, we only include it if
         // name is public constant or type alias
-        if (isStub || autoSymbol.kind !== SymbolKind.Variable) {
+        if (isStub || autoSymbol.kind !== SymbolKind.Variable || autoSymbol.inDunderAll) {
             return true;
         }
 
