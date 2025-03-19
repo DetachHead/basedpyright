@@ -201,11 +201,6 @@ executionEnvironments = [
     { root = 'tests', pythonVersion = '3.13' },
 ]
 
-# currently commented out due to https://github.com/DetachHead/basedpyright/issues/570
-# only seem to be needed when using pycharm, which i dont really care about anyway because pycharm sucks
-# venvPath = "."
-# venv = ".venv"
-
 
 [tool.ruff]
 target-version = "py38"
