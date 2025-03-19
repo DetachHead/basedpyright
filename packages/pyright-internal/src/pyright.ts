@@ -490,7 +490,7 @@ const outputResults = (
     }
     // Sort all file diagnostics by the file URI so
     // we have a deterministic ordering.
-    const fileDiagnostics = results.diagnostics.sort((a, b) =>
+    const fileDiagnostics = [...results.diagnostics].sort((a, b) =>
         a.fileUri.toString() < b.fileUri.toString() ? -1 : 1
     );
     const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(fileDiagnostics);
@@ -679,7 +679,7 @@ async function runMultiThreaded(
     output.info(`Found ${sourceFilesToAnalyze.length} files to analyze`);
     output.info(`Using ${workerCount} threads`);
 
-    let fileDiagnostics: FileDiagnostics[] = [];
+    const fileDiagnostics: FileDiagnostics[] = [];
     let pendingAnalysisCount = 0;
 
     const sendMessageToWorker = (worker: ChildProcess, message: string, data: any) => {
