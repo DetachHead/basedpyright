@@ -319,7 +319,7 @@ export class SourceFile {
         private _baselineHandler: BaselineHandler,
         // this is kinda weird but it's necessary because the chained file is stored on SourceFileInfo and
         // accessing it from here would cause a circular dependency
-        private _getCellIndex: () => number | undefined,
+        public getCellIndex: () => number | undefined,
         console?: ConsoleInterface,
         logTracker?: LogTracker,
         ipythonMode?: IPythonMode
@@ -405,6 +405,8 @@ export class SourceFile {
     // Returns a list of cached diagnostics from the latest analysis job.
     // If the prevVersion is specified, the method returns undefined if
     // the diagnostics haven't changed.
+    getDiagnostics(options: ConfigOptions): Diagnostic[];
+    getDiagnostics(options: ConfigOptions, prevDiagnosticVersion?: number): Diagnostic[] | undefined;
     getDiagnostics(options: ConfigOptions, prevDiagnosticVersion?: number): Diagnostic[] | undefined {
         if (this._writableData.diagnosticVersion === prevDiagnosticVersion) {
             return undefined;
@@ -560,7 +562,7 @@ export class SourceFile {
             // Otherwise, get content from file system.
             return getFileContent(this.fileSystem, this._uri, this._console);
         }
-        const cellIndex = this._getCellIndex();
+        const cellIndex = this.getCellIndex();
         if (cellIndex === undefined) {
             throw new Error(`something went wrong, failed to get cell index for ${this._uri}`);
         }
@@ -1325,7 +1327,7 @@ export class SourceFile {
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
-        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, this._getCellIndex(), diagList);
+        diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, this.getCellIndex(), diagList);
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
