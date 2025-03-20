@@ -747,24 +747,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#vscode" class="md-nav__link">
-    <span class="md-ellipsis">
-      VSCode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vscodium" class="md-nav__link">
-    <span class="md-ellipsis">
-      VSCodium
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       usage
@@ -826,39 +808,6 @@
       Emacs
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Emacs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#lsp-bridge" class="md-nav__link">
-    <span class="md-ellipsis">
-      lsp-bridge
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#eglot" class="md-nav__link">
-    <span class="md-ellipsis">
-      eglot
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#lsp-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      lsp-mode
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1645,24 +1594,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#vscode" class="md-nav__link">
-    <span class="md-ellipsis">
-      VSCode
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vscodium" class="md-nav__link">
-    <span class="md-ellipsis">
-      VSCodium
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       usage
@@ -1725,39 +1656,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Emacs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#lsp-bridge" class="md-nav__link">
-    <span class="md-ellipsis">
-      lsp-bridge
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#eglot" class="md-nav__link">
-    <span class="md-ellipsis">
-      eglot
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#lsp-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      lsp-mode
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1813,7 +1711,9 @@
 </div>
 <p>for information on how to configure the language server in your IDE, <a href="../../configuration/language-server-settings/#where-do-i-configure-these-settings">see here</a>.</p>
 <h2 id="vscode-vscodium">VSCode / VSCodium</h2>
-<h3 id="vscode">VSCode</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">VSCode</label><label for="__tabbed_1_2">VSCodium</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <p>install the extension from <a href="https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright">the vscode extension marketplace</a></p>
 <details>
 <summary>using basedpyright with pylance (not recommended)</summary>
@@ -1831,8 +1731,12 @@
 <span class="p">}</span>
 </code></pre></div>
 </details>
-<h3 id="vscodium">VSCodium</h3>
+</div>
+<div class="tabbed-block">
 <p>install the extension from <a href="https://open-vsx.org/extension/detachhead/basedpyright">the open VSX registry</a></p>
+</div>
+</div>
+</div>
 <h3 id="usage">usage</h3>
 <p>the basedpyright extension will automatically look for the pypi package in your python environment.</p>
 <p>if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:</p>
@@ -1868,22 +1772,49 @@ their docs, linked above.</p>
 <p>Sublime text users can install both <a href="https://packagecontrol.io/packages/LSP">LSP</a> and <a href="https://packagecontrol.io/packages/LSP-basedpyright">LSP-basedpyright</a> via <a href="https://packagecontrol.io">Package Control</a>.</p>
 <h2 id="emacs">Emacs</h2>
 <p>Emacs users have 3 options:</p>
-<h3 id="lsp-bridge"><a href="https://github.com/manateelazycat/lsp-bridge">lsp-bridge</a></h3>
-<p>basedpyright is the default language server for python in lsp-bridge, so no additional configuration is required.</p>
-<h3 id="eglot"><a href="https://github.com/joaotavora/eglot">eglot</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">lsp-bridge</label><label for="__tabbed_2_2">eglot</label><label for="__tabbed_2_3">lsp-mode</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>basedpyright is the default language server for python in <a href="https://github.com/manateelazycat/lsp-bridge">lsp-bridge</a>, so no additional configuration is required.</p>
+</div>
+<div class="tabbed-block">
 <p>add the following to your emacs config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">(</span><span class="nv">add-to-list</span><span class="w"> </span><span class="ss">&#39;eglot-server-programs</span>
-<span class="w">             </span><span class="o">&#39;</span><span class="p">((</span><span class="nv">python-mode</span><span class="w"> </span><span class="nv">python-ts-mode</span><span class="p">)</span>
-<span class="w">               </span><span class="s">&quot;basedpyright-langserver&quot;</span><span class="w"> </span><span class="s">&quot;--stdio&quot;</span><span class="p">))</span>
+<span class="w">            </span><span class="o">&#39;</span><span class="p">((</span><span class="nv">python-mode</span><span class="w"> </span><span class="nv">python-ts-mode</span><span class="p">)</span>
+<span class="w">            </span><span class="s">&quot;basedpyright-langserver&quot;</span><span class="w"> </span><span class="s">&quot;--stdio&quot;</span><span class="p">))</span>
 </code></pre></div>
-<h3 id="lsp-mode"><a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a></h3>
+</div>
+<div class="tabbed-block">
 <p>with <a href="https://github.com/emacs-lsp/lsp-pyright">lsp-pyright</a> (any commit after: <code>0c0d72a</code>, update the package if you encounter errors), add the following to your emacs config:</p>
 <div class="highlight"><pre><span></span><code><span class="p">(</span><span class="k">setq</span><span class="w"> </span><span class="nv">lsp-pyright-langserver-command</span><span class="w"> </span><span class="s">&quot;basedpyright&quot;</span><span class="p">)</span>
 </code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="pycharm">PyCharm</h2>
-<p>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</p>
-<p>configure it to use basedpyright by specifying the path to the <code>basedpyright-langserver</code> executable and set "Running mode" to "LSP4IJ":</p>
-<p><img alt="" src="https://github.com/user-attachments/assets/accfc498-825c-4c39-9e2c-35195c41fd67" /></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">PyCharm Community</label><label for="__tabbed_3_2">PyCharm Professional / IntelliJ IDEA Ultimate</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ol>
+<li>install the <a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> plugin</li>
+<li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
+<li>configure it to use basedpyright by specifying the path to the <code>basedpyright-langserver</code> executable:<br />
+<img alt="" src="../pycharm-lsp-exe.png" /></li>
+<li>set "Running mode" to "LSP4IJ":<br />
+<img alt="" src="../lsp4ij.png" /></li>
+</ol>
+</div>
+<div class="tabbed-block">
+<ol>
+<li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
+<li>configure it to use basedpyright by specifying the path to the <code>basedpyright-langserver</code> executable:<br />
+<img alt="" src="../pycharm-lsp-exe.png" /></li>
+<li>set "Running mode" to "Native LSP client":<br />
+<img alt="" src="../native-lsp.png" /></li>
+</ol>
+</div>
+</div>
+</div>
 <h2 id="helix">Helix</h2>
 <p>Install the LSP server itself, using the <a href="../command-line-and-language-server/">pypi package installation method</a> (as mentioned previously in this section).
 Then add the following to your <a href="https://docs.helix-editor.com/languages.html">languages file</a>:</p>
