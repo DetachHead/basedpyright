@@ -491,7 +491,6 @@ export class AnalyzerService {
     }
 
     baselineUpdated = () => {
-        this.backgroundAnalysisProgram.program.baselineHandler.invalidateCache();
         this.invalidateAndForceReanalysis(InvalidatedReason.BaselineFileUpdated);
         this._scheduleReanalysis(false);
     };
