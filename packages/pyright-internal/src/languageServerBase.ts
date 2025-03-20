@@ -153,7 +153,6 @@ import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from
 import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
-import { BaselineHandler } from './baseline';
 import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 import { zip } from 'lodash';
 import { assert } from './common/debug';
@@ -1441,10 +1440,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             return result;
         }
 
+        let serverDiagnostics: AnalyzerDiagnostic[] = [];
+
         // Reanalyze the file if it's not up to date.
         if (params.previousResultId !== diagnosticsVersion.toString() && sourceFile) {
             let diagnosticsVersionAfter = UncomputedDiagnosticsVersion - 1; // Just has to be different
-            let serverDiagnostics: AnalyzerDiagnostic[] = [];
 
             // Loop until we analyze the same version that we started with.
             while (diagnosticsVersion !== diagnosticsVersionAfter && !token.isCancellationRequested && sourceFile) {
@@ -1484,7 +1484,15 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 diagnosticsVersion === UncomputedDiagnosticsVersion ? undefined : diagnosticsVersion.toString();
             delete (result as any).items;
         }
-
+        if (sourceFile) {
+            this.documentsWithDiagnostics[uri.toString()] = {
+                reason: 'analysis',
+                fileUri: uri,
+                cell: sourceFile.getCellIndex(),
+                diagnostics: serverDiagnostics,
+                version: diagnosticsVersion,
+            };
+        }
         return result;
     }
 
@@ -1559,6 +1567,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
      */
     protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
         this.savedFilesForBaselineUpdate.add(params.textDocument.uri);
+        if (this.client.usingPullDiagnostics) {
+            // when not running in pull diagnostics mode, the baseline file can't be updated until after analysis
+            // is completed, in which case we instead call method later in onAnalysisCompletedHandler
+            this.updateBaselineFileIfNeeded();
+        }
     };
 
     protected onSaveNotebookDocument = async (params: DidSaveNotebookDocumentParams) => {
@@ -1649,6 +1662,43 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         return rule;
     }
 
+    /**
+     * updates the baseline file if the source file was saved. we intentionally only do this on-save instead
+     * of every time diagnostics are sent because otherwise it would remove diagnostics from the baseline file
+     * too aggressively (eg. the user moves a chunk of code using cut/paste, then baselined diagnostics come back
+     * unintentionally)
+     */
+    protected updateBaselineFileIfNeeded = async () => {
+        const filesRequiringBaselineUpdate = new Map<Workspace, FileDiagnostics[]>();
+        for (const textDocumentUri of this.savedFilesForBaselineUpdate) {
+            const fileUri = this.convertLspUriStringToUri(textDocumentUri);
+            // can't use result.diagnostics because we need the diagnostics from the previous analysis since
+            // saves don't trigger checking (i think)
+            const fileDiagnostics = this.documentsWithDiagnostics[fileUri.toString()];
+            if (!fileDiagnostics || fileDiagnostics.reason !== 'analysis') {
+                continue;
+            }
+            const workspace = await this.getWorkspaceForFile(fileUri);
+            if (!filesRequiringBaselineUpdate.has(workspace)) {
+                filesRequiringBaselineUpdate.set(workspace, []);
+            }
+            filesRequiringBaselineUpdate.get(workspace)!.push(fileDiagnostics);
+        }
+        for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
+            if (!workspace.rootUri) {
+                continue;
+            }
+            const baseline = workspace.service.backgroundAnalysisProgram.program.baselineHandler;
+            const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
+            if (baselineDiffSummary) {
+                this.console.info(
+                    `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`
+                );
+            }
+        }
+        this.savedFilesForBaselineUpdate.clear();
+    };
+
     protected async onAnalysisCompletedHandler(fs: FileSystem, results: AnalysisResults): Promise<void> {
         // If we're in pull mode, disregard any 'tracking' results. They're not necessary.
         if (this.client.usingPullDiagnostics && results.reason === 'tracking') {
@@ -1671,34 +1721,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             !results.requiringAnalysisCount.files &&
             !results.requiringAnalysisCount.cells
         ) {
-            const filesRequiringBaselineUpdate = new Map<Workspace, FileDiagnostics[]>();
-            for (const textDocumentUri of this.savedFilesForBaselineUpdate) {
-                const fileUri = this.convertLspUriStringToUri(textDocumentUri);
-                // can't use result.diagnostics because we need the diagnostics from the previous analysis since
-                // saves don't trigger checking (i think)
-                const fileDiagnostics = this.documentsWithDiagnostics[fileUri.toString()];
-                if (!fileDiagnostics || fileDiagnostics.reason !== 'analysis') {
-                    continue;
-                }
-                const workspace = await this.getWorkspaceForFile(fileUri);
-                if (!filesRequiringBaselineUpdate.has(workspace)) {
-                    filesRequiringBaselineUpdate.set(workspace, []);
-                }
-                filesRequiringBaselineUpdate.get(workspace)!.push(fileDiagnostics);
-            }
-            for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
-                if (!workspace.rootUri) {
-                    continue;
-                }
-                const baseline = new BaselineHandler(this.fs, workspace.service.getConfigOptions(), this.console);
-                const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
-                if (baselineDiffSummary) {
-                    this.console.info(
-                        `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`
-                    );
-                }
-            }
-            this.savedFilesForBaselineUpdate.clear();
+            this.updateBaselineFileIfNeeded();
         }
 
         if (!this._progressReporter.isEnabled(results)) {
