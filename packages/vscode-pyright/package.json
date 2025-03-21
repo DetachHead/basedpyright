@@ -1821,7 +1821,7 @@
                     "description": "Disables the “Organize Imports” command.",
                     "scope": "resource"
                 },
-                "pyright.disablePullDiagnostics": {
+                "basedpyright.disablePullDiagnostics": {
                     "type": "boolean",
                     "default": false,
                     "description": "Disables the use of pull diagnostics from VS Code.",
