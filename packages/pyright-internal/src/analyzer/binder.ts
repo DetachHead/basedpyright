@@ -417,9 +417,16 @@ export class Binder extends ParseTreeWalker {
             // If the module is allowed as an untyped library, we don't need the stub
             !moduleIsInList(this._fileInfo.diagnosticRuleSet.allowedUntypedLibraries, importResult.importName)
         ) {
+            /** taken from https://github.com/python/mypy/blob/master/mypy/stubinfo.py */
+            const packagesWithStubsNotInTypeshed = ['lxml', 'pandas'];
+            const packageName = importResult.importName.split('.')[0];
+            const addendum = new DiagnosticAddendum();
+            if (packagesWithStubsNotInTypeshed.includes(packageName)) {
+                addendum.addMessage(LocAddendum.installStubs().format({ packageName }));
+            }
             const diagnostic = this._addDiagnostic(
                 DiagnosticRule.reportMissingTypeStubs,
-                LocMessage.stubFileMissing().format({ importName: importResult.importName }),
+                LocMessage.stubFileMissing().format({ importName: importResult.importName }) + addendum.getString(),
                 node
             );
             if (diagnostic) {
