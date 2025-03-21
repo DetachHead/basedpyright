@@ -1665,6 +1665,8 @@ export namespace Localizer {
             new ParameterizedString<{ importName: string }>(
                 getRawString('DiagnosticAddendum.fullPathImportSuggestion')
             );
+        export const installStubs = () =>
+            new ParameterizedString<{ packageName: string }>(getRawString('DiagnosticAddendum.installStubs'));
     }
 
     export namespace CodeAction {
