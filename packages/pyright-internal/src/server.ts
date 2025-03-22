@@ -10,7 +10,6 @@ import { BackgroundAnalysis } from './backgroundAnalysis';
 import { IBackgroundAnalysis } from './backgroundAnalysisBase';
 import { getCancellationFolderName } from './common/cancellationUtils';
 import { ConsoleWithLogLevel } from './common/console';
-import { isDebugMode } from './common/core';
 import { FileBasedCancellationProvider } from './common/fileBasedCancellationUtils';
 import { FileSystem } from './common/fileSystem';
 import { FullAccessHost } from './common/fullAccessHost';
@@ -36,8 +35,8 @@ export class PyrightServer extends RealLanguageServer {
     }
 
     override createBackgroundAnalysis(serviceId: string, workspaceRoot: Uri): IBackgroundAnalysis | undefined {
-        if (isDebugMode() || !getCancellationFolderName()) {
-            // Don't do background analysis if we're in debug mode or an old client
+        if (!getCancellationFolderName()) {
+            // Don't do background analysis if an old client
             // is used where cancellation is not supported.
             return undefined;
         }
