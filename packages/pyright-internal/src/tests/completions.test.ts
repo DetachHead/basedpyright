@@ -1625,6 +1625,35 @@ describe('deprecated', () => {
             },
         });
     });
+
+    // see https://github.com/DetachHead/basedpyright/issues/1149
+    test('disabled on typevar bounds', async () => {
+        const code = `
+// @filename: test.py
+//// from warnings import deprecated
+//// 
+//// 
+//// @deprecated('asdf')
+//// class Asdf: ...
+//// 
+//// class Foo[T: Asd[|/*marker*/|] = str]:
+////     def __init__(self, default: tuple[T, ...] = (69,)) -> None:
+////         pass
+    `;
+
+        const state = parseAndGetTestState(code).state;
+
+        await state.verifyCompletion('included', 'markdown', {
+            ['marker']: {
+                completions: [
+                    {
+                        label: 'Asdf',
+                        kind: CompletionItemKind.Class,
+                    },
+                ],
+            },
+        });
+    });
 });
 
 describe('useTypingExtensions', () => {

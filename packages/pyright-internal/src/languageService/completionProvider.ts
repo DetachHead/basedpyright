@@ -702,10 +702,21 @@ export class CompletionProvider {
         symbol: Symbol,
         priorWord: string,
         completionMap: CompletionMap,
-        detail: SymbolDetail
+        detail: SymbolDetail,
+        node?: ParseNode
     ) {
         // Make sure we don't crash due to OOM.
         this.program.handleMemoryHighUsage();
+
+        const checkDeprecated =
+            !this.options.checkDeprecatedWhenResolving &&
+            // if types for completions are evaluated when the current node is a type parameter bound,
+            // the type evaluator freaks out and starts alternating between the default type and the type
+            // from the default argument and i have no idea why. i think its an upstream cache bug that only
+            // appears in basedpyright because things are being evaluated in a different order. as a
+            // workaround we just turn off the deprecated check in this scenario. see
+            // https://github.com/DetachHead/basedpyright/issues/1149
+            node?.parent?.nodeType !== ParseNodeType.TypeParameter;
 
         let primaryDecl = getLastTypedDeclarationForSymbol(symbol);
         if (!primaryDecl) {
@@ -757,8 +768,8 @@ export class CompletionProvider {
                 return;
             }
 
-            // if resolveTags is false then this check has already happened so we don't need to do it again
-            if (this.options.checkDeprecatedWhenResolving && this.checkIfDeprecated(type, primaryDecl, name, detail)) {
+            // if checkDeprecated is true then this check has already happened so we don't need to do it again
+            if (!checkDeprecated && this.checkIfDeprecated(type, primaryDecl, name, detail)) {
                 this.itemToResolve.tags = [CompletionItemTag.Deprecated];
             }
 
@@ -796,7 +807,7 @@ export class CompletionProvider {
 
             // Bail out. We don't need to add items to completion.
             return;
-        } else if (!this.options.checkDeprecatedWhenResolving) {
+        } else if (checkDeprecated) {
             // This call can be expensive to perform on every completion item
             // that we return, so we would ideally always do it lazily in the "resolve" callback
             // but unfortunately it often needs to be done here to check whether a symbol
@@ -928,7 +939,8 @@ export class CompletionProvider {
         similarityLimit: number,
         lazyEdit: boolean,
         completionMap: CompletionMap,
-        parensDisabled?: boolean
+        parensDisabled?: boolean,
+        node?: ParseNode
     ) {
         if (!this._codeActions && !this.configOptions.autoImportCompletions) {
             // If auto import on the server is turned off or this particular invocation
@@ -949,27 +961,35 @@ export class CompletionProvider {
             )
         );
 
-        this.addImportResults(results, priorWord, completionMap, parensDisabled);
+        this.addImportResults(results, priorWord, completionMap, parensDisabled, node);
     }
 
     protected addImportResults(
         results: AutoImportResult[],
         priorWord: string,
         completionMap: CompletionMap,
-        parensDisabled?: boolean
+        parensDisabled?: boolean,
+        node?: ParseNode
     ) {
         for (const result of results) {
             if (result.symbol) {
-                this.addSymbol(result.name, result.symbol, priorWord, completionMap, {
-                    extraCommitChars: true,
-                    autoImportSource: result.source,
-                    autoImportAlias: result.alias,
-                    edits: {
-                        textEdit: this.createReplaceEdits(priorWord, /* node */ undefined, result.insertionText),
-                        additionalTextEdits: result.edits,
+                this.addSymbol(
+                    result.name,
+                    result.symbol,
+                    priorWord,
+                    completionMap,
+                    {
+                        extraCommitChars: true,
+                        autoImportSource: result.source,
+                        autoImportAlias: result.alias,
+                        edits: {
+                            textEdit: this.createReplaceEdits(priorWord, /* node */ undefined, result.insertionText),
+                            additionalTextEdits: result.edits,
+                        },
+                        funcParensDisabled: parensDisabled,
                     },
-                    funcParensDisabled: parensDisabled,
-                });
+                    node
+                );
             } else {
                 this.addNameToCompletions(
                     result.alias ?? result.name,
@@ -2099,7 +2119,8 @@ export class CompletionProvider {
                 similarityLimit,
                 this.options.lazyEdit,
                 completionMap,
-                parensDisabled
+                parensDisabled,
+                parseNode
             );
         }
 
@@ -3097,11 +3118,18 @@ export class CompletionProvider {
                     // Skip func parens for classes when not a direct assignment or an argument (passed as a value)
                     const skipForClass = !this._shouldShowAutoParensForClass(symbol, node);
                     const skipForDecorator = node.parent?.nodeType === ParseNodeType.Decorator;
-                    this.addSymbol(name, symbol, priorWord, completionMap, {
-                        boundObjectOrClass,
-                        funcParensDisabled: isInImport || insideTypeAnnotation || skipForClass || skipForDecorator,
-                        extraCommitChars: !isInImport && !!priorWord,
-                    });
+                    this.addSymbol(
+                        name,
+                        symbol,
+                        priorWord,
+                        completionMap,
+                        {
+                            boundObjectOrClass,
+                            funcParensDisabled: isInImport || insideTypeAnnotation || skipForClass || skipForDecorator,
+                            extraCommitChars: !isInImport && !!priorWord,
+                        },
+                        node
+                    );
                 }
             }
         });
