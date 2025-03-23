@@ -22,7 +22,7 @@
     
     
       
-        <title>improved translations - basedpyright</title>
+        <title>localization fixes - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#improved-translations" class="md-skip">
+        <a href="#localization-fixes" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              improved translations
+              localization fixes
             
           </span>
         </div>
@@ -515,16 +515,65 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    localization fixes
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
-    improved translations
+    localization fixes
     
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#improved-translations" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved translations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed-country-code-format-for-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      fixed country code format for linux
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1444,6 +1493,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#improved-translations" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved translations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fixed-country-code-format-for-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      fixed country code format for linux
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1461,9 +1536,12 @@
   
 
 
-<h1 id="improved-translations">improved translations</h1>
+<h1 id="localization-fixes">localization fixes</h1>
+<h2 id="improved-translations">improved translations</h2>
 <p>the translations in pyright come from microsoft's localization team, who are not programmers. not only does this result in poor quality translations, but microsoft also doesn't accept contributions to fix them (<a href="https://github.com/microsoft/pyright/issues/7441#issuecomment-1987027067">more info here</a>).</p>
 <p>we accept translation fixes in basedpyright. <a href="../../development/localization/">see the localization guidelines</a> for information on how to contribute.</p>
+<h2 id="fixed-country-code-format-for-linux">fixed country code format for linux</h2>
+<p>in pyright, you can configure the locale using <a href="../../configuration/config-files/#locale-configuration">environment variables</a> in <code>"en-US"</code> format. this format is commonly used on windows, but linux uses the <code>"en_US"</code> format instead. unlike pyright, basedpyright supports both formats.</p>
 
 
 
