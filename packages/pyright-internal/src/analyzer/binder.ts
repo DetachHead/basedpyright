@@ -418,7 +418,7 @@ export class Binder extends ParseTreeWalker {
             !moduleIsInList(this._fileInfo.diagnosticRuleSet.allowedUntypedLibraries, importResult.importName)
         ) {
             /** taken from https://github.com/python/mypy/blob/master/mypy/stubinfo.py */
-            const packagesWithStubsNotInTypeshed = ['lxml', 'pandas'];
+            const packagesWithStubsNotInTypeshed = ['lxml', 'pandas', 'scipy'];
             const packageName = importResult.importName.split('.')[0];
             const addendum = new DiagnosticAddendum();
             if (packagesWithStubsNotInTypeshed.includes(packageName)) {
