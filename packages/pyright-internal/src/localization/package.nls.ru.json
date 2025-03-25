@@ -58,6 +58,7 @@
         "baseClassUnknown": "Неизвестный тип базового класса скрывает тип производного класса",
         "baseClassVariableTypeIncompatible": "Базовые классы класса \"{classType}\" определяют переменную \"{name}\" несовместимым способом",
         "binaryOperationNotAllowed": "В аннотации типа нельзя использовать этот бинарный оператор",
+        "bindParamMissing": "Невозможно привязать метод \"{methodName}\", потому что у него нет параметра \"self\" или \"cls\"",
         "bindTypeMismatch": "Невозможно привязать метод \"{methodName}\", \"{type}\" не может быть присвоен параметру \"{paramName}\"",
         "breakInExceptionGroup": "Запрещено наличие \"break\" в блоке \"except*\"",
         "breakOutsideLoop": "\"break\" можно использовать только внутри цикла",
@@ -340,6 +341,7 @@
         "nonLocalNoBinding": "Привязка для нелокального элемента \"{name}\" не найдена",
         "nonLocalReassignment": "Присваивание \"{name}\" происходит раньше директивы \"nonlocal\"",
         "nonLocalRedefinition": "\"{name}\" уже объявлено ранее как нелокальное",
+        "nonlocalTypeParam": "`nonlocal` нельзя использовать с параметром типа \"{name}\"",
         "noneNotCallable": "Объект типа \"None\" не может быть вызван",
         "noneNotIterable": "Объект типа \"None\" не может использоваться в качестве итерируемого значения",
         "noneNotSubscriptable": "Объект типа \"None\" нельзя индексировать",
@@ -488,7 +490,7 @@
         "typeAliasRedeclared": "\"{name}\" объявлен как TypeAlias и может быть присвоен только один раз",
         "typeAliasStatementBadScope": "Объявление псевдонима типа можно использовать только внутри области модуля или класса",
         "typeAliasStatementIllegal": "Оператор псевдонима типа можно использовать в Python версии не ниже 3.12",
-        "typeAliasTypeBadScope": "A type alias can be defined only within a module or class scope",
+        "typeAliasTypeBadScope": "Псевдоним типа можно объявить только внутри области модуля или класса",
         "typeAliasTypeBaseClass": "Псевдоним типа, определяемый в операторе \"type\", не может использоваться в качестве базового класса.",
         "typeAliasTypeMustBeAssigned": "TypeAliasType должен быть присвоен переменной с тем же именем, что и псевдоним типа",
         "typeAliasTypeNameArg": "Первый аргумент TypeAliasType должен быть строковым литералом, представляющим имя псевдонима типа",
@@ -660,7 +662,6 @@
         "classImplicitlyProtocol": "Класс \"{type}\" неявно класс-протокол, потом что наследован от класса-протокола, но не заполнил все абстрактные символы. Если это сделано намеренно, добавьте `Protocol` или `ABC` к его родительским классам или используйте `metaclass=ABCMeta`.",
         "functionDecoratorTypeAny": "Тип функции неизвестен, потому что декоратор имеет тип Any",
         "lambdaReturnTypeAny": "Лямбда-функция возвращает Any",
-        "noneNotUsableWithAsync": "\"None\" нельзя использовать в блоке \"async with\"",
         "paramTypeAny": "Тип параметра \"{paramName}\" — Any",
         "returnTypeAny": "Возвращаемый тип — Any",
         "typeAny": "Тип \"{name}\" — Any",
@@ -846,7 +847,8 @@
         "varianceMismatchForClass": "Вариантность аргумента типа \"{typeVarName}\" несовместим с базовым классом \"{className}\"",
         "varianceMismatchForTypeAlias": "Вариантность аргумента типа \"{typeVarName}\" несовместимо с \"{typeAliasParam}\"",
         "explicitRelativeImportSuggestion": "Используйте относительный импорт: `.{importName}`",
-        "fullPathImportSuggestion": "или укажите полный путь: `{importName}`"
+        "fullPathImportSuggestion": "или укажите полный путь: `{importName}`",
+        "installStubs": "чтобы исправить это, установите `{packageName}-stubs` из PyPI"
     },
     "Service": {
         "longOperation": "Перечисление исходных файлов рабочей области занимает много времени. Вместо этого рассмотрите возможность открыть вложенную папку. [Подробнее](https://aka.ms/workspace-too-many-files)"
