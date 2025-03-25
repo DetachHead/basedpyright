@@ -272,6 +272,11 @@ export class BaselineHandler {
         };
         const failedFiles = [];
         for (const fileWithDiagnostics of filesWithDiagnostics) {
+            if (!fileExists(this._fs, fileWithDiagnostics.fileUri)) {
+                // can happen if the file was deleted and the language server doesn't know yet so there are still diagnostics
+                // for it
+                continue;
+            }
             const filePath = this._formatUriForBaseline(fileWithDiagnostics.fileUri);
             if (filePath === undefined) {
                 failedFiles.push(fileWithDiagnostics.fileUri.toUserVisibleString());
