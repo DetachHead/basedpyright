@@ -62,7 +62,12 @@ export async function activate(context: ExtensionContext) {
     const moreInfo = 'More info';
     const disableBasedPyrightLsp = () =>
         workspace.getConfiguration('basedpyright').update('disableLanguageServices', true);
-    if (pyrightLanguageServerEnabled && languageServerSetting !== 'None') {
+    if (
+        pyrightLanguageServerEnabled &&
+        // undefined if the python extension isn't installed
+        languageServerSetting &&
+        languageServerSetting !== 'None'
+    ) {
         const disablePythonLanguageServer = 'fix setting & use basedpyright LSP (recommended)';
         const keepUsingExistingLanguageServer = `disable basedpyright LSP`;
         const result = await window.showWarningMessage(
