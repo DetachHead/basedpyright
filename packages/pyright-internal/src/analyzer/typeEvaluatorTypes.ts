@@ -641,9 +641,11 @@ export interface MatchArgsToParamsResult {
     paramSpecTarget?: ParamSpecType | undefined;
     paramSpecArgList?: Arg[] | undefined;
 
-    // A higher relevance means that it should be considered
-    // first, before lower relevance overloads.
-    relevance: number;
+    // Was there an unpacked argument of unknown length?
+    unpackedArgOfUnknownLength?: boolean;
+
+    // Did that unpacked argument map to a variadic parameter?
+    unpackedArgMapsToVariadic?: boolean;
 
     // A score that indicates how well the overload matches with
     // supplied arguments. Used to pick the "best" for purposes
@@ -903,7 +905,7 @@ export interface TypeEvaluator {
         callName: string,
         logger: ConsoleInterface
     ) => void;
-    typesOverlap: (leftType: Type, rightType: Type, checkEq: boolean) => boolean;
+    typesOverlap: (leftType: Type, rightType: Type, assumeIsOperator: boolean, checkEq: boolean) => boolean;
     markParamAccessed: (param: ParameterNode) => void;
     deprecatedTypingAlias: (
         fileInfo: AnalyzerFileInfo,

@@ -10701,7 +10701,7 @@ export function createTypeEvaluator(
                 );
             }
         }
-        if (!typesOverlap(castToInstance, castFromInstance, /* checkEq */ false)) {
+        if (!typesOverlap(castToInstance, castFromInstance, false, false)) {
             addDiagnostic(
                 DiagnosticRule.reportInvalidCast,
                 LocMessage.invalidCast().format({
@@ -10718,7 +10718,7 @@ export function createTypeEvaluator(
     /**
      * determines whether two types are overlapping (ie. they can be compared or casted)
      */
-    const typesOverlap = (leftType: Type, rightType: Type, checkEq: boolean) => {
+    const typesOverlap = (leftType: Type, rightType: Type, assumeIsOperator: boolean, checkEq: boolean) => {
         if (isNever(leftType) || isNever(rightType)) {
             return true;
         }
@@ -10736,7 +10736,7 @@ export function createTypeEvaluator(
 
                 rightSubtype = makeTopLevelTypeVarsConcrete(rightSubtype);
 
-                if (isTypeComparable(leftSubtype, rightSubtype, checkEq)) {
+                if (isTypeComparable(leftSubtype, rightSubtype, assumeIsOperator, checkEq)) {
                     isComparable = true;
                 }
 
