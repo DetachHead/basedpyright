@@ -10,7 +10,7 @@ import { ConsoleInterface } from '../common/console';
 import { LogTracker } from '../common/logTracker';
 import { ServiceProvider } from '../common/serviceProvider';
 import { Uri } from '../common/uri/uri';
-import { SourceFileEditMode, IPythonMode, SourceFile } from './sourceFile';
+import { IPythonMode, SourceFile, SourceFileEditMode } from './sourceFile';
 
 export interface ISourceFileFactory {
     createSourceFile(
@@ -19,6 +19,7 @@ export interface ISourceFileFactory {
         moduleName: string,
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
+        isModulePrivate: boolean,
         editMode: SourceFileEditMode,
         baselineHandler: BaselineHandler,
         getCellIndex: () => number | undefined,

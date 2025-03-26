@@ -2153,6 +2153,7 @@ export class Checker extends ParseTreeWalker {
     // have overlapping types.
     private _validateComparisonTypes(node: BinaryOperationNode) {
         let rightExpression = node.d.rightExpr;
+        const assumeIsOperator = node.d.operator === OperatorType.Is || node.d.operator === OperatorType.IsNot;
 
         // Check for chained comparisons.
         if (
@@ -2212,7 +2213,7 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         } else {
-            if (!this._evaluator.typesOverlap(leftType, rightType, /* checkEq */ true)) {
+            if (!this._evaluator.typesOverlap(leftType, rightType, assumeIsOperator, true)) {
                 const leftTypeText = this._evaluator.printType(leftType, { expandTypeAlias: true });
                 const rightTypeText = this._evaluator.printType(rightType, { expandTypeAlias: true });
 
@@ -4860,11 +4861,7 @@ export class Checker extends ParseTreeWalker {
                     // If the function consists entirely of "...", assume that it's
                     // an abstract method or a protocol method and don't require that
                     // the return type matches. This check can also be skipped for an overload.
-                    if (
-                        !ParseTreeUtils.isSuiteEmpty(node.d.suite) &&
-                        !FunctionType.isOverloaded(functionType) &&
-                        !FunctionType.isAsync(functionType)
-                    ) {
+                    if (!ParseTreeUtils.isSuiteEmpty(node.d.suite) && !FunctionType.isOverloaded(functionType)) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportReturnType,
                             LocMessage.noReturnReturnsNone(),
