@@ -90,7 +90,8 @@ About the interface:
 -   风格调整参考了该项目 [sparanoid/chinese-copywriting-guidelines](https://github.com/sparanoid/chinese-copywriting-guidelines)，该项目提供了一些中文文案排版的基本规范，以便提高文案的可读性。
 -   通常在中英文混排时，中文与英文之间需要添加空格，以增加可读性。在原始翻译中，这一规则仅在部分文本中得到了遵循，因此对其进行了调整。并且通过引号括起的文本和参数文本也遵循这一规则，在两侧添加空格以强调其内容。
 -   原始翻译中存在中文的全角标点符号和英文的半角标点符号混用，同时存在使用不正确，因此对其进行调整。考虑到文本格式化时部分条目会出现**硬编码**的直引号 `"`，因此将所有格式化参数的双引号统一为英文直双引号，代码符号统一为反引号。除引号以外的非英文之间的标点全部统一为全角标点符号。
--   没必要完整遵循原文，以符合中文理解习惯和语法为主。
+-   考虑到英文原文可能不符合中文的表达逻辑，因此允许不完全遵循原文，以符合中文理解习惯和语法为主，但仍需保证正确性。
+-   Python 官方文档的部分译文也存在一致性问题，需要酌情选取广泛使用的译文。
 -   若翻译后文本并不是常见写法，可添加括号并标注原文。
 
 #### 用词调整
@@ -98,14 +99,21 @@ About the interface:
 | 原词 (Word)                  | 原始翻译 (Original)   | 调整翻译 (Adjusted) | 错译类型 (Type of Mistranslation)          |
 | ---------------------------- | --------------------- | ------------------- | ------------------------------------------ |
 | annotation                   | （类型）批注          | （类型）注解        | 与文档不一致/Inconsistent with Python docs |
-| Any                          | 任意                  | Any                 | 语义错误/Wrong meaning                     |
-| Unknown                      | 未知                  | 未知                | 固定术语/Terminology                       |
-| argument                     | 参数                  | 参数/实参           | 语义错误/Wrong meaning                     |
+| Any                          | 任意                  | Any                 | 固定术语/Terminology                       |
+| Unknown                      | 未知/Unknown          | 未知                | 固定术语/Terminology                       |
 | import                       | 导入/Import           | 导入                | 语义错误/Wrong meaning                     |
-| parameter                    | 参数                  | 参数/形参           | 语义错误/Wrong meaning                     |
 | True                         | true/True             | True                | 语义错误/Wrong meaning                     |
 | assign                       | 分配                  | 赋值                | 词义错误/Wrong meaning                     |
-| comprehension                | 理解                  | 推导式              | 词义错误/Wrong meaning                     |
-| follow                       | 遵循                  | 在。.. 之后         | 词义错误/Wrong meaning                     |
-| implementation/unimplemented | （未）实施/实行（的） | （未）实现（的）    | 词义错误/Wrong meaning                     |
-| obscure                      | 遮盖/隐蔽             | 覆盖                | 词义错误/Wrong meaning                     |
+| follow                       | 遵循                  | 在 ... 之后         | 词义错误/Wrong meaning                     |
+| variance                     | 差异                  | 可变性              | 词义错误/Wrong meaning                     |
+| key                          | 密钥                  | 键                  | 词义错误/Wrong meaning                     |
+| argument                     | 参数                  | 参数/实参/传入值    | 词义不准确/Inaccurate meaning              |
+| parameter                    | 参数                  | 参数/形参           | 词义不准确/Inaccurate meaning              |
+| implementation/unimplemented | （未）实施/实行（的） | （未）实现（的）    | 词义不准确/Inaccurate meaning              |
+| obscure                      | 遮盖/隐蔽             | 覆盖                | 词义不准确/Inaccurate meaning              |
+| irrefutable                  | 无可辩驳的            | 通配                | 词义不准确/Inaccurate meaning              |
+
+#### 量词
+
+-   对于“数量”“个数”等离散计数的表述，在数值后通常需要添加量词“个”；
+-   对于“长度”“大小”等在习惯上非离散计数的表述，在数值后一般不添加量词“个”。
