@@ -356,7 +356,6 @@
         "noneNotUsableWithAsync": "`None` 类型的对象不能用于 `async with` 语句",
         "noneOperator": "`None` 不支持 \"{operator}\" 运算符",
         "noneUnknownMember": "`None` 没有 \"{name}\" 属性",
-        "nonlocalTypeParam": "类型参数 \"{name}\" 不允许进行 nonlocal 绑定",
         "notRequiredArgCount": "`NotRequired` 之后应有且仅有一个类型参数",
         "notRequiredNotInTypedDict": "此上下文中不允许使用 `NotRequired`",
         "objectNotCallable": "\"{type}\" 类型的对象不可调用",
