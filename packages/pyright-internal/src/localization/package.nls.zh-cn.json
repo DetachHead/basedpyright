@@ -847,7 +847,8 @@
         "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的可变性与基类 \"{className}\" 不兼容",
         "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的可变性与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 \".{importName}\" 作为相对导入",
-        "fullPathImportSuggestion": "或指定完整模块路径：\"{importName}\""
+        "fullPathImportSuggestion": "或指定完整模块路径：\"{importName}\"",
+        "installStubs": "从 PyPI 安装 `{packageName}-stubs` 以修复此问题"
     },
     "Service": {
         "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
