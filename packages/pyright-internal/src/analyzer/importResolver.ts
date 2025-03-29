@@ -2388,7 +2388,14 @@ export class ImportResolver {
             importName,
             importFailureInfo,
             /* allowPartial */ false,
-            /* allowNativeLib */ true
+            /* allowNativeLib */ true,
+            false,
+            true,
+            // needed to prevent https://github.com/DetachHead/basedpyright/issues/1171
+            // not entirely sure if this is the correct fix. it seems to be some cache related issue because
+            // this argument can change the result of isModulePrivate but the cache stored in _cachedImportResults
+            // doesn't seem to account for that
+            true
         );
 
         if (absImport && absImport.isStubFile) {
