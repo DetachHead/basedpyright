@@ -41,7 +41,8 @@
 ////     ...|]
 
 // @filename: ctypes/__init__.py
-//// # This should be flagged as a module
+//// [|/*marker0*/def bar():
+////     ...|]
 
 // @filename: test.py
 //// import [|/*marker2*/ctypes.util|]
@@ -53,6 +54,10 @@
 ////
 // @ts-ignore
 await helper.verifyDiagnostics({
+    marker0: {
+        category: 'warning',
+        message: `"${helper.getPathSep()}ctypes${helper.getPathSep()}__init__.py" is overriding the stdlib module "ctypes"`,
+    },
     marker1: {
         category: 'warning',
         message: `"${helper.getPathSep()}ctypes${helper.getPathSep()}util.py" is overriding the stdlib module "ctypes.util"`,

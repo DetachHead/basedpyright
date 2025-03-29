@@ -1962,8 +1962,21 @@ export class ImportResolver {
                         readDir(dirRoot, prefix ? `${prefix}.${entry.name}` : entry.name);
                     } else if (entry.name.includes('.py')) {
                         const stripped = stripFileExtension(entry.name);
-                        // Skip anything starting with an underscore.
-                        if (!stripped.startsWith('_')) {
+                        // Allow __init__.py but skip other files starting with underscore
+                        if (stripped === '__init__' && prefix) {
+                            // If we find an __init__.py, add the package to the cache
+                            if (
+                                this._isStdlibTypeshedStubValidForVersion(
+                                    createImportedModuleDescriptor(prefix),
+                                    root,
+                                    executionEnvironment.pythonVersion,
+                                    executionEnvironment.pythonPlatform,
+                                    []
+                                )
+                            ) {
+                                cache.add(prefix);
+                            }
+                        } else if (!stripped.startsWith('_')) {
                             if (
                                 this._isStdlibTypeshedStubValidForVersion(
                                     createImportedModuleDescriptor(stripped),
