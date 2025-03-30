@@ -1839,3 +1839,42 @@ describe('useTypingExtensions', () => {
         });
     });
 });
+
+test('import from stdlib package', async () => {
+    const code = `
+// @filename: test.py
+//// [|/*marker0*/|]
+//// [|/*importMarker*/|][|JSONDecodeErr/*marker*/|]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion(
+        'included',
+        'markdown',
+        {
+            ['marker']: {
+                completions: [
+                    {
+                        label: 'JSONDecodeError',
+                        kind: CompletionItemKind.Class,
+                        detail: 'Auto-import',
+                        textEdit: {
+                            range: state.getPositionRange('marker'),
+                            newText: 'JSONDecodeError',
+                        },
+                        additionalTextEdits: [
+                            {
+                                range: state.getPositionRange('importMarker'),
+                                newText: 'from json import JSONDecodeError\n\n\n',
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        undefined,
+        undefined,
+        false
+    );
+});
