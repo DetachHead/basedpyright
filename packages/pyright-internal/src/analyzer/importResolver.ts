@@ -1963,7 +1963,7 @@ export class ImportResolver {
                     } else if (entry.name.includes('.py')) {
                         const stripped = stripFileExtension(entry.name);
                         // Allow __init__.py but skip other files starting with underscore
-                        if (stripped === '__init__' && prefix) {
+                        if (stripped === '__init__' && prefix && !prefix.startsWith('_')) {
                             // If we find an __init__.py, add the package to the cache
                             if (
                                 this._isStdlibTypeshedStubValidForVersion(
