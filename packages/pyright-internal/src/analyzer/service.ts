@@ -1384,14 +1384,14 @@ export class AnalyzerService {
         const startTime = Date.now();
         // Use configurable timeout or default to 10 seconds
         const longOperationLimitInSec =
-            this._configOptions.fileEnumerationTimeoutInSec !== undefined
-                ? this._configOptions.fileEnumerationTimeoutInSec
-                : 10;
+            this._configOptions.fileEnumerationTimeoutInSec === undefined
+                ? 10
+                : this._configOptions.fileEnumerationTimeoutInSec;
         // Use configurable min files or default to 50 files
         const nFilesToSuggestSubfolder =
-            this._configOptions.fileEnumerationMinimumFiles !== undefined
-                ? this._configOptions.fileEnumerationMinimumFiles
-                : 50;
+            this._configOptions.fileEnumerationMinimumFiles === undefined
+                ? 50
+                : this._configOptions.fileEnumerationMinimumFiles;
         let loggedLongOperationError = false;
         let nFilesVisited = 0;
 
