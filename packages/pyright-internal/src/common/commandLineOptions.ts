@@ -141,9 +141,6 @@ export class CommandLineLanguageServerOptions {
     // Override default timeout (in seconds) for file enumeration operations.
     fileEnumerationTimeoutInSec?: number;
 
-    // Override minimum number of files to visit before showing warning.
-    fileEnumerationMinimumFiles?: number;
-
     // Run ambient analysis.
     enableAmbientAnalysis = true;
 

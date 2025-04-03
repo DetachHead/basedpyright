@@ -59,8 +59,6 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in large workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds. Set to 0 to disable the warning completely. Increase this value if you have a large workspace and don't want to see the warning.
 
-**basedpyright.analysis.fileEnumerationMinimumFiles** [integer]: Minimum number of files that need to be visited before showing a "slow enumeration" warning. Default is 50 files. Increase this value to reduce warnings in large workspaces where you expect many files to be scanned.
-
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:

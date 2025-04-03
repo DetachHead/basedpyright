@@ -922,10 +922,6 @@ export class AnalyzerService {
             configOptions.fileEnumerationTimeoutInSec = languageServerOptions.fileEnumerationTimeoutInSec;
         }
 
-        if (languageServerOptions.fileEnumerationMinimumFiles !== undefined) {
-            configOptions.fileEnumerationMinimumFiles = languageServerOptions.fileEnumerationMinimumFiles;
-        }
-
         // Special case, the language service can also set a pythonPath. It should override any other setting.
         if (languageServerOptions.pythonPath) {
             this._console.info(
@@ -1388,10 +1384,7 @@ export class AnalyzerService {
                 ? 10
                 : this._configOptions.fileEnumerationTimeoutInSec;
         // Use configurable min files or default to 50 files
-        const nFilesToSuggestSubfolder =
-            this._configOptions.fileEnumerationMinimumFiles === undefined
-                ? 50
-                : this._configOptions.fileEnumerationMinimumFiles;
+        const nFilesToSuggestSubfolder = 50;
         let loggedLongOperationError = false;
         let nFilesVisited = 0;
 
@@ -1401,11 +1394,7 @@ export class AnalyzerService {
 
                 // If this is taking a long time, log an error to help the user
                 // diagnose and mitigate the problem.
-                if (
-                    longOperationLimitInSec > 0 &&
-                    secondsSinceStart >= longOperationLimitInSec &&
-                    nFilesVisited >= nFilesToSuggestSubfolder
-                ) {
+                if (secondsSinceStart >= longOperationLimitInSec && nFilesVisited >= nFilesToSuggestSubfolder) {
                     (this._console as ConsoleInterface).error(
                         `Enumeration of workspace source files is taking longer than ${longOperationLimitInSec} seconds.\n` +
                             'This may be because:\n' +

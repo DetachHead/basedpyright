@@ -1763,12 +1763,6 @@
                         }
                     }
                 },
-                "basedpyright.analysis.fileEnumerationMinimumFiles": {
-                    "type": "integer",
-                    "default": 50,
-                    "description": "Minimum number of files that need to be visited before showing a 'slow enumeration' warning. Increase this value to reduce warnings in large workspaces.",
-                    "scope": "resource"
-                },
                 "basedpyright.analysis.fileEnumerationTimeout": {
                     "type": "integer",
                     "default": 10,

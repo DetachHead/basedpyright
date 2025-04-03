@@ -1451,10 +1451,6 @@ export class ConfigOptions {
     // Default is 10 seconds. Set to 0 to disable timeout warnings.
     fileEnumerationTimeoutInSec?: number;
 
-    // If specified, overrides the minimum number of files that need to be visited
-    // before showing a "slow enumeration" warning. Default is 50 files.
-    fileEnumerationMinimumFiles?: number;
-
     constructor(projectRoot: Uri) {
         this.projectRoot = projectRoot;
         this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet();
