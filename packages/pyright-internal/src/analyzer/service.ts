@@ -1383,7 +1383,6 @@ export class AnalyzerService {
             this._configOptions.fileEnumerationTimeoutInSec === undefined
                 ? 10
                 : this._configOptions.fileEnumerationTimeoutInSec;
-        // Use configurable min files or default to 50 files
         const nFilesToSuggestSubfolder = 50;
 
         let loggedLongOperationError = false;
