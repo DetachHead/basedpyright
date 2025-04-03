@@ -111,6 +111,7 @@ export class TestLanguageService implements LanguageServerInterface {
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
             useTypingExtensions: false,
+            fileEnumerationTimeoutInSec: 10,
         };
     }
     /** unlike the real one, this test implementation doesn't support notebook cells. TODO: language server tests for notebook cells */

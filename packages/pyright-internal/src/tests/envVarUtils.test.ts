@@ -224,5 +224,6 @@ function createWorkspace(rootUri: Uri | undefined): Workspace {
         isInitialized: createInitStatus(),
         searchPathsToWatch: [],
         useTypingExtensions: false,
+        fileEnumerationTimeoutInSec: 10,
     };
 }

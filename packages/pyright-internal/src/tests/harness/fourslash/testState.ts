@@ -212,6 +212,7 @@ export class TestState {
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
             useTypingExtensions: false,
+            fileEnumerationTimeoutInSec: 10,
         };
 
         if (!delayFileInitialization) {
