@@ -328,7 +328,7 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     if (args.pythonplatform) {
-        if (!['All', 'Darwin', 'Linux', 'Windows'].includes(args.pythonplatform)) {
+        if (['All', 'Darwin', 'Linux', 'Windows'].includes(args.pythonplatform)) {
             options.configSettings.pythonPlatform = args.pythonplatform;
         } else {
             console.error(
