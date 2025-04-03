@@ -42,6 +42,8 @@ export interface ServerSettings {
     indexing?: boolean | undefined;
     logTypeEvaluationTime?: boolean | undefined;
     typeEvaluationTimeThreshold?: number | undefined;
+    fileEnumerationTimeoutInSec?: number | undefined;
+    fileEnumerationMinimumFiles?: number | undefined;
     includeFileSpecs?: string[];
     excludeFileSpecs?: string[];
     ignoreFileSpecs?: string[];

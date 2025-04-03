@@ -918,6 +918,14 @@ export class AnalyzerService {
         }
         configOptions.typeEvaluationTimeThreshold = languageServerOptions.typeEvaluationTimeThreshold;
 
+        if (languageServerOptions.fileEnumerationTimeoutInSec !== undefined) {
+            configOptions.fileEnumerationTimeoutInSec = languageServerOptions.fileEnumerationTimeoutInSec;
+        }
+
+        if (languageServerOptions.fileEnumerationMinimumFiles !== undefined) {
+            configOptions.fileEnumerationMinimumFiles = languageServerOptions.fileEnumerationMinimumFiles;
+        }
+
         // Special case, the language service can also set a pythonPath. It should override any other setting.
         if (languageServerOptions.pythonPath) {
             this._console.info(
@@ -1374,9 +1382,16 @@ export class AnalyzerService {
         const envMarkers = [['bin', 'activate'], ['Scripts', 'activate'], ['pyvenv.cfg'], ['conda-meta']];
         const results: Uri[] = [];
         const startTime = Date.now();
-        const longOperationLimitInSec = 10;
-        const nFilesToSuggestSubfolder = 50;
-
+        // Use configurable timeout or default to 10 seconds
+        const longOperationLimitInSec =
+            this._configOptions.fileEnumerationTimeoutInSec !== undefined
+                ? this._configOptions.fileEnumerationTimeoutInSec
+                : 10;
+        // Use configurable min files or default to 50 files
+        const nFilesToSuggestSubfolder =
+            this._configOptions.fileEnumerationMinimumFiles !== undefined
+                ? this._configOptions.fileEnumerationMinimumFiles
+                : 50;
         let loggedLongOperationError = false;
         let nFilesVisited = 0;
 
@@ -1386,7 +1401,11 @@ export class AnalyzerService {
 
                 // If this is taking a long time, log an error to help the user
                 // diagnose and mitigate the problem.
-                if (secondsSinceStart >= longOperationLimitInSec && nFilesVisited >= nFilesToSuggestSubfolder) {
+                if (
+                    longOperationLimitInSec > 0 &&
+                    secondsSinceStart >= longOperationLimitInSec &&
+                    nFilesVisited >= nFilesToSuggestSubfolder
+                ) {
                     (this._console as ConsoleInterface).error(
                         `Enumeration of workspace source files is taking longer than ${longOperationLimitInSec} seconds.\n` +
                             'This may be because:\n' +

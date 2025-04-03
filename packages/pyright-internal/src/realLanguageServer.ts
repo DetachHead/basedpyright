@@ -217,6 +217,14 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                     serverSettings.typeEvaluationTimeThreshold = pythonAnalysisSection.typeEvaluationTimeThreshold;
                 }
 
+                if (pythonAnalysisSection.fileEnumerationTimeout !== undefined) {
+                    serverSettings.fileEnumerationTimeoutInSec = pythonAnalysisSection.fileEnumerationTimeout;
+                }
+
+                if (pythonAnalysisSection.fileEnumerationMinimumFiles !== undefined) {
+                    serverSettings.fileEnumerationMinimumFiles = pythonAnalysisSection.fileEnumerationMinimumFiles;
+                }
+
                 const inlayHintSection = pythonAnalysisSection.inlayHints;
                 if (inlayHintSection) {
                     serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };
