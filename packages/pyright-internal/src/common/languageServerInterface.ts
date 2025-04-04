@@ -49,6 +49,8 @@ export interface ServerSettings {
     functionSignatureDisplay?: SignatureDisplayType | undefined;
     inlayHints?: InlayHintSettings;
     useTypingExtensions?: boolean;
+
+    fileEnumerationTimeoutInSec?: number | undefined;
 }
 
 export interface MessageAction {

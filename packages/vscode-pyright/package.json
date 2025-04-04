@@ -1763,6 +1763,12 @@
                         }
                     }
                 },
+                "basedpyright.analysis.fileEnumerationTimeout": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Timeout (in seconds) for file enumeration operations. Set to 0 to disable the warning.",
+                    "scope": "resource"
+                },
                 "basedpyright.analysis.logLevel": {
                     "type": "string",
                     "default": "Information",
