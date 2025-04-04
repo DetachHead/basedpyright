@@ -148,6 +148,11 @@ function getEffectiveCommandLineOptions(
         commandLineOptions.configSettings.verboseOutput = true;
     }
 
+    if (serverSettings.fileEnumerationTimeoutInSec) {
+        commandLineOptions.languageServerSettings.fileEnumerationTimeoutInSec =
+            serverSettings.fileEnumerationTimeoutInSec;
+    }
+
     if (typeStubTargetImportName) {
         commandLineOptions.languageServerSettings.typeStubTargetImportName = typeStubTargetImportName;
     }

@@ -100,6 +100,7 @@ export interface Workspace extends WorkspaceFolder {
     searchPathsToWatch: Uri[];
     inlayHints?: InlayHintSettings | undefined;
     useTypingExtensions: boolean;
+    fileEnumerationTimeoutInSec: number;
 }
 
 export interface NormalWorkspace extends Workspace {
@@ -288,6 +289,7 @@ export class WorkspaceFactory {
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
             useTypingExtensions: false,
+            fileEnumerationTimeoutInSec: 10,
         };
 
         // Stick in our map

@@ -1444,6 +1444,9 @@ export class ConfigOptions {
     // Determines the effective default type checking mode.
     effectiveTypeCheckingMode: TypeCheckingMode = 'standard'; // TODO: we default to "recommended", wheres this default being used?
 
+    // Overrides the default timeout for file enumeration operations.
+    fileEnumerationTimeoutInSec?: number;
+
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;
 

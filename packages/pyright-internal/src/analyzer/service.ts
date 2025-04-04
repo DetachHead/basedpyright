@@ -918,6 +918,10 @@ export class AnalyzerService {
         }
         configOptions.typeEvaluationTimeThreshold = languageServerOptions.typeEvaluationTimeThreshold;
 
+        if (languageServerOptions.fileEnumerationTimeoutInSec !== undefined) {
+            configOptions.fileEnumerationTimeoutInSec = languageServerOptions.fileEnumerationTimeoutInSec;
+        }
+
         // Special case, the language service can also set a pythonPath. It should override any other setting.
         if (languageServerOptions.pythonPath) {
             this._console.info(
@@ -1374,7 +1378,10 @@ export class AnalyzerService {
         const envMarkers = [['bin', 'activate'], ['Scripts', 'activate'], ['pyvenv.cfg'], ['conda-meta']];
         const results: Uri[] = [];
         const startTime = Date.now();
-        const longOperationLimitInSec = 10;
+        const longOperationLimitInSec =
+            this._configOptions.fileEnumerationTimeoutInSec === undefined
+                ? 10
+                : this._configOptions.fileEnumerationTimeoutInSec;
         const nFilesToSuggestSubfolder = 50;
 
         let loggedLongOperationError = false;

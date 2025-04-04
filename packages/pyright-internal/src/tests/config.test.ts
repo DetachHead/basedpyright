@@ -637,6 +637,7 @@ describe(`config test'}`, () => {
         commandLineOptions.languageServerSettings.checkOnlyOpenFiles = true;
         commandLineOptions.languageServerSettings.disableTaggedHints = true;
         commandLineOptions.languageServerSettings.pythonPath = 'test_python_path';
+        commandLineOptions.languageServerSettings.fileEnumerationTimeoutInSec = 10;
 
         service.setOptions(commandLineOptions);
         let options = service.test_getConfigOptions(commandLineOptions);
@@ -647,6 +648,7 @@ describe(`config test'}`, () => {
         assert.strictEqual(options.typeEvaluationTimeThreshold, 1);
         assert.strictEqual(options.disableTaggedHints, true);
         assert.ok(options.pythonPath?.pathIncludes('test_python_path'));
+        assert.strictEqual(options.fileEnumerationTimeoutInSec, 10);
 
         // Test with language server set to true to make sure they are still set.
         commandLineOptions.fromLanguageServer = true;
@@ -660,6 +662,7 @@ describe(`config test'}`, () => {
         assert.strictEqual(options.typeEvaluationTimeThreshold, 1);
         assert.strictEqual(options.disableTaggedHints, true);
         assert.ok(options.pythonPath?.pathIncludes('test_python_path'));
+        assert.strictEqual(options.fileEnumerationTimeoutInSec, 10);
 
         // Verify language server options don't override the config setting. Only command line should
         assert.equal(options.venvPath?.pathIncludes('test_venv_path'), false);

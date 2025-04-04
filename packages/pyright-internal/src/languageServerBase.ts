@@ -386,6 +386,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.disableOrganizeImports = !!serverSettings.disableOrganizeImports;
             workspace.inlayHints = serverSettings.inlayHints;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
+            workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
