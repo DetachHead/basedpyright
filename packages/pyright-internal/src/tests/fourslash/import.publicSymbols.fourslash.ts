@@ -18,6 +18,7 @@
     const importRange = helper.getPositionRange('import');
     const marker1Range = helper.getPositionRange('marker1');
     const marker2Range = helper.getPositionRange('marker2');
+    const marker3Range = helper.getPositionRange('marker3');
     const marker4Range = helper.getPositionRange('marker4');
 
     // @ts-ignore
@@ -46,7 +47,18 @@
                 },
             ],
         },
-        marker3: { completions: [] },
+        marker3: {
+            completions: [
+                {
+                    label: 'normal_variable',
+                    kind: Consts.CompletionItemKind.Variable,
+                    documentation: '```\nfrom lib import normal_variable\n```',
+                    detail: 'Auto-import',
+                    textEdit: { range: marker3Range, newText: 'normal_variable' },
+                    additionalTextEdits: [{ range: importRange, newText: 'from lib import normal_variable\n\n\n' }],
+                },
+            ],
+        },
         marker4: {
             // Protected variables SHOULD be added
             completions: [
