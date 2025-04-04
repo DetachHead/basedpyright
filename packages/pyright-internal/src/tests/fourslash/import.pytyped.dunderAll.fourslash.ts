@@ -42,8 +42,8 @@
 //// from testpkg import *
 //// foofoofoo[|/*marker1*/|]
 
-// Ensure that only the __all__ items appear in the list.
-
+const completionRange = { start: { line: 1, character: 0 }, end: { line: 1, character: 9 } };
+const importRange = { start: { line: 0, character: 21 }, end: { line: 0, character: 21 } };
 // @ts-ignore
 await helper.verifyCompletion('exact', 'markdown', {
     marker1: {
@@ -51,6 +51,13 @@ await helper.verifyCompletion('exact', 'markdown', {
             {
                 label: 'foofoofoo0',
                 kind: Consts.CompletionItemKind.Variable,
+            },
+            {
+                label: 'foofoofoo1',
+                kind: Consts.CompletionItemKind.Variable,
+                detail: 'Auto-import',
+                textEdit: { range: completionRange, newText: 'foofoofoo1' },
+                additionalTextEdits: [{ range: importRange, newText: '\nfrom testpkg import foofoofoo1' }],
             },
             {
                 label: 'foofoofoo2',
@@ -61,12 +68,33 @@ await helper.verifyCompletion('exact', 'markdown', {
                 kind: Consts.CompletionItemKind.Variable,
             },
             {
+                label: 'foofoofoo4',
+                kind: Consts.CompletionItemKind.Variable,
+                detail: 'Auto-import',
+                textEdit: { range: completionRange, newText: 'foofoofoo4' },
+                additionalTextEdits: [{ range: importRange, newText: '\nfrom testpkg import foofoofoo4' }],
+            },
+            {
                 label: 'foofoofoo5',
                 kind: Consts.CompletionItemKind.Variable,
             },
             {
+                label: 'foofoofoo6',
+                kind: Consts.CompletionItemKind.Variable,
+                detail: 'Auto-import',
+                textEdit: { range: completionRange, newText: 'foofoofoo6' },
+                additionalTextEdits: [{ range: importRange, newText: '\nfrom testpkg.submod import foofoofoo6' }],
+            },
+            {
                 label: 'foofoofoo7',
                 kind: Consts.CompletionItemKind.Variable,
+            },
+            {
+                label: 'foofoofoo8',
+                kind: Consts.CompletionItemKind.Variable,
+                detail: 'Auto-import',
+                textEdit: { range: completionRange, newText: 'foofoofoo8' },
+                additionalTextEdits: [{ range: importRange, newText: '\nfrom testpkg.submod import foofoofoo8' }],
             },
             {
                 label: 'foofoofoo9',
