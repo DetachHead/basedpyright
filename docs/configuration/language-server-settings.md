@@ -57,7 +57,7 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.useTypingExtensions** [boolean]: Whether to rely on imports from the `typing_extensions` module when targeting older versions of python that do not include certain typing features such as the `@override` decorator. Defaults to `false`. [more info](../benefits-over-pyright/language-server-improvements.md#autocomplete-improvements)
 
-**basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in large workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds. Set to 0 to disable the warning completely. Increase this value if you have a large workspace and don't want to see the warning.
+**basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.
 
 ### discouraged settings
 
