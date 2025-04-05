@@ -1806,6 +1806,7 @@
 <p><strong>basedpyright.analysis.inlayHints.genericTypes</strong> [boolean]: Whether to show inlay hints on inferred generic types. Defaults to <code>false</code>:</p>
 <p><img alt="" src="../inlayHints.genericTypes.png" /></p>
 <p><strong>basedpyright.analysis.useTypingExtensions</strong> [boolean]: Whether to rely on imports from the <code>typing_extensions</code> module when targeting older versions of python that do not include certain typing features such as the <code>@override</code> decorator. Defaults to <code>false</code>. <a href="../../benefits-over-pyright/language-server-improvements/#autocomplete-improvements">more info</a></p>
+<p><strong>basedpyright.analysis.fileEnumerationTimeout</strong> [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.</p>
 <h3 id="discouraged-settings">discouraged settings</h3>
 <p>these options can also be configured <a href="../config-files/">using a config file</a>. it's recommended to use either a <code>pyproject.toml</code> or <code>pyrightconfig.json</code> file instead of the language server to configure type checking for the following reasons:</p>
 <ul>
