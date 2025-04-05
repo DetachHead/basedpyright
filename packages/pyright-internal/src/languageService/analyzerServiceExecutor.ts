@@ -148,7 +148,7 @@ function getEffectiveCommandLineOptions(
         commandLineOptions.configSettings.verboseOutput = true;
     }
 
-    if (serverSettings.fileEnumerationTimeoutInSec) {
+    if (serverSettings.fileEnumerationTimeoutInSec !== undefined) {
         commandLineOptions.languageServerSettings.fileEnumerationTimeoutInSec =
             serverSettings.fileEnumerationTimeoutInSec;
     }
