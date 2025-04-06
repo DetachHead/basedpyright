@@ -163,8 +163,9 @@ export const inlayHintSampleFile = (
     range?: Range,
     settings: Partial<InlayHintSettings> = {}
 ): TypeInlayHintsItemType[] => {
-    const program = createProgram();
-    const fileUri = UriEx.file(resolveSampleFilePath(path.join('inlay_hints', fileName)));
+    const projectRoot = UriEx.file(resolveSampleFilePath(path.join('inlay_hints')));
+    const program = createProgram(new ConfigOptions(projectRoot));
+    const fileUri = projectRoot.combinePaths(fileName);
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(
         program,

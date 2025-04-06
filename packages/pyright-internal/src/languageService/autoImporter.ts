@@ -235,21 +235,34 @@ export class AutoImporter {
             importNames.filter((importNameInfo) => !imports.some((i) => i.d.name.d.value === importNameInfo.name));
 
         if (importStatement) {
-            // Does an 'import from' statement already exist?
-            if (
-                importStatement.node.nodeType === ParseNodeType.ImportFrom &&
-                !importStatement.node.d.isWildcardImport
-            ) {
-                // If not, add what we want at the existing 'import from' statement as long as
-                // what is imported is not module itself.
-                // ex) don't add "path" to existing "from os.path import dirname" statement.
-                if (moduleNameInfo.name === importStatement.moduleName) {
-                    const importFromAsNodes = importStatement.node.d.imports;
-                    return getTextEditsForAutoImportSymbolAddition(
-                        filterImports(importFromAsNodes),
-                        importStatement,
-                        this.parseResults
-                    );
+            if (importNames.length) {
+                // Does an 'import from' statement already exist?
+                if (
+                    importStatement.node.nodeType === ParseNodeType.ImportFrom &&
+                    !importStatement.node.d.isWildcardImport
+                ) {
+                    // If not (filtered in filterImports), add what we want at the existing 'import from' statement as long as
+                    // what is imported is not module itself.
+                    // ex) don't add "path" to existing "from os.path import dirname" statement.
+                    if (moduleNameInfo.name === importStatement.moduleName) {
+                        const importFromAsNodes = importStatement.node.d.imports;
+                        return getTextEditsForAutoImportSymbolAddition(
+                            filterImports(importFromAsNodes),
+                            importStatement,
+                            this.parseResults
+                        );
+                    }
+                }
+            } else {
+                // does an import for the module already exist?
+                if (
+                    this._importStatements.orderedImports.find(
+                        (importStatement) =>
+                            importStatement.node.nodeType === ParseNodeType.Import &&
+                            importStatement.resolvedPath?.equals(fileUri)
+                    )
+                ) {
+                    return [];
                 }
             }
         } else {

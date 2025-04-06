@@ -175,6 +175,18 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             },
         ]);
     });
+    test('conflicting names', () => {
+        const result = inlayHintSampleFile('conflicting_names/b.py', undefined, { genericTypes: true });
+        tExpect(result).toStrictEqual([
+            {
+                inlayHintType: 'variable',
+                position: 40,
+                // TODO: should be tuple[conflicting_names.a.Foo, Foo] because b is the current file and isn't being imported
+                value: ': tuple[conflicting_names.a.Foo, conflicting_names.b.Foo]',
+                imports: { importFroms: new Map(), imports: new Set(['conflicting_names.a']) },
+            },
+        ]);
+    });
 } else {
     // prevent jest from failing because no tests were found
     test('windows placeholder', () => {});
