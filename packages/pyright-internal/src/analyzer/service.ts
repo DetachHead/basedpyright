@@ -711,14 +711,9 @@ export class AnalyzerService {
         // only apply to the language server.
         this._applyLanguageServerOptions(configOptions, projectRoot, commandLineOptions.languageServerSettings);
 
-        // If user didn't set either (venvPath & venv) or pythonPath, and project root is found,
+        // If user didn't set either (venvPath & venv) or pythonPath
         // try to fill pythonPath with a default value
-        if (
-            !configOptions.venvPath &&
-            !configOptions.venv &&
-            !configOptions.pythonPath &&
-            (configFilePath || pyprojectFilePath)
-        ) {
+        if (!configOptions.venvPath && !configOptions.venv && !configOptions.pythonPath) {
             // this is the most common name used for virtual environments, and newer tools like uv and pdm default to this name.
             // so if a python path hasn't been specified, we check whether a venv with this name exists in the project root.
             const defaultVenvPath = '.venv';
