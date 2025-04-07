@@ -181,8 +181,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             {
                 inlayHintType: 'variable',
                 position: 40,
-                // TODO: should be tuple[conflicting_names.a.Foo, Foo] because b is the current file and isn't being imported
-                value: ': tuple[conflicting_names.a.Foo, conflicting_names.b.Foo]',
+                value: ': tuple[conflicting_names.a.Foo, Foo]',
                 imports: { importFroms: new Map(), imports: new Set(['conflicting_names.a']) },
             },
         ]);

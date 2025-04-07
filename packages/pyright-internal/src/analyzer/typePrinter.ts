@@ -101,7 +101,7 @@ export function printType(
     returnTypeCallback: FunctionReturnTypeCallback,
     importTracker?: ImportTracker
 ): string {
-    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
+    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback, importTracker?.fileUri);
     uniqueNameMap.build(type);
     return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0, importTracker);
 }
@@ -123,7 +123,7 @@ export function printObjectTypeForClass(
     returnTypeCallback: FunctionReturnTypeCallback,
     importTracker: ImportTracker | undefined
 ): string {
-    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
+    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback, importTracker?.fileUri);
     uniqueNameMap.build(type);
 
     return printObjectTypeForClassInternal(
@@ -220,7 +220,7 @@ export class ImportTracker {
     private readonly _importFroms = new Map<string, Set<string>>();
     readonly result: ImportTrackerResults = { imports: this._imports, importFroms: this._importFroms };
 
-    constructor(private _fileUri: Uri, private _getTypingType: (name: string) => Type | undefined) {}
+    constructor(public fileUri: Uri, private _getTypingType: (name: string) => Type | undefined) {}
 
     /**
      * @param module the name of the module being imported. if it's possible for the module to be the same as the current module, you should
@@ -234,7 +234,7 @@ export class ImportTracker {
             // there are other more reliable ways to figure it out, but i think this is faster
             importIsFromCurrentModule = false;
         } else {
-            importIsFromCurrentModule = module.fileUri.toString() === this._fileUri.toString();
+            importIsFromCurrentModule = module.fileUri.toString() === this.fileUri.toString();
             module = module.moduleName;
         }
         if (module === 'builtins' || importIsFromCurrentModule) {
@@ -302,7 +302,7 @@ function printTypeInternal(
                         : aliasInfo.shared.name;
 
                 // Use the fully-qualified name if the name isn't unique.
-                if (!uniqueNameMap.isUnique(aliasName)) {
+                if (!uniqueNameMap.isUnique(aliasName, aliasInfo.shared.fileUri)) {
                     aliasName = aliasInfo.shared.fullName;
                     importTracker?.add(aliasInfo.shared);
                 } else {
@@ -425,7 +425,7 @@ function printTypeInternal(
                     (printTypeFlags & PrintTypeFlags.UseFullyQualifiedNames) !== 0
                         ? aliasInfo.shared.fullName
                         : aliasInfo.shared.name;
-                if (uniqueNameMap.isUnique(name)) {
+                if (uniqueNameMap.isUnique(name, aliasInfo.shared.fileUri)) {
                     importTracker?.add(aliasInfo.shared, name);
                 } else {
                     importTracker?.add(aliasInfo.shared);
@@ -1061,14 +1061,12 @@ function printObjectTypeForClassInternal(
     // Special-case NoneType to convert it to None.
     if (ClassType.isBuiltIn(type, 'NoneType')) {
         objName = 'None';
-    } else {
-        importTracker?.add(type.shared, objName);
-    }
-
-    // Use the fully-qualified name if the name isn't unique.
-    if (!uniqueNameMap.isUnique(objName)) {
+    } else if (!uniqueNameMap.isUnique(objName, type.shared.fileUri)) {
+        // Use the fully-qualified name if the name isn't unique.
         importTracker?.add(type.shared);
         objName = type.shared.fullName;
+    } else {
+        importTracker?.add(type.shared, objName);
     }
 
     // If this is a pseudo-generic class, don't display the type arguments
@@ -1476,7 +1474,17 @@ function getTypeVarVarianceText(type: TypeVarType) {
 class UniqueNameMap {
     private _map = new Map<string, Type[]>();
 
-    constructor(private _printTypeFlags: PrintTypeFlags, private _returnTypeCallback: FunctionReturnTypeCallback) {}
+    constructor(
+        private _printTypeFlags: PrintTypeFlags,
+        private _returnTypeCallback: FunctionReturnTypeCallback,
+        /**
+         * if provided, a non-unique name will be considered unique if it comes from the current module.
+         * used for inlay hints because we assume the type is already in scope and therefore does not need
+         * to be prefixed with a module and therefore does not need an import to be inserted when the inlay
+         * hint is double clicked
+         */
+        private _currentModule?: Uri
+    ) {}
 
     build(type: Type, recursionTypes: Type[] = [], recursionCount = 0) {
         if (recursionCount > maxTypeRecursionCount) {
@@ -1586,9 +1594,13 @@ class UniqueNameMap {
         }
     }
 
-    isUnique(name: string) {
+    /**
+     * @param module if provided, returns `true` even if the name isn't unique, because we don't want to prefix the
+     * type with the current module. see {@link _currentModule}
+     */
+    isUnique(name: string, module: Uri) {
         const entry = this._map.get(name);
-        return !entry || entry.length === 1;
+        return !entry || entry.length === 1 || (this._currentModule && module.equals(this._currentModule));
     }
 
     private _addIfUnique(name: string, type: Type, useTypeAliasName = false) {
