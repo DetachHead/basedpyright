@@ -291,7 +291,9 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportimplicitabstractclass)
 
-- <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
+- <a name="reportIncompatibleUnannotatedOverride"></a> **reportIncompatibleUnannotatedOverride** [boolean or string, optional]: Generate or suppress diagnostics for class variable declarations with an inferred type that override a symbol of the same name in a base class with a type that is incompatible with the base class symbol type. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportincompatibleunannotatedoverride)
+
+- <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless `reportIncompatibleUnannotatedOverride` is enabled. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
 
 ### Discouraged settings
 

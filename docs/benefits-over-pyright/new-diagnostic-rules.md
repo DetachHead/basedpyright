@@ -214,17 +214,46 @@ class FooImpl(AbstractFoo, ABC):
         print("hi")
 ```
 
-## `reportUnannotatedClassAttribute`
+## `reportIncompatibleUnannotatedOverride`
 
-pyright does not warn when a member of a class that doesn't have a type annotation is overridden with an incompatible type:
+pyright's `reportIncompatibleVariableOverride` rule checks for class attribute overrides with an incompatible type:
 
 ```py
 class A:
-    value = 1
+    value: int = 1
 
 
 class B(A):
-    value = None # no error, even though the type on the base class is `int` and the type here is `None`
+    value: int | None = None  # error, because `int | None` is not compatible with `int`
 ```
 
-this decision seems to have been made for performance reasons, which is fair enough. but because it's unsafe, there should be a check that enforces type annotations on class attributes (unless the class is decorated with `@final`). the `reportUnannotatedClassAttribute` rule will do just that.
+but it does not report an error if the attribute in the base class does not have a type annotation:
+
+```py
+class A:
+    value = 1  # inferred as `int`
+
+
+class B(A):
+    value = None  # no error, even though the type on the base class is `int` and the type here is `None`
+```
+
+this rule will report an error in such cases.
+
+!!! warning
+
+    the reason pyright does not check for cases like this is allegedly because it would be "very slow" to do so. in our testing, we have not noticed any performance impact with this rule enabled, but just in case, it's disabled by default in [the "recommended" diagnostic ruleset](../configuration/config-files.md#recommended-and-all) for now.
+
+    we intend to enable this rule by default in the future once we are more confident with it. please [open an issue](https://github.com/DetachHead/basedpyright/issues/new?template=issue.yaml) if you notice basedpyright running noticably slower with this rule enabled.
+
+    if you encounter any performance issues with this rule, you may want to disable it and use [`reportUnannotatedClassAttribute`](#reportunannotatedclassattribute) instead.
+
+## `reportUnannotatedClassAttribute`
+
+since pyright does not warn when a class attribute is overridden with an incompatible type (see [`reportIncompatibleUnannotatedOverride`](#reportincompatibleunannotatedoverride)), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to `reportIncompatibleUnannotatedOverride` if:
+
+-   you are developing a library that you want to be fully type-safe for users who may be using pyright instead of basedpyright
+-   you encountered performance issues with `reportIncompatibleUnannotatedOverride`
+-   you prefer explicit type annotations to reduce the risk of introducing unexpected breaking changes to your API
+
+`reportUnannotatedClassAttribute` will report an error on all unannotated class attributes that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.
