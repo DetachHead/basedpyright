@@ -423,6 +423,7 @@ export interface DiagnosticRuleSet {
     reportUnusedParameter: DiagnosticLevel;
     reportImplicitAbstractClass: DiagnosticLevel;
     reportUnannotatedClassAttribute: DiagnosticLevel;
+    reportIncompatibleUnannotatedOverride: DiagnosticLevel;
     allowedUntypedLibraries: string[];
 }
 
@@ -553,6 +554,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnusedParameter,
         DiagnosticRule.reportImplicitAbstractClass,
         DiagnosticRule.reportUnannotatedClassAttribute,
+        DiagnosticRule.reportIncompatibleUnannotatedOverride,
     ];
 }
 
@@ -688,6 +690,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        reportIncompatibleUnannotatedOverride: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -805,6 +808,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        reportIncompatibleUnannotatedOverride: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -922,6 +926,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        reportIncompatibleUnannotatedOverride: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1038,6 +1043,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedParameter: 'warning',
     reportImplicitAbstractClass: 'warning',
     reportUnannotatedClassAttribute: 'warning',
+    reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     allowedUntypedLibraries: [],
 });
 
@@ -1151,6 +1157,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedParameter: 'error',
     reportImplicitAbstractClass: 'error',
     reportUnannotatedClassAttribute: 'error',
+    reportIncompatibleUnannotatedOverride: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1265,6 +1272,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedParameter: 'hint',
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
+        reportIncompatibleUnannotatedOverride: 'none',
         allowedUntypedLibraries: [],
     };
 

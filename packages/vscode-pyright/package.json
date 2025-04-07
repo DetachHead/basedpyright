@@ -1744,6 +1744,23 @@
                                 false
                             ]
                         },
+                        "reportIncompatibleUnannotatedOverride": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for overrides in subclasses that redefine a variable without a type annotation in an incompatible way",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "hint",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
+                        },
                         "reportUnannotatedClassAttribute": {
                             "type": [
                                 "string",

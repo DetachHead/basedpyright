@@ -794,3 +794,22 @@ test('reportUnannotatedClassAttribute', () => {
         ],
     });
 });
+
+test('reportIncompatibleUnannotatedOverride', () => {
+    const configOptions = new BasedConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportIncompatibleUnannotatedOverride = 'error';
+    // make sure this one doesn't get reported in cases where it usually wouldn't if reportIncompatibleUnannotatedOverride is enabled,
+    // because the logic to handle which rule gets reported is a bit confusing
+    configOptions.diagnosticRuleSet.reportIncompatibleVariableOverride = 'error';
+    configOptions.diagnosticRuleSet.reportUnannotatedClassAttribute = 'none';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['reportUnannotatedClassAttribute.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 9 },
+            { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 14 },
+            { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 20 },
+            { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 43 },
+        ],
+    });
+});
