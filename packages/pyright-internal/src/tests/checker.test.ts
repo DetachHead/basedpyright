@@ -628,6 +628,7 @@ test('DeprecatedAlias1', () => {
 
 test('DeprecatedAlias2', () => {
     const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportDeprecated = 'error';
 
     configOptions.defaultPythonVersion = pythonVersion3_8;
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
@@ -650,11 +651,11 @@ test('DeprecatedAlias2', () => {
 
     configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults5 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
-    TestUtils.validateResults(analysisResults5, 42, 0, 0);
+    TestUtils.validateResults(analysisResults5, 41, 0, 0);
 
     configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults6 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
-    TestUtils.validateResults(analysisResults6, 46, 0, 0);
+    TestUtils.validateResults(analysisResults6, 45, 0, 0);
 });
 
 test('Deprecated2', () => {
