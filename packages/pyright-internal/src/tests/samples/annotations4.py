@@ -54,8 +54,7 @@ e = [3]
 e: list[int]
 
 
-def register(fn: Callable[[], None]) -> None:
-    ...
+def register(fn: Callable[[], None]) -> None: ...
 
 
 # These should be be fine because they use the "_" name.

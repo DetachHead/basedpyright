@@ -2,7 +2,7 @@
     "name": "vscode-pyright",
     "displayName": "BasedPyright",
     "description": "VS Code static type checking for Python (but based)",
-    "version": "1.1.398",
+    "version": "1.1.399",
     "private": true,
     "license": "MIT",
     "author": {
@@ -712,7 +712,7 @@
                                 "string",
                                 "boolean"
                             ],
-                            "description": "Diagnostics for an attempt to use an Optional type as an operand to a binary or unary operator (like '+', '==', 'or', 'not').",
+                            "description": "Diagnostics for an attempt to use an Optional type as an operand to a binary or unary operator (like '+', '<<', '~').",
                             "default": "error",
                             "enum": [
                                 "none",

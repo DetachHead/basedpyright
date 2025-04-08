@@ -41,7 +41,7 @@ export class PyrightServer extends RealLanguageServer {
             return undefined;
         }
 
-        return new BackgroundAnalysis(this.serverOptions.serviceProvider);
+        return new BackgroundAnalysis(workspaceRoot, this.serverOptions.serviceProvider);
     }
 
     protected override createHost(): Host {

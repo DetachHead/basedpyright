@@ -154,7 +154,7 @@ test('Assignment12', () => {
 
     configOptions.diagnosticRuleSet.reportUnknownVariableType = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['assignment12.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 2);
+    TestUtils.validateResults(analysisResults2, 3);
 });
 
 test('AugmentedAssignment1', () => {
@@ -354,11 +354,11 @@ test('isInstance3', () => {
 
     configOptions.defaultPythonVersion = pythonVersion3_9;
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['isinstance3.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 6);
+    TestUtils.validateResults(analysisResults1, 7);
 
     configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['isinstance3.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 6);
+    TestUtils.validateResults(analysisResults2, 7);
 });
 
 test('isInstance4', () => {

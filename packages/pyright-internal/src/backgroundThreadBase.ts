@@ -29,7 +29,7 @@ import { getCancellationTokenFromId } from './common/fileBasedCancellationUtils'
 export class BackgroundConsole implements ConsoleInterface {
     private _level = LogLevel.Log;
 
-    constructor(private _parentPort: MessagePort | null) {}
+    constructor(private readonly _parentPort: MessagePort) {}
 
     get level() {
         return this._level;
@@ -56,7 +56,7 @@ export class BackgroundConsole implements ConsoleInterface {
     }
 
     protected post(level: LogLevel, msg: string) {
-        this._parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
+        this._parentPort.postMessage({ requestType: 'log', data: serialize({ level: level, message: `BG: ${msg}` }) });
     }
 }
 
@@ -71,7 +71,7 @@ export abstract class BackgroundThreadBase {
         // Make sure there's a file system and a console interface.
         this.serviceProvider = serviceProvider ?? new ServiceProvider();
         if (!this.serviceProvider.tryGet(ServiceKeys.console)) {
-            this.serviceProvider.add(ServiceKeys.console, new BackgroundConsole(this.parentPort));
+            this.serviceProvider.add(ServiceKeys.console, new BackgroundConsole(parentPort!));
         }
 
         let tempFile = this.serviceProvider.tryGet(ServiceKeys.tempFile);
@@ -106,7 +106,7 @@ export abstract class BackgroundThreadBase {
     protected abstract createRealTempFile(tempFileName: string): TempFile & CaseSensitivityDetector;
 
     protected log(level: LogLevel, msg: string) {
-        this.parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: msg }) });
+        this.parentPort?.postMessage({ requestType: 'log', data: serialize({ level: level, message: `BG: ${msg}` }) });
     }
 
     protected getConsole() {
@@ -263,7 +263,7 @@ export function getBackgroundWaiter<T>(
                     break;
 
                 default:
-                    debug.fail(`unknown kind ${m.kind}`);
+                    debug.fail(`unknown kind ${m.kind} ${JSON.stringify(m)}`);
             }
         });
     });
@@ -271,6 +271,7 @@ export function getBackgroundWaiter<T>(
 
 export interface InitializationData {
     rootUri: string;
+    workspaceRootUri: string;
     tempFileName: string;
     serviceId: string;
     workerIndex: number;

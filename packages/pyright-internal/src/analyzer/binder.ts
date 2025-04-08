@@ -416,7 +416,9 @@ export class Binder extends ParseTreeWalker {
             );
         }
 
-        // A source file was found, but the type stub was missing.
+        // See if a source file was found but it's not part of a py.typed
+        // library and no type stub is found.
+        let reportStubMissing = false;
         if (
             !importResult.isStubFile &&
             importResult.importType === ImportType.ThirdParty &&
@@ -424,6 +426,24 @@ export class Binder extends ParseTreeWalker {
             // If the module is allowed as an untyped library, we don't need the stub
             !moduleIsInList(this._fileInfo.diagnosticRuleSet.allowedUntypedLibraries, importResult.importName)
         ) {
+            reportStubMissing = true;
+
+            // If the import is a namespace package, it's possible that all of
+            // the targeted import symbols are py.typed submodules. In this case,
+            // suppress the missing stub diagnostic.
+            if (importResult.isNamespacePackage && node.parent?.nodeType === ParseNodeType.ImportFrom) {
+                if (
+                    node.parent.d.imports.every((importAs) => {
+                        const implicitImport = importResult.filteredImplicitImports.get(importAs.d.name.d.value);
+                        return !!implicitImport?.pyTypedInfo;
+                    })
+                ) {
+                    reportStubMissing = false;
+                }
+            }
+        }
+
+        if (reportStubMissing) {
             /** taken from https://github.com/python/mypy/blob/master/mypy/stubinfo.py */
             const packagesWithStubsNotInTypeshed = ['lxml', 'pandas', 'scipy'];
             const packageName = importResult.importName.split('.')[0];
@@ -1292,6 +1312,7 @@ export class Binder extends ParseTreeWalker {
         }
 
         if (node.d.expr) {
+            AnalyzerNodeInfo.setFlowNode(node.d.expr, this._currentFlowNode!);
             this.walk(node.d.expr);
         }
 

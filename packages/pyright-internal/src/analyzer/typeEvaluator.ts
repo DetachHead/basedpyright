@@ -1508,9 +1508,10 @@ export function createTypeEvaluator(
             : undefined;
 
         const exprTypeResult = getTypeOfExpression(node.d.expr, flags, makeInferenceContext(expectedType));
+        const awaitableResult = getTypeOfAwaitable(exprTypeResult, node.d.expr);
         const typeResult: TypeResult = {
-            type: getTypeOfAwaitable(exprTypeResult.type, node.d.expr),
-            isIncomplete: exprTypeResult.isIncomplete,
+            type: awaitableResult.type,
+            isIncomplete: exprTypeResult.isIncomplete || awaitableResult.isIncomplete,
             typeErrors: exprTypeResult.typeErrors,
         };
 
@@ -2993,18 +2994,19 @@ export function createTypeEvaluator(
     // the result. According to PEP 492, await operates on an Awaitable
     // (object that provides an __await__ that returns a generator object).
     // If errorNode is undefined, no errors are reported.
-    function getTypeOfAwaitable(type: Type, errorNode?: ExpressionNode): Type {
+    function getTypeOfAwaitable(typeResult: TypeResult, errorNode?: ExpressionNode): TypeResult {
         if (
             !prefetched?.awaitableClass ||
             !isInstantiableClass(prefetched.awaitableClass) ||
             prefetched.awaitableClass.shared.typeParams.length !== 1
         ) {
-            return UnknownType.create();
+            return { type: UnknownType.create(), isIncomplete: typeResult.isIncomplete };
         }
 
         const awaitableProtocolObj = ClassType.cloneAsInstance(prefetched.awaitableClass);
+        const isIncomplete = !!typeResult.isIncomplete;
 
-        return mapSubtypes(type, (subtype) => {
+        const type = mapSubtypes(typeResult.type, (subtype) => {
             subtype = makeTopLevelTypeVarsConcrete(subtype);
 
             if (isAnyOrUnknown(subtype)) {
@@ -3031,7 +3033,7 @@ export function createTypeEvaluator(
                 }
             }
 
-            if (errorNode) {
+            if (errorNode && !typeResult.isIncomplete) {
                 addDiagnostic(
                     DiagnosticRule.reportGeneralTypeIssues,
                     LocMessage.typeNotAwaitable().format({ type: printType(subtype) }) + diag?.getString(),
@@ -3041,6 +3043,8 @@ export function createTypeEvaluator(
 
             return UnknownType.create();
         });
+
+        return { type, isIncomplete };
     }
 
     // Validates that the type is an iterator and returns the iterated type
@@ -3054,6 +3058,7 @@ export function createTypeEvaluator(
         const iterMethodName = isAsync ? '__aiter__' : '__iter__';
         const nextMethodName = isAsync ? '__anext__' : '__next__';
         let isValidIterator = true;
+        let isIncomplete = typeResult.isIncomplete;
 
         let type = transformPossibleRecursiveTypeAlias(typeResult.type);
         type = makeTopLevelTypeVarsConcrete(type);
@@ -3144,7 +3149,14 @@ export function createTypeEvaluator(
 
                             // If it's an async iteration, there's an implicit
                             // 'await' operator applied.
-                            return getTypeOfAwaitable(nextReturnType, errorNode);
+                            const awaitableResult = getTypeOfAwaitable(
+                                { type: nextReturnType, isIncomplete: typeResult.isIncomplete },
+                                errorNode
+                            );
+                            if (awaitableResult.isIncomplete) {
+                                isIncomplete = true;
+                            }
+                            return awaitableResult.type;
                         }
 
                         return undefined;
@@ -3158,7 +3170,7 @@ export function createTypeEvaluator(
                 }
             }
 
-            if (!typeResult.isIncomplete && emitNotIterableError) {
+            if (!isIncomplete && emitNotIterableError) {
                 addDiagnostic(
                     DiagnosticRule.reportGeneralTypeIssues,
                     LocMessage.typeNotIterable().format({ type: printType(subtype) }) + diag.getString(),
@@ -3170,7 +3182,7 @@ export function createTypeEvaluator(
             return undefined;
         });
 
-        return isValidIterator ? { type: iterableType, isIncomplete: typeResult.isIncomplete } : undefined;
+        return isValidIterator ? { type: iterableType, isIncomplete } : undefined;
     }
 
     // Validates that the type is an iterable and returns the iterable type argument.
@@ -3709,7 +3721,7 @@ export function createTypeEvaluator(
                 fileInfo.diagnosticRuleSet,
                 DiagnosticRule.reportUnknownVariableType,
                 nameNode,
-                destType,
+                typeResult.type,
                 nameNode,
                 ignoreEmptyContainers
             );
@@ -4511,37 +4523,11 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.TypeAnnotation: {
-                let annotationType: Type | undefined = getTypeOfAnnotation(target.d.annotation, {
+                getTypeOfAnnotation(target.d.annotation, {
                     varTypeAnnotation: true,
                     allowFinal: isFinalAllowedForAssignmentTarget(target.d.valueExpr),
                     allowClassVar: isClassVarAllowedForAssignmentTarget(target.d.valueExpr),
                 });
-
-                if (annotationType) {
-                    const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(target);
-                    annotationType = makeTypeVarsBound(annotationType, liveScopeIds);
-                }
-
-                // Handle a bare "Final" or "ClassVar" in a special manner.
-                const isBareFinalOrClassVar =
-                    isClassInstance(annotationType) &&
-                    (ClassType.isBuiltIn(annotationType, 'Final') || ClassType.isBuiltIn(annotationType, 'ClassVar'));
-
-                if (!isBareFinalOrClassVar) {
-                    const isTypeAliasAnnotation =
-                        isClassInstance(annotationType) && ClassType.isBuiltIn(annotationType, 'TypeAlias');
-
-                    if (!isTypeAliasAnnotation) {
-                        if (assignType(annotationType, typeResult.type)) {
-                            // Don't attempt to narrow based on the annotated type if the type
-                            // is a enum because the annotated type in an enum doesn't reflect
-                            // the type of the symbol.
-                            if (!isClassInstance(typeResult.type) || !ClassType.isEnumClass(typeResult.type)) {
-                                typeResult = narrowTypeBasedOnAssignment(annotationType, typeResult);
-                            }
-                        }
-                    }
-                }
 
                 assignTypeToExpression(
                     target.d.valueExpr,
@@ -7086,19 +7072,37 @@ export function createTypeEvaluator(
 
         // Is there a *tuple[T, ...] somewhere in the type arguments that we can expand if needed?
         let srcUnboundedTupleType: Type | undefined;
-        let srcUnboundedTupleIndex = typeArgs.findIndex((arg) => {
-            if (
-                isUnpackedClass(arg.type) &&
-                arg.type.priv.tupleTypeArgs &&
-                arg.type.priv.tupleTypeArgs.length === 1 &&
-                arg.type.priv.tupleTypeArgs[0].isUnbounded
-            ) {
-                srcUnboundedTupleType = arg.type.priv.tupleTypeArgs[0].type;
-                return true;
-            }
+        const findUnboundedTupleIndex = (startArgIndex: number) => {
+            return typeArgs.findIndex((arg, index) => {
+                if (index < startArgIndex) {
+                    return false;
+                }
+                if (
+                    isUnpackedClass(arg.type) &&
+                    arg.type.priv.tupleTypeArgs &&
+                    arg.type.priv.tupleTypeArgs.length === 1 &&
+                    arg.type.priv.tupleTypeArgs[0].isUnbounded
+                ) {
+                    srcUnboundedTupleType = arg.type.priv.tupleTypeArgs[0].type;
+                    return true;
+                }
 
-            return false;
-        });
+                return false;
+            });
+        };
+        let srcUnboundedTupleIndex = findUnboundedTupleIndex(0);
+
+        // Allow only one unpacked tuple that maps to a TypeVarTuple.
+        if (srcUnboundedTupleIndex >= 0) {
+            const secondUnboundedTupleIndex = findUnboundedTupleIndex(srcUnboundedTupleIndex + 1);
+            if (secondUnboundedTupleIndex >= 0) {
+                addDiagnostic(
+                    DiagnosticRule.reportInvalidTypeForm,
+                    LocMessage.variadicTypeArgsTooMany(),
+                    typeArgs[secondUnboundedTupleIndex].node
+                );
+            }
+        }
 
         if (
             srcUnboundedTupleType &&
@@ -16393,11 +16397,7 @@ export function createTypeEvaluator(
                         }
                         validateTypeVarTupleIsUnpacked(typeArg.type, typeArg.node);
                     } else if (paramLimit === undefined && isUnpackedClass(typeArg.type)) {
-                        if (
-                            typeArg.type.priv.tupleTypeArgs?.some(
-                                (typeArg) => isTypeVarTuple(typeArg.type) || typeArg.isUnbounded
-                            )
-                        ) {
+                        if (isUnboundedTupleClass(typeArg.type)) {
                             noteSawUnpacked(typeArg);
                         }
                         validateTypeArg(typeArg, { allowUnpackedTuples: true });
@@ -19949,6 +19949,7 @@ export function createTypeEvaluator(
         }
 
         const exprTypeResult = getTypeOfExpression(node.d.expr);
+        let isIncomplete = exprTypeResult.isIncomplete;
         let exprType = exprTypeResult.type;
         const isAsync = node.parent && node.parent.nodeType === ParseNodeType.With && !!node.parent.d.isAsync;
 
@@ -19983,7 +19984,19 @@ export function createTypeEvaluator(
                 );
 
                 if (enterTypeResult) {
-                    return isAsync ? getTypeOfAwaitable(enterTypeResult.type, node.d.expr) : enterTypeResult.type;
+                    if (isAsync) {
+                        if (enterTypeResult.isIncomplete) {
+                            isIncomplete = true;
+                        }
+
+                        const asyncResult = getTypeOfAwaitable({ type: enterTypeResult.type }, node.d.expr);
+                        if (asyncResult.isIncomplete) {
+                            isIncomplete = true;
+                        }
+
+                        return asyncResult.type;
+                    }
+                    return enterTypeResult.type;
                 }
 
                 if (!isAsync) {
@@ -20033,7 +20046,20 @@ export function createTypeEvaluator(
                 );
 
                 if (exitTypeResult) {
-                    return isAsync ? getTypeOfAwaitable(exitTypeResult.type, node.d.expr) : exitTypeResult.type;
+                    if (exitTypeResult.isIncomplete) {
+                        isIncomplete = true;
+                    }
+
+                    if (isAsync) {
+                        const asyncResult = getTypeOfAwaitable({ type: exitTypeResult.type }, node.d.expr);
+                        if (asyncResult.isIncomplete) {
+                            isIncomplete = true;
+                        }
+
+                        return asyncResult.type;
+                    }
+
+                    return exitTypeResult.type;
                 }
             }
 
@@ -20047,14 +20073,10 @@ export function createTypeEvaluator(
         });
 
         if (node.d.target) {
-            assignTypeToExpression(
-                node.d.target,
-                { type: scopedType, isIncomplete: exprTypeResult.isIncomplete },
-                node.d.target
-            );
+            assignTypeToExpression(node.d.target, { type: scopedType, isIncomplete }, node.d.target);
         }
 
-        writeTypeCache(node, { type: scopedType, isIncomplete: !!exprTypeResult.isIncomplete }, EvalFlags.None);
+        writeTypeCache(node, { type: scopedType, isIncomplete }, EvalFlags.None);
     }
 
     function evaluateTypesForImportAs(node: ImportAsNode): void {
@@ -25182,22 +25204,20 @@ export function createTypeEvaluator(
                 // Determine if the metaclass can be assigned to the object.
                 const metaclass = concreteSrcType.shared.effectiveMetaclass;
                 if (metaclass) {
-                    if (isAnyOrUnknown(metaclass)) {
-                        return true;
-                    }
-
-                    if (
-                        assignClass(
-                            ClassType.cloneAsInstantiable(destType),
-                            metaclass,
-                            /* diag */ undefined,
-                            constraints,
-                            flags,
-                            recursionCount,
-                            /* reportErrorsUsingObjType */ true
-                        )
-                    ) {
-                        return true;
+                    if (!isAnyOrUnknown(metaclass)) {
+                        if (
+                            assignClass(
+                                ClassType.cloneAsInstantiable(destType),
+                                metaclass,
+                                /* diag */ undefined,
+                                constraints,
+                                flags,
+                                recursionCount,
+                                /* reportErrorsUsingObjType */ true
+                            )
+                        ) {
+                            return true;
+                        }
                     }
                 }
             } else if (isAnyOrUnknown(concreteSrcType) && !concreteSrcType.props?.specialForm) {
@@ -25877,8 +25897,15 @@ export function createTypeEvaluator(
 
         const isLeftCallable = isFunction(leftType) || isOverloaded(leftType);
         const isRightCallable = isFunction(rightType) || isOverloaded(rightType);
-        if (isLeftCallable !== isRightCallable) {
-            return false;
+
+        // If either type is a function, assume that it may be comparable. The other
+        // operand might be a callable object, an 'object' instance, etc. We could
+        // make this more precise for specific cases (e.g. if the other operand is
+        // None or a literal or an instance of a nominal class that doesn't override
+        // __call__ and is marked final, etc.), but coming up with a comprehensive
+        // list is probably not feasible.
+        if (isLeftCallable || isRightCallable) {
+            return true;
         }
 
         if (
@@ -27488,8 +27515,7 @@ export function createTypeEvaluator(
                     baseOverload,
                     overrideOverload,
                     /* diag */ undefined,
-                    enforceParamNames,
-                    /* exemptSelfClsParam */ false
+                    enforceParamNames
                 );
 
                 // If the override is compatible but the match is one that is below the previous
@@ -27584,16 +27610,12 @@ export function createTypeEvaluator(
     // Determines whether the override method is compatible with the overridden method.
     // This is used both for parent/child overrides and implicit overrides for peer
     // classes in a multi-inheritance case. If enforceParamNames is true, the parameter
-    // names of non-positional-only parameters are enforced. If exemptSelfClsParam
-    // is true, the "self" and "cls" parameters are exempted from type checks.
-    // This is normally the case except with overloaded method overrides where the
-    // "self" or "cls" parameter type must be honored to differentiate between overloads.
+    // names of non-positional-only parameters are enforced.
     function validateOverrideMethodInternal(
         baseMethod: FunctionType,
         overrideMethod: FunctionType,
         diag: DiagnosticAddendum | undefined,
-        enforceParamNames: boolean,
-        exemptSelfClsParam = true
+        enforceParamNames: boolean
     ): boolean {
         const baseParamDetails = getParamListDetails(baseMethod);
         const overrideParamDetails = getParamListDetails(overrideMethod);
@@ -27640,7 +27662,7 @@ export function createTypeEvaluator(
                                 baseParamDetails.params[i].type,
                                 diag?.createAddendum(),
                                 constraints,
-                                AssignTypeFlags.Contravariant
+                                AssignTypeFlags.Default
                             )
                         ) {
                             LocAddendum.overrideParamType().format({
@@ -27689,7 +27711,7 @@ export function createTypeEvaluator(
                 // If the first parameter is a "self" or "cls" parameter, skip the
                 // test because these are allowed to violate the Liskov substitution
                 // principle.
-                if (i === 0 && exemptSelfClsParam) {
+                if (i === 0) {
                     if (
                         FunctionType.isInstanceMethod(overrideMethod) ||
                         FunctionType.isClassMethod(overrideMethod) ||
@@ -27755,7 +27777,8 @@ export function createTypeEvaluator(
                     const baseIsSynthesizedTypeVar = isTypeVar(baseParamType) && baseParamType.shared.isSynthesized;
                     const overrideIsSynthesizedTypeVar =
                         isTypeVar(overrideParamType) && overrideParamType.shared.isSynthesized;
-                    if (!exemptSelfClsParam || (!baseIsSynthesizedTypeVar && !overrideIsSynthesizedTypeVar)) {
+
+                    if (!baseIsSynthesizedTypeVar && !overrideIsSynthesizedTypeVar) {
                         if (
                             baseParam.category !== overrideParam.category ||
                             !assignType(
@@ -27763,7 +27786,7 @@ export function createTypeEvaluator(
                                 baseParamType,
                                 diag?.createAddendum(),
                                 constraints,
-                                AssignTypeFlags.Contravariant
+                                AssignTypeFlags.Default
                             )
                         ) {
                             diag?.addMessage(
@@ -27825,7 +27848,7 @@ export function createTypeEvaluator(
                             baseParamType,
                             diag?.createAddendum(),
                             constraints,
-                            AssignTypeFlags.Contravariant
+                            AssignTypeFlags.Default
                         )
                     ) {
                         diag?.addMessage(
@@ -27870,7 +27893,7 @@ export function createTypeEvaluator(
                             paramInfo.type,
                             diag?.createAddendum(),
                             constraints,
-                            AssignTypeFlags.Contravariant
+                            AssignTypeFlags.Default
                         )
                     ) {
                         diag?.addMessage(

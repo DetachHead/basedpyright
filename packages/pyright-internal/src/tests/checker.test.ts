@@ -137,7 +137,7 @@ test('Constants1', () => {
 test('NoReturn1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn1.py']);
 
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('NoReturn2', () => {
@@ -594,36 +594,67 @@ test('UninitializedVariable2', () => {
     TestUtils.validateResults(analysisResults, 3);
 });
 
-test('Deprecated1', () => {
+test('DeprecatedAlias1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
     configOptions.defaultPythonVersion = pythonVersion3_8;
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
-    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults1, 0, 0, 0);
 
     configOptions.defaultPythonVersion = pythonVersion3_9;
-    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults2, 0, 0, 0);
 
     configOptions.defaultPythonVersion = pythonVersion3_10;
-    const analysisResults3 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults3 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults3, 0, 0, 0);
 
     // Now enable the deprecateTypingAliases setting.
     configOptions.diagnosticRuleSet.deprecateTypingAliases = true;
 
     configOptions.defaultPythonVersion = pythonVersion3_8;
-    const analysisResults4 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults4 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults4, 0, 0, 0);
 
     configOptions.defaultPythonVersion = pythonVersion3_9;
-    const analysisResults5 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults5 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults5, 44, 0, 0);
 
     configOptions.defaultPythonVersion = pythonVersion3_10;
-    const analysisResults6 = TestUtils.typeAnalyzeSampleFiles(['deprecated1.py'], configOptions);
+    const analysisResults6 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias1.py'], configOptions);
     TestUtils.validateResults(analysisResults6, 48, 0, 0);
+});
+
+test('DeprecatedAlias2', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.defaultPythonVersion = pythonVersion3_8;
+    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0);
+
+    configOptions.defaultPythonVersion = pythonVersion3_9;
+    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults2, 0, 0, 0);
+
+    configOptions.defaultPythonVersion = pythonVersion3_10;
+    const analysisResults3 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults3, 0, 0, 0);
+
+    // Now enable the deprecateTypingAliases setting.
+    configOptions.diagnosticRuleSet.deprecateTypingAliases = true;
+
+    configOptions.defaultPythonVersion = pythonVersion3_8;
+    const analysisResults4 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults4, 0, 0, 0);
+
+    configOptions.defaultPythonVersion = pythonVersion3_9;
+    const analysisResults5 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults5, 42, 0, 0);
+
+    configOptions.defaultPythonVersion = pythonVersion3_10;
+    const analysisResults6 = TestUtils.typeAnalyzeSampleFiles(['deprecatedAlias2.py'], configOptions);
+    TestUtils.validateResults(analysisResults6, 46, 0, 0);
 });
 
 test('Deprecated2', () => {

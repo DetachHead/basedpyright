@@ -167,7 +167,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportOptionalContextManager"></a> **reportOptionalContextManager** [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as a context manager (as a parameter to a `with` statement).
 
-- <a name="reportOptionalOperand"></a> **reportOptionalOperand** [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an operand to a unary operator (like `~` or `not`) or the left-hand operator of a binary operator (like `*`, `==`, `or`).
+- <a name="reportOptionalOperand"></a> **reportOptionalOperand** [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an operand to a unary operator (like `~`) or the left-hand operator of a binary operator (like `*` or `<<`).
 
 - <a name="reportRedeclaration"></a> **reportRedeclaration** [boolean or string, optional]: Generate or suppress diagnostics for a symbol that has more than one type declaration.
 
@@ -299,7 +299,7 @@ there are rules in pyright that are discouraged in basedpyright because we provi
 
 - <a name="enableTypeIgnoreComments"></a> **enableTypeIgnoreComments** [boolean]: PEP 484 defines support for `# type: ignore` comments. This switch enables or disables support for these comments. This option is discouraged in favor of `# pyright: ignore` comments in basedpyright, as they are safer. [See here](../benefits-over-pyright/new-diagnostic-rules.md#reportignorecommentwithoutrule) for more information.
 
-- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of [`reportUnreachable`](../benefits-over-pyright/new-diagnostic-rules.md#reportunreachable).
+- <a name="enableReachabilityAnalysis"></a> **enableReachabilityAnalysis** [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of [`reportUnreachable`](../benefits-over-pyright/new-diagnostic-rules.md#reportunreachable).
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
