@@ -1167,7 +1167,7 @@ export function addInheritedDataClassEntries(classType: ClassType, entries: Data
     return allAncestorsAreKnown;
 }
 
-function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: string[]) {
+export function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: string[]) {
     let callName: string | undefined;
 
     if (isFunction(type)) {

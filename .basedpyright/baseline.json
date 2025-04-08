@@ -1,5 +1,15 @@
 {
     "files": {
+        "./build/py3_13/docs_macros.py": [
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 4,
+                    "endColumn": 23,
+                    "lineCount": 1
+                }
+            }
+        ],
         "./build/py3_13/generateUnicodeTables.py": [
             {
                 "code": "reportUnannotatedClassAttribute",
@@ -200,6 +210,42 @@
                 "range": {
                     "startColumn": 24,
                     "endColumn": 29,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./build/py3_8/generate_docstubs.py": [
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 8,
+                    "endColumn": 71,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 8,
+                    "endColumn": 70,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./pdm_build.py": [
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 66,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 97,
                     "lineCount": 1
                 }
             }

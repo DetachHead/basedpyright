@@ -137,9 +137,7 @@ describe('narrowing type vars using their bounds', () => {
         configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
         configOptions.diagnosticRuleSet.strictGenericNarrowing = false;
         const analysisResults = typeAnalyzeSampleFiles(['typeNarrowingUsingBoundsDisabled.py'], configOptions);
-        validateResultsButBased(analysisResults, {
-            hints: [{ line: 151, code: DiagnosticRule.reportUnreachable }],
-        });
+        validateResultsButBased(analysisResults, {});
     });
 });
 

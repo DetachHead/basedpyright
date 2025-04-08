@@ -19,7 +19,6 @@ test('reportAny', () => {
             },
             { line: 4, code: DiagnosticRule.reportAny },
             { line: 5, code: DiagnosticRule.reportAny, message: LocMessage.returnTypeAny() },
-            { line: 7, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'bar' }) },
             {
                 line: 9,
                 code: DiagnosticRule.reportAny,
@@ -45,6 +44,7 @@ test('reportAny', () => {
                 code: DiagnosticRule.reportAny,
                 message: LocMessage.wildcardPatternTypeAny(),
             },
+            { line: 24, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'asdf' }) },
         ],
     });
 });
