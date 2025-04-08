@@ -493,7 +493,7 @@ export class AnalyzerService {
 
     baselineUpdated = () => {
         this.invalidateAndForceReanalysis(InvalidatedReason.BaselineFileUpdated);
-        this._scheduleReanalysis(false);
+        this.scheduleReanalysis(false);
     };
 
     protected runAnalysis(token: CancellationToken) {

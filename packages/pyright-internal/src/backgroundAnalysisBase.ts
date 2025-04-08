@@ -225,7 +225,7 @@ export class BackgroundAnalysisBase implements IBackgroundAnalysis {
     async analyzeFileAndGetDiagnostics(fileUri: Uri, token: CancellationToken): Promise<Diagnostic[]> {
         throwIfCancellationRequested(token);
 
-        const { port1, port2 } = new MessageChannel();
+        const { port1, port2 } = createMessageChannel();
         const waiter = getBackgroundWaiter<Diagnostic[]>(port1);
 
         const cancellationId = getCancellationTokenId(token);

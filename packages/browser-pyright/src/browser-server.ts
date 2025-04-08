@@ -36,9 +36,9 @@ export class PyrightBrowserServer extends RealLanguageServer {
         super(connection, 0, testFileSystem, new DefaultCancellationProvider(), testFileSystem, nullFileWatcherHandler);
     }
 
-    createBackgroundAnalysis(): BackgroundAnalysisBase | undefined {
+    createBackgroundAnalysis(_: string, workspaceRoot: Uri): BackgroundAnalysisBase | undefined {
         // Ignore cancellation restriction for now. Needs investigation for browser support.
-        const result = new BrowserBackgroundAnalysis(this.serviceProvider);
+        const result = new BrowserBackgroundAnalysis(workspaceRoot, this.serviceProvider);
         if (this._initialFiles) {
             result.initializeFileSystem(this._initialFiles);
         }
@@ -94,7 +94,7 @@ export class PyrightBrowserServer extends RealLanguageServer {
 export class BrowserBackgroundAnalysis extends BackgroundAnalysisBase {
     private static _workerIndex = 0;
 
-    constructor(serviceProvider: ServiceProvider) {
+    constructor(workspaceRoot: Uri, serviceProvider: ServiceProvider) {
         super(serviceProvider.console());
 
         const index = ++BrowserBackgroundAnalysis._workerIndex;
@@ -106,6 +106,7 @@ export class BrowserBackgroundAnalysis extends BackgroundAnalysisBase {
             cancellationFolderName: undefined,
             runner: undefined,
             workerIndex: index,
+            workspaceRootUri: workspaceRoot.toString(),
         };
         const worker = createWorker(initialData);
         this.setup(worker);
