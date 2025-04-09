@@ -788,7 +788,7 @@
         "protocolRequiresRuntimeCheckable": "Protocol 类必须用 `@runtime_checkable` 装饰才能用于 `isinstance()` 和 `issubclass()`",
         "protocolSourceIsNotConcrete": "\"{sourceType}\" 不是具体类类型，无法赋值给 \"{destType}\" 类型",
         "protocolUnsafeOverlap": "\"{name}\" 的属性与 Protocol 类具有相同的名称",
-        "pyrightCommentIgnoreTip": "使用 `# pyright: ignore[<diagnostic rules>]` 取消单行诊断",
+        "pyrightCommentIgnoreTip": "使用 `# pyright: ignore[规则名]` 取消单行诊断",
         "readOnlyAttribute": "\"{name}\" 为只读属性",
         "seeClassDeclaration": "查看类声明",
         "seeDeclaration": "查看声明",
