@@ -112,6 +112,7 @@ About the interface:
 | implementation/unimplemented | （未）实施/实行（的） | （未）实现（的）    | 词义不准确/Inaccurate meaning              |
 | obscure                      | 遮盖/隐蔽             | 覆盖                | 词义不准确/Inaccurate meaning              |
 | irrefutable                  | 无可辩驳的            | 通配                | 词义不准确/Inaccurate meaning              |
+| entry                        | 条目                  | 项                  | 词义不准确/Inaccurate meaning              |
 
 #### 量词
 
