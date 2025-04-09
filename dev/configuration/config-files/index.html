@@ -2143,7 +2143,7 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="reportOptionalContextManager"></a> <strong>reportOptionalContextManager</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as a context manager (as a parameter to a <code>with</code> statement).</p>
 </li>
 <li>
-<p><a name="reportOptionalOperand"></a> <strong>reportOptionalOperand</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an operand to a unary operator (like <code>~</code> or <code>not</code>) or the left-hand operator of a binary operator (like <code>*</code>, <code>==</code>, <code>or</code>).</p>
+<p><a name="reportOptionalOperand"></a> <strong>reportOptionalOperand</strong> [boolean or string, optional]: Generate or suppress diagnostics for an attempt to use an Optional type as an operand to a unary operator (like <code>~</code>) or the left-hand operator of a binary operator (like <code>*</code> or <code>&lt;&lt;</code>).</p>
 </li>
 <li>
 <p><a name="reportRedeclaration"></a> <strong>reportRedeclaration</strong> [boolean or string, optional]: Generate or suppress diagnostics for a symbol that has more than one type declaration.</p>
@@ -2339,7 +2339,7 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="enableTypeIgnoreComments"></a> <strong>enableTypeIgnoreComments</strong> [boolean]: PEP 484 defines support for <code># type: ignore</code> comments. This switch enables or disables support for these comments. This option is discouraged in favor of <code># pyright: ignore</code> comments in basedpyright, as they are safer. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportignorecommentwithoutrule">See here</a> for more information.</p>
 </li>
 <li>
-<p><a name="enableReachabilityAnalysis"></a> <strong>enableReachabilityAnalysis</strong> [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable"><code>reportUnreachable</code></a>.</p>
+<p><a name="enableReachabilityAnalysis"></a> <strong>enableReachabilityAnalysis</strong> [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable"><code>reportUnreachable</code></a>.</p>
 </li>
 </ul>
 <h2 id="execution-environment-options">Execution Environment Options</h2>
