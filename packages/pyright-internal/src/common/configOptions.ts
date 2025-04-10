@@ -1043,7 +1043,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedParameter: 'warning',
     reportImplicitAbstractClass: 'warning',
     reportUnannotatedClassAttribute: 'warning',
-    reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
+    reportIncompatibleUnannotatedOverride: 'warning', // TODO: change to error when we're confident there's no performance issues with this rule
     allowedUntypedLibraries: [],
 });
 
