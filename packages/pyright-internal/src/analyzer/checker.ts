@@ -6621,6 +6621,8 @@ export class Checker extends ParseTreeWalker {
 
             // If the symbol has no declaration, and the type is inferred,
             // skip the type validation but still check for other issues like
+            // Final overrides and class/instance variable mismatches, unless
+            // reportIncompatibleUnannotatedOverride is enabled.
             // Final overrides and class/instance variable mismatches.
             let validateType = true;
             const declarations = symbol.getDeclarations();
@@ -6686,9 +6688,10 @@ export class Checker extends ParseTreeWalker {
                 this._validateBaseClassOverride(
                     baseClassAndSymbol,
                     symbol,
-                    validateType ? typeOfSymbol : AnyType.create(),
+                    typeOfSymbol,
                     classType,
-                    name
+                    name,
+                    validateType
                 );
             }
 
@@ -6804,7 +6807,8 @@ export class Checker extends ParseTreeWalker {
         overrideSymbol: Symbol,
         overrideType: Type,
         childClassType: ClassType,
-        memberName: string
+        memberName: string,
+        baseClassHasTypeDeclaration: boolean
     ) {
         if (!isInstantiableClass(baseClassAndSymbol.classType)) {
             return;
@@ -6814,11 +6818,28 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
-        // If the base class doesn't provide a type declaration, we won't bother
-        // proceeding with additional checks. Type inference is too inaccurate
-        // in this case, plus it would be very slow.
-        if (!baseClassAndSymbol.symbol.hasTypedDeclarations()) {
-            return;
+        const reportIncompatibleUnannotatedOverride =
+            this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
+
+        let incompatibleVariableOverrideRule: DiagnosticRule;
+
+        if (
+            // If the base class doesn't provide a type declaration,
+            !baseClassAndSymbol.symbol.hasTypedDeclarations() ||
+            // or the subclass doesn't provide a type declaration
+            (reportIncompatibleUnannotatedOverride && !baseClassHasTypeDeclaration)
+        ) {
+            // or if reportIncompatibleUnannotatedOverride is disabled,
+            if (!reportIncompatibleUnannotatedOverride) {
+                // we won't bother
+                // proceeding with additional checks. Type inference is too inaccurate
+                // in this case, plus it would be very slow.
+                // If the base class doesn't provide a type declaration,
+                return;
+            }
+            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
+        } else {
+            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
         }
 
         // Special case the '_' symbol, which is used in single dispatch
@@ -6845,6 +6866,16 @@ export class Checker extends ParseTreeWalker {
             this._evaluator.getTypeClassType(),
             baseClassSelf
         );
+
+        // the logic here is a bit confusing. we basically need to change the behavior at the end of this function
+        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class
+        // or the subclass's symbol. this function used to be conditionally passed an AnyType when the subclass's symbol
+        // didn't have a type annotation, so we need to safe the original type here so we can use it later to check whether
+        // reportIncompatibleUnannotatedOverride needs to be reported.
+        const originalOverrideType = overrideType;
+        if (!baseClassHasTypeDeclaration) {
+            overrideType = AnyType.create();
+        }
 
         overrideType = partiallySpecializeType(
             overrideType,
@@ -6994,7 +7025,10 @@ export class Checker extends ParseTreeWalker {
 
         // This check can be expensive, so don't perform it if the corresponding
         // rule is disabled.
-        if (this._fileInfo.diagnosticRuleSet.reportIncompatibleVariableOverride !== 'none') {
+        if (this._fileInfo.diagnosticRuleSet[incompatibleVariableOverrideRule] !== 'none') {
+            if (reportIncompatibleUnannotatedOverride) {
+                overrideType = originalOverrideType;
+            }
             const decls = overrideSymbol.getDeclarations();
 
             if (decls.length === 0) {
@@ -7062,7 +7096,7 @@ export class Checker extends ParseTreeWalker {
                 }
 
                 const diag = this._evaluator.addDiagnostic(
-                    DiagnosticRule.reportIncompatibleVariableOverride,
+                    incompatibleVariableOverrideRule,
                     LocMessage.symbolOverridden().format({
                         name: memberName,
                         className: baseClass.shared.name,
@@ -7115,7 +7149,7 @@ export class Checker extends ParseTreeWalker {
 
             if (!isBaseVarFinal && overrideFinalVarDecl) {
                 const diag = this._evaluator.addDiagnostic(
-                    DiagnosticRule.reportIncompatibleVariableOverride,
+                    incompatibleVariableOverrideRule,
                     LocMessage.variableFinalOverride().format({
                         name: memberName,
                         className: baseClass.shared.name,
@@ -7162,7 +7196,7 @@ export class Checker extends ParseTreeWalker {
                     : LocMessage.instanceVarOverridesClassVar();
 
                 const diag = this._evaluator.addDiagnostic(
-                    DiagnosticRule.reportIncompatibleVariableOverride,
+                    incompatibleVariableOverrideRule,
                     unformattedMessage.format({
                         name: memberName,
                         className: baseClass.shared.name,

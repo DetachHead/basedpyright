@@ -791,6 +791,46 @@ test('reportUnannotatedClassAttribute', () => {
             { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 5 },
             { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 9 },
             { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 37 },
+            { code: DiagnosticRule.reportUnannotatedClassAttribute, line: 43 },
         ],
+    });
+});
+
+describe('reportIncompatibleUnannotatedOverride', () => {
+    // we test this rule in combination with other rules because the logic to determine which rule to report is quite confusing
+    // and they can potentially interfere with each other
+    test('disabled', () => {
+        const configOptions = new BasedConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.reportIncompatibleUnannotatedOverride = 'none';
+        configOptions.diagnosticRuleSet.reportUnannotatedClassAttribute = 'none';
+
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(
+            ['reportIncompatibleUnannotatedOverride.py'],
+            configOptions
+        );
+        TestUtils.validateResultsButBased(analysisResults, {
+            errors: [
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 8 },
+                { code: DiagnosticRule.reportAssignmentType, line: 8 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 25 },
+            ],
+        });
+    });
+    test('enabled', () => {
+        const configOptions = new BasedConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.reportIncompatibleUnannotatedOverride = 'error';
+        configOptions.diagnosticRuleSet.reportUnannotatedClassAttribute = 'none';
+        const analysisResults = TestUtils.typeAnalyzeSampleFiles(
+            ['reportIncompatibleUnannotatedOverride.py'],
+            configOptions
+        );
+        TestUtils.validateResultsButBased(analysisResults, {
+            errors: [
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 8 },
+                { code: DiagnosticRule.reportAssignmentType, line: 8 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 25 },
+                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 16 },
+            ],
+        });
     });
 });

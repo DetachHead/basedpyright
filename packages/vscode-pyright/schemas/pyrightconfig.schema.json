@@ -564,6 +564,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of class variable declarations that do not have a type annotation, which is required due to performance reasons for strict validation of subclasses",
       "default": "none"
+    },
+    "reportIncompatibleUnannotatedOverride": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting diagnostics for overrides in subclasses that redefine a variable in an incompatible way",
+      "default": "none"
     }
   },
   "properties": {
@@ -957,6 +962,9 @@
     "reportImplicitAbstractClass": {
       "$ref": "#/definitions/reportImplicitAbstractClass"
     },
+    "reportIncompatibleUnannotatedOverride": {
+      "$ref": "#/definitions/reportIncompatibleUnannotatedOverride"
+    },
     "reportUnannotatedClassAttribute": {
       "$ref": "#/definitions/reportUnannotatedClassAttribute"
     },
@@ -1310,6 +1318,9 @@
           },
           "reportImplicitAbstractClass": {
             "$ref": "#/definitions/reportImplicitAbstractClass"
+          },
+          "reportIncompatibleUnannotatedOverride": {
+            "$ref": "#/definitions/reportIncompatibleUnannotatedOverride"
           },
           "reportUnannotatedClassAttribute": {
             "$ref": "#/definitions/reportUnannotatedClassAttribute"
