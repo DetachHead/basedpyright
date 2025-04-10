@@ -6619,15 +6619,13 @@ export class Checker extends ParseTreeWalker {
                 return;
             }
 
-            const declarations = symbol.getDeclarations();
             // If the symbol has no declaration, and the type is inferred,
             // skip the type validation but still check for other issues like
-            // Final overrides and class/instance variable mismatches, unless
-            // reportIncompatibleUnannotatedOverride is enabled.
-            const validateType =
-                declarations.some((declaration) => hasTypeForDeclaration(declaration)) ||
-                this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
-            if (!validateType) {
+            // Final overrides and class/instance variable mismatches.
+            let validateType = true;
+            const declarations = symbol.getDeclarations();
+            if (!declarations.some((declaration) => hasTypeForDeclaration(declaration))) {
+                validateType = false;
                 const firstUntypedDeclaration =
                     declarations.find(
                         // we don't want to report the error on the slots declaration because you obviously can't put an annotation there
@@ -6688,9 +6686,10 @@ export class Checker extends ParseTreeWalker {
                 this._validateBaseClassOverride(
                     baseClassAndSymbol,
                     symbol,
-                    validateType ? typeOfSymbol : AnyType.create(),
+                    typeOfSymbol,
                     classType,
-                    name
+                    name,
+                    validateType
                 );
             }
 
@@ -6806,7 +6805,8 @@ export class Checker extends ParseTreeWalker {
         overrideSymbol: Symbol,
         overrideType: Type,
         childClassType: ClassType,
-        memberName: string
+        memberName: string,
+        sublassSymbolHasTypeDelaration: boolean
     ) {
         if (!isInstantiableClass(baseClassAndSymbol.classType)) {
             return;
@@ -6816,17 +6816,16 @@ export class Checker extends ParseTreeWalker {
             return;
         }
 
+        const reportIncompatibleUnannotatedOverride =
+            this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
+
         let incompatibleVariableOverrideRule: DiagnosticRule;
 
         if (
-            // If the base class doesn't provide a type declaration,
-            !baseClassAndSymbol.symbol.hasTypedDeclarations()
+            !baseClassAndSymbol.symbol.hasTypedDeclarations() ||
+            (reportIncompatibleUnannotatedOverride && !sublassSymbolHasTypeDelaration)
         ) {
-            // or if reportIncompatibleUnannotatedOverride is disabled,
-            if (this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride === 'none') {
-                // we won't bother proceeding with additional checks. Type inference is too inaccurate
-                // in this case, plus it would be very slow.
-                // If the base class doesn't provide a type declaration,
+            if (!reportIncompatibleUnannotatedOverride) {
                 return;
             }
             incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
@@ -6858,6 +6857,17 @@ export class Checker extends ParseTreeWalker {
             this._evaluator.getTypeClassType(),
             baseClassSelf
         );
+
+        // the logic here is a bit confusing. we basically need to change the behavior at the end of this function
+        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class
+        // or the subclass's symbol. this function used to be conditionally passed an AnyType when the subclass's symbol
+        // didn't have a type annotation, so we need to save the original type here so we can preserve the original behavior
+        // when reportIncompatibleUnannotatedOverride is not enabled, then use it later to check whether
+        // reportIncompatibleUnannotatedOverride needs to be reported.
+        const originalOverrideType = overrideType;
+        if (!sublassSymbolHasTypeDelaration) {
+            overrideType = AnyType.create();
+        }
 
         overrideType = partiallySpecializeType(
             overrideType,
@@ -7008,6 +7018,9 @@ export class Checker extends ParseTreeWalker {
         // This check can be expensive, so don't perform it if the corresponding
         // rule is disabled.
         if (this._fileInfo.diagnosticRuleSet[incompatibleVariableOverrideRule] !== 'none') {
+            if (reportIncompatibleUnannotatedOverride) {
+                overrideType = originalOverrideType;
+            }
             const decls = overrideSymbol.getDeclarations();
 
             if (decls.length === 0) {

@@ -174,7 +174,7 @@
                 }
             },
             {
-                "code": "reportIncompatibleMethodOverride",
+                "code": "reportIncompatibleUnannotatedOverride",
                 "range": {
                     "startColumn": 4,
                     "endColumn": 9,
@@ -182,7 +182,7 @@
                 }
             },
             {
-                "code": "reportIncompatibleMethodOverride",
+                "code": "reportIncompatibleUnannotatedOverride",
                 "range": {
                     "startColumn": 13,
                     "endColumn": 18,
