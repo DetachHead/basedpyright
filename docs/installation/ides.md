@@ -121,7 +121,7 @@ Emacs users have 3 options:
 
     1. install the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin
     2. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
-    3. configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable:\
+    3. configure it to use basedpyright by specifying `basedpyright-langserver` as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:\
         ![](./pycharm-lsp-exe.png)
     4. set "Running mode" to "LSP4IJ":\
         ![](./lsp4ij.png)
@@ -129,10 +129,25 @@ Emacs users have 3 options:
 === "PyCharm Professional / IntelliJ IDEA Ultimate"
 
     1. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
-    2. configure it to use basedpyright by specifying the path to the `basedpyright-langserver` executable:\
+    3. configure it to use basedpyright by specifying `basedpyright-langserver` as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:\
         ![](./pycharm-lsp-exe.png)
     3. set "Running mode" to "Native LSP client":\
         ![](./native-lsp.png)
+
+!!! tip
+
+    if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Project" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
+
+    ![](pycharm-recommended-dependency.png)
+
+
+    you should then commit the following generated config files, so that others working on your repo are promted to install the plugin and don't have to manually configure it themselves:
+
+    - `.idea/pyright-overrides.xml`
+    - `.idea/pyright.xml`
+    - `.idea/externalDependencies.xml`
+
+    (note that pycharm hides the `.idea` directory by default, so you will need to `git add` the files via the CLI instead.)
 
 ## Helix
 
