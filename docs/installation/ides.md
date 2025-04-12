@@ -38,17 +38,19 @@ for information on how to configure the language server in your IDE, [see here](
 
     install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
-### usage
-
 the basedpyright extension will automatically look for the pypi package in your python environment.
 
-if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:
+!!! tip
 
-```json title=".vscode/extensions.json"
-{
-    "recommendations": ["detachhead.basedpyright"]
-}
-```
+    if you're adding basedpyright as a development dependency to your project, we recommend adding it to the recommended extensions list in your workspace:
+
+    ```json title=".vscode/extensions.json"
+    {
+        "recommendations": ["detachhead.basedpyright"]
+    }
+    ```
+
+    you should commit this file so that it prompts others working on your repo to install it the extension as well.
 
 ## Neovim
 
