@@ -705,6 +705,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reportincompatibleunannotatedoverride" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportIncompatibleUnannotatedOverride
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reportunannotatedclassattribute" class="md-nav__link">
     <span class="md-ellipsis">
       reportUnannotatedClassAttribute
@@ -1724,6 +1733,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reportincompatibleunannotatedoverride" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportIncompatibleUnannotatedOverride
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reportunannotatedclassattribute" class="md-nav__link">
     <span class="md-ellipsis">
       reportUnannotatedClassAttribute
@@ -1889,16 +1907,38 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;hi&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></h2>
-<p>pyright does not warn when a member of a class that doesn't have a type annotation is overridden with an incompatible type:</p>
+<h2 id="reportincompatibleunannotatedoverride"><code>reportIncompatibleUnannotatedOverride</code></h2>
+<p>pyright's <code>reportIncompatibleVariableOverride</code> rule checks for class attribute overrides with an incompatible type:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span>
-    <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
-    <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># no error, even though the type on the base class is `int` and the type here is `None`</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># error, because `int | None` is not compatible with `int`</span>
 </code></pre></div>
-<p>this decision seems to have been made for performance reasons, which is fair enough. but because it's unsafe, there should be a check that enforces type annotations on class attributes (unless the class is decorated with <code>@final</code>). the <code>reportUnannotatedClassAttribute</code> rule will do just that.</p>
+<p>but it does not report an error if the attribute in the base class does not have a type annotation:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># inferred as `int`</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># no error, even though the type on the base class is `int` and the type here is `None`</span>
+</code></pre></div>
+<p>this rule will report an error in such cases.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>the reason pyright does not check for cases like this is allegedly because it would be "very slow" to do so. in our testing, we have not noticed any performance impact with this rule enabled, but just in case, it's disabled by default in <a href="../../configuration/config-files/#recommended-and-all">the "recommended" diagnostic ruleset</a> for now.</p>
+<p>we intend to enable this rule by default in the future once we are more confident with it. please <a href="https://github.com/DetachHead/basedpyright/issues/new?template=issue.yaml">open an issue</a> if you notice basedpyright running noticably slower with this rule enabled.</p>
+<p>if you encounter any performance issues with this rule, you may want to disable it and use <a href="#reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></a> instead.</p>
+</div>
+<h2 id="reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></h2>
+<p>since pyright does not warn when a class attribute is overridden with an incompatible type (see <a href="#reportincompatibleunannotatedoverride"><code>reportIncompatibleUnannotatedOverride</code></a>), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to <code>reportIncompatibleUnannotatedOverride</code> if:</p>
+<ul>
+<li>you are developing a library that you want to be fully type-safe for users who may be using pyright instead of basedpyright</li>
+<li>you encountered performance issues with <code>reportIncompatibleUnannotatedOverride</code></li>
+<li>you prefer explicit type annotations to reduce the risk of introducing unexpected breaking changes to your API</li>
+</ul>
+<p><code>reportUnannotatedClassAttribute</code> will report an error on all unannotated class attributes that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.</p>
 
 
 

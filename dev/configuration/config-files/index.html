@@ -2329,7 +2329,10 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="reportImplicitAbstractClass"></a> <strong>reportImplicitAbstractClass</strong> [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportimplicitabstractclass">more info</a></p>
 </li>
 <li>
-<p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe because for performance reasons, subtypes are not validated to ensure that they are compatible with the supertype. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunannotatedclassattribute">more info</a></p>
+<p><a name="reportIncompatibleUnannotatedOverride"></a> <strong>reportIncompatibleUnannotatedOverride</strong> [boolean or string, optional]: Generate or suppress diagnostics for class variable declarations with an inferred type that override a symbol of the same name in a base class with a type that is incompatible with the base class symbol type. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportincompatibleunannotatedoverride">more info</a></p>
+</li>
+<li>
+<p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless <code>reportIncompatibleUnannotatedOverride</code> is enabled. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunannotatedclassattribute">more info</a></p>
 </li>
 </ul>
 <h3 id="discouraged-settings_1">Discouraged settings</h3>
@@ -3403,6 +3406,15 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportIncompatibleUnannotatedOverride</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 </tbody>
