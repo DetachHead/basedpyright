@@ -3,5 +3,6 @@
   <component name="ExternalDependencies">
     <plugin id="com.insyncwithfoo.pyright" />
     <plugin id="com.redhat.devtools.lsp4ij" />
+    <plugin id="intellij.prettierJS" />
   </component>
 </project>
