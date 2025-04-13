@@ -766,21 +766,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="VSCode / VSCodium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      usage
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1643,21 +1628,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="VSCode / VSCodium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      usage
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1790,13 +1760,16 @@
 </div>
 </div>
 </div>
-<h3 id="usage">usage</h3>
 <p>the basedpyright extension will automatically look for the pypi package in your python environment.</p>
-<p>if you're adding basedpyright as a development dependency in your project, we recommend adding it to the recommended extensions list in your workspace to prompt others working on your repo to install it:</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>if you're adding basedpyright as a development dependency to your project, we recommend adding it to the recommended extensions list in your workspace:</p>
 <div class="highlight"><span class="filename">.vscode/extensions.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;recommendations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;detachhead.basedpyright&quot;</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>you should commit this file so that it prompts others working on your repo to install it the extension as well.</p>
+</div>
 <h2 id="neovim">Neovim</h2>
 <p>You need to install the LSP client adapter plugin,
 <a href="https://github.com/neovim/nvim-lspconfig">nvim-lspconfig</a>, for setting up the
@@ -1851,7 +1824,7 @@ their docs, linked above.</p>
 <ol>
 <li>install the <a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> plugin</li>
 <li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
-<li>configure it to use basedpyright by specifying the path to the <code>basedpyright-langserver</code> executable:<br />
+<li>configure it to use basedpyright by specifying <code>basedpyright-langserver</code> as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:<br />
 <img alt="" src="../pycharm-lsp-exe.png" /></li>
 <li>set "Running mode" to "LSP4IJ":<br />
 <img alt="" src="../lsp4ij.png" /></li>
@@ -1860,13 +1833,25 @@ their docs, linked above.</p>
 <div class="tabbed-block">
 <ol>
 <li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
-<li>configure it to use basedpyright by specifying the path to the <code>basedpyright-langserver</code> executable:<br />
+<li>configure it to use basedpyright by specifying <code>basedpyright-langserver</code> as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:<br />
 <img alt="" src="../pycharm-lsp-exe.png" /></li>
 <li>set "Running mode" to "Native LSP client":<br />
 <img alt="" src="../native-lsp.png" /></li>
 </ol>
 </div>
 </div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Project" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:</p>
+<p><img alt="" src="../pycharm-recommended-dependency.png" /></p>
+<p>you should then commit the following generated config files, so that others working on your repo are promted to install the plugin and don't have to manually configure it themselves:</p>
+<ul>
+<li><code>.idea/pyright-overrides.xml</code></li>
+<li><code>.idea/pyright.xml</code></li>
+<li><code>.idea/externalDependencies.xml</code></li>
+</ul>
+<p>(note that pycharm hides the <code>.idea</code> directory by default, so you will need to <code>git add</code> the files via the CLI instead.)</p>
 </div>
 <h2 id="helix">Helix</h2>
 <p>Install the LSP server itself, using the <a href="../command-line-and-language-server/">pypi package installation method</a> (as mentioned previously in this section).
