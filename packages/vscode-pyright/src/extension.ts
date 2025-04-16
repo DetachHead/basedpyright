@@ -60,8 +60,9 @@ export async function activate(context: ExtensionContext) {
     const pyrightLanguageServerEnabled = !workspace.getConfiguration('basedpyright').get('disableLanguageServices');
     const languageServerSetting = workspace.getConfiguration('python').get('languageServer');
     const moreInfo = 'More info';
-    const disableBasedPyrightLsp = () =>
-        workspace.getConfiguration('basedpyright').update('disableLanguageServices', true);
+    const openMoreInfo = () => env.openExternal(Uri.parse(`${website}/installation/ides/#vscode`));
+
+    // see if a python language server is set (ie. pylance or jedi), which would conflict with basedpyright
     if (
         pyrightLanguageServerEnabled &&
         // undefined if the python extension isn't installed
@@ -80,45 +81,35 @@ export async function activate(context: ExtensionContext) {
         if (result === disablePythonLanguageServer) {
             workspace.getConfiguration('python').update('languageServer', 'None');
         } else if (result === keepUsingExistingLanguageServer) {
-            disableBasedPyrightLsp();
+            workspace.getConfiguration('basedpyright').update('disableLanguageServices', true);
         } else if (result === moreInfo) {
-            env.openExternal(Uri.parse(`${website}/installation/ides/#vscode`));
+            openMoreInfo();
+        } else {
+            result satisfies undefined;
         }
     }
+
     // See if Pylance is installed. If so, make sure its config doesn't conflict with basedpyright's
-    const pylanceIsInstalled = extensions.getExtension('ms-python.vscode-pylance');
-    if (pylanceIsInstalled) {
-        const pylanceTypeCheckingEnabled =
-            workspace.getConfiguration('python.analysis').get('typeCheckingMode') !== 'off';
-        if (pylanceTypeCheckingEnabled || pyrightLanguageServerEnabled) {
-            const problems: (() => void)[] = [];
-            if (pylanceTypeCheckingEnabled) {
-                problems.push(() => workspace.getConfiguration('python.analysis').update('typeCheckingMode', 'off'));
-            }
-            if (pyrightLanguageServerEnabled) {
-                problems.push(disableBasedPyrightLsp);
-            }
-            if (problems.length > 0) {
-                const uninstallPylance = 'Uninstall Pylance & restart vscode (recommended)';
-                const fixSettings = `Fix settings & keep both extensions`;
-                const result = await window.showWarningMessage(
-                    'basedpyright has detected that the Pylance extension is installed and conflicting settings are enabled.',
-                    { modal: true },
-                    uninstallPylance,
-                    fixSettings,
-                    moreInfo
-                );
-                if (result === uninstallPylance) {
-                    commands
-                        .executeCommand('workbench.extensions.uninstallExtension', 'ms-python.vscode-pylance')
-                        // can't use await  because this uses sussy `Thenable` type which doesn't work with it
-                        .then(() => commands.executeCommand('workbench.action.reloadWindow'));
-                } else if (result === moreInfo) {
-                    env.openExternal(Uri.parse(`${website}/installation/ides/#vscode`));
-                } else if (result !== undefined) {
-                    problems.forEach((problem) => problem());
-                }
-            }
+    if (
+        extensions.getExtension('ms-python.vscode-pylance') &&
+        ['python', 'basedpyright'].every(
+            (section) => workspace.getConfiguration(`${section}.analysis`).get('typeCheckingMode') !== 'off'
+        )
+    ) {
+        const disablePylance = 'Yes';
+        const result = await window.showWarningMessage(
+            'basedpyright has detected that Pylance is installed and its type checking is enabled. This will result in duplicated diagnostics.' +
+                " Would you like to disable Pylance's type checking?",
+            { modal: true },
+            disablePylance,
+            moreInfo
+        );
+        if (result === disablePylance) {
+            workspace.getConfiguration('python.analysis').update('typeCheckingMode', 'off');
+        } else if (result === moreInfo) {
+            openMoreInfo();
+        } else {
+            result satisfies undefined;
         }
     }
 
