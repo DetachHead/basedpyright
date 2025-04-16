@@ -1742,12 +1742,11 @@
 <summary>using basedpyright with pylance (not recommended)</summary>
 <p>unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.</p>
 <p>if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.</p>
-<p>if basedpyright detects that pylance is installed, you will see a popup prompting you to choose whether to uninstall pylance or fix your settings to allow both extensions to work without overlapping functionality:</p>
-<p><img alt="" src="../pylance.png" /></p>
-<p>clicking "Fix settings &amp; keep both extensions" will set the following settings for you automatically:</p>
+<p>basepyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:</p>
 <div class="highlight"><span class="filename">.vscode/settings.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="c1">// disable pylance&#39;s type checking and only use its language server</span>
 <span class="w">    </span><span class="nt">&quot;python.analysis.typeCheckingMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;python.languageServer&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pylance&quot;</span><span class="p">,</span>
 
 <span class="w">    </span><span class="c1">// disable basedpyright&#39;s language server and only use its type checking</span>
 <span class="w">    </span><span class="nt">&quot;basedpyright.disableLanguageServices&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
@@ -1768,7 +1767,7 @@
 <span class="w">    </span><span class="nt">&quot;recommendations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;detachhead.basedpyright&quot;</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>you should commit this file so that it prompts others working on your repo to install it the extension as well.</p>
+<p>you should commit this file so that it prompts others working on your repo to install the extension as well.</p>
 </div>
 <h2 id="neovim">Neovim</h2>
 <p>You need to install the LSP client adapter plugin,
