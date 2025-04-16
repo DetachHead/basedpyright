@@ -34,6 +34,7 @@ import {
     runPyrightServer,
     waitForDiagnostics,
 } from './lsp/languageServerTestUtils';
+import { tExpect } from 'typed-jest-expect';
 
 /** objects from `sendRequest` don't work with assertions and i cant figure out why */
 const assertEqual = <T>(actual: T, expected: T) => expect(JSON.parse(JSON.stringify(actual))).toStrictEqual(expected);
@@ -310,6 +311,47 @@ describe(`Basic language server tests`, () => {
                     file.diagnostics.find((diagnostic) => diagnostic.code === 'reportUnusedFunction')?.severity,
                     DiagnosticSeverity.Hint // TODO: hint? how do we differentiate between unused/unreachable/deprecated?
                 );
+            });
+            test('disableLanguageServices', async () => {
+                const code = `
+// @filename: test.py
+//// def _test([|/*marker*/|]): ...
+//// 
+// @filename: pyproject.toml
+//// 
+    `;
+                const settings = [
+                    {
+                        item: {
+                            scopeUri: `file://${normalizeSlashes(DEFAULT_WORKSPACE_ROOT, '/')}`,
+                            section: 'basedpyright',
+                        },
+                        value: {
+                            disableLanguageServices: true,
+                        },
+                    },
+                ];
+
+                const info = await runLanguageServer(
+                    DEFAULT_WORKSPACE_ROOT,
+                    code,
+                    /* callInitialize */ true,
+                    settings,
+                    undefined,
+                    /* supportsBackgroundThread */ true,
+                    supportsPullDiagnostics
+                );
+
+                // get the file containing the marker that also contains our task list comments
+                await openFile(info, 'marker');
+
+                // Wait for the diagnostics to publish
+                const diagnostics = await waitForDiagnostics(info);
+                const file = diagnostics.find((d) => d.uri.includes('test.py'));
+                assert(file);
+
+                // Make sure diagnostics are still reported
+                tExpect(file.diagnostics.length).toStrictEqual(1);
             });
         });
 
