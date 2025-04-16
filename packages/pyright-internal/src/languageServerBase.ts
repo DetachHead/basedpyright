@@ -1433,11 +1433,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             resultId: sourceFile?.getDiagnosticVersion()?.toString(),
             items: [],
         };
-        if (
-            workspace.disableLanguageServices ||
-            !canNavigateToFile(workspace.service.fs, uri) ||
-            token.isCancellationRequested
-        ) {
+        if (!canNavigateToFile(workspace.service.fs, uri) || token.isCancellationRequested) {
             return result;
         }
 
