@@ -47,7 +47,7 @@ the basedpyright extension will automatically look for the pypi package in your 
     }
     ```
 
-    you should commit this file so that it prompts others working on your repo to install it the extension as well.
+    you should commit this file so that it prompts others working on your repo to install the extension as well.
 
 ## Neovim
 
