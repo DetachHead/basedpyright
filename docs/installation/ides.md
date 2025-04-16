@@ -18,16 +18,13 @@ for information on how to configure the language server in your IDE, [see here](
 
         if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.
 
-        if basedpyright detects that pylance is installed, you will see a popup prompting you to choose whether to uninstall pylance or fix your settings to allow both extensions to work without overlapping functionality:
-
-        ![](pylance.png)
-
-        clicking "Fix settings & keep both extensions" will set the following settings for you automatically:
+        basepyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:
 
         ```json title=".vscode/settings.json"
         {
             // disable pylance's type checking and only use its language server
             "python.analysis.typeCheckingMode": "off",
+            "python.languageServer": "Pylance",
 
             // disable basedpyright's language server and only use its type checking
             "basedpyright.disableLanguageServices": true
