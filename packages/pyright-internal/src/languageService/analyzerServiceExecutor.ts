@@ -142,8 +142,8 @@ function getEffectiveCommandLineOptions(
         commandLineOptions.configSettings.stubPath = serverSettings.stubPath.getFilePath();
     }
 
-    if (serverSettings.baselinePath) {
-        commandLineOptions.configSettings.baselinePath = serverSettings.baselinePath.getFilePath();
+    if (serverSettings.baselineFile) {
+        commandLineOptions.configSettings.baselineFile = serverSettings.baselineFile.getFilePath();
     }
 
     if (serverSettings.logLevel === LogLevel.Log) {

@@ -152,7 +152,7 @@
                     "description": "Path to directory containing custom type stub files.",
                     "scope": "resource"
                 },
-                "basedpyright.analysis.baselinePath": {
+                "basedpyright.analysis.baselineFile": {
                     "type": "string",
                     "default": "",
                     "description": "Path to directory containing the baseline file.",

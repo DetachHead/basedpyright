@@ -24,7 +24,7 @@
     "enableTypeIgnoreComments": false,
     "stubPath": "test",
     "typeshedPath": "test",
-    "baselinePath": "test",
+    "baselineFile": "test",
     "venv": "test",
     "venvPath": "test",
     "useLibraryCodeForTypes": false,

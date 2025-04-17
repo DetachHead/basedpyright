@@ -86,7 +86,7 @@ export class BaselineHandler {
     }
 
     get fileUri() {
-        return this.configOptions.baselinePath || baselineFilePath(this.configOptions.projectRoot);
+        return this.configOptions.baselineFile || baselineFilePath(this.configOptions.projectRoot);
     }
 
     getContents = (): BaselineData | undefined => {
@@ -163,7 +163,6 @@ export class BaselineHandler {
                 result.files[file] = newBaselineFiles[file];
             }
         }
-
         this._fs.mkdirSync(this.fileUri.getDirectory(), { recursive: true });
         try {
             this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
@@ -235,7 +234,6 @@ export class BaselineHandler {
                 }
             }
         }
-
         return result;
     };
 
