@@ -983,6 +983,12 @@ export class AnalyzerService {
                 configOptions.venvPath = projectRoot.resolvePaths(languageServerOptions.venvPath);
             }
         }
+        if (languageServerOptions.baselinePath) {
+            
+            if (!configOptions.baselinePath) {
+                configOptions.baselinePath = projectRoot.resolvePaths(languageServerOptions.baselinePath);
+            }
+        }
     }
 
     private _applyCommandLineOverrides(
@@ -1078,6 +1084,14 @@ export class AnalyzerService {
                 configOptions.typeshedPath = projectRoot.resolvePaths(commandLineOptions.typeshedPath);
             } else {
                 reportDuplicateSetting('typeshedPath', configOptions.typeshedPath.toUserVisibleString());
+            }
+        }
+
+        if (commandLineOptions.baselinePath) {
+            if (!configOptions.baselinePath) {
+                configOptions.baselinePath = projectRoot.resolvePaths(commandLineOptions.baselinePath);
+            } else {
+                reportDuplicateSetting('baselinePath', configOptions.baselinePath.toUserVisibleString());
             }
         }
 

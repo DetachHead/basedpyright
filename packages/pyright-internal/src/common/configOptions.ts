@@ -1335,6 +1335,9 @@ export class ConfigOptions {
     // Path to custom typings (stub) modules.
     stubPath?: Uri | undefined;
 
+    // Path to custom baseline file.
+    baselinePath?: Uri | undefined;
+
     // A list of file specs to include in the analysis. Can contain
     // directories, in which case all "*.py" files within those directories
     // are included.
