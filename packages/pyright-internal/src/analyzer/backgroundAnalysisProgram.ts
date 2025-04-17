@@ -45,6 +45,7 @@ export class BackgroundAnalysisProgram {
         private readonly _maxAnalysisTime?: MaxAnalysisTime,
         private readonly _disableChecker?: boolean
     ) {
+
         this._program = new Program(
             this.importResolver,
             this.configOptions,
@@ -165,6 +166,7 @@ export class BackgroundAnalysisProgram {
             this._backgroundAnalysis.startAnalysis(token);
             return false;
         }
+
 
         return analyzeProgram(
             this._program,

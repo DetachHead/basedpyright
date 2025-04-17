@@ -74,6 +74,7 @@ class BaselineDiff<T extends boolean> {
         return `updated ${this._rootDir.getRelativePath(baselineFilePath(this._rootDir))} with ${pluralize(
             this.newErrorCount,
             'error'
+            
         )} (${message})`;
     };
 }
@@ -86,10 +87,11 @@ export class BaselineHandler {
     }
 
     get fileUri() {
-        return baselineFilePath(this.configOptions.projectRoot);
+        return this.configOptions.baselinePath || baselineFilePath(this.configOptions.projectRoot);
     }
 
     getContents = (): BaselineData | undefined => {
+        
         let baselineFileContents: string | undefined;
         try {
             baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
@@ -118,7 +120,7 @@ export class BaselineHandler {
     write = <T extends boolean>(
         force: T,
         removeDeletedFiles: boolean,
-        filesWithDiagnostics: readonly FileDiagnostics[]
+        filesWithDiagnostics: readonly FileDiagnostics[],
     ): BaselineDiff<T> | undefined => {
         const baselineData = this.getContents();
         if (!force) {
@@ -163,6 +165,7 @@ export class BaselineHandler {
                 result.files[file] = newBaselineFiles[file];
             }
         }
+
         this._fs.mkdirSync(this.fileUri.getDirectory(), { recursive: true });
         try {
             this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
@@ -234,6 +237,7 @@ export class BaselineHandler {
                 }
             }
         }
+
         return result;
     };
 

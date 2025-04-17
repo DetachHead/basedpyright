@@ -118,6 +118,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             diagnosticSeverityOverrides: {},
             logLevel: LogLevel.Info,
             autoImportCompletions: true,
+            baselinePath: undefined,
             functionSignatureDisplay: SignatureDisplayType.formatted,
             inlayHints: {
                 callArgumentNames: true,
@@ -160,6 +161,11 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 const stubPath = pythonAnalysisSection.stubPath;
                 if (stubPath && isString(stubPath)) {
                     serverSettings.stubPath = resolvePathWithEnvVariables(workspace, stubPath, workspaces);
+                }
+
+                const baselinePath = pythonAnalysisSection.baselinePath;
+                if (baselinePath && isString(baselinePath)) {
+                    serverSettings.baselinePath = resolvePathWithEnvVariables(workspace, baselinePath, workspaces);
                 }
 
                 const diagnosticSeverityOverrides = pythonAnalysisSection.diagnosticSeverityOverrides;

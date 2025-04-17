@@ -142,6 +142,10 @@ function getEffectiveCommandLineOptions(
         commandLineOptions.configSettings.stubPath = serverSettings.stubPath.getFilePath();
     }
 
+    if (serverSettings.baselinePath) {
+        commandLineOptions.configSettings.baselinePath = serverSettings.baselinePath.getFilePath();
+    }
+
     if (serverSettings.logLevel === LogLevel.Log) {
         // When logLevel is "Trace", turn on verboseOutput as well
         // so we can get detailed log from analysis service.
