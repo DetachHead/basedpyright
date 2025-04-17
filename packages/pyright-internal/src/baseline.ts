@@ -74,7 +74,6 @@ class BaselineDiff<T extends boolean> {
         return `updated ${this._rootDir.getRelativePath(baselineFilePath(this._rootDir))} with ${pluralize(
             this.newErrorCount,
             'error'
-            
         )} (${message})`;
     };
 }
@@ -91,7 +90,6 @@ export class BaselineHandler {
     }
 
     getContents = (): BaselineData | undefined => {
-        
         let baselineFileContents: string | undefined;
         try {
             baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
@@ -120,7 +118,7 @@ export class BaselineHandler {
     write = <T extends boolean>(
         force: T,
         removeDeletedFiles: boolean,
-        filesWithDiagnostics: readonly FileDiagnostics[],
+        filesWithDiagnostics: readonly FileDiagnostics[]
     ): BaselineDiff<T> | undefined => {
         const baselineData = this.getContents();
         if (!force) {
