@@ -1334,6 +1334,7 @@ export class SourceFile {
 
         // Now add in the "unnecessary type ignore" diagnostics.
         diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
+
         diagList = this._baselineHandler.sortDiagnosticsAndMatchBaseline(this._uri, this.getCellIndex(), diagList);
 
         // If we're not returning any diagnostics, filter out all of

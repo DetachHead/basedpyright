@@ -983,9 +983,9 @@ export class AnalyzerService {
                 configOptions.venvPath = projectRoot.resolvePaths(languageServerOptions.venvPath);
             }
         }
-        if (languageServerOptions.baselinePath) {
-            if (!configOptions.baselinePath) {
-                configOptions.baselinePath = projectRoot.resolvePaths(languageServerOptions.baselinePath);
+        if (languageServerOptions.baselineFile) {
+            if (!configOptions.baselineFile) {
+                configOptions.baselineFile = projectRoot.resolvePaths(languageServerOptions.baselineFile);
             }
         }
     }
@@ -1086,11 +1086,11 @@ export class AnalyzerService {
             }
         }
 
-        if (commandLineOptions.baselinePath) {
-            if (!configOptions.baselinePath) {
-                configOptions.baselinePath = projectRoot.resolvePaths(commandLineOptions.baselinePath);
+        if (commandLineOptions.baselineFile) {
+            if (!configOptions.baselineFile) {
+                configOptions.baselineFile = projectRoot.resolvePaths(commandLineOptions.baselineFile);
             } else {
-                reportDuplicateSetting('baselinePath', configOptions.baselinePath.toUserVisibleString());
+                reportDuplicateSetting('baselineFile', configOptions.baselineFile.toUserVisibleString());
             }
         }
 

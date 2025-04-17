@@ -75,8 +75,8 @@ export class CommandLineConfigOptions {
     // Path of typeshed stubs.
     typeshedPath?: string | undefined;
 
-    // Path to baseline path.
-    baselinePath?: string | undefined;
+    // Path to baseline file.
+    baselineFile?: string | undefined;
 
     // Path of typing folder
     stubPath?: string | undefined;
@@ -157,8 +157,8 @@ export class CommandLineLanguageServerOptions {
     // Virtual environments directory.
     venvPath?: string | undefined;
 
-    // Baseline file path
-    baselinePath?: string | undefined;
+    //Path to baseline file.
+    baselineFile?: string | undefined;
 }
 
 // Some options can be specified from a source other than the pyright config file.

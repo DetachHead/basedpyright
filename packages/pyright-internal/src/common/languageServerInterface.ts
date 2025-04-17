@@ -27,7 +27,7 @@ export interface ServerSettings {
     openFilesOnly?: boolean | undefined;
     typeCheckingMode?: string | undefined;
     useLibraryCodeForTypes?: boolean | undefined;
-    baselinePath?: Uri | undefined;
+    baselineFile?: Uri | undefined;
     disableLanguageServices?: boolean | undefined;
     disableTaggedHints?: boolean | undefined;
     disableOrganizeImports?: boolean | undefined;
