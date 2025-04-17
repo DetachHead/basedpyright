@@ -984,7 +984,6 @@ export class AnalyzerService {
             }
         }
         if (languageServerOptions.baselinePath) {
-            
             if (!configOptions.baselinePath) {
                 configOptions.baselinePath = projectRoot.resolvePaths(languageServerOptions.baselinePath);
             }

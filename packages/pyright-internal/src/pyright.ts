@@ -179,7 +179,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'stats', type: Boolean },
         { name: 'threads', type: parseThreadsArgValue },
         { name: 'typeshed-path', type: String },
-        { name: 'baseline-path', type: String},
+        { name: 'baseline-path', type: String },
         { name: 'typeshedpath', alias: 't', type: String },
         { name: 'venv-path', type: String },
         { name: 'venvpath', alias: 'v', type: String },
