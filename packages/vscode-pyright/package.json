@@ -155,7 +155,7 @@
                 "basedpyright.analysis.baselineFile": {
                     "type": "string",
                     "default": "",
-                    "description": "Path to directory containing the baseline file.",
+                    "markdownDescription": "Path to the baseline file. Defaults to `./.basedpyright/baseline.json`",
                     "scope": "resource"
                 },
                 "basedpyright.analysis.diagnosticMode": {

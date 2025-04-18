@@ -59,8 +59,6 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.
 
-**basedpyright.analysis.baselineFile** [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. The baseline file dictates which baseline will be written when executing the `--writebaseline` command and read during normal execution.
-
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
@@ -87,6 +85,12 @@ however these settings are still suppored to maintain compatibility with pyright
 **basedpyright.analysis.typeshedPaths** [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.
 
 **basedpyright.analysis.useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
+
+#### basedpyright exclusive settings
+
+as mentioned [above](#discouraged-settings), it's recommended to configure these settings [using a config file](./config-files.md) instead.
+
+**basedpyright.analysis.baselineFile** [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`. [more info](../benefits-over-pyright/baseline.md)
 
 ## where do i configure these settings?
 

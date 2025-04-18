@@ -4,8 +4,8 @@ Usage: basedpyright [options] [files...] [^1]
 
 basedpyright can be run as either a language server or as a command-line tool. The command-line version allows for the following options:
 
-| Flag                               | Description                                           |
-| :--------------------------------- | :---------------------------------------------------  |
+| Flag                                    | Description                                          |
+| :-------------------------------------- | :--------------------------------------------------- |
 | --createstub `<IMPORT>`                 | Create type stub file(s) for import                  |
 | --dependencies                          | Emit import dependency information                   |
 | -h, --help                              | Show help message                                    |
@@ -14,38 +14,40 @@ basedpyright can be run as either a language server or as a command-line tool. T
 | --outputjson                            | Output results in JSON format                        |
 | --gitlabcodequality                     | Output results to a gitlab code quality report       |
 | --writebaseline                         | Write new errors to the baseline file                |
-| --baselinefile `<FILE>`                 | Path to the baseline file to be used                 |
+| --baselinefile `<FILE>`                 | Path to the baseline file to be used [^2]            |
 | -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location          |
-| --pythonpath `<FILE>`                   | Path to the Python interpreter [^2]                  |
+| --pythonpath `<FILE>`                   | Path to the Python interpreter [^3]                  |
 | --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)        |
 | --pythonversion `<VERSION>`             | Analyze for version (3.3, 3.4, etc.)                 |
 | --skipunannotated                       | Skip type analysis of unannotated functions          |
 | --stats                                 | Print detailed performance stats                     |
-| -t, --typeshedpath `<DIRECTORY>`        | Use typeshed type stubs at this location [^3]        |
-| --threads <optional N>                  | Use up to N threads to parallelize type checking [^4]|
-| -v, --venvpath `<DIRECTORY>`            | Directory that contains virtual environments [^5]    |
+| -t, --typeshedpath `<DIRECTORY>`        | Use typeshed type stubs at this location [^4]        |
+| --threads <optional N>                  | Use up to N threads to parallelize type checking [^5]|
+| -v, --venvpath `<DIRECTORY>`            | Directory that contains virtual environments [^6]    |
 | --verbose                               | Emit verbose diagnostics                             |
 | --verifytypes `<IMPORT>`                | Verify completeness of types in py.typed package     |
 | --version                               | Print pyright version and exit                       |
-| --warnings                              | Use exit code of 1 if warnings are reported [^6]     |
-| -w, --watch                             | Continue to run and watch for changes [^7]           |
+| --warnings                              | Use exit code of 1 if warnings are reported [^7]     |
+| -w, --watch                             | Continue to run and watch for changes [^8]           |
 | -                                       | Read file or directory list from stdin               |
 
 [^1]: If specific files are specified on the command line, it overrides the files or directories specified in the pyrightconfig.json or pyproject.toml file.
 
-[^2]: This option is the same as the language server setting `python.pythonPath`. It cannot be used with `--venvpath`. The `--pythonpath` option is recommended over `--venvpath` in most cases. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
+[^2]: Defaults to `./.basedpyright/baseline.json`
 
-[^3]: Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.
+[^3]: This option is the same as the language server setting `python.pythonPath`. It cannot be used with `--venvpath`. The `--pythonpath` option is recommended over `--venvpath` in most cases. For more details, refer to the [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation.
 
-[^4]: This feature is experimental. If thread count is > 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).
+[^4]: Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.
 
-[^5]: `--venvpath` is discouraged in basedpyright. [see here](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath) for more info.
+[^5]: This feature is experimental. If thread count is > 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).
+
+[^6]: `--venvpath` is discouraged in basedpyright. [see here](../benefits-over-pyright/better-defaults.md#default-value-for-pythonpath) for more info.
 
     This option is the same as the language server setting `python.venvPath`. It used in conjunction with configuration file, which can refer to different virtual environments by name. For more details, refer to the [configuration](./config-files.md) and [import resolution](../usage/import-resolution.md#configuring-your-python-environment) documentation. This allows a common config file to be checked in to the project and shared by everyone on the development team without making assumptions about the local paths to the venv directory on each developer’s computer.
 
-[^6]: `--warnings` is equivalent to [`failOnWarnings`](./config-files.md#failOnWarnings), which is enabled by default in basedpyright, meaning this option is redundant unless you explicitly disable `failOnWarnings`. [see here](../benefits-over-pyright/better-defaults.md#typecheckingmode) for more information about this decision
+[^7]: `--warnings` is equivalent to [`failOnWarnings`](./config-files.md#failOnWarnings), which is enabled by default in basedpyright, meaning this option is redundant unless you explicitly disable `failOnWarnings`. [see here](../benefits-over-pyright/better-defaults.md#typecheckingmode) for more information about this decision
 
-[^7]: When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.
+[^8]: When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.
 
 
 ## Pyright Exit Codes

@@ -46,6 +46,8 @@ The following settings control the *environment* in which basedpyright will chec
 
 - <a name="allowedUntypedLibraries"></a> **allowedUntypedLibraries** [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules [`reportUnknownVariableType`](#reportUnknownVariableType), [`reportUnknownMemberType`](#reportUnknownMemberType), and [`reportMissingTypeStubs`](#reportMissingTypeStubs). The option name should be a list of module names, for example, `["library", "module.submodule"]`. By default, no modules are configured.
 
+- <a name="baselineFile"></a> **baselineFile** [path, optional]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`. [more info](../benefits-over-pyright/baseline.md)
+
 ## Type Evaluation Settings
 
 The following settings determine how different types should be evaluated.
