@@ -18,7 +18,9 @@ export class WriteBaselineCommand implements ServerCommand {
             return;
         }
         let workspace = workspaces.find((workspace) =>
-            workspace.rootUri ? workspace.service.fs.existsSync(baselineFilePath(workspace.rootUri)) : false
+            workspace.rootUri
+                ? workspace.service.fs.existsSync(baselineFilePath(workspace.service.getConfigOptions()))
+                : false
         );
         if (!workspace) {
             // if there's no baseline file yet, we do it in an even hackier way, by getting the workspace from
