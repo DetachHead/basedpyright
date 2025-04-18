@@ -997,6 +997,11 @@
       "title": "Output verbose logging",
       "default": false
     },
+    "baselineFile": {
+      "type": "string",
+      "title": "Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`",
+      "default": ""
+    },
     "executionEnvironments": {
       "type": "array",
       "title": "Analysis settings to use for specified subdirectories of code",
