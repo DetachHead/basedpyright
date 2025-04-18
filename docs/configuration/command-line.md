@@ -14,7 +14,7 @@ basedpyright can be run as either a language server or as a command-line tool. T
 | --outputjson                            | Output results in JSON format                        |
 | --gitlabcodequality                     | Output results to a gitlab code quality report       |
 | --writebaseline                         | Write new errors to the baseline file                |
-| --baseline-file `<FILE>`                | Path to the baseline .json file                      |
+| --baselinefile `<FILE>`                 | Path to the baseline file to be used                 |
 | -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location          |
 | --pythonpath `<FILE>`                   | Path to the Python interpreter [^2]                  |
 | --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)        |
