@@ -1192,7 +1192,7 @@ function printUsage() {
             '  --level <LEVEL>                    Minimum diagnostic level (error or warning)\n' +
             '  --outputjson                       Output results in JSON format\n' +
             '  --gitlabcodequality <FILE>         Output results to a gitlab code quality report\n' +
-            '  --writebaseline <FILE>             Write new errors to the baseline file\n' +
+            '  --writebaseline                    Write new errors to the baseline file\n' +
             '  --baselinefile <FILE>              Path to the baseline file to be used\n' +
             '  -p,--project <FILE OR DIRECTORY>   Use the configuration file at this location\n' +
             '  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)\n' +
