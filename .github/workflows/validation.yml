@@ -1,8 +1,5 @@
 name: 'Validation'
 
-env:
-  PYTHON_VERSION: 3.13
-
 on:
   pull_request:
     branches: [main]
@@ -12,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - run: ./pw uv venv --python ${{ env.PYTHON_VERSION }}
 
       # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
       - run: ./pw uv sync --locked
@@ -49,11 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Python ${{env.PYTHON_VERSION}}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         id: install_python
-        with:
-          python-version: ${{env.PYTHON_VERSION}}
 
       - run: ./pw uv sync
 
