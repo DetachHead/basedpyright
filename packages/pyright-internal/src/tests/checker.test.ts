@@ -833,3 +833,15 @@ describe('reportIncompatibleUnannotatedOverride', () => {
         });
     });
 });
+
+test('reportInvalidAbstractMethod', () => {
+    const configOptions = new BasedConfigOptions(Uri.empty());
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['reportInvalidAbstractMethod.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        warnings: [
+            { code: DiagnosticRule.reportInvalidAbstractMethod, line: 6 },
+            { code: DiagnosticRule.reportInvalidAbstractMethod, line: 11 },
+            { code: DiagnosticRule.reportInvalidAbstractMethod, line: 26 },
+        ],
+    });
+});

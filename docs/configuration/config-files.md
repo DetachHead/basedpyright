@@ -297,6 +297,8 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless `reportIncompatibleUnannotatedOverride` is enabled. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
 
+- <a name="reportInvalidAbstractMethod"></a> **reportInvalidAbstractMethod** [boolean or string, optional]: Generate or suppress diagnostics for usages of `@abstractmethod` on a non-abstract class. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidabstractmethod)
+
 ### Discouraged settings
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.

@@ -7383,13 +7383,19 @@ export class Checker extends ParseTreeWalker {
         const methodName = node.d.name.d.value;
         const isMetaclass = isInstantiableMetaclass(classType);
 
+        const isAbstractMethod = FunctionType.isAbstractMethod(functionType);
+
+        if (isAbstractMethod && !ClassType.supportsAbstractMethods(classType)) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportInvalidAbstractMethod,
+                LocMessage.reportInvalidAbstractMethod(),
+                node.d.name
+            );
+        }
+
         const superCheckMethods = ['__init__', '__init_subclass__', '__enter__', '__exit__'];
         if (superCheckMethods.includes(methodName)) {
-            if (
-                !FunctionType.isAbstractMethod(functionType) &&
-                !FunctionType.isOverloaded(functionType) &&
-                !this._fileInfo.isStubFile
-            ) {
+            if (!isAbstractMethod && !FunctionType.isOverloaded(functionType) && !this._fileInfo.isStubFile) {
                 this._validateSuperCallForMethod(node, functionType, classType);
             }
         }

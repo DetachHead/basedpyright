@@ -257,3 +257,22 @@ since pyright does not warn when a class attribute is overridden with an incompa
 -   you prefer explicit type annotations to reduce the risk of introducing unexpected breaking changes to your API
 
 `reportUnannotatedClassAttribute` will report an error on all unannotated class attributes that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.
+
+## `reportInvalidAbstractMethod`
+
+pyright ignores methods decorated with `@abstractmethod` if the class is not abstract:
+
+```py
+from abc import abstractmethod
+
+
+class Foo:
+    @abstractmethod
+    def foo(): ...
+
+_ = Foo()  # no error
+```
+
+this is allegedly for [performance reasons](https://github.com/microsoft/pyright/issues/5026#issuecomment-1526479622), but basedpyright's `reportInvalidAbstractMethod` rule is reported on the method definition instead of the usage, so it doesn't have to check every method when instantiating every non-abstract class.
+
+it also just makes more sense to report the error on the method definition anyway. methods decorated with `@abstractmethod` on classes that do not extend `ABC` will not raise a runtime error if they are instantiated, making them less safe.

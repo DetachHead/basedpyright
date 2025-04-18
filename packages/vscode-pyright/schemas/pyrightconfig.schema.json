@@ -569,6 +569,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting diagnostics for overrides in subclasses that redefine a variable in an incompatible way",
       "default": "none"
+    },
+    "reportInvalidAbstractMethod": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting diagnostics for usages of `@abstractmethod` on a non-abstract class",
+      "default": "none"
     }
   },
   "properties": {
@@ -968,6 +973,9 @@
     "reportUnannotatedClassAttribute": {
       "$ref": "#/definitions/reportUnannotatedClassAttribute"
     },
+    "reportInvalidAbstractMethod": {
+      "$ref": "#/definitions/reportInvalidAbstractMethod"
+    },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
     },
@@ -1329,6 +1337,9 @@
           },
           "reportUnannotatedClassAttribute": {
             "$ref": "#/definitions/reportUnannotatedClassAttribute"
+          },
+          "reportInvalidAbstractMethod": {
+            "$ref": "#/definitions/reportInvalidAbstractMethod"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

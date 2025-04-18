@@ -1252,6 +1252,7 @@ export namespace Localizer {
         export const unannotatedClassAttribute = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.unannotatedClassAttribute'));
         export const explicitAny = () => getRawString('Diagnostic.explicitAny');
+        export const reportInvalidAbstractMethod = () => getRawString('Diagnostic.reportInvalidAbstractMethod');
     }
 
     export namespace DiagnosticAddendum {

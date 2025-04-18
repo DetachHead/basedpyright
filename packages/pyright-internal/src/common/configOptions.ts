@@ -424,6 +424,7 @@ export interface DiagnosticRuleSet {
     reportImplicitAbstractClass: DiagnosticLevel;
     reportUnannotatedClassAttribute: DiagnosticLevel;
     reportIncompatibleUnannotatedOverride: DiagnosticLevel;
+    reportInvalidAbstractMethod: DiagnosticLevel;
     allowedUntypedLibraries: string[];
 }
 
@@ -555,6 +556,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportImplicitAbstractClass,
         DiagnosticRule.reportUnannotatedClassAttribute,
         DiagnosticRule.reportIncompatibleUnannotatedOverride,
+        DiagnosticRule.reportInvalidAbstractMethod,
     ];
 }
 
@@ -691,6 +693,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
+        reportInvalidAbstractMethod: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -809,6 +812,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
+        reportInvalidAbstractMethod: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -927,6 +931,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
+        reportInvalidAbstractMethod: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1044,6 +1049,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportImplicitAbstractClass: 'warning',
     reportUnannotatedClassAttribute: 'warning',
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
+    reportInvalidAbstractMethod: 'warning',
     allowedUntypedLibraries: [],
 });
 
@@ -1158,6 +1164,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportImplicitAbstractClass: 'error',
     reportUnannotatedClassAttribute: 'error',
     reportIncompatibleUnannotatedOverride: 'error',
+    reportInvalidAbstractMethod: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1273,6 +1280,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportImplicitAbstractClass: 'none',
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
+        reportInvalidAbstractMethod: 'none',
         allowedUntypedLibraries: [],
     };
 
