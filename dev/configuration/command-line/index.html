@@ -1683,12 +1683,16 @@
 <td style="text-align: left;">Write new errors to the baseline file</td>
 </tr>
 <tr>
+<td style="text-align: left;">--baselinefile <code>&lt;FILE&gt;</code></td>
+<td style="text-align: left;">Path to the baseline file to be used <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></td>
+</tr>
+<tr>
 <td style="text-align: left;">-p, --project <code>&lt;FILE OR DIRECTORY&gt;</code></td>
 <td style="text-align: left;">Use the configuration file at this location</td>
 </tr>
 <tr>
 <td style="text-align: left;">--pythonpath <code>&lt;FILE&gt;</code></td>
-<td style="text-align: left;">Path to the Python interpreter <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></td>
+<td style="text-align: left;">Path to the Python interpreter <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">--pythonplatform <code>&lt;PLATFORM&gt;</code></td>
@@ -1708,15 +1712,15 @@
 </tr>
 <tr>
 <td style="text-align: left;">-t, --typeshedpath <code>&lt;DIRECTORY&gt;</code></td>
-<td style="text-align: left;">Use typeshed type stubs at this location <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></td>
+<td style="text-align: left;">Use typeshed type stubs at this location <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">--threads <optional N></td>
-<td style="text-align: left;">Use up to N threads to parallelize type checking <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></td>
+<td style="text-align: left;">Use up to N threads to parallelize type checking <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">-v, --venvpath <code>&lt;DIRECTORY&gt;</code></td>
-<td style="text-align: left;">Directory that contains virtual environments <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup></td>
+<td style="text-align: left;">Directory that contains virtual environments <sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">--verbose</td>
@@ -1732,11 +1736,11 @@
 </tr>
 <tr>
 <td style="text-align: left;">--warnings</td>
-<td style="text-align: left;">Use exit code of 1 if warnings are reported <sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup></td>
+<td style="text-align: left;">Use exit code of 1 if warnings are reported <sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">-w, --watch</td>
-<td style="text-align: left;">Continue to run and watch for changes <sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup></td>
+<td style="text-align: left;">Continue to run and watch for changes <sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup></td>
 </tr>
 <tr>
 <td style="text-align: left;">-</td>
@@ -1834,23 +1838,26 @@ updated ./.basedpyright/baseline.json with 200 errors (went down by 5)
 <p>If specific files are specified on the command line, it overrides the files or directories specified in the pyrightconfig.json or pyproject.toml file.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>This option is the same as the language server setting <code>python.pythonPath</code>. It cannot be used with <code>--venvpath</code>. The <code>--pythonpath</code> option is recommended over <code>--venvpath</code> in most cases. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>Defaults to <code>./.basedpyright/baseline.json</code>&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>This option is the same as the language server setting <code>python.pythonPath</code>. It cannot be used with <code>--venvpath</code>. The <code>--pythonpath</code> option is recommended over <code>--venvpath</code> in most cases. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>This feature is experimental. If thread count is &gt; 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Pyright has built-in typeshed type stubs for Python stdlib functionality. To use a different version of typeshed type stubs, specify the directory with this option.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 <li id="fn:5">
-<p><code>--venvpath</code> is discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">see here</a> for more info.</p>
-<p>This option is the same as the language server setting <code>python.venvPath</code>. It used in conjunction with configuration file, which can refer to different virtual environments by name. For more details, refer to the <a href="../config-files/">configuration</a> and <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This allows a common config file to be checked in to the project and shared by everyone on the development team without making assumptions about the local paths to the venv directory on each developer’s computer.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+<p>This feature is experimental. If thread count is &gt; 1, multiple copies of pyright are executed in parallel to type check files in a project. If no thread count is specified, the thread count is based on the number of available logical processors (if at least 4) or 1 (if less than 4).&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 <li id="fn:6">
-<p><code>--warnings</code> is equivalent to <a href="../config-files/#failOnWarnings"><code>failOnWarnings</code></a>, which is enabled by default in basedpyright, meaning this option is redundant unless you explicitly disable <code>failOnWarnings</code>. <a href="../../benefits-over-pyright/better-defaults/#typecheckingmode">see here</a> for more information about this decision&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+<p><code>--venvpath</code> is discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">see here</a> for more info.</p>
+<p>This option is the same as the language server setting <code>python.venvPath</code>. It used in conjunction with configuration file, which can refer to different virtual environments by name. For more details, refer to the <a href="../config-files/">configuration</a> and <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation. This allows a common config file to be checked in to the project and shared by everyone on the development team without making assumptions about the local paths to the venv directory on each developer’s computer.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
 </li>
 <li id="fn:7">
-<p>When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+<p><code>--warnings</code> is equivalent to <a href="../config-files/#failOnWarnings"><code>failOnWarnings</code></a>, which is enabled by default in basedpyright, meaning this option is redundant unless you explicitly disable <code>failOnWarnings</code>. <a href="../../benefits-over-pyright/better-defaults/#typecheckingmode">see here</a> for more information about this decision&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:8">
+<p>When running in watch mode, pyright will reanalyze only those files that have been modified. These “deltas” are typically much faster than the initial analysis, which needs to analyze all files in the source tree.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

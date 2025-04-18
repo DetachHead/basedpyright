@@ -955,6 +955,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="discouraged settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1668,6 +1683,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="discouraged settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basedpyright-exclusive-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      basedpyright exclusive settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1823,6 +1853,9 @@
 <p><strong>basedpyright.analysis.typeCheckingMode</strong> ["off", "basic", "standard", "strict", "recommended", "all"]: Determines the default type-checking level used by pyright. This can be overridden in the configuration file. (Note: This setting used to be called "basedpyright.typeCheckingMode". The old name is deprecated but is still currently honored.)</p>
 <p><strong>basedpyright.analysis.typeshedPaths</strong> [array of paths]: Paths to look for typeshed modules. Pyright currently honors only the first path in the array.</p>
 <p><strong>basedpyright.analysis.useLibraryCodeForTypes</strong> [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.</p>
+<h4 id="basedpyright-exclusive-settings">basedpyright exclusive settings</h4>
+<p>as mentioned <a href="#discouraged-settings">above</a>, it's recommended to configure these settings <a href="../config-files/">using a config file</a> instead.</p>
+<p><strong>basedpyright.analysis.baselineFile</strong> [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to <code>./.basedpyright/baseline.json</code>. <a href="../../benefits-over-pyright/baseline/">more info</a></p>
 <h2 id="where-do-i-configure-these-settings">where do i configure these settings?</h2>
 <p>the way you configure the basedpyright language server depends on your IDE. below are some examples for <a href="../../installation/ides/">some of the supported editors</a>. this is not a comprehensive list, so if your editor is missing, consult the documentation for its language server support.</p>
 <h3 id="vscode-vscodium">vscode / vscodium</h3>

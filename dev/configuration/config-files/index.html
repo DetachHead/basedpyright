@@ -1980,6 +1980,9 @@
 <li>
 <p><a name="allowedUntypedLibraries"></a> <strong>allowedUntypedLibraries</strong> [array of strings, optional]: Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules <a href="#reportUnknownVariableType"><code>reportUnknownVariableType</code></a>, <a href="#reportUnknownMemberType"><code>reportUnknownMemberType</code></a>, and <a href="#reportMissingTypeStubs"><code>reportMissingTypeStubs</code></a>. The option name should be a list of module names, for example, <code>["library", "module.submodule"]</code>. By default, no modules are configured.</p>
 </li>
+<li>
+<p><a name="baselineFile"></a> <strong>baselineFile</strong> [path, optional]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to <code>./.basedpyright/baseline.json</code>. <a href="../../benefits-over-pyright/baseline/">more info</a></p>
+</li>
 </ul>
 <h2 id="type-evaluation-settings">Type Evaluation Settings</h2>
 <p>The following settings determine how different types should be evaluated.</p>
