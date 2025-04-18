@@ -1828,6 +1828,16 @@ export class ConfigOptions {
                 }
             }
         }
+
+        // Read the "baselineFile".
+        if (configObj.baselineFile !== undefined) {
+            if (typeof configObj.baselineFile !== 'string') {
+                console.error(`Config "baselineFile" field must contain a string.`);
+            } else {
+                this.baselineFile = configDirUri.resolvePaths(configObj.baselineFile);
+            }
+        }
+
         for (const key of unusedConfigDetector.unreadOptions()) {
             console.error(`unknown config option: ${key}`);
         }
