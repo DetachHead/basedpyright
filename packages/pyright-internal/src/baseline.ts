@@ -46,7 +46,7 @@ class BaselineDiff<T extends boolean> {
     readonly diff: number;
 
     constructor(
-        private _rootDir: Uri,
+        private _configOptions: ConfigOptions,
         readonly previousBaseline: BaselineData,
         readonly newBaseline: BaselineData,
         private readonly _forced: T
@@ -71,10 +71,9 @@ class BaselineDiff<T extends boolean> {
             message += `went down by ${this.diff * -1}`;
         }
 
-        return `updated ${this._rootDir.getRelativePath(baselineFilePath(this._rootDir))} with ${pluralize(
-            this.newErrorCount,
-            'error'
-        )} (${message})`;
+        return `updated ${this._configOptions.projectRoot.getRelativePath(
+            baselineFilePath(this._configOptions)
+        )} with ${pluralize(this.newErrorCount, 'error')} (${message})`;
     };
 }
 
@@ -86,7 +85,7 @@ export class BaselineHandler {
     }
 
     get fileUri() {
-        return this.configOptions.baselineFile || baselineFilePath(this.configOptions.projectRoot);
+        return this.configOptions.baselineFile || baselineFilePath(this.configOptions);
     }
 
     getContents = (): BaselineData | undefined => {
@@ -170,7 +169,7 @@ export class BaselineHandler {
             this._console.error(`failed to write baseline file - ${e}`);
             return undefined;
         }
-        return new BaselineDiff(this.configOptions.projectRoot, { files: previousBaselineFiles }, result, force);
+        return new BaselineDiff(this.configOptions, { files: previousBaselineFiles }, result, force);
     };
 
     sortDiagnosticsAndMatchBaseline = (
@@ -316,4 +315,5 @@ export class BaselineHandler {
 
 const lineCount = (range: Range) => range.end.line - range.start.line + 1;
 
-export const baselineFilePath = (rootDir: Uri) => rootDir.combinePaths('.basedpyright/baseline.json');
+export const baselineFilePath = (configOptions: ConfigOptions) =>
+    configOptions.baselineFile ?? configOptions.projectRoot.combinePaths('.basedpyright/baseline.json');
