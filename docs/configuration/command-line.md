@@ -121,7 +121,7 @@ basedpyright:
 
 ## Regenerating the baseline file
 
-if you're using [baseline](../benefits-over-pyright/baseline.md), as baselined errors are removed from your code, the CLI will automatically update the `./.basedpyright/baseline.json` file to remove them:
+if you're using [baseline](../benefits-over-pyright/baseline.md), as baselined errors are removed from your code, the CLI will automatically update the baseline file to remove them:
 
 ```
 >basedpyright
