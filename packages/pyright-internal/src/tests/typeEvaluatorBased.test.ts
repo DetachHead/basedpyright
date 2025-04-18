@@ -53,6 +53,7 @@ test('default typeCheckingMode=recommended', () => {
             ...[78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
             { line: 19, code: DiagnosticRule.reportUnknownParameterType },
             { line: 33, code: DiagnosticRule.reportUnknownParameterType },
+            { line: 33, code: DiagnosticRule.reportInvalidAbstractMethod },
             { line: 102, code: DiagnosticRule.reportUnusedVariable },
             { line: 113, code: DiagnosticRule.reportUnknownParameterType },
             { line: 114, code: DiagnosticRule.reportUnnecessaryIsInstance },
