@@ -26,6 +26,7 @@
     },
     "devDependencies": {
         "@types/node": "^22.10.5",
+        "@types/physical-cpu-count": "^2.0.2",
         "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",
         "shx": "^0.3.4",
@@ -44,5 +45,8 @@
         "basedpyright-langserver": "langserver.index.js",
         "pyright": "index.js",
         "pyright-langserver": "langserver.index.js"
+    },
+    "dependencies": {
+        "physical-cpu-count": "^2.0.0"
     }
 }
