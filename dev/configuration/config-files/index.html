@@ -2337,6 +2337,9 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <li>
 <p><a name="reportUnannotatedClassAttribute"></a> <strong>reportUnannotatedClassAttribute</strong> [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless <code>reportIncompatibleUnannotatedOverride</code> is enabled. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunannotatedclassattribute">more info</a></p>
 </li>
+<li>
+<p><a name="reportInvalidAbstractMethod"></a> <strong>reportInvalidAbstractMethod</strong> [boolean or string, optional]: Generate or suppress diagnostics for usages of <code>@abstractmethod</code> on a non-abstract class. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportinvalidabstractmethod">more info</a></p>
+</li>
 </ul>
 <h3 id="discouraged-settings_1">Discouraged settings</h3>
 <p>there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
@@ -3418,6 +3421,15 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportInvalidAbstractMethod</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>
 </tbody>
