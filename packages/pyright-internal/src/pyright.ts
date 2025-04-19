@@ -15,7 +15,6 @@ import { timingStats } from './common/timing';
 
 import chalk from 'chalk';
 import commandLineArgs, { CommandLineOptions, OptionDefinition } from 'command-line-args';
-import * as os from 'os';
 
 import { ChildProcess, fork } from 'child_process';
 import { AnalysisResults } from './analyzer/analysis';
@@ -58,6 +57,7 @@ import {
     getDiagLevelDiagnosticRules,
 } from './common/configOptions';
 import { writeFileSync } from 'fs';
+import physicalCpuCount from 'physical-cpu-count';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -463,10 +463,14 @@ async function processArgs(): Promise<ExitStatus> {
         let threadCount = args['threads'];
 
         // If the thread count was unspecified, use the number of
-        // logical CPUs (i.e. hardware threads). We find empirically
+        // physical CPUs (i.e. hardware threads). We find empirically
         // that going below 4 threads usually doesn't help.
+
+        // in basedpyright we specifically use physical CPUs instead of logical because on
+        // my machine with 12 logical cores it seems to be about as slow as not running with
+        // threads at all.
         if (threadCount === null) {
-            threadCount = os.cpus().length;
+            threadCount = physicalCpuCount;
             if (threadCount < 4) {
                 threadCount = 1;
             }

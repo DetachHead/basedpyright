@@ -22,6 +22,7 @@ on:
       - 'packages/pyright/**'
       - 'packages/pyright-internal/src/**'
       - 'packages/pyright-internal/typeshed-fallback/**'
+      - '.github/workflows/mypy_primer_*.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -71,6 +72,7 @@ jobs:
             mypy_primer \
             --repo pyright_to_test \
             --type-checker pyright \
+            --additional-flags="--threads" \
             --new $GITHUB_SHA --old base_commit \
             --num-shards 8 --shard-index ${{ matrix.shard-index }} \
             --debug \
