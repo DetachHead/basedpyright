@@ -56,6 +56,7 @@ jobs:
             mypy_primer \
             --repo pyright_to_test \
             --type-checker pyright \
+            --additional-flags="--threads" \
             --new $GITHUB_SHA \
             --debug \
             --output concise \

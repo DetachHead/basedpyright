@@ -71,6 +71,7 @@ jobs:
             mypy_primer \
             --repo pyright_to_test \
             --type-checker pyright \
+            --additional-flags="--threads" \
             --new $GITHUB_SHA --old base_commit \
             --num-shards 8 --shard-index ${{ matrix.shard-index }} \
             --debug \
