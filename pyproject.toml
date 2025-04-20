@@ -72,7 +72,7 @@ default-groups = ["dev", "docstubs", "lochelper"]
 no-build-package = ["libcst"]
 
 [tool.uv.sources]
-mypy-primer = { git = "https://github.com/detachhead/mypy_primer.git" }
+mypy-primer = { git = "https://github.com/DetachHead/mypy_primer", rev = "test" }
 
 [tool.pdm.version]
 source = "call"

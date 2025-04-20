@@ -150,7 +150,7 @@ lochelper = [
     { name = "rich", specifier = ">=13.0" },
     { name = "textual", specifier = ">=0.70.0" },
 ]
-primer = [{ name = "mypy-primer", marker = "python_full_version >= '3.10'", git = "https://github.com/detachhead/mypy_primer.git" }]
+primer = [{ name = "mypy-primer", marker = "python_full_version >= '3.10'", git = "https://github.com/DetachHead/mypy_primer?rev=test" }]
 
 [[package]]
 name = "bracex"
@@ -970,7 +970,7 @@ wheels = [
 [[package]]
 name = "mypy-primer"
 version = "0.1.0"
-source = { git = "https://github.com/detachhead/mypy_primer.git#b3389da2cc01d05753ecf4b53b4d5ef6057b08c1" }
+source = { git = "https://github.com/DetachHead/mypy_primer?rev=test#814573f431b93f07add94f9c19aa8a2bbe236b81" }
 
 [[package]]
 name = "natsort"
