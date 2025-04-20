@@ -40,6 +40,7 @@ docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947
     "docify>=1.0.0",
 ]
+primer = ["mypy-primer ; python_version >= '3.10'"]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
 [build-system]
@@ -69,6 +70,9 @@ main = ["uv"]
 default-groups = ["dev", "docstubs", "lochelper"]
 # transient dependency of docify. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
 no-build-package = ["libcst"]
+
+[tool.uv.sources]
+mypy-primer = { git = "https://github.com/detachhead/mypy_primer.git" }
 
 [tool.pdm.version]
 source = "call"
