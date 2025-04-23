@@ -27,16 +27,20 @@
 // @filename: b/c/main.py
 //// from a._b import [|/*marker1*/_D|]
 
-helper.openFiles(helper.getMarkers().map((m) => m.fileName));
-// https://github.com/DetachHead/basedpyright/issues/86
-// @ts-expect-error
-await helper.verifyDiagnostics({
-    marker1: {
-        category: 'error',
-        message: `"_D" is not exported from module "a._b"`,
-    },
-    marker2: {
-        category: 'hint',
-        message: `Import "C" is not accessed`,
-    },
-});
+// this test is commented out because it's testing a fix for an upstream change that was since reverted.
+// however it sounds like it will eventually be added back, in which case this test should be added back as well.
+// see https://github.com/microsoft/pyright/pull/10322
+
+// helper.openFiles(helper.getMarkers().map((m) => m.fileName));
+// // https://github.com/DetachHead/basedpyright/issues/86
+// // @ts-expect-error
+// await helper.verifyDiagnostics({
+//     marker1: {
+//         category: 'error',
+//         message: `"_D" is not exported from module "a._b"`,
+//     },
+//     marker2: {
+//         category: 'hint',
+//         message: `Import "C" is not accessed`,
+//     },
+// });
