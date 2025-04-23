@@ -101,7 +101,7 @@ export function parseSampleFile(
         parseOptions.isStubFile = true;
     }
     parseOptions.pythonVersion = execEnvironment.pythonVersion;
-    return parseText(text, diagSink);
+    return parseText(text, diagSink, parseOptions);
 }
 
 type ConfigOptionsArg = ConfigOptions | ((serviceProvider: ServiceProvider) => ConfigOptions);

@@ -61,7 +61,6 @@ export interface AnalyzerFileInfo {
     isTypeshedStubFile: boolean;
     isBuiltInStubFile: boolean;
     isInPyTypedPackage: boolean;
-    isModulePrivate: boolean;
     isThirdParty: boolean;
     ipythonMode: IPythonMode;
     accessedSymbolSet: Set<number>;

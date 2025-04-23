@@ -720,6 +720,7 @@
         "kwargsParamMissing": "\"**{paramName}\" 形参没有相应的实参",
         "listAssignmentMismatch": "\"{type}\" 类型与目标列表不兼容",
         "literalAssignmentMismatch": "\"{sourceType}\" 与 \"{destType}\" 类型不兼容",
+        "literalNotAllowed": "\"Literal\" special form cannot be used with instance and class checks",
         "matchIsNotExhaustiveHint": "如果不进行完全处理，请添加 `case _: pass`",
         "matchIsNotExhaustiveType": "未处理的类型：\"{type}\"",
         "memberAssignment": "无法将 \"{type}\" 类型的表达式赋值给 \"{classType}\" 类的 \"{name}\" 属性",

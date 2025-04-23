@@ -15,8 +15,8 @@ import { FullAccessHost } from '../common/fullAccessHost';
 import { combinePaths } from '../common/pathUtils';
 import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem';
 import { createServiceProvider } from '../common/serviceProviderExtensions';
-import { Uri } from '../common/uri/uri';
 import { parseAndGetTestState } from './harness/fourslash/testState';
+import { Uri } from '../common/uri/uri';
 import { BaselineHandler } from '../baseline';
 
 test('Empty', () => {
@@ -29,7 +29,6 @@ test('Empty', () => {
         serviceProvider,
         Uri.file(filePath, serviceProvider),
         '',
-        false,
         false,
         false,
         {
