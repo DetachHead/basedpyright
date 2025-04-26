@@ -39,3 +39,19 @@ test('pyright ignore unused import', async () => {
         marker: { category: 'none', message: '' },
     });
 });
+
+test('reportAny skips explicit object annotation', async () => {
+    const code = `
+// @filename: test.py
+//// def func(param: object):
+////     pass
+
+//// func([|/*marker*/42|])
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    state.verifyDiagnostics({
+        marker: { category: 'none', message: '' },
+    });
+});

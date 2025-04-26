@@ -780,11 +780,19 @@ export class Checker extends ParseTreeWalker {
                             param.d.name
                         );
                     } else if (isAny(paramType)) {
-                        this._evaluator.addDiagnostic(
-                            DiagnosticRule.reportAny,
-                            LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
-                            param.d.name
-                        );
+                        // Skip reporting 'reportAny' if the target type is explicitly 'object'.
+                        if (
+                            !(
+                                param.d.annotation &&
+                                this._evaluator.getType(param.d.annotation)?.category === TypeCategory.Class
+                            )
+                        ) {
+                            this._evaluator.addDiagnostic(
+                                DiagnosticRule.reportAny,
+                                LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
+                                param.d.name
+                            );
+                        }
                     }
                 }
             }
