@@ -780,13 +780,7 @@ export class Checker extends ParseTreeWalker {
                             param.d.name
                         );
                     } else if (isAny(paramType)) {
-                        // Skip reporting 'reportAny' if the target type is explicitly 'object'.
-                        if (
-                            !(
-                                param.d.annotation &&
-                                this._evaluator.getType(param.d.annotation)?.category === TypeCategory.Class
-                            )
-                        ) {
+                        if (isAny(paramType) && this._shouldReportAny(param)) {
                             this._evaluator.addDiagnostic(
                                 DiagnosticRule.reportAny,
                                 LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
@@ -7914,5 +7908,10 @@ export class Checker extends ParseTreeWalker {
                 importedNames.push(name);
             }
         });
+    }
+
+    private _shouldReportAny(param: ParameterNode): boolean {
+        const annotationType = param.d.annotation ? this._evaluator.getType(param.d.annotation) : undefined;
+        return !annotationType || annotationType.category !== TypeCategory.Class;
     }
 }
