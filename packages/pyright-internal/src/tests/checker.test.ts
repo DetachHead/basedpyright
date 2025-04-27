@@ -845,3 +845,11 @@ test('reportInvalidAbstractMethod', () => {
         ],
     });
 });
+
+test('Skip reportAny for explicit object annotation', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.reportAny = 'error';
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['explicitObjectAnnotation.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {});
+});
