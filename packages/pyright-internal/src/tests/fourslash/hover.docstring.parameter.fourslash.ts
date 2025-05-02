@@ -41,6 +41,26 @@
 ////     """
 ////     baz = [|/*marker11*/bar|]
 ////     ...
+////
+//// def foo5([|/*marker12*/bar|]: str, [|/*marker13*/bar2|]: str, [|/*marker14*/bar3|]: str, [|/*marker15*/bar4|]: str) -> None:
+////     """
+////     Foo5 does something
+////
+////     Args:
+////         @param bar: The bar is in town
+////             and is open
+////         :param bar2: The bar2 is in town
+////             and is open
+////         bar3: The bar3 is in town
+////             and is open
+////
+////             this is part of bar3 in the current implementation
+////         garbage that shouldn't show up in any hover
+////         bar4 (str): The bar4 is in town
+////             and is open
+////     """
+////     baz = [|/*marker16*/bar|]
+////     ...
 
 helper.verifyHover('markdown', {
     marker1: '```python\n(parameter) bar: str\n```\nbar: The bar is in town',
@@ -54,4 +74,10 @@ helper.verifyHover('markdown', {
     marker9: '```python\n(parameter) bar: str\n```\nbar (str): The bar is in town',
     marker10: '```python\n(parameter) bar2: str\n```',
     marker11: '```python\n(parameter) bar: str\n```\nbar (str): The bar is in town',
+    marker12: '```python\n(parameter) bar: str\n```\nbar: The bar is in town and is open',
+    marker13: '```python\n(parameter) bar2: str\n```\nbar2: The bar2 is in town and is open',
+    marker14:
+        '```python\n(parameter) bar3: str\n```\nbar3: The bar3 is in town and is open\nthis is part of bar3 in the current implementation',
+    marker15: '```python\n(parameter) bar4: str\n```\nbar4 (str): The bar4 is in town and is open',
+    marker16: '```python\n(parameter) bar: str\n```\nbar: The bar is in town and is open',
 });
