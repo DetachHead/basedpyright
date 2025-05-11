@@ -1855,6 +1855,30 @@
                     "description": "Disables type completion, definitions, and references.",
                     "scope": "resource"
                 },
+                "basedpyright.languageServerSettings.definitionProvider": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enables BasedPyright's definition symbol provider.",
+                    "scope": "resource"
+                },
+                "basedpyright.languageServerSettings.documentSymbolProvider": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enables BasedPyright's document symbol provider.",
+                    "scope": "resource"
+                },
+                "basedpyright.languageServerSettings.referencesProvider": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enables BasedPyright's references provider.",
+                    "scope": "resource"
+                },
+                "basedpyright.languageServerSettings.hoverProvider": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enables BasedPyright's hover provider.",
+                    "scope": "resource"
+                },
                 "basedpyright.disableTaggedHints": {
                     "type": "boolean",
                     "default": false,

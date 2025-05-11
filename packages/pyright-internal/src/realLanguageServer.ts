@@ -120,6 +120,14 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             autoImportCompletions: true,
             baselineFile: undefined,
             functionSignatureDisplay: SignatureDisplayType.formatted,
+            // start kv9898
+            languageServerSettings: {
+                definitionProvider: false,
+                documentSymbolProvider: false,
+                referencesProvider: false,
+                hoverProvider: false,
+            },
+            // end kv9898
             inlayHints: {
                 callArgumentNames: true,
                 functionReturnTypes: true,
@@ -252,6 +260,28 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
 
                 serverSettings.disableLanguageServices = !!pyrightSection.disableLanguageServices;
+                // start kv9898
+                if (!serverSettings.disableLanguageServices) {
+                    const userSettings = pyrightSection.languageServerSettings;
+                    serverSettings.languageServerSettings = {
+                        ...serverSettings.languageServerSettings,
+                        definitionProvider:
+                            typeof userSettings?.definitionProvider === 'boolean'
+                                ? userSettings.definitionProvider
+                                : true,
+                        documentSymbolProvider:
+                            typeof userSettings?.documentSymbolProvider === 'boolean'
+                                ? userSettings.documentSymbolProvider
+                                : false,
+                        hoverProvider:
+                            typeof userSettings?.hoverProvider === 'boolean' ? userSettings.hoverProvider : false,
+                        referencesProvider:
+                            typeof userSettings?.referencesProvider === 'boolean'
+                                ? userSettings.referencesProvider
+                                : false,
+                    };
+                }
+                // end kv9898
                 serverSettings.disableTaggedHints = !!pyrightSection.disableTaggedHints;
                 serverSettings.disableOrganizeImports = !!pyrightSection.disableOrganizeImports;
 

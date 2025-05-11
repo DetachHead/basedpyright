@@ -259,6 +259,7 @@ export async function activate(context: ExtensionContext) {
         initializationOptions: {
             diagnosticMode: workspace.getConfiguration('basedpyright.analysis').get('diagnosticMode'),
             disablePullDiagnostics: workspace.getConfiguration('basedpyright').get('disablePullDiagnostics'),
+            languageServerSettings: workspace.getConfiguration('basedpyright').get('languageServerSettings'), // by kv9898
         },
     };
 

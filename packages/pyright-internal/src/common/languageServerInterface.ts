@@ -8,7 +8,7 @@
 
 import { MaxAnalysisTime } from '../analyzer/program';
 import { IBackgroundAnalysis } from '../backgroundAnalysisBase';
-import { InlayHintSettings, Workspace } from '../workspaceFactory';
+import { InlayHintSettings, LanguageServerSettings, Workspace } from '../workspaceFactory';
 import { DiagnosticBooleanOverridesMap, DiagnosticSeverityOverridesMap } from './commandLineOptions';
 import { SignatureDisplayType } from './configOptions';
 import { ConsoleInterface, LogLevel } from './console';
@@ -48,6 +48,7 @@ export interface ServerSettings {
     ignoreFileSpecs?: string[];
     taskListTokens?: TaskListToken[];
     functionSignatureDisplay?: SignatureDisplayType | undefined;
+    languageServerSettings?: LanguageServerSettings;
     inlayHints?: InlayHintSettings;
     useTypingExtensions?: boolean;
 

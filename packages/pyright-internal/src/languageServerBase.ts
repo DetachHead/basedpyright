@@ -149,7 +149,13 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseFileResults } from './parser/parser';
 import { ClientCapabilities, InitializationOptions } from './types';
-import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
+import {
+    InitStatus,
+    LanguageServerSettings, // by kv9898
+    WellKnownWorkspaceKinds,
+    Workspace,
+    WorkspaceFactory,
+} from './workspaceFactory';
 import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
@@ -652,6 +658,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 )
             );
         }
+
+        // start kv9898: Find the "default" workspace to get settings from (pick the first one)
+        const langFeatures: LanguageServerSettings = {
+            definitionProvider: initializationOptions.languageServerSettings?.definitionProvider ?? true,
+            documentSymbolProvider: initializationOptions.languageServerSettings?.documentSymbolProvider ?? false,
+            hoverProvider: initializationOptions.languageServerSettings?.hoverProvider ?? false,
+            referencesProvider: initializationOptions.languageServerSettings?.referencesProvider ?? false,
+        };
+        // end kv9898
+
         const result: InitializeResult = {
             capabilities: {
                 textDocumentSync: { willSave: true, change: TextDocumentSyncKind.Incremental, openClose: true },
@@ -664,13 +680,13 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     ],
                     save: true,
                 },
-                definitionProvider: { workDoneProgress: true },
+                definitionProvider: langFeatures.definitionProvider, // by kv9898
                 declarationProvider: { workDoneProgress: true },
                 typeDefinitionProvider: { workDoneProgress: true },
-                referencesProvider: { workDoneProgress: true },
-                documentSymbolProvider: { workDoneProgress: true },
+                referencesProvider: langFeatures.referencesProvider, // by kv9898
+                documentSymbolProvider: langFeatures.documentSymbolProvider, //by kv9898
                 workspaceSymbolProvider: { workDoneProgress: true },
-                hoverProvider: { workDoneProgress: true },
+                hoverProvider: langFeatures.hoverProvider, // by kv9898
                 documentHighlightProvider: { workDoneProgress: true },
                 renameProvider: { prepareProvider: true, workDoneProgress: true },
                 completionProvider: {

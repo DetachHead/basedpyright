@@ -16,6 +16,19 @@ import { createDeferred } from './common/deferred';
 import { ServiceProvider } from './common/serviceProvider';
 import { Uri } from './common/uri/uri';
 
+// start kv9898
+
+export interface LanguageServerSettings {
+    /**
+     * Language server settings that are used to enable/disable language serverfeatures.
+     */
+    definitionProvider: boolean;
+    documentSymbolProvider: boolean;
+    referencesProvider: boolean;
+    hoverProvider: boolean;
+}
+// end kv9898
+
 export interface InlayHintSettings {
     /**
      * pylance's version of this option supports 3 settings: `"all" | "partial" | "off"`. `"all"` shows inlay hints

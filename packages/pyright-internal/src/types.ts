@@ -6,6 +6,7 @@
  * Types used for language server capabilities.
  */
 import { MarkupKind } from 'vscode-languageserver-types';
+import { LanguageServerSettings } from './workspaceFactory'; // by kv9898
 
 export interface ClientCapabilities {
     hasConfigurationCapability: boolean;
@@ -35,4 +36,5 @@ export interface ClientCapabilities {
 export type InitializationOptions = {
     diagnosticMode?: string;
     disablePullDiagnostics?: boolean;
+    languageServerSettings?: LanguageServerSettings; // by kv9898
 };
