@@ -67,7 +67,8 @@ export async function activate(context: ExtensionContext) {
         pyrightLanguageServerEnabled &&
         // undefined if the python extension isn't installed
         languageServerSetting &&
-        languageServerSetting !== 'None'
+        languageServerSetting !== 'None' && 
+        languageServerSetting !== 'Default'
     ) {
         const disablePythonLanguageServer = 'fix setting & use basedpyright LSP (recommended)';
         const keepUsingExistingLanguageServer = `disable basedpyright LSP`;
