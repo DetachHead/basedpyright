@@ -223,10 +223,10 @@ export class AutoImporter {
         importNames: ImportNameInfo[],
         moduleNameInfo: ModuleNameInfo,
         importGroup: ImportGroup,
-        fileUri: Uri
+        fileUri?: Uri
     ): TextEditAction[] => {
-        if (this.options.lazyEdit) {
-            // TODO: whats lazyEdit and is it even relevant here?
+        // TODO: whats lazyEdit and is it even relevant here?
+        if (this.options.lazyEdit || !fileUri) {
             return [];
         }
         const importStatement = this._importStatements.mapByFilePath.get(fileUri.key);
