@@ -1,6 +1,8 @@
-<h1><img src="https://docs.basedpyright.com/latest/img/readme_logo.png"> basedpyright</h1>
+<h1><img src="https://docs.basedpyright.com/latest/img/readme_logo.png"> basedpyright for Positron</h1>
 
 <!-- --8<-- [start:header] -->
+
+> 📌 **Note**: The badges below reflect the original [Basedpyright](https://github.com/detachhead/basedpyright) project, not this fork.
 
 [![pypi](https://img.shields.io/pypi/dm/basedpyright?logo=pypi&color=3775A9)](https://pypi.org/project/basedpyright/)
 [![visual studio marketplace](https://img.shields.io/visual-studio-marketplace/d/detachhead.basedpyright?logo=visualstudiocode&color=007ACC)](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
@@ -10,8 +12,25 @@
 [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
 [![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-42b983)](https://docs.basedpyright.com)
 
-Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, pylance features and more.
-
 <!-- --8<-- [end:header] -->
 
-See [the documentation](https://detachhead.github.io/basedpyright) for information about why this fork exists, and a comprehensive list of features and improvements we've made to pyright.
+> ✅ If you're using Positron, disable the built-in `pyright` extension to avoid conflicts.
+
+**`basedpyright-for-positron`** is a fork of [Basedpyright](https://github.com/detachhead/basedpyright) by [@detachhead](https://github.com/detachhead), tailored for use in [Positron](https://positron.dev), a next-generation IDE for data science.
+
+This fork avoids conflicts with Positron's built-in `positron-python` extension and adds settings-level toggles for LSP features like `hoverProvider` and `referencesProvider` which may duplicate Positron's built-in features.
+
+---
+
+### 📖 Documentation
+
+See [Basedpyright documentation](https://detachhead.github.io/basedpyright) for general usage and feature explanations. For Positron-specific behavior, see [the Positron docs](https://positron.dev/docs).
+
+---
+
+### 🔗 Credits
+
+This project builds on the great work of:
+
+-   [Pyright](https://github.com/microsoft/pyright) by [Microsoft](https://github.com/microsoft)
+-   [Basedpyright](https://github.com/detachhead/basedpyright) by [@detachhead](https://github.com/detachhead)
