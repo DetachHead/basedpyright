@@ -59,6 +59,7 @@ export class InlayHintsProvider {
             Array.from(names).map((name) => ({ name })),
             { name: module },
             ImportGroup.BuiltIn, // TODO: figure out the correct import group
+            // if an import isn't resolved, then it's probably a notebook cell
             this._program.importResolver.resolveImport(
                 this._fileUri,
                 this._program.configOptions.findExecEnvironment(this._fileUri),
