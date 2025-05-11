@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"name": "vscode-pyright",
+			"path": "packages/vscode-pyright"
+		},
+		{
+			"name": "basedpyright",
+			"path": "."
+		}
+	],
+	"settings": {
+		"typescript.enablePromptUseWorkspaceTsdk": true,
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"git.allowForcePush": true,
+		"git.useEditorAsCommitInput": false,
+		"terminal.integrated.persistentSessionReviveProcess": "never",
+		"testing.automaticallyOpenPeekView": "never",
+		"explorer.compactFolders": false,
+		"terminal.integrated.env.windows": {
+			"PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH}"
+		},
+		"terminal.integrated.env.osx": {
+			"PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+		},
+		"terminal.integrated.env.linux": {
+			"PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+		},
+		"task.problemMatchers.neverPrompt": true,
+		"ruff.nativeServer": true,
+		"git.blame.editorDecoration.enabled": true,
+		"git.blame.statusBarItem.enabled": true,
+		"chat.commandCenter.enabled": false
+	}
+}
