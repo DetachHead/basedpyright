@@ -98,6 +98,16 @@ when renaming a package or module, basedpyright will update all usages to the ne
 
 ![](https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c)
 
+## fixed parsing of multi-line parameter descriptions in docstrings
+
+in pyright, if a parameter description spans more than one line, only the first line is shown when hovering over the parameter:
+
+![alt text](./broken-docstring-parameter-descriptions.png)
+
+this issue is fixed in pylance, but the fix was never ported to pyright, so we had to fix it ourselves:
+
+![](./fixed-docstring-parameter-descriptions.png)
+
 ## Pylance features missing from basedpyright
 
 See the [open issues](https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22) related to feature parity with Pylance.
