@@ -740,6 +740,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fixed-parsing-of-multi-line-parameter-descriptions-in-docstrings" class="md-nav__link">
+    <span class="md-ellipsis">
+      fixed parsing of multi-line parameter descriptions in docstrings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pylance-features-missing-from-basedpyright" class="md-nav__link">
     <span class="md-ellipsis">
       Pylance features missing from basedpyright
@@ -1748,6 +1757,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fixed-parsing-of-multi-line-parameter-descriptions-in-docstrings" class="md-nav__link">
+    <span class="md-ellipsis">
+      fixed parsing of multi-line parameter descriptions in docstrings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pylance-features-missing-from-basedpyright" class="md-nav__link">
     <span class="md-ellipsis">
       Pylance features missing from basedpyright
@@ -1846,6 +1864,11 @@ c:\project\asdf.ipynb - cell 2
 <h2 id="renaming-packages-and-modules">renaming packages and modules</h2>
 <p>when renaming a package or module, basedpyright will update all usages to the new name, just like pylance does:</p>
 <p><img alt="" src="https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c" /></p>
+<h2 id="fixed-parsing-of-multi-line-parameter-descriptions-in-docstrings">fixed parsing of multi-line parameter descriptions in docstrings</h2>
+<p>in pyright, if a parameter description spans more than one line, only the first line is shown when hovering over the parameter:</p>
+<p><img alt="alt text" src="../broken-docstring-parameter-descriptions.png" /></p>
+<p>this issue is fixed in pylance, but the fix was never ported to pyright, so we had to fix it ourselves:</p>
+<p><img alt="" src="../fixed-docstring-parameter-descriptions.png" /></p>
 <h2 id="pylance-features-missing-from-basedpyright">Pylance features missing from basedpyright</h2>
 <p>See the <a href="https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22">open issues</a> related to feature parity with Pylance.</p>
 
