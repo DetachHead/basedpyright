@@ -571,7 +571,12 @@ export class SourceFile {
             //TODO: this isnt ideal because it re-reads the file for each cell which is unnecessary
             source = getIPythonCells(this.fileSystem, this.getRealUri(), this._console)?.[cellIndex]?.source;
             // Make sure we don't return any non-python cells
-            if(source && ["%sql", "%%sql", "%sh", "%pip", "%run", "%fs", "%load", "%matplotlib", "%who", "%env"].includes(source[0].split(/[\s]/)[0])){
+            if (
+                source &&
+                ['%sql', '%%sql', '%sh', '%pip', '%run', '%fs', '%load', '%matplotlib', '%who', '%env'].includes(
+                    source[0].split(/[\s]/)[0]
+                )
+            ) {
                 return undefined;
             }
         } catch (e) {
