@@ -67,14 +67,16 @@
         "**/pyright-internal/typeshed-fallback/*",
         "**/docstubs/*"
     ],
+    // even though python.terminal.activateEnvInCurrentTerminal is enabled, we still need to add the venv's script folder to the PATH
+    // because vscode's npm tasks do not run with the activated venv
     "terminal.integrated.env.windows": {
-      "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH}"
+      "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH};${workspaceFolder}/.venv/Scripts"
     },
     "terminal.integrated.env.osx": {
-      "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+      "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}:${workspaceFolder}/.venv/bin"
     },
     "terminal.integrated.env.linux": {
-      "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+      "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}:${workspaceFolder}/.venv/bin"
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
