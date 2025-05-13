@@ -577,7 +577,7 @@ export class SourceFile {
                     source[0].split(/[\s]/)[0]
                 )
             ) {
-                return undefined;
+                return '';
             }
         } catch (e) {
             this._console.error(e instanceof Error ? e.message : String(e));
@@ -735,6 +735,7 @@ export class SourceFile {
                     });
                     logState.add(`fs read ${timingStats.readFileTime.totalTime - startTime}ms`);
                 } catch (error) {
+                    console.log(error);
                     diagSink.addError(`Source file could not be read`, getEmptyRange());
                     fileContents = '';
 
