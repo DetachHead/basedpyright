@@ -6,7 +6,6 @@
         "detachhead.basedpyright",
         "ms-python.pylint",
         "charliermarsh.ruff",
-        "shd101wyy.markdown-preview-enhanced",
         "mhutchie.git-graph",
         "tamasfe.even-better-toml",
         "redhat.vscode-yaml",
