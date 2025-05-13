@@ -735,7 +735,6 @@ export class SourceFile {
                     });
                     logState.add(`fs read ${timingStats.readFileTime.totalTime - startTime}ms`);
                 } catch (error) {
-                    console.log(error);
                     diagSink.addError(`Source file could not be read`, getEmptyRange());
                     fileContents = '';
 
