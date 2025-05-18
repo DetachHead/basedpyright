@@ -828,7 +828,8 @@ describe('reportIncompatibleUnannotatedOverride', () => {
                 { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 8 },
                 { code: DiagnosticRule.reportAssignmentType, line: 8 },
                 { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 25 },
-                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 16 },
+                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 32 },
+                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 38 },
             ],
         });
     });

@@ -1,4 +1,4 @@
-from typing import override
+from typing import Literal, override
 
 
 class Foo:
@@ -14,7 +14,7 @@ class Baz:
 
   
 class Qux(Baz):
-    a = 1 # reportIncompatibleUnannotatedOverride
+    a = 1
 
 class A:
     @property
@@ -24,3 +24,16 @@ class B(A):
     @property
     @override
     def foo(Self) -> str: ... # reportIncompatibleMethodOverride
+
+
+class C:
+    a = 1
+
+class D(C):
+    a: Literal[1] = 1 # reportIncompatibleUnannotatedOverride (because invariant)
+
+class E:
+    a = 1
+
+class F(E):
+    a = "" # reportIncompatibleUnannotatedOverride
