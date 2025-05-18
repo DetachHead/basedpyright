@@ -6826,18 +6826,16 @@ export class Checker extends ParseTreeWalker {
         const reportIncompatibleUnannotatedOverride =
             this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
 
-        let incompatibleVariableOverrideRule: DiagnosticRule;
+        const baseClassHasTypeDeclaration = baseClassAndSymbol.symbol.hasTypedDeclarations();
 
-        if (
-            !baseClassAndSymbol.symbol.hasTypedDeclarations() ||
-            (reportIncompatibleUnannotatedOverride && !sublassSymbolHasTypeDelaration)
-        ) {
-            if (!reportIncompatibleUnannotatedOverride) {
+        let incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
+
+        if (!baseClassHasTypeDeclaration) {
+            if (reportIncompatibleUnannotatedOverride) {
+                incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
+            } else {
                 return;
             }
-            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
-        } else {
-            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
         }
 
         // Special case the '_' symbol, which is used in single dispatch
@@ -6866,10 +6864,10 @@ export class Checker extends ParseTreeWalker {
         );
 
         // the logic here is a bit confusing. we basically need to change the behavior at the end of this function
-        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class
-        // or the subclass's symbol. this function used to be conditionally passed an AnyType when the subclass's symbol
-        // didn't have a type annotation, so we need to save the original type here so we can preserve the original behavior
-        // when reportIncompatibleUnannotatedOverride is not enabled, then use it later to check whether
+        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class's
+        // symbol. this function used to be conditionally passed an AnyType when the subclass's symbol didn't have a
+        // type annotation, so we need to save the original type here so we can preserve the original behavior when
+        // reportIncompatibleUnannotatedOverride is not enabled, then use it later to check whether
         // reportIncompatibleUnannotatedOverride needs to be reported.
         const originalOverrideType = overrideType;
         if (!sublassSymbolHasTypeDelaration) {
@@ -7025,7 +7023,7 @@ export class Checker extends ParseTreeWalker {
         // This check can be expensive, so don't perform it if the corresponding
         // rule is disabled.
         if (this._fileInfo.diagnosticRuleSet[incompatibleVariableOverrideRule] !== 'none') {
-            if (reportIncompatibleUnannotatedOverride) {
+            if (reportIncompatibleUnannotatedOverride && !baseClassHasTypeDeclaration) {
                 overrideType = originalOverrideType;
             }
             const decls = overrideSymbol.getDeclarations();
