@@ -1,4 +1,5 @@
 from typing import Literal, cast, override
+from abc import ABC, abstractmethod
 
 
 class Foo:
@@ -45,3 +46,15 @@ class G(F):
 
 class H(G): 
     a = ""
+
+class I(ABC):
+    @property
+    @abstractmethod
+    def foo(self) -> int: ...
+
+class J(I):
+    foo = 1  # reportIncompatibleMethodOverride & reportAssignmentType
+
+
+class K(J):
+    foo = 2
