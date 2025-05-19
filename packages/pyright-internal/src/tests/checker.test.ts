@@ -809,9 +809,11 @@ describe('reportIncompatibleUnannotatedOverride', () => {
         );
         TestUtils.validateResultsButBased(analysisResults, {
             errors: [
-                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 8 },
-                { code: DiagnosticRule.reportAssignmentType, line: 8 },
-                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 25 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 9 },
+                { code: DiagnosticRule.reportAssignmentType, line: 9 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 26 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 55 },
+                { code: DiagnosticRule.reportAssignmentType, line: 55 },
             ],
         });
     });
@@ -825,11 +827,13 @@ describe('reportIncompatibleUnannotatedOverride', () => {
         );
         TestUtils.validateResultsButBased(analysisResults, {
             errors: [
-                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 8 },
-                { code: DiagnosticRule.reportAssignmentType, line: 8 },
-                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 25 },
-                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 32 },
-                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 35 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 9 },
+                { code: DiagnosticRule.reportAssignmentType, line: 9 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 26 },
+                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 33 },
+                { code: DiagnosticRule.reportIncompatibleUnannotatedOverride, line: 36 },
+                { code: DiagnosticRule.reportIncompatibleMethodOverride, line: 55 },
+                { code: DiagnosticRule.reportAssignmentType, line: 55 },
             ],
         });
     });
