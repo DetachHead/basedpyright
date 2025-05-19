@@ -1,4 +1,4 @@
-from typing import Literal, override
+from typing import Literal, cast, override
 
 
 class Foo:
@@ -32,8 +32,16 @@ class C:
 class D(C):
     a: Literal[1] = 1 # reportIncompatibleUnannotatedOverride (because invariant)
 
-class E:
-    a = 1
-
-class F(E):
+class E(C):
     a = "" # reportIncompatibleUnannotatedOverride
+
+class F:
+    a: str | None = ""
+
+
+class G(F):
+    a = cast(str | None, "")
+
+
+class H(G): 
+    a = ""

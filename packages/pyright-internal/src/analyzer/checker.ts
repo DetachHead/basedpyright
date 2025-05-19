@@ -6696,7 +6696,8 @@ export class Checker extends ParseTreeWalker {
                     typeOfSymbol,
                     classType,
                     name,
-                    validateType
+                    validateType,
+                    Boolean(lookUpClassMember(mroBaseClass, name, MemberAccessFlags.DeclaredTypesOnly))
                 );
             }
 
@@ -6813,7 +6814,8 @@ export class Checker extends ParseTreeWalker {
         overrideType: Type,
         childClassType: ClassType,
         memberName: string,
-        sublassSymbolHasTypeDelaration: boolean
+        sublassSymbolHasTypeDelaration: boolean,
+        baseClassSymbolHasTypeDeclaration: boolean
     ) {
         if (!isInstantiableClass(baseClassAndSymbol.classType)) {
             return;
@@ -6826,12 +6828,17 @@ export class Checker extends ParseTreeWalker {
         const reportIncompatibleUnannotatedOverride =
             this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
 
-        const baseClassHasTypeDeclaration = baseClassAndSymbol.symbol.hasTypedDeclarations();
+        // baseClassSymbolHasTypeDeclaration refers to whether any of the symbol declarations in the MRO have a type declaration, whereas
+        // superClassSymbolHasTypeDeclaration refers to whether the direct parent has a type declaration. this distinction is needed for
+        // backwards compatibility since the original logic to determine whether to check for an incompatible override only checked whether
+        // the direct parent had a type annotation, but we only want to report reportIncompatibleUnannotatedOverride if none of the base
+        // class's declarations have a type annotation
+        const superClassSymbolHasTypeDeclaration = baseClassAndSymbol.symbol.hasTypedDeclarations();
 
         let incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
 
-        if (!baseClassHasTypeDeclaration) {
-            if (reportIncompatibleUnannotatedOverride) {
+        if (!superClassSymbolHasTypeDeclaration) {
+            if (reportIncompatibleUnannotatedOverride && !baseClassSymbolHasTypeDeclaration) {
                 incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
             } else {
                 return;
@@ -7023,7 +7030,7 @@ export class Checker extends ParseTreeWalker {
         // This check can be expensive, so don't perform it if the corresponding
         // rule is disabled.
         if (this._fileInfo.diagnosticRuleSet[incompatibleVariableOverrideRule] !== 'none') {
-            if (reportIncompatibleUnannotatedOverride && !baseClassHasTypeDeclaration) {
+            if (reportIncompatibleUnannotatedOverride && !superClassSymbolHasTypeDeclaration) {
                 overrideType = originalOverrideType;
             }
             const decls = overrideSymbol.getDeclarations();
