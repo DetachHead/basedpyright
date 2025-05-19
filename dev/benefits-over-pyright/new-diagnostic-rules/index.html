@@ -1950,7 +1950,7 @@
 <p>if you encounter any performance issues with this rule, you may want to disable it and use <a href="#reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></a> instead.</p>
 </div>
 <h2 id="reportunannotatedclassattribute"><code>reportUnannotatedClassAttribute</code></h2>
-<p>since pyright does not warn when a class attribute is overridden with an incompatible type (see <a href="#reportincompatibleunannotatedoverride"><code>reportIncompatibleUnannotatedOverride</code></a>), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to <code>reportIncompatibleUnannotatedOverride</code> if:</p>
+<p>since pyright does not warn when a class attribute without a type annotation is overridden with an incompatible type (see <a href="#reportincompatibleunannotatedoverride"><code>reportIncompatibleUnannotatedOverride</code></a>), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to <code>reportIncompatibleUnannotatedOverride</code> if:</p>
 <ul>
 <li>you are developing a library that you want to be fully type-safe for users who may be using pyright instead of basedpyright</li>
 <li>you encountered performance issues with <code>reportIncompatibleUnannotatedOverride</code></li>
