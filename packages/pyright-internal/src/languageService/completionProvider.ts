@@ -523,7 +523,9 @@ export class CompletionProvider {
                         // constructors don't need the override decorator
                         !isMethodExemptFromLsp(name) &&
                         // metaclass members should not have the override decorator because they aren't present on the instance
-                        !metaclassMemberNames.has(name)
+                        !metaclassMemberNames.has(name) &&
+                        // If reportImplicitOverride is disabled, never add @override
+                        this.configOptions.diagnosticRuleSet.reportImplicitOverride !== 'none'
                     ) {
                         const overrideDecorator = this.evaluator.getTypingType(decl.node, 'override');
                         if (
