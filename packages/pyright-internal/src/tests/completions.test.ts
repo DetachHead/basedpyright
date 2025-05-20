@@ -374,13 +374,13 @@ test('include literals in expression completion', async () => {
     const code = `
 // @filename: test.py
 //// from typing import TypedDict
-////
+//// 
 //// class TestType(TypedDict):
 ////     key_a: str
 ////     key_b: int
-////
+//// 
 //// var: TestType = {}
-////
+//// 
 //// var[[|key_a/*marker*/|]]
     `;
 
@@ -405,11 +405,11 @@ test('include literals in set key', async () => {
     const code = `
 // @filename: test.py
 //// from typing import TypedDict
-////
+//// 
 //// class TestType(TypedDict):
 ////     key_a: str
 ////     key_b: int
-////
+//// 
 //// var: TestType = { [|key_a/*marker*/|] }
     `;
 
@@ -434,11 +434,11 @@ test('include literals in dict key', async () => {
     const code = `
 // @filename: test.py
 //// from typing import TypedDict
-////
+//// 
 //// class TestType(TypedDict):
 ////     key_a: str
 ////     key_b: int
-////
+//// 
 //// var: TestType = { [|key_a/*marker*/|] : "hello" }
     `;
 
@@ -463,9 +463,9 @@ test('literals support for binary operators - equals', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     if c == [|"/*marker*/"|]
     `;
@@ -496,9 +496,9 @@ test('literals support for binary operators - not equals', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     if c != [|"/*marker*/"|]
     `;
@@ -529,9 +529,9 @@ test('literals support for binary operators without string node', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     if c != [|/*marker*/|]
     `;
@@ -560,9 +560,9 @@ test('literals support for binary operators with prior word', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     if c != [|US/*marker*/|]
     `;
@@ -587,9 +587,9 @@ test('literals support for binary operators - assignment expression', async () =
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     if c := [|"/*marker*/"|]
     `;
@@ -620,9 +620,9 @@ test('literals support for call', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency) -> Currency:
 ////     return c
 ////
@@ -669,9 +669,9 @@ test('list with literal types', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// a: list[Currency] = [[|"/*marker*/"|]]
     `;
 
@@ -701,9 +701,9 @@ test('literals support for match - error case', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     match c:
 ////         case [|/*marker*/|]
@@ -733,9 +733,9 @@ test('literals support for match - simple case', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     match c:
 ////         case [|"/*marker*/"|]
@@ -767,9 +767,9 @@ test('literals support for match - simple case without string', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     match c:
 ////         case [|US/*marker*/|]
@@ -795,9 +795,9 @@ test('completion quote trigger', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["USD", "EUR"]
-////
+//// 
 //// def foo(c: Currency):
 ////     match c:
 ////         case [|"/*marker*/"|]
@@ -836,9 +836,9 @@ test('completion quote trigger - middle', async () => {
     const code = `
 // @filename: test.py
 //// from typing import Literal
-////
+//// 
 //// Currency = Literal["Quote'Middle"]
-////
+//// 
 //// def foo(c: Currency):
 ////     match c:
 ////         case [|"Quote'/*marker*/"|]
@@ -930,12 +930,12 @@ test('override generic', async () => {
 // @filename: test.py
 //// from typing import Generic, TypeVar
 //// from typing_extensions import override
-////
+//// 
 //// T = TypeVar('T')
 //// class A(Generic[T]):
 ////     def foo(self, x: list[T]) -> T:
 ////         return x
-////
+////     
 //// class B(A[int]):
 ////     @override
 ////     def [|foo/*marker*/|]
@@ -964,19 +964,19 @@ test('override generic nested', async () => {
 // @filename: test.py
 //// from typing import Generic, TypeVar
 //// from typing_extensions import override
-////
+//// 
 //// T = TypeVar('T')
 //// T2 = TypeVar('T2')
 //// class A(Generic[T, T2]):
 ////     def foo(self, x: tuple[T, T2]) -> T:
 ////         return x
-////
-////
+////     
+//// 
 //// T3 = TypeVar('T3')
 //// class B(A[int, T3]):
 ////     @override
 ////     def [|foo/*marker1*/|]
-////
+////     
 //// class C(B[int]):
 ////     @override
 ////     def [|foo/*marker2*/|]
@@ -1017,7 +1017,7 @@ test('override __call__', async () => {
 ${configEnableExplicitOverride}
 // @filename: test.py
 //// from argparse import Action[|/*importMarker*/|]
-////
+//// 
 //// class MyAction(Action):
 ////     [|/*overrideMarker*/|]def [|__call__/*marker*/|]
     `;
@@ -1062,7 +1062,7 @@ ${configEnableExplicitOverride}
 //// class A:
 ////     def foo(self, func: Callable[P, None], *args: P.args, **kwargs: P.kwargs):
 ////         pass
-////
+//// 
 //// class B(A):
 ////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
@@ -1103,7 +1103,7 @@ ${configEnableExplicitOverride}
 //// [|/*importMarker*/|]class A:
 ////     def foo(self, a): # type: (int) -> None
 ////         pass
-////
+//// 
 //// class B(A):
 ////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
@@ -1141,9 +1141,9 @@ test('Complex type arguments', async () => {
 ${configEnableExplicitOverride}
 // @filename: test.py
 //// from typing import Generic, TypeVar, Any, List, Dict, Tuple, Mapping, Union
-////
+//// 
 //// T = TypeVar("T")
-////
+//// 
 //// class A(Generic[T]):
 ////     def foo(self, a: T) -> T:
 ////         return a
@@ -1153,7 +1153,7 @@ ${configEnableExplicitOverride}
 
 // @filename: test1.py
 //// [|/*importMarker*/|]from test import B
-////
+//// 
 //// class U(B):
 ////     [|/*overrideMarker*/|]def [|foo/*marker*/|]
     `;
@@ -1192,11 +1192,11 @@ test('Enum member', async () => {
     const code = `
 // @filename: test.py
 //// from enum import Enum
-////
+//// 
 //// class MyEnum(Enum):
 ////     this = 1
 ////     that = 2
-////
+//// 
 //// print(MyEnum.[|/*marker*/|])
     `;
 
@@ -1219,11 +1219,11 @@ test('no member of Enum member', async () => {
     const code = `
 // @filename: test.py
 //// from enum import Enum
-////
+//// 
 //// class MyEnum(Enum):
 ////     this = 1
 ////     that = 2
-////
+//// 
 //// print(MyEnum.this.[|/*marker*/|])
     `;
 
@@ -1249,10 +1249,10 @@ test('default Enum member', async () => {
     const code = `
 // @filename: test.py
 //// from enum import Enum
-////
+//// 
 //// class MyEnum(Enum):
 ////     MemberOne = []
-////
+//// 
 //// MyEnum.MemberOne.[|/*marker*/|]
     `;
 
@@ -1278,10 +1278,10 @@ test('TypeDict literal values', async () => {
     const code = `
 // @filename: test.py
 //// from typing import TypedDict, Literal
-////
+//// 
 //// class DataA(TypedDict):
 ////     name: Literal["a", "b"] | None
-////
+//// 
 //// data_a: DataA = {
 ////     "name": [|"/*marker*/"|]
 //// }
@@ -1311,12 +1311,12 @@ test('typed dict key constructor completion', async () => {
     const code = `
 // @filename: test.py
 //// from typing import TypedDict
-////
+//// 
 //// class Movie(TypedDict):
 ////    key1: str
-////
+//// 
 //// a = Movie(k[|"/*marker*/"|])
-////
+//// 
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1642,11 +1642,11 @@ describe('deprecated', () => {
         const code = `
 // @filename: test.py
 //// from warnings import deprecated
-////
-////
+//// 
+//// 
 //// @deprecated('asdf')
 //// class Asdf: ...
-////
+//// 
 //// class Foo[T: Asd[|/*marker*/|] = str]:
 ////     def __init__(self, default: tuple[T, ...] = (69,)) -> None:
 ////         pass
