@@ -1,5 +1,10 @@
 /// <reference path="typings/fourslash.d.ts" />
 
+// @filename: pyrightconfig.json
+//// {
+////   "reportImplicitOverride": "error"
+//// }
+
 // @filename: test.py
 //// [|/*importMarker1*/|]class B(list):
 ////     [|/*overrideMarker1*/|]def [|append/*marker*/|]
