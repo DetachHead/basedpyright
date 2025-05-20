@@ -17,7 +17,7 @@
 //// class C(B):
 ////     def [|method/*marker*/|]
 
-// @ts-ignore
+// @ts-expect-error
 await helper.verifyCompletion('included', 'markdown', {
     marker: {
         completions: [
