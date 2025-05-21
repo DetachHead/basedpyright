@@ -42,6 +42,18 @@
                 ]
             }
         ],
+        "semanticTokenTypes": [
+            {
+                "id": "selfParameter",
+                "description": "self parameter",
+                "superType": "parameter"
+            },
+            {
+                "id": "clsParameter",
+                "description": "cls parameter",
+                "superType": "parameter"
+            }
+        ],
         "commands": [
             {
                 "command": "basedpyright.organizeimports",
