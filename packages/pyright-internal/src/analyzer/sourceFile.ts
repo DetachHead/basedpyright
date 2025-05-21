@@ -339,7 +339,10 @@ export class SourceFile {
         this._isTypingStubFile =
             this._isStubFile && (this._uri.pathEndsWith('stdlib/typing.pyi') || fileName === 'typing_extensions.pyi');
         this._isTypingExtensionsStubFile = this._isStubFile && fileName === 'typing_extensions.pyi';
-        this._isTypeshedStubFile = this._isStubFile && this._uri.pathEndsWith('stdlib/_typeshed/__init__.pyi');
+        this._isTypeshedStubFile =
+            this._isStubFile &&
+            (this._uri.pathEndsWith('stdlib/_typeshed/__init__.pyi') ||
+                this._uri.pathEndsWith('stdlib/_typeshed/_type_checker_internals.pyi'));
 
         this._isBuiltInStubFile = false;
         if (this._isStubFile) {
@@ -651,6 +654,8 @@ export class SourceFile {
             this._writableData.tokenizerOutput ?? this._tokenizeContents(this._writableData.parsedFileContents);
 
         return {
+            contentHash:
+                this._writableData.lastFileContentHash || StringUtils.hashString(this._writableData.parsedFileContents),
             parserOutput: this._writableData.parserOutput,
             tokenizerOutput,
             text: this._writableData.parsedFileContents,

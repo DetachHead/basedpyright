@@ -208,7 +208,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         declarations.some((declaration) =>
                             this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
                         );
-                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isPep695Syntax;
+                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
                     const isBuiltIn =
                         (!isTypeAlias &&
