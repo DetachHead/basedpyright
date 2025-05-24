@@ -935,8 +935,6 @@ export function getCodeFlowEngine(
             }
 
             function getTypeFromBranchFlowNode(branchNode: FlowLabel): FlowNodeTypeResult {
-                const typesToCombine: Type[] = [];
-
                 let sawIncomplete = false;
 
                 for (const antecedent of branchNode.antecedents) {
@@ -952,15 +950,8 @@ export function getCodeFlowEngine(
                     if (flowTypeResult.isIncomplete) {
                         sawIncomplete = true;
                     }
-
-                    if (flowTypeResult.type) {
-                        typesToCombine.push(flowTypeResult.type);
-                    }
                 }
-
-                const effectiveType = typesToCombine.length > 0 ? combineTypes(typesToCombine) : undefined;
-
-                return setCacheEntry(branchNode, effectiveType, sawIncomplete);
+                return setCacheEntry(branchNode, NeverType.createNever(), sawIncomplete);
             }
 
             function getTypeFromLoopFlowNode(
