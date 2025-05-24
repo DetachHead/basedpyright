@@ -938,22 +938,18 @@ export function getCodeFlowEngine(
                 const typesToCombine: Type[] = [];
 
                 let sawIncomplete = false;
-
                 for (const antecedent of branchNode.antecedents) {
                     const flowTypeResult = getTypeFromFlowNode(antecedent);
-
                     if (reference === undefined && flowTypeResult.type && !isNever(flowTypeResult.type)) {
                         // If we're solving for "reachability", and we have now proven
                         // reachability, there's no reason to do more work. The type we
                         // return here doesn't matter as long as it's not undefined.
                         return setCacheEntry(branchNode, UnknownType.create(), /* isIncomplete */ false);
                     }
-
                     if (flowTypeResult.isIncomplete) {
                         sawIncomplete = true;
                     }
-
-                    if (flowTypeResult.type) {
+                    if (flowTypeResult.type && branchNode.flags & FlowFlags.LoopLabel) {
                         typesToCombine.push(flowTypeResult.type);
                     }
                 }
