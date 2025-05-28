@@ -39,6 +39,7 @@ import { formatControlFlowGraph } from './codeFlowUtils';
 import { getBoundCallMethod, getBoundNewMethod } from './constructors';
 import { isMatchingExpression, isPartialMatchingExpression, printExpression } from './parseTreeUtils';
 import { getPatternSubtypeNarrowingCallback } from './patternMatching';
+import { indeterminateSymbolId } from './symbol';
 import { SpeculativeTypeTracker } from './typeCacheUtils';
 import { narrowForKeyAssignment } from './typedDicts';
 import { EvalFlags, Reachability, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
@@ -958,6 +959,7 @@ export function getCodeFlowEngine(
                     if (
                         flowTypeResult.type &&
                         (!(antecedent.flags & FlowFlags.Assignment) ||
+                            options?.targetSymbolId === indeterminateSymbolId ||
                             (antecedent as FlowAssignment).targetSymbolId === options?.targetSymbolId)
                     ) {
                         typesToCombine.push(flowTypeResult.type);
