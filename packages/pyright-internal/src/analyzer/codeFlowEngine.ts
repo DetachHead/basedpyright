@@ -666,7 +666,7 @@ export function getCodeFlowEngine(
                             }
                         }
 
-                        return getTypeFromBranchFlowNode(branchFlowNode);
+                        return getTypeFromBranchFlowNode(curFlowNode as FlowLabel);
                     }
 
                     if (curFlowNode.flags & FlowFlags.LoopLabel) {
@@ -934,34 +934,37 @@ export function getCodeFlowEngine(
                 }
             }
 
-            function getTypeFromBranchFlowNode(branchNode: FlowBranchLabel): FlowNodeTypeResult {
+            function getTypeFromBranchFlowNode(branchNode: FlowLabel): FlowNodeTypeResult {
                 const typesToCombine: Type[] = [];
 
-                const preBranchAntecedentType = branchNode.preBranchAntecedent
-                    ? getTypeFromFlowNode(branchNode.preBranchAntecedent).type
-                    : undefined;
-
                 let sawIncomplete = false;
+
                 for (const antecedent of branchNode.antecedents) {
                     const flowTypeResult = getTypeFromFlowNode(antecedent);
+
                     if (reference === undefined && flowTypeResult.type && !isNever(flowTypeResult.type)) {
                         // If we're solving for "reachability", and we have now proven
                         // reachability, there's no reason to do more work. The type we
                         // return here doesn't matter as long as it's not undefined.
                         return setCacheEntry(branchNode, UnknownType.create(), /* isIncomplete */ false);
                     }
+
                     if (flowTypeResult.isIncomplete) {
                         sawIncomplete = true;
                     }
-                    if (!preBranchAntecedentType && flowTypeResult.type) {
+
+                    // if the antecendent isn't an assignment to the target symbol, we discard the types from the antecendents
+                    // after the if statement and use its type instead to prevent it from creating a union of redundant types
+                    if (
+                        flowTypeResult.type &&
+                        (!(antecedent.flags & FlowFlags.Assignment) ||
+                            (antecedent as FlowAssignment).targetSymbolId === options?.targetSymbolId)
+                    ) {
                         typesToCombine.push(flowTypeResult.type);
                     }
                 }
 
-                const effectiveType =
-                    // if there's a preBranchAntecedent, we discard the types from the antecendents after the if statement
-                    // and use its type instead to prevent it from creating a union of redundant types
-                    preBranchAntecedentType ?? (typesToCombine.length > 0 ? combineTypes(typesToCombine) : undefined);
+                const effectiveType = typesToCombine.length > 0 ? combineTypes(typesToCombine) : undefined;
 
                 return setCacheEntry(branchNode, effectiveType, sawIncomplete);
             }
