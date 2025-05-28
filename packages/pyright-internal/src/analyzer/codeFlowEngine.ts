@@ -940,6 +940,11 @@ export function getCodeFlowEngine(
 
                 let sawIncomplete = false;
 
+                const preBranchAntecedentType =
+                    'preBranchAntecedent' in branchNode && (branchNode as FlowBranchLabel).preBranchAntecedent
+                        ? getTypeFromFlowNode((branchNode as FlowBranchLabel).preBranchAntecedent!).type
+                        : undefined;
+
                 for (const antecedent of branchNode.antecedents) {
                     const flowTypeResult = getTypeFromFlowNode(antecedent);
 
@@ -956,13 +961,16 @@ export function getCodeFlowEngine(
 
                     // if the antecendent isn't an assignment to the target symbol, we discard the types from the antecendents
                     // after the if statement and use its type instead to prevent it from creating a union of redundant types
-                    if (
-                        flowTypeResult.type &&
-                        (!(antecedent.flags & FlowFlags.Assignment) ||
+                    if (flowTypeResult.type) {
+                        if (
+                            !(antecedent.flags & FlowFlags.Assignment) ||
                             options?.targetSymbolId === indeterminateSymbolId ||
-                            (antecedent as FlowAssignment).targetSymbolId === options?.targetSymbolId)
-                    ) {
-                        typesToCombine.push(flowTypeResult.type);
+                            (antecedent as FlowAssignment).targetSymbolId === options?.targetSymbolId
+                        ) {
+                            typesToCombine.push(flowTypeResult.type);
+                        } else if (preBranchAntecedentType) {
+                            typesToCombine.push(preBranchAntecedentType);
+                        }
                     }
                 }
 
