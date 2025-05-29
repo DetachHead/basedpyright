@@ -1383,19 +1383,19 @@ export class Binder extends ParseTreeWalker {
         const isTypeCheckingNode = (node: ExpressionNode): node is NameNode =>
             node.nodeType === ParseNodeType.Name && node.d.value === 'TYPE_CHECKING';
 
+        // Determine if the test condition is always true or always false. If so,
+        // we can treat either the then or the else clause as unconditional.
+        const constExprValue = StaticExpressions.evaluateStaticBoolLikeExpression(
+            node.d.testExpr,
+            this._fileInfo.executionEnvironment,
+            this._fileInfo.definedConstants,
+            this._typingImportAliases,
+            this._sysImportAliases
+        );
+
+        this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
+
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
-            // Determine if the test condition is always true or always false. If so,
-            // we can treat either the then or the else clause as unconditional.
-            const constExprValue = StaticExpressions.evaluateStaticBoolLikeExpression(
-                node.d.testExpr,
-                this._fileInfo.executionEnvironment,
-                this._fileInfo.definedConstants,
-                this._typingImportAliases,
-                this._sysImportAliases
-            );
-
-            this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
-
             // Handle the if clause.
             if (constExprValue === false) {
                 this._currentFlowNode =
@@ -1424,7 +1424,9 @@ export class Binder extends ParseTreeWalker {
             if (node.d.elseSuite) {
                 this.walk(node.d.elseSuite);
             } else {
+                const savedExpressions = new Set(this._currentScopeCodeFlowExpressions);
                 this._bindNeverCondition(node.d.testExpr, postIfLabel, /* isPositiveTest */ false);
+                this._currentScopeCodeFlowExpressions = savedExpressions;
             }
             this._addAntecedent(postIfLabel, this._currentFlowNode);
             this._currentFlowNode = this._finishFlowLabel(postIfLabel);
@@ -3077,6 +3079,11 @@ export class Binder extends ParseTreeWalker {
         ) {
             return antecedent;
         }
+
+        expressionList.forEach((expr) => {
+            const referenceKey = createKeyForReference(expr);
+            this._currentScopeCodeFlowExpressions!.add(referenceKey);
+        });
 
         // Select the first name expression.
         const filteredExprList = expressionList.filter((expr) => expr.nodeType === ParseNodeType.Name);
