@@ -3078,11 +3078,6 @@ export class Binder extends ParseTreeWalker {
             return antecedent;
         }
 
-        expressionList.forEach((expr) => {
-            const referenceKey = createKeyForReference(expr);
-            this._currentScopeCodeFlowExpressions!.add(referenceKey);
-        });
-
         // Select the first name expression.
         const filteredExprList = expressionList.filter((expr) => expr.nodeType === ParseNodeType.Name);
 
