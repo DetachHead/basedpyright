@@ -1,5 +1,10 @@
 /// <reference path="typings/fourslash.d.ts" />
 
+// @filename: pyrightconfig.json
+//// {
+////   "reportImplicitOverride": "error"
+//// }
+
 // @filename: test.pyi
 //// [|/*importMarker*/|]class B:
 ////     @property

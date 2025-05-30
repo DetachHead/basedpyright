@@ -12,6 +12,13 @@ import { Uri } from '../common/uri/uri';
 import { CompletionOptions, CompletionProvider } from '../languageService/completionProvider';
 import { parseAndGetTestState } from './harness/fourslash/testState';
 
+const configEnableExplicitOverride = `
+// @filename: pyrightconfig.json
+//// {
+////   "reportImplicitOverride": "error"
+//// }
+`;
+
 test('completion import statement tooltip', async () => {
     const code = `
 // @filename: pyrightconfig.json
@@ -1007,6 +1014,7 @@ test('override generic nested', async () => {
 
 test('override __call__', async () => {
     const code = `
+${configEnableExplicitOverride}
 // @filename: test.py
 //// from argparse import Action[|/*importMarker*/|]
 //// 
@@ -1045,6 +1053,7 @@ test('override __call__', async () => {
 
 test('override ParamSpec', async () => {
     const code = `
+${configEnableExplicitOverride}
 // @filename: test.py
 //// from typing import Callable, ParamSpec[|/*importMarker*/|]
 ////
@@ -1089,6 +1098,7 @@ test('override ParamSpec', async () => {
 
 test('annotation using comment', async () => {
     const code = `
+${configEnableExplicitOverride}
 // @filename: test.py
 //// [|/*importMarker*/|]class A:
 ////     def foo(self, a): # type: (int) -> None
@@ -1128,6 +1138,7 @@ test('annotation using comment', async () => {
 
 test('Complex type arguments', async () => {
     const code = `
+${configEnableExplicitOverride}
 // @filename: test.py
 //// from typing import Generic, TypeVar, Any, List, Dict, Tuple, Mapping, Union
 //// 
@@ -1661,7 +1672,7 @@ describe('useTypingExtensions', () => {
         test('@override decorator useTypingExtensions=true', async () => {
             const code = `
 // @filename: pyrightconfig.json
-//// { "pythonVersion": "3.9" }
+//// { "pythonVersion": "3.9", "reportImplicitOverride": "error" }
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
@@ -1708,7 +1719,7 @@ describe('useTypingExtensions', () => {
         test('@override decorator useTypingExtensions=false', async () => {
             const code = `
 // @filename: pyrightconfig.json
-//// { "pythonVersion": "3.9" }
+//// { "pythonVersion": "3.9", "reportImplicitOverride": "error" }
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
@@ -1747,7 +1758,7 @@ describe('useTypingExtensions', () => {
         test('@override decorator useTypingExtensions=true', async () => {
             const code = `
 // @filename: pyrightconfig.json
-//// { "pythonVersion": "3.13" }
+//// { "pythonVersion": "3.13", "reportImplicitOverride": "error" }
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
@@ -1794,7 +1805,7 @@ describe('useTypingExtensions', () => {
         test('@override decorator useTypingExtensions=false', async () => {
             const code = `
 // @filename: pyrightconfig.json
-//// { "pythonVersion": "3.13" }
+//// { "pythonVersion": "3.13", "reportImplicitOverride": "error" }
 // @filename: test.py
 //// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...

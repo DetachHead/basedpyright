@@ -523,7 +523,9 @@ export class CompletionProvider {
                         // constructors don't need the override decorator
                         !isMethodExemptFromLsp(name) &&
                         // metaclass members should not have the override decorator because they aren't present on the instance
-                        !metaclassMemberNames.has(name)
+                        !metaclassMemberNames.has(name) &&
+                        // If reportImplicitOverride is disabled, never add @override
+                        this.configOptions.diagnosticRuleSet.reportImplicitOverride !== 'none'
                     ) {
                         const overrideDecorator = this.evaluator.getTypingType(decl.node, 'override');
                         if (
@@ -1281,7 +1283,7 @@ export class CompletionProvider {
         const textOnLine = this._fileContents.substr(lineTextRange.start, lineTextRange.length);
         const priorText = textOnLine.substr(0, this.position.character);
         const postText = textOnLine.substr(this.position.character);
-        const priorWordIndex = priorText.search(/\w+$/);
+        const priorWordIndex = priorText.search(/[\p{L}\p{N}\p{Pc}\p{Mn}\p{Mc}]+$/u);
         const priorWord = priorWordIndex >= 0 ? priorText.substr(priorWordIndex) : '';
 
         // Don't offer completions if we're within a comment.

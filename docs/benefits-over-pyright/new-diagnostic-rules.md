@@ -250,7 +250,7 @@ this rule will report an error in such cases.
 
 ## `reportUnannotatedClassAttribute`
 
-since pyright does not warn when a class attribute is overridden with an incompatible type (see [`reportIncompatibleUnannotatedOverride`](#reportincompatibleunannotatedoverride)), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to `reportIncompatibleUnannotatedOverride` if:
+since pyright does not warn when a class attribute without a type annotation is overridden with an incompatible type (see [`reportIncompatibleUnannotatedOverride`](#reportincompatibleunannotatedoverride)), you may want to enforce that all class attributes have a type annotation. this can be useful as an alternative to `reportIncompatibleUnannotatedOverride` if:
 
 -   you are developing a library that you want to be fully type-safe for users who may be using pyright instead of basedpyright
 -   you encountered performance issues with `reportIncompatibleUnannotatedOverride`

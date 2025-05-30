@@ -89,6 +89,9 @@ export interface ClassMember {
     isInstanceMember: boolean;
     isClassMember: boolean;
 
+    // Is the member in __slots__?
+    isSlotsMember: boolean;
+
     // True if explicitly declared as "ClassVar" and therefore is
     // a type violation if it is overwritten by an instance variable
     isClassVar: boolean;
@@ -1740,6 +1743,7 @@ export function getProtocolSymbolsRecursive(
                 unspecializedClassType: classType,
                 isInstanceMember: symbol.isInstanceMember(),
                 isClassMember: symbol.isClassMember(),
+                isSlotsMember: symbol.isSlotsMember(),
                 isClassVar: isEffectivelyClassVar(symbol, /* isDataclass */ false),
                 isReadOnly: false,
                 isTypeDeclared: symbol.hasTypedDeclarations(),
@@ -1880,6 +1884,7 @@ export function* getClassMemberIterator(
                         isInstanceMember: false,
                         isClassMember: true,
                         isClassVar: false,
+                        isSlotsMember: false,
                         classType,
                         unspecializedClassType: classType,
                         isReadOnly: false,
@@ -1911,6 +1916,7 @@ export function* getClassMemberIterator(
                             symbol,
                             isInstanceMember: true,
                             isClassMember: symbol.isClassMember(),
+                            isSlotsMember: symbol.isSlotsMember(),
                             isClassVar: isEffectivelyClassVar(symbol, ClassType.isDataClass(specializedMroClass)),
                             classType: specializedMroClass,
                             unspecializedClassType: mroClass,
@@ -1966,6 +1972,7 @@ export function* getClassMemberIterator(
                             symbol,
                             isInstanceMember,
                             isClassMember,
+                            isSlotsMember: symbol.isSlotsMember(),
                             isClassVar: isEffectivelyClassVar(symbol, isDataclass),
                             classType: specializedMroClass,
                             unspecializedClassType: mroClass,
@@ -1987,6 +1994,7 @@ export function* getClassMemberIterator(
             symbol: Symbol.createWithType(SymbolFlags.None, classType),
             isInstanceMember: false,
             isClassMember: true,
+            isSlotsMember: false,
             isClassVar: false,
             classType,
             unspecializedClassType: classType,
@@ -2083,6 +2091,7 @@ export function getClassFieldsRecursive(classType: ClassType): Map<string, Class
                         symbol,
                         isInstanceMember: symbol.isInstanceMember(),
                         isClassMember: symbol.isClassMember(),
+                        isSlotsMember: symbol.isSlotsMember(),
                         isClassVar: isEffectivelyClassVar(symbol, ClassType.isDataClass(specializedMroClass)),
                         isReadOnly: isMemberReadOnly(specializedMroClass, name),
                         isTypeDeclared: true,

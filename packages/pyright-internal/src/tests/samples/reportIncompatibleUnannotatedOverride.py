@@ -1,4 +1,5 @@
-from typing import override
+from typing import Literal, cast, override
+from abc import ABC, abstractmethod
 
 
 class Foo:
@@ -14,7 +15,7 @@ class Baz:
 
   
 class Qux(Baz):
-    a = 1 # reportIncompatibleUnannotatedOverride
+    a = 1
 
 class A:
     @property
@@ -24,3 +25,36 @@ class B(A):
     @property
     @override
     def foo(Self) -> str: ... # reportIncompatibleMethodOverride
+
+
+class C:
+    a = 1
+
+class D(C):
+    a: Literal[1] = 1 # reportIncompatibleUnannotatedOverride (because invariant)
+
+class E(C):
+    a = "" # reportIncompatibleUnannotatedOverride
+
+class F:
+    a: str | None = ""
+
+
+class G(F):
+    a = cast(str | None, "")
+
+
+class H(G): 
+    a = ""
+
+class I(ABC):
+    @property
+    @abstractmethod
+    def foo(self) -> int: ...
+
+class J(I):
+    foo = 1  # reportIncompatibleMethodOverride & reportAssignmentType
+
+
+class K(J):
+    foo = 2

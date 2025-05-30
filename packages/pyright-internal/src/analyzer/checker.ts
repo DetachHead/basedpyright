@@ -2258,7 +2258,9 @@ export class Checker extends ParseTreeWalker {
         ) {
             // Handle the old-style (pre-await) generator case
             // if the return type explicitly uses AwaitableGenerator.
-            generatorType = this._evaluator.getTypingType(node, 'AwaitableGenerator');
+            generatorType =
+                this._evaluator.getTypeCheckerInternalsType(node, 'AwaitableGenerator') ??
+                this._evaluator.getTypingType(node, 'AwaitableGenerator');
         } else {
             generatorType = this._evaluator.getTypingType(node, node.d.isAsync ? 'AsyncGenerator' : 'Generator');
         }
@@ -6696,7 +6698,8 @@ export class Checker extends ParseTreeWalker {
                     typeOfSymbol,
                     classType,
                     name,
-                    validateType
+                    validateType,
+                    Boolean(lookUpClassMember(mroBaseClass, name, MemberAccessFlags.DeclaredTypesOnly))
                 );
             }
 
@@ -6813,7 +6816,8 @@ export class Checker extends ParseTreeWalker {
         overrideType: Type,
         childClassType: ClassType,
         memberName: string,
-        sublassSymbolHasTypeDelaration: boolean
+        sublassSymbolHasTypeDelaration: boolean,
+        baseClassSymbolHasTypeDeclaration: boolean
     ) {
         if (!isInstantiableClass(baseClassAndSymbol.classType)) {
             return;
@@ -6826,18 +6830,21 @@ export class Checker extends ParseTreeWalker {
         const reportIncompatibleUnannotatedOverride =
             this._fileInfo.diagnosticRuleSet.reportIncompatibleUnannotatedOverride !== 'none';
 
-        let incompatibleVariableOverrideRule: DiagnosticRule;
+        // baseClassSymbolHasTypeDeclaration refers to whether any of the symbol declarations in the MRO have a type declaration, whereas
+        // superClassSymbolHasTypeDeclaration refers to whether the direct parent has a type declaration. this distinction is needed for
+        // backwards compatibility since the original logic to determine whether to check for an incompatible override only checked whether
+        // the direct parent had a type annotation, but we only want to report reportIncompatibleUnannotatedOverride if none of the base
+        // class's declarations have a type annotation
+        const superClassSymbolHasTypeDeclaration = baseClassAndSymbol.symbol.hasTypedDeclarations();
 
-        if (
-            !baseClassAndSymbol.symbol.hasTypedDeclarations() ||
-            (reportIncompatibleUnannotatedOverride && !sublassSymbolHasTypeDelaration)
-        ) {
-            if (!reportIncompatibleUnannotatedOverride) {
+        let incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
+
+        if (!superClassSymbolHasTypeDeclaration) {
+            if (reportIncompatibleUnannotatedOverride && !baseClassSymbolHasTypeDeclaration) {
+                incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
+            } else {
                 return;
             }
-            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleUnannotatedOverride;
-        } else {
-            incompatibleVariableOverrideRule = DiagnosticRule.reportIncompatibleVariableOverride;
         }
 
         // Special case the '_' symbol, which is used in single dispatch
@@ -6866,10 +6873,10 @@ export class Checker extends ParseTreeWalker {
         );
 
         // the logic here is a bit confusing. we basically need to change the behavior at the end of this function
-        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class
-        // or the subclass's symbol. this function used to be conditionally passed an AnyType when the subclass's symbol
-        // didn't have a type annotation, so we need to save the original type here so we can preserve the original behavior
-        // when reportIncompatibleUnannotatedOverride is not enabled, then use it later to check whether
+        // if reportIncompatibleUnannotatedOverride is true and only if there's no type annotation on the base class's
+        // symbol. this function used to be conditionally passed an AnyType when the subclass's symbol didn't have a
+        // type annotation, so we need to save the original type here so we can preserve the original behavior when
+        // reportIncompatibleUnannotatedOverride is not enabled, then use it later to check whether
         // reportIncompatibleUnannotatedOverride needs to be reported.
         const originalOverrideType = overrideType;
         if (!sublassSymbolHasTypeDelaration) {
@@ -6966,7 +6973,7 @@ export class Checker extends ParseTreeWalker {
                 // Special-case overrides of methods in '_TypedDict', since
                 // TypedDict attributes aren't manifest as attributes but rather
                 // as named keys.
-                if (ClassType.isBuiltIn(baseClass, '_TypedDict')) {
+                if (ClassType.isBuiltIn(baseClass, ['_TypedDict', 'TypedDictFallback'])) {
                     return;
                 }
 
@@ -7025,7 +7032,7 @@ export class Checker extends ParseTreeWalker {
         // This check can be expensive, so don't perform it if the corresponding
         // rule is disabled.
         if (this._fileInfo.diagnosticRuleSet[incompatibleVariableOverrideRule] !== 'none') {
-            if (reportIncompatibleUnannotatedOverride) {
+            if (reportIncompatibleUnannotatedOverride && !superClassSymbolHasTypeDeclaration) {
                 overrideType = originalOverrideType;
             }
             const decls = overrideSymbol.getDeclarations();
@@ -7738,7 +7745,9 @@ export class Checker extends ParseTreeWalker {
         ) {
             // Handle the old-style (pre-await) generator case
             // if the return type explicitly uses AwaitableGenerator.
-            generatorType = this._evaluator.getTypingType(node, 'AwaitableGenerator');
+            generatorType =
+                this._evaluator.getTypeCheckerInternalsType(node, 'AwaitableGenerator') ??
+                this._evaluator.getTypingType(node, 'AwaitableGenerator');
         } else {
             generatorType = this._evaluator.getTypingType(
                 node,

@@ -8,6 +8,7 @@ import {
     isClass,
     OverloadedType,
     Type,
+    TypeBase,
     TypeCategory,
     TypeFlags,
 } from './types';
@@ -27,8 +28,10 @@ import {
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
-import { CustomSemanticTokenModifiers } from '../languageService/semanticTokensProvider';
+import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
 import { isAliasDeclaration, isParamDeclaration } from './declaration';
+import { getScopeForNode } from './scopeUtils';
+import { ScopeType } from './scope';
 
 export type SemanticTokenItem = {
     type: string;
@@ -66,7 +69,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     override visitParameter(node: ParameterNode): boolean {
         if (node.d.name) {
-            this._addItemForNameNode(node.d.name, SemanticTokenTypes.parameter, [SemanticTokenModifiers.definition]);
+            const type = this._evaluator?.getType(node.d.name);
+            this._addItemForNameNode(node.d.name, this._getParamSemanticToken(node, type), [
+                SemanticTokenModifiers.definition,
+            ]);
         }
         return super.visitParameter(node);
     }
@@ -202,7 +208,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         declarations.some((declaration) =>
                             this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
                         );
-                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isPep695Syntax;
+                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
                     const isBuiltIn =
                         (!isTypeAlias &&
@@ -238,10 +244,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         if (declarations?.some(isParamDeclaration)) {
-            const parent = declarations[0].node.parent as FunctionNode | LambdaNode;
+            const paramDef = declarations[0].node as ParameterNode;
+            const parent = paramDef.parent as FunctionNode | LambdaNode;
             // Avoid duplicates for parameters visited by `visitParameter`
             if (!parent.d.params.some((param) => param.d.name?.id === node.id)) {
-                this._addItemForNameNode(node, SemanticTokenTypes.parameter, []);
+                this._addItemForNameNode(node, this._getParamSemanticToken(paramDef, type), []);
             }
         } else if (type?.category === TypeCategory.TypeVar && !(type.flags & TypeFlags.Instance)) {
             // `cls` method parameter is treated as a TypeVar in some special methods (methods
@@ -259,6 +266,30 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         } else {
             this._addItemForNameNode(node, SemanticTokenTypes.variable, []);
         }
+    }
+
+    private _getParamSemanticToken(node: ParameterNode, type?: Type): string {
+        if (node.parent?.nodeType !== ParseNodeType.Function) {
+            return SemanticTokenTypes.parameter;
+        }
+        if (node.parent.d.params[0].id !== node.id) {
+            return SemanticTokenTypes.parameter;
+        }
+
+        const parentType = this._evaluator?.getType(node.parent.d.name);
+        const isMethodParam =
+            parentType?.category === TypeCategory.Function &&
+            (FunctionType.isClassMethod(parentType) ||
+                FunctionType.isInstanceMethod(parentType) ||
+                FunctionType.isConstructorMethod(parentType));
+
+        if (!(isMethodParam && getScopeForNode(node)?.type === ScopeType.Class)) {
+            return SemanticTokenTypes.parameter;
+        }
+
+        return type?.flags && TypeBase.isInstantiable(type)
+            ? CustomSemanticTokenTypes.clsParameter
+            : CustomSemanticTokenTypes.selfParameter;
     }
 
     private _addItemForNameNode = (node: NameNode, type: string, modifiers: string[]) =>
