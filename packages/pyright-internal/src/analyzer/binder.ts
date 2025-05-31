@@ -1397,6 +1397,7 @@ export class Binder extends ParseTreeWalker {
             this._bindConditional(node.d.testExpr, thenLabel, elseLabel, [
                 ParseNodeType.AssignmentExpression,
                 ParseNodeType.Index,
+                ParseNodeType.MemberAccess,
             ]);
             // Handle the if clause.
             if (constExprValue === false) {
