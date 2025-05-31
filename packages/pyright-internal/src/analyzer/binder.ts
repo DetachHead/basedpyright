@@ -1426,7 +1426,8 @@ export class Binder extends ParseTreeWalker {
             } else {
                 const savedExpressions = new Set(this._currentScopeCodeFlowExpressions);
                 this._bindNeverCondition(node.d.testExpr, postIfLabel, /* isPositiveTest */ false);
-                this._currentScopeCodeFlowExpressions = savedExpressions;
+                this._currentScopeCodeFlowExpressions!.clear();
+                savedExpressions.forEach((it) => this._currentScopeCodeFlowExpressions!.add(it));
             }
             this._addAntecedent(postIfLabel, this._currentFlowNode);
             this._currentFlowNode = this._finishFlowLabel(postIfLabel);
