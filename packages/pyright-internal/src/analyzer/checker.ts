@@ -780,11 +780,13 @@ export class Checker extends ParseTreeWalker {
                             param.d.name
                         );
                     } else if (isAny(paramType)) {
-                        this._evaluator.addDiagnostic(
-                            DiagnosticRule.reportAny,
-                            LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
-                            param.d.name
-                        );
+                        if (isAny(paramType) && this._shouldReportAny(param)) {
+                            this._evaluator.addDiagnostic(
+                                DiagnosticRule.reportAny,
+                                LocMessage.paramTypeAny().format({ paramName: param.d.name.d.value }),
+                                param.d.name
+                            );
+                        }
                     }
                 }
             }
@@ -7915,5 +7917,10 @@ export class Checker extends ParseTreeWalker {
                 importedNames.push(name);
             }
         });
+    }
+
+    private _shouldReportAny(param: ParameterNode): boolean {
+        const annotationType = param.d.annotation ? this._evaluator.getType(param.d.annotation) : undefined;
+        return !annotationType || annotationType.category !== TypeCategory.Class;
     }
 }
