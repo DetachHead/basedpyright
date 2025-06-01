@@ -85,7 +85,12 @@
           "presentation": {
             "clear": true
           },
-          "problemMatcher": []
+          "problemMatcher": [],
+          // https://github.com/microsoft/vscode/issues/160891#issuecomment-2915280629
+          "windows": {
+            "command": "&'${command:python.interpreterPath}'",
+            "args": ["pw", "uv", "sync", "--reinstall-package", "basedpyright"]
+          }
         },
         {
             "label": "bump version",
