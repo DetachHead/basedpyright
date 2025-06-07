@@ -33,6 +33,11 @@ import { userFacingOptionsList } from './stringUtils';
 // which is cringe because it doesn't change the exit code
 /* eslint no-console: ["error", { allow: ["log"] }] */
 
+interface VerifyTypes {
+    package: string;
+    ignoreExternal: boolean;
+}
+
 export enum PythonPlatform {
     Darwin = 'Darwin',
     Windows = 'Windows',
@@ -425,7 +430,9 @@ export interface DiagnosticRuleSet {
     reportUnannotatedClassAttribute: DiagnosticLevel;
     reportIncompatibleUnannotatedOverride: DiagnosticLevel;
     reportInvalidAbstractMethod: DiagnosticLevel;
-    allowedUntypedLibraries: string[];
+    reportPackageTypeVerificationError: DiagnosticLevel;
+    reportPackageTypeVerificationWarning: DiagnosticLevel;
+    allowedUntypedLibraries: string[]; //TODO: this shouldnt be here because it's not a diagnostic rule
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -557,6 +564,8 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnannotatedClassAttribute,
         DiagnosticRule.reportIncompatibleUnannotatedOverride,
         DiagnosticRule.reportInvalidAbstractMethod,
+        DiagnosticRule.reportPackageTypeVerificationError,
+        DiagnosticRule.reportPackageTypeVerificationWarning,
     ];
 }
 
@@ -694,6 +703,8 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportPackageTypeVerificationError: 'none',
+        reportPackageTypeVerificationWarning: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -813,6 +824,8 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportPackageTypeVerificationError: 'none',
+        reportPackageTypeVerificationWarning: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -932,6 +945,8 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportPackageTypeVerificationError: 'none',
+        reportPackageTypeVerificationWarning: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1050,6 +1065,8 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'warning',
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
+    reportPackageTypeVerificationError: 'error',
+    reportPackageTypeVerificationWarning: 'warning',
     allowedUntypedLibraries: [],
 });
 
@@ -1165,6 +1182,8 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'error',
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
+    reportPackageTypeVerificationError: 'error',
+    reportPackageTypeVerificationWarning: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1281,6 +1300,8 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportPackageTypeVerificationError: 'none',
+        reportPackageTypeVerificationWarning: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1345,6 +1366,8 @@ export class ConfigOptions {
 
     //Path to baseline file.
     baselineFile?: Uri | undefined;
+
+    verifyTypes?: VerifyTypes | undefined;
 
     // A list of file specs to include in the analysis. Can contain
     // directories, in which case all "*.py" files within those directories

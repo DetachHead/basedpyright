@@ -983,11 +983,6 @@ export class AnalyzerService {
                 configOptions.venvPath = projectRoot.resolvePaths(languageServerOptions.venvPath);
             }
         }
-        if (languageServerOptions.baselineFile) {
-            if (!configOptions.baselineFile) {
-                configOptions.baselineFile = projectRoot.resolvePaths(languageServerOptions.baselineFile);
-            }
-        }
     }
 
     private _applyCommandLineOverrides(

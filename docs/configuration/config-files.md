@@ -299,6 +299,10 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportInvalidAbstractMethod"></a> **reportInvalidAbstractMethod** [boolean or string, optional]: Generate or suppress diagnostics for usages of `@abstractmethod` on a non-abstract class. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidabstractmethod)
 
+- <a name="reportPackageTypeVerificationError"></a> **reportPackageTypeVerificationError** [boolean or string, optional]: Generate or suppress diagnostics for errors from the package type verifier. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportpackagetypeverificationerror--reportpackagetypeverificationwarning)
+
+- <a name="reportPackageTypeVerificationWarning"></a> **reportPackageTypeVerificationWarning** [boolean or string, optional]: Generate or suppress diagnostics for warnings from the package type verifier. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportpackagetypeverificationerror--reportpackagetypeverificationwarning)
+
 ### Discouraged settings
 
 there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.

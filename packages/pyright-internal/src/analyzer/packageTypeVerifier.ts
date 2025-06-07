@@ -9,7 +9,7 @@
  */
 
 import { CommandLineOptions } from '../common/commandLineOptions';
-import { BasedConfigOptions, ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
+import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { NullConsole } from '../common/console';
 import { assert } from '../common/debug';
 import { Diagnostic, DiagnosticAddendum, DiagnosticCategory } from '../common/diagnostic';
@@ -75,18 +75,19 @@ export class PackageTypeVerifier {
     private _configOptions: ConfigOptions;
     private _execEnv: ExecutionEnvironment;
     private _importResolver: ImportResolver;
-    private _program: Program;
 
     constructor(
         private _serviceProvider: ServiceProvider,
         private _host: Host,
         commandLineOptions: CommandLineOptions,
         private _packageName: string,
+        private _program: Program,
         private _ignoreExternal = false
     ) {
         const host = new FullAccessHost(_serviceProvider);
-        this._configOptions = new BasedConfigOptions(Uri.empty());
         const console = new NullConsole();
+
+        this._configOptions = _program.configOptions;
 
         // Make sure we have a default python platform and version.
         // Allow the command-line parameters to override the normal defaults.
@@ -107,8 +108,7 @@ export class PackageTypeVerifier {
         }
 
         this._execEnv = this._configOptions.findExecEnvironment(Uri.file('.', _serviceProvider));
-        this._importResolver = new ImportResolver(this._serviceProvider, this._configOptions, this._host);
-        this._program = new Program(this._importResolver, this._configOptions, this._serviceProvider);
+        this._importResolver = _program.importResolver;
     }
 
     verify(): PackageTypeReport {
