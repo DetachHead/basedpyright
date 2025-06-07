@@ -53,6 +53,7 @@ import { getPrintTypeFlags } from './typePrinter';
 import { TypeStubWriter } from './typeStubWriter';
 import { Type } from './types';
 import { BaselineHandler } from '../baseline';
+import { PackageTypeVerifier } from './packageTypeVerifier';
 
 const _maxImportDepth = 256;
 
@@ -139,6 +140,7 @@ export class Program {
     private _editModeTracker = new EditModeTracker();
     private _sourceFileFactory: ISourceFileFactory;
 
+    private _packageTypeVerifier?: PackageTypeVerifier;
     baselineHandler: BaselineHandler;
 
     constructor(

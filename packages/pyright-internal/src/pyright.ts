@@ -433,21 +433,6 @@ async function processArgs(): Promise<ExitStatus> {
 
     const serviceProvider = createServiceProvider(fileSystem, output, tempFile);
 
-    // The package type verification uses a different path.
-    if (args['verifytypes'] !== undefined) {
-        return verifyPackageTypes(
-            serviceProvider,
-            args['verifytypes'] || '',
-            options,
-            !!args.outputjson,
-            minSeverityLevel,
-            args['ignoreexternal']
-        );
-    } else if (args['ignoreexternal'] !== undefined) {
-        console.error(`'--ignoreexternal' is valid only when used with '--verifytypes'`);
-        return ExitStatus.ParameterError;
-    }
-
     const watch = args.watch !== undefined;
     options.languageServerSettings.watchForSourceChanges = watch;
     options.languageServerSettings.watchForConfigChanges = watch;
@@ -458,6 +443,22 @@ async function processArgs(): Promise<ExitStatus> {
         // Refresh service 2 seconds after the last library file change is detected.
         libraryReanalysisTimeProvider: () => 2 * 1000,
     });
+
+    // The package type verification uses a different path.
+    if (args['verifytypes'] !== undefined) {
+        return verifyPackageTypes(
+            serviceProvider,
+            args['verifytypes'] || '',
+            options,
+            !!args.outputjson,
+            minSeverityLevel,
+            args['ignoreexternal'],
+            service
+        );
+    } else if (args['ignoreexternal'] !== undefined) {
+        console.error(`'--ignoreexternal' is valid only when used with '--verifytypes'`);
+        return ExitStatus.ParameterError;
+    }
 
     if ('threads' in args) {
         let threadCount = args['threads'];
@@ -909,7 +910,8 @@ function verifyPackageTypes(
     options: PyrightCommandLineOptions,
     outputJson: boolean,
     minSeverityLevel: SeverityLevel,
-    ignoreUnknownTypesFromImports: boolean
+    ignoreUnknownTypesFromImports: boolean,
+    service: AnalyzerService
 ): ExitStatus {
     try {
         const host = new FullAccessHost(serviceProvider);
@@ -918,6 +920,7 @@ function verifyPackageTypes(
             host,
             options,
             packageName,
+            service.backgroundAnalysisProgram.program,
             ignoreUnknownTypesFromImports
         );
         const report = verifier.verify();

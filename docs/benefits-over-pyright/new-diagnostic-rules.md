@@ -276,3 +276,9 @@ _ = Foo()  # no error
 this is allegedly for [performance reasons](https://github.com/microsoft/pyright/issues/5026#issuecomment-1526479622), but basedpyright's `reportInvalidAbstractMethod` rule is reported on the method definition instead of the usage, so it doesn't have to check every method when instantiating every non-abstract class.
 
 it also just makes more sense to report the error on the method definition anyway. methods decorated with `@abstractmethod` on classes that do not extend `ABC` will not raise a runtime error if they are instantiated, making them less safe.
+
+## `reportPackageTypeVerificationError` / `reportPackageTypeVerificationWarning`
+
+the pyright CLI's `--verifytypes` argument will run pyright with a completely separate set of diagnostics intended to validate that a package is correctly typed for distribution (ie. publishing on pypi). in pyright, there's no way to run these checks as part of the regular type checker, which means these diagnostics aren't visible in the language server.
+
+basedpyright solves this by reporting these diagnostics under the `reportPackageTypeVerificationError` and `reportPackageTypeVerificationWarning` rules.

@@ -156,9 +156,6 @@ export class CommandLineLanguageServerOptions {
 
     // Virtual environments directory.
     venvPath?: string | undefined;
-
-    //Path to baseline file.
-    baselineFile?: string | undefined;
 }
 
 // Some options can be specified from a source other than the pyright config file.
