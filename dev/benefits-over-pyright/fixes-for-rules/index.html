@@ -22,7 +22,7 @@
     
     
       
-        <title>fixes for the reportRedeclaration and reportDuplicateImport rules - basedpyright</title>
+        <title>fixes for existing diagnostic rules - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fixes-for-the-reportredeclaration-and-reportduplicateimport-rules" class="md-skip">
+        <a href="#fixes-for-existing-diagnostic-rules" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              fixes for the reportRedeclaration and reportDuplicateImport rules
+              fixes for existing diagnostic rules
             
           </span>
         </div>
@@ -436,17 +436,67 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    fixes for existing diagnostic rules
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    fixes for the reportRedeclaration and reportDuplicateImport rules
+    fixes for existing diagnostic rules
     
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reportredeclaration-and-reportduplicateimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportRedeclaration and reportDuplicateImport
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reportunreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportUnreachable
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1496,6 +1546,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reportredeclaration-and-reportduplicateimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportRedeclaration and reportDuplicateImport
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reportunreachable" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportUnreachable
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1513,7 +1589,8 @@
   
 
 
-<h1 id="fixes-for-the-reportredeclaration-and-reportduplicateimport-rules">fixes for the <code>reportRedeclaration</code> and <code>reportDuplicateImport</code> rules</h1>
+<h1 id="fixes-for-existing-diagnostic-rules">fixes for existing diagnostic rules</h1>
+<h2 id="reportredeclaration-and-reportduplicateimport"><code>reportRedeclaration</code> and <code>reportDuplicateImport</code></h2>
 <p>pyright does not report redeclarations if the redeclaration has the same type:</p>
 <div class="highlight"><pre><span></span><code><span class="n">foo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">foo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># no error</span>
@@ -1524,6 +1601,17 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">baz</span><span class="w"> </span><span class="kn">import</span> <span class="n">foo</span> <span class="k">as</span> <span class="n">baz</span><span class="p">,</span> <span class="n">bar</span> <span class="k">as</span> <span class="n">baz</span>  <span class="c1"># no error</span>
 </code></pre></div>
 <p>basedpyright solves both of these problems by always reporting an error on a redeclaration or an import with the same name as an existing import.</p>
+<h2 id="reportunreachable"><code>reportUnreachable</code></h2>
+<p><a href="../../configuration/config-files/#reportUnreachable"><code>reportUnreachable</code></a> was the first new diagnostic rule that was added to basedpyright, however this rule was recently added to pyright too, but their version is far less safe. specifically, it doesn't report an error on <code>sys.version_info</code> or <code>sys.platform</code> checks, which are by far the most common cases where pyright considers code to be unreachable.</p>
+<p>the reason we added <code>reportUnreachable</code> to basedpyright was not just to identify code that will never be reached, but mainly to identify code that will <em>not be type checked.</em></p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>assuming that you're running python 3.13 or above during development:
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">13</span><span class="p">):</span>
+    <span class="mi">1</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span> <span class="c1"># no error</span>
+</code></pre></div></p>
+<p>normally <code>1 + ""</code> would be reported as a type error but pyright doesn't complain here, because unreachable code doesn't get type checked at all! this is bad of course, because chances are if your code contains an <code>if</code> statement like this, you're expecting it to be run on multiple different python versions.</p>
+</div>
 
 
 

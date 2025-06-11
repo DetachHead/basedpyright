@@ -432,7 +432,7 @@
   
   
   <span class="md-ellipsis">
-    fixes for the reportRedeclaration and reportDuplicateImport rules
+    fixes for existing diagnostic rules
     
   </span>
   
@@ -613,15 +613,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#reportunreachable" class="md-nav__link">
-    <span class="md-ellipsis">
-      reportUnreachable
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#reportany" class="md-nav__link">
@@ -1652,15 +1643,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#reportunreachable" class="md-nav__link">
-    <span class="md-ellipsis">
-      reportUnreachable
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reportany" class="md-nav__link">
     <span class="md-ellipsis">
       reportAny
@@ -1789,20 +1771,6 @@
 
 <h1 id="new-diagnostic-rules">new diagnostic rules</h1>
 <p>this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivationbehind them. for a complete list of all diagnostic rules, <a href="../../configuration/config-files/#type-check-rule-overrides">see here</a>.</p>
-<h2 id="reportunreachable"><code>reportUnreachable</code></h2>
-<p>pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code as an error, only as agreyed-out hint in your IDE:</p>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
-  <span class="n">do_thing</span><span class="p">()</span> <span class="c1"># no error</span>
-</code></pre></div>
-<p><img alt="" src="../unreachable-hint.png" /></p>
-<p>this is very easy to miss, especially since it doesn't cause the CLI to fail so such a mistake could easily pass your CI.</p>
-<p>by default, pyright will treat the body in the code above as unreachable if pyright itself was run on an operating system other than windows. this is bad of course, because chances are if you write such a check, you intend for your code to be executed on multiple platforms.</p>
-<p>to make things worse, unreachable code is not even type-checked at all! so if the code is reached, and the <code>do_thing</code> function isn't being called with the correct arguments, pyright will not complain!</p>
-<p><code>reportUnreachable</code> solves this problem by reporting unreachable code as an error by default.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>the above example with <code>sys.platform</code> won't happen by default in basedpyright anyway, because <a href="../better-defaults/#pythonplatform">we've changed the default <code>pythonPlatform</code> to <code>"All"</code></a>. but other cases such as python version checks will still benefit from this rule.</p>
-</div>
 <h2 id="reportany"><code>reportAny</code></h2>
 <p>pyright has a few options to ban "Unknown" types such as <code>reportUnknownVariableType</code>, <code>reportUnknownParameterType</code>, etc. but "Unknown" is not a real type, rather a distinction pyright uses used to represent <code>Any</code>s that come from untyped code or unfollowed imports. if you want to ban all kinds of <code>Any</code>, pyright has no way to do that:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span> <span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -1900,7 +1868,7 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="c1"># &quot;value&quot; is not accessed</span>
   <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;something else&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>but like with <a href="#reportunreachable">unreachable code</a>, this just greys out code instead of actually reporting it as an error. basedpyright introduces a new <code>reportUnusedParameter</code> diagnostic rule which supports all the severity options (<code>"error"</code>, <code>"warning"</code> and <code>"none"</code>) as well as <code>"unused"</code>, which is the default behavior in pyright.</p>
+<p>but this just greys out the parameter instead of actually reporting it as an error. basedpyright introduces a new <code>reportUnusedParameter</code> diagnostic rule which supports all the severity options (<code>"error"</code>, <code>"warning"</code> and <code>"none"</code>) as well as <code>"hint"</code>, which is the default behavior in pyright.</p>
 <h2 id="reportimplicitabstractclass"><code>reportImplicitAbstractClass</code></h2>
 <p>abstract classes in python are declared using a base class called <code>ABC</code>, and were designed to be validated at runtime rather than by a static type checker. this means that there's no decent way to ensure on a class's definition that it implements all of the required abstract methods:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>

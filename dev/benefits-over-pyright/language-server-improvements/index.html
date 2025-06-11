@@ -432,7 +432,7 @@
   
   
   <span class="md-ellipsis">
-    fixes for the reportRedeclaration and reportDuplicateImport rules
+    fixes for existing diagnostic rules
     
   </span>
   
@@ -1626,7 +1626,7 @@
 <p>such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using <a href="https://docs.gauge.sh/usage/commands#tach-check-external">tach</a> to detect issues like these)</p>
 </div>
 <h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
-<p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../new-diagnostic-rules/#reportunreachable">there is no diagnostic rule at all</a>).</p>
+<p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../fixes-for-rules/#reportunreachable">the diagnostic is not reported in most cases where the hint is reported</a>).</p>
 <p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. some diagnostics use a diagnostic tag (unused or deprecated) if your IDE supports them:</p>
 <div class="highlight"><span class="filename">pyproject.toml</span><pre><span></span><code><span class="k">[tool.basedpyright]</span>
 <span class="n">reportUnreachable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;hint&#39;</span>

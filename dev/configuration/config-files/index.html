@@ -430,7 +430,7 @@
   
   
   <span class="md-ellipsis">
-    fixes for the reportRedeclaration and reportDuplicateImport rules
+    fixes for existing diagnostic rules
     
   </span>
   
@@ -930,6 +930,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#discouraged-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged settings
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -955,7 +964,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#discouraged-settings" class="md-nav__link">
+  <a href="#discouraged-settings_1" class="md-nav__link">
     <span class="md-ellipsis">
       Discouraged settings
     </span>
@@ -1000,15 +1009,6 @@
   <a href="#basedpyright-exclusive-settings_2" class="md-nav__link">
     <span class="md-ellipsis">
       basedpyright exclusive settings
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#discouraged-settings_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Discouraged settings
     </span>
   </a>
   
@@ -1742,6 +1742,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#discouraged-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discouraged settings
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1767,7 +1776,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#discouraged-settings" class="md-nav__link">
+  <a href="#discouraged-settings_1" class="md-nav__link">
     <span class="md-ellipsis">
       Discouraged settings
     </span>
@@ -1812,15 +1821,6 @@
   <a href="#basedpyright-exclusive-settings_2" class="md-nav__link">
     <span class="md-ellipsis">
       basedpyright exclusive settings
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#discouraged-settings_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Discouraged settings
     </span>
   </a>
   
@@ -1984,6 +1984,16 @@
 <p><a name="baselineFile"></a> <strong>baselineFile</strong> [path, optional]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to <code>./.basedpyright/baseline.json</code>. <a href="../../benefits-over-pyright/baseline/">more info</a></p>
 </li>
 </ul>
+<h3 id="discouraged-settings">Discouraged settings</h3>
+<p>these settings are discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">see here for more info</a>.</p>
+<ul>
+<li>
+<p><strong>venvPath</strong> [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a <strong>venv</strong> setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter.</p>
+</li>
+<li>
+<p><strong>venv</strong> [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
+</li>
+</ul>
 <h2 id="type-evaluation-settings">Type Evaluation Settings</h2>
 <p>The following settings determine how different types should be evaluated.</p>
 <ul>
@@ -2016,14 +2026,14 @@
 <ul>
 <li><a name="strictGenericNarrowing"></a> <strong>strictGenericNarrowing</strong> [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an <code>isinstance</code> check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of <code>Any</code>. <a href="../../benefits-over-pyright/improved-generic-narrowing/">more info</a></li>
 </ul>
-<h3 id="discouraged-settings">Discouraged settings</h3>
-<p>these settings are discouraged in basedpyright. <a href="../../benefits-over-pyright/better-defaults/#default-value-for-pythonpath">see here for more info</a>.</p>
+<h3 id="discouraged-settings_1">Discouraged settings</h3>
+<p>there are options in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
 <ul>
 <li>
-<p><strong>venvPath</strong> [path, optional]: Path to a directory containing one or more subdirectories, each of which contains a virtual environment. When used in conjunction with a <strong>venv</strong> setting (see below), pyright will search for imports in the virtual environment’s site-packages directory rather than the paths specified by the default Python interpreter.</p>
+<p><a name="enableTypeIgnoreComments"></a> <strong>enableTypeIgnoreComments</strong> [boolean]: PEP 484 defines support for <code># type: ignore</code> comments. This switch enables or disables support for these comments. This option is discouraged in favor of <code># pyright: ignore</code> comments in basedpyright, as they are safer. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportignorecommentwithoutrule">See here</a> for more information.</p>
 </li>
 <li>
-<p><strong>venv</strong> [string, optional]: Used in conjunction with the venvPath, specifies the virtual environment to use. For more details, refer to the <a href="../../usage/import-resolution/#configuring-your-python-environment">import resolution</a> documentation.</p>
+<p><a name="enableReachabilityAnalysis"></a> <strong>enableReachabilityAnalysis</strong> [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable independent of type analysis; such code is always reported as unreachable using a tagged hint. This setting also has no effect when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of <a href="../../benefits-over-pyright/fixes-for-rules/#reportunreachable"><code>reportUnreachable</code></a>.</p>
 </li>
 </ul>
 <h2 id="diagnostic-categories">Diagnostic Categories</h2>
@@ -2293,7 +2303,10 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <p><a name="reportMatchNotExhaustive"></a> <strong>reportMatchNotExhaustive</strong> [boolean or string, optional]: Generate or suppress diagnostics for a <code>match</code> statement that does not provide cases that exhaustively match against all potential types of the target expression.</p>
 </li>
 <li>
-<p><a name="reportImplicitOverride"></a> <strong>reportImplicitOverride</strong> [boolean or string, optional]: Generate or suppress diagnostics for overridden methods in a class that are missing an explicit <code>@override</code> decorator. If set to "none", do not add <code>@override</code> to method override completions.</p>
+<p><a name="reportMatchNotExhaustive"></a> <strong>reportMatchNotExhaustive</strong> [boolean or string, optional]: Generate or suppress diagnostics for a <code>match</code> statement that does not provide cases that exhaustively match against all potential types of the target expression.</p>
+</li>
+<li>
+<p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for code that is determined to be structurally unreachable or unreachable by type analysis.</p>
 </li>
 <li>
 <p><a name="reportShadowedImports"></a> <strong>reportShadowedImports</strong> [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.</p>
@@ -2301,9 +2314,6 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 </ul>
 <h3 id="basedpyright-exclusive-settings_2">basedpyright exclusive settings</h3>
 <ul>
-<li>
-<p><a name="reportUnreachable"></a> <strong>reportUnreachable</strong> [boolean or string, optional]: Generate or suppress diagnostics for unreachable code. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable">more info</a></p>
-</li>
 <li>
 <p><a name="reportAny"></a> <strong>reportAny</strong> [boolean or string, optional]: Generate or suppress diagnostics for expressions that have the <code>Any</code> type. this accounts for all scenarios not covered by the <code>reportUnknown*</code> rules (since "Unknown" isn't a real type, but a distinction pyright makes to disallow the <code>Any</code> type only in certain circumstances). <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportany">more info</a></p>
 </li>
@@ -2339,16 +2349,6 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 </li>
 <li>
 <p><a name="reportInvalidAbstractMethod"></a> <strong>reportInvalidAbstractMethod</strong> [boolean or string, optional]: Generate or suppress diagnostics for usages of <code>@abstractmethod</code> on a non-abstract class. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportinvalidabstractmethod">more info</a></p>
-</li>
-</ul>
-<h3 id="discouraged-settings_1">Discouraged settings</h3>
-<p>there are rules in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
-<ul>
-<li>
-<p><a name="enableTypeIgnoreComments"></a> <strong>enableTypeIgnoreComments</strong> [boolean]: PEP 484 defines support for <code># type: ignore</code> comments. This switch enables or disables support for these comments. This option is discouraged in favor of <code># pyright: ignore</code> comments in basedpyright, as they are safer. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportignorecommentwithoutrule">See here</a> for more information.</p>
-</li>
-<li>
-<p><a name="enableReachabilityAnalysis"></a> <strong>enableReachabilityAnalysis</strong> [boolean]: If enabled, code that is determined to be unreachable by type analysis is reported using a tagged hint. This setting does not affect code that is determined to be unreachable regardless of type analysis; such code is always reported as unreachable. This setting also has no effect when using the command-line version of pyright because it never emits tagged hints for unreachable code. this rule is discouraged in basedpyright in favor of <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportunreachable"><code>reportUnreachable</code></a>.</p>
 </li>
 </ul>
 <h2 id="execution-environment-options">Execution Environment Options</h2>
@@ -3312,15 +3312,6 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
-<td style="text-align: left;">"warning"</td>
-<td style="text-align: left;">"error"</td>
-</tr>
-<tr>
-<td style="text-align: left;">reportUnreachable</td>
-<td style="text-align: left;">"hint"</td>
-<td style="text-align: left;">"hint"</td>
-<td style="text-align: left;">"hint"</td>
-<td style="text-align: left;">"hint"</td>
 <td style="text-align: left;">"warning"</td>
 <td style="text-align: left;">"error"</td>
 </tr>

@@ -430,7 +430,7 @@
   
   
   <span class="md-ellipsis">
-    fixes for the reportRedeclaration and reportDuplicateImport rules
+    fixes for existing diagnostic rules
     
   </span>
   
@@ -2003,6 +2003,7 @@
 <li><code>x == None</code> and <code>x != None</code></li>
 <li><code>x is ...</code> and <code>x is not ...</code> (where <code>...</code> is an ellipsis token)</li>
 <li><code>x == ...</code> and <code>x != ...</code> (where <code>...</code> is an ellipsis token)</li>
+<li><code>x is S</code> and <code>x is not S</code> (where S is a Sentinel)</li>
 <li><code>type(x) is T</code> and <code>type(x) is not T</code></li>
 <li><code>type(x) == T</code> and <code>type(x) != T</code></li>
 <li><code>x is L</code> and <code>x is not L</code> (where L is an expression that evaluates to a literal type)</li>
@@ -2440,7 +2441,7 @@
 <p>If one of these conditional expressions evaluates statically to false, pyright does not analyze any of the code within it other than checking for and reporting syntax errors.</p>
 <h3 id="reachability">Reachability</h3>
 <p>Pyright performs “reachability analysis” to determine whether statements will be executed at runtime.</p>
-<p>Reachability analysis is based on both non-type and type information. Non-type information includes statements that unconditionally affect code flow such as <code>continue</code>, <code>raise</code> and <code>return</code>. It also includes conditional statements (<code>if</code>, <code>elif</code>, or <code>while</code>) where the conditional expression is one of these <a href="#static-conditional-evaluation">supported expression forms</a>. Type analysis is not performed on code determined to be unreachable using non-type information. Therefore, language server features like completion suggestions are not available for this code.</p>
+<p>Reachability analysis is based on both non-type and type information. Non-type information includes statements that affect code structure such as <code>continue</code>, <code>raise</code> and <code>return</code>. It also includes conditional statements (<code>if</code>, <code>elif</code>, or <code>while</code>) where the conditional expression is one of these <a href="#static-conditional-evaluation">supported expression forms</a>. Type analysis is not performed on code determined to be unreachable using non-type information. Therefore, language server features like completion suggestions are not available for this code.</p>
 <p>Here are some examples of code determined to be unreachable using non-type information.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
