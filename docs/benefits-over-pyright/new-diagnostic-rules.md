@@ -2,29 +2,6 @@
 
 this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivationbehind them. for a complete list of all diagnostic rules, [see here](../configuration/config-files.md#type-check-rule-overrides).
 
-## `reportUnreachable`
-
-pyright often incorrectly marks code as unreachable. in most cases, unreachable code is a mistake and therefore should be an error, but pyright does not have an option to report unreachable code as an error, only as agreyed-out hint in your IDE:
-
-```py
-if sys.platform == "win32":
-  do_thing() # no error
-```
-
-![](unreachable-hint.png)
-
-this is very easy to miss, especially since it doesn't cause the CLI to fail so such a mistake could easily pass your CI.
-
-by default, pyright will treat the body in the code above as unreachable if pyright itself was run on an operating system other than windows. this is bad of course, because chances are if you write such a check, you intend for your code to be executed on multiple platforms.
-
-to make things worse, unreachable code is not even type-checked at all! so if the code is reached, and the `do_thing` function isn't being called with the correct arguments, pyright will not complain!
-
-`reportUnreachable` solves this problem by reporting unreachable code as an error by default.
-
-!!! note
-
-    the above example with `sys.platform` won't happen by default in basedpyright anyway, because [we've changed the default `pythonPlatform` to `"All"`](./better-defaults.md#pythonplatform). but other cases such as python version checks will still benefit from this rule.
-
 ## `reportAny`
 
 pyright has a few options to ban "Unknown" types such as `reportUnknownVariableType`, `reportUnknownParameterType`, etc. but "Unknown" is not a real type, rather a distinction pyright uses used to represent `Any`s that come from untyped code or unfollowed imports. if you want to ban all kinds of `Any`, pyright has no way to do that:
