@@ -23,7 +23,7 @@ autocomplete suggestions for method overrides will automatically add the `@overr
 
 ## improved diagnostic severity system
 
-in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, [there is no diagnostic rule at all](./new-diagnostic-rules.md#reportunreachable)).
+in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, [the diagnostic is not reported in most cases where the hint is reported](./fixes-for-rules.md#reportunreachable)).
 
 basedpyright introduces a new [`"hint"`](../configuration/config-files.md#diagnostic-categories) diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. some diagnostics use a diagnostic tag (unused or deprecated) if your IDE supports them:
 
