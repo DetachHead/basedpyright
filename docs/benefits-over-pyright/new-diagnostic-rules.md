@@ -157,7 +157,7 @@ def print_value(value: str): # "value" is not accessed
   print("something else")
 ```
 
-but this just greys out the parameter instead of actually reporting it as an error. basedpyright introduces a new `reportUnusedParameter` diagnostic rule which supports all the severity options (`"error"`, `"warning"` and `"none"`) as well as `"unused"`, which is the default behavior in pyright.
+but this just greys out the parameter instead of actually reporting it as an error. basedpyright introduces a new `reportUnusedParameter` diagnostic rule which supports all the severity options (`"error"`, `"warning"` and `"none"`) as well as `"hint"`, which is the default behavior in pyright.
 
 ## `reportImplicitAbstractClass`
 
