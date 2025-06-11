@@ -212,7 +212,7 @@ export function isCodeUnreachable(node: ParseNode): boolean {
     while (curNode) {
         const flowNode = getFlowNode(curNode);
         if (flowNode) {
-            return (flowNode.flags & (FlowFlags.UnreachableStaticCondition | FlowFlags.UnreachableStructural)) !== 0;
+            return !!(flowNode.flags & FlowFlags.Unreachable);
         }
         curNode = curNode.parent;
     }

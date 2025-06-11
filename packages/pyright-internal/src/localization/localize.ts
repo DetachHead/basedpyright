@@ -1223,8 +1223,7 @@ export namespace Localizer {
         export const unpackNotAllowed = () => getRawString('Diagnostic.unpackNotAllowed');
         export const unpackOperatorNotAllowed = () => getRawString('Diagnostic.unpackOperatorNotAllowed');
         export const unpackTuplesIllegal = () => getRawString('Diagnostic.unpackTuplesIllegal');
-        export const unreachableCodeCondition = () => getRawString('Diagnostic.unreachableCodeCondition');
-        export const unreachableCodeStructure = () => getRawString('Diagnostic.unreachableCodeStructure');
+        export const unreachableCode = () => getRawString('Diagnostic.unreachableCode');
         export const unreachableCodeType = () => getRawString('Diagnostic.unreachableCodeType');
         export const unreachableExcept = () => getRawString('Diagnostic.unreachableExcept');
         export const unsupportedDunderAllOperation = () => getRawString('Diagnostic.unsupportedDunderAllOperation');

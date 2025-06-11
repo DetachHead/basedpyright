@@ -544,7 +544,6 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnusedExpression,
         DiagnosticRule.reportUnnecessaryTypeIgnoreComment,
         DiagnosticRule.reportMatchNotExhaustive,
-        DiagnosticRule.reportUnreachable,
         DiagnosticRule.reportShadowedImports,
         DiagnosticRule.reportImplicitOverride,
         DiagnosticRule.reportAny,

@@ -3499,7 +3499,7 @@ export function createTypeEvaluator(
             if (node.parent) {
                 return getNodeReachability(node.parent, sourceNode);
             }
-            return Reachability.UnreachableStructural;
+            return Reachability.UnreachableAlways;
         }
 
         const sourceFlowNode = sourceNode ? AnalyzerNodeInfo.getFlowNode(sourceNode) : undefined;
@@ -3522,7 +3522,7 @@ export function createTypeEvaluator(
     function getAfterNodeReachability(node: ParseNode): Reachability {
         const returnFlowNode = AnalyzerNodeInfo.getAfterFlowNode(node);
         if (!returnFlowNode) {
-            return Reachability.UnreachableStructural;
+            return Reachability.UnreachableAlways;
         }
 
         if (checkCodeFlowTooComplex(node)) {

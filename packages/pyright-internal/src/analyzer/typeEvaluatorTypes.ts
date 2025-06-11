@@ -506,20 +506,7 @@ export interface SolveConstraintsOptions {
 
 export enum Reachability {
     Reachable,
-
-    // The node is unreachable in the code flow graph and
-    // should be reported as an error. This includes situations
-    // like code after return statements.
-    UnreachableStructural,
-
-    // The node is unreachable in the code flow graph due to
-    // a statically-evaluated condition such as a TYPE_CHECKER
-    // or Python version check.
-    UnreachableStaticCondition,
-
-    // The node is unreachable according to code flow analysis.
-    // The type of one or more expressions has been narrowed to
-    // never.
+    UnreachableAlways,
     UnreachableByAnalysis,
 }
 
