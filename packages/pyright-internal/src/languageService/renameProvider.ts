@@ -96,7 +96,7 @@ export class RenameProvider {
                         // Make sure searching symbol name exists in the file.
                         // TODO: why is this here? source files shouldnt be read from disk directly when using the language server.
                         // for now we just disable this check in notebooks because they use a different file uri in the lsp
-                        if (curSourceFileInfo.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
+                        if (curSourceFileInfo.ipythonMode !== IPythonMode.CellDocs) {
                             const content = curSourceFileInfo.contents ?? '';
                             if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
                                 continue;
@@ -175,7 +175,7 @@ export class RenameProvider {
         // and Multi file mode.
         // 1. rename public symbols defined in user files on regular workspace (ex, open folder mode).
         const userFile = isUserCode(sourceFileInfo);
-        if (sourceFileInfo.sourceFile.getIPythonMode() === IPythonMode.CellDocs) {
+        if (sourceFileInfo.ipythonMode === IPythonMode.CellDocs) {
             return 'multiFileMode';
         }
         if (

@@ -1380,14 +1380,6 @@ export class Binder extends ParseTreeWalker {
         const elseLabel = this._createBranchLabel();
         const postIfLabel = this._createBranchLabel(preIfFlowNode);
 
-        const notTypeCheckingNode: FlowNode = {
-            flags: FlowFlags.NotTypeChecking | FlowFlags.Unreachable,
-            id: getUniqueFlowNodeId(),
-        };
-
-        const isTypeCheckingNode = (node: ExpressionNode): node is NameNode =>
-            node.nodeType === ParseNodeType.Name && node.d.value === 'TYPE_CHECKING';
-
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
             // Determine if the test condition is always true or always false. If so,
             // we can treat either the then or the else clause as unconditional.

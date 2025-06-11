@@ -36,7 +36,6 @@ export interface FileSpec {
     hasDirectoryWildcard: boolean;
 }
 
-const _includeFileRegex = /\.pyi?$/;
 const _wildcardRegex = /[*?]/;
 
 //TODO: why are there 2 different copies of this class? one in pathUtils that takes strings instead of Uri's

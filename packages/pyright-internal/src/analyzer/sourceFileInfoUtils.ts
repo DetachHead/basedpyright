@@ -16,7 +16,7 @@ export function isUserCode(fileInfo: SourceFileInfo | undefined) {
         !!fileInfo &&
         ((fileInfo.isTracked && !fileInfo.isThirdPartyImport && !fileInfo.isTypeshedFile) ||
             // notebooks are always user code (source: a comment on AnalyzerService.setFileOpened)
-            fileInfo.sourceFile.getIPythonMode() === IPythonMode.CellDocs)
+            fileInfo.ipythonMode === IPythonMode.CellDocs)
     );
 }
 
