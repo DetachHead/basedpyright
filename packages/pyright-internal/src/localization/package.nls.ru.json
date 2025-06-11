@@ -631,7 +631,6 @@
         "unpackedSubscriptIllegal": "Оператор распаковки в индексации можно использовать в Python версии не ниже 3.11",
         "unpackedTypeVarTupleExpected": "Ожидается распакованный TypeVarTuple; используйте Unpack[{name1}] или *{name2}",
         "unpackedTypedDictArgument": "Распакованный TypedDict не соответсвтует параметрам функции",
-        "unreachableCode": "Код никогда не будет выполнен",
         "unreachableCodeType": "Код никогда не будет выполнен",
         "unreachableExcept": "Блок except никогда не выполнится, так как исключение уже обработано",
         "unsupportedDunderAllOperation": "Операция на \"__all__\" не поддерживается, поэтому список экспортируемых символов может быть неправильным",

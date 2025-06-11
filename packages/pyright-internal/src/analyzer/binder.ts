@@ -244,8 +244,13 @@ export class Binder extends ParseTreeWalker {
     private _dunderSlotsEntries: StringListNode[] | undefined;
 
     // Flow node that is used for unreachable code.
-    private static _unreachableFlowNode: FlowNode = {
-        flags: FlowFlags.Unreachable,
+    private static _unreachableStaticConditionFlowNode: FlowNode = {
+        flags: FlowFlags.UnreachableStaticCondition,
+        id: getUniqueFlowNodeId(),
+    };
+
+    private static _unreachableStructuralFlowNode: FlowNode = {
+        flags: FlowFlags.UnreachableStructural,
         id: getUniqueFlowNodeId(),
     };
 
@@ -1280,7 +1285,7 @@ export class Binder extends ParseTreeWalker {
         if (this._currentContinueTarget) {
             this._addAntecedent(this._currentContinueTarget, this._currentFlowNode!);
         }
-        this._currentFlowNode = Binder._unreachableFlowNode;
+        this._currentFlowNode = Binder._unreachableStructuralFlowNode;
 
         // Continue nodes don't have any children.
         return false;
@@ -1290,7 +1295,7 @@ export class Binder extends ParseTreeWalker {
         if (this._currentBreakTarget) {
             this._addAntecedent(this._currentBreakTarget, this._currentFlowNode!);
         }
-        this._currentFlowNode = Binder._unreachableFlowNode;
+        this._currentFlowNode = Binder._unreachableStructuralFlowNode;
 
         // Break nodes don't have any children.
         return false;
@@ -1316,7 +1321,7 @@ export class Binder extends ParseTreeWalker {
         this._finallyTargets.forEach((target) => {
             this._addAntecedent(target, this._currentFlowNode!);
         });
-        this._currentFlowNode = Binder._unreachableFlowNode;
+        this._currentFlowNode = Binder._unreachableStructuralFlowNode;
         return false;
     }
 
@@ -1397,30 +1402,18 @@ export class Binder extends ParseTreeWalker {
             this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
 
             // Handle the if clause.
-            if (constExprValue === false) {
-                this._currentFlowNode =
-                    node.d.testExpr.nodeType === ParseNodeType.UnaryOperation &&
-                    node.d.testExpr.d.operator === OperatorType.Not &&
-                    isTypeCheckingNode(node.d.testExpr.d.expr) &&
-                    constExprValue === false
-                        ? notTypeCheckingNode
-                        : Binder._unreachableFlowNode;
-            } else {
-                this._currentFlowNode = this._finishFlowLabel(thenLabel);
-            }
+            this._currentFlowNode =
+                constExprValue === false
+                    ? Binder._unreachableStaticConditionFlowNode
+                    : this._finishFlowLabel(thenLabel);
             this.walk(node.d.ifSuite);
             this._addAntecedent(postIfLabel, this._currentFlowNode);
 
             // Now handle the else clause if it's present. If there
             // are chained "else if" statements, they'll be handled
             // recursively here.
-            if (constExprValue === true) {
-                this._currentFlowNode = isTypeCheckingNode(node.d.testExpr)
-                    ? notTypeCheckingNode
-                    : Binder._unreachableFlowNode;
-            } else {
-                this._currentFlowNode = this._finishFlowLabel(elseLabel);
-            }
+            this._currentFlowNode =
+                constExprValue === true ? Binder._unreachableStaticConditionFlowNode : this._finishFlowLabel(elseLabel);
             if (node.d.elseSuite) {
                 this.walk(node.d.elseSuite);
             } else {
@@ -1456,14 +1449,14 @@ export class Binder extends ParseTreeWalker {
 
         // Handle the while clause.
         this._currentFlowNode =
-            constExprValue === false ? Binder._unreachableFlowNode : this._finishFlowLabel(thenLabel);
+            constExprValue === false ? Binder._unreachableStaticConditionFlowNode : this._finishFlowLabel(thenLabel);
         this._bindLoopStatement(preLoopLabel, postWhileLabel, () => {
             this.walk(node.d.whileSuite);
         });
         this._addAntecedent(preLoopLabel, this._currentFlowNode);
 
         this._currentFlowNode =
-            constExprValue === true ? Binder._unreachableFlowNode : this._finishFlowLabel(elseLabel);
+            constExprValue === true ? Binder._unreachableStaticConditionFlowNode : this._finishFlowLabel(elseLabel);
         if (node.d.elseSuite) {
             this.walk(node.d.elseSuite);
         }
@@ -1550,7 +1543,7 @@ export class Binder extends ParseTreeWalker {
             this._addAntecedent(target, this._currentFlowNode!);
         });
 
-        this._currentFlowNode = Binder._unreachableFlowNode;
+        this._currentFlowNode = Binder._unreachableStructuralFlowNode;
         return false;
     }
 
@@ -1680,7 +1673,9 @@ export class Binder extends ParseTreeWalker {
                 antecedent: this._currentFlowNode!,
                 preFinallyGate,
             };
-            this._currentFlowNode = isAfterElseAndExceptsReachable ? postFinallyNode : Binder._unreachableFlowNode;
+            this._currentFlowNode = isAfterElseAndExceptsReachable
+                ? postFinallyNode
+                : Binder._unreachableStructuralFlowNode;
         }
 
         return false;
@@ -2931,7 +2926,7 @@ export class Binder extends ParseTreeWalker {
     private _finishFlowLabel(node: FlowLabel) {
         // If there were no antecedents, this is unreachable.
         if (node.antecedents.length === 0) {
-            return Binder._unreachableFlowNode;
+            return Binder._unreachableStructuralFlowNode;
         }
 
         // If there was only one antecedent and this is a simple
@@ -3052,7 +3047,7 @@ export class Binder extends ParseTreeWalker {
     }
 
     private _createFlowConditional(flags: FlowFlags, antecedent: FlowNode, expression: ExpressionNode): FlowNode {
-        if (antecedent.flags & FlowFlags.Unreachable) {
+        if (antecedent.flags & (FlowFlags.UnreachableStructural | FlowFlags.UnreachableStaticCondition)) {
             return antecedent;
         }
         const staticValue = StaticExpressions.evaluateStaticBoolLikeExpression(
@@ -3066,7 +3061,7 @@ export class Binder extends ParseTreeWalker {
             (staticValue === true && flags & FlowFlags.FalseCondition) ||
             (staticValue === false && flags & FlowFlags.TrueCondition)
         ) {
-            return Binder._unreachableFlowNode;
+            return Binder._unreachableStaticConditionFlowNode;
         }
 
         const expressionList: CodeFlowReferenceExpressionNode[] = [];
@@ -3505,7 +3500,10 @@ export class Binder extends ParseTreeWalker {
     }
 
     private _isCodeUnreachable() {
-        return !!(this._currentFlowNode!.flags & FlowFlags.Unreachable);
+        return !!(
+            this._currentFlowNode!.flags &
+            (FlowFlags.UnreachableStaticCondition | FlowFlags.UnreachableStructural)
+        );
     }
 
     private _addExceptTargets(flowNode: FlowNode) {
@@ -3550,7 +3548,9 @@ export class Binder extends ParseTreeWalker {
     }
 
     private _addAntecedent(label: FlowLabel, antecedent: FlowNode) {
-        if (!(this._currentFlowNode!.flags & FlowFlags.Unreachable)) {
+        if (
+            !(this._currentFlowNode!.flags & (FlowFlags.UnreachableStructural | FlowFlags.UnreachableStaticCondition))
+        ) {
             // Don't add the same antecedent twice.
             if (!label.antecedents.some((existing) => existing.id === antecedent.id)) {
                 label.antecedents.push(antecedent);

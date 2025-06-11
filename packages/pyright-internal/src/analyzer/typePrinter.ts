@@ -33,6 +33,7 @@ import {
     isUnpacked,
     maxTypeRecursionCount,
     OverloadedType,
+    SentinelLiteral,
     TupleTypeArg,
     Type,
     TypeBase,
@@ -41,7 +42,14 @@ import {
     UnionType,
     Variance,
 } from './types';
-import { convertToInstance, doForEachSubtype, isNoneInstance, isTupleClass, removeNoneFromUnion } from './typeUtils';
+import {
+    convertToInstance,
+    doForEachSubtype,
+    isNoneInstance,
+    isSentinelLiteral,
+    isTupleClass,
+    removeNoneFromUnion,
+} from './typeUtils';
 
 export const enum PrintTypeFlags {
     None = 0,
@@ -496,6 +504,8 @@ function printTypeInternal(
                     if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             return printLiteralValueTruncated(type, importTracker);
+                        } else if (type.priv.literalValue instanceof SentinelLiteral) {
+                            return type.priv.literalValue.className;
                         } else {
                             importTracker?.addTypingImport('Literal');
                             return `Literal[${printLiteralValue(type, "'", importTracker)}]`;
@@ -517,6 +527,8 @@ function printTypeInternal(
                     if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                             typeToWrap = printLiteralValueTruncated(type, importTracker);
+                        } else if (type.priv.literalValue instanceof SentinelLiteral) {
+                            return type.priv.literalValue.className;
                         } else {
                             importTracker?.addTypingImport('Literal');
                             typeToWrap = `Literal[${printLiteralValue(type, "'", importTracker)}]`;
@@ -868,13 +880,17 @@ function printUnionType(
     const literalClassStrings = new Set<string>();
     doForEachSubtype(type, (subtype, index) => {
         if (!subtypeHandledSet.has(index)) {
-            if (isClassInstance(subtype) && subtype.priv.literalValue !== undefined) {
+            if (isClassInstance(subtype) && subtype.priv.literalValue !== undefined && !isSentinelLiteral(subtype)) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                     subtypeStrings.add(printLiteralValueTruncated(subtype, importTracker));
                 } else {
                     literalObjectStrings.add(printLiteralValue(subtype, "'", importTracker));
                 }
-            } else if (isInstantiableClass(subtype) && subtype.priv.literalValue !== undefined) {
+            } else if (
+                isInstantiableClass(subtype) &&
+                subtype.priv.literalValue !== undefined &&
+                !isSentinelLiteral(subtype)
+            ) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
                     subtypeStrings.add(`type[${printLiteralValueTruncated(subtype, importTracker)}]`);
                 } else {

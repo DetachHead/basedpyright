@@ -746,7 +746,7 @@ export class SourceFile {
                     configOptions,
                     this._uri,
                     fileContents!,
-                    this.getIPythonMode(),
+                    this.getIPythonMode() !== IPythonMode.None,
                     diagSink
                 );
 
@@ -1505,6 +1505,8 @@ export class SourceFile {
             builtinsImportResult = resolveAndAddIfNotSelf(['builtins']);
         }
 
+        resolveAndAddIfNotSelf(['_typeshed', '_type_checker_internals'], /* skipMissingImport */ true);
+
         for (const moduleImport of moduleImports) {
             const importResult = importResolver.resolveImport(this._uri, execEnv, {
                 leadingDots: moduleImport.leadingDots,
@@ -1547,7 +1549,7 @@ export class SourceFile {
         configOptions: ConfigOptions,
         fileUri: Uri,
         fileContents: string,
-        ipythonMode: IPythonMode,
+        useNotebookMode: boolean,
         diagSink: DiagnosticSink
     ): ParseFileResults {
         // Use the configuration options to determine the environment zin which
@@ -1555,7 +1557,7 @@ export class SourceFile {
         const execEnvironment = configOptions.findExecEnvironment(fileUri);
 
         const parseOptions = new ParseOptions();
-        parseOptions.ipythonMode = ipythonMode;
+        parseOptions.useNotebookMode = useNotebookMode;
         if (fileUri.pathEndsWith('pyi')) {
             parseOptions.isStubFile = true;
         }

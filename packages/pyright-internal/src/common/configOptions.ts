@@ -395,6 +395,9 @@ export interface DiagnosticRuleSet {
     // covering all possible cases.
     reportMatchNotExhaustive: DiagnosticLevel;
 
+    // Report code that is determined to be unreachable via type analysis.
+    reportUnreachable: DiagnosticLevel;
+
     // Report files that match stdlib modules.
     reportShadowedImports: DiagnosticLevel;
 
@@ -542,6 +545,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnusedExpression,
         DiagnosticRule.reportUnnecessaryTypeIgnoreComment,
         DiagnosticRule.reportMatchNotExhaustive,
+        DiagnosticRule.reportUnreachable,
         DiagnosticRule.reportShadowedImports,
         DiagnosticRule.reportImplicitOverride,
         DiagnosticRule.reportUnreachable,
@@ -677,6 +681,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedExpression: 'none',
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
+        reportUnreachable: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
@@ -796,6 +801,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedExpression: 'warning',
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
+        reportUnreachable: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
@@ -915,6 +921,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedExpression: 'warning',
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
+        reportUnreachable: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
@@ -1264,6 +1271,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnusedExpression: 'error',
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'error',
+        reportUnreachable: 'none',
         reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,

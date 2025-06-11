@@ -304,7 +304,7 @@ describe('MissingSuper', () => {
 test('NewType1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['newType1.py']);
 
-    TestUtils.validateResults(analysisResults, 11);
+    TestUtils.validateResults(analysisResults, 13);
 });
 
 test('NewType2', () => {
@@ -335,6 +335,12 @@ test('NewType6', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['newType6.py']);
 
     TestUtils.validateResults(analysisResults, 1);
+});
+
+test('NewType7', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['newType7.py']);
+
+    TestUtils.validateResults(analysisResults, 2);
 });
 
 test('isInstance1', () => {
@@ -875,6 +881,12 @@ test('Solver44', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('Solver45', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solver45.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('SolverScoring1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solverScoring1.py']);
 
@@ -999,4 +1011,12 @@ test('SolverUnknown1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['solverUnknown1.py']);
 
     TestUtils.validateResults(analysisResults, 0);
+});
+
+test('Sentinel1', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['sentinel1.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 5);
 });

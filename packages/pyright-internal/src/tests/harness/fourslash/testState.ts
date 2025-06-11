@@ -41,16 +41,18 @@ import { ConsoleInterface, ConsoleWithLogLevel, NullConsole } from '../../../com
 import { Comparison, isNumber, isString } from '../../../common/core';
 import * as debug from '../../../common/debug';
 import { DiagnosticCategory } from '../../../common/diagnostic';
+import { DocumentRange } from '../../../common/docRange';
 import { PyrightDocStringService } from '../../../common/docStringService';
 import { FileEditAction } from '../../../common/editAction';
 import { ReadOnlyFileSystem } from '../../../common/fileSystem';
+import { Host } from '../../../common/host';
 import { LanguageServerInterface } from '../../../common/languageServerInterface';
 import { getFileExtension, normalizePath, normalizeSlashes } from '../../../common/pathUtils';
 import { convertOffsetToPosition, convertPositionToOffset } from '../../../common/positionUtils';
 import { ServiceProvider } from '../../../common/serviceProvider';
 import { createServiceProvider } from '../../../common/serviceProviderExtensions';
 import { compareStringsCaseInsensitive, compareStringsCaseSensitive } from '../../../common/stringUtils';
-import { DocumentRange, Position, Range as PositionRange, TextRange, rangesAreEqual } from '../../../common/textRange';
+import { Position, Range as PositionRange, TextRange, rangesAreEqual } from '../../../common/textRange';
 import { TextRangeCollection } from '../../../common/textRangeCollection';
 import { Uri } from '../../../common/uri/uri';
 import { UriEx, getFileSpec } from '../../../common/uri/uriUtils';
@@ -72,6 +74,7 @@ import { SignatureHelpProvider } from '../../../languageService/signatureHelpPro
 import { ParseNode } from '../../../parser/parseNodes';
 import { ParseFileResults } from '../../../parser/parser';
 import { Tokenizer } from '../../../parser/tokenizer';
+import { PartialStubService } from '../../../partialStubService';
 import { PyrightFileSystem } from '../../../pyrightFileSystem';
 import { NormalWorkspace, WellKnownWorkspaceKinds, Workspace, createInitStatus } from '../../../workspaceFactory';
 import { TestAccessHost } from '../testAccessHost';
@@ -98,8 +101,6 @@ import {
     getRangeByMarkerName,
 } from './testStateUtils';
 import { verifyWorkspaceEdit } from './workspaceEditTestUtils';
-import { Host } from '../../../common/host';
-import { PartialStubService } from '../../../partialStubService';
 import { tExpect } from 'typed-jest-expect';
 
 export interface TextChange {
@@ -604,6 +605,9 @@ export class TestState {
             }
 
             const result = resultPerFile.get(file)!;
+            if (!result.parseResults) {
+                this.raiseError(`parse results not found for ${file}`);
+            }
             resultPerFile.delete(file);
 
             for (const [category, expected] of rangesPerCategory.entries()) {
@@ -703,12 +707,10 @@ export class TestState {
         // calling `analyze` should have parse and bind all or open user files. make sure that's true at least for open files.
         for (const info of this.program.getOpened()) {
             if (!info.sourceFile.getModuleSymbolTable()) {
-                this.console.error(
-                    `Module symbol missing?: ${info.sourceFile.getUri()}, bound: ${!info.sourceFile.isBindingRequired}`
-                );
+                this.console.error(`Module symbol missing?: ${info.uri}, bound: ${!info.sourceFile.isBindingRequired}`);
 
                 // Make sure it is bound.
-                this.program.getBoundSourceFile(info.sourceFile.getUri());
+                this.program.getBoundSourceFile(info.uri);
             }
         }
 
@@ -2012,6 +2014,13 @@ export class TestState {
             if (sourceFile) {
                 const diagnostics = sourceFile.getDiagnostics(this.configOptions) || [];
                 const fileUri = sourceFile.getUri();
+                if (sourceFile.isParseRequired()) {
+                    sourceFile.parse(
+                        this.program.configOptions,
+                        this.program.importResolver,
+                        sourceFile.getFileContent()
+                    );
+                }
                 const value = {
                     fileUri,
                     parseResults: sourceFile.getParseResults(),

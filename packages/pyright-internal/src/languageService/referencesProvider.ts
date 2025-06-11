@@ -22,11 +22,12 @@ import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
 import { assertNever } from '../common/debug';
+import { DocumentRange } from '../common/docRange';
 import { ProgramView, ReferenceUseCase, SymbolUsageProvider } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
 import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
 import { ServiceKeys } from '../common/serviceKeys';
-import { DocumentRange, Position, Range, TextRange, doesRangeContain } from '../common/textRange';
+import { isRangeInRange, Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
@@ -256,7 +257,7 @@ export class ReferencesProvider {
 
         // Do we need to do a global search as well?
         if (!referencesResult.requiresGlobalSearch) {
-            this.addReferencesToResult(sourceFileInfo.sourceFile.getUri(), includeDeclaration, referencesResult);
+            this.addReferencesToResult(sourceFileInfo.uri, includeDeclaration, referencesResult);
         }
 
         for (const curSourceFileInfo of this._program.getSourceFileInfoList()) {
@@ -267,13 +268,9 @@ export class ReferencesProvider {
             if (curSourceFileInfo.isOpenByClient || !invokedFromUserFile || isUserCode(curSourceFileInfo)) {
                 // See if the reference symbol's string is located somewhere within the file.
                 // If not, we can skip additional processing for the file.
-                const fileContents = curSourceFileInfo.sourceFile.getFileContent();
+                const fileContents = curSourceFileInfo.contents;
                 if (!fileContents || referencesResult.symbolNames.some((s) => fileContents.indexOf(s) >= 0)) {
-                    this.addReferencesToResult(
-                        curSourceFileInfo.sourceFile.getUri(),
-                        includeDeclaration,
-                        referencesResult
-                    );
+                    this.addReferencesToResult(curSourceFileInfo.uri, includeDeclaration, referencesResult);
                 }
 
                 // This operation can consume significant memory, so check
@@ -308,10 +305,10 @@ export class ReferencesProvider {
                     referencesResult.providers
                 );
 
-                this.addReferencesToResult(declFileInfo.sourceFile.getUri(), includeDeclaration, tempResult);
+                this.addReferencesToResult(declFileInfo.uri, includeDeclaration, tempResult);
                 for (const result of tempResult.results) {
                     // Include declarations only. And throw away any references
-                    if (result.location.uri.equals(decl.uri) && doesRangeContain(decl.range, result.location.range)) {
+                    if (result.location.uri.equals(decl.uri) && isRangeInRange(decl.range, result.location.range)) {
                         referencesResult.addResults(result);
                     }
                 }

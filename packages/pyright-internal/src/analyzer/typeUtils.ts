@@ -53,6 +53,7 @@ import {
     ParamSpecType,
     PropertyMethodInfo,
     removeFromUnion,
+    SentinelLiteral,
     SignatureWithOffsets,
     SpecializedFunctionTypes,
     TupleTypeArg,
@@ -1348,6 +1349,10 @@ export function isLiteralLikeType(type: ClassType): boolean {
     }
 
     return false;
+}
+
+export function isSentinelLiteral(type: Type): boolean {
+    return isClassInstance(type) && type.priv.literalValue instanceof SentinelLiteral;
 }
 
 export function containsLiteralType(type: Type, includeTypeArgs = false): boolean {

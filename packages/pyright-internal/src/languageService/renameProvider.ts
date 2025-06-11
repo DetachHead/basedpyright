@@ -97,14 +97,14 @@ export class RenameProvider {
                         // TODO: why is this here? source files shouldnt be read from disk directly when using the language server.
                         // for now we just disable this check in notebooks because they use a different file uri in the lsp
                         if (curSourceFileInfo.sourceFile.getIPythonMode() !== IPythonMode.CellDocs) {
-                            const content = curSourceFileInfo.sourceFile.getFileContent() ?? '';
+                            const content = curSourceFileInfo.contents ?? '';
                             if (!referencesResult.symbolNames.some((s) => content.search(s) >= 0)) {
                                 continue;
                             }
                         }
 
                         referenceProvider.addReferencesToResult(
-                            curSourceFileInfo.sourceFile.getUri(),
+                            curSourceFileInfo.uri,
                             /* includeDeclaration */ true,
                             referencesResult
                         );

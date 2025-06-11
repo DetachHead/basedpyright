@@ -645,7 +645,6 @@
         "unpackedSubscriptIllegal": "下标中使用解包操作符需要 Python 3.11 或更高版本",
         "unpackedTypeVarTupleExpected": "此处应为已解包的 `TypeVarTuple`；使用 Unpack[{name1}] 或 *{name2}",
         "unpackedTypedDictArgument": "无法将已解包的 `TypedDict` 实参与形参匹配",
-        "unreachableCode": "代码不会被执行",
         "unreachableCodeType": "类型分析表明代码不会被执行",
         "unreachableExcept": "`except` 子句不会被执行，因为此异常已被处理",
         "unsupportedDunderAllOperation": "不支持识别对 `__all__` 执行的复杂操作，因此导出符号列表可能不正确",

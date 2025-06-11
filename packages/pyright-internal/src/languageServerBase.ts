@@ -115,6 +115,7 @@ import { ConsoleInterface, ConsoleWithLogLevel, LogLevel } from './common/consol
 import { Diagnostic as AnalyzerDiagnostic, DiagnosticCategory } from './common/diagnostic';
 import { DiagnosticRule } from './common/diagnosticRules';
 import { FileDiagnostics } from './common/diagnosticSink';
+import { DocumentRange } from './common/docRange';
 import { FileSystem, ReadOnlyFileSystem } from './common/fileSystem';
 import { FileWatcherEventType } from './common/fileWatcher';
 import { Host } from './common/host';
@@ -128,7 +129,7 @@ import { fromLSPAny, isNullProgressReporter } from './common/lspUtils';
 import { ProgressReportTracker, ProgressReporter } from './common/progressReporter';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
-import { DocumentRange, Position, Range } from './common/textRange';
+import { Position, Range } from './common/textRange';
 import { Uri } from './common/uri/uri';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';

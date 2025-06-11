@@ -534,7 +534,7 @@ test('TypeNarrowingTuple1', () => {
 test('TypeNarrowingTypedDict1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeNarrowingTypedDict1.py']);
 
-    TestUtils.validateResults(analysisResults, 8);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('TypeNarrowingTypedDict2', () => {
@@ -980,7 +980,7 @@ test('FunctionMember1', () => {
 test('FunctionMember2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['functionMember2.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 6);
 });
 
 test('Annotations1', () => {
