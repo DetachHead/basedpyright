@@ -1770,7 +1770,7 @@
 
 
 <h1 id="new-diagnostic-rules">new diagnostic rules</h1>
-<p>this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivationbehind them. for a complete list of all diagnostic rules, <a href="../../configuration/config-files/#type-check-rule-overrides">see here</a>.</p>
+<p>this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivation behind them. for a complete list of all diagnostic rules, <a href="../../configuration/config-files/#type-check-rule-overrides">see here</a>.</p>
 <h2 id="reportany"><code>reportAny</code></h2>
 <p>pyright has a few options to ban "Unknown" types such as <code>reportUnknownVariableType</code>, <code>reportUnknownParameterType</code>, etc. but "Unknown" is not a real type, rather a distinction pyright uses used to represent <code>Any</code>s that come from untyped code or unfollowed imports. if you want to ban all kinds of <code>Any</code>, pyright has no way to do that:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span> <span class="n">baz</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -1835,7 +1835,7 @@
 <div class="highlight"><pre><span></span><code><span class="n">foo</span><span class="p">:</span> <span class="nb">int</span>
 <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">foo</span><span class="p">)</span>
 </code></pre></div>
-<p>in this example, it's impossible to be <code>foo</code> to be a <code>str</code> if it's also an <code>int</code>, because the <code>int</code> and <code>str</code> types do not overlap. the <code>reportInvalidCast</code> rule will report invalid casts like these.</p>
+<p>in this example, it's impossible for <code>foo</code> to be a <code>str</code> if it's also an <code>int</code>, because the <code>int</code> and <code>str</code> types do not overlap. the <code>reportInvalidCast</code> rule will report invalid casts like these.</p>
 <div class="admonition note">
 <p class="admonition-title">note about casting with <code>TypedDict</code>s</p>
 <p>a common use case of <code>cast</code> is to convert a regular <code>dict</code> into a <code>TypedDict</code>:</p>
