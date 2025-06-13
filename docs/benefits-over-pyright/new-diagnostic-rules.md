@@ -1,6 +1,6 @@
 # new diagnostic rules
 
-this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivationbehind them. for a complete list of all diagnostic rules, [see here](../configuration/config-files.md#type-check-rule-overrides).
+this section lists all of the new diagnostic rules that are exclusive to basedpyright and the motivation behind them. for a complete list of all diagnostic rules, [see here](../configuration/config-files.md#type-check-rule-overrides).
 
 ## `reportAny`
 
