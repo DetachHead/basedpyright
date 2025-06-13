@@ -107,7 +107,7 @@ foo: int
 cast(str, foo)
 ```
 
-in this example, it's impossible to be `foo` to be a `str` if it's also an `int`, because the `int` and `str` types do not overlap. the `reportInvalidCast` rule will report invalid casts like these.
+in this example, it's impossible for `foo` to be a `str` if it's also an `int`, because the `int` and `str` types do not overlap. the `reportInvalidCast` rule will report invalid casts like these.
 
 !!! note "note about casting with `TypedDict`s"
 
