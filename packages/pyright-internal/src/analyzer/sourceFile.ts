@@ -115,6 +115,13 @@ export const getIPythonCells = (fileSystem: FileSystem, uri: Uri, console: Conso
     }
     try {
         const parsedNotebook = JSON.parse(fileContent) as INotebookContent;
+
+        // https://github.com/microsoft/vscode/blob/7e4e0f4e55d0d0a2a931aa4e0b7acc518e5da0dd/extensions/ipynb/src/notebookSerializer.ts#L49
+        // VSCode does not support jupyter nbformat 3 since 1.63.0
+        if (parsedNotebook.nbformat && parsedNotebook.nbformat < 4) {
+            return;
+        }
+
         return parsedNotebook.cells.filter(
             (cell) =>
                 cell.cell_type === 'code' &&
