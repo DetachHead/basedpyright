@@ -25,6 +25,11 @@ test('non-python cell', () => {
     tExpect(analysisResults.length).toStrictEqual(0);
 });
 
+test('skip parsing old format notebook', () => {
+    const analysisResults = typeAnalyzeSampleFiles(['notebook_old_format.ipynb']);
+    tExpect(analysisResults.length).toStrictEqual(0);
+});
+
 test('invalid notebook file', () => {
     const console = new ErrorTrackingNullConsole();
     typeAnalyzeSampleFiles(['notebook3.ipynb'], undefined, console);
