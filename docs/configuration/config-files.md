@@ -432,7 +432,7 @@ basedpyright introduces two new diagnostic rulesets in addition to the ones in p
 
 ## Overriding language server settings
 
-If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [dicouraged language server settings](./language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
+If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` exists, any [discouraged language server settings](./language-server-settings.md#discouraged-settings) (eg. in a VS Code `settings.json`) will be ignored. `pyrightconfig.json` is prescribing the environment to be used for a particular project. Changing the environment configuration options per user is not supported.
 
 If a `pyproject.toml` (with a `basedpyright` or `pyright` section) or a `pyrightconfig.json` does not exist, then the language server settings apply.
 
