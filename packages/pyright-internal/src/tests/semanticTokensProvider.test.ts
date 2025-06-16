@@ -24,16 +24,27 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('imports', () => {
         const result = semanticTokenizeSampleFile('imports.py');
         expect(result).toStrictEqual([
-            //TODO: fix duplicates
-            { type: 'namespace', modifiers: [], start: 5, length: 6 },
-            { type: 'type', modifiers: [], start: 19, length: 5 },
-            { type: 'type', modifiers: [], start: 19, length: 5 },
-            { type: 'class', modifiers: [], start: 26, length: 8 },
-            { type: 'class', modifiers: [], start: 38, length: 3 },
-            { type: 'namespace', modifiers: [], start: 47, length: 11 },
-            { type: 'namespace', modifiers: [], start: 59, length: 3 },
-            { type: 'class', modifiers: [], start: 70, length: 8 },
-            { type: 'class', modifiers: [], start: 70, length: 8 },
+            { type: 'namespace', modifiers: [], start: 7, length: 4 }, // json
+            { type: 'namespace', modifiers: [], start: 19, length: 4 }, // json
+            { type: 'namespace', modifiers: [], start: 27, length: 4 }, // JSON
+            { type: 'namespace', modifiers: [], start: 39, length: 2 }, // os
+            { type: 'namespace', modifiers: [], start: 42, length: 4 }, // path
+            { type: 'namespace', modifiers: [], start: 50, length: 2 }, // p1
+            { type: 'namespace', modifiers: [], start: 58, length: 2 }, // os
+            { type: 'namespace', modifiers: [], start: 68, length: 4 }, // path
+            { type: 'namespace', modifiers: [], start: 76, length: 2 }, // p2
+            { type: 'namespace', modifiers: [], start: 84, length: 2 }, // re
+            { type: 'function', modifiers: [], start: 94, length: 5 }, // match
+            { type: 'function', modifiers: [], start: 101, length: 6 }, // search
+            { type: 'function', modifiers: [], start: 111, length: 1 }, // s
+            { type: 'variable', modifiers: ['readonly'], start: 114, length: 10 }, // IGNORECASE
+            { type: 'namespace', modifiers: [], start: 130, length: 6 }, // typing
+            { type: 'type', modifiers: [], start: 144, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 151, length: 8 }, // Iterable
+            { type: 'class', modifiers: [], start: 163, length: 3 }, // Foo
+            { type: 'namespace', modifiers: [], start: 172, length: 11 }, // collections
+            { type: 'namespace', modifiers: [], start: 184, length: 3 }, // abc
+            { type: 'class', modifiers: [], start: 195, length: 8 }, // Iterator
         ]);
     });
 
@@ -42,7 +53,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 },
             { type: 'class', modifiers: [], start: 19, length: 5 },
-            { type: 'class', modifiers: [], start: 19, length: 5 },
             { type: 'variable', modifiers: ['readonly'], start: 26, length: 3 },
             { type: 'variable', modifiers: ['readonly'], start: 34, length: 3 },
             { type: 'class', modifiers: [], start: 39, length: 5 },
@@ -50,24 +60,20 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: ['readonly'], start: 55, length: 2 },
             { type: 'class', modifiers: [], start: 59, length: 5 },
             { type: 'class', modifiers: ['definition'], start: 76, length: 3 },
-            { type: 'class', modifiers: [], start: 76, length: 3 },
             { type: 'method', modifiers: ['definition'], start: 103, length: 3 },
             { type: 'decorator', modifiers: [], start: 85, length: 1 },
             { type: 'decorator', modifiers: [], start: 86, length: 8 },
-            { type: 'method', modifiers: [], start: 103, length: 3 },
             { type: 'selfParameter', modifiers: ['definition'], start: 107, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 116, length: 3 },
             { type: 'method', modifiers: ['definition'], start: 148, length: 3 },
             { type: 'decorator', modifiers: [], start: 130, length: 1 },
             { type: 'decorator', modifiers: [], start: 131, length: 8 },
-            { type: 'method', modifiers: [], start: 148, length: 3 },
             { type: 'selfParameter', modifiers: ['definition'], start: 152, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 161, length: 3 },
             { type: 'method', modifiers: ['definition'], start: 194, length: 3 },
             { type: 'decorator', modifiers: [], start: 174, length: 1 },
             { type: 'variable', modifiers: [], start: 175, length: 3 },
             { type: 'function', modifiers: [], start: 179, length: 6 },
-            { type: 'method', modifiers: [], start: 194, length: 3 },
             { type: 'selfParameter', modifiers: ['definition'], start: 198, length: 4 },
             { type: 'parameter', modifiers: ['definition'], start: 204, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 211, length: 3 },
@@ -90,16 +96,13 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
             { type: 'type', modifiers: [], start: 19, length: 5 }, // Never
-            { type: 'type', modifiers: [], start: 19, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 26, length: 3 }, // foo
             { type: 'type', modifiers: [], start: 31, length: 5 }, // Never
             { type: 'type', modifiers: [], start: 37, length: 3 }, // bar
             { type: 'type', modifiers: [], start: 43, length: 5 }, // Never
             { type: 'function', modifiers: ['definition'], start: 54, length: 3 }, // baz
-            { type: 'function', modifiers: [], start: 54, length: 3 }, // baz
             { type: 'type', modifiers: [], start: 63, length: 5 }, // Never
             { type: 'function', modifiers: ['definition'], start: 83, length: 4 }, // asdf
-            { type: 'function', modifiers: [], start: 83, length: 4 }, // asdf
             { type: 'parameter', modifiers: ['definition'], start: 88, length: 3 }, // foo
             { type: 'type', modifiers: [], start: 93, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 105, length: 5 }, // value
@@ -111,7 +114,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 148, length: 5 }, // value
             { type: 'type', modifiers: [], start: 155, length: 4 }, // Type
             { type: 'function', modifiers: ['definition'], start: 169, length: 8 }, // inferred
-            { type: 'function', modifiers: [], start: 169, length: 8 }, // inferred
             { type: 'variable', modifiers: [], start: 185, length: 5 }, // value
             { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 207, length: 10 }, // isinstance
             { type: 'variable', modifiers: [], start: 218, length: 5 }, // value
@@ -136,9 +138,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 },
             { type: 'class', modifiers: [], start: 19, length: 8 },
-            { type: 'class', modifiers: [], start: 19, length: 8 },
             { type: 'function', modifiers: ['definition'], start: 34, length: 3 },
-            { type: 'function', modifiers: [], start: 34, length: 3 },
             { type: 'parameter', modifiers: ['definition'], start: 38, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 },
             { type: 'parameter', modifiers: ['definition'], start: 47, length: 1 },
@@ -161,7 +161,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 },
             { type: 'class', modifiers: [], start: 19, length: 9 },
-            { type: 'class', modifiers: [], start: 19, length: 9 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 30, length: 3 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 36, length: 3 },
             { type: 'class', modifiers: [], start: 40, length: 3 },
@@ -177,14 +176,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('builtin_identifiers.py');
         expect(result).toStrictEqual([
             // imports
-            // TODO: Fix duplicates
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
             { type: 'class', modifiers: [], start: 19, length: 4 }, // List
-            { type: 'class', modifiers: [], start: 19, length: 4 },
             { type: 'class', modifiers: [], start: 25, length: 3 }, // Set
-            { type: 'class', modifiers: [], start: 25, length: 3 },
             { type: 'class', modifiers: [], start: 30, length: 9 }, // TypeAlias
-            { type: 'class', modifiers: [], start: 30, length: 9 },
             // type aliases
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 }, // Foo
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 47, length: 4 }, // list
@@ -213,41 +208,33 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('decorators', () => {
         const result = semanticTokenizeSampleFile('decorators.py');
         expect(result).toStrictEqual([
-            // TODO: Fix duplicates
             { type: 'namespace', modifiers: [], start: 7, length: 11 }, // dataclasses
             { type: 'namespace', modifiers: [], start: 24, length: 11 }, // dataclasses
             { type: 'function', modifiers: [], start: 43, length: 9 }, // dataclass
-            { type: 'function', modifiers: [], start: 43, length: 9 }, // dataclass
             { type: 'namespace', modifiers: [], start: 60, length: 9 }, // functools
             { type: 'namespace', modifiers: [], start: 75, length: 6 }, // typing
-            { type: 'function', modifiers: [], start: 89, length: 5 }, // final
             { type: 'function', modifiers: [], start: 89, length: 5 }, // final
 
             { type: 'class', modifiers: ['definition'], start: 115, length: 1 }, // A
             { type: 'decorator', modifiers: [], start: 96, length: 1 }, // @
             { type: 'function', modifiers: [], start: 97, length: 9 },
-            { type: 'class', modifiers: [], start: 115, length: 1 },
 
             { type: 'class', modifiers: ['definition'], start: 154, length: 1 }, // B
             { type: 'decorator', modifiers: [], start: 123, length: 1 }, // @
             { type: 'namespace', modifiers: [], start: 124, length: 11 }, // dataclasses
             { type: 'function', modifiers: [], start: 136, length: 9 }, // dataclass
-            { type: 'class', modifiers: [], start: 154, length: 1 },
             { type: 'method', modifiers: ['definition'], start: 176, length: 6 }, // method
             { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
-            { type: 'method', modifiers: [], start: 176, length: 6 },
             { type: 'selfParameter', modifiers: ['definition'], start: 183, length: 4 }, // self
             { type: 'method', modifiers: ['definition'], start: 220, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 199, length: 12 },
-            { type: 'method', modifiers: [], start: 220, length: 6 },
 
             { type: 'function', modifiers: ['definition'], start: 256, length: 6 }, // cached
             { type: 'decorator', modifiers: [], start: 235, length: 1 }, // @
             { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
             { type: 'function', modifiers: [], start: 246, length: 5 }, // cache
-            { type: 'function', modifiers: [], start: 256, length: 6 },
         ]);
     });
 
@@ -256,9 +243,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             // method
             { type: 'class', modifiers: ['definition'], start: 6, length: 1 }, // C
-            { type: 'class', modifiers: [], start: 6, length: 1 },
             { type: 'method', modifiers: ['definition'], start: 17, length: 8 }, // __init__
-            { type: 'method', modifiers: [], start: 17, length: 8 },
             { type: 'selfParameter', modifiers: ['definition'], start: 26, length: 4 }, // self
             { type: 'parameter', modifiers: ['definition'], start: 32, length: 1 }, // x
             { type: 'selfParameter', modifiers: [], start: 44, length: 4 }, // self
@@ -267,17 +252,14 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'method', modifiers: ['definition'], start: 81, length: 1 }, // m
             { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 61, length: 11 },
-            { type: 'method', modifiers: [], start: 81, length: 1 },
             { type: 'clsParameter', modifiers: ['definition'], start: 83, length: 3 }, // cls
             { type: 'clsParameter', modifiers: [], start: 104, length: 3 }, // cls
             // function
             { type: 'function', modifiers: ['definition'], start: 116, length: 1 }, // f
-            { type: 'function', modifiers: [], start: 116, length: 1 },
             { type: 'parameter', modifiers: ['definition'], start: 118, length: 1 }, // x
             { type: 'parameter', modifiers: ['definition'], start: 121, length: 1 }, // y
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 124, length: 3 }, // int
             { type: 'function', modifiers: ['definition'], start: 138, length: 1 }, // g
-            { type: 'function', modifiers: [], start: 138, length: 1 },
             { type: 'parameter', modifiers: ['definition'], start: 140, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 159, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 163, length: 1 }, // y
@@ -298,9 +280,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
             { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
-            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
             { type: 'function', modifiers: ['definition'], start: 28, length: 1 }, // f
-            { type: 'function', modifiers: [], start: 28, length: 1 },
             { type: 'parameter', modifiers: ['definition'], start: 30, length: 1 }, // l
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
             { type: 'type', modifiers: [], start: 42, length: 3 }, // Any
