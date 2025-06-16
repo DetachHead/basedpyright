@@ -83,7 +83,7 @@
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
     "typescript.inlayHints.enumMemberValues.enabled": true,
-    "jest.jestCommandLine": "npm run jest --",
+    "jest.jestCommandLine": "./pw uv run npm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pyprojectx/**/*": true,
