@@ -27,7 +27,7 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
-import { isFunctionDeclaration, isAliasDeclaration, isParamDeclaration } from './declaration';
+import { isFunctionDeclaration, isAliasDeclaration, isParamDeclaration, isClassDeclaration } from './declaration';
 import { getScopeForNode } from './scopeUtils';
 import { ScopeType } from './scope';
 import { assertNever } from '../common/debug';
@@ -100,9 +100,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitImportFromAs(node: ImportFromAsNode): boolean {
-        const type = this._evaluator?.getType(node.d.alias ?? node.d.name);
-        if (type) {
-            this._visitNameWithType(node.d.name, type);
+        // `node.d.name` is handled by `visitName`
+        if (node.d.alias) {
+            const type = this._evaluator?.getType(node.d.alias);
+            if (type) {
+                this._visitNameWithType(node.d.name, type);
+            }
         }
         return super.visitImportFromAs(node);
     }
@@ -180,15 +183,19 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
                 if (!TypeBase.isInstance(type)) {
+                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
+
+                    // Avoid duplicates for classes visited by `visitClass`
+                    if (declarations?.some((decl) => isClassDeclaration(decl) && node.id === decl.node.d.name.id)) {
+                        return;
+                    }
+
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
-                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
-                    const isPEP613TypeAlias =
-                        declarations &&
-                        declarations.some((declaration) =>
-                            this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
-                        );
+                    const isPEP613TypeAlias = declarations?.some((declaration) =>
+                        this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
+                    );
                     const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
                     const isBuiltIn =
@@ -253,6 +260,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     private _visitFunctionWithType(node: NameNode, type: FunctionType) {
+        // Avoid duplicates for functions/methods visited by `visitFunction`
+        const isDeclaration = this._evaluator
+            ?.getDeclInfoForNameNode(node)
+            ?.decls.some((decl) => isFunctionDeclaration(decl) && node.id === decl.node.d.name.id);
+        if (isDeclaration) {
+            return;
+        }
+
         // type alias to Callable
         if (!TypeBase.isInstance(type)) {
             this._addItemForNameNode(node, SemanticTokenTypes.type, []);
