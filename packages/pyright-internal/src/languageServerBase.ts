@@ -1125,6 +1125,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 : undefined;
             return new InlayHintsProvider(program, uri, autoImporter, params.range, {
                 callArgumentNames: workspace.inlayHints?.callArgumentNames ?? true,
+                callArgumentNamesMatching: workspace.inlayHints?.callArgumentNamesMatching ?? false,
                 functionReturnTypes: workspace.inlayHints?.functionReturnTypes ?? true,
                 variableTypes: workspace.inlayHints?.variableTypes ?? true,
                 genericTypes: workspace.inlayHints?.genericTypes ?? false,

@@ -9,7 +9,7 @@ foo(value=1)  # no inlay hint
 foo(1, "")  # 2 inlay hints
 
 value=3
-foo(value, "")  # only 1 inlay hint for bar since value has the same name
+foo(value, "")  # only 1 inlay hint for bar since value has the same name (unless callArgumentNamesMatching is set)
 
 @overload
 def bar(a: int) -> int: ...

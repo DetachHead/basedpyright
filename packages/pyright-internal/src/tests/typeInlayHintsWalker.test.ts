@@ -98,9 +98,23 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { inlayHintType: 'parameter', position: 175, value: 'value=' },
             { inlayHintType: 'parameter', position: 178, value: 'bar=' },
             { inlayHintType: 'parameter', position: 219, value: 'bar=' },
-            { inlayHintType: 'parameter', position: 418, value: 'a=' },
-            { inlayHintType: 'parameter', position: 446, value: 'b=' },
-            { inlayHintType: 'parameter', position: 669, value: 'b=' },
+            { inlayHintType: 'parameter', position: 460, value: 'a=' },
+            { inlayHintType: 'parameter', position: 488, value: 'b=' },
+            { inlayHintType: 'parameter', position: 711, value: 'b=' },
+        ]);
+    });
+
+    test('function calls param matching', () => {
+        const result = inlayHintSampleFile('function_calls.py', undefined, { callArgumentNamesMatching: true });
+        tExpect(result).toStrictEqual([
+            { inlayHintType: 'parameter', position: 99, value: 'value=' },
+            { inlayHintType: 'parameter', position: 175, value: 'value=' },
+            { inlayHintType: 'parameter', position: 178, value: 'bar=' },
+            { inlayHintType: 'parameter', position: 212, value: 'value=' }, // this one is unique to callArgumentNamesMatching: true
+            { inlayHintType: 'parameter', position: 219, value: 'bar=' },
+            { inlayHintType: 'parameter', position: 460, value: 'a=' },
+            { inlayHintType: 'parameter', position: 488, value: 'b=' },
+            { inlayHintType: 'parameter', position: 711, value: 'b=' },
         ]);
     });
 
