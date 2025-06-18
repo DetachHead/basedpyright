@@ -1922,7 +1922,7 @@
                 "basedpyright.analysis.inlayHints.callArgumentNamesMatching": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Whether to show inlay hints on function arguments when the input matches the argument name.",
+                    "description": "Whether to show inlay hints on function arguments when the input expression is a variable with the same name as the parameter.",
                     "scope": "resource"
                 },
                 "basedpyright.analysis.inlayHints.functionReturnTypes": {
