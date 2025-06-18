@@ -22,6 +22,7 @@ export interface InlayHintSettings {
      * for positional only arguments which i think is dumb so we don't support it
      */
     callArgumentNames: boolean;
+    callArgumentNamesMatching: boolean;
     functionReturnTypes: boolean;
     variableTypes: boolean;
     genericTypes: boolean;

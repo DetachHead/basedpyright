@@ -122,6 +122,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             functionSignatureDisplay: SignatureDisplayType.formatted,
             inlayHints: {
                 callArgumentNames: true,
+                callArgumentNamesMatching: false,
                 functionReturnTypes: true,
                 variableTypes: true,
                 genericTypes: false,

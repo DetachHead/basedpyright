@@ -47,6 +47,8 @@ the following settings are exclusive to basedpyright
 
 ![](inlayHints.callArgumentNames.png)
 
+**basedpyright.analysis.inlayHints.callArgumentNamesMatching** [boolean]: Whether to show inlay hints on function arguments when the input expression is a variable with the same name as the parameter. Defaults to `false`.
+
 **basedpyright.analysis.inlayHints.functionReturnTypes** [boolean]: Whether to show inlay hints on function return types. Defaults to `true`:
 
 ![](inlayHints.functionReturnTypes.png)

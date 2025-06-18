@@ -169,7 +169,14 @@ export const inlayHintSampleFile = (
     program.setTrackedFiles([fileUri]);
     const walker = new TypeInlayHintsWalker(
         program,
-        { callArgumentNames: true, functionReturnTypes: true, variableTypes: true, genericTypes: false, ...settings },
+        {
+            callArgumentNames: true,
+            callArgumentNamesMatching: false,
+            functionReturnTypes: true,
+            variableTypes: true,
+            genericTypes: false,
+            ...settings,
+        },
         fileUri,
         range
     );
