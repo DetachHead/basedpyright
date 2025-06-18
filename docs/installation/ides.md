@@ -12,6 +12,27 @@ for information on how to configure the language server in your IDE, [see here](
 
     install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 
+    !!! warning ""
+
+        If `basedpyright` is installed within a virtual environment and the official Python extension (`ms-python`) is not or cannot be present,
+        
+        the VSCode extension will crash on load. This is a known issue (#1188) and is caused because automatic interpreter detection, which
+        
+        this extension needs to detect the correct path for `basedpyright`, is provided only by `ms-python`. 
+        
+        The `basedpyright` VSCode extension by design does not depend an explicit dependency to `ms-python`, due to concerns about
+        
+        telemetry collection and to enable installing the extension on non-Microsoft-blessed VSCode builds such as VSCodium or Cursor.
+        
+
+
+        There are two workarounds for this problem:
+
+        - Manually install `ms-python`
+
+        - Set `basedpyright.importStrategy` to `useBundled` in your .vscode/settings.json
+
+
     ??? "using basedpyright with pylance (not recommended)"
 
         unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.
