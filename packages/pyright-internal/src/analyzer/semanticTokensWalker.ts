@@ -2,7 +2,6 @@ import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
 import {
     ClassType,
-    ClassTypeFlags,
     FunctionType,
     getTypeAliasInfo,
     isClass,
@@ -10,7 +9,6 @@ import {
     Type,
     TypeBase,
     TypeCategory,
-    TypeFlags,
 } from './types';
 import {
     ClassNode,
@@ -29,9 +27,11 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
-import { isAliasDeclaration, isParamDeclaration } from './declaration';
+import { isFunctionDeclaration, isAliasDeclaration, isParamDeclaration, isClassDeclaration } from './declaration';
 import { getScopeForNode } from './scopeUtils';
 import { ScopeType } from './scope';
+import { assertNever } from '../common/debug';
+import { getDeclaration } from './analyzerNodeInfo';
 
 export type SemanticTokenItem = {
     type: string;
@@ -57,8 +57,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (node.d.isAsync) {
             modifiers.push(SemanticTokenModifiers.async);
         }
-        //TODO: whats the correct type here
-        if ((node.a as any).declaration?.isMethod) {
+        const decl = getDeclaration(node);
+        if (decl && isFunctionDeclaration(decl) && decl.isMethod) {
             this._addItemForNameNode(node.d.name, SemanticTokenTypes.method, modifiers);
         } else {
             this._addItemForNameNode(node.d.name, SemanticTokenTypes.function, modifiers);
@@ -100,7 +100,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitImportFromAs(node: ImportFromAsNode): boolean {
-        this._visitNameWithType(node.d.name, this._evaluator?.getType(node.d.alias ?? node.d.name));
+        // `node.d.name` is handled by `visitName`
+        if (node.d.alias) {
+            const type = this._evaluator?.getType(node.d.alias);
+            if (type) {
+                this._visitNameWithType(node.d.name, type);
+            }
+        }
         return super.visitImportFromAs(node);
     }
 
@@ -114,7 +120,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     override visitName(node: NameNode): boolean {
         // covered by visitDecorator
         if (node.parent?.nodeType !== ParseNodeType.Decorator) {
-            this._visitNameWithType(node, this._evaluator?.getType(node));
+            const type = this._evaluator?.getType(node);
+            if (type) {
+                this._visitNameWithType(node, type);
+            }
         }
         return super.visitName(node);
     }
@@ -134,80 +143,59 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             const declaredType = this._evaluator.getDeclaredTypeForExpression(node, {
                 method: 'set',
             });
-            if (declaredType && isClass(declaredType) && declaredType.shared.flags & ClassTypeFlags.PropertyClass) {
+            if (declaredType && isClass(declaredType) && ClassType.isPropertyClass(declaredType)) {
                 this._addItemForNameNode(node.d.member, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
             }
         }
         return super.visitMemberAccess(node);
     }
 
-    private _visitNameWithType(node: NameNode, type: Type | undefined) {
-        switch (type?.category) {
-            case TypeCategory.Function:
-                if (type.flags & TypeFlags.Instance) {
-                    if ((type as FunctionType).shared.declaration?.isMethod) {
-                        this._addItemForNameNode(node, SemanticTokenTypes.method, []);
-                    } else {
-                        const modifiers = this.builtinModules.has(type.shared.moduleName)
-                            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
-                            : [];
-                        this._addItemForNameNode(node, SemanticTokenTypes.function, modifiers);
-                    }
-                } else {
-                    // type alias to Callable
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
-                }
-                return;
-            case TypeCategory.Overloaded:
-                if (type.flags & TypeFlags.Instance) {
-                    const details = OverloadedType.getOverloads(type)[0].shared;
-                    if (details.declaration?.isMethod) {
-                        this._addItemForNameNode(node, SemanticTokenTypes.method, []);
-                    } else {
-                        const modifiers = this.builtinModules.has(details.moduleName)
-                            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
-                            : [];
-                        this._addItemForNameNode(node, SemanticTokenTypes.function, modifiers);
-                    }
-                } else {
-                    // dunno if this is possible but better safe than sorry!!!
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
-                }
-                return;
-
-            case TypeCategory.Module:
-                this._addItemForNameNode(node, SemanticTokenTypes.namespace, []);
-                return;
+    private _visitNameWithType(node: NameNode, type: Type) {
+        switch (type.category) {
             case TypeCategory.Any:
                 if (type.props?.specialForm) {
                     this._addItemForNameNode(node, SemanticTokenTypes.type, []);
                     return;
                 }
-            // eslint-disable-next-line no-fallthrough -- intentional fallthrough. these are handled below
+                break;
+            // these are handled below
             case TypeCategory.Unknown:
             case TypeCategory.TypeVar:
+            case TypeCategory.Never:
                 break;
             case TypeCategory.Unbound:
-            case undefined:
+                return;
+            case TypeCategory.Function:
+                this._visitFunctionWithType(node, type);
+                return;
+            case TypeCategory.Overloaded:
+                this._visitFunctionWithType(node, OverloadedType.getOverloads(type)[0]);
+                return;
+            case TypeCategory.Module:
+                this._addItemForNameNode(node, SemanticTokenTypes.namespace, []);
                 return;
             case TypeCategory.Union:
-                if (!(type.flags & TypeFlags.Instance)) {
+                if (!TypeBase.isInstance(type)) {
                     this._addItemForNameNode(node, SemanticTokenTypes.type, []);
                     return;
                 }
                 break;
             case TypeCategory.Class:
                 //type annotations handled by visitTypeAnnotation
-                if (!(type.flags & TypeFlags.Instance)) {
+                if (!TypeBase.isInstance(type)) {
+                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
+
+                    // Avoid duplicates for classes visited by `visitClass`
+                    if (declarations?.some((decl) => isClassDeclaration(decl) && node.id === decl.node.d.name.id)) {
+                        return;
+                    }
+
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
-                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
-                    const isPEP613TypeAlias =
-                        declarations &&
-                        declarations.some((declaration) =>
-                            this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
-                        );
+                    const isPEP613TypeAlias = declarations?.some((declaration) =>
+                        this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
+                    );
                     const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
                     const isBuiltIn =
@@ -223,9 +211,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     this._addItemForNameNode(node, SemanticTokenTypes.class, modifiers);
                     return;
                 }
+                break;
+            default:
+                assertNever(type);
         }
         const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
-        if (type?.category === TypeCategory.Never && symbol) {
+        if (type.category === TypeCategory.Never && symbol) {
             const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
             if (
                 // check for new python 3.12 type alias syntax
@@ -243,21 +234,21 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
         }
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
-        if (declarations?.some(isParamDeclaration)) {
-            const paramDef = declarations[0].node as ParameterNode;
-            const parent = paramDef.parent as FunctionNode | LambdaNode;
+        const paramNode = declarations?.find(isParamDeclaration)?.node;
+        if (paramNode) {
+            const parent = paramNode.parent as FunctionNode | LambdaNode;
             // Avoid duplicates for parameters visited by `visitParameter`
             if (!parent.d.params.some((param) => param.d.name?.id === node.id)) {
-                this._addItemForNameNode(node, this._getParamSemanticToken(paramDef, type), []);
+                this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), []);
             }
-        } else if (type?.category === TypeCategory.TypeVar && !(type.flags & TypeFlags.Instance)) {
+        } else if (type.category === TypeCategory.TypeVar && !TypeBase.isInstance(type)) {
             // `cls` method parameter is treated as a TypeVar in some special methods (methods
             // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
             // check first if it's a parameter before checking that it's a TypeVar
             this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, []);
             return;
         } else if (
-            (type?.category === TypeCategory.Unknown || type?.category === TypeCategory.Any) &&
+            (type.category === TypeCategory.Unknown || type.category === TypeCategory.Any) &&
             (declarations === undefined || declarations.length === 0 || declarations.every(isAliasDeclaration))
         ) {
             return;
@@ -266,6 +257,30 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         } else {
             this._addItemForNameNode(node, SemanticTokenTypes.variable, []);
         }
+    }
+
+    private _visitFunctionWithType(node: NameNode, type: FunctionType) {
+        // Avoid duplicates for functions/methods visited by `visitFunction`
+        const isDeclaration = this._evaluator
+            ?.getDeclInfoForNameNode(node)
+            ?.decls.some((decl) => isFunctionDeclaration(decl) && node.id === decl.node.d.name.id);
+        if (isDeclaration) {
+            return;
+        }
+
+        // type alias to Callable
+        if (!TypeBase.isInstance(type)) {
+            this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+            return;
+        }
+        if (type.shared.declaration?.isMethod) {
+            this._addItemForNameNode(node, SemanticTokenTypes.method, []);
+            return;
+        }
+        const modifiers = this.builtinModules.has(type.shared.moduleName)
+            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+            : [];
+        this._addItemForNameNode(node, SemanticTokenTypes.function, modifiers);
     }
 
     private _getParamSemanticToken(node: ParameterNode, type?: Type): string {
@@ -287,7 +302,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.parameter;
         }
 
-        return type?.flags && TypeBase.isInstantiable(type)
+        return type && TypeBase.isInstantiable(type)
             ? CustomSemanticTokenTypes.clsParameter
             : CustomSemanticTokenTypes.selfParameter;
     }
