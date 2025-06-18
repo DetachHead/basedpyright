@@ -20,7 +20,7 @@ for information on how to configure the language server in your IDE, [see here](
         
         this extension needs to detect the correct path for `basedpyright`, is provided only by `ms-python`. 
         
-        The `basedpyright` VSCode extension by design does not depend an explicit dependency to `ms-python`, due to concerns about
+        The `basedpyright` VSCode extension by design does not depend explicitly on `ms-python`, due to concerns about
         
         telemetry collection and to enable installing the extension on non-Microsoft-blessed VSCode builds such as VSCodium or Cursor.
         
