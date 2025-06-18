@@ -12,7 +12,7 @@ for information on how to configure the language server in your IDE, [see here](
 
     install the extension from [the vscode extension marketplace](https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright)
 
-    !!! warning ""
+    !!! warning 
 
         If `basedpyright` is installed within a virtual environment and the official Python extension (`ms-python`) is not or cannot be present,
         
