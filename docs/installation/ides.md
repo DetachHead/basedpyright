@@ -37,9 +37,20 @@ for information on how to configure the language server in your IDE, [see here](
 
 the basedpyright extension will automatically look for the pypi package in your python environment.
 
-!!! tip
+!!! warning
 
-    if you're adding basedpyright as a development dependency to your project, we recommend adding it to the recommended extensions list in your workspace:
+    If `basedpyright` is installed within a virtual environment and the official Python extension ([`ms-python`](https://marketplace.visualstudio.com/items?itemName=ms-python.python)) is not installed, the VSCode extension will crash on load. This is a known issue ([#1188](https://github.com/detachhead/basedpyright/issues/1188)) because the automatic python interpreter detection is provided only by `ms-python`.
+
+    The `basedpyright` VSCode extension by design does not depend explicitly on `ms-python`, due to concerns about telemetry.
+
+    There are two workarounds for this problem:
+
+    - Manually install `ms-python`
+    - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json
+
+??? tip "if adding basedpyright as a development dependency to your project"
+
+    we recommend adding it to the recommended extensions list in your workspace:
 
     ```json title=".vscode/extensions.json"
     {
