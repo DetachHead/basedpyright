@@ -1760,15 +1760,25 @@
 </div>
 </div>
 <p>the basedpyright extension will automatically look for the pypi package in your python environment.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>if you're adding basedpyright as a development dependency to your project, we recommend adding it to the recommended extensions list in your workspace:</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If <code>basedpyright</code> is installed within a virtual environment and the official Python extension (<a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python"><code>ms-python</code></a>) is not installed, the VSCode extension will crash on load. This is a known issue (<a href="https://github.com/detachhead/basedpyright/issues/1188">#1188</a>) because the automatic python interpreter detection is provided only by <code>ms-python</code>.</p>
+<p>The <code>basedpyright</code> VSCode extension by design does not depend explicitly on <code>ms-python</code>, due to concerns about telemetry.</p>
+<p>There are two workarounds for this problem:</p>
+<ul>
+<li>Manually install <code>ms-python</code></li>
+<li>Set <code>basedpyright.importStrategy</code> to <code>useBundled</code> in your `.vscode/settings.json</li>
+</ul>
+</div>
+<details class="tip">
+<summary>if adding basedpyright as a development dependency to your project</summary>
+<p>we recommend adding it to the recommended extensions list in your workspace:</p>
 <div class="highlight"><span class="filename">.vscode/extensions.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;recommendations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;detachhead.basedpyright&quot;</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>you should commit this file so that it prompts others working on your repo to install the extension as well.</p>
-</div>
+</details>
 <h2 id="neovim">Neovim</h2>
 <p>You need to install the LSP client adapter plugin,
 <a href="https://github.com/neovim/nvim-lspconfig">nvim-lspconfig</a>, for setting up the
