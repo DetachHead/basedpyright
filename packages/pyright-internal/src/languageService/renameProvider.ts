@@ -7,7 +7,7 @@
  * Logic that rename identifier on the given position and its references.
  */
 
-import { CancellationToken, WorkspaceEdit } from 'vscode-languageserver';
+import { CancellationToken, ChangeAnnotation, WorkspaceEdit } from 'vscode-languageserver';
 
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -154,7 +154,16 @@ export class RenameProvider {
             });
         });
 
-        return convertToWorkspaceEdit(this._ls, this._program.fileSystem, { edits, fileOperations: [] });
+        const symbolNames = this._getRenameSymbolNames(referencesResult.symbolNames) ?? 'symbol';
+        return convertToWorkspaceEdit(
+            this._ls,
+            this._program.fileSystem,
+            { edits, fileOperations: [] },
+            {
+                rename_symbol: ChangeAnnotation.create('Rename', false, `Rename ${symbolNames} to ${newName}`),
+            },
+            'rename_symbol'
+        );
     }
 
     static getRenameSymbolMode(
@@ -228,5 +237,15 @@ export class RenameProvider {
             referencesResult.useCase,
             referencesResult.providers
         );
+    }
+
+    private _getRenameSymbolNames(names: string[]): string | null {
+        if (names.length === 1) {
+            return names[0];
+        } else if (names.length > 1) {
+            return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+        } else {
+            return null;
+        }
     }
 }
