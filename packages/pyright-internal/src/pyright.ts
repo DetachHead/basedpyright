@@ -1464,7 +1464,6 @@ const reportDiagnosticsAsGithubActionsCommands = (
     if (result.errorCount !== 0) {
         core.setFailed(pluralize(result.errorCount, 'error', 'errors'));
     }
-    printDiagnosticSummary(result);
     return result;
 };
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
-from typing import TYPE_CHECKING, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from nodejs_wheel.executable import npm
 from pdm.backend.hooks.base import BuildHookInterface
@@ -13,6 +13,10 @@ from build.py3_8.generate_docstubs import main as generate_docstubs
 
 if TYPE_CHECKING:
     from pdm.backend.hooks import Context
+foo: Any = 1
+foo: Any = 1
+foo: Any = 1
+foo: Any = 1
 
 
 class PackageJson(TypedDict):
