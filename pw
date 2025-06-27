@@ -21,8 +21,8 @@ except ImportError:
     EnvBuilder = None
 
 
-VERSION = "3.2.3"
-UV_VERSION = "0.7.3"
+VERSION = "3.2.4"
+UV_VERSION = "0.7.13"
 
 PYPROJECTX_INSTALL_DIR_ENV_VAR = "PYPROJECTX_INSTALL_DIR"
 PYPROJECTX_PACKAGE_ENV_VAR = "PYPROJECTX_PACKAGE"
@@ -67,7 +67,7 @@ def get_options(args):
         options.pyprojectx_package = os.environ.get(PYPROJECTX_PACKAGE_ENV_VAR)
     else:
         options.version = VERSION
-        options.pyprojectx_package = f"pyprojectx[locked]=={VERSION}"
+        options.pyprojectx_package = f"pyprojectx=={VERSION}"
     options.verbosity = 0 if options.quiet or not options.verbosity else options.verbosity
     return options
 
