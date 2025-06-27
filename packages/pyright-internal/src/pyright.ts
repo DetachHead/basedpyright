@@ -1523,7 +1523,7 @@ function parseThreadsArgValue(input: string | null): any {
 
     const value = parseInt(input, 10);
     if (isNaN(value) || value < 1) {
-        return null;
+        throw new Error(`'${input}' is not a valid value for --threads; specify a positive integer or 'auto'`);
     }
 
     return value;
