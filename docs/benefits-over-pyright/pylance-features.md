@@ -23,13 +23,25 @@ c:\project\asdf.ipynb - cell 2
 2 errors, 0 warnings, 0 notes
 ```
 
-## import suggestion code actions
+## code actions
+
+### import suggestions
 
 pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see [this issue](https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645)).
 
 basedpyright re-implements pylance's import suggestion code actions:
 
 ![image](https://github.com/DetachHead/basedpyright/assets/57028336/a3e8a506-5682-4230-a43c-e815c84889c0)
+
+### ignore comments
+
+basedpyright also re-implements pylance's code actions for adding `# pyright: ignore` comments:
+
+![](./ignore-comment-code-action.png)
+
+!!! note
+
+    `# type: ignore` comments are not supported by this code action because they are discouraged, [see here](../configuration/comments.md#prefer-pyrightignore-comments) for more information.
 
 ## semantic highlighting
 

@@ -19,7 +19,7 @@ import { convertToFileTextEdits, convertToTextEditActions, convertToWorkspaceEdi
 import { Localizer } from '../localization/localize';
 import { Workspace } from '../workspaceFactory';
 import { CompletionProvider } from './completionProvider';
-import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
+import { convertOffsetToPosition, convertPositionToOffset, convertTextRangeToRange } from '../common/positionUtils';
 import { findNodeByOffset } from '../analyzer/parseTreeUtils';
 import { ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
@@ -57,9 +57,10 @@ export class CodeActionProvider {
 
         const diags = await workspace.service.getDiagnosticsForRange(fileUri, range, token);
 
-        if (diags.find((d) => d.getActions()?.some((action) => action.action === Commands.import))?.getActions()) {
-            const parseResults = workspace.service.backgroundAnalysisProgram.program.getParseResults(fileUri)!;
-            const lines = parseResults.tokenizerOutput.lines;
+        const parseResults = workspace.service.backgroundAnalysisProgram.program.getParseResults(fileUri)!;
+        const lines = parseResults.tokenizerOutput.lines;
+
+        if (diags.find((d) => d.getActions()?.some((action) => action.action === Commands.import))) {
             const offset = convertPositionToOffset(range.start, lines);
             if (offset === undefined) {
                 return [];
@@ -189,6 +190,55 @@ export class CodeActionProvider {
                 const renameAction = CodeAction.create(title, workspaceEdit, CodeActionKind.QuickFix);
                 codeActions.push(renameAction);
             }
+        }
+
+        const fs = ls.serviceProvider.fs();
+        for (const diagnostic of diags) {
+            const rule = diagnostic.getRule();
+            if (!rule) {
+                continue;
+            }
+            const ignoreCommentPrefix = `# pyright: ignore`;
+            const line = diagnostic.range.start.line;
+            const item = lines.getItemAt(line);
+            // we deliberately only check for type:ignore comments here but not pyright:ignore for 2 reasons:
+            // - type:ignore comments are discouraged in favor of pyright:ignore comments
+            // - the type:ignore comment might be for another type checker
+            const existingIgnoreComment = parseResults.tokenizerOutput.pyrightIgnoreLines.get(line);
+            let title: string;
+            let positionCharacter: number;
+            let insertText: string;
+            if (existingIgnoreComment) {
+                const lastRuleTextRange = existingIgnoreComment.rulesList.at(-1)?.range;
+                if (!lastRuleTextRange) {
+                    continue;
+                }
+                positionCharacter = convertTextRangeToRange(lastRuleTextRange, lines).end.character;
+                insertText = `, ${rule}`;
+                title = `Add \`${rule}\` to existing \`${ignoreCommentPrefix}\` comment`;
+            } else {
+                positionCharacter = item.length - 1;
+                const ignoreComment = `${ignoreCommentPrefix}[${rule}]`;
+                insertText = `  ${ignoreComment}`;
+                title = `Add \`${ignoreComment}\``;
+            }
+            const position = { line, character: positionCharacter };
+            codeActions.push(
+                CodeAction.create(
+                    title,
+                    convertToWorkspaceEdit(
+                        ls,
+                        fs,
+                        convertToFileTextEdits(
+                            fileUri,
+                            convertToTextEditActions([
+                                { newText: insertText, range: { start: position, end: position } },
+                            ])
+                        )
+                    ),
+                    CodeActionKind.QuickFix
+                )
+            );
         }
 
         return codeActions;
