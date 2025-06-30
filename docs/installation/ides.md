@@ -46,7 +46,7 @@ the basedpyright extension will automatically look for the pypi package in your 
     There are two workarounds for this problem:
 
     - Manually install `ms-python`
-    - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json
+    - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json`
 
 ??? tip "if adding basedpyright as a development dependency to your project"
 
