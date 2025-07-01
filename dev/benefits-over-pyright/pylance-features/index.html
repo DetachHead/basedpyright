@@ -647,11 +647,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#import-suggestion-code-actions" class="md-nav__link">
+  <a href="#code-actions" class="md-nav__link">
     <span class="md-ellipsis">
-      import suggestion code actions
+      code actions
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="code actions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import-suggestions" class="md-nav__link">
+    <span class="md-ellipsis">
+      import suggestions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignore-comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      ignore comments
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1664,11 +1688,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#import-suggestion-code-actions" class="md-nav__link">
+  <a href="#code-actions" class="md-nav__link">
     <span class="md-ellipsis">
-      import suggestion code actions
+      code actions
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="code actions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import-suggestions" class="md-nav__link">
+    <span class="md-ellipsis">
+      import suggestions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignore-comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      ignore comments
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1809,10 +1857,18 @@ c:\project\asdf.ipynb - cell 2
     &quot;int&quot; is not assignable to &quot;str&quot; (reportAssignmentType)
 2 errors, 0 warnings, 0 notes
 </code></pre></div>
-<h2 id="import-suggestion-code-actions">import suggestion code actions</h2>
+<h2 id="code-actions">code actions</h2>
+<h3 id="import-suggestions">import suggestions</h3>
 <p>pyright only supports import suggestions as autocomplete suggestions, but not as quick fixes (see <a href="https://github.com/microsoft/pyright/issues/4263#issuecomment-1333987645">this issue</a>).</p>
 <p>basedpyright re-implements pylance's import suggestion code actions:</p>
 <p><img alt="image" src="https://github.com/DetachHead/basedpyright/assets/57028336/a3e8a506-5682-4230-a43c-e815c84889c0" /></p>
+<h3 id="ignore-comments">ignore comments</h3>
+<p>basedpyright also re-implements pylance's code actions for adding <code># pyright: ignore</code> comments:</p>
+<p><img alt="" src="../ignore-comment-code-action.png" /></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code># type: ignore</code> comments are not supported by this code action because they are discouraged, <a href="../../configuration/comments/#prefer-pyrightignore-comments">see here</a> for more information.</p>
+</div>
 <h2 id="semantic-highlighting">semantic highlighting</h2>
 <table>
 <thead>
