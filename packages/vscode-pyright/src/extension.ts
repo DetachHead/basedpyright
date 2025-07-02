@@ -11,12 +11,15 @@
 
 import { PythonExtension } from '@vscode/python-extension';
 import { existsSync } from 'fs';
+import { cp } from 'fs/promises';
 import os from 'os';
 import * as path from 'path';
 import { Commands } from 'pyright-internal/commands/commands';
 import { isThenable } from 'pyright-internal/common/core';
+import { toolName, website } from 'pyright-internal/constants';
 import {
     commands,
+    env,
     ExtensionContext,
     ExtensionMode,
     extensions,
@@ -29,13 +32,13 @@ import {
     window,
     workspace,
     WorkspaceConfiguration,
-    env,
 } from 'vscode';
 import {
     CancellationToken,
     ConfigurationParams,
     ConfigurationRequest,
     DidChangeConfigurationNotification,
+    Executable,
     LanguageClient,
     LanguageClientOptions,
     ResponseError,
@@ -44,8 +47,6 @@ import {
     TransportKind,
 } from 'vscode-languageclient/node';
 import { FileBasedCancellationStrategy } from './cancellationUtils';
-import { website, toolName } from 'pyright-internal/constants';
-import { cp } from 'fs/promises';
 
 let cancellationStrategy: FileBasedCancellationStrategy | undefined;
 
@@ -115,6 +116,32 @@ export async function activate(context: ExtensionContext) {
 
     cancellationStrategy = new FileBasedCancellationStrategy();
     let serverOptions: ServerOptions | undefined = undefined;
+    let serverBaseOptions: Partial<Executable> = {
+        args: cancellationStrategy.getCommandLineArguments(),
+    };
+    switch (workspace.getConfiguration('basedpyright.transport').get('kind')) {
+        case 'ipc':
+            serverBaseOptions.transport = TransportKind.ipc;
+            break;
+        case 'socket':
+            const port = workspace.getConfiguration('basedpyright.transport').get('port');
+            if (port !== -1) {
+                serverBaseOptions.transport = {
+                    kind: TransportKind.socket,
+                    port: Number(port),
+                };
+                break;
+            }
+            serverBaseOptions.transport = TransportKind.socket;
+            break;
+        default:
+            serverBaseOptions.transport = TransportKind.stdio;
+            serverBaseOptions.options = {
+                // workaround for https://github.com/astral-sh/uv/issues/6399, no idea why this works
+                shell: true,
+            };
+            break;
+    }
     if (workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
         const pythonApi = await PythonExtension.api();
         const executableName = `basedpyright-langserver${os.platform() === 'win32' ? '.exe' : ''}`;
@@ -136,12 +163,7 @@ export async function activate(context: ExtensionContext) {
                 // quotes are needed in case there's a space in the path. ideally we shouldnt need to do this
                 // but it's necessary because we use `shell: true`, see comment below
                 command: `"${copiedExecutablePath}"`,
-                transport: TransportKind.stdio,
-                args: cancellationStrategy.getCommandLineArguments(),
-                options: {
-                    // workaround for https://github.com/astral-sh/uv/issues/6399, no idea why this works
-                    shell: true,
-                },
+                ...serverBaseOptions,
             };
         } else {
             console.warn('failed to find pyright executable, falling back to bundled:', executablePath);
@@ -158,18 +180,16 @@ export async function activate(context: ExtensionContext) {
         serverOptions = {
             run: {
                 module: bundlePath,
-                transport: TransportKind.ipc,
-                args: cancellationStrategy.getCommandLineArguments(),
                 options: runOptions,
+                ...serverBaseOptions,
             },
             // In debug mode, use the non-bundled code if it's present. The production
             // build includes only the bundled package, so we don't want to crash if
             // someone starts the production extension in debug mode.
             debug: {
                 module: bundlePath,
-                transport: TransportKind.ipc,
-                args: cancellationStrategy.getCommandLineArguments(),
                 options: debugOptions,
+                ...serverBaseOptions,
             },
         };
     }

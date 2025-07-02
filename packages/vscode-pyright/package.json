@@ -1942,6 +1942,21 @@
                     "default": false,
                     "markdownDescription": "Whether to rely on imports from the `typing_extensions` module when targeting older versions of python that do not include certain typing features such as the `@override` decorator.",
                     "scope": "resource"
+                },
+                "basedpyright.transport.kind": {
+                    "type": "string",
+                    "default": "stdio",
+                    "markdownDescription": "Change connection transport",
+                    "enum": [
+                        "stdio",
+                        "ipc",
+                        "socket"
+                    ]
+                },
+                "basedpyright.transport.port": {
+                    "type": "integer",
+                    "default": -1,
+                    "markdownDescription": "Works while `basedpyright.transport.kind` is set to socket. Default value `-1` means random port"
                 }
             }
         },
