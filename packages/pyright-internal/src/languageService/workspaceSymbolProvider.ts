@@ -17,13 +17,9 @@ import { Uri } from '../common/uri/uri';
 import { Workspace } from '../workspaceFactory';
 import { IndexSymbolData, SymbolIndexer } from './symbolIndexer';
 import { LanguageServerInterface } from '../common/languageServerInterface';
-import { WorkspaceSymbolCache } from './workspaceSymbolCache';
+import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './workspaceSymbolCacheSingleton';
 
 type WorkspaceSymbolCallback = (symbols: SymbolInformation[]) => void;
-
-// Global instance shared across the LS process. This is a stop-gap until we
-// wire the cache into LanguageServerBase.
-const _workspaceSymbolCache = new WorkspaceSymbolCache();
 
 export class WorkspaceSymbolProvider {
     private _reporter: WorkspaceSymbolCallback;

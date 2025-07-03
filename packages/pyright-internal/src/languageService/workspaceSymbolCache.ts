@@ -9,7 +9,7 @@
  * begin to depend on it without TypeScript compile errors.
  */
 
-import { CancellationToken, SymbolInformation } from 'vscode-languageserver-protocol';
+import { CancellationToken, SymbolInformation } from 'vscode-languageserver';
 
 import { ProgramView } from '../common/extensibility';
 import { Uri } from '../common/uri/uri';
