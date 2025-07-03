@@ -16,6 +16,8 @@ import { Uri } from '../common/uri/uri';
 import { SymbolIndexer } from './symbolIndexer';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
+import { FileSystem } from '../common/fileSystem';
+import { ReadOnlyFileSystem } from '../common/fileSystem';
 
 /**
  * Persisted representation of a workspace-wide symbol cache.
@@ -62,6 +64,7 @@ export interface WorkspaceSymbolCacheOptions {
  */
 export class WorkspaceSymbolCache {
     private _cache = new Map<string /* workspaceRoot.key */, CachedWorkspaceSymbols>();
+    private _saveTimers = new Map<string, any>();
 
     private _options: Required<WorkspaceSymbolCacheOptions>;
 
@@ -119,6 +122,7 @@ export class WorkspaceSymbolCache {
             files: symbolMap,
         };
         this._cache.set(workspaceRoot.key, cached);
+        this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
     }
 
     /**
@@ -131,7 +135,14 @@ export class WorkspaceSymbolCache {
         query: string,
         token: CancellationToken = CancellationToken.None
     ): SymbolInformation[] {
-        const cached = this._cache.get(workspaceRoot.key);
+        let cached = this._cache.get(workspaceRoot.key);
+        if (!cached) {
+            // Try to load from disk first.
+            cached = this._loadFromDisk(workspaceRoot, program.fileSystem);
+            if (cached) {
+                this._cache.set(workspaceRoot.key, cached);
+            }
+        }
         if (!cached) {
             // Synchronous rebuild is expensive; in real impl we'd schedule async
             // and block for now. For skeleton we run synchronously.
@@ -203,5 +214,53 @@ export class WorkspaceSymbolCache {
             }
         }
         return out;
+    }
+
+    private _getCacheFileUri(workspaceRoot: Uri): Uri {
+        return workspaceRoot.combinePaths('.pyright', 'workspaceSymbolsCache_v1.json');
+    }
+
+    private _loadFromDisk(workspaceRoot: Uri, fs: ReadOnlyFileSystem): CachedWorkspaceSymbols | undefined {
+        const fileUri = this._getCacheFileUri(workspaceRoot);
+        if (!fs.existsSync(fileUri)) return undefined;
+        try {
+            const text = fs.readFileSync(fileUri, 'utf8');
+            const obj = JSON.parse(text);
+            if (obj.version === 1 && obj.files) {
+                return obj as CachedWorkspaceSymbols;
+            }
+        } catch { /* ignore read errors */ }
+        return undefined;
+    }
+
+    private _scheduleSaveToDisk(workspaceRoot: Uri, cached: CachedWorkspaceSymbols, fs: ReadOnlyFileSystem) {
+        const key = workspaceRoot.key;
+        if (this._saveTimers.has(key)) {
+            clearTimeout(this._saveTimers.get(key));
+        }
+        const timer = setTimeout(() => {
+            this._saveToDisk(workspaceRoot, cached, fs);
+            this._saveTimers.delete(key);
+        }, 1000);
+        this._saveTimers.set(key, timer);
+    }
+
+    private _saveToDisk(workspaceRoot: Uri, cached: CachedWorkspaceSymbols, fs: ReadOnlyFileSystem) {
+        const dirUri = workspaceRoot.combinePaths('.pyright');
+        if (FileSystem.is(fs)) {
+            if (!fs.existsSync(dirUri)) {
+                try {
+                    fs.mkdirSync(dirUri, { recursive: true });
+                } catch {
+                    // ignore write errors
+                }
+            }
+            const fileUri = this._getCacheFileUri(workspaceRoot);
+            try {
+                fs.writeFileSync(fileUri, JSON.stringify(cached), null);
+            } catch {
+                // ignore write errors
+            }
+        }
     }
 } 
