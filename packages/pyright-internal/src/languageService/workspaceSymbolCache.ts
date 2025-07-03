@@ -9,8 +9,7 @@
  * begin to depend on it without TypeScript compile errors.
  */
 
-import { CancellationToken } from 'vscode-languageserver';
-import { SymbolInformation } from 'vscode-languageserver-protocol';
+import { CancellationToken, SymbolInformation } from 'vscode-languageserver-protocol';
 
 import { ProgramView } from '../common/extensibility';
 import { Uri } from '../common/uri/uri';
@@ -130,13 +129,13 @@ export class WorkspaceSymbolCache {
         workspaceRoot: Uri,
         program: ProgramView,
         query: string,
-        token?: CancellationToken
+        token: CancellationToken = CancellationToken.None
     ): SymbolInformation[] {
         const cached = this._cache.get(workspaceRoot.key);
         if (!cached) {
             // Synchronous rebuild is expensive; in real impl we'd schedule async
             // and block for now. For skeleton we run synchronously.
-            this.cacheWorkspaceSymbols(workspaceRoot, program, /* force */ true, CancellationToken.None);
+            this.cacheWorkspaceSymbols(workspaceRoot, program, /* force */ true, token);
         }
 
         const result: SymbolInformation[] = [];
@@ -145,28 +144,28 @@ export class WorkspaceSymbolCache {
             return result;
         }
 
-        for (const fileSymbols of Object.values(cacheToUse.files)) {
+        for (const [fileUriStr, fileSymbols] of Object.entries(cacheToUse.files)) {
             for (const sym of fileSymbols) {
-                if (sym.name.includes(query)) {
-                    // TODO: Convert back to full SymbolInformation with proper URI.
-                    // Placeholder conversion:
-                    result.push({
-                        name: sym.name,
-                        kind: sym.kind as any,
-                        location: {
-                            uri: '',
-                            range: sym.range,
-                        },
-                        containerName: sym.container,
-                    });
-
-                    if (result.length >= this._options.maxResults) {
-                        return result;
-                    }
+                if (!sym.name.includes(query)) {
+                    continue;
+                }
+                const symbolInfo: SymbolInformation = {
+                    name: sym.name,
+                    kind: sym.kind as any,
+                    location: {
+                        uri: fileUriStr,
+                        range: sym.selectionRange ?? sym.range,
+                    },
+                    containerName: sym.container,
+                };
+                result.push(symbolInfo);
+                if (result.length >= this._options.maxResults) {
+                    return result;
                 }
             }
         }
 
+        // TODO finish
         return result;
     }
 
