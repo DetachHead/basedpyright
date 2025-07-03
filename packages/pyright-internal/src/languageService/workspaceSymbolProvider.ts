@@ -17,8 +17,13 @@ import { Uri } from '../common/uri/uri';
 import { Workspace } from '../workspaceFactory';
 import { IndexSymbolData, SymbolIndexer } from './symbolIndexer';
 import { LanguageServerInterface } from '../common/languageServerInterface';
+import { WorkspaceSymbolCache } from './workspaceSymbolCache';
 
 type WorkspaceSymbolCallback = (symbols: SymbolInformation[]) => void;
+
+// Global instance shared across the LS process. This is a stop-gap until we
+// wire the cache into LanguageServerBase.
+const _workspaceSymbolCache = new WorkspaceSymbolCache();
 
 export class WorkspaceSymbolProvider {
     private _reporter: WorkspaceSymbolCallback;
@@ -135,6 +140,14 @@ export class WorkspaceSymbolProvider {
             return;
         }
 
+        // Attempt cache lookup first
+        const cached = _workspaceSymbolCache.search(program.rootPath, program, this._query, this._token);
+        if (cached.length) {
+            this._reporter(cached);
+            return;
+        }
+
+        // Fallback: walk the program file list (current behaviour).
         // "Workspace symbols" searches symbols only from user code.
         for (const sourceFileInfo of program.getSourceFileInfoList()) {
             if (!isUserCode(sourceFileInfo)) {
