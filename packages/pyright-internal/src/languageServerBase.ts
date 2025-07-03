@@ -1812,7 +1812,12 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         // 5 seconds default
         const defaultBackOffTime = 5 * 1000;
 
-        const service = this.createAnalyzerService(name, workspaceRoot || Uri.empty(), services, () => defaultBackOffTime);
+        const service = this.createAnalyzerService(
+            name,
+            workspaceRoot || Uri.empty(),
+            services,
+            () => defaultBackOffTime
+        );
 
         // Register workspace‐symbol cache invalidation listener so edits refresh cache.
         if (workspaceRoot) {

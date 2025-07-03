@@ -1,3 +1,3 @@
 import { WorkspaceSymbolCache } from './workspaceSymbolCache';
 
-export const workspaceSymbolCacheSingleton = new WorkspaceSymbolCache(); 
+export const workspaceSymbolCacheSingleton = new WorkspaceSymbolCache();

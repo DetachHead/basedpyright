@@ -58,6 +58,7 @@ import {
     getDiagLevelDiagnosticRules,
 } from './common/configOptions';
 import { writeFileSync } from 'fs';
+import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './languageService/workspaceSymbolCacheSingleton';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -630,6 +631,16 @@ async function runSingleThreaded(
             return;
         } else if (!args.outputjson) {
             console.info('Watching for file changes...');
+        }
+
+        // Build workspace-symbol cache for CLI run so LSP can reuse it later.
+        try {
+            service.run((program) => {
+                const root = program.rootPath;
+                _workspaceSymbolCache.cacheWorkspaceSymbols(root, program, /*force*/ true);
+            }, cancellationNone as any);
+        } catch {
+            /* ignore cache build errors */
         }
     });
 

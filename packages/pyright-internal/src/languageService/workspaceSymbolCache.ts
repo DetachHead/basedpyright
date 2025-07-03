@@ -85,6 +85,7 @@ export class WorkspaceSymbolCache {
         forceRefresh = false,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
+        console.log('cacheWorkspaceSymbols@@@', workspaceRoot, program, forceRefresh, token);
         // TODO: incremental build respecting mtime/hash.
         // For the initial skeleton we eagerly rebuild everything so downstream
         // callers can experiment.
@@ -123,6 +124,7 @@ export class WorkspaceSymbolCache {
         };
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
+        console.log('cached LOL', cached);
     }
 
     /**
@@ -229,7 +231,9 @@ export class WorkspaceSymbolCache {
             if (obj.version === 1 && obj.files) {
                 return obj as CachedWorkspaceSymbols;
             }
-        } catch { /* ignore read errors */ }
+        } catch {
+            /* ignore read errors */
+        }
         return undefined;
     }
 
@@ -263,4 +267,4 @@ export class WorkspaceSymbolCache {
             }
         }
     }
-} 
+}
