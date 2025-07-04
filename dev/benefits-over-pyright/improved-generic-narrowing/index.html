@@ -1639,7 +1639,8 @@
 </code></pre></div>
 <h2 id="narrowing-of-contravariant-generics">narrowing of contravariant generics</h2>
 <p>when a type variable is contravariant its widest possible type is <code>Never</code>, so when <code>strictGenericNarrowing</code> is enabled, contravariant generics get narrowed to <code>Never</code> instead of "Unknown":</p>
-<div class="highlight"><pre><span></span><code><span class="n">T_contra</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_contra&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">T_contra</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_contra&quot;</span><span class="p">,</span> <span class="n">contravariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_contra</span><span class="p">]):</span>
     <span class="o">...</span>
