@@ -138,12 +138,15 @@ export class WorkspaceSymbolProvider {
 
         // Attempt cache lookup first
         const cached = _workspaceSymbolCache.search(program.rootPath, program, this._query, this._token);
-        if (cached.length) {
+        if (cached.length > 0) {
             this._reporter(cached);
             return;
         }
 
-        // Fallback: walk the program file list (current behaviour).
+        // Cache returned empty - either no cache exists or cache is building
+        // Fall back to traditional symbol search for immediate results
+        // The cache will be ready for subsequent searches
+        
         // "Workspace symbols" searches symbols only from user code.
         for (const sourceFileInfo of program.getSourceFileInfoList()) {
             if (!isUserCode(sourceFileInfo)) {

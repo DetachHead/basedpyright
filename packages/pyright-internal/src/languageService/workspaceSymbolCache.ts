@@ -67,6 +67,15 @@ export interface WorkspaceSymbolCacheOptions {
     maxResults?: number;
 }
 
+/** Cache statistics for monitoring and debugging. */
+export interface CacheStats {
+    workspaceCount: number;
+    totalFileCount: number;
+    totalSymbolCount: number;
+    averageSymbolsPerFile: number;
+    cacheHitRate: number;
+}
+
 /**
  * In-memory & on-disk cache for Workspace Symbol search.
  *
@@ -76,6 +85,9 @@ export interface WorkspaceSymbolCacheOptions {
 export class WorkspaceSymbolCache {
     private _cache = new Map<string /* workspaceRoot.key */, CachedWorkspaceSymbols>();
     private _saveTimers = new Map<string, any>();
+    private _buildingCaches = new Set<string>(); // Track which workspaces are currently building
+    private _cacheQueries = 0; // Track total queries for hit rate calculation
+    private _cacheHits = 0; // Track cache hits for hit rate calculation
 
     private _options: Required<WorkspaceSymbolCacheOptions>;
 
@@ -183,6 +195,8 @@ export class WorkspaceSymbolCache {
         query: string,
         token: CancellationToken = CancellationToken.None
     ): SymbolInformation[] {
+        this._cacheQueries++;
+
         let cached = this._cache.get(workspaceRoot.key);
         if (!cached) {
             // Try to load from disk first.
@@ -191,39 +205,77 @@ export class WorkspaceSymbolCache {
                 this._cache.set(workspaceRoot.key, cached);
             }
         }
-        if (!cached) {
-            // Build cache synchronously for now
-            this.cacheWorkspaceSymbols(workspaceRoot, program, /* force */ true, token);
-            cached = this._cache.get(workspaceRoot.key);
+        
+        // If we have a cache, search it
+        if (cached) {
+            this._cacheHits++;
+            return this._searchCache(cached, query);
+        }
+        
+        // No cache available - trigger async cache build and return empty for now
+        // The next search will have the cache ready
+        this._triggerAsyncCacheBuild(workspaceRoot, program, token);
+        return [];
+    }
+
+    /**
+     * Warm up the cache for a workspace in the background.
+     * This should be called when a workspace is first opened.
+     */
+    warmupCache(workspaceRoot: Uri, program: ProgramView): void {
+        // Check if cache already exists
+        if (this._cache.has(workspaceRoot.key)) {
+            return;
         }
 
-        const result: SymbolInformation[] = [];
-        if (!cached) {
-            return result;
+        // Try loading from disk first
+        const cached = this._loadFromDisk(workspaceRoot, program.fileSystem);
+        if (cached) {
+            this._cache.set(workspaceRoot.key, cached);
+            return;
         }
 
-        for (const [fileUriStr, fileIndex] of Object.entries(cached.files)) {
-            for (const sym of fileIndex.symbols) {
-                if (!sym.name.toLowerCase().includes(query.toLowerCase())) {
-                    continue;
-                }
-                const symbolInfo: SymbolInformation = {
-                    name: sym.name,
-                    kind: sym.kind as any,
-                    location: {
-                        uri: fileUriStr,
-                        range: sym.selectionRange ?? sym.range,
-                    },
-                    containerName: sym.container,
-                };
-                result.push(symbolInfo);
-                if (result.length >= this._options.maxResults) {
-                    return result;
-                }
+        // Trigger async cache build in background
+        this._triggerAsyncCacheBuild(workspaceRoot, program, CancellationToken.None);
+    }
+
+    /**
+     * Get cache statistics for monitoring and debugging.
+     */
+    getCacheStats(): CacheStats {
+        let totalFiles = 0;
+        let totalSymbols = 0;
+        let workspaceCount = 0;
+
+        for (const cached of this._cache.values()) {
+            workspaceCount++;
+            totalFiles += Object.keys(cached.files).length;
+            for (const fileIndex of Object.values(cached.files)) {
+                totalSymbols += fileIndex.symbols.length;
             }
         }
 
-        return result;
+        return {
+            workspaceCount,
+            totalFileCount: totalFiles,
+            totalSymbolCount: totalSymbols,
+            averageSymbolsPerFile: totalFiles > 0 ? Math.round(totalSymbols / totalFiles) : 0,
+            cacheHitRate: this._cacheQueries > 0 ? this._cacheHits / this._cacheQueries : 0,
+        };
+    }
+
+    /**
+     * Clear all caches (useful for testing or memory management).
+     */
+    clearAllCaches(): void {
+        this._cache.clear();
+        this._buildingCaches.clear();
+        for (const timer of this._saveTimers.values()) {
+            clearTimeout(timer);
+        }
+        this._saveTimers.clear();
+        this._cacheQueries = 0;
+        this._cacheHits = 0;
     }
 
     /** Mark a file or entire workspace as dirty. */
@@ -310,5 +362,55 @@ export class WorkspaceSymbolCache {
                 // ignore write errors
             }
         }
+    }
+
+    private _searchCache(cached: CachedWorkspaceSymbols, query: string): SymbolInformation[] {
+        const result: SymbolInformation[] = [];
+        const lowerQuery = query.toLowerCase();
+
+        for (const [fileUriStr, fileIndex] of Object.entries(cached.files)) {
+            for (const sym of fileIndex.symbols) {
+                if (!sym.name.toLowerCase().includes(lowerQuery)) {
+                    continue;
+                }
+                const symbolInfo: SymbolInformation = {
+                    name: sym.name,
+                    kind: sym.kind as any,
+                    location: {
+                        uri: fileUriStr,
+                        range: sym.selectionRange ?? sym.range,
+                    },
+                    containerName: sym.container,
+                };
+                result.push(symbolInfo);
+                if (result.length >= this._options.maxResults) {
+                    return result;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private _triggerAsyncCacheBuild(workspaceRoot: Uri, program: ProgramView, token: CancellationToken) {
+        // Avoid multiple concurrent builds for the same workspace
+        const key = workspaceRoot.key;
+        if (this._buildingCaches.has(key)) {
+            return;
+        }
+
+        this._buildingCaches.add(key);
+        
+        // Build cache asynchronously
+        setTimeout(async () => {
+            try {
+                await this.cacheWorkspaceSymbols(workspaceRoot, program, false, token);
+            } catch (error) {
+                // Log error but don't throw - this is background work
+                console.error('Background cache build failed:', error);
+            } finally {
+                this._buildingCaches.delete(key);
+            }
+        }, 0);
     }
 }

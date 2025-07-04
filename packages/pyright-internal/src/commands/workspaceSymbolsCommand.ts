@@ -9,22 +9,11 @@
 import { CancellationToken, ExecuteCommandParams } from 'vscode-languageserver';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { WorkspaceSymbolProvider } from '../languageService/workspaceSymbolProvider';
-import { WorkspaceSymbolCache } from '../languageService/workspaceSymbolCache';
+import { workspaceSymbolCacheSingleton } from '../languageService/workspaceSymbolCacheSingleton';
 import { ServerCommand } from './commandController';
 
 export class WorkspaceSymbolsCommand implements ServerCommand {
-    private _symbolCache: WorkspaceSymbolCache;
-
-    constructor(private _ls: LanguageServerInterface) {
-        // Initialize workspace symbol cache with disk persistence enabled
-        this._symbolCache = new WorkspaceSymbolCache(
-            this._ls.console,
-            this._ls.serviceProvider.fs(),
-            this._ls.serviceProvider,
-            true, // Enable disk persistence
-            undefined // Use default cache directory
-        );
-    }
+    constructor(private _ls: LanguageServerInterface) {}
 
     get command(): string {
         return 'basedpyright.workspaceSymbols';
@@ -68,8 +57,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
                 undefined, // No progress reporter for CLI
                 query.trim(),
                 token,
-                this._ls,
-                this._symbolCache
+                this._ls
             );
 
             const symbols = provider.reportSymbols();
@@ -128,19 +116,16 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
 
             try {
                 const startTime = Date.now();
-                let symbolCount = 0;
 
                 await new Promise<void>((resolve, reject) => {
-                    workspace.service.run((program: any) => {
+                    workspace.service.run(async (program: any) => {
                         try {
-                            this._symbolCache.cacheWorkspaceSymbols(
+                            await workspaceSymbolCacheSingleton.cacheWorkspaceSymbols(
                                 workspace.rootUri!,
                                 program,
-                                true // Force refresh
+                                true, // Force refresh
+                                token || CancellationToken.None
                             );
-                            
-                            const stats = this._symbolCache.getCacheStats();
-                            symbolCount = stats.totalSymbolCount;
                             resolve();
                         } catch (error) {
                             reject(error);
@@ -149,16 +134,18 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
                 });
 
                 const elapsedTime = Date.now() - startTime;
+                const stats = workspaceSymbolCacheSingleton.getCacheStats();
+                
                 results.push({
                     workspace: workspace.rootUri.toUserVisibleString(),
-                    symbolCount,
+                    symbolCount: stats.totalSymbolCount,
                     elapsedTime: `${elapsedTime}ms`,
                     status: 'success'
                 });
 
             } catch (error) {
                 results.push({
-                    workspace: workspace.rootUri.toUserVisibleString(),
+                    workspace: workspace.rootUri?.toUserVisibleString() || 'unknown',
                     error: String(error),
                     status: 'failed'
                 });
@@ -175,8 +162,20 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
     private async _clearCache(workspaceUri?: string): Promise<any> {
         try {
             if (workspaceUri) {
-                // For specific workspace, just clear the cache
-                this._symbolCache.emptyCache();
+                // For specific workspace, we need to find the workspace and clear just that cache
+                const workspaces = await this._ls.getWorkspaces();
+                const workspace = workspaces.find(w => w.rootUri?.toString() === workspaceUri);
+                
+                if (!workspace || !workspace.rootUri) {
+                    return {
+                        action: 'clear',
+                        workspace: workspaceUri,
+                        error: 'Workspace not found',
+                        status: 'failed'
+                    };
+                }
+
+                workspaceSymbolCacheSingleton.invalidate(workspace.rootUri);
                 return {
                     action: 'clear',
                     workspace: workspaceUri,
@@ -184,7 +183,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
                 };
             } else {
                 // Clear all caches
-                this._symbolCache.emptyCache();
+                workspaceSymbolCacheSingleton.clearAllCaches();
                 return {
                     action: 'clear',
                     scope: 'all',
@@ -201,11 +200,12 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
     }
 
     private _getCacheStats(): any {
-        const stats = this._symbolCache.getCacheStats();
+        const stats = workspaceSymbolCacheSingleton.getCacheStats();
         return {
             ...stats,
             cacheSize: `${stats.totalSymbolCount} symbols in ${stats.totalFileCount} files across ${stats.workspaceCount} workspaces`,
-            averageSymbolsPerFile: stats.averageSymbolsPerFile
+            averageSymbolsPerFile: stats.averageSymbolsPerFile,
+            cacheHitRate: `${(stats.cacheHitRate * 100).toFixed(1)}%`
         };
     }
 }
