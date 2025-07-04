@@ -83,6 +83,7 @@ export interface CacheStats {
  * follow incrementally in subsequent commits.
  */
 export class WorkspaceSymbolCache {
+    [x: string]: any;
     private _cache = new Map<string /* workspaceRoot.key */, CachedWorkspaceSymbols>();
     private _saveTimers = new Map<string, any>();
     private _buildingCaches = new Set<string>(); // Track which workspaces are currently building
@@ -183,6 +184,25 @@ export class WorkspaceSymbolCache {
         
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
+    }
+
+    /**
+     * Build (or refresh) the cache for a workspace and save immediately.
+     * This is useful for CLI scenarios where we want to ensure the cache is saved before exit.
+     */
+    async cacheWorkspaceSymbolsImmediate(
+        workspaceRoot: Uri,
+        program: ProgramView,
+        forceRefresh = false,
+        token: CancellationToken = CancellationToken.None
+    ): Promise<void> {
+        await this.cacheWorkspaceSymbols(workspaceRoot, program, forceRefresh, token);
+        
+        // Save immediately instead of scheduling
+        const cached = this._cache.get(workspaceRoot.key);
+        if (cached) {
+            this._saveToDisk(workspaceRoot, cached, program.fileSystem);
+        }
     }
 
     /**

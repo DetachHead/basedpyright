@@ -476,7 +476,6 @@ async function processArgs(): Promise<ExitStatus> {
             return runMultiThreaded(args, options, threadCount, service, minSeverityLevel, output);
         }
     }
-
     return runSingleThreaded(args, options, service, minSeverityLevel, output);
 }
 
@@ -573,11 +572,12 @@ async function runSingleThreaded(
     const exitStatus = createDeferred<ExitStatus>();
 
     service.setCompletionCallback((results) => {
+        console.log('runSingleThreaded222@@@', results);
         if (results.fatalErrorOccurred) {
             exitStatus.resolve(ExitStatus.FatalError);
             return;
         }
-
+       
         const errorCount =
             args.createstub || args.verifytypes
                 ? 0
@@ -631,20 +631,23 @@ async function runSingleThreaded(
         } else if (!args.outputjson) {
             console.info('Watching for file changes...');
         }
-
-        // Build workspace-symbol cache for CLI run so LSP can reuse it later.
-        try {
-            service.run((program) => {
-                const root = program.rootPath;
-                _workspaceSymbolCache.cacheWorkspaceSymbols(root, program, /*force*/ true);
-            }, cancellationNone as any);
-        } catch {
-            /* ignore cache build errors */
-        }
     });
 
     // This will trigger the analyzer.
     service.setOptions(options);
+
+    // Check workspace-symbol cache for CLI run so LSP can reuse it later.
+    try {
+        console.log('Checking workspace-symbol cache...');
+        service.run(async (program) => {
+            const root = program.rootPath;
+            // cacheWorkspaceSymbolsImmediate automatically checks for existing cache and saves immediately
+            console.log('Loading/building workspace-symbol cache...');
+            await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, /*forceRefresh*/ false);
+        }, cancellationNone as any);
+    } catch {
+        /* ignore cache build errors */
+    }
 
     return await exitStatus.promise;
 }
