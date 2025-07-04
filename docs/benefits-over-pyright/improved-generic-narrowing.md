@@ -47,7 +47,8 @@ def foo(value: object):
 when a type variable is contravariant its widest possible type is `Never`, so when `strictGenericNarrowing` is enabled, contravariant generics get narrowed to `Never` instead of "Unknown":
 
 ```py
-T_contra = TypeVar("T_contra", bound=int | str, covariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
+
 
 class Foo(Generic[T_contra]):
     ...
