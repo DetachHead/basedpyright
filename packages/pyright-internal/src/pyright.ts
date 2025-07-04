@@ -192,7 +192,6 @@ async function processArgs(): Promise<ExitStatus> {
         // undocumented option only used internally for generating docs. pretty cringe but it's the least messy way i could think of to do it
         { name: 'printdiagnosticrulesets', type: Boolean },
     ];
-
     let args: CommandLineOptions;
 
     try {

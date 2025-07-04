@@ -18,6 +18,7 @@ import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
 import { FileSystem } from '../common/fileSystem';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
+import { fnv1a } from '../common/fnv1a';
 
 /**
  * Persisted representation of a workspace-wide symbol cache.
@@ -29,8 +30,18 @@ export interface CachedWorkspaceSymbols {
     version: number;
     /** Aggregated checksum (mtime/hash) so we can detect global invalidation. */
     checksum: string;
-    /** Map keyed by file URI (string) containing the flattened symbol list. */
-    files: Record<string, IndexedSymbol[]>;
+    /** Map keyed by file URI (string) containing the file metadata and symbols. */
+    files: Record<string, FileIndex>;
+}
+
+/** File metadata and symbols for incremental caching. */
+export interface FileIndex {
+    /** File modification time (milliseconds since epoch). */
+    mtime: number;
+    /** Content hash (FNV-1a) of first 8KB for change detection. */
+    hash: string;
+    /** Flattened symbol list for this file. */
+    symbols: IndexedSymbol[];
 }
 
 /** Subset of SymbolInformation that is serializable without circular refs. */
@@ -85,17 +96,13 @@ export class WorkspaceSymbolCache {
         forceRefresh = false,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
-        console.log('cacheWorkspaceSymbols@@@', workspaceRoot, program, forceRefresh, token);
-        // TODO: incremental build respecting mtime/hash.
-        // For the initial skeleton we eagerly rebuild everything so downstream
-        // callers can experiment.
-        const symbolMap: Record<string, IndexedSymbol[]> = {};
-
+        const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
+        const newFiles: Record<string, FileIndex> = {};
+        
         for (const fileInfo of program.getSourceFileInfoList()) {
             throwIfCancellationRequested(token);
 
             // Skip non-user code for now.
-            // TODO: respect isUserCode helper once imported.
             const parseResults = program.getParseResults(fileInfo.uri);
             if (!parseResults) {
                 continue;
@@ -105,6 +112,33 @@ export class WorkspaceSymbolCache {
                 continue;
             }
 
+            const fileUriStr = fileInfo.uri.toString();
+            const stat = program.fileSystem.statSync(fileInfo.uri);
+            const mtime = stat?.mtimeMs || 0;
+            
+            // Check if we can reuse existing cache entry
+            const existingFile = existingCache?.files[fileUriStr];
+            if (!forceRefresh && existingFile && existingFile.mtime === mtime) {
+                // File hasn't changed, reuse cached symbols
+                newFiles[fileUriStr] = existingFile;
+                continue;
+            }
+            
+            // File changed or doesn't exist in cache, need to recompute
+            const bytes = program.fileSystem.readFileSync(fileInfo.uri, null).subarray(0, 8192);
+            const hash = fnv1a(bytes);
+            
+            // Double-check with content hash if mtime changed but content might be same
+            if (!forceRefresh && existingFile && existingFile.hash === hash) {
+                // Content unchanged, just update mtime and reuse symbols
+                newFiles[fileUriStr] = {
+                    ...existingFile,
+                    mtime
+                };
+                continue;
+            }
+
+            // Need to rebuild symbols for this file
             const symbols = SymbolIndexer.indexSymbols(
                 analyzerFileInfo,
                 parseResults,
@@ -112,19 +146,31 @@ export class WorkspaceSymbolCache {
                 token ?? CancellationToken.None
             );
 
-            // Flatten & convert to serialisable form.
+            // Flatten & convert to serializable form
             const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
-            symbolMap[fileInfo.uri.toString()] = flat;
+            
+            newFiles[fileUriStr] = {
+                mtime,
+                hash,
+                symbols: flat
+            };
         }
+
+        // Compute overall checksum for the workspace
+        const checksumData = Object.keys(newFiles).sort().map(uri => {
+            const file = newFiles[uri];
+            return `${uri}:${file.mtime}:${file.hash}`;
+        }).join('|');
+        const checksum = fnv1a(new TextEncoder().encode(checksumData));
 
         const cached: CachedWorkspaceSymbols = {
             version: 1,
-            checksum: 'TEMP', // TODO: compute checksum
-            files: symbolMap,
+            checksum,
+            files: newFiles,
         };
+        
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
-        console.log('cached LOL', cached);
     }
 
     /**
@@ -146,20 +192,19 @@ export class WorkspaceSymbolCache {
             }
         }
         if (!cached) {
-            // Synchronous rebuild is expensive; in real impl we'd schedule async
-            // and block for now. For skeleton we run synchronously.
+            // Build cache synchronously for now
             this.cacheWorkspaceSymbols(workspaceRoot, program, /* force */ true, token);
+            cached = this._cache.get(workspaceRoot.key);
         }
 
         const result: SymbolInformation[] = [];
-        const cacheToUse = this._cache.get(workspaceRoot.key);
-        if (!cacheToUse) {
+        if (!cached) {
             return result;
         }
 
-        for (const [fileUriStr, fileSymbols] of Object.entries(cacheToUse.files)) {
-            for (const sym of fileSymbols) {
-                if (!sym.name.includes(query)) {
+        for (const [fileUriStr, fileIndex] of Object.entries(cached.files)) {
+            for (const sym of fileIndex.symbols) {
+                if (!sym.name.toLowerCase().includes(query.toLowerCase())) {
                     continue;
                 }
                 const symbolInfo: SymbolInformation = {
@@ -178,7 +223,6 @@ export class WorkspaceSymbolCache {
             }
         }
 
-        // TODO finish
         return result;
     }
 
@@ -192,7 +236,7 @@ export class WorkspaceSymbolCache {
         } else {
             const cached = this._cache.get(workspaceRoot.key)!;
             delete cached.files[fileUri.toString()];
-            // Defer checksum recompute until next build.
+            // Recompute checksum on next build
         }
     }
 
