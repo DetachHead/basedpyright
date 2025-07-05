@@ -103,6 +103,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const type = this._evaluator?.getType(node.d.alias ?? node.d.name);
         if (type) {
             this._visitNameWithType(node.d.name, type);
+            if (node.d.alias) {
+                this._visitNameWithType(node.d.alias, type);
+            }
         }
         return super.visitImportFromAs(node);
     }
@@ -115,8 +118,15 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitName(node: NameNode): boolean {
-        // covered by visitDecorator
-        if (node.parent?.nodeType !== ParseNodeType.Decorator) {
+        const parentType = node.parent?.nodeType;
+        if (
+            parentType !== ParseNodeType.Class &&
+            parentType !== ParseNodeType.Decorator &&
+            parentType !== ParseNodeType.ImportAs &&
+            parentType !== ParseNodeType.ImportFromAs &&
+            // Ensure only `parent.d.name` is skipped for functions, e.g. don't skip `returnAnnotation`
+            (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id)
+        ) {
             const type = this._evaluator?.getType(node);
             if (type) {
                 this._visitNameWithType(node, type);
@@ -184,11 +194,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
                     const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
-                    const isPEP613TypeAlias =
-                        declarations &&
-                        declarations.some((declaration) =>
-                            this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
-                        );
+                    const isPEP613TypeAlias = declarations?.some((declaration) =>
+                        this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
+                    );
                     const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
                     const isBuiltIn =
