@@ -969,6 +969,18 @@ export class AnalyzerService {
             configOptions.fileEnumerationTimeoutInSec = languageServerOptions.fileEnumerationTimeoutInSec;
         }
 
+        if (languageServerOptions.enableTypeCaching !== undefined) {
+            configOptions.enableTypeCaching = languageServerOptions.enableTypeCaching;
+        }
+
+        if (languageServerOptions.maxTypeCacheFiles !== undefined) {
+            configOptions.maxTypeCacheFiles = languageServerOptions.maxTypeCacheFiles;
+        }
+
+        if (languageServerOptions.typeCacheFormat !== undefined) {
+            configOptions.typeCacheFormat = languageServerOptions.typeCacheFormat;
+        }
+
         // Special case, the language service can also set a pythonPath. It should override any other setting.
         if (languageServerOptions.pythonPath) {
             this._console.info(
