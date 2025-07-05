@@ -26,17 +26,17 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
         switch (subCommand) {
             case 'search':
                 return this._searchSymbols(args[1] as string, token);
-            
+
             case 'cache':
                 return this._manageCache(args[1] as string, args[2], token);
-            
+
             case 'stats':
                 return this._getCacheStats();
-            
+
             default:
                 return {
                     error: `Unknown workspace symbols command: ${subCommand}`,
-                    usage: 'Available commands: search <query>, cache <build|clear|stats>, stats'
+                    usage: 'Available commands: search <query>, cache <build|clear|stats>, stats',
                 };
         }
     }
@@ -61,14 +61,13 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             );
 
             const symbols = provider.reportSymbols();
-            
+
             return {
                 query,
                 symbolCount: symbols.length,
                 symbols: symbols.slice(0, 50), // Limit results for CLI display
-                truncated: symbols.length > 50
+                truncated: symbols.length > 50,
             };
-
         } catch (error) {
             return { error: `Search failed: ${error}` };
         }
@@ -79,17 +78,17 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             switch (action) {
                 case 'build':
                     return this._buildCache(workspaceUri, token);
-                
+
                 case 'clear':
                     return this._clearCache(workspaceUri);
-                
+
                 case 'stats':
                     return this._getCacheStats();
-                
+
                 default:
-                    return { 
+                    return {
                         error: `Unknown cache action: ${action}`,
-                        usage: 'Available actions: build [workspace], clear [workspace], stats'
+                        usage: 'Available actions: build [workspace], clear [workspace], stats',
                     };
             }
         } catch (error) {
@@ -104,7 +103,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
         }
 
         const results: any[] = [];
-        
+
         for (const workspace of workspaces) {
             if (workspaceUri && workspace.rootUri?.toString() !== workspaceUri) {
                 continue; // Skip if specific workspace requested and this isn't it
@@ -135,19 +134,18 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
 
                 const elapsedTime = Date.now() - startTime;
                 const stats = workspaceSymbolCacheSingleton.getCacheStats();
-                
+
                 results.push({
                     workspace: workspace.rootUri.toUserVisibleString(),
                     symbolCount: stats.totalSymbolCount,
                     elapsedTime: `${elapsedTime}ms`,
-                    status: 'success'
+                    status: 'success',
                 });
-
             } catch (error) {
                 results.push({
                     workspace: workspace.rootUri?.toUserVisibleString() || 'unknown',
                     error: String(error),
-                    status: 'failed'
+                    status: 'failed',
                 });
             }
         }
@@ -155,7 +153,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
         return {
             action: 'build',
             results,
-            totalWorkspaces: results.length
+            totalWorkspaces: results.length,
         };
     }
 
@@ -164,14 +162,14 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             if (workspaceUri) {
                 // For specific workspace, we need to find the workspace and clear just that cache
                 const workspaces = await this._ls.getWorkspaces();
-                const workspace = workspaces.find(w => w.rootUri?.toString() === workspaceUri);
-                
+                const workspace = workspaces.find((w) => w.rootUri?.toString() === workspaceUri);
+
                 if (!workspace || !workspace.rootUri) {
                     return {
                         action: 'clear',
                         workspace: workspaceUri,
                         error: 'Workspace not found',
-                        status: 'failed'
+                        status: 'failed',
                     };
                 }
 
@@ -179,7 +177,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
                 return {
                     action: 'clear',
                     workspace: workspaceUri,
-                    status: 'success'
+                    status: 'success',
                 };
             } else {
                 // Clear all caches
@@ -187,14 +185,14 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
                 return {
                     action: 'clear',
                     scope: 'all',
-                    status: 'success'
+                    status: 'success',
                 };
             }
         } catch (error) {
             return {
                 action: 'clear',
                 error: String(error),
-                status: 'failed'
+                status: 'failed',
             };
         }
     }
@@ -205,7 +203,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             ...stats,
             cacheSize: `${stats.totalSymbolCount} symbols in ${stats.totalFileCount} files across ${stats.workspaceCount} workspaces`,
             averageSymbolsPerFile: stats.averageSymbolsPerFile,
-            cacheHitRate: `${(stats.cacheHitRate * 100).toFixed(1)}%`
+            cacheHitRate: `${(stats.cacheHitRate * 100).toFixed(1)}%`,
         };
     }
 }

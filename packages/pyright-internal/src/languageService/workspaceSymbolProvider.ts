@@ -146,7 +146,7 @@ export class WorkspaceSymbolProvider {
         // Cache returned empty - either no cache exists or cache is building
         // Fall back to traditional symbol search for immediate results
         // The cache will be ready for subsequent searches
-        
+
         // "Workspace symbols" searches symbols only from user code.
         for (const sourceFileInfo of program.getSourceFileInfoList()) {
             if (!isUserCode(sourceFileInfo)) {

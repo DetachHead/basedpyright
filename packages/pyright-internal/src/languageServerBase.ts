@@ -1782,7 +1782,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         // Otherwise the initialize completion should cause settings to be updated on all workspaces.
 
-        // Warm up workspace symbol cache in background 
+        // Warm up workspace symbol cache in background
         if (workspace.rootUri) {
             workspace.service.run((program) => {
                 _workspaceSymbolCache.warmupCache(workspace.rootUri!, program);

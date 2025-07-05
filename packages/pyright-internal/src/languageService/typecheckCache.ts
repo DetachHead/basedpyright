@@ -1,6 +1,6 @@
 /*
  * typecheckCache.ts
- * 
+ *
  * High-performance cache for type checking results (diagnostics).
  * Caches Diagnostic[] objects per file with smart invalidation based on
  * file content changes and dependency changes.
@@ -102,7 +102,7 @@ export class TypecheckCache {
     private _totalQueries = 0;
     private _totalHits = 0;
     private _totalTimeSaved = 0;
-    
+
     private _options: Required<TypecheckCacheOptions>;
 
     constructor(options?: TypecheckCacheOptions) {
@@ -130,7 +130,7 @@ export class TypecheckCache {
         configOptions: ConfigOptions
     ): Diagnostic[] | null {
         this._totalQueries++;
-        
+
         const cached = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
         if (!cached) {
             return null;
@@ -170,13 +170,16 @@ export class TypecheckCache {
 
             // Cache hit - convert back to Diagnostic objects
             this._totalHits++;
-            
+
             if (this._options.verbose) {
-                console.log(`[TYPECHECK-CACHE] Cache hit: ${fileUri.toUserVisibleString()} (${fileCache.diagnostics.length} diagnostics)`);
+                console.log(
+                    `[TYPECHECK-CACHE] Cache hit: ${fileUri.toUserVisibleString()} (${
+                        fileCache.diagnostics.length
+                    } diagnostics)`
+                );
             }
-            
-            return fileCache.diagnostics.map(d => this._deserializeDiagnostic(d));
-            
+
+            return fileCache.diagnostics.map((d) => this._deserializeDiagnostic(d));
         } catch (error) {
             // File might be deleted or inaccessible
             return null;
@@ -210,7 +213,7 @@ export class TypecheckCache {
                 hash,
                 configHash,
                 dependencyHash,
-                diagnostics: diagnostics.map(d => this._serializeDiagnostic(d)),
+                diagnostics: diagnostics.map((d) => this._serializeDiagnostic(d)),
                 cacheTime: Date.now(),
             };
 
@@ -237,9 +240,9 @@ export class TypecheckCache {
                     const bTime = cached!.files[b].cacheTime;
                     return aTime - bTime;
                 });
-                
+
                 const toRemove = sorted.slice(0, fileKeys.length - this._options.maxFiles);
-                toRemove.forEach(key => delete cached!.files[key]);
+                toRemove.forEach((key) => delete cached!.files[key]);
             }
 
             // Update checksum
@@ -252,9 +255,10 @@ export class TypecheckCache {
             }
 
             if (this._options.verbose) {
-                console.log(`[TYPECHECK-CACHE] Cached: ${fileUri.toUserVisibleString()} (${diagnostics.length} diagnostics)`);
+                console.log(
+                    `[TYPECHECK-CACHE] Cached: ${fileUri.toUserVisibleString()} (${diagnostics.length} diagnostics)`
+                );
             }
-            
         } catch (error) {
             // Ignore cache errors - don't break type checking
             if (this._options.verbose) {
@@ -268,18 +272,18 @@ export class TypecheckCache {
      */
     invalidate(workspaceRoot: Uri, fileUri?: Uri): void {
         const key = workspaceRoot.key;
-        
+
         if (!fileUri) {
             // Clear entire workspace
             this._cache.delete(key);
             this._cacheMetadata.delete(key);
-            
+
             const timer = this._saveTimers.get(key);
             if (timer) {
                 clearTimeout(timer);
                 this._saveTimers.delete(key);
             }
-            
+
             if (this._options.verbose) {
                 console.log(`[TYPECHECK-CACHE] Invalidated workspace: ${workspaceRoot.toUserVisibleString()}`);
             }
@@ -290,7 +294,7 @@ export class TypecheckCache {
                 const fileUriStr = fileUri.toString();
                 delete cached.files[fileUriStr];
                 cached.checksum = this._computeWorkspaceChecksum(cached);
-                
+
                 if (this._options.verbose) {
                     console.log(`[TYPECHECK-CACHE] Invalidated file: ${fileUri.toUserVisibleString()}`);
                 }
@@ -332,7 +336,7 @@ export class TypecheckCache {
     clearAllCaches(): void {
         this._cache.clear();
         this._cacheMetadata.clear();
-        this._saveTimers.forEach(timer => clearTimeout(timer));
+        this._saveTimers.forEach((timer) => clearTimeout(timer));
         this._saveTimers.clear();
         this._buildingCaches.clear();
     }
@@ -344,7 +348,10 @@ export class TypecheckCache {
         this._totalTimeSaved += milliseconds;
     }
 
-    private _loadFromDisk(workspaceRoot: Uri, fileSystem: FileSystem | ReadOnlyFileSystem): CachedTypecheckResults | null {
+    private _loadFromDisk(
+        workspaceRoot: Uri,
+        fileSystem: FileSystem | ReadOnlyFileSystem
+    ): CachedTypecheckResults | null {
         try {
             const cacheFileUri = this._getCacheFileUri(workspaceRoot);
             if (!fileSystem.existsSync(cacheFileUri)) {
@@ -353,7 +360,7 @@ export class TypecheckCache {
 
             const content = fileSystem.readFileSync(cacheFileUri, 'utf8');
             const cached: CachedTypecheckResults = JSON.parse(content);
-            
+
             // Version check
             if (cached.version !== 1) {
                 return null;
@@ -361,7 +368,10 @@ export class TypecheckCache {
 
             if (this._options.verbose) {
                 const fileCount = Object.keys(cached.files).length;
-                const diagnosticCount = Object.values(cached.files).reduce((sum, file) => sum + file.diagnostics.length, 0);
+                const diagnosticCount = Object.values(cached.files).reduce(
+                    (sum, file) => sum + file.diagnostics.length,
+                    0
+                );
                 console.log(`[TYPECHECK-CACHE] Loaded from disk: ${fileCount} files, ${diagnosticCount} diagnostics`);
             }
 
@@ -376,7 +386,7 @@ export class TypecheckCache {
 
     private _scheduleSaveToDisk(workspaceRoot: Uri, cached: CachedTypecheckResults, fileSystem: FileSystem): void {
         const key = workspaceRoot.key;
-        
+
         // Clear existing timer
         const existingTimer = this._saveTimers.get(key);
         if (existingTimer) {
@@ -396,7 +406,7 @@ export class TypecheckCache {
         try {
             const cacheFileUri = this._getCacheFileUri(workspaceRoot);
             const cacheDir = cacheFileUri.getDirectory();
-            
+
             // Ensure cache directory exists
             if (!fileSystem.existsSync(cacheDir)) {
                 fileSystem.mkdirSync(cacheDir, { recursive: true });
@@ -407,7 +417,10 @@ export class TypecheckCache {
 
             if (this._options.verbose) {
                 const fileCount = Object.keys(cached.files).length;
-                const diagnosticCount = Object.values(cached.files).reduce((sum, file) => sum + file.diagnostics.length, 0);
+                const diagnosticCount = Object.values(cached.files).reduce(
+                    (sum, file) => sum + file.diagnostics.length,
+                    0
+                );
                 console.log(`[TYPECHECK-CACHE] Saved to disk: ${fileCount} files, ${diagnosticCount} diagnostics`);
             }
         } catch (error) {
@@ -432,7 +445,7 @@ export class TypecheckCache {
             diagnosticRuleSet: configOptions.diagnosticRuleSet,
             strict: configOptions.strict,
         };
-        
+
         const configStr = JSON.stringify(relevantConfig);
         return fnv1a(new TextEncoder().encode(configStr));
     }
@@ -445,25 +458,31 @@ export class TypecheckCache {
         }
 
         const imports = sourceFileInfo.imports || [];
-        const importData = imports.map(imp => {
-            try {
-                const impUri = imp.uri;
-                const stat = program.fileSystem.statSync(impUri);
-                return `${impUri.toString()}:${stat?.mtimeMs || 0}`;
-            } catch {
-                return `${imp.uri.toString()}:0`;
-            }
-        }).sort().join('|');
+        const importData = imports
+            .map((imp) => {
+                try {
+                    const impUri = imp.uri;
+                    const stat = program.fileSystem.statSync(impUri);
+                    return `${impUri.toString()}:${stat?.mtimeMs || 0}`;
+                } catch {
+                    return `${imp.uri.toString()}:0`;
+                }
+            })
+            .sort()
+            .join('|');
 
         return fnv1a(new TextEncoder().encode(importData));
     }
 
     private _computeWorkspaceChecksum(cached: CachedTypecheckResults): string {
-        const checksumData = Object.keys(cached.files).sort().map(uri => {
-            const file = cached.files[uri];
-            return `${uri}:${file.mtime}:${file.hash}:${file.configHash}:${file.dependencyHash}`;
-        }).join('|');
-        
+        const checksumData = Object.keys(cached.files)
+            .sort()
+            .map((uri) => {
+                const file = cached.files[uri];
+                return `${uri}:${file.mtime}:${file.hash}:${file.configHash}:${file.dependencyHash}`;
+            })
+            .join('|');
+
         return fnv1a(new TextEncoder().encode(checksumData));
     }
 
@@ -481,27 +500,27 @@ export class TypecheckCache {
 
     private _deserializeDiagnostic(cached: CachedDiagnostic): Diagnostic {
         const diagnostic = new Diagnostic(cached.category, cached.message, cached.range);
-        
+
         if (cached.rule) {
             diagnostic.setRule(cached.rule);
         }
-        
+
         // Severity not settable in this API
-        
+
         if (cached.relatedInfo) {
-            cached.relatedInfo.forEach(info => {
+            cached.relatedInfo.forEach((info) => {
                 if (info.message && info.uri && info.range) {
                     diagnostic.addRelatedInfo(info.message, info.uri, info.range);
                 }
             });
         }
-        
+
         if (cached.actions) {
-            cached.actions.forEach(action => {
+            cached.actions.forEach((action) => {
                 diagnostic.addAction(action);
             });
         }
-        
+
         return diagnostic;
     }
-} 
+}

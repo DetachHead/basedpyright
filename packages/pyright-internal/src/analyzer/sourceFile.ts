@@ -983,21 +983,21 @@ export class SourceFile {
                     program,
                     configOptions
                 );
-                
+
                 if (cachedDiagnostics !== null) {
                     // Cache hit - use cached diagnostics
                     this._writableData.checkerDiagnostics = cachedDiagnostics;
                     this._writableData.isCheckingNeeded = false;
                     this._writableData.checkTime = 0; // Cached, so no actual check time
-                    
+
                     // Record time saved (estimate)
                     typecheckCacheSingleton.recordTimeSaved(50); // Estimated 50ms saved per file
-                    
+
                     this._recomputeDiagnostics(configOptions);
                     return;
                 }
             }
-            
+
             try {
                 timingStats.typeCheckerTime.timeOperation(() => {
                     const checkDuration = new Duration();
@@ -1014,7 +1014,7 @@ export class SourceFile {
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(this._writableData.parserOutput!.parseTree)!;
                     this._writableData.checkerDiagnostics = fileInfo.diagnosticSink.fetchAndClear();
                     this._writableData.checkTime = checkDuration.getDurationInMilliseconds();
-                    
+
                     // Cache the results for future use
                     if (program) {
                         typecheckCacheSingleton.cacheDiagnostics(

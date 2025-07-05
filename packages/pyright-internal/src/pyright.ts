@@ -623,7 +623,7 @@ async function runSingleThreaded(
             exitStatus.resolve(ExitStatus.FatalError);
             return;
         }
-       
+
         const errorCount =
             args.createstub || args.verifytypes
                 ? 0
@@ -683,32 +683,34 @@ async function runSingleThreaded(
     if (args.cacheonly) {
         try {
             console.log('Cache-only mode: updating workspace symbols...');
-            
+
             // Configure cache options from environment variables and CLI args
-            const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 5000;
+            const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES
+                ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10)
+                : 5000;
             const verbose = options.configSettings.verboseOutput;
-            
-            _workspaceSymbolCache.setOptions({ 
+
+            _workspaceSymbolCache.setOptions({
                 maxFiles: maxFiles > 0 ? maxFiles : 5000,
-                verbose: verbose 
+                verbose: verbose,
             });
-            
+
             // Set minimal options to avoid heavy computation
             const minimalOptions = { ...options };
             minimalOptions.languageServerSettings.checkOnlyOpenFiles = true;
             minimalOptions.languageServerSettings.enableAmbientAnalysis = false;
-            
+
             // Initialize the service
             service.setOptions(minimalOptions);
-            
+
             // Get the program
             const program = service.backgroundAnalysisProgram.program;
             const root = program.rootPath;
-            
+
             // Determine cache strategy
             const forceRebuild = process.env.PYRIGHT_FORCE_REBUILD_CACHE === 'true' || args.rebuildcache;
             const incrementalUpdate = args.updatecache;
-            
+
             if (forceRebuild) {
                 console.log('Rebuilding workspace-symbol cache (rebuilding all files)...');
                 await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, true);
@@ -719,11 +721,10 @@ async function runSingleThreaded(
                 console.log('Loading workspace-symbol cache (reusing existing cache)...');
                 await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, false);
             }
-            
+
             console.log('Cache operation completed. Exiting (--cacheonly mode).');
             exitStatus.resolve(ExitStatus.NoErrors);
             return await exitStatus.promise;
-            
         } catch (error) {
             console.error('Cache operation failed:', error);
             exitStatus.resolve(ExitStatus.FatalError);
@@ -737,23 +738,23 @@ async function runSingleThreaded(
     // Check workspace-symbol cache for CLI run so LSP can reuse it later.
     try {
         console.log('Checking workspace-symbol cache...');
-        
+
         // Configure cache options from environment variables and CLI args
         const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 5000;
         const verbose = options.configSettings.verboseOutput;
-        
-        _workspaceSymbolCache.setOptions({ 
+
+        _workspaceSymbolCache.setOptions({
             maxFiles: maxFiles > 0 ? maxFiles : 5000,
-            verbose: verbose 
+            verbose: verbose,
         });
-        
+
         service.run(async (program) => {
             const root = program.rootPath;
-            
+
             // Determine cache strategy
             const forceRebuild = process.env.PYRIGHT_FORCE_REBUILD_CACHE === 'true' || args.rebuildcache;
             const incrementalUpdate = args.updatecache;
-            
+
             if (forceRebuild) {
                 console.log('Rebuilding workspace-symbol cache (rebuilding all files)...');
                 await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, true);
@@ -772,31 +773,33 @@ async function runSingleThreaded(
     // Check typecheck cache for CLI run to speed up type checking.
     try {
         console.log('Checking typecheck cache...');
-        
+
         // Configure cache options from environment variables and CLI args
-        const maxFiles = process.env.PYRIGHT_MAX_TYPE_CACHE_FILES ? parseInt(process.env.PYRIGHT_MAX_TYPE_CACHE_FILES, 10) : 5000;
+        const maxFiles = process.env.PYRIGHT_MAX_TYPE_CACHE_FILES
+            ? parseInt(process.env.PYRIGHT_MAX_TYPE_CACHE_FILES, 10)
+            : 5000;
         const verbose = options.configSettings.verboseOutput;
-        
-        _typecheckCache.setOptions({ 
+
+        _typecheckCache.setOptions({
             maxFiles: maxFiles > 0 ? maxFiles : 5000,
-            verbose: verbose 
+            verbose: verbose,
         });
-        
+
         // Handle cache-only mode for typecheck cache
         if (args.typecacheonly) {
             console.log('Type cache-only mode: running cache operations without type checking...');
-            
+
             // Set minimal options to reduce computation
             options.languageServerSettings.checkOnlyOpenFiles = true;
             options.languageServerSettings.enableAmbientAnalysis = false;
-            
+
             service.run(async (program) => {
                 const root = program.rootPath;
-                
+
                 // Determine cache strategy
                 const forceRebuild = args.rebuildtypecache;
                 const incrementalUpdate = args.updatetypecache;
-                
+
                 if (forceRebuild) {
                     console.log('Rebuilding typecheck cache (rebuilding all files)...');
                     _typecheckCache.invalidate(root);
@@ -807,15 +810,19 @@ async function runSingleThreaded(
                     console.log('Loading typecheck cache (reusing existing cache)...');
                     // Cache will be used during normal type checking
                 }
-                
+
                 // Print cache stats
                 const stats = _typecheckCache.getCacheStats();
-                console.log(`Typecheck cache stats: ${stats.totalFileCount} files, ${stats.totalDiagnosticCount} diagnostics, ${(stats.cacheHitRate * 100).toFixed(1)}% hit rate`);
+                console.log(
+                    `Typecheck cache stats: ${stats.totalFileCount} files, ${
+                        stats.totalDiagnosticCount
+                    } diagnostics, ${(stats.cacheHitRate * 100).toFixed(1)}% hit rate`
+                );
                 if (stats.totalTimeSaved > 0) {
                     console.log(`Total time saved: ${(stats.totalTimeSaved / 1000).toFixed(1)}s`);
                 }
             }, cancellationNone as any);
-            
+
             exitStatus.resolve(ExitStatus.NoErrors);
             return await exitStatus.promise;
         }

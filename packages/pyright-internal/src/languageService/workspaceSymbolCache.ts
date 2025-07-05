@@ -126,39 +126,46 @@ export class WorkspaceSymbolCache {
         forceRebuild = false,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
-        const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
-        
+        const existingCache =
+            this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
+
         // If we have existing cache and not forcing rebuild, just reuse it entirely
         if (existingCache && !forceRebuild) {
             if (this._options.verbose) {
                 const fileCount = Object.keys(existingCache.files).length;
-                const symbolCount = Object.values(existingCache.files).reduce((sum, file) => sum + file.symbols.length, 0);
-                console.log(`[CACHE] Reusing entire existing cache: ${fileCount} files, ${symbolCount} symbols (skipping file iteration)`);
+                const symbolCount = Object.values(existingCache.files).reduce(
+                    (sum, file) => sum + file.symbols.length,
+                    0
+                );
+                console.log(
+                    `[CACHE] Reusing entire existing cache: ${fileCount} files, ${symbolCount} symbols (skipping file iteration)`
+                );
             }
-            
+
             // Store metadata for lazy loading
-            const maxMtime = Math.max(...Object.values(existingCache.files).map(f => f.mtime));
+            const maxMtime = Math.max(...Object.values(existingCache.files).map((f) => f.mtime));
             this._cacheMetadata.set(workspaceRoot.key, {
                 checksum: existingCache.checksum,
                 fileCount: Object.keys(existingCache.files).length,
-                lastModified: maxMtime
+                lastModified: maxMtime,
             });
-            
+
             this._cache.set(workspaceRoot.key, existingCache);
             return; // Exit early - no file iteration needed
         }
 
         const newFiles: Record<string, FileIndex> = {};
-        
+
         // Get all source files and sort by modification time (most recent first)
-        const allFiles = program.getSourceFileInfoList()
-            .filter(fileInfo => {
+        const allFiles = program
+            .getSourceFileInfoList()
+            .filter((fileInfo) => {
                 const parseResults = program.getParseResults(fileInfo.uri);
                 if (!parseResults) return false;
                 const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
                 return !!analyzerFileInfo;
             })
-            .map(fileInfo => ({
+            .map((fileInfo) => ({
                 fileInfo,
                 stat: program.fileSystem.statSync(fileInfo.uri),
             }))
@@ -176,35 +183,37 @@ export class WorkspaceSymbolCache {
 
             const parseResults = program.getParseResults(fileInfo.uri);
             if (!parseResults) continue;
-            
+
             const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
             if (!analyzerFileInfo) continue;
 
             const fileUriStr = fileInfo.uri.toString();
             const mtime = stat?.mtimeMs || 0;
-            
+
             // Get file content hash for change detection
             const bytes = program.fileSystem.readFileSync(fileInfo.uri, null).subarray(0, 8192);
             const currentHash = fnv1a(bytes);
-            
+
             // Check if we can reuse existing cache entry
             const existingFile = existingCache?.files[fileUriStr];
-            
+
             if (!forceRebuild && existingFile) {
                 // Compare hash first (most reliable), then mtime as fallback
-                if (existingFile.hash === currentHash || 
-                    (existingFile.mtime === mtime && existingFile.hash)) {
-                    
+                if (existingFile.hash === currentHash || (existingFile.mtime === mtime && existingFile.hash)) {
                     // File hasn't changed, reuse cached symbols
                     newFiles[fileUriStr] = {
                         ...existingFile,
                         mtime, // Update mtime to current value
-                        hash: currentHash // Update hash to current value
+                        hash: currentHash, // Update hash to current value
                     };
                     reusedCount++;
                     if (this._options.verbose) {
-                        const reason = existingFile.hash === currentHash ? "hash match" : "mtime match";
-                        console.log(`[CACHE] Reused (${reason}): ${fileInfo.uri.toUserVisibleString()} (${existingFile.symbols.length} symbols)`);
+                        const reason = existingFile.hash === currentHash ? 'hash match' : 'mtime match';
+                        console.log(
+                            `[CACHE] Reused (${reason}): ${fileInfo.uri.toUserVisibleString()} (${
+                                existingFile.symbols.length
+                            } symbols)`
+                        );
                     }
                     continue;
                 }
@@ -220,32 +229,38 @@ export class WorkspaceSymbolCache {
 
             // Flatten & convert to serializable form
             const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
-            
+
             newFiles[fileUriStr] = {
                 mtime,
                 hash: currentHash,
-                symbols: flat
+                symbols: flat,
             };
-            
+
             rebuiltCount++;
-            const reason = forceRebuild ? "force rebuild" : 
-                          !existingFile ? "new file" : "file changed";
+            const reason = forceRebuild ? 'force rebuild' : !existingFile ? 'new file' : 'file changed';
             if (this._options.verbose) {
-                console.log(`[CACHE] Indexed (${reason}): ${fileInfo.uri.toUserVisibleString()} (${flat.length} symbols)`);
+                console.log(
+                    `[CACHE] Indexed (${reason}): ${fileInfo.uri.toUserVisibleString()} (${flat.length} symbols)`
+                );
             }
-            
+
             processedCount++;
         }
 
         if (this._options.verbose) {
-            console.log(`[CACHE] Summary: ${processedCount} files processed, ${reusedCount} reused, ${rebuiltCount} rebuilt`);
+            console.log(
+                `[CACHE] Summary: ${processedCount} files processed, ${reusedCount} reused, ${rebuiltCount} rebuilt`
+            );
         }
 
         // Compute overall checksum for the workspace
-        const checksumData = Object.keys(newFiles).sort().map(uri => {
-            const file = newFiles[uri];
-            return `${uri}:${file.mtime}:${file.hash}`;
-        }).join('|');
+        const checksumData = Object.keys(newFiles)
+            .sort()
+            .map((uri) => {
+                const file = newFiles[uri];
+                return `${uri}:${file.mtime}:${file.hash}`;
+            })
+            .join('|');
         const checksum = fnv1a(new TextEncoder().encode(checksumData));
 
         const cached: CachedWorkspaceSymbols = {
@@ -253,15 +268,15 @@ export class WorkspaceSymbolCache {
             checksum,
             files: newFiles,
         };
-        
+
         // Store metadata for lazy loading
-        const maxMtime = Math.max(...Object.values(newFiles).map(f => f.mtime));
+        const maxMtime = Math.max(...Object.values(newFiles).map((f) => f.mtime));
         this._cacheMetadata.set(workspaceRoot.key, {
             checksum,
             fileCount: Object.keys(newFiles).length,
-            lastModified: maxMtime
+            lastModified: maxMtime,
         });
-        
+
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
     }
@@ -276,8 +291,9 @@ export class WorkspaceSymbolCache {
         token: CancellationToken = CancellationToken.None,
         expandCache: boolean = false
     ): Promise<void> {
-        const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
-        
+        const existingCache =
+            this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
+
         // If no existing cache, fall back to full rebuild
         if (!existingCache) {
             console.log('No existing cache found, performing full rebuild...');
@@ -289,7 +305,7 @@ export class WorkspaceSymbolCache {
         const totalFiles = Object.keys(existingCache.files).length;
         console.log(`Incrementally updating cache with ${totalFiles} files...`);
 
-        // Quick optimization: If we have very few files or the cache is recent, 
+        // Quick optimization: If we have very few files or the cache is recent,
         // we can do a fast global mtime check first
         if (totalFiles <= 1000) {
             let hasChanges = false;
@@ -306,7 +322,7 @@ export class WorkspaceSymbolCache {
                     break;
                 }
             }
-            
+
             // If no mtime changes detected, we can reuse the entire cache
             if (!hasChanges) {
                 const elapsedTime = Date.now() - startTime;
@@ -315,7 +331,7 @@ export class WorkspaceSymbolCache {
                 return;
             }
         }
-        
+
         const newFiles: Record<string, FileIndex> = {};
         let reusedCount = 0;
         let rebuiltCount = 0;
@@ -323,11 +339,11 @@ export class WorkspaceSymbolCache {
 
         // Cache frequently used URIs to avoid repeated parsing
         const uriCache = new Map<string, Uri>();
-        
+
         // Process all files - optimized for speed
         for (const [fileUriStr, existingFile] of Object.entries(existingCache.files)) {
             throwIfCancellationRequested(token);
-            
+
             try {
                 // Use cached URI or parse once
                 let fileUri = uriCache.get(fileUriStr);
@@ -335,27 +351,27 @@ export class WorkspaceSymbolCache {
                     fileUri = Uri.parse(fileUriStr, program.serviceProvider);
                     uriCache.set(fileUriStr, fileUri);
                 }
-                
+
                 // Quick stat check - if file doesn't exist anymore, skip it
                 const stat = program.fileSystem.statSync(fileUri);
                 if (!stat) {
                     skippedCount++;
                     continue;
                 }
-                
+
                 const mtime = stat.mtimeMs || 0;
-                
+
                 // Fast path: if mtime hasn't changed, reuse immediately (most common case)
                 if (existingFile.mtime === mtime) {
                     newFiles[fileUriStr] = existingFile;
                     reusedCount++;
                     continue;
                 }
-                
+
                 // mtime changed - check if content actually changed (expensive path)
                 const bytes = program.fileSystem.readFileSync(fileUri, null).subarray(0, 8192);
                 const currentHash = fnv1a(bytes);
-                
+
                 if (existingFile.hash === currentHash) {
                     // Content unchanged, just mtime changed - reuse symbols
                     newFiles[fileUriStr] = {
@@ -365,14 +381,14 @@ export class WorkspaceSymbolCache {
                     reusedCount++;
                     continue;
                 }
-                
+
                 // Content changed - need to rebuild (most expensive path)
                 const parseResults = program.getParseResults(fileUri);
                 if (!parseResults) continue;
-                
+
                 const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
                 if (!analyzerFileInfo) continue;
-                
+
                 const symbols = SymbolIndexer.indexSymbols(
                     analyzerFileInfo,
                     parseResults,
@@ -381,15 +397,14 @@ export class WorkspaceSymbolCache {
                 );
 
                 const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
-                
+
                 newFiles[fileUriStr] = {
                     mtime,
                     hash: currentHash,
-                    symbols: flat
+                    symbols: flat,
                 };
-                
+
                 rebuiltCount++;
-                
             } catch (error) {
                 // File might have been deleted or become inaccessible
                 skippedCount++;
@@ -401,7 +416,9 @@ export class WorkspaceSymbolCache {
         const addedCount = 0;
 
         const elapsedTime = Date.now() - startTime;
-        console.log(`Cache update completed: ${reusedCount} reused, ${rebuiltCount} rebuilt, ${addedCount} added, ${skippedCount} skipped (${elapsedTime}ms)`);
+        console.log(
+            `Cache update completed: ${reusedCount} reused, ${rebuiltCount} rebuilt, ${addedCount} added, ${skippedCount} skipped (${elapsedTime}ms)`
+        );
 
         // Handle case where no files remain (all deleted or skipped)
         if (Object.keys(newFiles).length === 0) {
@@ -412,10 +429,13 @@ export class WorkspaceSymbolCache {
         }
 
         // Compute overall checksum for the workspace
-        const checksumData = Object.keys(newFiles).sort().map(uri => {
-            const file = newFiles[uri];
-            return `${uri}:${file.mtime}:${file.hash}`;
-        }).join('|');
+        const checksumData = Object.keys(newFiles)
+            .sort()
+            .map((uri) => {
+                const file = newFiles[uri];
+                return `${uri}:${file.mtime}:${file.hash}`;
+            })
+            .join('|');
         const checksum = fnv1a(new TextEncoder().encode(checksumData));
 
         const cached: CachedWorkspaceSymbols = {
@@ -423,15 +443,15 @@ export class WorkspaceSymbolCache {
             checksum,
             files: newFiles,
         };
-        
+
         // Store metadata for lazy loading
-        const maxMtime = Math.max(...Object.values(newFiles).map(f => f.mtime));
+        const maxMtime = Math.max(...Object.values(newFiles).map((f) => f.mtime));
         this._cacheMetadata.set(workspaceRoot.key, {
             checksum,
             fileCount: Object.keys(newFiles).length,
-            lastModified: maxMtime
+            lastModified: maxMtime,
         });
-        
+
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
     }
@@ -447,7 +467,7 @@ export class WorkspaceSymbolCache {
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
         await this.cacheWorkspaceSymbols(workspaceRoot, program, forceRebuild, token);
-        
+
         // Save immediately instead of scheduling
         const cached = this._cache.get(workspaceRoot.key);
         if (cached) {
@@ -464,7 +484,7 @@ export class WorkspaceSymbolCache {
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
         await this.updateWorkspaceSymbols(workspaceRoot, program, token, false);
-        
+
         // Save immediately instead of scheduling
         const cached = this._cache.get(workspaceRoot.key);
         if (cached) {
@@ -511,8 +531,13 @@ export class WorkspaceSymbolCache {
             if (cached) {
                 this._cache.set(workspaceRoot.key, cached);
                 if (this._options.verbose) {
-                    const totalSymbols = Object.values(cached.files).reduce((sum, file) => sum + file.symbols.length, 0);
-                    console.log(`[CACHE] Full cache loaded: ${Object.keys(cached.files).length} files, ${totalSymbols} symbols`);
+                    const totalSymbols = Object.values(cached.files).reduce(
+                        (sum, file) => sum + file.symbols.length,
+                        0
+                    );
+                    console.log(
+                        `[CACHE] Full cache loaded: ${Object.keys(cached.files).length} files, ${totalSymbols} symbols`
+                    );
                 }
             } else {
                 // Cache file exists but couldn't load - trigger rebuild
@@ -520,7 +545,7 @@ export class WorkspaceSymbolCache {
                 return [];
             }
         }
-        
+
         // If we have a cache, search it
         this._cacheHits++;
         const results = this._searchCache(cached, query);
@@ -536,7 +561,7 @@ export class WorkspaceSymbolCache {
      */
     warmupCache(workspaceRoot: Uri, program: ProgramView): void {
         const key = workspaceRoot.key;
-        
+
         // Check if cache already exists in memory
         if (this._cache.has(key)) {
             return;
@@ -550,7 +575,12 @@ export class WorkspaceSymbolCache {
             if (metadata) {
                 this._cacheMetadata.set(key, metadata);
                 if (this._options.verbose) {
-                    console.log(`[CACHE] Metadata loaded: ${metadata.fileCount} files, checksum: ${metadata.checksum.substring(0, 8)}...`);
+                    console.log(
+                        `[CACHE] Metadata loaded: ${metadata.fileCount} files, checksum: ${metadata.checksum.substring(
+                            0,
+                            8
+                        )}...`
+                    );
                 }
                 return; // Metadata loaded, full cache will be loaded on-demand
             }
@@ -603,7 +633,7 @@ export class WorkspaceSymbolCache {
     /** Mark a file or entire workspace as dirty. */
     invalidate(workspaceRoot: Uri, fileUri?: Uri) {
         const key = workspaceRoot.key;
-        
+
         if (!fileUri) {
             // Invalidate entire workspace
             if (this._options.verbose) {
@@ -611,7 +641,7 @@ export class WorkspaceSymbolCache {
             }
             this._cache.delete(key);
             this._cacheMetadata.delete(key);
-            
+
             // Cancel any pending save timers
             const timer = this._saveTimers.get(key);
             if (timer) {
@@ -635,8 +665,6 @@ export class WorkspaceSymbolCache {
     // ————————————————————————————————————————————
     // Helpers
     // ————————————————————————————————————————————
-
-
 
     private _flattenIndexedSymbols(symbols: any[], container: string): IndexedSymbol[] {
         const out: IndexedSymbol[] = [];
@@ -675,7 +703,10 @@ export class WorkspaceSymbolCache {
         return undefined;
     }
 
-    private _loadCacheMetadata(workspaceRoot: Uri, fs: ReadOnlyFileSystem): { checksum: string; fileCount: number; lastModified: number } | undefined {
+    private _loadCacheMetadata(
+        workspaceRoot: Uri,
+        fs: ReadOnlyFileSystem
+    ): { checksum: string; fileCount: number; lastModified: number } | undefined {
         const fileUri = this._getCacheFileUri(workspaceRoot);
         if (!fs.existsSync(fileUri)) return undefined;
         try {
@@ -688,7 +719,7 @@ export class WorkspaceSymbolCache {
                 return {
                     checksum: obj.checksum,
                     fileCount,
-                    lastModified
+                    lastModified,
                 };
             }
         } catch {
@@ -767,11 +798,11 @@ export class WorkspaceSymbolCache {
         }
 
         this._buildingCaches.add(key);
-        
+
         if (this._options.verbose) {
             console.log(`[CACHE] Starting background cache build for: ${workspaceRoot.toUserVisibleString()}`);
         }
-        
+
         // Build cache asynchronously
         setTimeout(async () => {
             try {
