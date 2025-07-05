@@ -177,6 +177,8 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'pythonplatform', type: String },
         { name: 'pythonversion', type: String },
         { name: 'rebuildcache', type: Boolean },
+        { name: 'updatecache', type: Boolean },
+        { name: 'cacheonly', type: Boolean },
         { name: 'skipunannotated', type: Boolean },
         { name: 'stats', type: Boolean },
         { name: 'threads', type: parseThreadsArgValue },
@@ -278,6 +280,46 @@ async function processArgs(): Promise<ExitStatus> {
                 return ExitStatus.ParameterError;
             }
         }
+    }
+
+    if (args.rebuildcache) {
+        const incompatibleArgs = ['watch', 'stats', 'verifytypes', 'dependencies', 'skipunannotated', 'threads'];
+        for (const arg of incompatibleArgs) {
+            if (args[arg] !== undefined) {
+                console.error(`'rebuildcache' option cannot be used with '${arg}' option`);
+                return ExitStatus.ParameterError;
+            }
+        }
+    }
+
+    if (args.updatecache) {
+        const incompatibleArgs = ['watch', 'verifytypes', 'dependencies', 'skipunannotated', 'threads'];
+        for (const arg of incompatibleArgs) {
+            if (args[arg] !== undefined) {
+                console.error(`'updatecache' option cannot be used with '${arg}' option`);
+                return ExitStatus.ParameterError;
+            }
+        }
+    }
+
+    if (args.cacheonly) {
+        const incompatibleArgs = ['watch', 'verifytypes', 'dependencies', 'skipunannotated', 'threads', 'createstub'];
+        for (const arg of incompatibleArgs) {
+            if (args[arg] !== undefined) {
+                console.error(`'cacheonly' option cannot be used with '${arg}' option`);
+                return ExitStatus.ParameterError;
+            }
+        }
+    }
+
+    if (args.rebuildcache && args.updatecache) {
+        console.error(`'rebuildcache' and 'updatecache' options cannot be used together`);
+        return ExitStatus.ParameterError;
+    }
+
+    if (args.cacheonly && !args.rebuildcache && !args.updatecache) {
+        console.error(`'cacheonly' option requires either 'rebuildcache' or 'updatecache' option`);
+        return ExitStatus.ParameterError;
     }
 
     const options = new PyrightCommandLineOptions(process.cwd(), false);
@@ -573,7 +615,6 @@ async function runSingleThreaded(
     const exitStatus = createDeferred<ExitStatus>();
 
     service.setCompletionCallback((results) => {
-        console.log('runSingleThreaded222@@@', results);
         if (results.fatalErrorOccurred) {
             exitStatus.resolve(ExitStatus.FatalError);
             return;
@@ -634,7 +675,59 @@ async function runSingleThreaded(
         }
     });
 
-    // This will trigger the analyzer.
+    // Handle cache-only mode BEFORE starting any analysis
+    if (args.cacheonly) {
+        try {
+            console.log('Cache-only mode: updating workspace symbols...');
+            
+            // Configure cache options from environment variables and CLI args
+            const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 3000;
+            const verbose = options.configSettings.verboseOutput;
+            
+            _workspaceSymbolCache.setOptions({ 
+                maxFiles: maxFiles > 0 ? maxFiles : 3000,
+                verbose: verbose 
+            });
+            
+            // Set minimal options to avoid heavy computation
+            const minimalOptions = { ...options };
+            minimalOptions.languageServerSettings.checkOnlyOpenFiles = true;
+            minimalOptions.languageServerSettings.enableAmbientAnalysis = false;
+            
+            // Initialize the service
+            service.setOptions(minimalOptions);
+            
+            // Get the program
+            const program = service.backgroundAnalysisProgram.program;
+            const root = program.rootPath;
+            
+            // Determine cache strategy
+            const forceRebuild = process.env.PYRIGHT_FORCE_REBUILD_CACHE === 'true' || args.rebuildcache;
+            const incrementalUpdate = args.updatecache;
+            
+            if (forceRebuild) {
+                console.log('Rebuilding workspace-symbol cache (rebuilding all files)...');
+                await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, true);
+            } else if (incrementalUpdate) {
+                console.log('Updating workspace-symbol cache (checking files for changes)...');
+                await _workspaceSymbolCache.updateWorkspaceSymbolsImmediate(root, program);
+            } else {
+                console.log('Loading workspace-symbol cache (reusing existing cache)...');
+                await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, false);
+            }
+            
+            console.log('Cache operation completed. Exiting (--cacheonly mode).');
+            exitStatus.resolve(ExitStatus.NoErrors);
+            return await exitStatus.promise;
+            
+        } catch (error) {
+            console.error('Cache operation failed:', error);
+            exitStatus.resolve(ExitStatus.FatalError);
+            return await exitStatus.promise;
+        }
+    }
+
+    // This will trigger the analyzer for normal operation.
     service.setOptions(options);
 
     // Check workspace-symbol cache for CLI run so LSP can reuse it later.
@@ -652,16 +745,21 @@ async function runSingleThreaded(
         
         service.run(async (program) => {
             const root = program.rootPath;
-            // By default, reuse existing cache. Only rebuild if --rebuild-cache is specified
+            
+            // Determine cache strategy
             const forceRebuild = process.env.PYRIGHT_FORCE_REBUILD_CACHE === 'true' || args.rebuildcache;
+            const incrementalUpdate = args.updatecache;
             
             if (forceRebuild) {
-                console.log('Force rebuilding workspace-symbol cache...');
+                console.log('Rebuilding workspace-symbol cache (rebuilding all files)...');
+                await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, true);
+            } else if (incrementalUpdate) {
+                console.log('Updating workspace-symbol cache (checking files for changes)...');
+                await _workspaceSymbolCache.updateWorkspaceSymbolsImmediate(root, program);
             } else {
-                console.log('Loading/reusing workspace-symbol cache...');
+                console.log('Loading workspace-symbol cache (reusing existing cache)...');
+                await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, false);
             }
-            
-            await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, forceRebuild);
         }, cancellationNone as any);
     } catch {
         /* ignore cache build errors */
@@ -1229,6 +1327,9 @@ function printUsage() {
             '  --pythonplatform <PLATFORM>        Analyze for a specific platform (Darwin, Linux, Windows)\n' +
             '  --pythonpath <FILE>                Path to the Python interpreter\n' +
             '  --pythonversion <VERSION>          Analyze for a specific version (3.3, 3.4, etc.)\n' +
+            '  --rebuildcache                     Force rebuild of workspace symbol cache\n' +
+            '  --updatecache                      Update workspace symbol cache (check for file changes)\n' +
+            '  --cacheonly                        Only update cache without running type analysis\n' +
             '  --skipunannotated                  Skip analysis of functions with no type annotations\n' +
             '  --stats                            Print detailed performance stats\n' +
             '  -t,--typeshedpath <DIRECTORY>      Use typeshed type stubs at this location\n' +
