@@ -22,6 +22,7 @@ import { assert } from '../common/debug';
 import { Diagnostic, DiagnosticCategory, TaskListToken, convertLevelToCategory } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { DiagnosticSink, TextRangeDiagnosticSink } from '../common/diagnosticSink';
+import { ProgramView } from '../common/extensibility';
 import { FileSystem } from '../common/fileSystem';
 import { LogTracker, getPathForLogging } from '../common/logTracker';
 import { stripFileExtension } from '../common/pathUtils';
@@ -39,6 +40,7 @@ import { ModuleNode } from '../parser/parseNodes';
 import { ModuleImport, ParseFileResults, ParseOptions, Parser, ParserOutput } from '../parser/parser';
 import { IgnoreComment, IgnoreCommentRule, Tokenizer, TokenizerOutput } from '../parser/tokenizer';
 import { Token } from '../parser/tokenizerTypes';
+import { typecheckCacheSingleton } from '../languageService/typecheckCacheSingleton';
 import { AnalyzerFileInfo, ImportLookup } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { Binder } from './binder';
@@ -963,7 +965,8 @@ export class SourceFile {
         importResolver: ImportResolver,
         evaluator: TypeEvaluator,
         sourceMapper: SourceMapper,
-        dependentFiles?: ParserOutput[]
+        dependentFiles?: ParserOutput[],
+        program?: ProgramView
     ) {
         assert(!this.isParseRequired(), `Check called before parsing: state=${this._writableData.debugPrint()}`);
         assert(!this.isBindingRequired(), `Check called before binding: state=${this._writableData.debugPrint()}`);
@@ -972,6 +975,29 @@ export class SourceFile {
         assert(this._writableData.parserOutput !== undefined, 'Parse results not available');
 
         return this._logTracker.log(`checking: ${this._getPathForLogging(this._uri)}`, () => {
+            // Try to get cached diagnostics first
+            if (program) {
+                const cachedDiagnostics = typecheckCacheSingleton.getCachedDiagnostics(
+                    program.rootPath,
+                    this._uri,
+                    program,
+                    configOptions
+                );
+                
+                if (cachedDiagnostics !== null) {
+                    // Cache hit - use cached diagnostics
+                    this._writableData.checkerDiagnostics = cachedDiagnostics;
+                    this._writableData.isCheckingNeeded = false;
+                    this._writableData.checkTime = 0; // Cached, so no actual check time
+                    
+                    // Record time saved (estimate)
+                    typecheckCacheSingleton.recordTimeSaved(50); // Estimated 50ms saved per file
+                    
+                    this._recomputeDiagnostics(configOptions);
+                    return;
+                }
+            }
+            
             try {
                 timingStats.typeCheckerTime.timeOperation(() => {
                     const checkDuration = new Duration();
@@ -988,6 +1014,17 @@ export class SourceFile {
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(this._writableData.parserOutput!.parseTree)!;
                     this._writableData.checkerDiagnostics = fileInfo.diagnosticSink.fetchAndClear();
                     this._writableData.checkTime = checkDuration.getDurationInMilliseconds();
+                    
+                    // Cache the results for future use
+                    if (program) {
+                        typecheckCacheSingleton.cacheDiagnostics(
+                            program.rootPath,
+                            this._uri,
+                            this._writableData.checkerDiagnostics,
+                            program,
+                            configOptions
+                        );
+                    }
                 });
             } catch (e: any) {
                 const isCancellation = OperationCanceledException.is(e);

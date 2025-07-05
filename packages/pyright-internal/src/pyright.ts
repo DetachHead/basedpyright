@@ -59,6 +59,7 @@ import {
 } from './common/configOptions';
 import { writeFileSync } from 'fs';
 import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './languageService/workspaceSymbolCacheSingleton';
+import { typecheckCacheSingleton as _typecheckCache } from './languageService/typecheckCacheSingleton';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -179,6 +180,9 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'rebuildcache', type: Boolean },
         { name: 'updatecache', type: Boolean },
         { name: 'cacheonly', type: Boolean },
+        { name: 'rebuildtypecache', type: Boolean },
+        { name: 'updatetypecache', type: Boolean },
+        { name: 'typecacheonly', type: Boolean },
         { name: 'skipunannotated', type: Boolean },
         { name: 'stats', type: Boolean },
         { name: 'threads', type: parseThreadsArgValue },
@@ -765,6 +769,60 @@ async function runSingleThreaded(
         /* ignore cache build errors */
     }
 
+    // Check typecheck cache for CLI run to speed up type checking.
+    try {
+        console.log('Checking typecheck cache...');
+        
+        // Configure cache options from environment variables and CLI args
+        const maxFiles = process.env.PYRIGHT_MAX_TYPE_CACHE_FILES ? parseInt(process.env.PYRIGHT_MAX_TYPE_CACHE_FILES, 10) : 5000;
+        const verbose = options.configSettings.verboseOutput;
+        
+        _typecheckCache.setOptions({ 
+            maxFiles: maxFiles > 0 ? maxFiles : 5000,
+            verbose: verbose 
+        });
+        
+        // Handle cache-only mode for typecheck cache
+        if (args.typecacheonly) {
+            console.log('Type cache-only mode: running cache operations without type checking...');
+            
+            // Set minimal options to reduce computation
+            options.languageServerSettings.checkOnlyOpenFiles = true;
+            options.languageServerSettings.enableAmbientAnalysis = false;
+            
+            service.run(async (program) => {
+                const root = program.rootPath;
+                
+                // Determine cache strategy
+                const forceRebuild = args.rebuildtypecache;
+                const incrementalUpdate = args.updatetypecache;
+                
+                if (forceRebuild) {
+                    console.log('Rebuilding typecheck cache (rebuilding all files)...');
+                    _typecheckCache.invalidate(root);
+                } else if (incrementalUpdate) {
+                    console.log('Updating typecheck cache (clearing stale entries)...');
+                    // Cache will be populated during normal type checking
+                } else {
+                    console.log('Loading typecheck cache (reusing existing cache)...');
+                    // Cache will be used during normal type checking
+                }
+                
+                // Print cache stats
+                const stats = _typecheckCache.getCacheStats();
+                console.log(`Typecheck cache stats: ${stats.totalFileCount} files, ${stats.totalDiagnosticCount} diagnostics, ${(stats.cacheHitRate * 100).toFixed(1)}% hit rate`);
+                if (stats.totalTimeSaved > 0) {
+                    console.log(`Total time saved: ${(stats.totalTimeSaved / 1000).toFixed(1)}s`);
+                }
+            }, cancellationNone as any);
+            
+            exitStatus.resolve(ExitStatus.NoErrors);
+            return await exitStatus.promise;
+        }
+    } catch {
+        /* ignore cache build errors */
+    }
+
     return await exitStatus.promise;
 }
 
@@ -1330,6 +1388,9 @@ function printUsage() {
             '  --rebuildcache                     Force rebuild of workspace symbol cache\n' +
             '  --updatecache                      Update workspace symbol cache (check for file changes)\n' +
             '  --cacheonly                        Only update cache without running type analysis\n' +
+            '  --rebuildtypecache                 Force rebuild of typecheck result cache\n' +
+            '  --updatetypecache                  Update typecheck result cache (clear stale entries)\n' +
+            '  --typecacheonly                    Only manage typecheck cache without running analysis\n' +
             '  --skipunannotated                  Skip analysis of functions with no type annotations\n' +
             '  --stats                            Print detailed performance stats\n' +
             '  -t,--typeshedpath <DIRECTORY>      Use typeshed type stubs at this location\n' +

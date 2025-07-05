@@ -2041,7 +2041,8 @@ export class Program {
                         this._importResolver,
                         this._evaluator!,
                         this._createSourceMapper(execEnv, token, fileToCheck),
-                        dependentFiles
+                        dependentFiles,
+                        this // Pass program for typecheck cache
                     );
                 }
             }
