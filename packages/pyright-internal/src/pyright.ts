@@ -59,7 +59,7 @@ import {
 } from './common/configOptions';
 import { writeFileSync } from 'fs';
 import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './languageService/workspaceSymbolCacheSingleton';
-import { typecheckCacheSingleton as _typecheckCache } from './languageService/typecheckCacheSingleton';
+import { typecheckCacheSingleton as _typecheckCache, configureTypecheckCache, printTypecheckCacheSummary } from './languageService/typecheckCacheSingleton';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -440,6 +440,7 @@ async function processArgs(): Promise<ExitStatus> {
 
     if (args.verbose) {
         options.configSettings.verboseOutput = true;
+        configureTypecheckCache(true);
     }
 
     // Always enable autoSearchPaths when using the command line.
@@ -1744,6 +1745,10 @@ export async function main() {
     }
 
     const exitCode = await processArgs();
+    
+    // Print typecheck cache summary if there was any cache activity
+    printTypecheckCacheSummary();
+    
     process.exitCode = exitCode;
     // Don't call process.exit; stdout may not have been flushed which can break readers.
     // https://github.com/nodejs/node/issues/6379

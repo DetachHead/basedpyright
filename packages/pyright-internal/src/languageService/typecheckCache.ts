@@ -131,14 +131,26 @@ export class TypecheckCache {
     ): Diagnostic[] | null {
         this._totalQueries++;
 
-        const cached = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
+        let cached = this._cache.get(workspaceRoot.key);
         if (!cached) {
-            return null;
+            const loadedCache = this._loadFromDisk(workspaceRoot, program.fileSystem);
+            if (!loadedCache) {
+                if (this._options.verbose) {
+                    console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - No cache file found`);
+                }
+                return null;
+            }
+            // Store the loaded cache in memory for future use
+            cached = loadedCache;
+            this._cache.set(workspaceRoot.key, cached);
         }
 
         const fileUriStr = fileUri.toString();
         const fileCache = cached.files[fileUriStr];
         if (!fileCache) {
+            if (this._options.verbose) {
+                console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - File not in cache`);
+            }
             return null;
         }
 
@@ -146,6 +158,9 @@ export class TypecheckCache {
         try {
             const stat = program.fileSystem.statSync(fileUri);
             if (!stat || (stat.mtimeMs || 0) !== fileCache.mtime) {
+                if (this._options.verbose) {
+                    console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - File modified (mtime: ${stat?.mtimeMs || 0} vs cached: ${fileCache.mtime})`);
+                }
                 return null;
             }
 
@@ -153,18 +168,27 @@ export class TypecheckCache {
             const bytes = program.fileSystem.readFileSync(fileUri, null).subarray(0, 8192);
             const currentHash = fnv1a(bytes);
             if (currentHash !== fileCache.hash) {
+                if (this._options.verbose) {
+                    console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - Content changed (hash: ${currentHash} vs cached: ${fileCache.hash})`);
+                }
                 return null;
             }
 
             // Check config hash
             const configHash = this._computeConfigHash(configOptions);
             if (configHash !== fileCache.configHash) {
+                if (this._options.verbose) {
+                    console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - Config changed (hash: ${configHash} vs cached: ${fileCache.configHash})`);
+                }
                 return null;
             }
 
             // Check dependency hash
             const dependencyHash = this._computeDependencyHash(fileUri, program);
             if (dependencyHash !== fileCache.dependencyHash) {
+                if (this._options.verbose) {
+                    console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - Dependencies changed (hash: ${dependencyHash} vs cached: ${fileCache.dependencyHash})`);
+                }
                 return null;
             }
 
@@ -173,15 +197,18 @@ export class TypecheckCache {
 
             if (this._options.verbose) {
                 console.log(
-                    `[TYPECHECK-CACHE] Cache hit: ${fileUri.toUserVisibleString()} (${
+                    `[TYPECHECK-CACHE] HIT: ${fileUri.toUserVisibleString()} (${
                         fileCache.diagnostics.length
-                    } diagnostics)`
+                    } diagnostics, saved ~50ms)`
                 );
             }
 
             return fileCache.diagnostics.map((d) => this._deserializeDiagnostic(d));
         } catch (error) {
             // File might be deleted or inaccessible
+            if (this._options.verbose) {
+                console.log(`[TYPECHECK-CACHE] MISS: ${fileUri.toUserVisibleString()} - File access error: ${error}`);
+            }
             return null;
         }
     }
@@ -256,7 +283,7 @@ export class TypecheckCache {
 
             if (this._options.verbose) {
                 console.log(
-                    `[TYPECHECK-CACHE] Cached: ${fileUri.toUserVisibleString()} (${diagnostics.length} diagnostics)`
+                    `[TYPECHECK-CACHE] REINDEX: ${fileUri.toUserVisibleString()} (${diagnostics.length} diagnostics cached)`
                 );
             }
         } catch (error) {
@@ -346,6 +373,28 @@ export class TypecheckCache {
      */
     recordTimeSaved(milliseconds: number): void {
         this._totalTimeSaved += milliseconds;
+    }
+
+    /**
+     * Print cache summary statistics
+     */
+    printCacheSummary(): void {
+        if (this._totalQueries === 0) {
+            return;
+        }
+
+        const stats = this.getCacheStats();
+        const hitRate = (stats.cacheHitRate * 100).toFixed(1);
+        const timeSavedSeconds = (stats.totalTimeSaved / 1000).toFixed(1);
+        
+        console.log(`\n[TYPECHECK-CACHE] Summary:`);
+        console.log(`  Total queries: ${stats.totalQueries}`);
+        console.log(`  Cache hits: ${stats.totalHits}`);
+        console.log(`  Cache misses: ${stats.totalQueries - stats.totalHits}`);
+        console.log(`  Hit rate: ${hitRate}%`);
+        console.log(`  Time saved: ${timeSavedSeconds}s`);
+        console.log(`  Files cached: ${stats.totalFileCount}`);
+        console.log(`  Workspaces: ${stats.workspaceCount}`);
     }
 
     private _loadFromDisk(
