@@ -269,7 +269,6 @@ export class Program {
 
         // Initialize type cache if enabled with the correct project root
         if (configOptions.enableTypeCaching && !this._typeCacheManager) {
-            this._console.info(`🔧 Initializing type cache system with project root: ${configOptions.projectRoot.toUserVisibleString()}`);
             const format = configOptions.typeCacheFormat === 'json' ? TypeCacheFormat.Json : TypeCacheFormat.Binary;
             this._typeCacheManager = new TypeCacheManager(
                 configOptions.projectRoot,
@@ -285,7 +284,6 @@ export class Program {
                 this._console.warn(`⚠️  Type cache initialization failed: ${error}`);
             });
         } else if (!configOptions.enableTypeCaching && this._typeCacheManager) {
-            this._console.info(`ℹ️  Type caching disabled, cleaning up existing cache manager`);
             this._typeCacheManager = undefined;
         }
 
@@ -1169,6 +1167,24 @@ export class Program {
         }
         return importName;
     };
+
+    private _checkCacheSync(filePath: string): boolean {
+        // Quick synchronous cache check - the cache manager should have already
+        // loaded and validated entries during initialization
+        if (!this._typeCacheManager) {
+            return false;
+        }
+        
+        try {
+            // Use a synchronous version of cache lookup
+            // This assumes the cache is already loaded in memory
+            const cacheKey = this._typeCacheManager.getCacheKey(filePath);
+            return this._typeCacheManager.hasValidEntry(cacheKey);
+        } catch (error) {
+            // Cache error, fall through to normal analysis
+            return false;
+        }
+    }
 
     private _handleMemoryHighUsage() {
         const cacheUsage = this._cacheManager.getCacheUsage();
@@ -2091,28 +2107,24 @@ export class Program {
             // Get relative path for logging
             const relativePath = this._configOptions.projectRoot.getRelativePath(fileToCheck.uri) || fileToCheck.uri.getFilePath();
             
-            // Check if we can use cached results
+            // Check if we can use cached results (synchronous check)
             if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
-                this._console.log(`🔍 Checking cache for: ${relativePath}`);
-                this._typeCacheManager.load(fileToCheck.uri.getFilePath()).then(cachedEntry => {
-                    if (cachedEntry) {
-                        this._console.info(`🔍 Analyzing (cached): ${relativePath}`);
-                        return;
-                    } else {
-                        this._console.log(`📋 No cache entry found for: ${relativePath}`);
+                // Try to load from cache synchronously
+                // Note: This will be a quick in-memory lookup after cache is loaded
+                const cachedEntry = this._checkCacheSync(fileToCheck.uri.getFilePath());
+                if (cachedEntry) {
+                    // Cache hit! Skip analysis
+                    if (this._configOptions.verboseOutput) {
+                        this._console.info(`⚡ Reindexed: ${relativePath}`);
                     }
-                }).catch(error => {
-                    this._console.log(`❌ Cache load error for ${relativePath}: ${error}`);
-                });
-            } else {
-                if (!this._typeCacheManager) {
-                    this._console.log(`🚫 No type cache manager for: ${relativePath}`);
-                } else if (!this._configOptions.enableTypeCaching) {
-                    this._console.log(`🚫 Type caching disabled for: ${relativePath}`);
+                    logState.suppress();
+                    return false;
                 }
             }
 
-            this._console.info(`🔍 Analyzing: ${relativePath}`);
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`🔍 Analyzing: ${relativePath}`);
+            }
             const startTime = Date.now();
 
             // Bind the file if necessary even if we're not going to run the checker.
@@ -2155,11 +2167,9 @@ export class Program {
             const endTime = Date.now();
             const analysisTime = endTime - startTime;
 
-            // Log completion with timing
-            if (analysisTime > 100) {
+            // Log completion with timing in verbose mode
+            if (this._configOptions.verboseOutput) {
                 this._console.info(`✅ Analyzed: ${relativePath} (${analysisTime}ms)`);
-            } else {
-                this._console.log(`✅ Analyzed: ${relativePath} (${analysisTime}ms)`);
             }
 
             // For very large programs, we may need to discard the evaluator and
@@ -2168,23 +2178,21 @@ export class Program {
 
             // Store analysis results in cache if enabled
             if (this._typeCacheManager && this._typeCacheExtractor && this._configOptions.enableTypeCaching && boundFile) {
-                this._console.log(`💾 Attempting to cache analysis for: ${relativePath}`);
                 try {
                     const cacheEntry = this._typeCacheExtractor.extractCacheEntry(fileToCheck, analysisTime);
                     if (cacheEntry) {
-                        this._console.log(`💾 Cache entry created for: ${relativePath}, storing...`);
                         // Store asynchronously without blocking
-                        this._typeCacheManager.store(fileToCheck.uri.getFilePath(), cacheEntry).catch(error => {
-                            this._console.warn(`❌ Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                        this._typeCacheManager.store(fileToCheck.uri.getFilePath(), cacheEntry).then(() => {
+                            if (this._configOptions.verboseOutput) {
+                                this._console.info(`💾 Indexed: ${relativePath}`);
+                            }
+                        }).catch(error => {
+                            this._console.warn(`Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
                         });
-                    } else {
-                        this._console.log(`⚠️  No cache entry created for: ${relativePath}`);
                     }
                 } catch (error) {
-                    this._console.warn(`❌ Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                    this._console.warn(`Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
                 }
-            } else {
-                this._console.log(`🚫 Cannot cache analysis for ${relativePath}: manager=${!!this._typeCacheManager}, extractor=${!!this._typeCacheExtractor}, enabled=${this._configOptions.enableTypeCaching}, bound=${boundFile}`);
             }
 
             // Detect import cycles that involve the file.

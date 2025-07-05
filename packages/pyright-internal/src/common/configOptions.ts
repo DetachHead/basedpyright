@@ -1484,7 +1484,6 @@ export class ConfigOptions {
         this.projectRoot = projectRoot;
         this.diagnosticRuleSet = this.constructor.getDiagnosticRuleSet();
         this.functionSignatureDisplay = SignatureDisplayType.formatted;
-        console.log(`🔧 ConfigOptions created: enableTypeCaching=${this.enableTypeCaching} for project ${projectRoot.toUserVisibleString()}`);
     }
 
     static getDiagnosticRuleSet(typeCheckingMode?: TypeCheckingMode): DiagnosticRuleSet {

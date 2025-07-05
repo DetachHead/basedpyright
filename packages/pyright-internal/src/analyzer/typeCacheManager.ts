@@ -146,12 +146,10 @@ export class TypeCacheManager {
             expensiveFiles: [],
         };
 
-        this._console.info(`🔧 Type cache manager initialized (format: ${format}, max files: ${this._maxCacheFiles})`);
     }
 
     async initialize(): Promise<void> {
         this._initStartTime = Date.now();
-        this._console.info('🚀 Initializing type cache system...');
         
         try {
             await this._ensureCacheDirectory();
@@ -159,18 +157,14 @@ export class TypeCacheManager {
             await this._validateCacheEntries();
             this._isLoaded = true;
             
-            const initTime = Date.now() - this._initStartTime;
             const existingEntries = this._cacheIndex.size;
             
-            this._console.info(`✅ Type cache initialized in ${initTime}ms`);
-            this._console.info(`📊 Cache status: ${existingEntries} entries, format: ${this._format}`);
-            
-            if (existingEntries > 0) {
-                this._console.info(`📂 Cache directory: ${this._cacheDir.toUserVisibleString()}`);
+            if (this._configOptions.verboseOutput && existingEntries > 0) {
+                this._console.info(`📋 Cache loaded: ${existingEntries} entries`);
                 this._logCacheStats();
             }
         } catch (error) {
-            this._console.error(`❌ Failed to initialize type cache: ${error}`);
+            this._console.error(`Failed to initialize type cache: ${error}`);
         }
     }
 
@@ -184,9 +178,23 @@ export class TypeCacheManager {
         const cacheKey = this._getCacheKey(filePath);
         const entry = this._cacheIndex.get(cacheKey);
 
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`🔍 Cache lookup for: ${this._getDisplayPath(filePath)}`);
+            this._console.info(`   Key: ${cacheKey}`);
+            this._console.info(`   Found: ${!!entry}`);
+            if (entry) {
+                this._console.info(`   Entry path: ${entry.filePath}`);
+            }
+        }
+
         if (!entry) {
             this._misses++;
-            this._console.log(`📋 Cache miss: ${this._getDisplayPath(filePath)}`);
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ Cache miss: No entry found for key ${cacheKey}`);
+                // Show first few cache keys for debugging
+                const keys = Array.from(this._cacheIndex.keys()).slice(0, 3);
+                this._console.info(`   Available keys (first 3): ${keys.join(', ')}`);
+            }
             return undefined;
         }
 
@@ -194,7 +202,9 @@ export class TypeCacheManager {
         if (!(await this._isEntryValid(entry))) {
             this._invalidate(filePath);
             this._invalidations++;
-            this._console.log(`🔄 Cache invalidated (stale): ${this._getDisplayPath(filePath)}`);
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ Cache invalidated: Entry became invalid for ${this._getDisplayPath(filePath)}`);
+            }
             return undefined;
         }
 
@@ -205,7 +215,9 @@ export class TypeCacheManager {
         }
 
         this._hits++;
-        this._console.log(`⚡ Cache hit: ${this._getDisplayPath(filePath)} (${entry.analysisTime}ms saved)`);
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`✅ Cache hit: ${this._getDisplayPath(filePath)}`);
+        }
         return entry;
     }
 
@@ -237,19 +249,8 @@ export class TypeCacheManager {
             await this._saveCacheEntry(filePath, entry);
             await this._updateCacheIndex();
             
-            this._console.log(`💾 Cached analysis: ${this._getDisplayPath(filePath)} (${entry.analysisTime}ms, ${entry.symbols.length} symbols)`);
-            
-            // Log interesting files
-            if (entry.analysisTime > 1000) {
-                this._console.info(`🐌 Slow analysis cached: ${this._getDisplayPath(filePath)} (${entry.analysisTime}ms)`);
-            }
-            
-            if (entry.symbols.length > 100) {
-                this._console.info(`🧠 Complex file cached: ${this._getDisplayPath(filePath)} (${entry.symbols.length} symbols)`);
-            }
-            
         } catch (error) {
-            this._console.error(`❌ Failed to store cache entry for ${this._getDisplayPath(filePath)}: ${error}`);
+            this._console.error(`Failed to store cache entry for ${this._getDisplayPath(filePath)}: ${error}`);
         }
     }
 
@@ -283,6 +284,26 @@ export class TypeCacheManager {
     getStats(): TypeCacheStats {
         this._updateStats();
         return { ...this._stats };
+    }
+
+    getCacheKey(filePath: string): string {
+        return this._getCacheKey(filePath);
+    }
+
+    hasValidEntry(cacheKey: string): boolean {
+        if (!this._isLoaded) {
+            return false;
+        }
+        
+        const entry = this._cacheIndex.get(cacheKey);
+        if (!entry) {
+            return false;
+        }
+        
+        // Quick validation - check version and config hash only
+        // Skip file content and dependency validation for performance
+        return entry.version === TypeCacheManager._cacheVersion && 
+               entry.configHash === this._configHash;
     }
 
     async cleanup(): Promise<void> {
@@ -377,38 +398,81 @@ export class TypeCacheManager {
 
     private async _validateCacheEntries(): Promise<void> {
         const invalidEntries: string[] = [];
+        const totalEntries = this._cacheIndex.size;
+        let validatedCount = 0;
+
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`🔍 Validating ${totalEntries} cache entries...`);
+        }
 
         for (const [key, entry] of this._cacheIndex) {
+            validatedCount++;
             if (!(await this._isEntryValid(entry))) {
                 invalidEntries.push(this._getFilePathFromKey(key));
             }
+            
+            // Show progress for large validation batches
+            if (this._configOptions.verboseOutput && validatedCount % 100 === 0) {
+                this._console.info(`🔍 Validated ${validatedCount}/${totalEntries} entries...`);
+            }
         }
 
-        for (const filePath of invalidEntries) {
-            this._invalidate(filePath);
+        if (invalidEntries.length > 0) {
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ Invalidating ${invalidEntries.length}/${totalEntries} cache entries`);
+                if (invalidEntries.length <= 10) {
+                    invalidEntries.forEach(file => this._console.info(`   - ${this._getDisplayPath(file)}`));
+                }
+            }
+            
+            for (const filePath of invalidEntries) {
+                this._invalidate(filePath);
+            }
+        } else if (this._configOptions.verboseOutput) {
+            this._console.info(`✅ All ${totalEntries} cache entries are valid`);
         }
     }
 
     private async _isEntryValid(entry: TypeCacheEntry): Promise<boolean> {
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`🔍 Validating cache entry for ${this._getDisplayPath(entry.filePath)}`);
+        }
+
         // Check version compatibility
         if (entry.version !== TypeCacheManager._cacheVersion) {
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ Cache version mismatch for ${this._getDisplayPath(entry.filePath)}: ${entry.version} vs ${TypeCacheManager._cacheVersion}`);
+            }
             return false;
         }
 
         // Check config hash
         if (entry.configHash !== this._configHash) {
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ Config hash mismatch for ${this._getDisplayPath(entry.filePath)}`);
+                this._console.info(`   Stored: ${entry.configHash}`);
+                this._console.info(`   Current: ${this._configHash}`);
+            }
             return false;
         }
 
         // Check if file still exists and hash matches
         const fileUri = Uri.file(entry.filePath, this._serviceProvider);
         if (!this._fileSystem.existsSync(fileUri)) {
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ File not found: ${this._getDisplayPath(entry.filePath)}`);
+            }
             return false;
         }
 
         const fileContent = this._fileSystem.readFileSync(fileUri, 'utf8');
         const currentHash = hashString(fileContent).toString();
         if (currentHash !== entry.fileHash) {
+            if (this._configOptions.verboseOutput) {
+                this._console.info(`❌ File hash mismatch for ${this._getDisplayPath(entry.filePath)}`);
+                this._console.info(`   Stored: ${entry.fileHash}`);
+                this._console.info(`   Current: ${currentHash}`);
+            }
             return false;
         }
 
@@ -416,14 +480,26 @@ export class TypeCacheManager {
         for (const dep of entry.dependencies) {
             const depUri = Uri.file(dep.filePath, this._serviceProvider);
             if (!this._fileSystem.existsSync(depUri)) {
+                if (this._configOptions.verboseOutput) {
+                    this._console.info(`❌ Dependency not found: ${dep.filePath}`);
+                }
                 return false;
             }
 
             const depContent = this._fileSystem.readFileSync(depUri, 'utf8');
             const depHash = hashString(depContent).toString();
             if (depHash !== dep.hash) {
+                if (this._configOptions.verboseOutput) {
+                    this._console.info(`❌ Dependency hash mismatch for ${dep.filePath}`);
+                    this._console.info(`   Stored: ${dep.hash}`);
+                    this._console.info(`   Current: ${depHash}`);
+                }
                 return false;
             }
+        }
+
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`✅ Cache entry is valid for ${this._getDisplayPath(entry.filePath)}`);
         }
 
         return true;
@@ -496,7 +572,16 @@ export class TypeCacheManager {
             extraPaths: this._configOptions.defaultExtraPaths?.map(p => p.toString()),
         };
         
-        return hashString(JSON.stringify(configData)).toString();
+        const jsonString = JSON.stringify(configData);
+        const hash = hashString(jsonString).toString();
+        
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`🔧 Config hash computation:`);
+            this._console.info(`   Data: ${jsonString}`);
+            this._console.info(`   Hash: ${hash}`);
+        }
+        
+        return hash;
     }
 
     private _getCacheKey(filePath: string): string {
