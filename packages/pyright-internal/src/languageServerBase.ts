@@ -157,6 +157,8 @@ import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 import { zip } from 'lodash';
 import { assert } from './common/debug';
+import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './languageService/workspaceSymbolCacheSingleton';
+import { StatusMutationListener } from './common/extensibility';
 
 const UncomputedDiagnosticsVersion = -1;
 
@@ -1779,6 +1781,13 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
 
         // Otherwise the initialize completion should cause settings to be updated on all workspaces.
+
+        // Warm up workspace symbol cache in background
+        if (workspace.rootUri) {
+            workspace.service.run((program) => {
+                _workspaceSymbolCache.warmupCache(workspace.rootUri!, program);
+            }, CancellationToken.None);
+        }
     }
 
     protected onWorkspaceRemoved(workspace: Workspace) {
@@ -1810,7 +1819,28 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         // 5 seconds default
         const defaultBackOffTime = 5 * 1000;
 
-        return this.createAnalyzerService(name, workspaceRoot || Uri.empty(), services, () => defaultBackOffTime);
+        const service = this.createAnalyzerService(
+            name,
+            workspaceRoot || Uri.empty(),
+            services,
+            () => defaultBackOffTime
+        );
+
+        // Register workspace‐symbol cache invalidation listener so edits refresh cache.
+        if (workspaceRoot) {
+            const listener: StatusMutationListener = {
+                onFileDirty: (fileUri) => {
+                    _workspaceSymbolCache.invalidate(workspaceRoot, fileUri);
+                },
+                onClearCache: () => {
+                    _workspaceSymbolCache.invalidate(workspaceRoot);
+                },
+            };
+
+            service.serviceProvider.add(ServiceKeys.stateMutationListeners, listener);
+        }
+
+        return service;
     }
 
     protected recordUserInteractionTime() {

@@ -97,6 +97,7 @@ export interface Workspace extends WorkspaceFolder {
     disableTaggedHints: boolean;
     disableOrganizeImports: boolean;
     disableWorkspaceSymbol: boolean;
+    disableWorkspaceSymbolCache?: boolean;
     isInitialized: InitStatus;
     searchPathsToWatch: Uri[];
     inlayHints?: InlayHintSettings | undefined;
@@ -287,6 +288,7 @@ export class WorkspaceFactory {
             disableTaggedHints: false,
             disableOrganizeImports: false,
             disableWorkspaceSymbol: false,
+            disableWorkspaceSymbolCache: false,
             isInitialized: createInitStatus(),
             searchPathsToWatch: [],
             useTypingExtensions: false,

@@ -17,6 +17,7 @@ import { Uri } from '../common/uri/uri';
 import { Workspace } from '../workspaceFactory';
 import { IndexSymbolData, SymbolIndexer } from './symbolIndexer';
 import { LanguageServerInterface } from '../common/languageServerInterface';
+import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './workspaceSymbolCacheSingleton';
 
 type WorkspaceSymbolCallback = (symbols: SymbolInformation[]) => void;
 
@@ -134,6 +135,17 @@ export class WorkspaceSymbolProvider {
         if (!this._query) {
             return;
         }
+
+        // Attempt cache lookup first
+        const cached = _workspaceSymbolCache.search(program.rootPath, program, this._query, this._token);
+        if (cached.length > 0) {
+            this._reporter(cached);
+            return;
+        }
+
+        // Cache returned empty - either no cache exists or cache is building
+        // Fall back to traditional symbol search for immediate results
+        // The cache will be ready for subsequent searches
 
         // "Workspace symbols" searches symbols only from user code.
         for (const sourceFileInfo of program.getSourceFileInfoList()) {
