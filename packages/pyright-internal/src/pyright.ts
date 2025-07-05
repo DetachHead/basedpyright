@@ -188,6 +188,9 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'version', type: Boolean },
         { name: 'warnings', type: Boolean },
         { name: 'watch', alias: 'w', type: Boolean },
+        { name: 'enable-type-caching', type: Boolean },
+        { name: 'max-type-cache-files', type: Number },
+        { name: 'type-cache-format', type: String },
         // undocumented option only used internally for generating docs. pretty cringe but it's the least messy way i could think of to do it
         { name: 'printdiagnosticrulesets', type: Boolean },
     ];
@@ -381,6 +384,29 @@ async function processArgs(): Promise<ExitStatus> {
 
     if (args['baseline-file']) {
         options.configSettings.baselineFile = combinePaths(process.cwd(), normalizePath(args['baseline-file']));
+    }
+
+    if (args['enable-type-caching']) {
+        options.languageServerSettings.enableTypeCaching = true;
+    }
+
+    if (args['max-type-cache-files']) {
+        if (args['max-type-cache-files'] > 0) {
+            options.languageServerSettings.maxTypeCacheFiles = args['max-type-cache-files'];
+        } else {
+            console.error(`'max-type-cache-files' must be a positive number`);
+            return ExitStatus.ParameterError;
+        }
+    }
+
+    if (args['type-cache-format']) {
+        const format = args['type-cache-format'].toLowerCase();
+        if (format === 'json' || format === 'binary') {
+            options.languageServerSettings.typeCacheFormat = format;
+        } else {
+            console.error(`'type-cache-format' must be either 'json' or 'binary'`);
+            return ExitStatus.ParameterError;
+        }
     }
 
     if (args.createstub) {
@@ -1208,6 +1234,9 @@ function printUsage() {
             '  --version                          Print Pyright version and exit\n' +
             '  --warnings                         Use exit code of 1 if warnings are reported\n' +
             '  -w,--watch                         Continue to run and watch for changes\n' +
+            '  --enable-type-caching              Enable persistent type check caching\n' +
+            '  --max-type-cache-files <NUMBER>    Maximum files to cache (default: 5000)\n' +
+            '  --type-cache-format <FORMAT>       Cache format: json or binary (default: binary)\n' +
             '  -                                  Read files from stdin\n'
     );
 }
