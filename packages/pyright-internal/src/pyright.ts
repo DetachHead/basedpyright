@@ -176,6 +176,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'pythonpath', type: String },
         { name: 'pythonplatform', type: String },
         { name: 'pythonversion', type: String },
+        { name: 'rebuildcache', type: Boolean },
         { name: 'skipunannotated', type: Boolean },
         { name: 'stats', type: Boolean },
         { name: 'threads', type: parseThreadsArgValue },
@@ -651,9 +652,16 @@ async function runSingleThreaded(
         
         service.run(async (program) => {
             const root = program.rootPath;
-            // cacheWorkspaceSymbolsImmediate automatically checks for existing cache and saves immediately
-            console.log('Loading/building workspace-symbol cache...');
-            await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, /*forceRefresh*/ false);
+            // By default, reuse existing cache. Only rebuild if --rebuild-cache is specified
+            const forceRebuild = process.env.PYRIGHT_FORCE_REBUILD_CACHE === 'true' || args.rebuildcache;
+            
+            if (forceRebuild) {
+                console.log('Force rebuilding workspace-symbol cache...');
+            } else {
+                console.log('Loading/reusing workspace-symbol cache...');
+            }
+            
+            await _workspaceSymbolCache.cacheWorkspaceSymbolsImmediate(root, program, forceRebuild);
         }, cancellationNone as any);
     } catch {
         /* ignore cache build errors */

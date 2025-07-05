@@ -118,15 +118,36 @@ export class WorkspaceSymbolCache {
 
     /**
      * Build (or refresh) the cache for a workspace.
-     * @param forceRefresh When true, rebuilds all files regardless of timestamps.
+     * @param forceRebuild When true, rebuilds files that have changed. When false, reuses existing cache entirely.
      */
     async cacheWorkspaceSymbols(
         workspaceRoot: Uri,
         program: ProgramView,
-        forceRefresh = false,
+        forceRebuild = false,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
         const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
+        
+        // If we have existing cache and not forcing rebuild, just reuse it
+        if (existingCache && !forceRebuild) {
+            if (this._options.verbose) {
+                const fileCount = Object.keys(existingCache.files).length;
+                const symbolCount = Object.values(existingCache.files).reduce((sum, file) => sum + file.symbols.length, 0);
+                console.log(`[CACHE] Reusing existing cache: ${fileCount} files, ${symbolCount} symbols (force rebuild: ${forceRebuild})`);
+            }
+            
+            // Store metadata for lazy loading
+            const maxMtime = Math.max(...Object.values(existingCache.files).map(f => f.mtime));
+            this._cacheMetadata.set(workspaceRoot.key, {
+                checksum: existingCache.checksum,
+                fileCount: Object.keys(existingCache.files).length,
+                lastModified: maxMtime
+            });
+            
+            this._cache.set(workspaceRoot.key, existingCache);
+            return; // Exit early - no rebuilding needed
+        }
+
         const newFiles: Record<string, FileIndex> = {};
         
         // Get all source files and sort by modification time (most recent first)
@@ -164,7 +185,7 @@ export class WorkspaceSymbolCache {
             
             // Check if we can reuse existing cache entry
             const existingFile = existingCache?.files[fileUriStr];
-            if (!forceRefresh && existingFile && existingFile.mtime === mtime) {
+            if (!forceRebuild && existingFile && existingFile.mtime === mtime) {
                 // File hasn't changed, reuse cached symbols
                 newFiles[fileUriStr] = existingFile;
                 reusedCount++;
@@ -179,7 +200,7 @@ export class WorkspaceSymbolCache {
             const hash = fnv1a(bytes);
             
             // Double-check with content hash if mtime changed but content might be same
-            if (!forceRefresh && existingFile && existingFile.hash === hash) {
+            if (!forceRebuild && existingFile && existingFile.hash === hash) {
                 // Content unchanged, just update mtime and reuse symbols
                 newFiles[fileUriStr] = {
                     ...existingFile,
@@ -253,10 +274,10 @@ export class WorkspaceSymbolCache {
     async cacheWorkspaceSymbolsImmediate(
         workspaceRoot: Uri,
         program: ProgramView,
-        forceRefresh = false,
+        forceRebuild = false,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
-        await this.cacheWorkspaceSymbols(workspaceRoot, program, forceRefresh, token);
+        await this.cacheWorkspaceSymbols(workspaceRoot, program, forceRebuild, token);
         
         // Save immediately instead of scheduling
         const cached = this._cache.get(workspaceRoot.key);
