@@ -397,6 +397,29 @@ export class AnalyzerService {
 
         const checkedFileCount = this._program.getUserFileCount();
         this._console.info('Total files checked: ' + checkedFileCount.toString());
+
+        // Print cache statistics if type caching is enabled
+        const cacheStats = this._program.getTypeCacheStats();
+        if (cacheStats) {
+            this._console.info('');
+            this._console.info('Type cache stats');
+            this._console.info('Total cache entries: ' + cacheStats.totalEntries.toString());
+            this._console.info('Cache hit rate: ' + (cacheStats.hitRate * 100).toFixed(1) + '%');
+            this._console.info('Cache miss rate: ' + (cacheStats.missRate * 100).toFixed(1) + '%');
+            this._console.info('Cache invalidation rate: ' + (cacheStats.invalidationRate * 100).toFixed(1) + '%');
+            this._console.info('Average analysis time: ' + cacheStats.avgAnalysisTime.toFixed(0) + 'ms');
+
+            if (cacheStats.expensiveFiles.length > 0) {
+                this._console.info('Expensive files in cache: ' + cacheStats.expensiveFiles.length.toString());
+                const maxToShow = Math.min(5, cacheStats.expensiveFiles.length);
+                for (let i = 0; i < maxToShow; i++) {
+                    const fileUri = Uri.file(cacheStats.expensiveFiles[i], this.serviceProvider);
+                    const relativePath =
+                        this._backgroundAnalysisProgram.configOptions.projectRoot.getRelativePath(fileUri);
+                    this._console.info('  - ' + (relativePath || cacheStats.expensiveFiles[i]));
+                }
+            }
+        }
     }
 
     printDetailedAnalysisTimes() {
@@ -653,8 +676,6 @@ export class AnalyzerService {
     // Calculates the effective options based on the command-line options,
     // an optional config file, and default values.
     private _getConfigOptions(host: Host, commandLineOptions: CommandLineOptions): ConfigOptions {
-
-        
         const optionRoot = commandLineOptions.executionRoot;
         const executionRootUri = Uri.is(optionRoot)
             ? optionRoot
@@ -666,7 +687,7 @@ export class AnalyzerService {
         let projectRoot = executionRoot;
         let configFilePath: Uri | undefined;
         let pyprojectFilePath: Uri | undefined;
-        
+
         if (commandLineOptions.configFilePath) {
             // If the config file path was specified, determine whether it's
             // a directory (in which case the default config file name is assumed)
@@ -981,10 +1002,14 @@ export class AnalyzerService {
         if (languageServerOptions.typeCacheFormat !== undefined) {
             configOptions.typeCacheFormat = languageServerOptions.typeCacheFormat;
         }
-        
+
         // Log cache setup only if enabled and in verbose mode
         if (configOptions.enableTypeCaching && configOptions.verboseOutput) {
-            this._console.info(`📋 Type caching enabled - cache directory: ${projectRoot.combinePaths('.basedpyright-cache').toUserVisibleString()}`);
+            this._console.info(
+                `📋 Type caching enabled - cache directory: ${projectRoot
+                    .combinePaths('.basedpyright-cache')
+                    .toUserVisibleString()}`
+            );
         }
 
         // Special case, the language service can also set a pythonPath. It should override any other setting.

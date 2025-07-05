@@ -1814,7 +1814,12 @@ export class ConfigOptions {
         }
 
         // read the boolean settings
-        for (const key of ['autoImportCompletions', 'indexing', 'logTypeEvaluationTime', 'enableTypeCaching'] as const) {
+        for (const key of [
+            'autoImportCompletions',
+            'indexing',
+            'logTypeEvaluationTime',
+            'enableTypeCaching',
+        ] as const) {
             const value = configObj[key];
             if (value !== undefined) {
                 if (typeof value !== 'boolean') {

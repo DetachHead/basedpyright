@@ -163,10 +163,10 @@ export class Program {
 
         this._cacheManager = serviceProvider.tryGet(ServiceKeys.cacheManager) ?? new CacheManager();
         this._cacheManager.registerCacheOwner(this);
-        
+
         // Type cache will be initialized later in setConfigOptions with proper project root
         this._typeCacheManager = undefined;
-        
+
         this._createNewEvaluator();
 
         this._id = id ?? `Prog_${Program._nextId}`;
@@ -278,9 +278,9 @@ export class Program {
                 this.serviceProvider,
                 format
             );
-            
+
             // Initialize the cache manager immediately
-            this._typeCacheManager.initialize().catch(error => {
+            this._typeCacheManager.initialize().catch((error) => {
                 this._console.warn(`⚠️  Type cache initialization failed: ${error}`);
             });
         } else if (!configOptions.enableTypeCaching && this._typeCacheManager) {
@@ -725,8 +725,9 @@ export class Program {
 
                 if (openFiles.length <= 3) {
                     this._console.info(`📂 Analyzing ${openFiles.length} open files:`);
-                    openFiles.forEach(sf => {
-                        const relativePath = this._configOptions.projectRoot.getRelativePath(sf.uri) || sf.uri.getFilePath();
+                    openFiles.forEach((sf) => {
+                        const relativePath =
+                            this._configOptions.projectRoot.getRelativePath(sf.uri) || sf.uri.getFilePath();
                         this._console.info(`  - ${relativePath}`);
                     });
                 } else {
@@ -778,13 +779,19 @@ export class Program {
             // Log completion statistics
             const finalElapsedTime = elapsedTime.getDurationInMilliseconds();
             if (allFilesRequiringAnalysis.length > 0) {
-                this._console.info(`🎉 Analysis complete! ${allFilesRequiringAnalysis.length} files analyzed in ${finalElapsedTime}ms`);
-                
+                this._console.info(
+                    `🎉 Analysis complete! ${allFilesRequiringAnalysis.length} files analyzed in ${finalElapsedTime}ms`
+                );
+
                 // Log cache statistics if enabled
                 if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
                     const stats = this._typeCacheManager.getStats();
                     if (stats.totalEntries > 0) {
-                        this._console.info(`📊 Cache performance: ${(stats.hitRate * 100).toFixed(1)}% hit rate, ${stats.totalEntries} entries`);
+                        this._console.info(
+                            `📊 Cache performance: ${(stats.hitRate * 100).toFixed(1)}% hit rate, ${
+                                stats.totalEntries
+                            } entries`
+                        );
                     }
                 }
             }
@@ -1141,6 +1148,11 @@ export class Program {
         return Math.max(entryCountRatio, fileCountRatio);
     }
 
+    // Returns type cache statistics if caching is enabled
+    getTypeCacheStats() {
+        return this._typeCacheManager?.getStats();
+    }
+
     // Discards any cached information associated with this program.
     emptyCache() {
         this._createNewEvaluator();
@@ -1174,7 +1186,7 @@ export class Program {
         if (!this._typeCacheManager) {
             return false;
         }
-        
+
         try {
             // Use a synchronous version of cache lookup
             // This assumes the cache is already loaded in memory
@@ -2105,8 +2117,9 @@ export class Program {
             }
 
             // Get relative path for logging
-            const relativePath = this._configOptions.projectRoot.getRelativePath(fileToCheck.uri) || fileToCheck.uri.getFilePath();
-            
+            const relativePath =
+                this._configOptions.projectRoot.getRelativePath(fileToCheck.uri) || fileToCheck.uri.getFilePath();
+
             // Check if we can use cached results (synchronous check)
             if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
                 // Try to load from cache synchronously
@@ -2177,18 +2190,28 @@ export class Program {
             this._handleMemoryHighUsage();
 
             // Store analysis results in cache if enabled
-            if (this._typeCacheManager && this._typeCacheExtractor && this._configOptions.enableTypeCaching && boundFile) {
+            if (
+                this._typeCacheManager &&
+                this._typeCacheExtractor &&
+                this._configOptions.enableTypeCaching &&
+                boundFile
+            ) {
                 try {
                     const cacheEntry = this._typeCacheExtractor.extractCacheEntry(fileToCheck, analysisTime);
                     if (cacheEntry) {
                         // Store asynchronously without blocking
-                        this._typeCacheManager.store(fileToCheck.uri.getFilePath(), cacheEntry).then(() => {
-                            if (this._configOptions.verboseOutput) {
-                                this._console.info(`💾 Indexed: ${relativePath}`);
-                            }
-                        }).catch(error => {
-                            this._console.warn(`Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
-                        });
+                        this._typeCacheManager
+                            .store(fileToCheck.uri.getFilePath(), cacheEntry)
+                            .then(() => {
+                                if (this._configOptions.verboseOutput) {
+                                    this._console.info(`💾 Indexed: ${relativePath}`);
+                                }
+                            })
+                            .catch((error) => {
+                                this._console.warn(
+                                    `Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`
+                                );
+                            });
                     }
                 } catch (error) {
                     this._console.warn(`Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);

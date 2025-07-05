@@ -13,16 +13,16 @@ import { Declaration, DeclarationType } from './declaration';
 import { SourceFileInfo } from './sourceFileInfo';
 import { Symbol, SymbolTable } from './symbol';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { 
-    TypeCacheEntry, 
-    CacheDependency, 
-    CachedSymbol, 
-    CachedType, 
-    CachedLocation, 
-    CachedDeclaration 
+import {
+    TypeCacheEntry,
+    CacheDependency,
+    CachedSymbol,
+    CachedType,
+    CachedLocation,
+    CachedDeclaration,
 } from './typeCacheManager';
-import { 
-    Type, 
+import {
+    Type,
     TypeCategory,
     isClass,
     isFunction,
@@ -31,7 +31,7 @@ import {
     isAny,
     isNever,
     ClassType,
-    FunctionType
+    FunctionType,
 } from './types';
 import { ParseFileResults } from '../parser/parser';
 
@@ -44,10 +44,7 @@ export class TypeCacheExtractor {
         this._evaluator = evaluator;
     }
 
-    extractCacheEntry(
-        sourceFileInfo: SourceFileInfo,
-        analysisTime: number
-    ): TypeCacheEntry | undefined {
+    extractCacheEntry(sourceFileInfo: SourceFileInfo, analysisTime: number): TypeCacheEntry | undefined {
         const parseResults = sourceFileInfo.sourceFile.getParseResults();
         if (!parseResults) {
             return undefined;
@@ -91,7 +88,7 @@ export class TypeCacheExtractor {
                 try {
                     const importContent = this._fileSystem.readFileSync(importFileInfo.uri, 'utf8');
                     const importHash = hashString(importContent).toString();
-                    
+
                     dependencies.push({
                         module: importFileInfo.sourceFile.getModuleName(),
                         filePath: importFileInfo.uri.getFilePath(),
@@ -124,7 +121,7 @@ export class TypeCacheExtractor {
                 location,
                 isExported: !symbol.isExternallyHidden(),
                 isPrivate: symbol.isPrivateMember(),
-                declarations: declarations.map(decl => this._convertDeclaration(decl)),
+                declarations: declarations.map((decl) => this._convertDeclaration(decl)),
             };
 
             symbols.push(cachedSymbol);
@@ -178,7 +175,7 @@ export class TypeCacheExtractor {
                 column: declaration.range.start.character,
             };
         }
-        
+
         return { line: 0, column: 0 };
     }
 
@@ -217,7 +214,7 @@ export class TypeCacheExtractor {
         } else if (isNever(type)) {
             return 'never';
         }
-        
+
         return 'other';
     }
 
@@ -231,7 +228,7 @@ export class TypeCacheExtractor {
             if (classType.priv.typeArgs) {
                 complexity += classType.priv.typeArgs.length * 2;
             }
-            
+
             // Add complexity for inheritance
             if (classType.shared.baseClasses) {
                 complexity += classType.shared.baseClasses.length;
@@ -288,4 +285,4 @@ export class TypeCacheExtractor {
                 return 'Unknown';
         }
     }
-} 
+}
