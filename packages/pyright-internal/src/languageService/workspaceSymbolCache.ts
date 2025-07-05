@@ -268,11 +268,13 @@ export class WorkspaceSymbolCache {
 
     /**
      * Update the cache incrementally - check files for changes and only rebuild changed ones.
+     * Highly optimized for speed - minimal file system operations and logging.
      */
     async updateWorkspaceSymbols(
         workspaceRoot: Uri,
         program: ProgramView,
-        token: CancellationToken = CancellationToken.None
+        token: CancellationToken = CancellationToken.None,
+        expandCache: boolean = false
     ): Promise<void> {
         const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
         
@@ -283,51 +285,70 @@ export class WorkspaceSymbolCache {
             return;
         }
 
-        console.log(`Incrementally updating existing cache with ${Object.keys(existingCache.files).length} files...`);
+        const startTime = Date.now();
+        const totalFiles = Object.keys(existingCache.files).length;
+        console.log(`Incrementally updating cache with ${totalFiles} files...`);
+
+        // Quick optimization: If we have very few files or the cache is recent, 
+        // we can do a fast global mtime check first
+        if (totalFiles <= 1000) {
+            let hasChanges = false;
+            for (const [fileUriStr, existingFile] of Object.entries(existingCache.files)) {
+                try {
+                    const fileUri = Uri.parse(fileUriStr, program.serviceProvider);
+                    const stat = program.fileSystem.statSync(fileUri);
+                    if (!stat || (stat.mtimeMs || 0) !== existingFile.mtime) {
+                        hasChanges = true;
+                        break;
+                    }
+                } catch {
+                    hasChanges = true;
+                    break;
+                }
+            }
+            
+            // If no mtime changes detected, we can reuse the entire cache
+            if (!hasChanges) {
+                const elapsedTime = Date.now() - startTime;
+                console.log(`Cache is up-to-date: ${totalFiles} files unchanged (${elapsedTime}ms)`);
+                this._cache.set(workspaceRoot.key, existingCache);
+                return;
+            }
+        }
         
         const newFiles: Record<string, FileIndex> = {};
         let reusedCount = 0;
         let rebuiltCount = 0;
-        let checkedCount = 0;
         let skippedCount = 0;
-        let errorCount = 0;
 
-        const totalFiles = Object.keys(existingCache.files).length;
-        const startTime = Date.now();
-
-        // Start with existing cache files
+        // Cache frequently used URIs to avoid repeated parsing
+        const uriCache = new Map<string, Uri>();
+        
+        // Process all files - optimized for speed
         for (const [fileUriStr, existingFile] of Object.entries(existingCache.files)) {
             throwIfCancellationRequested(token);
             
-            // Progress logging every 100 files
-            if (checkedCount % 100 === 0 && checkedCount > 0) {
-                const progress = Math.round((checkedCount / totalFiles) * 100);
-                console.log(`[CACHE] Progress: ${checkedCount}/${totalFiles} files (${progress}%), ${reusedCount} reused, ${rebuiltCount} rebuilt`);
-            }
-            
             try {
-                const fileUri = Uri.parse(fileUriStr, program.serviceProvider);
+                // Use cached URI or parse once
+                let fileUri = uriCache.get(fileUriStr);
+                if (!fileUri) {
+                    fileUri = Uri.parse(fileUriStr, program.serviceProvider);
+                    uriCache.set(fileUriStr, fileUri);
+                }
                 
                 // Quick stat check - if file doesn't exist anymore, skip it
                 const stat = program.fileSystem.statSync(fileUri);
                 if (!stat) {
                     skippedCount++;
-                    if (this._options.verbose) {
-                        console.log(`[CACHE] Skipped (file deleted): ${fileUri.toUserVisibleString()}`);
-                    }
                     continue;
                 }
                 
-                checkedCount++;
                 const mtime = stat.mtimeMs || 0;
                 
-                // Fast path: if mtime hasn't changed, reuse immediately
+                // Fast path: if mtime hasn't changed, reuse immediately (most common case)
                 if (existingFile.mtime === mtime) {
                     newFiles[fileUriStr] = existingFile;
                     reusedCount++;
-                    if (this._options.verbose) {
-                        console.log(`[CACHE] Reused (mtime unchanged): ${fileUri.toUserVisibleString()} (${existingFile.symbols.length} symbols)`);
-                    }
                     continue;
                 }
                 
@@ -342,9 +363,6 @@ export class WorkspaceSymbolCache {
                         mtime, // Update mtime
                     };
                     reusedCount++;
-                    if (this._options.verbose) {
-                        console.log(`[CACHE] Reused (content unchanged): ${fileUri.toUserVisibleString()} (${existingFile.symbols.length} symbols)`);
-                    }
                     continue;
                 }
                 
@@ -371,29 +389,23 @@ export class WorkspaceSymbolCache {
                 };
                 
                 rebuiltCount++;
-                if (this._options.verbose) {
-                    console.log(`[CACHE] Rebuilt (content changed): ${fileUri.toUserVisibleString()} (${flat.length} symbols)`);
-                }
                 
             } catch (error) {
                 // File might have been deleted or become inaccessible
-                errorCount++;
-                if (this._options.verbose) {
-                    console.log(`[CACHE] Skipped (error): ${fileUriStr} - ${error}`);
-                }
+                skippedCount++;
                 continue;
             }
         }
 
-        // TODO: Add new files that weren't in the cache (optional, could be a separate mode)
-        // For now, we only update existing files for maximum speed
+        // Cache expansion disabled for performance - only update existing cached files
+        const addedCount = 0;
 
         const elapsedTime = Date.now() - startTime;
-        console.log(`[CACHE] Incremental update completed: ${checkedCount}/${totalFiles} files checked, ${reusedCount} reused, ${rebuiltCount} rebuilt, ${skippedCount} skipped, ${errorCount} errors (${elapsedTime}ms)`);
+        console.log(`Cache update completed: ${reusedCount} reused, ${rebuiltCount} rebuilt, ${addedCount} added, ${skippedCount} skipped (${elapsedTime}ms)`);
 
         // Handle case where no files remain (all deleted or skipped)
         if (Object.keys(newFiles).length === 0) {
-            console.log(`[CACHE] No files remain in cache after update - clearing cache`);
+            console.log('No files remain - clearing cache');
             this._cache.delete(workspaceRoot.key);
             this._cacheMetadata.delete(workspaceRoot.key);
             return;
@@ -451,7 +463,7 @@ export class WorkspaceSymbolCache {
         program: ProgramView,
         token: CancellationToken = CancellationToken.None
     ): Promise<void> {
-        await this.updateWorkspaceSymbols(workspaceRoot, program, token);
+        await this.updateWorkspaceSymbols(workspaceRoot, program, token, false);
         
         // Save immediately instead of scheduling
         const cached = this._cache.get(workspaceRoot.key);
@@ -623,6 +635,8 @@ export class WorkspaceSymbolCache {
     // ————————————————————————————————————————————
     // Helpers
     // ————————————————————————————————————————————
+
+
 
     private _flattenIndexedSymbols(symbols: any[], container: string): IndexedSymbol[] {
         const out: IndexedSymbol[] = [];

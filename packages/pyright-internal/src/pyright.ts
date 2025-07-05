@@ -681,11 +681,11 @@ async function runSingleThreaded(
             console.log('Cache-only mode: updating workspace symbols...');
             
             // Configure cache options from environment variables and CLI args
-            const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 3000;
+            const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 5000;
             const verbose = options.configSettings.verboseOutput;
             
             _workspaceSymbolCache.setOptions({ 
-                maxFiles: maxFiles > 0 ? maxFiles : 3000,
+                maxFiles: maxFiles > 0 ? maxFiles : 5000,
                 verbose: verbose 
             });
             
@@ -735,11 +735,11 @@ async function runSingleThreaded(
         console.log('Checking workspace-symbol cache...');
         
         // Configure cache options from environment variables and CLI args
-        const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 3000;
+        const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 5000;
         const verbose = options.configSettings.verboseOutput;
         
         _workspaceSymbolCache.setOptions({ 
-            maxFiles: maxFiles > 0 ? maxFiles : 3000,
+            maxFiles: maxFiles > 0 ? maxFiles : 5000,
             verbose: verbose 
         });
         
