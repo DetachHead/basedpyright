@@ -65,6 +65,10 @@ export interface WorkspaceSymbolCacheOptions {
     extensions?: string[];
     /** Maximum symbols to return before short-circuiting search. */
     maxResults?: number;
+    /** Maximum number of files to index (most recently modified); default 3000 */
+    maxFiles?: number;
+    /** Enable verbose logging; default false */
+    verbose?: boolean;
 }
 
 /** Cache statistics for monitoring and debugging. */
@@ -85,6 +89,7 @@ export interface CacheStats {
 export class WorkspaceSymbolCache {
     [x: string]: any;
     private _cache = new Map<string /* workspaceRoot.key */, CachedWorkspaceSymbols>();
+    private _cacheMetadata = new Map<string, { checksum: string; fileCount: number; lastModified: number }>();
     private _saveTimers = new Map<string, any>();
     private _buildingCaches = new Set<string>(); // Track which workspaces are currently building
     private _cacheQueries = 0; // Track total queries for hit rate calculation
@@ -96,6 +101,18 @@ export class WorkspaceSymbolCache {
         this._options = {
             extensions: options?.extensions ?? ['.py', '.pyi'],
             maxResults: options?.maxResults ?? 500,
+            maxFiles: options?.maxFiles ?? 3000,
+            verbose: options?.verbose ?? false,
+        };
+    }
+
+    /**
+     * Update cache options (useful for runtime configuration).
+     */
+    setOptions(options: Partial<WorkspaceSymbolCacheOptions>): void {
+        this._options = {
+            ...this._options,
+            ...options,
         };
     }
 
@@ -112,21 +129,37 @@ export class WorkspaceSymbolCache {
         const existingCache = this._cache.get(workspaceRoot.key) || this._loadFromDisk(workspaceRoot, program.fileSystem);
         const newFiles: Record<string, FileIndex> = {};
         
-        for (const fileInfo of program.getSourceFileInfoList()) {
+        // Get all source files and sort by modification time (most recent first)
+        const allFiles = program.getSourceFileInfoList()
+            .filter(fileInfo => {
+                const parseResults = program.getParseResults(fileInfo.uri);
+                if (!parseResults) return false;
+                const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
+                return !!analyzerFileInfo;
+            })
+            .map(fileInfo => ({
+                fileInfo,
+                stat: program.fileSystem.statSync(fileInfo.uri),
+            }))
+            .sort((a, b) => (b.stat?.mtimeMs || 0) - (a.stat?.mtimeMs || 0)) // Most recent first
+            .slice(0, this._options.maxFiles); // Limit to maxFiles
+
+        console.log(`Indexing ${allFiles.length} most recent files (limit: ${this._options.maxFiles})`);
+
+        let processedCount = 0;
+        let reusedCount = 0;
+        let rebuiltCount = 0;
+
+        for (const { fileInfo, stat } of allFiles) {
             throwIfCancellationRequested(token);
 
-            // Skip non-user code for now.
             const parseResults = program.getParseResults(fileInfo.uri);
-            if (!parseResults) {
-                continue;
-            }
+            if (!parseResults) continue;
+            
             const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
-            if (!analyzerFileInfo) {
-                continue;
-            }
+            if (!analyzerFileInfo) continue;
 
             const fileUriStr = fileInfo.uri.toString();
-            const stat = program.fileSystem.statSync(fileInfo.uri);
             const mtime = stat?.mtimeMs || 0;
             
             // Check if we can reuse existing cache entry
@@ -134,6 +167,10 @@ export class WorkspaceSymbolCache {
             if (!forceRefresh && existingFile && existingFile.mtime === mtime) {
                 // File hasn't changed, reuse cached symbols
                 newFiles[fileUriStr] = existingFile;
+                reusedCount++;
+                if (this._options.verbose) {
+                    console.log(`[CACHE] Reused: ${fileInfo.uri.toUserVisibleString()} (${existingFile.symbols.length} symbols)`);
+                }
                 continue;
             }
             
@@ -148,6 +185,10 @@ export class WorkspaceSymbolCache {
                     ...existingFile,
                     mtime
                 };
+                reusedCount++;
+                if (this._options.verbose) {
+                    console.log(`[CACHE] Reused (hash match): ${fileInfo.uri.toUserVisibleString()} (${existingFile.symbols.length} symbols)`);
+                }
                 continue;
             }
 
@@ -167,6 +208,17 @@ export class WorkspaceSymbolCache {
                 hash,
                 symbols: flat
             };
+            
+            rebuiltCount++;
+            if (this._options.verbose) {
+                console.log(`[CACHE] Indexed: ${fileInfo.uri.toUserVisibleString()} (${flat.length} symbols)`);
+            }
+            
+            processedCount++;
+        }
+
+        if (this._options.verbose) {
+            console.log(`[CACHE] Summary: ${processedCount} files processed, ${reusedCount} reused, ${rebuiltCount} rebuilt`);
         }
 
         // Compute overall checksum for the workspace
@@ -181,6 +233,14 @@ export class WorkspaceSymbolCache {
             checksum,
             files: newFiles,
         };
+        
+        // Store metadata for lazy loading
+        const maxMtime = Math.max(...Object.values(newFiles).map(f => f.mtime));
+        this._cacheMetadata.set(workspaceRoot.key, {
+            checksum,
+            fileCount: Object.keys(newFiles).length,
+            lastModified: maxMtime
+        });
         
         this._cache.set(workspaceRoot.key, cached);
         this._scheduleSaveToDisk(workspaceRoot, cached, program.fileSystem);
@@ -217,25 +277,50 @@ export class WorkspaceSymbolCache {
     ): SymbolInformation[] {
         this._cacheQueries++;
 
+        // Check if we have metadata first (lightweight check)
+        let metadata = this._cacheMetadata.get(workspaceRoot.key);
+        if (!metadata) {
+            // Try to load metadata from disk
+            metadata = this._loadCacheMetadata(workspaceRoot, program.fileSystem);
+            if (metadata) {
+                this._cacheMetadata.set(workspaceRoot.key, metadata);
+            }
+        }
+
+        if (!metadata) {
+            // No cache available - trigger async cache build and return empty for now
+            this._triggerAsyncCacheBuild(workspaceRoot, program, token);
+            return [];
+        }
+
+        // We have metadata, now lazy load the full cache only when needed
         let cached = this._cache.get(workspaceRoot.key);
         if (!cached) {
-            // Try to load from disk first.
+            // Load full cache from disk
+            if (this._options.verbose) {
+                console.log(`[CACHE] Loading full cache from disk for search query: "${query}"`);
+            }
             cached = this._loadFromDisk(workspaceRoot, program.fileSystem);
             if (cached) {
                 this._cache.set(workspaceRoot.key, cached);
+                if (this._options.verbose) {
+                    const totalSymbols = Object.values(cached.files).reduce((sum, file) => sum + file.symbols.length, 0);
+                    console.log(`[CACHE] Full cache loaded: ${Object.keys(cached.files).length} files, ${totalSymbols} symbols`);
+                }
+            } else {
+                // Cache file exists but couldn't load - trigger rebuild
+                this._triggerAsyncCacheBuild(workspaceRoot, program, token);
+                return [];
             }
         }
         
         // If we have a cache, search it
-        if (cached) {
-            this._cacheHits++;
-            return this._searchCache(cached, query);
+        this._cacheHits++;
+        const results = this._searchCache(cached, query);
+        if (this._options.verbose) {
+            console.log(`[CACHE] Search results: ${results.length} symbols found for query "${query}"`);
         }
-        
-        // No cache available - trigger async cache build and return empty for now
-        // The next search will have the cache ready
-        this._triggerAsyncCacheBuild(workspaceRoot, program, token);
-        return [];
+        return results;
     }
 
     /**
@@ -243,19 +328,28 @@ export class WorkspaceSymbolCache {
      * This should be called when a workspace is first opened.
      */
     warmupCache(workspaceRoot: Uri, program: ProgramView): void {
-        // Check if cache already exists
-        if (this._cache.has(workspaceRoot.key)) {
+        const key = workspaceRoot.key;
+        
+        // Check if cache already exists in memory
+        if (this._cache.has(key)) {
             return;
         }
 
-        // Try loading from disk first
-        const cached = this._loadFromDisk(workspaceRoot, program.fileSystem);
-        if (cached) {
-            this._cache.set(workspaceRoot.key, cached);
-            return;
+        // Check if we have metadata
+        let metadata = this._cacheMetadata.get(key);
+        if (!metadata) {
+            // Try loading metadata from disk
+            metadata = this._loadCacheMetadata(workspaceRoot, program.fileSystem);
+            if (metadata) {
+                this._cacheMetadata.set(key, metadata);
+                if (this._options.verbose) {
+                    console.log(`[CACHE] Metadata loaded: ${metadata.fileCount} files, checksum: ${metadata.checksum.substring(0, 8)}...`);
+                }
+                return; // Metadata loaded, full cache will be loaded on-demand
+            }
         }
 
-        // Trigger async cache build in background
+        // No metadata available - trigger async cache build in background
         this._triggerAsyncCacheBuild(workspaceRoot, program, CancellationToken.None);
     }
 
@@ -289,6 +383,7 @@ export class WorkspaceSymbolCache {
      */
     clearAllCaches(): void {
         this._cache.clear();
+        this._cacheMetadata.clear();
         this._buildingCaches.clear();
         for (const timer of this._saveTimers.values()) {
             clearTimeout(timer);
@@ -300,15 +395,33 @@ export class WorkspaceSymbolCache {
 
     /** Mark a file or entire workspace as dirty. */
     invalidate(workspaceRoot: Uri, fileUri?: Uri) {
-        if (!this._cache.has(workspaceRoot.key)) {
-            return;
-        }
+        const key = workspaceRoot.key;
+        
         if (!fileUri) {
-            this._cache.delete(workspaceRoot.key);
+            // Invalidate entire workspace
+            if (this._options.verbose) {
+                console.log(`[CACHE] Invalidating entire workspace: ${workspaceRoot.toUserVisibleString()}`);
+            }
+            this._cache.delete(key);
+            this._cacheMetadata.delete(key);
+            
+            // Cancel any pending save timers
+            const timer = this._saveTimers.get(key);
+            if (timer) {
+                clearTimeout(timer);
+                this._saveTimers.delete(key);
+            }
         } else {
-            const cached = this._cache.get(workspaceRoot.key)!;
-            delete cached.files[fileUri.toString()];
-            // Recompute checksum on next build
+            // Invalidate specific file
+            if (this._options.verbose) {
+                console.log(`[CACHE] Invalidating file: ${fileUri.toUserVisibleString()}`);
+            }
+            const cached = this._cache.get(key);
+            if (cached) {
+                delete cached.files[fileUri.toString()];
+                // Mark metadata as stale by removing it
+                this._cacheMetadata.delete(key);
+            }
         }
     }
 
@@ -346,6 +459,28 @@ export class WorkspaceSymbolCache {
             const obj = JSON.parse(text);
             if (obj.version === 1 && obj.files) {
                 return obj as CachedWorkspaceSymbols;
+            }
+        } catch {
+            /* ignore read errors */
+        }
+        return undefined;
+    }
+
+    private _loadCacheMetadata(workspaceRoot: Uri, fs: ReadOnlyFileSystem): { checksum: string; fileCount: number; lastModified: number } | undefined {
+        const fileUri = this._getCacheFileUri(workspaceRoot);
+        if (!fs.existsSync(fileUri)) return undefined;
+        try {
+            const text = fs.readFileSync(fileUri, 'utf8');
+            const obj = JSON.parse(text);
+            if (obj.version === 1 && obj.files && obj.checksum) {
+                const files = obj.files;
+                const fileCount = Object.keys(files).length;
+                const lastModified = Math.max(...Object.values(files).map((f: any) => f.mtime || 0));
+                return {
+                    checksum: obj.checksum,
+                    fileCount,
+                    lastModified
+                };
             }
         } catch {
             /* ignore read errors */
@@ -416,15 +551,25 @@ export class WorkspaceSymbolCache {
         // Avoid multiple concurrent builds for the same workspace
         const key = workspaceRoot.key;
         if (this._buildingCaches.has(key)) {
+            if (this._options.verbose) {
+                console.log(`[CACHE] Build already in progress for: ${workspaceRoot.toUserVisibleString()}`);
+            }
             return;
         }
 
         this._buildingCaches.add(key);
         
+        if (this._options.verbose) {
+            console.log(`[CACHE] Starting background cache build for: ${workspaceRoot.toUserVisibleString()}`);
+        }
+        
         // Build cache asynchronously
         setTimeout(async () => {
             try {
                 await this.cacheWorkspaceSymbols(workspaceRoot, program, false, token);
+                if (this._options.verbose) {
+                    console.log(`[CACHE] Background cache build completed for: ${workspaceRoot.toUserVisibleString()}`);
+                }
             } catch (error) {
                 // Log error but don't throw - this is background work
                 console.error('Background cache build failed:', error);

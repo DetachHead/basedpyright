@@ -639,6 +639,16 @@ async function runSingleThreaded(
     // Check workspace-symbol cache for CLI run so LSP can reuse it later.
     try {
         console.log('Checking workspace-symbol cache...');
+        
+        // Configure cache options from environment variables and CLI args
+        const maxFiles = process.env.PYRIGHT_MAX_INDEX_FILES ? parseInt(process.env.PYRIGHT_MAX_INDEX_FILES, 10) : 3000;
+        const verbose = options.configSettings.verboseOutput;
+        
+        _workspaceSymbolCache.setOptions({ 
+            maxFiles: maxFiles > 0 ? maxFiles : 3000,
+            verbose: verbose 
+        });
+        
         service.run(async (program) => {
             const root = program.rootPath;
             // cacheWorkspaceSymbolsImmediate automatically checks for existing cache and saves immediately
