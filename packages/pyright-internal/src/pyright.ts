@@ -328,7 +328,8 @@ async function processArgs(): Promise<ExitStatus> {
     }
 
     if (args.project) {
-        options.configFilePath = combinePaths(process.cwd(), normalizePath(args.project));
+        const resolvedProject = combinePaths(process.cwd(), normalizePath(args.project));
+        options.configFilePath = resolvedProject;
     }
 
     if (args.pythonplatform) {

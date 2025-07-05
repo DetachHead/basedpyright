@@ -653,6 +653,9 @@ export class AnalyzerService {
     // Calculates the effective options based on the command-line options,
     // an optional config file, and default values.
     private _getConfigOptions(host: Host, commandLineOptions: CommandLineOptions): ConfigOptions {
+        console.log(`🔧 _getConfigOptions called with executionRoot: ${commandLineOptions.executionRoot}`);
+        console.log(`🔧 configFilePath option: ${commandLineOptions.configFilePath}`);
+        
         const optionRoot = commandLineOptions.executionRoot;
         const executionRootUri = Uri.is(optionRoot)
             ? optionRoot
@@ -664,8 +667,12 @@ export class AnalyzerService {
         let projectRoot = executionRoot;
         let configFilePath: Uri | undefined;
         let pyprojectFilePath: Uri | undefined;
+        
+        console.log(`🔧 Initial executionRoot: ${executionRoot.toUserVisibleString()}`);
+        console.log(`🔧 Initial projectRoot: ${projectRoot.toUserVisibleString()}`);
 
         if (commandLineOptions.configFilePath) {
+            console.log(`🔧 Processing configFilePath: ${commandLineOptions.configFilePath}`);
             // If the config file path was specified, determine whether it's
             // a directory (in which case the default config file name is assumed)
             // or a file.
@@ -674,22 +681,31 @@ export class AnalyzerService {
                     ? Uri.file(commandLineOptions.configFilePath, this.serviceProvider, /* checkRelative */ true)
                     : projectRoot.resolvePaths(commandLineOptions.configFilePath)
             );
+            console.log(`🔧 Resolved configFilePath: ${configFilePath.toUserVisibleString()}`);
 
             if (!this.fs.existsSync(configFilePath)) {
+                console.log(`🔧 Config path does not exist, using as projectRoot`);
                 this._console.info(`Configuration file not found at ${configFilePath.toUserVisibleString()}.`);
                 configFilePath = projectRoot;
             } else {
+                console.log(`🔧 Config path exists, checking if file or directory`);
                 if (configFilePath.lastExtension.endsWith('.json') || configFilePath.lastExtension.endsWith('.toml')) {
+                    console.log(`🔧 Config path is a file, setting projectRoot to its directory`);
                     projectRoot = configFilePath.getDirectory();
                 } else {
+                    console.log(`🔧 Config path is a directory, setting as projectRoot`);
                     projectRoot = configFilePath;
                     configFilePath = findConfigFile(this.fs, configFilePath);
                     if (!configFilePath) {
                         this._console.info(`Configuration file not found at ${projectRoot.toUserVisibleString()}.`);
+                    } else {
+                        console.log(`🔧 Found config file: ${configFilePath.toUserVisibleString()}`);
                     }
                 }
             }
-        } else if (commandLineOptions.executionRoot) {
+            console.log(`🔧 Final projectRoot after configFilePath processing: ${projectRoot.toUserVisibleString()}`);
+        } else {
+            console.log(`🔧 No explicit config file path, searching for config files`);
             // In a project-based IDE like VS Code, we should assume that the
             // project root directory contains the config file.
             configFilePath = findConfigFile(this.fs, projectRoot);
@@ -703,13 +719,16 @@ export class AnalyzerService {
 
             if (configFilePath) {
                 projectRoot = configFilePath.getDirectory();
+                console.log(`🔧 Found config file, set projectRoot to: ${projectRoot.toUserVisibleString()}`);
             } else {
                 this._console.log(`No configuration file found.`);
                 configFilePath = undefined;
+                console.log(`🔧 No config file found, projectRoot remains: ${projectRoot.toUserVisibleString()}`);
             }
         }
 
         if (!configFilePath) {
+            console.log(`🔧 No pyrightconfig.json found, looking for pyproject.toml`);
             // See if we can find a pyproject.toml file in this directory.
             pyprojectFilePath = findPyprojectTomlFile(this.fs, projectRoot);
 
@@ -720,10 +739,14 @@ export class AnalyzerService {
             if (pyprojectFilePath) {
                 projectRoot = pyprojectFilePath.getDirectory();
                 this._console.log(`pyproject.toml file found at ${projectRoot.toUserVisibleString()}.`);
+                console.log(`🔧 Found pyproject.toml, set projectRoot to: ${projectRoot.toUserVisibleString()}`);
             } else {
                 this._console.log(`No pyproject.toml file found.`);
+                console.log(`🔧 No pyproject.toml found, projectRoot remains: ${projectRoot.toUserVisibleString()}`);
             }
         }
+
+        console.log(`🔧 FINAL PROJECT ROOT: ${projectRoot.toUserVisibleString()}`);
 
         const configOptions = new BasedConfigOptions(projectRoot);
 
@@ -979,6 +1002,14 @@ export class AnalyzerService {
 
         if (languageServerOptions.typeCacheFormat !== undefined) {
             configOptions.typeCacheFormat = languageServerOptions.typeCacheFormat;
+        }
+        
+        // Always log the final cache settings
+        console.log(`🔧 Final cache settings: enabled=${configOptions.enableTypeCaching}, maxFiles=${configOptions.maxTypeCacheFiles}, format=${configOptions.typeCacheFormat}`);
+        console.log(`🔧 Project root: ${projectRoot.toUserVisibleString()}`);
+        console.log(`🔧 Config file source: ${configOptions.configFileSource?.toUserVisibleString() || 'none'}`);
+        if (configOptions.enableTypeCaching) {
+            console.log(`🔧 Cache directory will be: ${projectRoot.combinePaths('.basedpyright-cache').toUserVisibleString()}`);
         }
 
         // Special case, the language service can also set a pythonPath. It should override any other setting.

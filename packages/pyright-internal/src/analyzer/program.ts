@@ -164,18 +164,8 @@ export class Program {
         this._cacheManager = serviceProvider.tryGet(ServiceKeys.cacheManager) ?? new CacheManager();
         this._cacheManager.registerCacheOwner(this);
         
-        // Initialize type cache if enabled
-        if (initialConfigOptions.enableTypeCaching) {
-            const format = initialConfigOptions.typeCacheFormat === 'json' ? TypeCacheFormat.Json : TypeCacheFormat.Binary;
-            this._typeCacheManager = new TypeCacheManager(
-                initialConfigOptions.projectRoot,
-                initialConfigOptions,
-                this.fileSystem,
-                this._console,
-                serviceProvider,
-                format
-            );
-        }
+        // Type cache will be initialized later in setConfigOptions with proper project root
+        this._typeCacheManager = undefined;
         
         this._createNewEvaluator();
 
@@ -276,6 +266,28 @@ export class Program {
         this._configOptions = configOptions;
         this._importResolver.setConfigOptions(configOptions);
         this.baselineHandler.configOptions = configOptions;
+
+        // Initialize type cache if enabled with the correct project root
+        if (configOptions.enableTypeCaching && !this._typeCacheManager) {
+            this._console.info(`🔧 Initializing type cache system with project root: ${configOptions.projectRoot.toUserVisibleString()}`);
+            const format = configOptions.typeCacheFormat === 'json' ? TypeCacheFormat.Json : TypeCacheFormat.Binary;
+            this._typeCacheManager = new TypeCacheManager(
+                configOptions.projectRoot,
+                configOptions,
+                this.fileSystem,
+                this._console,
+                this.serviceProvider,
+                format
+            );
+            
+            // Initialize the cache manager immediately
+            this._typeCacheManager.initialize().catch(error => {
+                this._console.warn(`⚠️  Type cache initialization failed: ${error}`);
+            });
+        } else if (!configOptions.enableTypeCaching && this._typeCacheManager) {
+            this._console.info(`ℹ️  Type caching disabled, cleaning up existing cache manager`);
+            this._typeCacheManager = undefined;
+        }
 
         // Create a new evaluator with the updated config options.
         this._createNewEvaluator();
@@ -1796,7 +1808,10 @@ export class Program {
 
         // Create cache extractor if caching is enabled
         if (this._typeCacheManager && this._evaluator) {
+            this._console.log(`🔧 Creating type cache extractor...`);
             this._typeCacheExtractor = new TypeCacheExtractor(this.fileSystem, this._evaluator);
+        } else if (this._typeCacheManager) {
+            this._console.warn(`⚠️  Type cache manager exists but evaluator is not ready`);
         }
 
         return this._evaluator;
@@ -2078,14 +2093,23 @@ export class Program {
             
             // Check if we can use cached results
             if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
+                this._console.log(`🔍 Checking cache for: ${relativePath}`);
                 this._typeCacheManager.load(fileToCheck.uri.getFilePath()).then(cachedEntry => {
                     if (cachedEntry) {
                         this._console.info(`🔍 Analyzing (cached): ${relativePath}`);
                         return;
+                    } else {
+                        this._console.log(`📋 No cache entry found for: ${relativePath}`);
                     }
-                }).catch(() => {
-                    // Fall through to normal analysis
+                }).catch(error => {
+                    this._console.log(`❌ Cache load error for ${relativePath}: ${error}`);
                 });
+            } else {
+                if (!this._typeCacheManager) {
+                    this._console.log(`🚫 No type cache manager for: ${relativePath}`);
+                } else if (!this._configOptions.enableTypeCaching) {
+                    this._console.log(`🚫 Type caching disabled for: ${relativePath}`);
+                }
             }
 
             this._console.info(`🔍 Analyzing: ${relativePath}`);
@@ -2144,17 +2168,23 @@ export class Program {
 
             // Store analysis results in cache if enabled
             if (this._typeCacheManager && this._typeCacheExtractor && this._configOptions.enableTypeCaching && boundFile) {
+                this._console.log(`💾 Attempting to cache analysis for: ${relativePath}`);
                 try {
                     const cacheEntry = this._typeCacheExtractor.extractCacheEntry(fileToCheck, analysisTime);
                     if (cacheEntry) {
+                        this._console.log(`💾 Cache entry created for: ${relativePath}, storing...`);
                         // Store asynchronously without blocking
                         this._typeCacheManager.store(fileToCheck.uri.getFilePath(), cacheEntry).catch(error => {
-                            this._console.warn(`Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                            this._console.warn(`❌ Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
                         });
+                    } else {
+                        this._console.log(`⚠️  No cache entry created for: ${relativePath}`);
                     }
                 } catch (error) {
-                    this._console.warn(`Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                    this._console.warn(`❌ Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
                 }
+            } else {
+                this._console.log(`🚫 Cannot cache analysis for ${relativePath}: manager=${!!this._typeCacheManager}, extractor=${!!this._typeCacheExtractor}, enabled=${this._configOptions.enableTypeCaching}, bound=${boundFile}`);
             }
 
             // Detect import cycles that involve the file.
