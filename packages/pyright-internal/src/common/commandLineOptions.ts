@@ -107,6 +107,15 @@ export class CommandLineConfigOptions {
 
     // Emit verbose information to console?
     verboseOutput?: boolean | undefined;
+
+    // Enable type check caching
+    enableTypeCaching?: boolean | undefined;
+
+    // Maximum number of files to cache types for
+    maxTypeCacheFiles?: number | undefined;
+
+    // Type cache output format
+    typeCacheFormat?: string | undefined;
 }
 
 // Options that are not specified in a JSON config file but apply to a language server.

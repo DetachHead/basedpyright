@@ -60,7 +60,7 @@ export class TypeCacheExtractor {
 
         const filePath = sourceFileInfo.uri.getFilePath();
         const fileContent = this._fileSystem.readFileSync(sourceFileInfo.uri, 'utf8');
-        const fileHash = hashString(fileContent);
+        const fileHash = hashString(fileContent).toString();
 
         const dependencies = this._extractDependencies(sourceFileInfo);
         const symbols = this._extractSymbols(symbolTable, parseResults);
@@ -90,7 +90,7 @@ export class TypeCacheExtractor {
             if (this._fileSystem.existsSync(importFileInfo.uri)) {
                 try {
                     const importContent = this._fileSystem.readFileSync(importFileInfo.uri, 'utf8');
-                    const importHash = hashString(importContent);
+                    const importHash = hashString(importContent).toString();
                     
                     dependencies.push({
                         module: importFileInfo.sourceFile.getModuleName(),

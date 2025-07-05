@@ -1400,7 +1400,7 @@ export class ConfigOptions {
     typeEvaluationTimeThreshold = 50;
 
     // Enable type check caching
-    enableTypeCaching = false;
+    enableTypeCaching = true;
 
     // Maximum number of files to cache types for
     maxTypeCacheFiles?: number | undefined;
@@ -1814,7 +1814,7 @@ export class ConfigOptions {
         }
 
         // read the boolean settings
-        for (const key of ['autoImportCompletions', 'indexing', 'logTypeEvaluationTime'] as const) {
+        for (const key of ['autoImportCompletions', 'indexing', 'logTypeEvaluationTime', 'enableTypeCaching'] as const) {
             const value = configObj[key];
             if (value !== undefined) {
                 if (typeof value !== 'boolean') {
@@ -1831,6 +1831,26 @@ export class ConfigOptions {
                 console.error(`Config "typeEvaluationTimeThreshold" field must be a number.`);
             } else {
                 this.typeEvaluationTimeThreshold = configObj.typeEvaluationTimeThreshold;
+            }
+        }
+
+        // Read the "maxTypeCacheFiles" setting.
+        if (configObj.maxTypeCacheFiles !== undefined) {
+            if (typeof configObj.maxTypeCacheFiles !== 'number') {
+                console.error(`Config "maxTypeCacheFiles" field must be a number.`);
+            } else {
+                this.maxTypeCacheFiles = configObj.maxTypeCacheFiles;
+            }
+        }
+
+        // Read the "typeCacheFormat" setting.
+        if (configObj.typeCacheFormat !== undefined) {
+            if (typeof configObj.typeCacheFormat !== 'string') {
+                console.error(`Config "typeCacheFormat" field must be a string.`);
+            } else if (configObj.typeCacheFormat !== 'binary' && configObj.typeCacheFormat !== 'json') {
+                console.error(`Config "typeCacheFormat" field must be "binary" or "json".`);
+            } else {
+                this.typeCacheFormat = configObj.typeCacheFormat;
             }
         }
 

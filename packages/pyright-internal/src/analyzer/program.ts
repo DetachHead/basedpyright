@@ -53,6 +53,8 @@ import { getPrintTypeFlags } from './typePrinter';
 import { TypeStubWriter } from './typeStubWriter';
 import { Type } from './types';
 import { BaselineHandler } from '../baseline';
+import { TypeCacheManager, TypeCacheFormat } from './typeCacheManager';
+import { TypeCacheExtractor } from './typeCacheExtractor';
 
 const _maxImportDepth = 256;
 
@@ -131,6 +133,8 @@ export class Program {
 
     private _allowedThirdPartyImports: string[] | undefined;
     private _configOptions: ConfigOptions;
+    private _typeCacheManager: TypeCacheManager | undefined;
+    private _typeCacheExtractor: TypeCacheExtractor | undefined;
     private _importResolver: ImportResolver;
     private _evaluator: TypeEvaluator | undefined;
 
@@ -159,6 +163,20 @@ export class Program {
 
         this._cacheManager = serviceProvider.tryGet(ServiceKeys.cacheManager) ?? new CacheManager();
         this._cacheManager.registerCacheOwner(this);
+        
+        // Initialize type cache if enabled
+        if (initialConfigOptions.enableTypeCaching) {
+            const format = initialConfigOptions.typeCacheFormat === 'json' ? TypeCacheFormat.Json : TypeCacheFormat.Binary;
+            this._typeCacheManager = new TypeCacheManager(
+                initialConfigOptions.projectRoot,
+                initialConfigOptions,
+                this.fileSystem,
+                this._console,
+                serviceProvider,
+                format
+            );
+        }
+        
         this._createNewEvaluator();
 
         this._id = id ?? `Prog_${Program._nextId}`;
@@ -684,8 +702,26 @@ export class Program {
                 (sf) => sf.isOpenByClient && sf.sourceFile.isCheckingRequired()
             );
 
+            const allFilesRequiringAnalysis = this._sourceFileList.filter(
+                (sf) => isUserCode(sf) && sf.sourceFile.isCheckingRequired()
+            );
+
+            if (allFilesRequiringAnalysis.length > 0) {
+                this._console.info(`🚀 Starting analysis of ${allFilesRequiringAnalysis.length} files...`);
+            }
+
             if (openFiles.length > 0) {
                 const effectiveMaxTime = maxTime ? maxTime.openFilesTimeInMs : Number.MAX_VALUE;
+
+                if (openFiles.length <= 3) {
+                    this._console.info(`📂 Analyzing ${openFiles.length} open files:`);
+                    openFiles.forEach(sf => {
+                        const relativePath = this._configOptions.projectRoot.getRelativePath(sf.uri) || sf.uri.getFilePath();
+                        this._console.info(`  - ${relativePath}`);
+                    });
+                } else {
+                    this._console.info(`📂 Analyzing ${openFiles.length} open files...`);
+                }
 
                 // Check the open files.
                 for (const sourceFileInfo of openFiles) {
@@ -707,6 +743,14 @@ export class Program {
             if (!this._configOptions.checkOnlyOpenFiles) {
                 const effectiveMaxTime = maxTime ? maxTime.noOpenFilesTimeInMs : Number.MAX_VALUE;
 
+                const closedFilesRequiringAnalysis = this._sourceFileList.filter(
+                    (sf) => isUserCode(sf) && sf.sourceFile.isCheckingRequired() && !sf.isOpenByClient
+                );
+
+                if (closedFilesRequiringAnalysis.length > 0) {
+                    this._console.info(`📁 Analyzing ${closedFilesRequiringAnalysis.length} additional files...`);
+                }
+
                 // Now do type parsing and analysis of the remaining.
                 for (const sourceFileInfo of this._sourceFileList) {
                     if (!isUserCode(sourceFileInfo)) {
@@ -717,6 +761,20 @@ export class Program {
                         if (elapsedTime.getDurationInMilliseconds() > effectiveMaxTime) {
                             return true;
                         }
+                    }
+                }
+            }
+
+            // Log completion statistics
+            const finalElapsedTime = elapsedTime.getDurationInMilliseconds();
+            if (allFilesRequiringAnalysis.length > 0) {
+                this._console.info(`🎉 Analysis complete! ${allFilesRequiringAnalysis.length} files analyzed in ${finalElapsedTime}ms`);
+                
+                // Log cache statistics if enabled
+                if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
+                    const stats = this._typeCacheManager.getStats();
+                    if (stats.totalEntries > 0) {
+                        this._console.info(`📊 Cache performance: ${(stats.hitRate * 100).toFixed(1)}% hit rate, ${stats.totalEntries} entries`);
                     }
                 }
             }
@@ -1736,6 +1794,11 @@ export class Program {
                 : undefined
         );
 
+        // Create cache extractor if caching is enabled
+        if (this._typeCacheManager && this._evaluator) {
+            this._typeCacheExtractor = new TypeCacheExtractor(this.fileSystem, this._evaluator);
+        }
+
         return this._evaluator;
     }
 
@@ -2010,6 +2073,24 @@ export class Program {
                 return false;
             }
 
+            // Get relative path for logging
+            const relativePath = this._configOptions.projectRoot.getRelativePath(fileToCheck.uri) || fileToCheck.uri.getFilePath();
+            
+            // Check if we can use cached results
+            if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
+                this._typeCacheManager.load(fileToCheck.uri.getFilePath()).then(cachedEntry => {
+                    if (cachedEntry) {
+                        this._console.info(`🔍 Analyzing (cached): ${relativePath}`);
+                        return;
+                    }
+                }).catch(() => {
+                    // Fall through to normal analysis
+                });
+            }
+
+            this._console.info(`🔍 Analyzing: ${relativePath}`);
+            const startTime = Date.now();
+
             // Bind the file if necessary even if we're not going to run the checker.
             // disableChecker means disable semantic errors, not syntax errors. We need to bind again
             // in order to generate syntax errors.
@@ -2046,9 +2127,35 @@ export class Program {
                 }
             }
 
+            // Calculate analysis time
+            const endTime = Date.now();
+            const analysisTime = endTime - startTime;
+
+            // Log completion with timing
+            if (analysisTime > 100) {
+                this._console.info(`✅ Analyzed: ${relativePath} (${analysisTime}ms)`);
+            } else {
+                this._console.log(`✅ Analyzed: ${relativePath} (${analysisTime}ms)`);
+            }
+
             // For very large programs, we may need to discard the evaluator and
             // its cached types to avoid running out of heap space.
             this._handleMemoryHighUsage();
+
+            // Store analysis results in cache if enabled
+            if (this._typeCacheManager && this._typeCacheExtractor && this._configOptions.enableTypeCaching && boundFile) {
+                try {
+                    const cacheEntry = this._typeCacheExtractor.extractCacheEntry(fileToCheck, analysisTime);
+                    if (cacheEntry) {
+                        // Store asynchronously without blocking
+                        this._typeCacheManager.store(fileToCheck.uri.getFilePath(), cacheEntry).catch(error => {
+                            this._console.warn(`Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                        });
+                    }
+                } catch (error) {
+                    this._console.warn(`Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
+                }
+            }
 
             // Detect import cycles that involve the file.
             if (this._configOptions.diagnosticRuleSet.reportImportCycles !== 'none') {
