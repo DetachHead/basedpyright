@@ -150,6 +150,15 @@ export class CommandLineLanguageServerOptions {
     // Disable reporting of hint diagnostics with tags?
     disableTaggedHints?: boolean;
 
+    // Enable type check caching
+    enableTypeCaching?: boolean;
+
+    // Maximum number of files to cache types for
+    maxTypeCacheFiles?: number | undefined;
+
+    // Type cache output format
+    typeCacheFormat?: string | undefined;
+
     // Path to python interpreter. This is used when the language server
     // gets the python path from the client.
     pythonPath?: string | undefined;

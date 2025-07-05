@@ -1399,6 +1399,15 @@ export class ConfigOptions {
     // Minimum threshold for type eval logging
     typeEvaluationTimeThreshold = 50;
 
+    // Enable type check caching
+    enableTypeCaching = false;
+
+    // Maximum number of files to cache types for
+    maxTypeCacheFiles?: number | undefined;
+
+    // Type cache output format
+    typeCacheFormat?: string | undefined;
+
     // Was this config initialized from JSON (pyrightconfig/pyproject)?
     initializedFromJson = false;
 
