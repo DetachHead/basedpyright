@@ -1,6 +1,6 @@
 /*
  * fastSemanticTokensProvider.ts
- * 
+ *
  * Provides basic semantic tokens from cached symbol information
  * before full type analysis is complete. This improves perceived
  * responsiveness during workspace initialization.
@@ -53,7 +53,7 @@ export class FastSemanticTokensProvider {
             try {
                 const tokenType = this._mapSymbolKindToTokenType(symbol.kind);
                 const tokenModifiers = this._getTokenModifiers(symbol);
-                
+
                 if (tokenType && symbol.range) {
                     // Handle range format from cached symbols
                     const range = symbol.range;
@@ -141,7 +141,7 @@ export class FastSemanticTokensProvider {
 
     private _getTokenModifiers(symbol: IndexedSymbol): string[] {
         const modifiers: string[] = [];
-        
+
         // Add basic modifiers based on symbol name patterns
         if (symbol.name.startsWith('_') && !symbol.name.startsWith('__')) {
             // Private member
@@ -175,4 +175,4 @@ export class FastSemanticTokensProvider {
         }
         return data;
     }
-} 
+}

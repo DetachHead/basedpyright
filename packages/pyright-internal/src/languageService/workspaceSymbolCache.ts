@@ -655,8 +655,9 @@ export class WorkspaceSymbolCache {
             const currentFileCount = Object.keys(newFiles).length;
             if (currentFileCount > this._options.maxFiles) {
                 const toPrune = currentFileCount - this._options.maxFiles;
-                const sortedByMtime = Object.entries(newFiles)
-                    .sort(([_aUri, a], [_bUri, b]) => (b.mtime || 0) - (a.mtime || 0));
+                const sortedByMtime = Object.entries(newFiles).sort(
+                    ([_aUri, a], [_bUri, b]) => (b.mtime || 0) - (a.mtime || 0)
+                );
 
                 for (let i = sortedByMtime.length - 1; i >= sortedByMtime.length - toPrune; i--) {
                     const [uri] = sortedByMtime[i];
@@ -894,6 +895,13 @@ export class WorkspaceSymbolCache {
         this._processBatchInvalidations();
     }
 
+    /**
+     * Return cached symbols for a workspace if already present in memory. Does not perform any disk I/O.
+     */
+    getCachedSymbols(workspaceRoot: Uri): CachedWorkspaceSymbols | undefined {
+        return this._cache.get(workspaceRoot.key);
+    }
+
     /** Check if file should be included in symbol indexing for performance. */
     private _shouldIndexFile(fileUri: Uri): boolean {
         const filePath = fileUri.toUserVisibleString();
@@ -930,154 +938,6 @@ export class WorkspaceSymbolCache {
         // Check file extension
         const lowerPath = filePath.toLowerCase();
         return this._options.extensions.some((ext) => lowerPath.endsWith(ext));
-    }
-
-    /** Batch invalidate files to reduce noise and improve performance. */
-    private _batchInvalidateFile(workspaceRoot: Uri, fileUri: Uri): void {
-        const key = workspaceRoot.key;
-        const fileUriStr = fileUri.toString();
-
-        // Add to pending invalidations
-        if (!this._pendingInvalidations.has(key)) {
-            this._pendingInvalidations.set(key, new Set<string>());
-        }
-        this._pendingInvalidations.get(key)!.add(fileUriStr);
-
-        // Clear existing timer and set new one
-        if (this._invalidationTimer) {
-            clearTimeout(this._invalidationTimer);
-        }
-
-        this._invalidationTimer = setTimeout(() => {
-            this._processBatchInvalidations();
-        }, this._options.debounceMs || 50); // Configurable debounce time
-    }
-
-    /** Check if invalidations suggest a workspace-wide change (git operations, build processes, etc.) */
-    private _isWorkspaceWideChange(pendingFiles: Set<string>): boolean {
-        if (pendingFiles.size < 10) return false;
-
-        // Check for patterns that suggest workspace-wide changes
-        const files = Array.from(pendingFiles);
-
-        // Look for git-related changes (multiple files changing simultaneously)
-        const gitRelatedPatterns = ['.git/', '__pycache__/', '.pyc', 'node_modules/'];
-        const gitRelatedCount = files.filter((file) =>
-            gitRelatedPatterns.some((pattern) => file.includes(pattern))
-        ).length;
-
-        // If more than 30% of files are git/build related, likely a workspace change
-        if (gitRelatedCount > pendingFiles.size * 0.3) {
-            return true;
-        }
-
-        // Check for generated file patterns
-        const generatedPatterns = ['_pb2.py', '_pb2_grpc.py', '.generated.py', 'build/', 'dist/'];
-        const generatedCount = files.filter((file) =>
-            generatedPatterns.some((pattern) => file.includes(pattern))
-        ).length;
-
-        // If more than 50% are generated files, likely a build process
-        if (generatedCount > pendingFiles.size * 0.5) {
-            return true;
-        }
-
-        // Check for similar timestamps (files changed within 1 second of each other)
-        // This suggests a batch operation like git checkout
-        if (pendingFiles.size > 20) {
-            return true; // Large batch is likely workspace-wide
-        }
-
-        return false;
-    }
-
-    /** Process all pending invalidations in batches. */
-    private _processBatchInvalidations(): void {
-        for (const [workspaceKey, pendingFiles] of this._pendingInvalidations.entries()) {
-            if (pendingFiles.size === 0) continue;
-
-            // Check if cache is currently being built
-            if (this._buildingCaches.has(workspaceKey)) {
-                this._debugLog(
-                    `Skipping batch invalidation for workspace ${workspaceKey} - cache is currently being built`
-                );
-                continue;
-            }
-
-            const cached = this._cache.get(workspaceKey);
-            if (!cached) {
-                this._debugLog(`Skipping batch invalidation for workspace ${workspaceKey} - no cache exists`);
-                continue;
-            }
-
-            // Check if this looks like a workspace-wide change
-            if (this._isWorkspaceWideChange(pendingFiles)) {
-                // Clear entire workspace cache for efficiency
-                this._cache.delete(workspaceKey);
-                this._cacheMetadata.delete(workspaceKey);
-                this._accessOrder.delete(workspaceKey);
-                this._lastValidatedCache.delete(workspaceKey);
-
-                this._log(
-                    `Workspace-wide change detected (${pendingFiles.size} files), cleared entire cache for rebuild`
-                );
-                this._lastInvalidationBatch.set(workspaceKey, Date.now());
-                continue;
-            }
-
-            let actualInvalidations = 0;
-            let skippedFiles = 0;
-
-            // Process each file in the batch individually
-            for (const fileUriStr of pendingFiles) {
-                if (cached.files[fileUriStr]) {
-                    delete cached.files[fileUriStr];
-                    actualInvalidations++;
-                } else {
-                    skippedFiles++;
-                }
-            }
-
-            // Log batch results
-            if (actualInvalidations > 0) {
-                // Mark metadata as stale by removing it
-                this._cacheMetadata.delete(workspaceKey);
-
-                // Check if this looks like a mass invalidation (lots of files at once)
-                const isMassInvalidation = actualInvalidations > (this._options.massInvalidationThreshold || 20);
-                const lastBatchTime = this._lastInvalidationBatch.get(workspaceKey) || 0;
-                const timeSinceLastBatch = Date.now() - lastBatchTime;
-
-                if (isMassInvalidation && timeSinceLastBatch < 2000) {
-                    // Frequent mass invalidations - suggest rebuilding entire cache
-                    this._log(
-                        `Frequent mass invalidation: ${actualInvalidations} files (may trigger cache rebuild next time)`
-                    );
-                } else if (this._options.verbose) {
-                    // Normal batch invalidation
-                    this._debugLog(
-                        `Batch invalidation: ${actualInvalidations} files updated${
-                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
-                        }`
-                    );
-                } else {
-                    // Debug mode - show individual files only in debug
-                    this._debugLog(
-                        `Batch invalidation: ${actualInvalidations} files updated${
-                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
-                        }`
-                    );
-                }
-
-                this._lastInvalidationBatch.set(workspaceKey, Date.now());
-            } else if (skippedFiles > 0) {
-                this._debugLog(`Batch invalidation: ${skippedFiles} files already removed from cache`);
-            }
-        }
-
-        // Clear all pending invalidations
-        this._pendingInvalidations.clear();
-        this._invalidationTimer = null;
     }
 
     /**
@@ -1398,5 +1258,159 @@ export class WorkspaceSymbolCache {
         } catch (error) {
             this._handleIndexingError(workspaceRoot, error as Error, 'cache recovery');
         }
+    }
+
+    /**
+     * Process all pending invalidations in batches.
+     */
+    private _processBatchInvalidations(): void {
+        for (const [workspaceKey, pendingFiles] of this._pendingInvalidations.entries()) {
+            if (pendingFiles.size === 0) continue;
+
+            // Check if cache is currently being built
+            if (this._buildingCaches.has(workspaceKey)) {
+                this._debugLog(
+                    `Skipping batch invalidation for workspace ${workspaceKey} - cache is currently being built`
+                );
+                continue;
+            }
+
+            const cached = this._cache.get(workspaceKey);
+            if (!cached) {
+                this._debugLog(`Skipping batch invalidation for workspace ${workspaceKey} - no cache exists`);
+                continue;
+            }
+
+            // Check if this looks like a workspace-wide change
+            if (this._isWorkspaceWideChange(pendingFiles)) {
+                // Clear entire workspace cache for efficiency
+                this._cache.delete(workspaceKey);
+                this._cacheMetadata.delete(workspaceKey);
+                this._accessOrder.delete(workspaceKey);
+                this._lastValidatedCache.delete(workspaceKey);
+
+                this._log(
+                    `Workspace-wide change detected (${pendingFiles.size} files), cleared entire cache for rebuild`
+                );
+                this._lastInvalidationBatch.set(workspaceKey, Date.now());
+                continue;
+            }
+
+            let actualInvalidations = 0;
+            let skippedFiles = 0;
+
+            // Process each file in the batch individually
+            for (const fileUriStr of pendingFiles) {
+                if (cached.files[fileUriStr]) {
+                    delete cached.files[fileUriStr];
+                    actualInvalidations++;
+                } else {
+                    skippedFiles++;
+                }
+            }
+
+            // Log batch results
+            if (actualInvalidations > 0) {
+                // Mark metadata as stale by removing it
+                this._cacheMetadata.delete(workspaceKey);
+
+                // Check if this looks like a mass invalidation (lots of files at once)
+                const isMassInvalidation = actualInvalidations > (this._options.massInvalidationThreshold || 20);
+                const lastBatchTime = this._lastInvalidationBatch.get(workspaceKey) || 0;
+                const timeSinceLastBatch = Date.now() - lastBatchTime;
+
+                if (isMassInvalidation && timeSinceLastBatch < 2000) {
+                    // Frequent mass invalidations - suggest rebuilding entire cache
+                    this._log(
+                        `Frequent mass invalidation: ${actualInvalidations} files (may trigger cache rebuild next time)`
+                    );
+                } else if (this._options.verbose) {
+                    // Normal batch invalidation
+                    this._debugLog(
+                        `Batch invalidation: ${actualInvalidations} files updated${
+                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
+                        }`
+                    );
+                } else {
+                    // Debug mode - show individual files only in debug
+                    this._debugLog(
+                        `Batch invalidation: ${actualInvalidations} files updated${
+                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
+                        }`
+                    );
+                }
+
+                this._lastInvalidationBatch.set(workspaceKey, Date.now());
+            } else if (skippedFiles > 0) {
+                this._debugLog(`Batch invalidation: ${skippedFiles} files already removed from cache`);
+            }
+        }
+
+        // Clear all pending invalidations
+        this._pendingInvalidations.clear();
+        this._invalidationTimer = null;
+    }
+
+    /**
+     * Check if invalidations suggest a workspace-wide change (git operations, build processes, etc.)
+     */
+    private _isWorkspaceWideChange(pendingFiles: Set<string>): boolean {
+        if (pendingFiles.size < 10) return false;
+
+        // Check for patterns that suggest workspace-wide changes
+        const files = Array.from(pendingFiles);
+
+        // Look for git-related changes (multiple files changing simultaneously)
+        const gitRelatedPatterns = ['.git/', '__pycache__/', '.pyc', 'node_modules/'];
+        const gitRelatedCount = files.filter((file) =>
+            gitRelatedPatterns.some((pattern) => file.includes(pattern))
+        ).length;
+
+        // If more than 30% of files are git/build related, likely a workspace change
+        if (gitRelatedCount > pendingFiles.size * 0.3) {
+            return true;
+        }
+
+        // Check for generated file patterns
+        const generatedPatterns = ['_pb2.py', '_pb2_grpc.py', '.generated.py', 'build/', 'dist/'];
+        const generatedCount = files.filter((file) =>
+            generatedPatterns.some((pattern) => file.includes(pattern))
+        ).length;
+
+        // If more than 50% are generated files, likely a build process
+        if (generatedCount > pendingFiles.size * 0.5) {
+            return true;
+        }
+
+        // Check for similar timestamps (files changed within 1 second of each other)
+        // This suggests a batch operation like git checkout
+        if (pendingFiles.size > 20) {
+            return true; // Large batch is likely workspace-wide
+        }
+
+        return false;
+    }
+
+    /**
+     * Batch invalidate files to reduce noise and improve performance.
+     */
+    private _batchInvalidateFile(workspaceRoot: Uri, fileUri: Uri): void {
+        const key = workspaceRoot.key;
+        const fileUriStr = fileUri.toString();
+
+        // Add to pending invalidations
+        if (!this._pendingInvalidations.has(key)) {
+            this._pendingInvalidations.set(key, new Set<string>());
+        }
+        this._pendingInvalidations.get(key)!.add(fileUriStr);
+
+        // Clear existing timer and set new one
+        if (this._invalidationTimer) {
+            clearTimeout(this._invalidationTimer);
+        }
+
+        this._invalidationTimer = setTimeout(() => {
+            this._processBatchInvalidations();
+        }, this._options.debounceMs || 50); // Configurable debounce time
     }
 }
