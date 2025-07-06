@@ -73,6 +73,10 @@ export interface WorkspaceSymbolCacheOptions {
     verbose?: boolean;
     /** Enable debug logging for invalidation and detailed operations; default false */
     debug?: boolean;
+    /** Maximum memory usage in MB before LRU eviction; default 50 */
+    maxMemoryMB?: number;
+    /** Maximum indexing errors before fallback; default 100 */
+    maxErrors?: number;
     /** Console interface for logging */
     console?: ConsoleInterface;
 }
@@ -88,7 +92,7 @@ export interface CacheStats {
 
 /**
  * Synchronous workspace symbols cache for LSP.
- * 
+ *
  * This cache provides persistent storage of workspace symbols to speed up
  * LSP workspace symbol searches. All operations are synchronous to avoid
  * background processing complexity.
@@ -102,7 +106,8 @@ export class WorkspaceSymbolCache {
     private _startupCheckComplete = false; // Track startup cache folder detection
     private _buildingCaches = new Set<string>(); // Track workspaces currently building cache
 
-    private _options: Required<Omit<WorkspaceSymbolCacheOptions, 'console' | 'debug'>> & Pick<WorkspaceSymbolCacheOptions, 'console' | 'debug'>;
+    private _options: Required<Omit<WorkspaceSymbolCacheOptions, 'console' | 'debug'>> &
+        Pick<WorkspaceSymbolCacheOptions, 'console' | 'debug'>;
     private _console?: ConsoleInterface;
 
     constructor(options?: WorkspaceSymbolCacheOptions) {
@@ -120,13 +125,19 @@ export class WorkspaceSymbolCache {
     /**
      * Configure the cache with server settings.
      */
-    configure(enabled: boolean, maxFiles: number, verbose: boolean = false, debug: boolean = false, console?: ConsoleInterface): void {
+    configure(
+        enabled: boolean,
+        maxFiles: number,
+        verbose: boolean = false,
+        debug: boolean = false,
+        console?: ConsoleInterface
+    ): void {
         this._enabled = enabled;
         this._options.maxFiles = maxFiles;
         this._options.verbose = verbose;
         this._options.debug = debug;
         this._console = console || this._console;
-        
+
         // If caching is disabled, clear existing caches
         if (!enabled) {
             this._cache.clear();
@@ -160,7 +171,7 @@ export class WorkspaceSymbolCache {
 
         const cacheDir = workspaceRoot.combinePaths('.pyright');
         const cacheFile = this._getCacheFileUri(workspaceRoot);
-        
+
         try {
             const cacheDirExists = fs.existsSync(cacheDir);
             const cacheFileExists = fs.existsSync(cacheFile);
@@ -169,7 +180,9 @@ export class WorkspaceSymbolCache {
                 try {
                     const stats = fs.statSync(cacheFile);
                     const lastModified = stats ? new Date(stats.mtimeMs).toISOString() : 'unknown';
-                    this._log(`Found existing workspace symbols cache at ${cacheFile.toUserVisibleString()} (last modified: ${lastModified})`);
+                    this._log(
+                        `Found existing workspace symbols cache at ${cacheFile.toUserVisibleString()} (last modified: ${lastModified})`
+                    );
                 } catch {
                     this._log(`Found workspace symbols cache at ${cacheFile.toUserVisibleString()}`);
                 }
@@ -201,7 +214,7 @@ export class WorkspaceSymbolCache {
         }
 
         const workspaceKey = workspaceRoot.key;
-        
+
         // Prevent multiple concurrent cache builds for the same workspace
         if (this._buildingCaches.has(workspaceKey)) {
             this._debugLog(`Skipping cache build for ${workspaceRoot.toUserVisibleString()} - already building`);
@@ -238,7 +251,7 @@ export class WorkspaceSymbolCache {
 
         // Mark as building to prevent concurrent builds and invalidation
         this._buildingCaches.add(workspaceKey);
-        
+
         try {
             const startTime = Date.now();
             const newFiles: Record<string, FileIndex> = {};
@@ -329,7 +342,11 @@ export class WorkspaceSymbolCache {
 
             const elapsedTime = Date.now() - startTime;
             if (this._options.verbose) {
-                this._log(`Indexing completed in ${elapsedTime}ms: ${reusedCount} reused, ${rebuiltCount} rebuilt${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+                this._log(
+                    `Indexing completed in ${elapsedTime}ms: ${reusedCount} reused, ${rebuiltCount} rebuilt${
+                        errorCount > 0 ? `, ${errorCount} errors` : ''
+                    }`
+                );
             }
 
             // Compute overall checksum for the workspace
@@ -383,7 +400,7 @@ export class WorkspaceSymbolCache {
         }
 
         const workspaceKey = workspaceRoot.key;
-        
+
         // Prevent multiple concurrent cache updates for the same workspace
         if (this._buildingCaches.has(workspaceKey)) {
             this._debugLog(`Skipping cache update for ${workspaceRoot.toUserVisibleString()} - already building`);
@@ -406,11 +423,11 @@ export class WorkspaceSymbolCache {
 
         // Mark as building to prevent concurrent builds and invalidation
         this._buildingCaches.add(workspaceKey);
-        
+
         try {
             const startTime = Date.now();
             const totalFiles = Object.keys(existingCache.files).length;
-            
+
             if (this._options.verbose) {
                 this._log(`Incrementally updating cache with ${totalFiles} files...`);
             }
@@ -502,7 +519,11 @@ export class WorkspaceSymbolCache {
 
             const elapsedTime = Date.now() - startTime;
             if (this._options.verbose) {
-                this._log(`Update completed in ${elapsedTime}ms: ${reusedCount} reused, ${rebuiltCount} rebuilt, ${skippedCount} skipped${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
+                this._log(
+                    `Update completed in ${elapsedTime}ms: ${reusedCount} reused, ${rebuiltCount} rebuilt, ${skippedCount} skipped${
+                        errorCount > 0 ? `, ${errorCount} errors` : ''
+                    }`
+                );
             }
 
             // Handle case where no files remain (all deleted or skipped)
@@ -576,7 +597,7 @@ export class WorkspaceSymbolCache {
             cached = this._loadFromDisk(workspaceRoot, program.fileSystem);
             if (cached) {
                 this._cache.set(workspaceRoot.key, cached);
-                
+
                 // Store metadata for fast access
                 const maxMtime = Math.max(...Object.values(cached.files).map((f) => f.mtime));
                 this._cacheMetadata.set(workspaceRoot.key, {
@@ -599,11 +620,11 @@ export class WorkspaceSymbolCache {
         // Search the cache
         this._cacheHits++;
         const results = this._searchCache(cached, query);
-        
+
         if (this._options.verbose) {
             this._log(`Search results: ${results.length} symbols found for query "${query}"`);
         }
-        
+
         return results;
     }
 
@@ -655,7 +676,9 @@ export class WorkspaceSymbolCache {
 
         // Don't invalidate if cache is currently being built
         if (this._buildingCaches.has(key)) {
-            const target = fileUri ? `file ${fileUri.toUserVisibleString()}` : `workspace ${workspaceRoot.toUserVisibleString()}`;
+            const target = fileUri
+                ? `file ${fileUri.toUserVisibleString()}`
+                : `workspace ${workspaceRoot.toUserVisibleString()}`;
             this._debugLog(`Skipping invalidation for ${target} - cache is currently being built`);
             return;
         }
@@ -670,7 +693,9 @@ export class WorkspaceSymbolCache {
                 this._cache.delete(key);
                 this._cacheMetadata.delete(key);
             } else {
-                this._debugLog(`Skipping invalidation for workspace ${workspaceRoot.toUserVisibleString()} - no cache exists`);
+                this._debugLog(
+                    `Skipping invalidation for workspace ${workspaceRoot.toUserVisibleString()} - no cache exists`
+                );
             }
         } else {
             // Invalidate specific file
@@ -715,7 +740,7 @@ export class WorkspaceSymbolCache {
     private _loadFromDisk(workspaceRoot: Uri, fs: ReadOnlyFileSystem): CachedWorkspaceSymbols | undefined {
         const fileUri = this._getCacheFileUri(workspaceRoot);
         if (!fs.existsSync(fileUri)) return undefined;
-        
+
         try {
             const text = fs.readFileSync(fileUri, 'utf8');
             const obj = JSON.parse(text);
@@ -745,7 +770,7 @@ export class WorkspaceSymbolCache {
                     }
                 }
             }
-            
+
             const fileUri = this._getCacheFileUri(workspaceRoot);
             try {
                 fs.writeFileSync(fileUri, JSON.stringify(cached), null);

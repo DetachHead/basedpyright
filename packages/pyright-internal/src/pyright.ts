@@ -60,7 +60,6 @@ import {
 import { writeFileSync } from 'fs';
 import { workspaceSymbolCacheSingleton as _workspaceSymbolCache } from './languageService/workspaceSymbolCacheSingleton';
 
-
 type SeverityLevel = 'error' | 'warning' | 'information';
 
 // These values are publicly documented. Do not change them.
@@ -437,7 +436,6 @@ async function processArgs(): Promise<ExitStatus> {
 
     if (args.verbose) {
         options.configSettings.verboseOutput = true;
-
     }
 
     // Always enable autoSearchPaths when using the command line.
@@ -688,13 +686,13 @@ async function runSingleThreaded(
                 : 5000;
             const verbose = options.configSettings.verboseOutput;
 
-                    // Configure workspace symbols cache with defaults for CLI
-        _workspaceSymbolCache.configure(
-            true, // Enable caching
-            maxFiles > 0 ? maxFiles : 5000, // Max files
-            verbose, // Verbose logging
-            output // Console interface
-        );
+            // Configure workspace symbols cache with defaults for CLI
+            _workspaceSymbolCache.configure(
+                true, // Enable caching
+                maxFiles > 0 ? maxFiles : 5000, // Max files
+                verbose, // Verbose logging
+                output // Console interface
+            );
 
             // Set minimal options to avoid heavy computation
             const minimalOptions = { ...options };
@@ -773,8 +771,6 @@ async function runSingleThreaded(
     } catch {
         /* ignore cache build errors */
     }
-
-
 
     return await exitStatus.promise;
 }
@@ -1341,7 +1337,6 @@ function printUsage() {
             '  --rebuildcache                     Force rebuild of workspace symbol cache\n' +
             '  --updatecache                      Update workspace symbol cache (check for file changes)\n' +
             '  --cacheonly                        Only update cache without running type analysis\n' +
-            
             '  --skipunannotated                  Skip analysis of functions with no type annotations\n' +
             '  --stats                            Print detailed performance stats\n' +
             '  -t,--typeshedpath <DIRECTORY>      Use typeshed type stubs at this location\n' +
@@ -1688,9 +1683,7 @@ export async function main() {
     }
 
     const exitCode = await processArgs();
-    
-    
-    
+
     process.exitCode = exitCode;
     // Don't call process.exit; stdout may not have been flushed which can break readers.
     // https://github.com/nodejs/node/issues/6379

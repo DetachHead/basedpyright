@@ -391,15 +391,21 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.inlayHints = serverSettings.inlayHints;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
-            
+
             // Configure workspace symbols cache
             const workspaceSymbolsEnabled = serverSettings.workspaceSymbolsEnabled ?? true;
             const workspaceSymbolsMaxFiles = serverSettings.workspaceSymbolsMaxFiles ?? 3000;
             const workspaceSymbolsDebug = serverSettings.workspaceSymbolsDebug ?? false;
             const verbose = serverSettings.logLevel === LogLevel.Log || serverSettings.logLevel === LogLevel.Info;
-            _workspaceSymbolCache.configure(workspaceSymbolsEnabled, workspaceSymbolsMaxFiles, verbose, workspaceSymbolsDebug, this.console);
-            
-                        // Proactively build workspace symbols cache (like CLI does)
+            _workspaceSymbolCache.configure(
+                workspaceSymbolsEnabled,
+                workspaceSymbolsMaxFiles,
+                verbose,
+                workspaceSymbolsDebug,
+                this.console
+            );
+
+            // Proactively build workspace symbols cache (like CLI does)
             if (workspaceSymbolsEnabled && workspace.rootUri && !workspace.disableLanguageServices) {
                 // Use setTimeout to ensure workspace initialization is complete before building cache
                 setTimeout(() => {
@@ -408,14 +414,14 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         if (!workspace.service || workspace.disableLanguageServices) {
                             return;
                         }
-                        
+
                         workspace.service.run((program) => {
-                             _workspaceSymbolCache.cacheWorkspaceSymbols(
-                                 workspace.rootUri!,
-                                 program,
-                                 false // Don't force rebuild - reuse existing cache if available
-                             );
-                         }, CancellationToken.None);
+                            _workspaceSymbolCache.cacheWorkspaceSymbols(
+                                workspace.rootUri!,
+                                program,
+                                false // Don't force rebuild - reuse existing cache if available
+                            );
+                        }, CancellationToken.None);
                     } catch (error) {
                         // Don't let cache building errors break workspace initialization
                         if (verbose) {

@@ -105,9 +105,9 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
         // Check if caching is enabled
         const isEnabled = workspaceSymbolCacheSingleton['_enabled'];
         if (!isEnabled) {
-            return { 
+            return {
                 error: 'Workspace symbols caching is disabled',
-                hint: 'Enable caching via LSP settings: basedpyright.analysis.workspaceSymbolsEnabled = true'
+                hint: 'Enable caching via LSP settings: basedpyright.analysis.workspaceSymbolsEnabled = true',
             };
         }
 
@@ -203,7 +203,7 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
         const stats = workspaceSymbolCacheSingleton.getCacheStats();
         const isEnabled = workspaceSymbolCacheSingleton['_enabled'];
         const maxFiles = workspaceSymbolCacheSingleton['_options'].maxFiles;
-        
+
         return {
             ...stats,
             enabled: isEnabled,

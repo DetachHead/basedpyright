@@ -128,7 +128,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 genericTypes: false,
             },
             useTypingExtensions: false,
-            
+
             // Workspace symbols caching defaults
             workspaceSymbolsEnabled: true,
             workspaceSymbolsMaxFiles: 3000,
