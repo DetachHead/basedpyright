@@ -291,20 +291,10 @@ export class WorkspaceSymbolCache {
             const startTime = Date.now();
             const newFiles: Record<string, FileIndex> = {};
 
-            // Get all source files with optimized filtering
+            // Determine candidate files using only cheap checks (path and mtime) first.
             const allFiles = program
                 .getSourceFileInfoList()
-                .filter((fileInfo) => {
-                    // Fast file filtering before expensive operations
-                    if (!this._shouldIndexFile(fileInfo.uri)) {
-                        return false;
-                    }
-
-                    const parseResults = program.getParseResults(fileInfo.uri);
-                    if (!parseResults) return false;
-                    const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
-                    return !!analyzerFileInfo;
-                })
+                .filter((fileInfo) => this._shouldIndexFile(fileInfo.uri))
                 .map((fileInfo) => ({
                     fileInfo,
                     stat: program.fileSystem.statSync(fileInfo.uri),
@@ -581,73 +571,63 @@ export class WorkspaceSymbolCache {
                 }
             }
 
-            // After processing existing cached files, index any **new** files that were not previously cached.
-            // This prevents the cache from being invalidated wholesale when large numbers of new files are added.
+            // Build a candidate list of new files (not yet in newFiles) using cheap operations.
+            const currentCount = Object.keys(newFiles).length;
+            const remainingCapacity = Math.max(this._options.maxFiles - currentCount, 0);
+            if (remainingCapacity > 0) {
+                const candidateNewFiles = program
+                    .getSourceFileInfoList()
+                    .filter(
+                        (file) =>
+                            this._shouldIndexFile(file.uri) &&
+                            !newFiles[file.uri.toString()] &&
+                            !existingCache.files[file.uri.toString()]
+                    )
+                    .map((file) => ({ fileInfo: file, stat: program.fileSystem.statSync(file.uri) }))
+                    .sort((a, b) => (b.stat?.mtimeMs || 0) - (a.stat?.mtimeMs || 0))
+                    .slice(0, remainingCapacity);
 
-            // Identify and index new files that were not in the previous cache.
-            for (const fileInfo of program.getSourceFileInfoList()) {
-                const fileUriStr = fileInfo.uri.toString();
+                for (const { fileInfo, stat } of candidateNewFiles) {
+                    try {
+                        throwIfCancellationRequested(token);
 
-                // Skip files we already handled above.
-                if (newFiles[fileUriStr]) {
-                    continue;
-                }
+                        const parseResults = program.getParseResults(fileInfo.uri);
+                        if (!parseResults) {
+                            skippedCount++;
+                            continue;
+                        }
+                        const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
+                        if (!analyzerFileInfo) {
+                            skippedCount++;
+                            continue;
+                        }
 
-                // Respect file-filtering rules.
-                if (!this._shouldIndexFile(fileInfo.uri)) {
-                    continue;
-                }
+                        const fileUriStr = fileInfo.uri.toString();
+                        const mtime = stat.mtimeMs || 0;
+                        const bytes = program.fileSystem.readFileSync(fileInfo.uri, null).subarray(0, 8192);
+                        const currentHash = fnv1a(bytes);
 
-                try {
-                    throwIfCancellationRequested(token);
+                        const symbols = SymbolIndexer.indexSymbols(
+                            analyzerFileInfo,
+                            parseResults,
+                            { includeAliases: false },
+                            token ?? CancellationToken.None
+                        );
+                        const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
 
-                    const stat = program.fileSystem.statSync(fileInfo.uri);
-                    if (!stat) {
-                        // File might have been removed after program snapshot.
+                        newFiles[fileUriStr] = {
+                            mtime,
+                            hash: currentHash,
+                            symbols: flat,
+                        };
+                        rebuiltCount++;
+                    } catch (error) {
+                        errorCount++;
+                        if (this._options.verbose) {
+                            this._log(`Error indexing new file ${fileInfo.uri.toUserVisibleString()}: ${error}`);
+                        }
                         skippedCount++;
-                        continue;
                     }
-
-                    const mtime = stat.mtimeMs || 0;
-                    const bytes = program.fileSystem.readFileSync(fileInfo.uri, null).subarray(0, 8192);
-                    const currentHash = fnv1a(bytes);
-
-                    // Build symbols for the new file.
-                    const parseResults = program.getParseResults(fileInfo.uri);
-                    if (!parseResults) {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
-                    if (!analyzerFileInfo) {
-                        skippedCount++;
-                        continue;
-                    }
-
-                    const symbols = SymbolIndexer.indexSymbols(
-                        analyzerFileInfo,
-                        parseResults,
-                        { includeAliases: false },
-                        token ?? CancellationToken.None
-                    );
-
-                    const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
-
-                    newFiles[fileUriStr] = {
-                        mtime,
-                        hash: currentHash,
-                        symbols: flat,
-                    };
-
-                    rebuiltCount++;
-                } catch (error) {
-                    errorCount++;
-                    if (this._options.verbose) {
-                        this._log(`Error indexing new file ${fileUriStr}: ${error}`);
-                    }
-                    skippedCount++;
-                    continue;
                 }
             }
 
