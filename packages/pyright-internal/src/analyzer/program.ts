@@ -53,7 +53,7 @@ import { getPrintTypeFlags } from './typePrinter';
 import { TypeStubWriter } from './typeStubWriter';
 import { Type } from './types';
 import { BaselineHandler } from '../baseline';
-import { TypeCacheManager, TypeCacheFormat } from './typeCacheManager';
+import { TypeCacheManager, TypeCacheFormat, TypeCacheEntry } from './typeCacheManager';
 import { TypeCacheExtractor } from './typeCacheExtractor';
 
 const _maxImportDepth = 256;
@@ -142,6 +142,9 @@ export class Program {
     private _preCheckCallback: PreCheckCallback | undefined;
     private _editModeTracker = new EditModeTracker();
     private _sourceFileFactory: ISourceFileFactory;
+
+    // Cache queue for processing cache operations after analysis
+    private _cacheQueue: Array<{ filePath: string; cacheEntry: TypeCacheEntry; relativePath: string }> = [];
 
     baselineHandler: BaselineHandler;
 
@@ -782,6 +785,11 @@ export class Program {
                 this._console.info(
                     `🎉 Analysis complete! ${allFilesRequiringAnalysis.length} files analyzed in ${finalElapsedTime}ms`
                 );
+
+                // Process cache queue after analysis is complete
+                if (this._cacheQueue.length > 0) {
+                    this._processCacheQueue();
+                }
 
                 // Log cache statistics if enabled
                 if (this._typeCacheManager && this._configOptions.enableTypeCaching) {
@@ -2189,7 +2197,7 @@ export class Program {
             // its cached types to avoid running out of heap space.
             this._handleMemoryHighUsage();
 
-            // Store analysis results in cache if enabled
+            // Queue analysis results for caching if enabled
             if (
                 this._typeCacheManager &&
                 this._typeCacheExtractor &&
@@ -2199,19 +2207,8 @@ export class Program {
                 try {
                     const cacheEntry = this._typeCacheExtractor.extractCacheEntry(fileToCheck, analysisTime);
                     if (cacheEntry) {
-                        // Store asynchronously without blocking
-                        this._typeCacheManager
-                            .store(fileToCheck.uri.getFilePath(), cacheEntry)
-                            .then(() => {
-                                if (this._configOptions.verboseOutput) {
-                                    this._console.info(`💾 Indexed: ${relativePath}`);
-                                }
-                            })
-                            .catch((error) => {
-                                this._console.warn(
-                                    `Type cache store failed for ${fileToCheck.uri.getFilePath()}: ${error}`
-                                );
-                            });
+                        // Queue the cache operation instead of processing immediately
+                        this._queueCacheOperation(fileToCheck.uri.getFilePath(), cacheEntry, relativePath);
                     }
                 } catch (error) {
                     this._console.warn(`Type cache extraction failed for ${fileToCheck.uri.getFilePath()}: ${error}`);
@@ -2469,6 +2466,60 @@ export class Program {
         // For example, it might be a file delete.
         if (reevaluationRequired) {
             this._createNewEvaluator();
+        }
+    }
+
+    // Queue a cache operation to be processed after analysis
+    private _queueCacheOperation(filePath: string, cacheEntry: TypeCacheEntry, relativePath: string) {
+        this._cacheQueue.push({ filePath, cacheEntry, relativePath });
+    }
+
+    // Process queued cache operations without blocking
+    private _processCacheQueue(): void {
+        if (this._cacheQueue.length === 0 || !this._typeCacheManager) {
+            return;
+        }
+
+        const startTime = Date.now();
+        const operations = [...this._cacheQueue];
+        this._cacheQueue = []; // Clear the queue
+
+        if (this._configOptions.verboseOutput) {
+            this._console.info(`📦 Processing ${operations.length} cache operations...`);
+        }
+
+        // Process operations synchronously to avoid keeping event loop alive
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const op of operations) {
+            try {
+                // Use a synchronous version of store that doesn't await file operations
+                this._typeCacheManager.storeSync(op.filePath, op.cacheEntry);
+                successCount++;
+
+                if (this._configOptions.verboseOutput && successCount % 100 === 0) {
+                    this._console.info(`💾 Cached ${successCount}/${operations.length} files...`);
+                }
+            } catch (error) {
+                errorCount++;
+                if (errorCount <= 5) {
+                    // Only log first few errors to avoid spam
+                    this._console.warn(`Cache store failed for ${op.relativePath}: ${error}`);
+                }
+            }
+        }
+
+        // Update cache index once at the end
+        if (successCount > 0) {
+            this._typeCacheManager.flushCacheIndex();
+        }
+
+        const elapsedTime = Date.now() - startTime;
+        if (this._configOptions.verboseOutput) {
+            this._console.info(
+                `✅ Cache operations completed: ${successCount} success, ${errorCount} errors (${elapsedTime}ms)`
+            );
         }
     }
 }

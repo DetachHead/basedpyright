@@ -252,6 +252,49 @@ export class TypeCacheManager {
         }
     }
 
+    // Synchronous version that doesn't block the event loop
+    storeSync(filePath: string, entry: TypeCacheEntry): void {
+        if (!this._isLoaded) {
+            // Skip if cache not loaded to avoid blocking
+            return;
+        }
+
+        const cacheKey = this._getCacheKey(filePath);
+        entry.version = TypeCacheManager._cacheVersion;
+        entry.configHash = this._configHash;
+
+        // Store metadata for prioritization
+        this._fileMetadata.set(filePath, {
+            analysisTime: entry.analysisTime,
+            complexity: this._computeComplexity(entry),
+            lastAccessed: Date.now(),
+            dependencies: entry.dependencies.map((d) => d.filePath),
+        });
+
+        // Check if we need to evict files (synchronously)
+        if (this._cacheIndex.size >= this._maxCacheFiles) {
+            this._evictLeastImportantFilesSync();
+        }
+
+        this._cacheIndex.set(cacheKey, entry);
+
+        try {
+            this._saveCacheEntrySync(filePath, entry);
+            // Note: Index update is done separately for batch operations
+        } catch (error) {
+            this._console.error(`Failed to store cache entry for ${this._getDisplayPath(filePath)}: ${error}`);
+        }
+    }
+
+    // Flush the cache index after batch operations
+    flushCacheIndex(): void {
+        try {
+            this._updateCacheIndexSync();
+        } catch (error) {
+            this._console.error(`Failed to update cache index: ${error}`);
+        }
+    }
+
     async invalidate(filePath: string): Promise<void> {
         this._invalidate(filePath);
         await this._updateCacheIndex();
@@ -534,7 +577,7 @@ export class TypeCacheManager {
         const scoredFiles: Array<{ filePath: string; score: number }> = [];
 
         for (const [filePath, metadata] of this._fileMetadata) {
-            const score = this._calculateImportanceScore(metadata);
+            const score = this._calculateImportanceScore(metadata, filePath);
             scoredFiles.push({ filePath, score });
         }
 
@@ -556,17 +599,104 @@ export class TypeCacheManager {
         }
     }
 
-    private _calculateImportanceScore(metadata: CacheFileMetadata): number {
+    // Synchronous version of eviction
+    private _evictLeastImportantFilesSync(): void {
+        this._console.info(
+            `🔄 Cache full (${this._cacheIndex.size}/${this._maxCacheFiles}), evicting least important files...`
+        );
+
+        // Calculate importance score for each file
+        const scoredFiles: Array<{ filePath: string; score: number }> = [];
+
+        for (const [filePath, metadata] of this._fileMetadata) {
+            const score = this._calculateImportanceScore(metadata, filePath);
+            scoredFiles.push({ filePath, score });
+        }
+
+        // Sort by score (lowest first = least important)
+        scoredFiles.sort((a, b) => a.score - b.score);
+
+        // Evict bottom 10% of files
+        const toEvict = Math.floor(scoredFiles.length * 0.1);
+        const evictedFiles: string[] = [];
+
+        for (let i = 0; i < toEvict; i++) {
+            evictedFiles.push(scoredFiles[i].filePath);
+            this._invalidate(scoredFiles[i].filePath);
+        }
+
+        this._console.info(`🗑️  Evicted ${evictedFiles.length} files from cache`);
+        if (evictedFiles.length <= 5) {
+            evictedFiles.forEach((file) => this._console.log(`  - ${this._getDisplayPath(file)}`));
+        }
+    }
+
+    // Synchronous version of saving cache entry
+    private _saveCacheEntrySync(filePath: string, entry: TypeCacheEntry): void {
+        const entryFileName = this._getEntryFileName(filePath);
+        const entryPath = this._cacheDir.combinePaths(entryFileName);
+
+        let serializedData: string | Buffer;
+
+        if (this._format === TypeCacheFormat.Json) {
+            serializedData = JSON.stringify(entry, null, 2);
+        } else {
+            // Binary format - simplified custom serialization
+            serializedData = Buffer.from(JSON.stringify(entry));
+        }
+
+        this._fileSystem.writeFileSync(
+            entryPath,
+            serializedData,
+            this._format === TypeCacheFormat.Json ? 'utf8' : null
+        );
+    }
+
+    // Synchronous version of updating cache index
+    private _updateCacheIndexSync(): void {
+        const indexData = {
+            version: TypeCacheManager._cacheVersion,
+            entries: Object.fromEntries(this._cacheIndex),
+            metadata: Object.fromEntries(this._fileMetadata),
+            lastUpdated: Date.now(),
+        };
+
+        this._fileSystem.writeFileSync(this._indexFile, JSON.stringify(indexData, null, 2), 'utf8');
+    }
+
+    private _calculateImportanceScore(metadata: CacheFileMetadata, filePath?: string): number {
         const now = Date.now();
         const daysSinceAccess = (now - metadata.lastAccessed) / (1000 * 60 * 60 * 24);
+        const analysisTimeSeconds = metadata.analysisTime / 1000;
 
-        // Higher score = more important
-        // Factors: analysis time (expensive files), complexity, recent access
-        const timeScore = metadata.analysisTime / 1000; // Convert to seconds
+        // Weighted scoring system (higher score = more important = kept in cache)
+
+        // 1. RECENCY SCORE (0-60 points) - PRIMARY FACTOR
+        // Recently accessed files get high priority
+        const recencyScore = Math.max(0, 60 - daysSinceAccess * 2); // Linear decay over 30 days
+
+        // 2. ANALYSIS TIME SCORE (0-40 points) - SECONDARY FACTOR
+        // Normalize expensive analysis to reasonable range
+        const timeScore = Math.min(40, analysisTimeSeconds * 8); // Cap at 40 points (5+ seconds)
+
+        // 3. COMPLEXITY SCORE (raw value) - TIE-BREAKER
+        // Keep as-is since it provides good differentiation
         const complexityScore = metadata.complexity;
-        const recencyScore = Math.max(0, 30 - daysSinceAccess); // Decay over 30 days
 
-        return timeScore + complexityScore + recencyScore;
+        const totalScore = recencyScore + timeScore + complexityScore;
+
+        // Debug logging for first few files if verbose
+        if (this._configOptions.verboseOutput && Math.random() < 0.01 && filePath) {
+            // Log ~1% of files
+            const displayPath = this._getDisplayPath(filePath);
+            this._console.info(`📊 Score breakdown for ${displayPath}:`);
+            this._console.info(`   Recency: ${recencyScore.toFixed(1)} (${daysSinceAccess.toFixed(1)} days ago)`);
+            this._console.info(`   Analysis: ${timeScore.toFixed(1)} (${analysisTimeSeconds.toFixed(2)}s)`);
+            this._console.info(`   Complexity: ${complexityScore}`);
+            this._console.info(`   Total: ${totalScore.toFixed(1)}`);
+        }
+
+        return totalScore;
     }
 
     private _computeComplexity(entry: TypeCacheEntry): number {
