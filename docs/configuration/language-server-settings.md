@@ -88,6 +88,10 @@ however these settings are still suppored to maintain compatibility with pyright
 
 **basedpyright.analysis.useLibraryCodeForTypes** [boolean]: Determines whether pyright reads, parses and analyzes library code to extract type information in the absence of type stub files. Type information will typically be incomplete. We recommend using type stubs where possible. The default value for this option is true.
 
+**basedpyright.analysis.workspaceSymbolsEnabled** [boolean]: Determines whether workspace symbols caching is enabled. When enabled, workspace symbols are cached to disk for faster subsequent LSP workspace symbol searches. The default value for this option is true.
+
+**basedpyright.analysis.workspaceSymbolsMaxFiles** [number]: Determines the maximum number of files to cache for workspace symbols. Higher values use more memory but provide more comprehensive symbol search results. The default value for this option is 3000.
+
 #### basedpyright exclusive settings
 
 as mentioned [above](#discouraged-settings), it's recommended to configure these settings [using a config file](./config-files.md) instead.
@@ -104,7 +108,9 @@ the basedpyright language server settings can be configured using a workspace or
 
 ```json title="./.vscode/settings.json"
 {
-    "basedpyright.analysis.diagnosticMode": "openFilesOnly"
+    "basedpyright.analysis.diagnosticMode": "openFilesOnly",
+    "basedpyright.analysis.workspaceSymbolsEnabled": true,
+    "basedpyright.analysis.workspaceSymbolsMaxFiles": 5000
 }
 ```
 
@@ -118,6 +124,8 @@ require("lspconfig").basedpyright.setup {
     basedpyright = {
       analysis = {
         diagnosticMode = "openFilesOnly",
+        workspaceSymbolsEnabled = true,
+        workspaceSymbolsMaxFiles = 5000,
         inlayHints = {
           callArgumentNames = true
         }
@@ -136,6 +144,8 @@ args = ["--stdio"]
 
 [language-server.basedpyright.config]
 basedpyright.analysis.diagnosticMode = "openFilesOnly"
+basedpyright.analysis.workspaceSymbolsEnabled = true
+basedpyright.analysis.workspaceSymbolsMaxFiles = 5000
 ```
 
 ### zed
@@ -154,7 +164,9 @@ basedpyright.analysis.diagnosticMode = "openFilesOnly"
                     "pythonPath": ".venv/bin/python"
                 },
                 "basedpyright.analysis": {
-                    "diagnosticMode": "openFilesOnly"
+                    "diagnosticMode": "openFilesOnly",
+                    "workspaceSymbolsEnabled": true,
+                    "workspaceSymbolsMaxFiles": 5000
                 }
             }
         }
@@ -182,6 +194,8 @@ basedpyright.analysis.diagnosticMode = "openFilesOnly"
            :diagnosticSeverityOverrides (
              :reportUnusedCallResult "none"
            )
+           :workspaceSymbolsEnabled t
+           :workspaceSymbolsMaxFiles 5000
            :inlayHints (
              :callArgumentNames :json-false
            )

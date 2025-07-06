@@ -52,6 +52,11 @@ export interface ServerSettings {
     useTypingExtensions?: boolean;
 
     fileEnumerationTimeoutInSec?: number | undefined;
+
+    // Workspace symbols caching settings
+    workspaceSymbolsEnabled?: boolean | undefined;
+    workspaceSymbolsMaxFiles?: number | undefined;
+    workspaceSymbolsDebug?: boolean | undefined;
 }
 
 export interface MessageAction {

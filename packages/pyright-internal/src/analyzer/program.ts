@@ -2042,7 +2042,7 @@ export class Program {
                         this._evaluator!,
                         this._createSourceMapper(execEnv, token, fileToCheck),
                         dependentFiles,
-                        this // Pass program for typecheck cache
+                        this
                     );
                 }
             }

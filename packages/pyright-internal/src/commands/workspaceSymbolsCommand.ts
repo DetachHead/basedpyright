@@ -102,6 +102,15 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             return { error: 'No workspaces available' };
         }
 
+        // Check if caching is enabled
+        const isEnabled = workspaceSymbolCacheSingleton['_enabled'];
+        if (!isEnabled) {
+            return { 
+                error: 'Workspace symbols caching is disabled',
+                hint: 'Enable caching via LSP settings: basedpyright.analysis.workspaceSymbolsEnabled = true'
+            };
+        }
+
         const results: any[] = [];
 
         for (const workspace of workspaces) {
@@ -116,21 +125,14 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
             try {
                 const startTime = Date.now();
 
-                await new Promise<void>((resolve, reject) => {
-                    workspace.service.run(async (program: any) => {
-                        try {
-                            await workspaceSymbolCacheSingleton.cacheWorkspaceSymbols(
-                                workspace.rootUri!,
-                                program,
-                                true, // Force refresh
-                                token || CancellationToken.None
-                            );
-                            resolve();
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }, token || CancellationToken.None);
-                });
+                workspace.service.run((program: any) => {
+                    workspaceSymbolCacheSingleton.cacheWorkspaceSymbols(
+                        workspace.rootUri!,
+                        program,
+                        true, // Force refresh
+                        token || CancellationToken.None
+                    );
+                }, token || CancellationToken.None);
 
                 const elapsedTime = Date.now() - startTime;
                 const stats = workspaceSymbolCacheSingleton.getCacheStats();
@@ -199,11 +201,17 @@ export class WorkspaceSymbolsCommand implements ServerCommand {
 
     private _getCacheStats(): any {
         const stats = workspaceSymbolCacheSingleton.getCacheStats();
+        const isEnabled = workspaceSymbolCacheSingleton['_enabled'];
+        const maxFiles = workspaceSymbolCacheSingleton['_options'].maxFiles;
+        
         return {
             ...stats,
+            enabled: isEnabled,
+            maxFiles: maxFiles,
             cacheSize: `${stats.totalSymbolCount} symbols in ${stats.totalFileCount} files across ${stats.workspaceCount} workspaces`,
             averageSymbolsPerFile: stats.averageSymbolsPerFile,
             cacheHitRate: `${(stats.cacheHitRate * 100).toFixed(1)}%`,
+            status: isEnabled ? 'enabled' : 'disabled',
         };
     }
 }

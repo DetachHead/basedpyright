@@ -128,6 +128,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 genericTypes: false,
             },
             useTypingExtensions: false,
+            
+            // Workspace symbols caching defaults
+            workspaceSymbolsEnabled: true,
+            workspaceSymbolsMaxFiles: 3000,
         };
 
         try {
@@ -234,6 +238,18 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 }
                 if (pythonAnalysisSection.useTypingExtensions) {
                     serverSettings.useTypingExtensions = pythonAnalysisSection.useTypingExtensions;
+                }
+
+                // Workspace symbols caching configuration
+                if (pythonAnalysisSection.workspaceSymbolsEnabled !== undefined) {
+                    serverSettings.workspaceSymbolsEnabled = !!pythonAnalysisSection.workspaceSymbolsEnabled;
+                }
+
+                if (pythonAnalysisSection.workspaceSymbolsMaxFiles !== undefined) {
+                    const maxFiles = pythonAnalysisSection.workspaceSymbolsMaxFiles;
+                    if (typeof maxFiles === 'number' && maxFiles > 0) {
+                        serverSettings.workspaceSymbolsMaxFiles = maxFiles;
+                    }
                 }
             } else {
                 serverSettings.autoSearchPaths = true;

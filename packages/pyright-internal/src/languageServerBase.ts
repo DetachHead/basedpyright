@@ -391,6 +391,39 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.inlayHints = serverSettings.inlayHints;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
+            
+            // Configure workspace symbols cache
+            const workspaceSymbolsEnabled = serverSettings.workspaceSymbolsEnabled ?? true;
+            const workspaceSymbolsMaxFiles = serverSettings.workspaceSymbolsMaxFiles ?? 3000;
+            const workspaceSymbolsDebug = serverSettings.workspaceSymbolsDebug ?? false;
+            const verbose = serverSettings.logLevel === LogLevel.Log || serverSettings.logLevel === LogLevel.Info;
+            _workspaceSymbolCache.configure(workspaceSymbolsEnabled, workspaceSymbolsMaxFiles, verbose, workspaceSymbolsDebug, this.console);
+            
+                        // Proactively build workspace symbols cache (like CLI does)
+            if (workspaceSymbolsEnabled && workspace.rootUri && !workspace.disableLanguageServices) {
+                // Use setTimeout to ensure workspace initialization is complete before building cache
+                setTimeout(() => {
+                    try {
+                        // Check if workspace is still valid and initialized
+                        if (!workspace.service || workspace.disableLanguageServices) {
+                            return;
+                        }
+                        
+                        workspace.service.run((program) => {
+                             _workspaceSymbolCache.cacheWorkspaceSymbols(
+                                 workspace.rootUri!,
+                                 program,
+                                 false // Don't force rebuild - reuse existing cache if available
+                             );
+                         }, CancellationToken.None);
+                    } catch (error) {
+                        // Don't let cache building errors break workspace initialization
+                        if (verbose) {
+                            this.console.info(`Workspace symbols: Error during proactive cache building: ${error}`);
+                        }
+                    }
+                }, 2000); // Longer delay to ensure all initialization is complete
+            }
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -1782,12 +1815,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         // Otherwise the initialize completion should cause settings to be updated on all workspaces.
 
-        // Warm up workspace symbol cache in background
-        if (workspace.rootUri) {
-            workspace.service.run((program) => {
-                _workspaceSymbolCache.warmupCache(workspace.rootUri!, program);
-            }, CancellationToken.None);
-        }
+        // Workspace symbols cache will be loaded on-demand during LSP searches
     }
 
     protected onWorkspaceRemoved(workspace: Workspace) {
