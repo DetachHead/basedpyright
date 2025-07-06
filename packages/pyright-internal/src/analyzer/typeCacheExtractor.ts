@@ -70,6 +70,7 @@ export class TypeCacheExtractor {
             filePath,
             fileHash,
             lastModified: Date.now(),
+            createdTime: Date.now(),
             analysisTime,
             dependencies,
             symbols,

@@ -15,6 +15,7 @@ import { Uri } from '../common/uri/uri';
 import { FileSystem } from '../common/fileSystem';
 import { ServiceProvider } from '../common/serviceProvider';
 import { makeDirectories } from '../common/uri/uriUtils';
+import * as v8 from 'v8';
 
 export const enum TypeCacheFormat {
     Binary = 'binary',
@@ -27,6 +28,7 @@ export interface TypeCacheEntry {
     filePath: string;
     fileHash: string;
     lastModified: number;
+    createdTime: number;
     analysisTime: number;
     dependencies: CacheDependency[];
     symbols: CachedSymbol[];
@@ -92,7 +94,6 @@ export interface CacheFileMetadata {
 export class TypeCacheManager {
     private static readonly _cacheVersion = '1.0.0';
     private static readonly _cacheDirName = '.basedpyright-cache';
-    private static readonly _indexFileName = 'index.json';
     private static readonly _maxCacheSizeMb = 500;
     private static readonly _defaultMaxFiles = 5000;
 
@@ -127,12 +128,16 @@ export class TypeCacheManager {
     ) {
         this._projectRoot = projectRoot;
         this._cacheDir = projectRoot.combinePaths(TypeCacheManager._cacheDirName);
-        this._indexFile = this._cacheDir.combinePaths(TypeCacheManager._indexFileName);
+        this._format = format;
+        
+        // Dynamic index filename based on format
+        const indexFileName = format === TypeCacheFormat.Json ? 'index.json' : 'index.cache';
+        this._indexFile = this._cacheDir.combinePaths(indexFileName);
+        
         this._configOptions = configOptions;
         this._fileSystem = fileSystem;
         this._console = console;
         this._serviceProvider = serviceProvider;
-        this._format = format;
         this._maxCacheFiles = configOptions.maxTypeCacheFiles ?? TypeCacheManager._defaultMaxFiles;
         this._configHash = this._computeConfigHash();
 
@@ -387,8 +392,16 @@ export class TypeCacheManager {
                 return;
             }
 
-            const indexContent = this._fileSystem.readFileSync(this._indexFile, 'utf8');
-            const indexData = JSON.parse(indexContent);
+            let indexData: any;
+
+            if (this._format === TypeCacheFormat.Json) {
+                const indexContent = this._fileSystem.readFileSync(this._indexFile, 'utf8');
+                indexData = JSON.parse(indexContent);
+            } else {
+                // Binary format
+                const indexBuffer = this._fileSystem.readFileSync(this._indexFile);
+                indexData = v8.deserialize(indexBuffer);
+            }
 
             let loadedEntries = 0;
             for (const [key, entry] of Object.entries(indexData.entries || {})) {
@@ -420,8 +433,8 @@ export class TypeCacheManager {
         if (this._format === TypeCacheFormat.Json) {
             serializedData = JSON.stringify(entry, null, 2);
         } else {
-            // Binary format - simplified custom serialization
-            serializedData = Buffer.from(JSON.stringify(entry));
+            // True binary format using Node.js v8 serialization
+            serializedData = v8.serialize(entry);
         }
 
         this._fileSystem.writeFileSync(
@@ -439,7 +452,19 @@ export class TypeCacheManager {
             lastUpdated: Date.now(),
         };
 
-        this._fileSystem.writeFileSync(this._indexFile, JSON.stringify(indexData, null, 2), 'utf8');
+        let serializedData: string | Buffer;
+        let encoding: 'utf8' | null;
+
+        if (this._format === TypeCacheFormat.Json) {
+            serializedData = JSON.stringify(indexData, null, 2);
+            encoding = 'utf8';
+        } else {
+            // Binary format for cache index too
+            serializedData = v8.serialize(indexData);
+            encoding = null;
+        }
+
+        this._fileSystem.writeFileSync(this._indexFile, serializedData, encoding);
     }
 
     private async _validateCacheEntries(): Promise<void> {
@@ -641,8 +666,8 @@ export class TypeCacheManager {
         if (this._format === TypeCacheFormat.Json) {
             serializedData = JSON.stringify(entry, null, 2);
         } else {
-            // Binary format - simplified custom serialization
-            serializedData = Buffer.from(JSON.stringify(entry));
+            // True binary format using Node.js v8 serialization
+            serializedData = v8.serialize(entry);
         }
 
         this._fileSystem.writeFileSync(
@@ -661,7 +686,19 @@ export class TypeCacheManager {
             lastUpdated: Date.now(),
         };
 
-        this._fileSystem.writeFileSync(this._indexFile, JSON.stringify(indexData, null, 2), 'utf8');
+        let serializedData: string | Buffer;
+        let encoding: 'utf8' | null;
+
+        if (this._format === TypeCacheFormat.Json) {
+            serializedData = JSON.stringify(indexData, null, 2);
+            encoding = 'utf8';
+        } else {
+            // Binary format for cache index too
+            serializedData = v8.serialize(indexData);
+            encoding = null;
+        }
+
+        this._fileSystem.writeFileSync(this._indexFile, serializedData, encoding);
     }
 
     private _calculateImportanceScore(metadata: CacheFileMetadata, filePath?: string): number {
@@ -739,8 +776,10 @@ export class TypeCacheManager {
 
     private _getEntryFileName(filePath: string): string {
         const key = this._getCacheKey(filePath);
+        const entry = this._cacheIndex.get(key);
+        const timestamp = entry?.createdTime ?? Date.now();
         const extension = this._format === TypeCacheFormat.Json ? '.json' : '.cache';
-        return `${key}${extension}`;
+        return `${key}_${timestamp}${extension}`;
     }
 
     private _updateStats(): void {
@@ -789,3 +828,4 @@ export class TypeCacheManager {
         }
     }
 }
+ 
