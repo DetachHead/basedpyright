@@ -9,7 +9,9 @@
  * {
  *   "basedpyright.analysis.workspaceSymbolsEnabled": true,
  *   "basedpyright.analysis.workspaceSymbolsMaxFiles": 3000,
- *   "basedpyright.analysis.workspaceSymbolsDebug": false  // Set to true for detailed invalidation logging
+ *   "basedpyright.analysis.workspaceSymbolsDebug": false,  // Set to true for detailed invalidation logging
+ *   "basedpyright.analysis.workspaceSymbolsMaxMemoryMB": 50,  // LRU cache memory limit
+ *   "basedpyright.analysis.workspaceSymbolsMaxErrors": 100   // Error threshold before fallback
  * }
  */
 
@@ -79,6 +81,10 @@ export interface WorkspaceSymbolCacheOptions {
     maxErrors?: number;
     /** Console interface for logging */
     console?: ConsoleInterface;
+    /** Debounce time for batch invalidations in ms; default 50 */
+    debounceMs?: number;
+    /** Mass invalidation threshold; default 20 */
+    massInvalidationThreshold?: number;
 }
 
 /** Cache statistics for monitoring and debugging. */
@@ -88,6 +94,9 @@ export interface CacheStats {
     totalSymbolCount: number;
     averageSymbolsPerFile: number;
     cacheHitRate: number;
+    memoryUsageMB: number;
+    totalErrors: number;
+    fallbackActive: boolean;
 }
 
 /**
@@ -106,8 +115,30 @@ export class WorkspaceSymbolCache {
     private _startupCheckComplete = false; // Track startup cache folder detection
     private _buildingCaches = new Set<string>(); // Track workspaces currently building cache
 
-    private _options: Required<Omit<WorkspaceSymbolCacheOptions, 'console' | 'debug'>> &
-        Pick<WorkspaceSymbolCacheOptions, 'console' | 'debug'>;
+    // LRU cache management
+    private _accessOrder = new Map<string, number>(); // Track access order for LRU
+    private _accessCounter = 0; // Monotonic counter for access ordering
+
+    // Error handling
+    private _errorCount = 0; // Track total errors
+    private _fallbackToTraditionalSearch = false; // Flag to fall back when too many errors
+    private _lastValidatedCache = new Map<string, number>(); // Track last validation time per workspace
+
+    // Batch invalidation handling
+    private _pendingInvalidations = new Map<string, Set<string>>(); // workspace -> set of file URIs
+    private _invalidationTimer: any = null;
+    private _lastInvalidationBatch = new Map<string, number>(); // Track last batch invalidation time per workspace
+
+    private _options: Required<
+        Omit<
+            WorkspaceSymbolCacheOptions,
+            'console' | 'debug' | 'maxMemoryMB' | 'maxErrors' | 'debounceMs' | 'massInvalidationThreshold'
+        >
+    > &
+        Pick<
+            WorkspaceSymbolCacheOptions,
+            'console' | 'debug' | 'maxMemoryMB' | 'maxErrors' | 'debounceMs' | 'massInvalidationThreshold'
+        >;
     private _console?: ConsoleInterface;
 
     constructor(options?: WorkspaceSymbolCacheOptions) {
@@ -117,6 +148,10 @@ export class WorkspaceSymbolCache {
             maxFiles: options?.maxFiles ?? 3000,
             verbose: options?.verbose ?? false,
             debug: options?.debug ?? false,
+            maxMemoryMB: options?.maxMemoryMB ?? 50,
+            maxErrors: options?.maxErrors ?? 100,
+            debounceMs: options?.debounceMs ?? 50,
+            massInvalidationThreshold: options?.massInvalidationThreshold ?? 20,
             console: options?.console ?? undefined,
         };
         this._console = options?.console;
@@ -256,10 +291,15 @@ export class WorkspaceSymbolCache {
             const startTime = Date.now();
             const newFiles: Record<string, FileIndex> = {};
 
-            // Get all source files and sort by modification time (most recent first)
+            // Get all source files with optimized filtering
             const allFiles = program
                 .getSourceFileInfoList()
                 .filter((fileInfo) => {
+                    // Fast file filtering before expensive operations
+                    if (!this._shouldIndexFile(fileInfo.uri)) {
+                        return false;
+                    }
+
                     const parseResults = program.getParseResults(fileInfo.uri);
                     if (!parseResults) return false;
                     const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
@@ -334,9 +374,11 @@ export class WorkspaceSymbolCache {
                     rebuiltCount++;
                 } catch (error) {
                     errorCount++;
-                    if (this._options.verbose) {
-                        this._log(`Error indexing file ${fileInfo.uri.toUserVisibleString()}: ${error}`);
-                    }
+                    this._handleIndexingError(
+                        workspaceRoot,
+                        error as Error,
+                        `indexing file ${fileInfo.uri.toUserVisibleString()}`
+                    );
                 }
             }
 
@@ -347,6 +389,12 @@ export class WorkspaceSymbolCache {
                         errorCount > 0 ? `, ${errorCount} errors` : ''
                     }`
                 );
+            }
+
+            // Check if we should store partial cache on high error count
+            if (errorCount > 0 && errorCount >= allFiles.length * 0.3) {
+                this._storePartialCache(workspaceRoot, newFiles, program.fileSystem);
+                return;
             }
 
             // Compute overall checksum for the workspace
@@ -374,11 +422,11 @@ export class WorkspaceSymbolCache {
             });
 
             this._cache.set(workspaceKey, cached);
+            this._trackAccess(workspaceKey);
+            this._evictLRU(); // Check if we need to evict old caches
             this._saveToDisk(workspaceRoot, cached, program.fileSystem);
         } catch (error) {
-            if (this._options.verbose) {
-                this._log(`Error during cache building for ${workspaceRoot.toUserVisibleString()}: ${error}`);
-            }
+            this._handleIndexingError(workspaceRoot, error as Error, 'cache building');
             throw error;
         } finally {
             // Always clean up building state
@@ -421,6 +469,16 @@ export class WorkspaceSymbolCache {
             return;
         }
 
+        // Fast check: if we have pending invalidations that suggest workspace-wide changes,
+        // just do a full rebuild instead of incremental update
+        const pendingFiles = this._pendingInvalidations.get(workspaceKey);
+        if (pendingFiles && this._isWorkspaceWideChange(pendingFiles)) {
+            this._debugLog('Workspace-wide change detected during update, switching to full rebuild');
+            this._pendingInvalidations.delete(workspaceKey);
+            this.cacheWorkspaceSymbols(workspaceRoot, program, true, token);
+            return;
+        }
+
         // Mark as building to prevent concurrent builds and invalidation
         this._buildingCaches.add(workspaceKey);
 
@@ -451,6 +509,12 @@ export class WorkspaceSymbolCache {
                     if (!fileUri) {
                         fileUri = Uri.parse(fileUriStr, program.serviceProvider);
                         uriCache.set(fileUriStr, fileUri);
+                    }
+
+                    // Fast file filtering - skip files that shouldn't be indexed
+                    if (!this._shouldIndexFile(fileUri)) {
+                        skippedCount++;
+                        continue;
                     }
 
                     // Quick stat check - if file doesn't exist anymore, skip it
@@ -583,8 +647,8 @@ export class WorkspaceSymbolCache {
         query: string,
         token: CancellationToken = CancellationToken.None
     ): SymbolInformation[] {
-        // If caching is disabled, return empty results to fall back to traditional search
-        if (!this._enabled) {
+        // If caching is disabled or fallback is active, return empty results to fall back to traditional search
+        if (!this._enabled || this._fallbackToTraditionalSearch) {
             return [];
         }
 
@@ -616,6 +680,9 @@ export class WorkspaceSymbolCache {
         if (!cached) {
             return [];
         }
+
+        // Track access for LRU
+        this._trackAccess(workspaceRoot.key);
 
         // Search the cache
         this._cacheHits++;
@@ -650,6 +717,9 @@ export class WorkspaceSymbolCache {
             totalSymbolCount: totalSymbols,
             averageSymbolsPerFile: totalFiles > 0 ? Math.round(totalSymbols / totalFiles) : 0,
             cacheHitRate: this._cacheQueries > 0 ? this._cacheHits / this._cacheQueries : 0,
+            memoryUsageMB: this._estimateMemoryUsage(),
+            totalErrors: this._errorCount,
+            fallbackActive: this._fallbackToTraditionalSearch,
         };
     }
 
@@ -660,8 +730,19 @@ export class WorkspaceSymbolCache {
         this._cache.clear();
         this._cacheMetadata.clear();
         this._buildingCaches.clear();
+        this._accessOrder.clear();
+        this._lastValidatedCache.clear();
+        this._pendingInvalidations.clear();
+        this._lastInvalidationBatch.clear();
+        if (this._invalidationTimer) {
+            clearTimeout(this._invalidationTimer);
+            this._invalidationTimer = null;
+        }
         this._cacheQueries = 0;
         this._cacheHits = 0;
+        this._accessCounter = 0;
+        this._errorCount = 0;
+        this._fallbackToTraditionalSearch = false;
         this._log('Cleared all workspace symbol caches');
     }
 
@@ -692,25 +773,227 @@ export class WorkspaceSymbolCache {
                 }
                 this._cache.delete(key);
                 this._cacheMetadata.delete(key);
+                this._accessOrder.delete(key);
+                this._lastValidatedCache.delete(key);
+                this._pendingInvalidations.delete(key);
             } else {
                 this._debugLog(
                     `Skipping invalidation for workspace ${workspaceRoot.toUserVisibleString()} - no cache exists`
                 );
             }
         } else {
-            // Invalidate specific file
-            const cached = this._cache.get(key);
-            if (cached && cached.files[fileUri.toString()]) {
-                if (this._options.verbose) {
-                    this._log(`Invalidating file: ${fileUri.toUserVisibleString()}`);
-                }
-                delete cached.files[fileUri.toString()];
-                // Mark metadata as stale by removing it
-                this._cacheMetadata.delete(key);
-            } else {
-                this._debugLog(`Skipping invalidation for file ${fileUri.toUserVisibleString()} - not in cache`);
+            // Skip files that shouldn't be indexed for performance
+            if (!this._shouldIndexFile(fileUri)) {
+                this._debugLog(`Skipping invalidation for non-indexable file: ${fileUri.toUserVisibleString()}`);
+                return;
+            }
+
+            // Check if this is a duplicate invalidation (same file invalidated multiple times quickly)
+            const fileUriStr = fileUri.toString();
+            const pendingFiles = this._pendingInvalidations.get(key);
+            if (pendingFiles && pendingFiles.has(fileUriStr)) {
+                this._debugLog(`Skipping duplicate invalidation for ${fileUri.toUserVisibleString()}`);
+                return;
+            }
+
+            // Invalidate specific file - use batch processing for better performance
+            this._batchInvalidateFile(workspaceRoot, fileUri);
+        }
+    }
+
+    /** Force immediate processing of pending invalidations. */
+    flushPendingInvalidations(): void {
+        if (this._invalidationTimer) {
+            clearTimeout(this._invalidationTimer);
+            this._invalidationTimer = null;
+        }
+        this._processBatchInvalidations();
+    }
+
+    /** Check if file should be included in symbol indexing for performance. */
+    private _shouldIndexFile(fileUri: Uri): boolean {
+        const filePath = fileUri.toUserVisibleString();
+
+        // Skip common build/generated file patterns for performance
+        const skipPatterns = [
+            '__pycache__/',
+            '.git/',
+            'node_modules/',
+            '.venv/',
+            '.env/',
+            'venv/',
+            'env/',
+            '.tox/',
+            '.pytest_cache/',
+            '.mypy_cache/',
+            'build/',
+            'dist/',
+            '.egg-info/',
+            '_pb2.py',
+            '_pb2_grpc.py',
+            '.generated.py',
+            '.min.js',
+            '.bundle.js',
+        ];
+
+        // Quick pattern matching for performance
+        for (const pattern of skipPatterns) {
+            if (filePath.includes(pattern)) {
+                return false;
             }
         }
+
+        // Check file extension
+        const lowerPath = filePath.toLowerCase();
+        return this._options.extensions.some((ext) => lowerPath.endsWith(ext));
+    }
+
+    /** Batch invalidate files to reduce noise and improve performance. */
+    private _batchInvalidateFile(workspaceRoot: Uri, fileUri: Uri): void {
+        const key = workspaceRoot.key;
+        const fileUriStr = fileUri.toString();
+
+        // Add to pending invalidations
+        if (!this._pendingInvalidations.has(key)) {
+            this._pendingInvalidations.set(key, new Set<string>());
+        }
+        this._pendingInvalidations.get(key)!.add(fileUriStr);
+
+        // Clear existing timer and set new one
+        if (this._invalidationTimer) {
+            clearTimeout(this._invalidationTimer);
+        }
+
+        this._invalidationTimer = setTimeout(() => {
+            this._processBatchInvalidations();
+        }, this._options.debounceMs || 50); // Configurable debounce time
+    }
+
+    /** Check if invalidations suggest a workspace-wide change (git operations, build processes, etc.) */
+    private _isWorkspaceWideChange(pendingFiles: Set<string>): boolean {
+        if (pendingFiles.size < 10) return false;
+
+        // Check for patterns that suggest workspace-wide changes
+        const files = Array.from(pendingFiles);
+
+        // Look for git-related changes (multiple files changing simultaneously)
+        const gitRelatedPatterns = ['.git/', '__pycache__/', '.pyc', 'node_modules/'];
+        const gitRelatedCount = files.filter((file) =>
+            gitRelatedPatterns.some((pattern) => file.includes(pattern))
+        ).length;
+
+        // If more than 30% of files are git/build related, likely a workspace change
+        if (gitRelatedCount > pendingFiles.size * 0.3) {
+            return true;
+        }
+
+        // Check for generated file patterns
+        const generatedPatterns = ['_pb2.py', '_pb2_grpc.py', '.generated.py', 'build/', 'dist/'];
+        const generatedCount = files.filter((file) =>
+            generatedPatterns.some((pattern) => file.includes(pattern))
+        ).length;
+
+        // If more than 50% are generated files, likely a build process
+        if (generatedCount > pendingFiles.size * 0.5) {
+            return true;
+        }
+
+        // Check for similar timestamps (files changed within 1 second of each other)
+        // This suggests a batch operation like git checkout
+        if (pendingFiles.size > 20) {
+            return true; // Large batch is likely workspace-wide
+        }
+
+        return false;
+    }
+
+    /** Process all pending invalidations in batches. */
+    private _processBatchInvalidations(): void {
+        for (const [workspaceKey, pendingFiles] of this._pendingInvalidations.entries()) {
+            if (pendingFiles.size === 0) continue;
+
+            // Check if cache is currently being built
+            if (this._buildingCaches.has(workspaceKey)) {
+                this._debugLog(
+                    `Skipping batch invalidation for workspace ${workspaceKey} - cache is currently being built`
+                );
+                continue;
+            }
+
+            const cached = this._cache.get(workspaceKey);
+            if (!cached) {
+                this._debugLog(`Skipping batch invalidation for workspace ${workspaceKey} - no cache exists`);
+                continue;
+            }
+
+            // Check if this looks like a workspace-wide change
+            if (this._isWorkspaceWideChange(pendingFiles)) {
+                // Clear entire workspace cache for efficiency
+                this._cache.delete(workspaceKey);
+                this._cacheMetadata.delete(workspaceKey);
+                this._accessOrder.delete(workspaceKey);
+                this._lastValidatedCache.delete(workspaceKey);
+
+                this._log(
+                    `Workspace-wide change detected (${pendingFiles.size} files), cleared entire cache for rebuild`
+                );
+                this._lastInvalidationBatch.set(workspaceKey, Date.now());
+                continue;
+            }
+
+            let actualInvalidations = 0;
+            let skippedFiles = 0;
+
+            // Process each file in the batch individually
+            for (const fileUriStr of pendingFiles) {
+                if (cached.files[fileUriStr]) {
+                    delete cached.files[fileUriStr];
+                    actualInvalidations++;
+                } else {
+                    skippedFiles++;
+                }
+            }
+
+            // Log batch results
+            if (actualInvalidations > 0) {
+                // Mark metadata as stale by removing it
+                this._cacheMetadata.delete(workspaceKey);
+
+                // Check if this looks like a mass invalidation (lots of files at once)
+                const isMassInvalidation = actualInvalidations > (this._options.massInvalidationThreshold || 20);
+                const lastBatchTime = this._lastInvalidationBatch.get(workspaceKey) || 0;
+                const timeSinceLastBatch = Date.now() - lastBatchTime;
+
+                if (isMassInvalidation && timeSinceLastBatch < 2000) {
+                    // Frequent mass invalidations - suggest rebuilding entire cache
+                    this._log(
+                        `Frequent mass invalidation: ${actualInvalidations} files (may trigger cache rebuild next time)`
+                    );
+                } else if (this._options.verbose) {
+                    // Normal batch invalidation
+                    this._debugLog(
+                        `Batch invalidation: ${actualInvalidations} files updated${
+                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
+                        }`
+                    );
+                } else {
+                    // Debug mode - show individual files only in debug
+                    this._debugLog(
+                        `Batch invalidation: ${actualInvalidations} files updated${
+                            skippedFiles > 0 ? ` (${skippedFiles} already removed)` : ''
+                        }`
+                    );
+                }
+
+                this._lastInvalidationBatch.set(workspaceKey, Date.now());
+            } else if (skippedFiles > 0) {
+                this._debugLog(`Batch invalidation: ${skippedFiles} files already removed from cache`);
+            }
+        }
+
+        // Clear all pending invalidations
+        this._pendingInvalidations.clear();
+        this._invalidationTimer = null;
     }
 
     /**
@@ -745,12 +1028,20 @@ export class WorkspaceSymbolCache {
             const text = fs.readFileSync(fileUri, 'utf8');
             const obj = JSON.parse(text);
             if (obj.version === 1 && obj.files) {
-                return obj as CachedWorkspaceSymbols;
+                const cached = obj as CachedWorkspaceSymbols;
+
+                // Validate cache integrity
+                if (!this._validateCache(cached, workspaceRoot.key)) {
+                    this._log(
+                        `Cache validation failed for ${workspaceRoot.toUserVisibleString()}, ignoring cached data`
+                    );
+                    return undefined;
+                }
+
+                return cached;
             }
         } catch (error) {
-            if (this._options.verbose) {
-                this._log(`Error reading cache file ${fileUri.toUserVisibleString()}: ${error}`);
-            }
+            this._log(`Error reading cache file ${fileUri.toUserVisibleString()}: ${error}`);
         }
         return undefined;
     }
@@ -828,6 +1119,200 @@ export class WorkspaceSymbolCache {
             } else {
                 console.log(`Workspace symbols [DEBUG]: ${message}`);
             }
+        }
+    }
+
+    /**
+     * Track access for LRU cache management.
+     */
+    private _trackAccess(workspaceKey: string): void {
+        this._accessOrder.set(workspaceKey, ++this._accessCounter);
+    }
+
+    /**
+     * Estimate memory usage of cached data in MB.
+     */
+    private _estimateMemoryUsage(): number {
+        let totalBytes = 0;
+        for (const [key, cached] of this._cache) {
+            // Rough estimation: key + JSON size
+            totalBytes += key.length * 2; // UTF-16 encoding
+            totalBytes += JSON.stringify(cached).length * 2; // Rough JSON size
+        }
+        return totalBytes / (1024 * 1024); // Convert to MB
+    }
+
+    /**
+     * Evict least recently used caches to free memory.
+     */
+    private _evictLRU(): void {
+        const memoryUsage = this._estimateMemoryUsage();
+        const maxMemory = this._options.maxMemoryMB || 50;
+
+        if (memoryUsage <= maxMemory) {
+            return;
+        }
+
+        // Sort by access order (oldest first)
+        const sortedEntries = Array.from(this._accessOrder.entries()).sort((a, b) => a[1] - b[1]);
+
+        let evicted = 0;
+        for (const [workspaceKey] of sortedEntries) {
+            if (this._estimateMemoryUsage() <= maxMemory * 0.8) {
+                break; // Leave some headroom
+            }
+
+            this._cache.delete(workspaceKey);
+            this._cacheMetadata.delete(workspaceKey);
+            this._accessOrder.delete(workspaceKey);
+            this._lastValidatedCache.delete(workspaceKey);
+            evicted++;
+        }
+
+        if (evicted > 0 && this._options.verbose) {
+            this._log(
+                `Evicted ${evicted} LRU cache entries to free memory (${memoryUsage.toFixed(
+                    1
+                )}MB -> ${this._estimateMemoryUsage().toFixed(1)}MB)`
+            );
+        }
+    }
+
+    /**
+     * Validate cache integrity and handle corruption.
+     */
+    private _validateCache(cached: CachedWorkspaceSymbols, workspaceKey: string): boolean {
+        try {
+            // Basic structural validation
+            if (!cached.files || typeof cached.files !== 'object') {
+                this._log(`Cache validation failed for ${workspaceKey}: Invalid files structure`);
+                return false;
+            }
+
+            if (!cached.checksum || typeof cached.checksum !== 'string') {
+                this._log(`Cache validation failed for ${workspaceKey}: Invalid checksum`);
+                return false;
+            }
+
+            // Check for empty cache
+            if (Object.keys(cached.files).length === 0) {
+                this._debugLog(`Cache validation warning for ${workspaceKey}: Empty cache`);
+                return true; // Empty cache is valid
+            }
+
+            // Validate file entries
+            for (const [uri, fileIndex] of Object.entries(cached.files)) {
+                if (!fileIndex.symbols || !Array.isArray(fileIndex.symbols)) {
+                    this._log(`Cache validation failed for ${workspaceKey}: Invalid symbols for ${uri}`);
+                    return false;
+                }
+
+                if (typeof fileIndex.mtime !== 'number' || typeof fileIndex.hash !== 'string') {
+                    this._log(`Cache validation failed for ${workspaceKey}: Invalid metadata for ${uri}`);
+                    return false;
+                }
+            }
+
+            // Update last validation time
+            this._lastValidatedCache.set(workspaceKey, Date.now());
+            return true;
+        } catch (error) {
+            this._log(`Cache validation error for ${workspaceKey}: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Handle indexing errors with graceful degradation.
+     */
+    private _handleIndexingError(workspaceRoot: Uri, error: Error, context: string): void {
+        this._errorCount++;
+
+        if (this._options.verbose) {
+            this._log(`Indexing error in ${context} for ${workspaceRoot.toUserVisibleString()}: ${error.message}`);
+        }
+
+        // If too many errors, fall back to traditional search
+        if (this._errorCount > (this._options.maxErrors || 100)) {
+            this._fallbackToTraditionalSearch = true;
+            this._log(`Too many indexing errors (${this._errorCount}), falling back to traditional search`);
+
+            // Clear caches to prevent further issues
+            this.clearAllCaches();
+        }
+    }
+
+    /**
+     * Store partial cache on error to preserve work done.
+     */
+    private _storePartialCache(
+        workspaceRoot: Uri,
+        partialFiles: Record<string, FileIndex>,
+        fileSystem: ReadOnlyFileSystem
+    ): void {
+        if (Object.keys(partialFiles).length === 0) {
+            return;
+        }
+
+        try {
+            // Compute checksum for partial data
+            const checksumData = Object.keys(partialFiles)
+                .sort()
+                .map((uri) => {
+                    const file = partialFiles[uri];
+                    return `${uri}:${file.mtime}:${file.hash}`;
+                })
+                .join('|');
+            const checksum = fnv1a(new TextEncoder().encode(checksumData));
+
+            const partialCache: CachedWorkspaceSymbols = {
+                version: 1,
+                checksum,
+                files: partialFiles,
+            };
+
+            // Store partial cache
+            this._cache.set(workspaceRoot.key, partialCache);
+            this._saveToDisk(workspaceRoot, partialCache, fileSystem);
+
+            if (this._options.verbose) {
+                this._log(`Stored partial cache with ${Object.keys(partialFiles).length} files`);
+            }
+        } catch (error) {
+            this._log(`Failed to store partial cache: ${error}`);
+        }
+    }
+
+    /**
+     * Recover from cache corruption by rebuilding.
+     */
+    private _recoverFromCorruption(workspaceRoot: Uri, program: ProgramView): void {
+        const workspaceKey = workspaceRoot.key;
+
+        this._log(`Recovering from cache corruption for ${workspaceRoot.toUserVisibleString()}`);
+
+        // Clear corrupted cache
+        this._cache.delete(workspaceKey);
+        this._cacheMetadata.delete(workspaceKey);
+        this._accessOrder.delete(workspaceKey);
+        this._lastValidatedCache.delete(workspaceKey);
+
+        // Try to delete corrupted disk cache
+        try {
+            const cacheFile = this._getCacheFileUri(workspaceRoot);
+            if (program.fileSystem.existsSync(cacheFile)) {
+                // ReadOnlyFileSystem doesn't have unlinkSync, so we'll just log and continue
+                this._log(`Corrupted cache file found at ${cacheFile.toUserVisibleString()}, will be overwritten`);
+            }
+        } catch (error) {
+            this._log(`Failed to check corrupted cache file: ${error}`);
+        }
+
+        // Rebuild cache
+        try {
+            this.cacheWorkspaceSymbols(workspaceRoot, program, true);
+        } catch (error) {
+            this._handleIndexingError(workspaceRoot, error as Error, 'cache recovery');
         }
     }
 }

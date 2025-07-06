@@ -691,6 +691,7 @@ async function runSingleThreaded(
                 true, // Enable caching
                 maxFiles > 0 ? maxFiles : 5000, // Max files
                 verbose, // Verbose logging
+                false, // Debug logging
                 output // Console interface
             );
 
@@ -747,6 +748,7 @@ async function runSingleThreaded(
             true, // Enable caching
             maxFiles > 0 ? maxFiles : 5000, // Max files
             verbose, // Verbose logging
+            false, // Debug logging
             output // Console interface
         );
 

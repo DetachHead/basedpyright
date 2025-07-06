@@ -396,7 +396,24 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             const workspaceSymbolsEnabled = serverSettings.workspaceSymbolsEnabled ?? true;
             const workspaceSymbolsMaxFiles = serverSettings.workspaceSymbolsMaxFiles ?? 3000;
             const workspaceSymbolsDebug = serverSettings.workspaceSymbolsDebug ?? false;
+            const workspaceSymbolsMaxMemoryMB = serverSettings.workspaceSymbolsMaxMemoryMB ?? 50;
+            const workspaceSymbolsMaxErrors = serverSettings.workspaceSymbolsMaxErrors ?? 100;
+            const workspaceSymbolsDebounceMs = serverSettings.workspaceSymbolsDebounceMs ?? 50;
+            const workspaceSymbolsMassInvalidationThreshold =
+                serverSettings.workspaceSymbolsMassInvalidationThreshold ?? 20;
             const verbose = serverSettings.logLevel === LogLevel.Log || serverSettings.logLevel === LogLevel.Info;
+
+            // Update cache options for LRU and error handling
+            _workspaceSymbolCache.setOptions({
+                maxMemoryMB: workspaceSymbolsMaxMemoryMB,
+                maxErrors: workspaceSymbolsMaxErrors,
+                debounceMs: workspaceSymbolsDebounceMs,
+                massInvalidationThreshold: workspaceSymbolsMassInvalidationThreshold,
+                debug: workspaceSymbolsDebug,
+                verbose: verbose,
+                console: this.console,
+            });
+
             _workspaceSymbolCache.configure(
                 workspaceSymbolsEnabled,
                 workspaceSymbolsMaxFiles,

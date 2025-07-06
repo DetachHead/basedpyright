@@ -57,6 +57,10 @@ export interface ServerSettings {
     workspaceSymbolsEnabled?: boolean | undefined;
     workspaceSymbolsMaxFiles?: number | undefined;
     workspaceSymbolsDebug?: boolean | undefined;
+    workspaceSymbolsMaxMemoryMB?: number | undefined;
+    workspaceSymbolsMaxErrors?: number | undefined;
+    workspaceSymbolsDebounceMs?: number | undefined;
+    workspaceSymbolsMassInvalidationThreshold?: number | undefined;
 }
 
 export interface MessageAction {

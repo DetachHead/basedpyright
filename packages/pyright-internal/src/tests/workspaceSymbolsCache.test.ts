@@ -92,12 +92,18 @@ describe('WorkspaceSymbolCache', () => {
         expect(stats).toHaveProperty('totalSymbolCount');
         expect(stats).toHaveProperty('averageSymbolsPerFile');
         expect(stats).toHaveProperty('cacheHitRate');
+        expect(stats).toHaveProperty('memoryUsageMB');
+        expect(stats).toHaveProperty('totalErrors');
+        expect(stats).toHaveProperty('fallbackActive');
 
         expect(typeof stats.workspaceCount).toBe('number');
         expect(typeof stats.totalFileCount).toBe('number');
         expect(typeof stats.totalSymbolCount).toBe('number');
         expect(typeof stats.averageSymbolsPerFile).toBe('number');
         expect(typeof stats.cacheHitRate).toBe('number');
+        expect(typeof stats.memoryUsageMB).toBe('number');
+        expect(typeof stats.totalErrors).toBe('number');
+        expect(typeof stats.fallbackActive).toBe('boolean');
     });
 
     test('should handle error conditions gracefully', () => {
@@ -140,6 +146,134 @@ describe('WorkspaceSymbolCache', () => {
         cache.invalidate(mockWorkspaceRoot);
 
         expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('[DEBUG]'));
+
+        logSpy.mockRestore();
+    });
+
+    test('should track LRU cache access and provide memory usage stats', () => {
+        const stats = cache.getCacheStats();
+
+        expect(stats.memoryUsageMB).toBeGreaterThanOrEqual(0);
+        expect(stats.totalErrors).toBe(0);
+        expect(stats.fallbackActive).toBe(false);
+    });
+
+    test('should configure with LRU and error handling options', () => {
+        const customCache = new WorkspaceSymbolCache({
+            verbose: true,
+            maxMemoryMB: 100,
+            maxErrors: 50,
+            console: console,
+        });
+
+        // This should not throw an error
+        expect(() => {
+            customCache.configure(true, 1000, true, false, console);
+        }).not.toThrow();
+
+        const stats = customCache.getCacheStats();
+        expect(stats.memoryUsageMB).toBeGreaterThanOrEqual(0);
+        expect(stats.totalErrors).toBe(0);
+        expect(stats.fallbackActive).toBe(false);
+    });
+
+    test('should clear all caches including LRU tracking', () => {
+        const logSpy = jest.spyOn(console, 'info');
+
+        // This should clear all internal state
+        cache.clearAllCaches();
+
+        expect(logSpy).toHaveBeenCalledWith('Workspace symbols: Cleared all workspace symbol caches');
+
+        const stats = cache.getCacheStats();
+        expect(stats.workspaceCount).toBe(0);
+        expect(stats.totalFileCount).toBe(0);
+        expect(stats.totalSymbolCount).toBe(0);
+        expect(stats.memoryUsageMB).toBe(0);
+        expect(stats.totalErrors).toBe(0);
+        expect(stats.fallbackActive).toBe(false);
+
+        logSpy.mockRestore();
+    });
+
+    test('should handle batch invalidation properly', () => {
+        const logSpy = jest.spyOn(console, 'info');
+        const mockWorkspaceRoot = Uri.file(tempFile.tmpdir().getFilePath(), serviceProvider);
+        const mockFileUri = Uri.file(tempFile.tmpdir().getFilePath() + '/test.py', serviceProvider);
+
+        // Configure with debug mode to see batch invalidation logs
+        cache.configure(true, 1000, false, true, console);
+
+        // Test multiple invalidations of the same file (should be deduplicated)
+        cache.invalidate(mockWorkspaceRoot, mockFileUri);
+        cache.invalidate(mockWorkspaceRoot, mockFileUri);
+        cache.invalidate(mockWorkspaceRoot, mockFileUri);
+
+        // Should log duplicate skip messages
+        expect(logSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Workspace symbols [DEBUG]: Skipping duplicate invalidation for')
+        );
+
+        logSpy.mockRestore();
+    });
+
+    test('should flush pending invalidations immediately', () => {
+        const logSpy = jest.spyOn(console, 'info');
+        const mockWorkspaceRoot = Uri.file(tempFile.tmpdir().getFilePath(), serviceProvider);
+        const mockFileUri = Uri.file(tempFile.tmpdir().getFilePath() + '/test.py', serviceProvider);
+
+        // Configure with debug mode
+        cache.configure(true, 1000, false, true, console);
+
+        // Add a pending invalidation
+        cache.invalidate(mockWorkspaceRoot, mockFileUri);
+
+        // Flush should process it immediately
+        cache.flushPendingInvalidations();
+
+        // Should have processed the batch
+        expect(logSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Workspace symbols [DEBUG]: Skipping batch invalidation for workspace')
+        );
+
+        logSpy.mockRestore();
+    });
+
+    test('should handle performance optimizations for monorepos', () => {
+        const customCache = new WorkspaceSymbolCache({
+            verbose: false,
+            debug: true,
+            debounceMs: 25, // Faster responsiveness
+            massInvalidationThreshold: 15, // Lower threshold for mass detection
+            console: console,
+        });
+
+        // This should not throw an error
+        expect(() => {
+            customCache.configure(true, 1000, false, true, console);
+        }).not.toThrow();
+
+        const stats = customCache.getCacheStats();
+        expect(stats.memoryUsageMB).toBeGreaterThanOrEqual(0);
+        expect(stats.totalErrors).toBe(0);
+        expect(stats.fallbackActive).toBe(false);
+    });
+
+    test('should skip non-indexable files for performance', () => {
+        const logSpy = jest.spyOn(console, 'info');
+        const mockWorkspaceRoot = Uri.file(tempFile.tmpdir().getFilePath(), serviceProvider);
+        const mockBuildFile = Uri.file(tempFile.tmpdir().getFilePath() + '/build/output.js', serviceProvider);
+
+        // Configure with debug mode to see skip messages
+        cache.configure(true, 1000, false, true, console);
+
+        // Try to invalidate a build file - should be skipped
+        cache.invalidate(mockWorkspaceRoot, mockBuildFile);
+
+        // Should log skip message
+        expect(logSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Workspace symbols [DEBUG]: Skipping invalidation for non-indexable file')
+        );
 
         logSpy.mockRestore();
     });
