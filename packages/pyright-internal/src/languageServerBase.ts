@@ -1879,9 +1879,36 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         // Register workspace‐symbol cache invalidation listener so edits refresh cache.
         if (workspaceRoot) {
+            // State used to debounce workspace-symbol cache updates for this workspace.
+            const pendingReindexFiles = new Set<string>();
+            let reindexTimer: any = null;
+
             const listener: StatusMutationListener = {
                 onFileDirty: (fileUri) => {
                     _workspaceSymbolCache.invalidate(workspaceRoot, fileUri);
+
+                    // Debounce incremental reindexing so a burst of edits triggers one update.
+                    pendingReindexFiles.add(fileUri.toString());
+
+                    if (!reindexTimer) {
+                        // Run after small delay to coalesce multiple file-dirty events.
+                        reindexTimer = setTimeout(() => {
+                            const fileCount = pendingReindexFiles.size;
+                            pendingReindexFiles.clear();
+                            reindexTimer = null;
+
+                            // Only log when verbose (Trace) logging is enabled.
+                            if (service.backgroundAnalysisProgram.program.configOptions.verboseOutput) {
+                                console.info(
+                                    `Workspace symbols: Reindexing ${fileCount} file${fileCount === 1 ? '' : 's'} after edits`
+                                );
+                            }
+
+                            service.run((program) => {
+                                _workspaceSymbolCache.updateWorkspaceSymbols(workspaceRoot, program);
+                            }, CancellationToken.None);
+                        }, 300); // 300 ms debounce
+                    }
                 },
                 onClearCache: () => {
                     _workspaceSymbolCache.invalidate(workspaceRoot);
