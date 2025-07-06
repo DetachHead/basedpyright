@@ -581,6 +581,90 @@ export class WorkspaceSymbolCache {
                 }
             }
 
+            // After processing existing cached files, index any **new** files that were not previously cached.
+            // This prevents the cache from being invalidated wholesale when large numbers of new files are added.
+
+            // Identify and index new files that were not in the previous cache.
+            for (const fileInfo of program.getSourceFileInfoList()) {
+                const fileUriStr = fileInfo.uri.toString();
+
+                // Skip files we already handled above.
+                if (newFiles[fileUriStr]) {
+                    continue;
+                }
+
+                // Respect file-filtering rules.
+                if (!this._shouldIndexFile(fileInfo.uri)) {
+                    continue;
+                }
+
+                try {
+                    throwIfCancellationRequested(token);
+
+                    const stat = program.fileSystem.statSync(fileInfo.uri);
+                    if (!stat) {
+                        // File might have been removed after program snapshot.
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const mtime = stat.mtimeMs || 0;
+                    const bytes = program.fileSystem.readFileSync(fileInfo.uri, null).subarray(0, 8192);
+                    const currentHash = fnv1a(bytes);
+
+                    // Build symbols for the new file.
+                    const parseResults = program.getParseResults(fileInfo.uri);
+                    if (!parseResults) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const analyzerFileInfo = getFileInfo(parseResults.parserOutput.parseTree);
+                    if (!analyzerFileInfo) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const symbols = SymbolIndexer.indexSymbols(
+                        analyzerFileInfo,
+                        parseResults,
+                        { includeAliases: false },
+                        token ?? CancellationToken.None
+                    );
+
+                    const flat: IndexedSymbol[] = this._flattenIndexedSymbols(symbols, '');
+
+                    newFiles[fileUriStr] = {
+                        mtime,
+                        hash: currentHash,
+                        symbols: flat,
+                    };
+
+                    rebuiltCount++;
+                } catch (error) {
+                    errorCount++;
+                    if (this._options.verbose) {
+                        this._log(`Error indexing new file ${fileUriStr}: ${error}`);
+                    }
+                    skippedCount++;
+                    continue;
+                }
+            }
+
+            // Enforce maxFiles limit – prune the oldest files (by mtime) if we exceed it.
+            const currentFileCount = Object.keys(newFiles).length;
+            if (currentFileCount > this._options.maxFiles) {
+                const toPrune = currentFileCount - this._options.maxFiles;
+                const sortedByMtime = Object.entries(newFiles)
+                    .sort(([_aUri, a], [_bUri, b]) => (b.mtime || 0) - (a.mtime || 0));
+
+                for (let i = sortedByMtime.length - 1; i >= sortedByMtime.length - toPrune; i--) {
+                    const [uri] = sortedByMtime[i];
+                    delete newFiles[uri];
+                    skippedCount++;
+                }
+            }
+
             const elapsedTime = Date.now() - startTime;
             if (this._options.verbose) {
                 this._log(
