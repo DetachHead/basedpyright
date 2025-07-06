@@ -83,6 +83,14 @@ adapter for native Neovim's LSP support.
 After having both, the client-side plugin and the LSP server command installed,
 simply add this settings to your Neovim's settings:
 
+For Neovim 0.11+
+
+```lua
+vim.lsp.enable("basedpyright")
+```
+
+For Neovim 0.10 (legacy)
+
 ```lua
 local lspconfig = require("lspconfig")
 lspconfig.basedpyright.setup{}
