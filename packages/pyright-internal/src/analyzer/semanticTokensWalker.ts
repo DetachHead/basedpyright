@@ -17,7 +17,6 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
-    LambdaNode,
     MemberAccessNode,
     NameNode,
     ParameterNode,
@@ -124,8 +123,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             parentType !== ParseNodeType.Decorator &&
             parentType !== ParseNodeType.ImportAs &&
             parentType !== ParseNodeType.ImportFromAs &&
-            // Ensure only `parent.d.name` is skipped for functions, e.g. don't skip `returnAnnotation`
-            (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id)
+            // Ensure only `parent.d.name` is skipped, e.g. don't skip `returnAnnotation` in `FunctionNode`
+            (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id) &&
+            (parentType !== ParseNodeType.Parameter || node.parent.d.name?.id !== node.id)
         ) {
             const type = this._evaluator?.getType(node);
             if (type) {
@@ -237,11 +237,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         const paramNode = declarations?.find(isParamDeclaration)?.node;
         if (paramNode) {
-            const parent = paramNode.parent as FunctionNode | LambdaNode;
-            // Avoid duplicates for parameters visited by `visitParameter`
-            if (!parent.d.params.some((param) => param.d.name?.id === node.id)) {
-                this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), []);
-            }
+            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), []);
         } else if (type.category === TypeCategory.TypeVar && !TypeBase.isInstance(type)) {
             // `cls` method parameter is treated as a TypeVar in some special methods (methods
             // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
