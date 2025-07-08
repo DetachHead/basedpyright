@@ -1796,6 +1796,10 @@ have the version of BasedPyright maintained and upgraded by Mason project.</p>
 adapter for native Neovim's LSP support.</p>
 <p>After having both, the client-side plugin and the LSP server command installed,
 simply add this settings to your Neovim's settings:</p>
+<p>For Neovim 0.11+</p>
+<div class="highlight"><pre><span></span><code><span class="nv">vim</span><span class="p">.</span><span class="py">lsp</span><span class="p">.</span><span class="nf">enable</span><span class="p">(</span><span class="s2">&quot;basedpyright&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>For Neovim 0.10 (legacy)</p>
 <div class="highlight"><pre><span></span><code><span class="kd">local</span><span class="w"> </span><span class="nv">lspconfig</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;lspconfig&quot;</span><span class="p">)</span>
 <span class="nv">lspconfig</span><span class="p">.</span><span class="py">basedpyright</span><span class="p">.</span><span class="py">setup</span><span class="p">{}</span>
 </code></pre></div>
