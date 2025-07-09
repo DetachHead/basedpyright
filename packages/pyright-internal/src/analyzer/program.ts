@@ -328,7 +328,7 @@ export class Program {
         return fileInfo;
     }
 
-    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false) {
+    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false, isTypeshedFile?: boolean) {
         let cells;
         try {
             cells = getIPythonCells(this.fileSystem, fileUri, this.console);
@@ -359,7 +359,7 @@ export class Program {
                 );
                 const sourceFileInfo = new SourceFileInfo(
                     sourceFile,
-                    sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile(),
+                    isTypeshedFile ?? this._isNonUserTypeshedFile(sourceFile),
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
@@ -390,7 +390,7 @@ export class Program {
             sourceFileInfos.push(
                 new SourceFileInfo(
                     sourceFile,
-                    sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile(),
+                    isTypeshedFile ?? this._isNonUserTypeshedFile(sourceFile),
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
@@ -1081,6 +1081,9 @@ export class Program {
 
         this.serviceProvider.tryGet(ServiceKeys.stateMutationListeners)?.forEach((l) => l.onClearCache?.());
     }
+
+    private _isNonUserTypeshedFile = (sourceFile: SourceFile) =>
+        sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile();
 
     /**
      * @returns `undefined` if the source file is already tracked
@@ -1919,7 +1922,7 @@ export class Program {
 
                     if (!sourceFileInfo) {
                         // Start tracking the source file.
-                        this.addTrackedFile(resolvedPath, false, false);
+                        this.addTrackedFile(resolvedPath, false, false, importResult.isStdlibTypeshedFile);
                         sourceFileInfo = this.getSourceFileInfo(resolvedPath);
                     }
                 }
