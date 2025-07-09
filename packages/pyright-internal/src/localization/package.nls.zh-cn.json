@@ -294,7 +294,6 @@
         "isSubclassInvalidType": "`issubclass` 的第二个参数必须是单个类或由多个类构成的元组",
         "keyValueInSet": "集合内不允许存在键值对",
         "keywordArgInTypeArgument": "关键字参数不能在类型参数列表中使用",
-        "keywordArgShortcutIllegal": "关键字参数的简写形式需要 Python 3.14 或更高版本",
         "keywordOnlyAfterArgs": "参数声明中，`/` 不允许出现在 `*` 之后",
         "keywordParameterMissing": "`*` 参数之后必须有关键字参数",
         "keywordSubscriptIllegal": "下标中不支持使用关键字参数",

@@ -328,7 +328,7 @@ export class Program {
         return fileInfo;
     }
 
-    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false, isTypeshedFile = false) {
+    addTrackedFile(fileUri: Uri, isThirdPartyImport = false, isInPyTypedPackage = false) {
         let cells;
         try {
             cells = getIPythonCells(this.fileSystem, fileUri, this.console);
@@ -359,7 +359,7 @@ export class Program {
                 );
                 const sourceFileInfo = new SourceFileInfo(
                     sourceFile,
-                    isTypeshedFile,
+                    sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile(),
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
@@ -390,7 +390,7 @@ export class Program {
             sourceFileInfos.push(
                 new SourceFileInfo(
                     sourceFile,
-                    isTypeshedFile,
+                    sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile(),
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
@@ -1919,7 +1919,7 @@ export class Program {
 
                     if (!sourceFileInfo) {
                         // Start tracking the source file.
-                        this.addTrackedFile(resolvedPath, false, false, importResult.isStdlibTypeshedFile);
+                        this.addTrackedFile(resolvedPath, false, false);
                         sourceFileInfo = this.getSourceFileInfo(resolvedPath);
                     }
                 }
