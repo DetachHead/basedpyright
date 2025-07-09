@@ -737,7 +737,7 @@ export class CompletionProvider {
             : undefined;
 
         const autoImportText =
-            detail.autoImportSource && this.program.configOptions.autoImportCompletions
+            detail.autoImportSource && (this.program.configOptions.autoImportCompletions || this._codeActions)
                 ? this.getAutoImportText(name, detail.autoImportSource, detail.autoImportAlias)
                 : undefined;
 
@@ -998,23 +998,17 @@ export class CompletionProvider {
                 this.addNameToCompletions(
                     result.alias ?? result.name,
                     result.kind ?? CompletionItemKind.Module,
-                    this.program.configOptions.autoImportCompletions ? priorWord : result.alias ?? result.name,
+                    priorWord,
                     completionMap,
-                    this.program.configOptions.autoImportCompletions
-                        ? {
-                              extraCommitChars: true,
-                              autoImportText: this.getAutoImportText(result.name, result.source, result.alias),
-                              edits: {
-                                  textEdit: this.createReplaceEdits(
-                                      priorWord,
-                                      /* node */ undefined,
-                                      result.insertionText
-                                  ),
-                                  additionalTextEdits: result.edits,
-                              },
-                              funcParensDisabled: parensDisabled,
-                          }
-                        : undefined
+                    {
+                        extraCommitChars: true,
+                        autoImportText: this.getAutoImportText(result.name, result.source, result.alias),
+                        edits: {
+                            textEdit: this.createReplaceEdits(priorWord, /* node */ undefined, result.insertionText),
+                            additionalTextEdits: result.edits,
+                        },
+                        funcParensDisabled: parensDisabled,
+                    }
                 );
             }
         }
