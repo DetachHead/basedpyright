@@ -43,6 +43,7 @@ import { CancellationProvider } from './common/cancellationUtils';
 import { FileWatcherHandler } from './common/fileWatcher';
 import version from './version.json';
 import { PartialStubService } from './partialStubService';
+import { Commands } from './commands/commands';
 
 const maxAnalysisTimeInForeground = { openFilesTimeInMs: 50, noOpenFilesTimeInMs: 200 };
 
@@ -97,6 +98,9 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 fileWatcherHandler: fileWatcherProvider,
                 maxAnalysisTimeInForeground,
                 supportedCodeActions: [CodeActionKind.QuickFix, CodeActionKind.SourceOrganizeImports],
+                // TODO: all the other commands are registered in the vscode extension because they seem to have client side logic
+                // for some reason
+                supportedCommands: [Commands.createTypeStub, Commands.restartServer, Commands.writeBaseline],
             },
             connection
         );
