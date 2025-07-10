@@ -77,7 +77,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'selfParameter', modifiers: ['definition'], start: 198, length: 4 },
             { type: 'parameter', modifiers: ['definition'], start: 204, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 211, length: 3 },
-            { type: 'variable', modifiers: ['readonly'], start: 229, length: 3 },
             { type: 'class', modifiers: [], start: 223, length: 3 },
             { type: 'variable', modifiers: ['readonly'], start: 229, length: 3 },
             { type: 'class', modifiers: [], start: 233, length: 3 },
@@ -85,7 +84,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 244, length: 3 },
             { type: 'class', modifiers: [], start: 250, length: 3 },
             { type: 'variable', modifiers: [], start: 256, length: 1 },
-            { type: 'variable', modifiers: ['readonly'], start: 264, length: 3 },
             { type: 'variable', modifiers: [], start: 260, length: 3 },
             { type: 'variable', modifiers: ['readonly'], start: 264, length: 3 },
         ]);
