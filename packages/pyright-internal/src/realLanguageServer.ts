@@ -303,7 +303,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
     ): Promise<(Command | CodeAction)[] | undefined | null> {
         this.recordUserInteractionTime();
 
-        const uri = Uri.parse(params.textDocument.uri, this.serverOptions.serviceProvider);
+        const uri = this.convertLspUriStringToUri(params.textDocument.uri);
         const workspace = await this.getWorkspaceForFile(uri);
         return CodeActionProvider.getCodeActionsForPosition(
             workspace,
