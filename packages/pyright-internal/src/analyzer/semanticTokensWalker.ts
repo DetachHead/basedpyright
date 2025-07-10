@@ -1,15 +1,6 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import {
-    ClassType,
-    FunctionType,
-    getTypeAliasInfo,
-    isClass,
-    OverloadedType,
-    Type,
-    TypeBase,
-    TypeCategory,
-} from './types';
+import { ClassType, FunctionType, getTypeAliasInfo, OverloadedType, Type, TypeBase, TypeCategory } from './types';
 import {
     ClassNode,
     DecoratorNode,
@@ -17,7 +8,6 @@ import {
     ImportAsNode,
     ImportFromAsNode,
     ImportFromNode,
-    MemberAccessNode,
     NameNode,
     ParameterNode,
     ParseNodeType,
@@ -142,19 +132,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // `def`, `class` and `lambda` which are blue but i can't figure out what semantic token type does that.
         this._addItem(node.start, 4 /* length of the word "type" */, SemanticTokenTypes.keyword, []);
         return super.visitTypeAlias(node);
-    }
-
-    override visitMemberAccess(node: MemberAccessNode): boolean {
-        // check for properties without a setter
-        if (node.parent && this._evaluator) {
-            const declaredType = this._evaluator.getDeclaredTypeForExpression(node, {
-                method: 'set',
-            });
-            if (declaredType && isClass(declaredType) && ClassType.isPropertyClass(declaredType)) {
-                this._addItemForNameNode(node.d.member, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
-            }
-        }
-        return super.visitMemberAccess(node);
     }
 
     private _visitNameWithType(node: NameNode, type: Type) {
