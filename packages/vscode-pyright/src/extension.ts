@@ -297,15 +297,6 @@ export async function activate(context: ExtensionContext) {
         );
     });
 
-    const genericCommands = [Commands.createTypeStub, Commands.restartServer, Commands.writeBaseline];
-    genericCommands.forEach((command) => {
-        context.subscriptions.push(
-            commands.registerCommand(command, (...args: any[]) => {
-                client.sendRequest('workspace/executeCommand', { command, arguments: args });
-            })
-        );
-    });
-
     // Register the debug only commands when running under the debugger.
     if (context.extensionMode === ExtensionMode.Development) {
         // Create a 'when' context for development.
