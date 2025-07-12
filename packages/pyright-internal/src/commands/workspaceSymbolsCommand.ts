@@ -1,8 +1,5 @@
 /*
  * workspaceSymbolsCommand.ts
- * Copyright (c) Microsoft Corporation.
- * Licensed under the MIT license.
- *
  * Implements command for workspace symbols functionality in CLI.
  */
 

@@ -1,7 +1,5 @@
 /*
  * workspaceSymbolsCache.test.ts
- * Copyright (c) Microsoft Corporation.
- * Licensed under the MIT license.
  *
  * Tests for workspace symbols cache functionality.
  */
