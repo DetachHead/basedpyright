@@ -1942,12 +1942,21 @@
                     "default": false,
                     "markdownDescription": "Whether to rely on imports from the `typing_extensions` module when targeting older versions of python that do not include certain typing features such as the `@override` decorator.",
                     "scope": "resource"
+                },
+                "basedpyright.analysis.autoFormatStrings": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Whether to automatically insert an `f` in front of a string when typing a `{` inside it.",
+                    "scope": "resource"
                 }
             }
         },
         "configurationDefaults": {
             "python.languageServer": "None",
-            "python.analysis.typeCheckingMode": "off"
+            "python.analysis.typeCheckingMode": "off",
+            "[python]": {
+                "editor.formatOnType": true
+            }
         },
         "jsonValidation": [
             {

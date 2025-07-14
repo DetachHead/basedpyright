@@ -30,6 +30,7 @@ export interface ClientCapabilities {
     usingPullDiagnostics: boolean;
     requiresPullRelatedInformationCapability: boolean;
     completionItemResolveSupportsTags: boolean;
+    onTypeFormatting: boolean;
 }
 
 export type InitializationOptions = {

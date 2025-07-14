@@ -83,10 +83,12 @@ import {
     DidCloseNotebookDocumentParams,
     DidOpenNotebookDocumentParams,
     DidSaveNotebookDocumentParams,
+    DocumentOnTypeFormattingParams,
     InlayHint,
     InlayHintParams,
     SemanticTokens,
     SemanticTokensParams,
+    TextEdit,
     WillSaveTextDocumentParams,
 } from 'vscode-languageserver-protocol';
 
@@ -157,6 +159,10 @@ import { RenameUsageFinder } from './analyzer/renameUsageFinder';
 import { AutoImporter, buildModuleSymbolsMap } from './languageService/autoImporter';
 import { zip } from 'lodash';
 import { assert } from './common/debug';
+import { convertOffsetToPosition, convertPositionToOffset } from './common/positionUtils';
+import { findNodeByOffset } from './analyzer/parseTreeUtils';
+import { ParseNodeType } from './parser/parseNodes';
+import { StringTokenFlags } from './parser/tokenizerTypes';
 
 const UncomputedDiagnosticsVersion = -1;
 
@@ -198,6 +204,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         usingPullDiagnostics: false,
         requiresPullRelatedInformationCapability: false,
         completionItemResolveSupportsTags: false,
+        onTypeFormatting: false,
     };
 
     protected defaultClientConfig: any;
@@ -389,6 +396,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.inlayHints = serverSettings.inlayHints;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
+            workspace.autoFormatStrings = serverSettings.autoFormatStrings ?? true;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -573,6 +581,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.connection.workspace.onWillRenameFiles(this.onRenameFiles);
         this.connection.onWillSaveTextDocument(this.onSaveTextDocument);
 
+        this.connection.onDocumentOnTypeFormatting(this.onTypeFormatting);
+
         this.connection.languages.diagnostics.on(async (params, token) => this.onDiagnostics(params, token));
         this.connection.languages.diagnostics.onWorkspace(async (params, token) =>
             this.onWorkspaceDiagnostics(params, token)
@@ -639,6 +649,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             !!capabilities.textDocument?.diagnostic?.relatedInformation &&
             initializationOptions?.diagnosticMode !== 'workspace' &&
             initializationOptions?.disablePullDiagnostics !== true;
+        this.client.onTypeFormatting = capabilities.textDocument?.onTypeFormatting?.dynamicRegistration ?? false;
 
         // Create a service instance for each of the workspace folders.
         this.workspaceFactory.handleInitialize(params);
@@ -709,6 +720,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         changeNotifications: true,
                     },
                 },
+                documentOnTypeFormattingProvider: { firstTriggerCharacter: '{' },
             },
             serverInfo: {
                 name: 'basedpyright',
@@ -1580,6 +1592,39 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected onSaveNotebookDocument = async (params: DidSaveNotebookDocumentParams) => {
         const uri = this.convertLspUriStringToUri(params.notebookDocument.uri);
         this._openCells.get(uri.key)?.forEach((cell) => this.savedFilesForBaselineUpdate.add(cell.uri));
+    };
+
+    protected onTypeFormatting = async (params: DocumentOnTypeFormattingParams): Promise<TextEdit[] | undefined> => {
+        if (!this.client.onTypeFormatting) {
+            return;
+        }
+        const uri = this.convertLspUriStringToUri(params.textDocument.uri);
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices || !workspace.autoFormatStrings) {
+            return;
+        }
+        const parseResults = workspace.service.run((program) => program.getParseResults(uri), CancellationToken.None);
+        if (!parseResults) {
+            this.console.error('failed to convert string to f-string');
+            return;
+        }
+        const offset = convertPositionToOffset(params.position, parseResults.tokenizerOutput.lines);
+        if (offset === undefined) {
+            return;
+        }
+        const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
+        if (node === undefined) {
+            return;
+        }
+        if (
+            node?.nodeType === ParseNodeType.String &&
+            // other string types that can't be used with f-strings
+            !(node.d.token.flags & (StringTokenFlags.Bytes | StringTokenFlags.Unicode | StringTokenFlags.Template))
+        ) {
+            const position = convertOffsetToPosition(node?.start, parseResults.tokenizerOutput.lines);
+            return [{ range: { start: position, end: position }, newText: 'f' }];
+        }
+        return;
     };
 
     protected async onExecuteCommand(

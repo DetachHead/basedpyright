@@ -12,6 +12,7 @@ import {
     CompletionRequest,
     ConfigurationItem,
     DiagnosticSeverity,
+    DocumentOnTypeFormattingRequest,
     InitializedNotification,
     InitializeRequest,
     MarkupContent,
@@ -166,6 +167,46 @@ describe(`Basic language server tests`, () => {
 
         const completionItem = completionResult.items.find((i) => i.label === 'path')!;
         assert(completionItem);
+    });
+    describe('onTypeFormatting', () => {
+        const checkOnTypeFormatting = async (stringPrefix: string, shouldConvertString: boolean) => {
+            const code = `
+// @filename: test.py
+//// foo = ${stringPrefix}"[|/*marker*/|]"
+        `;
+            const info = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, /* callInitialize */ true);
+
+            openFile(info, 'marker');
+            const marker = info.testData.markerPositions.get('marker')!;
+            const fileUri = marker.fileUri;
+            const text = info.testData.files.find((d) => d.fileName === marker.fileName)!.content;
+            const parseResult = getParseResults(text);
+            const onTypeFormattingRequest = await info.connection.sendRequest(
+                DocumentOnTypeFormattingRequest.type,
+                {
+                    textDocument: { uri: fileUri.toString() },
+                    position: convertOffsetToPosition(marker.position, parseResult.tokenizerOutput.lines),
+                    ch: '{',
+                    options: { insertSpaces: true, tabSize: 4 },
+                },
+                CancellationToken.None
+            );
+            if (shouldConvertString) {
+                const expectedPosition = { character: 6, line: 0 };
+                tExpect(onTypeFormattingRequest).toEqual([
+                    { newText: 'f', range: { start: expectedPosition, end: expectedPosition } },
+                ]);
+            } else {
+                tExpect(onTypeFormattingRequest).toBeNull();
+            }
+        };
+        test('normal string', () => checkOnTypeFormatting('', true));
+        test('already f-string', () => checkOnTypeFormatting('f', false));
+        test('r-string', () => checkOnTypeFormatting('r', true));
+        test('bytes', () => checkOnTypeFormatting('b', false));
+        test('t-string', () => checkOnTypeFormatting('t', false));
+        test('u-string', () => checkOnTypeFormatting('u', false));
+        test('r-string and b-string', () => checkOnTypeFormatting('rb', false));
     });
 
     [false, true].forEach((supportsPullDiagnostics) => {
