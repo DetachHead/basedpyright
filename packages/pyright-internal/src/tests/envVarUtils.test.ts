@@ -225,5 +225,6 @@ function createWorkspace(rootUri: Uri | undefined): Workspace {
         searchPathsToWatch: [],
         useTypingExtensions: false,
         fileEnumerationTimeoutInSec: 10,
+        autoFormatStrings: true,
     };
 }

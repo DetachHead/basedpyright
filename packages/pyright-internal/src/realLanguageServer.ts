@@ -232,6 +232,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                     serverSettings.fileEnumerationTimeoutInSec = pythonAnalysisSection.fileEnumerationTimeout;
                 }
 
+                if (pythonAnalysisSection.autoFormatStrings !== undefined) {
+                    serverSettings.autoFormatStrings = pythonAnalysisSection.autoFormatStrings;
+                }
+
                 const inlayHintSection = pythonAnalysisSection.inlayHints;
                 if (inlayHintSection) {
                     serverSettings.inlayHints = { ...serverSettings.inlayHints, ...inlayHintSection };

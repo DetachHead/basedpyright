@@ -50,8 +50,8 @@ export interface ServerSettings {
     functionSignatureDisplay?: SignatureDisplayType | undefined;
     inlayHints?: InlayHintSettings;
     useTypingExtensions?: boolean;
-
     fileEnumerationTimeoutInSec?: number | undefined;
+    autoFormatStrings?: boolean;
 }
 
 export interface MessageAction {

@@ -112,6 +112,7 @@ export class TestLanguageService implements LanguageServerInterface {
             searchPathsToWatch: [],
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
+            autoFormatStrings: true,
         };
     }
     /** unlike the real one, this test implementation doesn't support notebook cells. TODO: language server tests for notebook cells */

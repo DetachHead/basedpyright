@@ -214,6 +214,7 @@ export class TestState {
             searchPathsToWatch: [],
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
+            autoFormatStrings: true,
         };
 
         if (!delayFileInitialization) {

@@ -61,6 +61,8 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.
 
+**basedpyright.analysis.autoFormatStrings** [boolean]: Whether to automatically insert an `f` in front of a string when typing a `{` inside it. Defaults to `true`. [more info](../benefits-over-pyright/pylance-features.md#automatic-conversion-to-f-string-when-typing-inside-a-string)
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:

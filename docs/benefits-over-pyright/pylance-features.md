@@ -120,6 +120,12 @@ this issue is fixed in pylance, but the fix was never ported to pyright, so we h
 
 ![](./fixed-docstring-parameter-descriptions.png)
 
+## automatic conversion to f-string when typing `{` inside a string
+
+basedpyright implements the `autoFormatStrings` setting from pylance ([`basedpyright.analysis.autoFormatStrings`](../configuration/language-server-settings.md#based-settings)):
+
+![](./autoformatstrings.gif)
+
 ## Pylance features missing from basedpyright
 
 See the [open issues](https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22) related to feature parity with Pylance.
