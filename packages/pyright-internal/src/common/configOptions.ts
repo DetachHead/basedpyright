@@ -1048,7 +1048,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportInvalidCast: 'error',
     reportUnsafeMultipleInheritance: 'error',
     reportUnusedParameter: 'warning',
-    reportImplicitAbstractClass: 'warning',
+    reportImplicitAbstractClass: 'error',
     reportUnannotatedClassAttribute: 'warning',
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
