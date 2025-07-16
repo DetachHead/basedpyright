@@ -742,6 +742,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    pre-commit hook
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -753,6 +766,67 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#should-i-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      should i use this?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="should i use this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checking-your-code-before-committing" class="md-nav__link">
+    <span class="md-ellipsis">
+      checking your code before committing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-non-python-tools-in-a-python-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      running non-python tools in a python project
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-basedpyright-in-the-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      running basedpyright in the CI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1496,6 +1570,56 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#should-i-use-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      should i use this?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="should i use this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checking-your-code-before-committing" class="md-nav__link">
+    <span class="md-ellipsis">
+      checking your code before committing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-non-python-tools-in-a-python-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      running non-python tools in a python project
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-basedpyright-in-the-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      running basedpyright in the CI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1520,10 +1644,15 @@
 <span class="w">      </span><span class="nt">hooks</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basedpyright</span>
 </code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>pre-commit is not recommended. for more information, <a href="https://github.com/DetachHead/basedpyright-pre-commit-mirror/blob/main/README.md#should-i-use-this">see here</a></p>
-</div>
+<h2 id="should-i-use-this">should i use this?</h2>
+<p>we don't recommend pre-commit as there are better alternatives for most of its use cases. also its maintainer is notoriously very rude to users.</p>
+<p>we will continue to support pre-commit, however there are alternative approaches you may want to consider depending on your use case.</p>
+<h3 id="checking-your-code-before-committing">checking your code before committing</h3>
+<p>we instead recommend <a href="../ides/">integrating basedpyright with your IDE</a>. doing so will show errors on your code as you write it, instead of waiting until you go to commit your changes.</p>
+<h3 id="running-non-python-tools-in-a-python-project">running non-python tools in a python project</h3>
+<p>pre-commit can be useful when the tool does not have a pypi package, because it can automatically manage nodejs and install npm packages for you without you ever having to install nodejs yourself. basedpyright already solves this problem with pyright by <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/">bundling the npm package as a pypi package</a>, so you don't need to use pre-commit.</p>
+<h3 id="running-basedpyright-in-the-ci">running basedpyright in the CI</h3>
+<p>basedpyright already <a href="../../benefits-over-pyright/improved-ci-integration/">integrates well with CI by default</a> when using the pypi package.</p>
 
 
 
