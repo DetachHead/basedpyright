@@ -14,21 +14,21 @@
 
     [:octicons-arrow-right-24: more info](./benefits-over-pyright/pylance-features.md)
 
--   :material-language-python:{ .lg .middle } **New type checking rules**
+-   :simple-pypi:{ .lg .middle } **Easy to install & pin**
 
     ***
 
-    basedpyright introduces over 10 new diagnostic rules to catch potentially serious issues in your code that would otherwise go completely undetected by pyright.
+    unlike pyright, basedpyright can be installed from PyPI without having to install NodeJS. the VSCode extension uses the same version so you never see different errors in your editor vs. the CLI
+
+    [:octicons-arrow-right-24: more info](./benefits-over-pyright/pypi-package-vscode-pinning.md)
+
+-   :octicons-alert-16:{ .lg .middle } **Strict by default & new type checking rules**
+
+    ***
+
+    basedpyright introduces many new diagnostic rules to detect potentially serious issues in your code that pyright won't catch, and [all rules are enabled by default](./benefits-over-pyright/better-defaults.md) for maximum discoverability.
 
     [:octicons-arrow-right-24: more info](./benefits-over-pyright/new-diagnostic-rules.md)
-
--   :simple-pypi:{ .lg .middle } **Easy to install**
-
-    ***
-
-    unlike pyright, using the basedpyright CLI doesn't require you to install nodeJS. just install it from PyPI like all your other dependencies.
-
-    [:octicons-arrow-right-24: more info ](./benefits-over-pyright/pypi-package-vscode-pinning.md#pypi-package-no-nodejs-required)
 
 -   :octicons-checklist-16:{ .lg .middle } **Baseline support**
 
@@ -36,22 +36,21 @@
 
     adopt basedpyright's stricter type checking rules effortlessly in an existing project. no need to update any of your old code
 
-    [:octicons-arrow-right-24: more info ](./benefits-over-pyright/baseline.md)
+    [:octicons-arrow-right-24: more info](./benefits-over-pyright/baseline.md)
 
--   :octicons-terminal-16:{ .lg .middle } **Consistent between the editor and CLI**
+-   :octicons-sync-16:{ .lg .middle } **Up-to-date**
 
     ***
 
-    the basedpyright vscode extension will use the version of the PyPI package installed to your environment by default, so you never see different errors
-    in your editor and the CLI
+    when a new version of pyright is released, we merge it and release a new version of basedpyright within a day
 
-    [:octicons-arrow-right-24: more info ](./benefits-over-pyright/pypi-package-vscode-pinning.md#ability-to-pin-the-version-used-by-vscode)
+    [:octicons-arrow-right-24: more info](./development/upstream.md)
 
 -   :octicons-issue-reopened-16:{ .lg .middle } **Open to feedback**
 
     ***
 
-    unlike pyright, we listen to what the users want. if you encounter any problems or have an idea for a new feature, don't hesitate to open an issue.
+    we listen to user feedback. if you encounter any problems or have an idea for a new feature, don't hesitate to open an issue.
 
     [:octicons-arrow-right-24: issue tracker](https://github.com/DetachHead/basedpyright/issues)
 
