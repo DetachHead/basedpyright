@@ -19,7 +19,12 @@ import { convertToFileTextEdits, convertToTextEditActions, convertToWorkspaceEdi
 import { Localizer } from '../localization/localize';
 import { Workspace } from '../workspaceFactory';
 import { CompletionProvider } from './completionProvider';
-import { convertOffsetToPosition, convertPositionToOffset, convertTextRangeToRange } from '../common/positionUtils';
+import {
+    convertOffsetToPosition,
+    convertPositionToOffset,
+    convertTextRangeToRange,
+    getLineEndPosition,
+} from '../common/positionUtils';
 import { findNodeByOffset } from '../analyzer/parseTreeUtils';
 import { ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
@@ -200,8 +205,7 @@ export class CodeActionProvider {
             }
             const ignoreCommentPrefix = `# pyright: ignore`;
             const line = diagnostic.range.start.line;
-            const item = lines.getItemAt(line);
-            // we deliberately only check for type:ignore comments here but not pyright:ignore for 2 reasons:
+            // we deliberately only check for pyright:ignore comments here but not type:ignore for 2 reasons:
             // - type:ignore comments are discouraged in favor of pyright:ignore comments
             // - the type:ignore comment might be for another type checker
             const existingIgnoreComment = parseResults.tokenizerOutput.pyrightIgnoreLines.get(line);
@@ -217,7 +221,7 @@ export class CodeActionProvider {
                 insertText = `, ${rule}`;
                 title = `Add \`${rule}\` to existing \`${ignoreCommentPrefix}\` comment`;
             } else {
-                positionCharacter = item.length - 1;
+                positionCharacter = getLineEndPosition(parseResults.tokenizerOutput, parseResults.text, line).character;
                 const ignoreComment = `${ignoreCommentPrefix}[${rule}]`;
                 insertText = `  ${ignoreComment}`;
                 title = `Add \`${ignoreComment}\``;
