@@ -117,7 +117,8 @@ export async function activate(context: ExtensionContext) {
     let serverOptions: ServerOptions | undefined = undefined;
     if (workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
         const pythonApi = await PythonExtension.api();
-        const executableName = `basedpyright-langserver${os.platform() === 'win32' ? '.exe' : ''}`;
+        const isWindows = os.platform() === 'win32';
+        const executableName = `basedpyright-langserver${isWindows ? '.exe' : ''}`;
         const executableDir = path.join(pythonApi.environments.getActiveEnvironmentPath().path, '..');
         const executablePath = path.join(executableDir, executableName);
         if (existsSync(executablePath)) {
@@ -132,10 +133,15 @@ export async function activate(context: ExtensionContext) {
                 console.warn(`failed to create copy at ${copiedExecutablePath}, falling back to using the real one`);
                 copiedExecutablePath = executablePath;
             }
+            // don't do this if windows due to https://github.com/swyddfa/lsp-devtools/issues/125
+            const debugCommandPrefix =
+                context.extensionMode === ExtensionMode.Development && !isWindows
+                    ? `"${context.asAbsolutePath('../../.venv/bin/lsp-devtools')}" agent -- `
+                    : '';
             serverOptions = {
                 // quotes are needed in case there's a space in the path. ideally we shouldnt need to do this
                 // but it's necessary because we use `shell: true`, see comment below
-                command: `"${copiedExecutablePath}"`,
+                command: `${debugCommandPrefix}"${copiedExecutablePath}"`,
                 transport: TransportKind.stdio,
                 args: cancellationStrategy.getCommandLineArguments(),
                 options: {
