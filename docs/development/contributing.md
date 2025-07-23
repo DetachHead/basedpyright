@@ -23,7 +23,11 @@ you can now run any node/npm commands from inside the venv.
 
 ## Debugging
 
+### CLI
+
 To debug pyright, open the root source directory within VS Code. Open the debug sub-panel and choose “Pyright CLI” from the debug target menu. Click on the green “run” icon or press F5 to build and launch the command-line version in the VS Code debugger. There's also a similar option that provides a slightly faster build/debug loop: make sure you've built the pyright-internal project e.g. with Terminal > Run Build Task > tsc: watch, then choose “Pyright CLI (pyright-internal)”.
+
+### VSCode extension
 
 To debug the VS Code extension, select “Pyright extension” from the debug target menu. Click on the green “run” icon or press F5 to build and launch a second copy of VS Code with the extension. Within the second VS Code instance, open a python source file so the pyright extension is loaded. Return to the first instance of VS Code and select “Pyright extension attach server” from the debug target menu and click the green “run” icon. This will attach the debugger to the process that hosts the type checker. You can now set breakpoints, etc.
 
@@ -34,3 +38,7 @@ To debug the VS Code extension in watch mode, you can do the above, but select �
     while the VSCode extension is running in this mode, you can run the `npm: lsp-inspect` task to launch the [LSP inspector](https://lsp-devtools.readthedocs.io/en/latest/lsp-devtools/guide/inspect-command.html), which allows you to browse all messages sent between the client and server:
 
     ![](./lspinspector.svg)
+
+### Language server
+
+you may want to debug the language server without the VSCcode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using [LSP-inspector](https://github.com/swyddfa/lsp-devtools)'s client by running the `npm: lsp-client` task.
