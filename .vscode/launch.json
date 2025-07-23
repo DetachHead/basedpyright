@@ -133,6 +133,29 @@
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "program": "${workspaceFolder}/packages/pyright-internal/node_modules/jest/bin/jest"
+        },
+        {
+            // this config is only needed because the integrated terminal doesn't work with textual on windows for some reason.
+            // on linux/mac you can just run the lsp-client npm task, but this may still be useful if you want the client to open
+            // in a separate window.
+            "name": "LSP client",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "${command:python.interpreterPath}",
+            "runtimeArgs": ["pw", "uv", "run", "--no-sync", "lsp-devtools", "client", "--", "node"],
+            "program": "packages/pyright/langserver.index.js",
+            "args": ["--stdio"],
+            "console": "externalTerminal",
+        },
+        {
+            // this config is only needed if you are debugging the localization helper script, or if you are using windows (see
+            // comment above). otherwise you can just run the lsp-client npm task, but this may still be useful if you want the
+            // client to open in a separate window.
+            "name": "localization helper",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "build/py3_13/localization_helper.py",
+            "console": "externalTerminal",
         }
     ]
 }
