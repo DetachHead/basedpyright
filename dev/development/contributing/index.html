@@ -1426,6 +1426,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vscode-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      VSCode extension
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#language-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Language server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1586,6 +1619,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vscode-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      VSCode extension
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#language-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Language server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1618,18 +1684,31 @@
 <li>hit <code>F1</code> &gt; <code>Tasks: Run task</code> &gt; <code>install dependencies</code>, or run the following command:
     <div class="highlight"><pre><span></span><code>./pw uv sync
 </code></pre></div>
-    this will install all dependencies required for the project (pyprojectx, pdm, node, typescript, etc.). all dependencies are installed locally to <code>./.venv</code> and <code>./node_modules</code></li>
+    this will install all dependencies required for the project (pyprojectx, uv, node, typescript, etc.). all dependencies are installed locally to <code>./.venv</code> and <code>./node_modules</code></li>
 <li>press "Yes" when prompted by vscode to use the newly created virtualenv</li>
 </ol>
 <p>you can now run any node/npm commands from inside the venv.</p>
 <h2 id="debugging">Debugging</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>these instructions assume you are using VSCode/VSCodium. if you are using another editor, npm tasks can be run via the command line with <code>npm run script-name</code>. you can view all the available scripts in the root <code>./package.json</code>, but VSCode-specific debug configs will be unavailable.</p>
+</div>
+<h3 id="cli">CLI</h3>
 <p>To debug pyright, open the root source directory within VS Code. Open the debug sub-panel and choose “Pyright CLI” from the debug target menu. Click on the green “run” icon or press F5 to build and launch the command-line version in the VS Code debugger. There's also a similar option that provides a slightly faster build/debug loop: make sure you've built the pyright-internal project e.g. with Terminal &gt; Run Build Task &gt; tsc: watch, then choose “Pyright CLI (pyright-internal)”.</p>
+<h3 id="vscode-extension">VSCode extension</h3>
 <p>To debug the VS Code extension, select “Pyright extension” from the debug target menu. Click on the green “run” icon or press F5 to build and launch a second copy of VS Code with the extension. Within the second VS Code instance, open a python source file so the pyright extension is loaded. Return to the first instance of VS Code and select “Pyright extension attach server” from the debug target menu and click the green “run” icon. This will attach the debugger to the process that hosts the type checker. You can now set breakpoints, etc.</p>
 <p>To debug the VS Code extension in watch mode, you can do the above, but select “Pyright extension (watch mode)”. When pyright's source is saved, an incremental build will occur, and you can either reload the second VS Code window or relaunch it to start using the updated code. Note that the watcher stays open when debugging stops, so you may need to stop it (or close VS Code) if you want to perform packaging steps without the output potentially being overwritten.</p>
 <div class="admonition tip">
 <p class="admonition-title">inspecting LSP messages</p>
 <p>while the VSCode extension is running in this mode, you can run the <code>npm: lsp-inspect</code> task to launch the <a href="https://lsp-devtools.readthedocs.io/en/latest/lsp-devtools/guide/inspect-command.html">LSP inspector</a>, which allows you to browse all messages sent between the client and server:</p>
 <p><img alt="" src="../lspinspector.svg" /></p>
+<p>note that this does not work on windows, see <a href="https://github.com/swyddfa/lsp-devtools/issues/125">this issue</a>. as a workaround you can use <a href="#language-server">the client</a> instead.</p>
+</div>
+<h3 id="language-server">Language server</h3>
+<p>you may want to debug the language server without the VSCcode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using <a href="https://github.com/swyddfa/lsp-devtools">LSP-inspector</a>'s client by running the <code>npm: lsp-client</code> task or the "LSP client" launch config</p>
+<div class="admonition note">
+<p class="admonition-title">for windows users</p>
+<p>the npm script will not work if run from VSCode's task runner. use the launch config instead.</p>
 </div>
 
 
