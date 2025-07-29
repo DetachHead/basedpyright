@@ -1969,7 +1969,7 @@
         "clean": "shx rm -rf ./dist ./out README.md",
         "prepack": "pnpm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && pnpm run build",
         "prepackage": "node ./build/renamePackage.js basedpyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js pyright && cd ../vscode-pyright",
-        "package": "vsce package",
+        "package": "vsce package --no-dependencies",
         "postpackage": "node ./build/renamePackage.js vscode-pyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js basedpyright && cd ../vscode-pyright",
         "vscode:prepublish": "node ./build/checkPackage.js && pnpm run clean && webpack --mode production --progress && shx cp ../../README.md .",
         "webpack": "webpack --mode development --progress",
