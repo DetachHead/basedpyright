@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copy, copyfile, copytree
 from typing import TYPE_CHECKING, TypedDict, cast
 
-from nodejs_wheel.executable import npm
+from nodejs_wheel.executable import corepack
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
 
@@ -19,10 +19,10 @@ class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-def run_npm(*args: str):
-    exit_code = npm(args)
+def run_pnpm(*args: str):
+    exit_code = corepack(("pnpm", *args))
     if exit_code != 0:
-        raise Exception(f"the following npm command exited with {exit_code=}: {args}")
+        raise Exception(f"the following corepack command exited with {exit_code=}: {args}")
 
 
 # https://github.com/pdm-project/pdm-backend/issues/247
@@ -41,8 +41,8 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         if context.builder.config_settings.get("regenerate_docstubs") != "false":
             generate_docstubs(overwrite=True)
 
-        run_npm("ci")
-        run_npm("run", "build:cli:dev")
+        run_pnpm("install")
+        run_pnpm("run", "build:cli:dev")
 
         if context.target == "editable":
             copy(npm_package_dir / package_json, pypi_package_dir)

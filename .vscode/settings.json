@@ -83,9 +83,9 @@
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
     "typescript.inlayHints.enumMemberValues.enabled": true,
-    "jest.jestCommandLine": "npm run jest --",
-    // use this instead if running on linux/macos, see https://github.com/jest-community/vscode-jest/issues/1252
-    // "jest.jestCommandLine": "./pw uv run npm run jest --",
+    // use this instead if running on windows, see https://github.com/jest-community/vscode-jest/issues/1252
+    // "jest.jestCommandLine": "pnpm run jest --",
+    "jest.jestCommandLine": "./pw uv run pnpm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pyprojectx/**/*": true,
@@ -97,7 +97,7 @@
         "basedpyright/index.js": true,
         "basedpyright/langserver.index.js": true,
         "docstubs/**/*": true,
-        "package-lock.json": true,
+        "pnpm-lock.yaml": true,
         "uv.lock": true,
         "pw.lock": true,
         "pw": true,
@@ -122,5 +122,7 @@
         "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format",
         "tag:yaml.org,2002:python/object/apply:pymdownx.slugs.slugify mapping"
     ],
-    "telemetry.feedback.enabled": false
+    "telemetry.feedback.enabled": false,
+    "npm.packageManager": "pnpm",
+    "npm.scriptRunner": "pnpm"
 }

@@ -98,7 +98,7 @@ jobs:
       # ideally this should be run with the rest of the pytest tests in the validation workflow,
       # but they depend on the docstubs generated in the previous job
       - name: validate docstubs
-        run: uv run npm run test-python -- -m needs_all_docstubs
+        run: uv run pnpm run test-python -m needs_all_docstubs
 
       - id: current-version
         # https://github.com/astral-sh/uv/issues/6298
@@ -106,6 +106,8 @@ jobs:
           echo ::set-output name=CURRENT_VERSION::$(uv run python -c "from build.py3_8.version import get;print(get())")
           echo ::set-output name=CURRENT_UPSTREAM_VERSION::$(uv run node -p "require(\"./package.json\").version")
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
+
+      # ideally we sould be using pnpm for all these commands, see https://github.com/njzjz/nodejs-wheel/issues/136
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
@@ -120,7 +122,7 @@ jobs:
       - name: Build VSIX
         working-directory: ${{ env.VSIX_DIR }}
         run: |
-          uv run npm run package
+          uv run pnpm run package
           mv basedpyright-*.vsix ${{ env.VSIX_NAME }}
 
       - uses: actions/upload-artifact@v4

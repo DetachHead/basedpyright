@@ -19,7 +19,7 @@ def define_env(env: MacrosPlugin):
 
 def generate_diagnostic_rule_table() -> str:
     """generates the table of `typeCheckingMode` defaults"""
-    _ = run(["npm", "run", "build:cli:dev"])
+    _ = run(["pnpm", "run", "build:cli:dev"])
     diagnostic_rulesets: list[dict[str, bool | str]] = json.loads(
         run(["node", "packages/pyright/index.js", "--printdiagnosticrulesets"]).stdout
     )

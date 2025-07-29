@@ -2,21 +2,21 @@
     "name": "pyright-root",
     "private": true,
     "scripts": {
-        "build:extension:dev": "cd packages/vscode-pyright && npm run webpack",
-        "build:extension": "cd packages/vscode-pyright && npm run package",
-        "build:cli:dev": "cd packages/pyright && npm run webpack",
-        "watch:extension": "cd packages/vscode-pyright && npm run webpack-dev",
-        "watch:testserver": "cd packages/pyright-internal && npm run webpack:testserver:watch",
-        "check": "npm run check:syncpack && npm run check:eslint && npm run check:prettier",
+        "build:extension:dev": "cd packages/vscode-pyright && pnpm run webpack",
+        "build:extension": "cd packages/vscode-pyright && pnpm run package",
+        "build:cli:dev": "cd packages/pyright && corepack pnpm run webpack",
+        "watch:extension": "cd packages/vscode-pyright && pnpm run webpack-dev",
+        "watch:testserver": "cd packages/pyright-internal && pnpm run webpack:testserver:watch",
+        "check": "pnpm run check:syncpack && pnpm run check:eslint && pnpm run check:prettier",
         "check:syncpack": "syncpack list-mismatches",
-        "fix:syncpack": "syncpack fix-mismatches --indent \"    \" && npm run install:all",
+        "fix:syncpack": "syncpack fix-mismatches --indent \"    \" && pnpm install",
         "check:eslint": "eslint .",
         "fix:eslint": "eslint --fix .",
         "check:prettier": "prettier -c .",
         "fix:prettier": "prettier --write .",
-        "typecheck": "npm exec --workspaces -- tsc --noEmit",
-        "run:cli": "npm run build:cli:dev && node packages/pyright/index.js",
-        "run:langserver": "npm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
+        "typecheck": "pnpm --filter \"./packages/**\" exec tsc --noEmit",
+        "run:cli": "pnpm run build:cli:dev && node packages/pyright/index.js",
+        "run:langserver": "pnpm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
         "jest": "cd packages/pyright-internal && jest",
         "update-python-deps": "uv sync --upgrade",
         "update-pyprojectx-lockfile": "python pw --lock",
@@ -53,5 +53,5 @@
         "word-wrap": "1.2.5",
         "yargs": "^16.2.0"
     },
-    "workspaces": ["packages/*"]
+    "packageManager": "pnpm@10.14.0-0+sha512.2cd47a0cbf5f1d1de7693a88307a0ede5be94e0d3b34853d800ee775efbea0650cb562b77605ec80bc8d925f5cd27c4dfe8bb04d3a0b76090784c664450d32d6"
 }

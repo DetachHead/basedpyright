@@ -64,7 +64,10 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [tool.pyprojectx]
 lock-python-version = "3.8"
-main = ["uv"]
+
+[tool.pyprojectx.main]
+requirements = ["uv"]
+post-install = "uv run corepack enable"
 
 [tool.uv]
 default-groups = ["dev", "docstubs", "lochelper"]
@@ -83,7 +86,7 @@ source-includes = [
     "packages/pyright",
     "packages/pyright-internal",
     "package.json",
-    "package-lock.json",
+    "pnpm-lock.yaml",
     "tsconfig.json",
 ]
 

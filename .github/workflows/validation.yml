@@ -17,12 +17,12 @@ jobs:
         run: realpath ./.pyprojectx/main >> $GITHUB_PATH
 
       - name: typescript typecheck
-        run: uv run npm run typecheck
+        run: uv run pnpm run typecheck
 
-      - run: uv run npm run check
+      - run: uv run pnpm run check
 
       - name: python typecheck
-        run: uv run npm run typecheck-python
+        run: uv run pnpm run typecheck-python
 
       - name: ruff check
         run: uv run ruff check --output-format github
@@ -31,7 +31,7 @@ jobs:
         run: uv run ruff format --check --diff
 
       - name: pylint
-        run: uv run npm run pylint
+        run: uv run pnpm run pylint
 
   tests:
     strategy:
@@ -61,10 +61,10 @@ jobs:
           echo (resolve-path "./.pyprojectx/main").path | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: python tests
-        run: uv run npm run test-python -- -m "not needs_all_docstubs"
+        run: uv run pnpm run test-python -m "not needs_all_docstubs"
 
       - name: npm test (pyright-internal)
-        run: uv run npm test
+        run: uv run pnpm test
         working-directory: packages/pyright-internal
 
       # TODO: all tests run in a venv now so i dont think any of this stuff is needed anymore
@@ -93,13 +93,13 @@ jobs:
         env:
           CI_IMPORT_TEST_VENVPATH: '../../'
           CI_IMPORT_TEST_VENV: '.venv'
-        run: uv run npm run test:imports
+        run: uv run pnpm run test:imports
         working-directory: packages/pyright-internal
 
       - name: Run import tests with pythonpath
         env:
           CI_IMPORT_TEST_PYTHONPATH: ${{env.python_venv_path}}
-        run: uv run npm run test:imports
+        run: uv run pnpm run test:imports
         working-directory: packages/pyright-internal
 
   required:

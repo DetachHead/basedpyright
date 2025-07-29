@@ -1,3 +1,4 @@
 [main]
-requirements = ["uv==0.7.20"]
-hash = "45210da832f9626829457a65e9e7c4d0"
+requirements = ["uv==0.8.3"]
+hash = "038cedbdb201e1b363ca877485e4fde5"
+post-install = "uv run corepack enable"

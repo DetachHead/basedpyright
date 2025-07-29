@@ -1967,13 +1967,13 @@
     },
     "scripts": {
         "clean": "shx rm -rf ./dist ./out README.md",
-        "prepack": "npm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && npm run build",
+        "prepack": "pnpm run clean && shx cp ../../README.md . && shx cp ../../LICENSE.txt . && pnpm run build",
         "prepackage": "node ./build/renamePackage.js basedpyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js pyright && cd ../vscode-pyright",
         "package": "vsce package",
         "postpackage": "node ./build/renamePackage.js vscode-pyright && cd ../pyright && node ../vscode-pyright/build/renamePackage.js basedpyright && cd ../vscode-pyright",
-        "vscode:prepublish": "node ./build/checkPackage.js && npm run clean && webpack --mode production --progress && shx cp ../../README.md .",
+        "vscode:prepublish": "node ./build/checkPackage.js && pnpm run clean && webpack --mode production --progress && shx cp ../../README.md .",
         "webpack": "webpack --mode development --progress",
-        "webpack-dev": "npm run clean && webpack --mode development --watch --progress"
+        "webpack-dev": "pnpm run clean && webpack --mode development --watch --progress"
     },
     "dependencies": {
         "@vscode/python-extension": "^1.0.5",
@@ -1986,6 +1986,7 @@
         "@types/node": "^22.10.5",
         "@types/vscode": "^1.100.0",
         "@vscode/vsce": "^2.32.0",
+        "chalk": "^4.1.2",
         "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",
         "ovsx": "^0.8.3",
