@@ -124,5 +124,6 @@
     ],
     "telemetry.feedback.enabled": false,
     "npm.packageManager": "pnpm",
-    "npm.scriptRunner": "pnpm"
+    "npm.scriptRunner": "pnpm",
+    "terminal.integrated.scrollback": 10000
 }
