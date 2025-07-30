@@ -83,9 +83,9 @@
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
     "typescript.inlayHints.enumMemberValues.enabled": true,
-    "jest.jestCommandLine": "npm run jest --",
-    // use this instead if running on linux/macos, see https://github.com/jest-community/vscode-jest/issues/1252
-    // "jest.jestCommandLine": "./pw uv run npm run jest --",
+    // use this instead if running on windows, see https://github.com/jest-community/vscode-jest/issues/1252
+    // "jest.jestCommandLine": "pnpm run jest --",
+    "jest.jestCommandLine": "./pw uv run pnpm run jest --",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pyprojectx/**/*": true,
