@@ -2,6 +2,30 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // hack to make the jest vscode extension use the venv's version of node, since it ignores the PATH set in settings.json.
+            // this is only used when debugging tests. the normal run config is in settings.json (jest.jestCommandLine)
+            "type": "node",
+            "name": "vscode-jest-tests.v2",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "args": [
+                "--runInBand",
+                "--watchAll=false",
+                "--testNamePattern",
+                "${jest.testNamePattern}",
+                "--runTestsByPath",
+                "${jest.testFile}"
+            ],
+            "cwd": "${workspaceFolder}/packages/pyright-internal",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "runtimeExecutable": "${workspaceFolder}/.venv/bin/node",
+            "windows": {
+                "runtimeExecutable": "${workspaceFolder}/.venv/Scripts/node.exe",
+                "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+            }
+        },
+        {
             "name":"Python Current File (justMyCode=false)",
             "type":"debugpy",
             "request":"launch",
