@@ -75,6 +75,15 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                     imports: new Set(),
                 },
             },
+            {
+                inlayHintType: 'variable',
+                position: 1008,
+                value: ': list[Any]',
+                imports: {
+                    importFroms: new Map([['typing', new Set(['Any'])]]),
+                    imports: new Set(),
+                },
+            },
         ]);
     });
 

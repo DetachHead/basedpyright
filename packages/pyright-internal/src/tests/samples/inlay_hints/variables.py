@@ -19,6 +19,16 @@ def asdf(a: Foo, b: type[Foo], c: int | str, d: Literal[1, 2], e: type[int], f: 
     quxx = e # inlay hint (type, but not TypeAlias)
     quxxx = f
     quxxxx = g
+    (a1, a2) = (1, 2)
 
 class Baz(Enum):
     a = 1 # no inlay hint
+
+class Qux:
+    def __init__(self) -> None:
+        self.a = []
+
+
+Qux().a = [] # no inlay hint, not a declaratioin
+qux: Qux = Qux()
+qux.a = [] # no inlay hint
