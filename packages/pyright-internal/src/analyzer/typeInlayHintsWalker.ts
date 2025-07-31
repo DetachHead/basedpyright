@@ -16,10 +16,10 @@ import {
 import { ProgramView } from '../common/extensibility';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
+    AssignmentNode,
     CallNode,
     ClassNode,
     FunctionNode,
-    NameNode,
     ParamCategory,
     ParseNode,
     ParseNodeBase,
@@ -89,13 +89,6 @@ function isIgnoredBuiltin(type: FunctionType): boolean {
     return ignoredBuiltinFunctions.has(type.shared.fullName);
 }
 
-function isLeftSideOfAssignment(node: ParseNode): boolean {
-    if (node.parent?.nodeType !== ParseNodeType.Assignment) {
-        return false;
-    }
-    return node.start < node.parent.d.rightExpr.start;
-}
-
 export class TypeInlayHintsWalker extends ParseTreeWalker {
     featureItems: TypeInlayHintsItemType[] = [];
     parseResults?: ParseFileResults;
@@ -138,17 +131,27 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
         return super.visitClass(node);
     }
 
-    override visitName(node: NameNode): boolean {
+    override visitAssignment(node: AssignmentNode): boolean {
+        const leftExpr = node.d.leftExpr;
+        const isNameNode = leftExpr.nodeType === ParseNodeType.Name;
+        const isMemberAccessNode = leftExpr.nodeType === ParseNodeType.MemberAccess;
         if (
             this._settings.variableTypes &&
             this._checkInRange(node) &&
-            isLeftSideOfAssignment(node) &&
-            !isDunderName(node.d.value) &&
-            !isUnderscoreOnlyName(node.d.value) &&
-            !this._variablesThatShouldntHaveInlayHints.has(node)
+            // only put the inlay hint if the assigmment is on a name or member access expression but not tuple expressions.
+            // we whitelist name and member access instead of blaclisting tuple expressions in case there are also other
+            // node types that can be assigned to that i'm forgetting about
+            ((isMemberAccessNode &&
+                // if it's a member access expression, only show the inlay hint if it's the declaration
+                this._program.evaluator
+                    ?.getDeclInfoForNameNode(leftExpr.d.member)
+                    ?.decls.some((declaration) => declaration.node === leftExpr.d.member)) ||
+                // if it's a name, only show the inlay hint if it's not a variable called `_` or a dunder name
+                (isNameNode && !isDunderName(leftExpr.d.value) && !isUnderscoreOnlyName(leftExpr.d.value))) &&
+            !this._variablesThatShouldntHaveInlayHints.has(leftExpr)
         ) {
             const evaluator = this._program.evaluator;
-            const type = evaluator?.getType(node);
+            const type = evaluator?.getType(leftExpr);
             if (
                 evaluator &&
                 type &&
@@ -157,31 +160,37 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 !isTypeVar(type) &&
                 !isParamSpec(type)
             ) {
+                if (isMemberAccessNode) {
+                    const declarations = this._program.evaluator?.getDeclInfoForNameNode(leftExpr.d.member)?.decls;
+                    if (!declarations?.find((declaration) => declaration.node === leftExpr.d.member)) {
+                        return super.visitAssignment(node);
+                    }
+                }
                 let importTracker: ImportTracker;
                 let inlayHintValue;
                 if (
                     type.props?.typeAliasInfo &&
-                    node.nodeType === ParseNodeType.Name &&
+                    isNameNode &&
                     // prevent variables whose type comes from a type alias from being incorrectly treated as a TypeAlias.
-                    getTypeAliasInfo(type)?.shared.name === node.d.value
+                    getTypeAliasInfo(type)?.shared.name === leftExpr.d.value
                 ) {
                     inlayHintValue = 'TypeAlias';
-                    importTracker = new ImportTracker(this._fileUri, (name) => evaluator.getTypingType(node, name));
+                    importTracker = new ImportTracker(this._fileUri, (name) => evaluator.getTypingType(leftExpr, name));
                     importTracker.addTypingImport(inlayHintValue);
                 } else {
-                    const result = this._printType(node, type);
+                    const result = this._printType(leftExpr, type);
                     inlayHintValue = result.value;
                     importTracker = result.imports;
                 }
                 this.featureItems.push({
                     inlayHintType: 'variable',
-                    position: this._endOfNode(node),
+                    position: this._endOfNode(leftExpr),
                     value: `: ${inlayHintValue}`,
                     imports: importTracker.result,
                 });
             }
         }
-        return super.visitName(node);
+        return super.visitAssignment(node);
     }
 
     override visitCall(node: CallNode): boolean {
