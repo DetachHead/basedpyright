@@ -1,0 +1,4 @@
+#!/bin/bash
+# see jest.jestCommandLine in settings.json
+PATH=$(pwd)/.venv/bin:$PATH
+npm run jest -- "$@"

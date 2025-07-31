@@ -83,9 +83,10 @@
     "ruff.nativeServer": true,
     "typescript.inlayHints.parameterNames.enabled": "literals",
     "typescript.inlayHints.enumMemberValues.enabled": true,
-    // use this instead if running on windows, see https://github.com/jest-community/vscode-jest/issues/1252
-    // "jest.jestCommandLine": "npm run jest --",
-    "jest.jestCommandLine": "./pw uv run npm run jest --",
+    // this is a hack to make the jest vscode extension use the venv's version of node (from nodejs-wheel),
+    // since it ignores the PATH from terminal.integrated.env. this is not used when debugging tests.
+    // the run config for that is in launch.json (vscode-jest-tests.v2)
+    "jest.jestCommandLine": "\"./.vscode/jest\"",
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pyprojectx/**/*": true,
