@@ -1048,9 +1048,56 @@ describe(`Basic language server tests`, () => {
                     ],
                 });
             });
+            test('relative import', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// baz = 1[|/*marker*/|]
+////
+// @filename: foo/qux.py
+//// from .bar import baz
+//// baz
+////
+    `;
+                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+                openFile(serverInfo, 'marker');
+                const marker = serverInfo.testData.markerPositions.get('marker')!;
+                const result = await serverInfo.connection.sendRequest(
+                    WillRenameFilesRequest.type,
+                    {
+                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/foo/bazz.py' }],
+                    },
+                    CancellationToken.None
+                );
+                assertEqual(result, {
+                    documentChanges: [
+                        {
+                            edits: [],
+                            textDocument: {
+                                uri: marker.fileUri.toString(),
+                                version: null,
+                            },
+                        },
+                        {
+                            edits: [
+                                {
+                                    range: {
+                                        start: { line: 0, character: 6 },
+                                        end: { line: 0, character: 9 },
+                                    },
+                                    newText: 'bazz',
+                                },
+                            ],
+                            textDocument: {
+                                uri: 'file:///src/foo/qux.py',
+                                version: null,
+                            },
+                        },
+                    ],
+                });
+            });
         });
     });
-    describe('error on invalid config', async () => {
+    describe('error on invalid config', () => {
         test('config file', async () => {
             const code = `
 // @filename: test.py

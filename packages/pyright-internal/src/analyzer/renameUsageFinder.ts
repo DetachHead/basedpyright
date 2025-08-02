@@ -1,7 +1,7 @@
 import { TextEdit } from 'vscode-languageserver-types';
 import { ModuleNameNode, NameNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseTreeWalker } from './parseTreeWalker';
-import { getFileInfo } from './analyzerNodeInfo';
+import { getFileInfo, getImportInfo } from './analyzerNodeInfo';
 import { convertTextRangeToRange } from '../common/positionUtils';
 import { ParseFileResults } from '../parser/parser';
 import { Uri } from '../common/uri/uri';
@@ -18,6 +18,8 @@ export class RenameUsageFinder extends ParseTreeWalker {
     private _oldModuleName: string;
     private _newModuleName: string;
     private _lines: TextRangeCollection<TextRange>;
+    private _oldImport: string;
+    private _newImport: string;
 
     constructor(
         private _program: Program,
@@ -33,12 +35,19 @@ export class RenameUsageFinder extends ParseTreeWalker {
                 : this._uriToModuleName(oldFile);
 
         this._newModuleName = this._uriToModuleName(newUri);
+        this._oldImport = this._getImportedName(this._oldModuleName);
+        this._newImport = this._getImportedName(this._newModuleName);
     }
 
+    // ideally this would be covered by visitName, but it seems that for performance reasons,
+    // TypeEvaluator.getType doesn't evaluate types on `NameNode`s in import statements
     override visitModuleName = (node: ModuleNameNode): boolean => {
-        // ideally this would be covered by visitName, but it seems that for performance reasons,
-        // TypeEvaluator.getType doesn't evaluate types on `NameNode`s in import statements
-        const currentNameParts: string[] = [];
+        const importInfo = getImportInfo(node);
+        // if it's a relative import we need to evaluate the parts of the name that would otherwise appear before the
+        //leading dots
+        const currentNameParts = importInfo?.isRelative
+            ? this._uriToModuleName(importInfo.resolvedUris[0]).split('.').slice(0, -node.d.nameParts.length)
+            : [];
         node.d.nameParts.forEach((name) => {
             currentNameParts.push(name.d.value);
             this._visitName(name, currentNameParts.join('.'));
@@ -64,12 +73,10 @@ export class RenameUsageFinder extends ParseTreeWalker {
 
     private _visitName = (node: NameNode, moduleName: string) => {
         if (moduleName === this._oldModuleName) {
-            const oldImport = this._getImportedName(this._oldModuleName);
-            const newImport = this._getImportedName(this._newModuleName);
-            if (node.d.value === oldImport && newImport !== oldImport) {
+            if (node.d.value === this._oldImport && this._newImport !== this._oldImport) {
                 this.edits.push({
                     range: convertTextRangeToRange(node, this._lines),
-                    newText: newImport,
+                    newText: this._newImport,
                 });
             }
         }
