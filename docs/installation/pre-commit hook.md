@@ -25,3 +25,7 @@ pre-commit can be useful when the tool does not have a pypi package, because it 
 ### running basedpyright in the CI
 
 basedpyright already [integrates well with CI by default](../benefits-over-pyright/improved-ci-integration.md) when using the pypi package.
+
+!!! tip "if you still want to use the pre-commit hook"
+
+    you may want to check out [prefligit](https://github.com/j178/prefligit) instead, which is a drop-in replacement for pre-commit written in rust (🚀)
