@@ -1653,6 +1653,10 @@
 <p>pre-commit can be useful when the tool does not have a pypi package, because it can automatically manage nodejs and install npm packages for you without you ever having to install nodejs yourself. basedpyright already solves this problem with pyright by <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/">bundling the npm package as a pypi package</a>, so you don't need to use pre-commit.</p>
 <h3 id="running-basedpyright-in-the-ci">running basedpyright in the CI</h3>
 <p>basedpyright already <a href="../../benefits-over-pyright/improved-ci-integration/">integrates well with CI by default</a> when using the pypi package.</p>
+<div class="admonition tip">
+<p class="admonition-title">if you still want to use the pre-commit hook</p>
+<p>you may want to check out <a href="https://github.com/j178/prefligit">prefligit</a> instead, which is a drop-in replacement for pre-commit written in rust (🚀)</p>
+</div>
 
 
 
