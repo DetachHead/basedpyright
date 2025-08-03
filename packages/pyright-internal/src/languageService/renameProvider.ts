@@ -84,7 +84,12 @@ export class RenameProvider {
 
         switch (renameMode) {
             case 'singleFileMode':
-                referenceProvider.addReferencesToResult(this._fileUri, /* includeDeclaration */ true, referencesResult);
+                referenceProvider.addReferencesToResult(
+                    this._fileUri,
+                    /* includeDeclaration */ true,
+                    referencesResult,
+                    undefined
+                );
                 break;
 
             case 'multiFileMode': {
@@ -105,7 +110,8 @@ export class RenameProvider {
                         referenceProvider.addReferencesToResult(
                             curSourceFileInfo.uri,
                             /* includeDeclaration */ true,
-                            referencesResult
+                            referencesResult,
+                            undefined
                         );
                     }
 

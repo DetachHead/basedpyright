@@ -10,14 +10,14 @@
 
 import { CancellationToken, Location, ResultProgressReporter } from 'vscode-languageserver';
 
-import { Declaration, DeclarationType, isAliasDeclaration } from '../analyzer/declaration';
+import { ClassDeclaration, Declaration, DeclarationType, isAliasDeclaration } from '../analyzer/declaration';
 import { getNameFromDeclaration } from '../analyzer/declarationUtils';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
 import { Symbol } from '../analyzer/symbol';
 import { isVisibleExternally } from '../analyzer/symbolUtils';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
-import { maxTypeRecursionCount } from '../analyzer/types';
+import { maxTypeRecursionCount, TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -34,6 +34,7 @@ import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
 import { convertDocumentRangesToLocation } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
+import { isConstructor } from '../analyzer/constructors';
 
 export type ReferenceCallback = (locations: DocumentRange[]) => void;
 
@@ -124,7 +125,8 @@ export class FindReferencesTreeWalker {
             fileUri: Uri,
             result: CollectionResult,
             parseResults: ParseFileResults
-        ) => DocumentRange = FindReferencesTreeWalker.createDocumentRange
+        ) => DocumentRange = FindReferencesTreeWalker.createDocumentRange,
+        private readonly _checkConstructorUsagesForClass: ClassDeclaration | undefined
     ) {
         this._parseResults = this._program.getParseResults(this._fileUri);
     }
@@ -149,7 +151,28 @@ export class FindReferencesTreeWalker {
             }
         );
 
-        for (const result of collector.collect()) {
+        const collectionResults = collector.collect();
+
+        if (this._checkConstructorUsagesForClass) {
+            const classCollector = new DocumentSymbolCollector(
+                this._program,
+                [this._checkConstructorUsagesForClass.node.d.name.d.value],
+                [this._checkConstructorUsagesForClass],
+                rootNode!,
+                this._cancellationToken,
+                {
+                    treatModuleInImportAndFromImportSame: true,
+                    skipUnreachableCode: false,
+                    useCase: this._referencesResult.useCase,
+                    providers: this._referencesResult.providers,
+                }
+            );
+            collectionResults.push(
+                ...classCollector.collect().filter((result) => result.node.parent?.nodeType === ParseNodeType.Call)
+            );
+        }
+
+        for (const result of collectionResults) {
             // Is it the same symbol?
             if (this._includeDeclaration || result.node !== this._referencesResult.nodeAtOffset) {
                 results.push({
@@ -255,9 +278,26 @@ export class ReferencesProvider {
             return;
         }
 
+        const node = referencesResult.nodeAtOffset;
+        let checkConstructorUsagesForClass: ClassDeclaration | undefined;
+        if (node?.nodeType === ParseNodeType.Name && isConstructor(node.d.value)) {
+            const type = this._program.evaluator?.getType(node);
+            if (type?.category === TypeCategory.Function && type.shared.methodClass) {
+                const classDeclaration = type.shared.methodClass.shared.declaration;
+                if (classDeclaration?.type === DeclarationType.Class) {
+                    checkConstructorUsagesForClass = classDeclaration;
+                }
+            }
+        }
+
         // Do we need to do a global search as well?
         if (!referencesResult.requiresGlobalSearch) {
-            this.addReferencesToResult(sourceFileInfo.uri, includeDeclaration, referencesResult);
+            this.addReferencesToResult(
+                sourceFileInfo.uri,
+                includeDeclaration,
+                referencesResult,
+                checkConstructorUsagesForClass
+            );
         }
 
         for (const curSourceFileInfo of this._program.getSourceFileInfoList()) {
@@ -269,8 +309,18 @@ export class ReferencesProvider {
                 // See if the reference symbol's string is located somewhere within the file.
                 // If not, we can skip additional processing for the file.
                 const fileContents = curSourceFileInfo.contents;
-                if (!fileContents || referencesResult.symbolNames.some((s) => fileContents.indexOf(s) >= 0)) {
-                    this.addReferencesToResult(curSourceFileInfo.uri, includeDeclaration, referencesResult);
+
+                if (
+                    checkConstructorUsagesForClass ||
+                    !fileContents ||
+                    referencesResult.symbolNames.some((s) => fileContents.indexOf(s) >= 0)
+                ) {
+                    this.addReferencesToResult(
+                        curSourceFileInfo.uri,
+                        includeDeclaration,
+                        referencesResult,
+                        checkConstructorUsagesForClass
+                    );
                 }
 
                 // This operation can consume significant memory, so check
@@ -298,14 +348,14 @@ export class ReferencesProvider {
 
                 const tempResult = new ReferencesResult(
                     referencesResult.requiresGlobalSearch,
-                    referencesResult.nodeAtOffset,
+                    node,
                     referencesResult.symbolNames,
                     referencesResult.declarations,
                     referencesResult.useCase,
                     referencesResult.providers
                 );
 
-                this.addReferencesToResult(declFileInfo.uri, includeDeclaration, tempResult);
+                this.addReferencesToResult(declFileInfo.uri, includeDeclaration, tempResult, undefined);
                 for (const result of tempResult.results) {
                     // Include declarations only. And throw away any references
                     if (result.location.uri.equals(decl.uri) && isRangeInRange(decl.range, result.location.range)) {
@@ -329,7 +379,12 @@ export class ReferencesProvider {
         return dedupedLocations;
     }
 
-    addReferencesToResult(fileUri: Uri, includeDeclaration: boolean, referencesResult: ReferencesResult): void {
+    addReferencesToResult(
+        fileUri: Uri,
+        includeDeclaration: boolean,
+        referencesResult: ReferencesResult,
+        checkConstructorUsagesForClass: ClassDeclaration | undefined
+    ): void {
         const parseResults = this._program.getParseResults(fileUri);
         if (!parseResults) {
             return;
@@ -341,7 +396,8 @@ export class ReferencesProvider {
             referencesResult,
             includeDeclaration,
             this._token,
-            this._createDocumentRange
+            this._createDocumentRange,
+            checkConstructorUsagesForClass
         );
 
         referencesResult.addResults(...refTreeWalker.findReferences());
