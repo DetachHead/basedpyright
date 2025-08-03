@@ -1124,7 +1124,7 @@ function isDefaultNewMethod(newMethod?: Type): boolean {
 /**
  * Determines whether the name is exempt from Liskov Substitution Principle rules.
  */
-export function isMethodExemptFromLsp(name: string): boolean {
-    const exemptMethods = ['__init__', '__new__', '__init_subclass__', '__post_init__'];
-    return exemptMethods.some((n) => n === name);
-}
+export const isMethodExemptFromLsp = (name: string) =>
+    isConstructor(name) || ['__init_subclass__', '__post_init__'].includes(name);
+
+export const isConstructor = (name: string) => ['__init__', '__new__'].includes(name);

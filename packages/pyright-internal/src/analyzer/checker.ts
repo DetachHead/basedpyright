@@ -95,7 +95,13 @@ import { OperatorType, StringTokenFlags, TokenType } from '../parser/tokenizerTy
 import { AnalyzerFileInfo } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { ConstraintTracker } from './constraintTracker';
-import { getBoundCallMethod, getBoundInitMethod, getBoundNewMethod, isMethodExemptFromLsp } from './constructors';
+import {
+    getBoundCallMethod,
+    getBoundInitMethod,
+    getBoundNewMethod,
+    isConstructor,
+    isMethodExemptFromLsp,
+} from './constructors';
 import { addInheritedDataClassEntries } from './dataClasses';
 import { Declaration, DeclarationType, isAliasDeclaration, isVariableDeclaration } from './declaration';
 import { getNameNodeForDeclaration, hasTypeForDeclaration } from './declarationUtils';
@@ -617,7 +623,6 @@ export class Checker extends ParseTreeWalker {
                 const annotationNode = param.d.annotation || param.d.annotationComment;
                 if (annotationNode && index < functionTypeResult.functionType.shared.parameters.length) {
                     const paramType = FunctionType.getParamType(functionTypeResult.functionType, index);
-                    const exemptMethods = ['__init__', '__new__'];
 
                     if (
                         containingClassNode &&
@@ -625,7 +630,7 @@ export class Checker extends ParseTreeWalker {
                         paramType.priv.scopeType === TypeVarScopeType.Class &&
                         paramType.shared.declaredVariance === Variance.Covariant &&
                         !paramType.shared.isSynthesized &&
-                        !exemptMethods.some((name) => name === functionTypeResult.functionType.shared.name)
+                        !isConstructor(functionTypeResult.functionType.shared.name)
                     ) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportGeneralTypeIssues,
@@ -4372,10 +4377,7 @@ export class Checker extends ParseTreeWalker {
                         if (node.d.value === overload.shared.name) {
                             deprecatedMessage = overload.shared.deprecatedMessage;
                             errorMessage = getDeprecatedMessageForFunction(overload);
-                        } else if (
-                            isInstantiableClass(type) &&
-                            ['__init__', '__new__'].includes(overload.shared.name)
-                        ) {
+                        } else if (isInstantiableClass(type) && isConstructor(overload.shared.name)) {
                             deprecatedMessage = overload.shared.deprecatedMessage;
                             errorMessage = LocMessage.deprecatedConstructor().format({
                                 name: type.shared.name,
