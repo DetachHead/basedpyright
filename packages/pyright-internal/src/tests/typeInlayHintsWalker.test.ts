@@ -1,6 +1,6 @@
+import { tExpect } from 'typed-jest-expect';
 import { ImportTrackerResults } from '../analyzer/typePrinter';
 import { inlayHintSampleFile } from './testUtils';
-import { tExpect } from 'typed-jest-expect';
 
 const noImports: ImportTrackerResults = { imports: new Set(), importFroms: new Map() };
 
@@ -124,6 +124,23 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { inlayHintType: 'parameter', position: 460, value: 'a=' },
             { inlayHintType: 'parameter', position: 488, value: 'b=' },
             { inlayHintType: 'parameter', position: 711, value: 'b=' },
+        ]);
+    });
+
+    test('method calls', () => {
+        const result = inlayHintSampleFile('method_calls.py', undefined);
+        // With callArgumentNamesMatching false, member accesses ending in .foo should NOT show hint
+        // bar(3) shows hint, bar(self.foo) doesn't, bar(baz.quz.qux.foo) doesn't
+        tExpect(result).toStrictEqual([{ inlayHintType: 'parameter', position: 101, value: 'foo=' }]);
+    });
+
+    test('method calls param matching', () => {
+        const result = inlayHintSampleFile('method_calls.py', undefined, { callArgumentNamesMatching: true });
+        // With callArgumentNamesMatching true, all three calls should show hints
+        tExpect(result).toStrictEqual([
+            { inlayHintType: 'parameter', position: 101, value: 'foo=' },
+            { inlayHintType: 'parameter', position: 116, value: 'foo=' }, // this one is unique to callArgumentNamesMatching: true
+            { inlayHintType: 'parameter', position: 138, value: 'foo=' }, // this one is unique to callArgumentNamesMatching: true
         ]);
     });
 
