@@ -28,4 +28,4 @@ basedpyright already [integrates well with CI by default](../benefits-over-pyrig
 
 !!! tip "if you still want to use the pre-commit hook"
 
-    you may want to check out [prefligit](https://github.com/j178/prefligit) instead, which is a drop-in replacement for pre-commit written in rust (🚀)
+    you may want to check out [prek](https://github.com/j178/prek) instead, which is a drop-in replacement for pre-commit written in rust (🚀)
