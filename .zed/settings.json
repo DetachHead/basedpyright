@@ -1,0 +1,19 @@
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["basedpyright", "ruff", "!pyright", "!pylsp"]
+    }
+  },
+  "lsp": {
+    "basedpyright": {
+      "binary": {
+        "path": ".venv/bin/basedpyright-langserver",
+        "arguments": ["--stdio"]
+      }
+    }
+  },
+  "auto_install_extensions": {
+    "basedpyright": true,
+    "ruff": true
+  }
+}
