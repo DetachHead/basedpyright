@@ -190,8 +190,38 @@ Enable and configure basedpyright under Zed settings:
 {
     "languages": {
         "Python": {
-            "language_servers": ["basedpyright"]
+            "language_servers": [
+                "basedpyright",
+                // disable the other python language servers
+                "!pyright",
+                "!pylsp"
+            ]
         }
     }
 }
 ```
+
+??? tip "if adding basedpyright as a development dependency to your project"
+
+    we recommend using project settings (`.zed/settings.json`) with the following:
+
+    - set the path to the language server located inside your venv so that it uses the correct version of basedpyright instead of a globally installed version
+    - add basedpyright to `auto_install_extensions` so that it's automatically installed for other contributors working on your project
+
+    ```json title=".zed/settings.json"
+    {
+        "lsp": {
+            "basedpyright": {
+                "binary": {
+                    "path": ".venv/bin/basedpyright-langserver",
+                    "arguments": ["--stdio"]
+                }
+            }
+        },
+        "auto_install_extensions": {
+            "basedpyright": true
+        }
+    }
+    ```
+
+    you should commit this file so that these settings are automatically applied for other contributors.
