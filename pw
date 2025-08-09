@@ -13,7 +13,9 @@ import os
 import subprocess
 import sys
 import sysconfig
+import zipfile
 from pathlib import Path
+from urllib import request
 
 try:
     from venv import EnvBuilder
@@ -21,8 +23,8 @@ except ImportError:
     EnvBuilder = None
 
 
-VERSION = "3.2.4"
-UV_VERSION = "0.7.13"
+VERSION = "3.2.7"
+UV_VERSION = "0.8.4"
 
 PYPROJECTX_INSTALL_DIR_ENV_VAR = "PYPROJECTX_INSTALL_DIR"
 PYPROJECTX_PACKAGE_ENV_VAR = "PYPROJECTX_PACKAGE"
@@ -43,6 +45,10 @@ if sys.platform.startswith("win"):
 def run(args):
     try:
         options = get_options(args)
+        if options.upgrade:
+            download_wrappers()
+            return
+
         pyprojectx_script = ensure_pyprojectx(options)
         explicit_options = []
         if not options.toml:
@@ -150,7 +156,7 @@ def arg_parser():
     parser.add_argument(
         "--upgrade",
         action="store_true",
-        help="Print instructions to download the latest pyprojectx wrapper scripts.",
+        help="Download the latest pyprojectx wrapper scripts.",
     )
     parser.add_argument(
         "command", nargs=argparse.REMAINDER, help="The command/alias with optional arguments to execute."
@@ -211,7 +217,7 @@ def ensure_pyprojectx(options):  # noqa: C901
             )
             uv = uv_dir / f"uv{EXE}"
             subprocess.run(
-                [uv, "venv", str(venv_dir), "--python", sys.executable],
+                [uv, "venv", str(venv_dir), "--python", sys.executable, "--clear"],
                 stdout=out,
                 check=True,
             )
@@ -232,6 +238,13 @@ def ensure_pyprojectx(options):  # noqa: C901
         subprocess.run([*pip_cmd, options.pyprojectx_package], stdout=out, check=True)
 
     return pyprojectx_script
+
+
+def download_wrappers():
+    latest = "https://github.com/pyprojectx/pyprojectx/releases/latest/download/wrappers.zip"
+    zip_file, _ = request.urlretrieve(latest)  # noqa: S310
+    with zipfile.ZipFile(zip_file, "r") as zip_ref:
+        zip_ref.extractall(Path(__file__).parent)
 
 
 if __name__ == "__main__":
