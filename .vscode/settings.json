@@ -123,5 +123,6 @@
         "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format",
         "tag:yaml.org,2002:python/object/apply:pymdownx.slugs.slugify mapping"
     ],
-    "telemetry.feedback.enabled": false
+    "telemetry.feedback.enabled": false,
+    "workbench.editor.revealIfOpen": true
 }
