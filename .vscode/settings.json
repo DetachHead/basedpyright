@@ -19,6 +19,18 @@
         "editor.defaultFormatter": "tamasfe.even-better-toml",
         "editor.formatOnSave": true
     },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        }
+    },
+    "editor.codeActionsOnSave": {
+        // this is the default, but we disable it explicitly to prevent any user settings from causing imports to get
+        // sorted in typescript files since upstream has unsorted imports and we don't want to have to deal with
+        // unnecessary conflicts
+        "source.organizeImports": "never"
+    },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "node_modules/typescript/lib",
@@ -48,12 +60,6 @@
         "refactor": "Warning",
         "warning": "Warning",
         "info": "Warning"
-    },
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "always"
-        }
     },
     "explorer.compactFolders": false,
     "search.exclude": {
