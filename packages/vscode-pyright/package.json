@@ -212,7 +212,7 @@
                 },
                 "basedpyright.analysis.diagnosticSeverityOverrides": {
                     "type": "object",
-                    "description": "Allows a user to override the severity levels for individual diagnostics. Use the rule name as a key and one of \"error\", \"warning\", \"information\", \"none\", `true` (alias for \"error\") or `false` (alias for \"none\") as value. The default value shown for each diagnostic is the default when \"basedpyright.analysis.typeCheckingMode\" is set to \"standard\". See [here](https://github.com/detachhead/basedpyright/blob/main/docs/configuration.md#diagnostic-rule-defaults) for defaults for each type checking mode (\"off\", \"basic\", \"standard\", \"strict\", and \"all\").",
+                    "markdownDescription": "Allows a user to override the severity levels for individual diagnostics. Use the rule name as a key and one of \"error\", \"warning\", \"information\", \"none\", `true` (alias for \"error\") or `false` (alias for \"none\") as value. The default value shown for each diagnostic is the default when \"basedpyright.analysis.typeCheckingMode\" is set to \"standard\". See [here](https://docs.basedpyright.com/latest/configuration/config-files/#diagnostic-settings-defaults) for defaults for each type checking mode (\"off\", \"basic\", \"standard\", \"strict\", and \"all\").",
                     "scope": "resource",
                     "properties": {
                         "reportGeneralTypeIssues": {
