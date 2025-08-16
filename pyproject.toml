@@ -64,7 +64,6 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [tool.pyprojectx]
 lock-python-version = "3.8"
-main = ["uv"]
 
 [tool.uv]
 default-groups = ["dev", "docstubs", "lochelper"]
