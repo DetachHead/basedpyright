@@ -15410,11 +15410,16 @@ export function createTypeEvaluator(
         }
 
         // Or if the object is in an untyped library that was explicitly mentioned.
+        // Overloaded methods must be handled separately, as the module is stored on the implementation.
+        let moduleName: string | null = null;
         if (type.shared && 'moduleName' in type.shared) {
-            const moduleName = type.shared.moduleName;
-            if (moduleIsInList(ruleset.allowedUntypedLibraries, moduleName)) {
-                return;
-            }
+            moduleName = type.shared.moduleName;
+        }
+        if (type.category === TypeCategory.Overloaded && type.priv._implementation?.shared && 'moduleName' in type.priv._implementation.shared) {
+            moduleName = type.priv._implementation.shared.moduleName;
+        }
+        if (moduleName && moduleIsInList(ruleset.allowedUntypedLibraries, moduleName)) {
+          return;
         }
 
         const nameValue = target.d.value;
