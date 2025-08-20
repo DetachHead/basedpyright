@@ -33,6 +33,7 @@ import {
     openFile,
     PyrightServerInfo,
     runPyrightServer,
+    sleep,
     waitForDiagnostics,
 } from './lsp/languageServerTestUtils';
 import { tExpect } from 'typed-jest-expect';
@@ -61,6 +62,8 @@ describe(`Basic language server tests`, () => {
             supportsPullDiagnostics
         );
         serverInfo = result;
+        //TODO: why is this needed for the rename tests to work?
+        await sleep(500);
         return result;
     }
 
