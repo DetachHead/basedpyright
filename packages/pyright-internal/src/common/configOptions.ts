@@ -7,6 +7,7 @@
  * Class that holds the configuration options for the analyzer.
  */
 
+import { ImportLogger } from '../analyzer/importLogger';
 import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
 import { appendArray } from './collectionUtils';
@@ -1882,13 +1883,13 @@ export class ConfigOptions {
             return;
         }
 
-        const importFailureInfo: string[] = [];
-        this.defaultPythonVersion = host.getPythonVersion(this.pythonPath, importFailureInfo);
+        const importLogger = new ImportLogger();
+        this.defaultPythonVersion = host.getPythonVersion(this.pythonPath, importLogger);
         if (this.defaultPythonVersion !== undefined) {
             console.info(`Assuming Python version ${PythonVersion.toString(this.defaultPythonVersion)}`);
         }
 
-        for (const log of importFailureInfo) {
+        for (const log of importLogger.getLogs()) {
             console.info(log);
         }
     }

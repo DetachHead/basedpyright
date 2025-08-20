@@ -26,7 +26,7 @@ import { convertRangeToTextRange } from '../common/positionUtils';
 import { ServiceKeys } from '../common/serviceKeys';
 import { ServiceProvider } from '../common/serviceProvider';
 import '../common/serviceProviderExtensions';
-import { Range, doRangesIntersect } from '../common/textRange';
+import { Range, TextRange, doRangesIntersect } from '../common/textRange';
 import { Duration, timingStats } from '../common/timing';
 import { Uri } from '../common/uri/uri';
 import { makeDirectories } from '../common/uri/uriUtils';
@@ -78,10 +78,16 @@ interface UpdateImportInfo {
 
 export type PreCheckCallback = (parserOutput: ParserOutput, evaluator: TypeEvaluator) => void;
 
+export interface ChangedRange {
+    range: TextRange;
+    delta: number;
+}
+
 export interface OpenFileOptions {
     isTracked: boolean;
     ipythonMode: IPythonMode;
     chainedFileUri: Uri | undefined;
+    changedRange?: ChangedRange;
 }
 
 // Track edit mode related information.
@@ -133,7 +139,7 @@ export class Program {
     private _configOptions: ConfigOptions;
     private _importResolver: ImportResolver;
     private _evaluator: TypeEvaluator | undefined;
-
+    private _disposed = false;
     private _parsedFileCount = 0;
     private _preCheckCallback: PreCheckCallback | undefined;
     private _editModeTracker = new EditModeTracker();
@@ -193,8 +199,13 @@ export class Program {
         return this._importResolver.fileSystem;
     }
 
+    get isDisposed() {
+        return this._disposed;
+    }
+
     dispose() {
         this._cacheManager.unregisterCacheOwner(this);
+        this._disposed = true;
     }
 
     enterEditMode() {
@@ -340,14 +351,13 @@ export class Program {
         if (cells) {
             cells.forEach((_, index) => {
                 const cellUri = fileUri.withFragment(index.toString());
-                const importName = this._getImportNameForNewSourceFile(cellUri);
-                if (importName === undefined) {
+                if (!this._checkAddNewSourceFile(cellUri)) {
                     return; // continue
                 }
                 const sourceFile = this._sourceFileFactory.createSourceFile(
                     this.serviceProvider,
                     cellUri,
-                    importName,
+                    (uri) => this._getModuleName(uri),
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
@@ -371,14 +381,13 @@ export class Program {
                 sourceFileInfos.push(sourceFileInfo);
             });
         } else {
-            const importName = this._getImportNameForNewSourceFile(fileUri);
-            if (importName === undefined) {
-                return;
+            if (!this._checkAddNewSourceFile(cellUri)) {
+                return; // continue
             }
             const sourceFile = this._sourceFileFactory.createSourceFile(
                 this.serviceProvider,
                 fileUri,
-                importName,
+                (uri) => this._getModuleName(uri),
                 isThirdPartyImport,
                 isInPyTypedPackage,
                 this._editModeTracker,
@@ -411,7 +420,7 @@ export class Program {
             const sourceFile = this._sourceFileFactory.createSourceFile(
                 this.serviceProvider,
                 fileUri,
-                moduleImportInfo.moduleName,
+                (uri) => this._getModuleName(uri),
                 /* isThirdPartyImport */ false,
                 moduleImportInfo.isThirdPartyPyTypedPresent,
                 this._editModeTracker,
@@ -789,6 +798,14 @@ export class Program {
         )?.sourceFile.getParseResults();
     }
 
+    getParseDiagnostics(fileUri: Uri): Diagnostic[] | undefined {
+        return this.getBoundSourceFileInfo(
+            fileUri,
+            /* content */ undefined,
+            /* force */ true
+        )?.sourceFile.getParseDiagnostics();
+    }
+
     handleMemoryHighUsage() {
         this._handleMemoryHighUsage();
     }
@@ -1082,25 +1099,37 @@ export class Program {
         this.serviceProvider.tryGet(ServiceKeys.stateMutationListeners)?.forEach((l) => l.onClearCache?.());
     }
 
+    bindShadowFile(stubFileUri: Uri, shadowFile: Uri): SourceFile | undefined {
+        let stubFileInfo = this.getSourceFileInfo(stubFileUri);
+        if (!stubFileInfo) {
+            // make sure uri exits before adding interimFile
+            if (!this.fileSystem.existsSync(stubFileUri)) {
+                return undefined;
+            }
+
+            // Special case for import statement like "import X.Y". The SourceFile
+            // for X might not be in memory since import `X.Y` only brings in Y.
+            stubFileInfo = this.addInterimFile(stubFileUri);
+        }
+
+        this._addShadowedFile(stubFileInfo, shadowFile);
+        return this.getBoundSourceFile(shadowFile);
+    }
+
     private _isNonUserTypeshedFile = (sourceFile: SourceFile) =>
         sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile();
 
-    /**
-     * @returns `undefined` if the source file is already tracked
-     */
-    private _getImportNameForNewSourceFile = (fileUri: Uri): string | undefined => {
-        const sourceFileInfo = this.getSourceFileInfo(fileUri);
-        const moduleImportInfo = this._getModuleImportInfoForFile(fileUri);
-        const importName = moduleImportInfo.moduleName;
+    private _checkAddNewSourceFile = (fileUri: Uri): boolean => {
+        let sourceFileInfo = this.getSourceFileInfo(fileUri);
 
         if (sourceFileInfo) {
             // The module name may have changed based on updates to the
-            // search paths, so update it here.
-            sourceFileInfo.sourceFile.setModuleName(importName);
+            // search paths. Clear any cached module name so it is recomputed.
+            sourceFileInfo.sourceFile.clearCachedModuleName();
             sourceFileInfo.isTracked = true;
-            return undefined;
+            return false;
         }
-        return importName;
+        return true;
     };
 
     private _handleMemoryHighUsage() {
@@ -1314,22 +1343,7 @@ export class Program {
             this._importResolver,
             execEnv,
             this._evaluator!,
-            (stubFileUri: Uri, implFileUri: Uri) => {
-                let stubFileInfo = this.getSourceFileInfo(stubFileUri);
-                if (!stubFileInfo) {
-                    // make sure uri exits before adding interimFile
-                    if (!this.fileSystem.existsSync(stubFileUri)) {
-                        return undefined;
-                    }
-
-                    // Special case for import statement like "import X.Y". The SourceFile
-                    // for X might not be in memory since import `X.Y` only brings in Y.
-                    stubFileInfo = this.addInterimFile(stubFileUri);
-                }
-
-                this._addShadowedFile(stubFileInfo, implFileUri);
-                return this.getBoundSourceFile(implFileUri);
-            },
+            (stubFileUri: Uri, implFileUri: Uri) => this.bindShadowFile(stubFileUri, implFileUri),
             (f) => {
                 let fileInfo = this.getBoundSourceFileInfo(f);
                 if (!fileInfo) {
@@ -1405,6 +1419,7 @@ export class Program {
                 thirdPartyImportAllowed = true;
             } else if (
                 importResult.isNamespacePackage &&
+                importResult.filteredImplicitImports &&
                 Array.from(importResult.filteredImplicitImports.values()).some(
                     (implicitImport) => !!implicitImport.pyTypedInfo
                 )
@@ -1500,7 +1515,7 @@ export class Program {
                     }
                 }
 
-                importResult.filteredImplicitImports.forEach((implicitImport) => {
+                importResult.filteredImplicitImports?.forEach((implicitImport) => {
                     if (this._isImportAllowed(sourceFileInfo, importResult, implicitImport.isStubFile)) {
                         if (!implicitImport.isNativeLib) {
                             const thirdPartyTypeInfo = getThirdPartyImportInfo(importResult);
@@ -1570,11 +1585,10 @@ export class Program {
                 // of the program.
                 let importedFileInfo = this.getSourceFileInfo(importInfo.path);
                 if (!importedFileInfo) {
-                    const moduleImportInfo = this._getModuleImportInfoForFile(importInfo.path);
                     const sourceFile = this._sourceFileFactory.createSourceFile(
                         this.serviceProvider,
                         importInfo.path,
-                        moduleImportInfo.moduleName,
+                        (uri) => this._getModuleName(uri),
                         importInfo.isThirdPartyImport,
                         importInfo.isPyTypedPresent,
                         this._editModeTracker,
@@ -1648,6 +1662,11 @@ export class Program {
         this._sourceFileMap.set(fileUri.key, fileInfo);
     }
 
+    private _getModuleName(fileUri: Uri): string {
+        const moduleInfo = this._getModuleImportInfoForFile(fileUri);
+        return moduleInfo.moduleName;
+    }
+
     private _getModuleImportInfoForFile(fileUri: Uri) {
         // We allow illegal module names (e.g. names that include "-" in them)
         // because we want a unique name for each module even if it cannot be
@@ -1688,11 +1707,10 @@ export class Program {
     }
 
     private _createInterimFileInfo(fileUri: Uri) {
-        const moduleImportInfo = this._getModuleImportInfoForFile(fileUri);
         const sourceFile = this._sourceFileFactory.createSourceFile(
             this.serviceProvider,
             fileUri,
-            moduleImportInfo.moduleName,
+            (uri) => this._getModuleName(uri),
             /* isThirdPartyImport */ false,
             /* isInPyTypedPackage */ false,
             this._editModeTracker,

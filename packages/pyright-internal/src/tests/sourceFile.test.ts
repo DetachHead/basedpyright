@@ -28,7 +28,7 @@ test('Empty', () => {
     const sourceFile = new SourceFile(
         serviceProvider,
         Uri.file(filePath, serviceProvider),
-        '',
+        () => '',
         false,
         false,
         {

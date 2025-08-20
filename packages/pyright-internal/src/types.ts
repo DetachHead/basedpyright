@@ -27,7 +27,7 @@ export interface ClientCapabilities {
     signatureDocFormat: MarkupKind;
     supportsTaskItemDiagnosticTag: boolean;
     completionItemResolveSupportsAdditionalTextEdits: boolean;
-    usingPullDiagnostics: boolean;
+    supportsPullDiagnostics: boolean;
     requiresPullRelatedInformationCapability: boolean;
     completionItemResolveSupportsTags: boolean;
     onTypeFormatting: boolean;

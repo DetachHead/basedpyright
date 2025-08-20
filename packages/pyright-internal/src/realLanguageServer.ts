@@ -339,7 +339,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                         .then((progress) => {
                             progress.begin('');
                         })
-                        .ignoreErrors();
+                        .catch(() => {});
                 } else {
                     this.connection.sendNotification('pyright/beginProgress');
                 }
@@ -350,7 +350,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                         .then((progress) => {
                             progress.report(message);
                         })
-                        .ignoreErrors();
+                        .catch(() => {});
                 } else {
                     this.connection.sendNotification('pyright/reportProgress', message);
                 }
@@ -362,7 +362,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                         .then((progress) => {
                             progress.done();
                         })
-                        .ignoreErrors();
+                        .catch(() => {});
                     workDoneProgress = undefined;
                 } else {
                     this.connection.sendNotification('pyright/endProgress');

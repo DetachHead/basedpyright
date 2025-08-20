@@ -636,7 +636,6 @@ export function createTypeEvaluator(
     wrapWithLogger: LogWrapper
 ): TypeEvaluator {
     const symbolResolutionStack: SymbolResolutionStackEntry[] = [];
-    const asymmetricAccessorAssignmentCache = new Set<number>();
     const speculativeTypeTracker = new SpeculativeTypeTracker();
     const suppressedNodeStack: SuppressedNodeStackEntry[] = [];
     const assignClassToSelfStack: AssignClassToSelfInfo[] = [];
@@ -646,6 +645,7 @@ export function createTypeEvaluator(
     let typeCache = new Map<number, TypeCacheEntry>();
     let effectiveTypeCache = new Map<number, Map<string, EffectiveTypeResult>>();
     let expectedTypeCache = new Map<number, Type>();
+    let asymmetricAccessorAssignmentCache = new Set<number>();
     let deferredClassCompletions: DeferredClassCompletion[] = [];
     let cancellationToken: CancellationToken | undefined;
     let printExpressionSpaceCount = 0;
@@ -701,6 +701,7 @@ export function createTypeEvaluator(
         typeCache = new Map<number, TypeCacheEntry>();
         effectiveTypeCache = new Map<number, Map<string, EffectiveTypeResult>>();
         expectedTypeCache = new Map<number, Type>();
+        asymmetricAccessorAssignmentCache = new Set<number>();
     }
 
     function readTypeCacheEntry(node: ParseNode) {
@@ -17921,10 +17922,7 @@ export function createTypeEvaluator(
                             );
                         } else if (arg.d.name.d.value === 'total' && !constArgValue) {
                             classType.shared.flags |= ClassTypeFlags.CanOmitDictValues;
-                        } else if (
-                            arg.d.name.d.value === 'closed' &&
-                            AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures
-                        ) {
+                        } else if (arg.d.name.d.value === 'closed') {
                             if (constArgValue) {
                                 classType.shared.flags |=
                                     ClassTypeFlags.TypedDictMarkedClosed | ClassTypeFlags.TypedDictEffectivelyClosed;
@@ -17948,10 +17946,7 @@ export function createTypeEvaluator(
 
                             sawClosedOrExtraItems = true;
                         }
-                    } else if (
-                        arg.d.name.d.value === 'extra_items' &&
-                        AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures
-                    ) {
+                    } else if (arg.d.name.d.value === 'extra_items') {
                         // Record a reference to the expression but don't evaluate it yet.
                         // It may refer to the class itself.
                         classType.shared.typedDictExtraItemsExpr = arg.d.valueExpr;

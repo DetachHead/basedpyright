@@ -152,7 +152,13 @@ import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvid
 import { Localizer, setLocaleOverride } from './localization/localize';
 import { ParseFileResults } from './parser/parser';
 import { ClientCapabilities, InitializationOptions } from './types';
-import { InitStatus, WellKnownWorkspaceKinds, Workspace, WorkspaceFactory } from './workspaceFactory';
+import {
+    InitStatus,
+    IWorkspaceFactory,
+    WellKnownWorkspaceKinds,
+    Workspace,
+    WorkspaceFactory,
+} from './workspaceFactory';
 import { website } from './constants';
 import { SemanticTokensProvider, SemanticTokensProviderLegend } from './languageService/semanticTokensProvider';
 import { RenameUsageFinder } from './analyzer/renameUsageFinder';
@@ -201,7 +207,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         signatureDocFormat: MarkupKind.PlainText,
         supportsTaskItemDiagnosticTag: false,
         completionItemResolveSupportsAdditionalTextEdits: false,
-        usingPullDiagnostics: false,
+        supportsPullDiagnostics: false,
         requiresPullRelatedInformationCapability: false,
         completionItemResolveSupportsTags: false,
         onTypeFormatting: false,
@@ -209,7 +215,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     protected defaultClientConfig: any;
 
-    protected readonly workspaceFactory: WorkspaceFactory;
+    protected readonly workspaceFactory: IWorkspaceFactory;
     protected readonly openFileMap = new Map<string, TextDocument>();
     private readonly _openCells = new Map<string, readonly TextDocument[]>();
     protected readonly fs: FileSystem;
@@ -238,13 +244,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.fs = this.serverOptions.serviceProvider.fs();
         this.caseSensitiveDetector = this.serverOptions.serviceProvider.get(ServiceKeys.caseSensitivityDetector);
 
-        this.workspaceFactory = new WorkspaceFactory(
-            this.console,
-            this.createAnalyzerServiceForWorkspace.bind(this),
-            this.onWorkspaceCreated.bind(this),
-            this.onWorkspaceRemoved.bind(this),
-            this.serviceProvider
-        );
+        this.workspaceFactory = this.createWorkspaceFactory();
 
         // Set the working directory to a known location within
         // the extension directory. Otherwise the execution of
@@ -315,9 +315,9 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             libraryReanalysisTimeProvider,
             serviceId,
             fileSystem: services?.fs ?? this.serverOptions.serviceProvider.fs(),
-            usingPullDiagnostics: this.client.usingPullDiagnostics,
+            usingPullDiagnostics: this.client.supportsPullDiagnostics,
             onInvalidated: (reason) => {
-                if (this.client.usingPullDiagnostics) {
+                if (this.client.supportsPullDiagnostics) {
                     this.connection.sendRequest(DiagnosticRefreshRequest.type);
                 }
             },
@@ -520,6 +520,16 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         );
     }
 
+    protected createWorkspaceFactory(): IWorkspaceFactory {
+        return new WorkspaceFactory(
+            this.console,
+            this.createAnalyzerServiceForWorkspace.bind(this),
+            this.onWorkspaceCreated.bind(this),
+            this.onWorkspaceRemoved.bind(this),
+            this.serviceProvider
+        );
+    }
+
     protected setupConnection(supportedCommands: string[], supportedCodeActions: string[]): void {
         // After the server has started the client sends an initialize request. The server receives
         // in the passed params the rootPath of the workspace plus the client capabilities.
@@ -641,7 +651,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         this.client.completionItemResolveSupportsAdditionalTextEdits =
             completionResolveProperties.includes('additionalTextEdits');
         this.client.completionItemResolveSupportsTags = completionResolveProperties.includes('tags');
-        this.client.usingPullDiagnostics =
+        this.client.supportsPullDiagnostics =
             !!capabilities.textDocument?.diagnostic?.dynamicRegistration &&
             initializationOptions?.diagnosticMode !== 'workspace' &&
             initializationOptions?.disablePullDiagnostics !== true;
@@ -728,7 +738,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             },
         };
 
-        if (this.client.usingPullDiagnostics) {
+        if (this.client.supportsPullDiagnostics) {
             result.capabilities.diagnosticProvider = {
                 identifier: 'pyright',
                 documentSelector: null,
@@ -1749,7 +1759,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
     protected async onAnalysisCompletedHandler(fs: FileSystem, results: AnalysisResults): Promise<void> {
         // If we're in pull mode, disregard any 'tracking' results. They're not necessary.
-        if (this.client.usingPullDiagnostics && results.reason === 'tracking') {
+        if (this.client.supportsPullDiagnostics && results.reason === 'tracking') {
             return;
         }
         // Send the computed diagnostics to the client.
@@ -1820,7 +1830,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
     protected onWorkspaceCreated(workspace: Workspace) {
         // Update settings on this workspace (but only if initialize has happened)
         if (this._initialized) {
-            this.updateSettingsForWorkspace(workspace, workspace.isInitialized).ignoreErrors();
+            this.updateSettingsForWorkspace(workspace, workspace.isInitialized).catch(() => {});
         }
 
         // Otherwise the initialize completion should cause settings to be updated on all workspaces.

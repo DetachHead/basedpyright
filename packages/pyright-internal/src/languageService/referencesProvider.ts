@@ -413,12 +413,9 @@ export class ReferencesProvider {
     ) {
         throwIfCancellationRequested(token);
 
-        const declarations = DocumentSymbolCollector.getDeclarationsForNode(
-            program,
-            node,
-            /* resolveLocalNames */ false,
-            token
-        );
+        const declarations = DocumentSymbolCollector.getDeclarationsForNode(program, node, token, {
+            resolveLocalNames: false,
+        });
 
         if (declarations.length === 0) {
             return undefined;
