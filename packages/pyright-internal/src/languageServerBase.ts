@@ -1592,7 +1592,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
      */
     protected onSaveTextDocument = async (params: WillSaveTextDocumentParams) => {
         this.savedFilesForBaselineUpdate.add(params.textDocument.uri);
-        if (this.client.usingPullDiagnostics) {
+        if (this.client.supportsPullDiagnostics) {
             // when not running in pull diagnostics mode, the baseline file can't be updated until after analysis
             // is completed, in which case we instead call method later in onAnalysisCompletedHandler
             this.updateBaselineFileIfNeeded();

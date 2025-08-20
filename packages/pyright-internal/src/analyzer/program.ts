@@ -381,8 +381,8 @@ export class Program {
                 sourceFileInfos.push(sourceFileInfo);
             });
         } else {
-            if (!this._checkAddNewSourceFile(cellUri)) {
-                return; // continue
+            if (!this._checkAddNewSourceFile(fileUri)) {
+                return;
             }
             const sourceFile = this._sourceFileFactory.createSourceFile(
                 this.serviceProvider,
@@ -1120,7 +1120,7 @@ export class Program {
         sourceFile.isTypingStubFile() || sourceFile.isTypeshedStubFile() || sourceFile.isBuiltInStubFile();
 
     private _checkAddNewSourceFile = (fileUri: Uri): boolean => {
-        let sourceFileInfo = this.getSourceFileInfo(fileUri);
+        const sourceFileInfo = this.getSourceFileInfo(fileUri);
 
         if (sourceFileInfo) {
             // The module name may have changed based on updates to the

@@ -63,7 +63,6 @@ import {
 } from './serviceUtils';
 import { SourceEnumerator } from './sourceEnumerator';
 import { IPythonMode } from './sourceFile';
-import { website } from '../constants';
 
 // How long since the last user activity should we wait until running
 // the analyzer on any files that have not yet been analyzed?
@@ -454,7 +453,8 @@ export class AnalyzerService {
             this._configOptions.exclude,
             !!this._configOptions.autoExcludeVenv,
             this.fs,
-            this._console
+            this._console,
+            this._configOptions.fileEnumerationTimeoutInSec
         );
 
         const results = enumerator.enumerate(0);
@@ -1470,7 +1470,8 @@ export class AnalyzerService {
                 this._configOptions.exclude,
                 !!this._configOptions.autoExcludeVenv,
                 this.fs,
-                this._console
+                this._console,
+                this._configOptions.fileEnumerationTimeoutInSec
             );
 
             this._backgroundAnalysisProgram.markAllFilesDirty(markFilesDirtyUnconditionally);

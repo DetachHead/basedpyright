@@ -1924,8 +1924,7 @@ export class ImportResolver {
                                     createImportedModuleDescriptor(prefix),
                                     root,
                                     executionEnvironment.pythonVersion,
-                                    executionEnvironment.pythonPlatform,
-                                    []
+                                    executionEnvironment.pythonPlatform
                                 )
                             ) {
                                 cache.add(prefix);
