@@ -1216,7 +1216,7 @@ function printUsage() {
 
 function printVersion(console: ConsoleInterface) {
     console.info(`${toolName} ${version}`);
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     console.info(`based on pyright ${require('../package.json').version}`);
 }
 
