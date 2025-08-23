@@ -10,7 +10,6 @@ type HeapInfo = ReturnType<typeof import('v8').getHeapStatistics>;
 
 function getHeapStatisticsFunc(): () => HeapInfo {
     try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const getHeapStatistics = require('v8').getHeapStatistics;
         if (getHeapStatistics) {
             return getHeapStatistics;

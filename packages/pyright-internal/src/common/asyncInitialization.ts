@@ -13,7 +13,7 @@ export async function initializeDependencies() {
     await ensureTomlModuleLoaded();
 
     if (process.env.NODE_ENV === 'production') {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require('source-map-support').install();
     }
 }
