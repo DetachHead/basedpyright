@@ -172,3 +172,26 @@ describe('uninitialized variable checking with init method calling', () => {
         });
     });
 });
+
+test('`allowedUntypedLibraries` on overloaded functions', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnknownMemberType = 'error';
+    //TODO: typeAnalyzeSampleFiles should probably do this by default
+    configOptions.projectRoot = UriEx.file(resolveSampleFilePath('based_overloaded_functions_module_name'));
+
+    let analysisResults = typeAnalyzeSampleFiles(['based_overloaded_functions_module_name/foobar.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                line: 2,
+                code: DiagnosticRule.reportUnknownMemberType,
+                message:
+                    'Type of "baz" is partially unknown\n  Type of "baz" is "Overload[(a: int, b: Unknown) -> int, (a: str, b: Unknown) -> str]"',
+            },
+        ],
+    });
+
+    configOptions.diagnosticRuleSet.allowedUntypedLibraries = ['foo'];
+    analysisResults = typeAnalyzeSampleFiles(['based_overloaded_functions_module_name/foobar.py'], configOptions);
+    validateResultsButBased(analysisResults, {});
+});
