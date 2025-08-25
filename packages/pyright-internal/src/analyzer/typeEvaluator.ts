@@ -15409,9 +15409,10 @@ export function createTypeEvaluator(
         }
 
         // Or if the object is in an untyped library that was explicitly mentioned.
-        // Overloaded methods must be handled separately, as the module is stored on the implementation.
+        // Overloaded methods must be handled separately, as the module is stored on the implementation and the overloads.
         let typeShared = type.shared;
         if (type.category === TypeCategory.Overloaded) {
+            // We get the module from the first overload in case there's no implementation (eg. if the overload came from a stub file).
             typeShared = OverloadedType.getOverloads(type)[0].shared;
         }
         if (
