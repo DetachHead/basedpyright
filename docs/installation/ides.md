@@ -154,7 +154,7 @@ Emacs users have 3 options:
 
 !!! tip
 
-    if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Project" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
+    if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
 
     ![](pycharm-recommended-dependency.png)
 
