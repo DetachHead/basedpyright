@@ -215,8 +215,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const semanticModifiers =
             node.nodeType === ParseNodeType.Name &&
             this._evaluator?.getProjectBuiltInType(node, node.d.value).category !== TypeCategory.Unknown
-            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
-            : [];
+                ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+                : [];
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         const paramNode = declarations?.find(isParamDeclaration)?.node;
         if (paramNode) {
@@ -233,7 +233,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         ) {
             return;
         } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
-            this._addItemForNameNode(node, SemanticTokenTypes.variable, [...semanticModifiers, SemanticTokenModifiers.readonly]);
+            this._addItemForNameNode(node, SemanticTokenTypes.variable, [
+                ...semanticModifiers,
+                SemanticTokenModifiers.readonly,
+            ]);
         } else {
             this._addItemForNameNode(node, SemanticTokenTypes.variable, semanticModifiers);
         }
