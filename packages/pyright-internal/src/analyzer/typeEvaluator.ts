@@ -22011,13 +22011,19 @@ export function createTypeEvaluator(
 
     function getProjectBuiltInType(node: ParseNode, name: string): Type {
         let scope = ScopeUtils.getScopeForNode(node);
+        // first time we see a module scope, it's our module,
+        // second time it is the project builtins
+        let alreadySeenModule = false;
         while (scope) {
             const nameType = scope.lookUpSymbol(name);
-            if (nameType && (scope.type === ScopeType.Builtin || scope.parent?.type === ScopeType.Builtin)) {
+            if (nameType && scope.type === ScopeType.Module && alreadySeenModule) {
                 return getEffectiveTypeOfSymbol(nameType);
             }
             if (nameType) {
                 return UnknownType.create();
+            }
+            if (scope.type === ScopeType.Module) {
+                alreadySeenModule = true;
             }
             scope = scope.parent;
         }
