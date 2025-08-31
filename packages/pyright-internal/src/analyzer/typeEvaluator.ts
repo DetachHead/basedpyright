@@ -22009,6 +22009,22 @@ export function createTypeEvaluator(
         return UnknownType.create();
     }
 
+    function getProjectBuiltInType(node: ParseNode, name: string): Type {
+        let scope = ScopeUtils.getScopeForNode(node);
+        while (scope) {
+            const nameType = scope.lookUpSymbol(name);
+            if (nameType && (scope.type === ScopeType.Builtin || scope.parent?.type === ScopeType.Builtin)) {
+                return getEffectiveTypeOfSymbol(nameType);
+            }
+            if (nameType) {
+                return UnknownType.create();
+            }
+            scope = scope.parent;
+        }
+
+        return UnknownType.create();
+    }
+
     function getBuiltInObject(node: ParseNode, name: string, typeArgs?: Type[]) {
         const nameType = getBuiltInType(node, name);
         if (isInstantiableClass(nameType)) {
@@ -29022,6 +29038,7 @@ export function createTypeEvaluator(
         typesOverlap,
         markParamAccessed,
         deprecatedTypingAlias,
+        getProjectBuiltInType,
     };
 
     const codeFlowEngine = getCodeFlowEngine(evaluatorInterface, speculativeTypeTracker);

@@ -782,6 +782,7 @@ export interface TypeEvaluator {
         argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
+    getProjectBuiltInType: (node: ParseNode, name: string) => Type;
     getTypeOfMember: (member: ClassMember) => Type;
     getTypeOfBoundMember(
         errorNode: ExpressionNode,
