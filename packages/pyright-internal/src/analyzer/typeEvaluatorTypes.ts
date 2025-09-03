@@ -409,6 +409,7 @@ export interface ExpectedTypeOptions {
     typeFormArg?: boolean;
     forwardRefs?: boolean;
     typeExpression?: boolean;
+    runtimeTypeExpression?: boolean;
     convertEllipsisToAny?: boolean;
     allowEllipsis?: boolean;
 }

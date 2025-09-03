@@ -1547,6 +1547,10 @@
             "message": "Base class \"{name}\" is a closed TypedDict; extra items are not allowed",
             "comment": "{Locked='closed','TypedDict'}"
         },
+        "typedDictClosedFalseNonOpenBase": {
+            "message": "Base class \"{name}\" is not an open TypedDict; closed=False is not allowed",
+            "comment": "{Locked='TypedDict','closed'}"
+        },
         "typedDictDelete": {
             "message": "Could not delete item in TypedDict",
             "comment": "{Locked='TypedDict'}"
@@ -1613,6 +1617,7 @@
             "message": "Expected \"def\", \"with\" or \"for\" to follow \"async\"",
             "comment": "{Locked='def','with','for','async'}"
         },
+        "unexpectedEof": "Unexpected EOF",
         "unexpectedExprToken": "Unexpected token at end of expression",
         "unexpectedIndent": "Unexpected indentation",
         "unexpectedUnindent": "Unindent not expected",
@@ -1983,7 +1988,7 @@
             "comment": "{Locked='__new__'}"
         },
         "newTypeClassNotAllowed": {
-            "message": "Class created with NewType cannot be used with instance and class checks",
+            "message": "Type created with NewType cannot be used with instance and class checks",
             "comment": "{Locked='NewType'}"
         },
         "noOverloadAssignable": "No overloaded function matches type \"{type}\"",

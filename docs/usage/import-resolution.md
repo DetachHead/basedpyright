@@ -53,6 +53,9 @@ Import hooks can provide an editable installation that is a more accurate repres
 - [compat mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html#legacy-behavior)
 - [strict mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html#strict-editable-installs)
 
+#### uv
+[uv's build backend](https://docs.astral.sh/uv/concepts/build-backend/) uses `.pth` files by default.
+
 #### Hatchling
 [Hatchling](https://hatch.pypa.io/latest/config/build/#dev-mode) uses path-based `.pth` files by
 default. It will only use import hooks if you set `dev-mode-exact` to `true`.

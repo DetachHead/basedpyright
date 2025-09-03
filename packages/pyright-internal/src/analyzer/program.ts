@@ -739,7 +739,7 @@ export class Program {
     analyzeFile(fileUri: Uri, token: CancellationToken = CancellationToken.None): boolean {
         return this._runEvaluatorWithCancellationToken(token, () => {
             const sourceFileInfo = this.getSourceFileInfo(fileUri);
-            if (sourceFileInfo && this._checkTypes(sourceFileInfo, token)) {
+            if (sourceFileInfo && this._checkTypes(sourceFileInfo, token, { skipFileNeededCheck: true })) {
                 return true;
             }
             return false;
@@ -1138,20 +1138,20 @@ export class Program {
             this._configOptions.verboseOutput ? this._console : undefined
         );
 
+        const heapRatioHighWaterMark = 0.9;
+
         // If the total cache has exceeded 75%, determine whether we should empty
-        // the cache. If the usedHeapRatio has exceeded 90%, we should definitely
-        // empty the cache. This can happen before the cacheUsage maxes out because
+        // the cache. If the usedHeapRatio has exceeded our high-water mark, we should
+        // definitely empty the cache. This can happen before the cacheUsage maxes out because
         // we might be on the background thread and a bunch of the cacheUsage is on the main
         // thread.
-        if (cacheUsage > 0.75 || usedHeapRatio > 0.9) {
+        if (cacheUsage > 0.75 || usedHeapRatio > heapRatioHighWaterMark) {
             // The type cache uses a Map, which has an absolute limit of 2^24 entries
-            // before it will fail. If we cross the 95% mark, we'll empty the cache.
+            // before it will fail. If we cross the 90% mark, we'll empty the cache.
             const absoluteMaxCacheEntryCount = (1 << 24) * 0.9;
             const typeCacheEntryCount = this._evaluator!.getTypeCacheEntryCount();
 
-            // If we use more than 90% of the heap size limit, avoid a crash
-            // by emptying the type cache.
-            if (typeCacheEntryCount > absoluteMaxCacheEntryCount || usedHeapRatio > 0.9) {
+            if (typeCacheEntryCount > absoluteMaxCacheEntryCount || usedHeapRatio > heapRatioHighWaterMark) {
                 this._cacheManager.emptyCache(this._console);
             }
         }
@@ -1967,6 +1967,9 @@ export class Program {
         }
 
         if (sourceFileInfo.sourceFile.isBindingRequired()) {
+            // If we're running low on memory, free up some space.
+            this._handleMemoryHighUsage();
+
             // Bind the file if it's not already bound. Don't count this time
             // against the type checker.
             timingStats.typeCheckerTime.subtractFromTime(() => {
@@ -2011,7 +2014,15 @@ export class Program {
         return false;
     }
 
-    private _checkTypes(fileToCheck: SourceFileInfo, token: CancellationToken, chainedByList?: SourceFileInfo[]) {
+    private _checkTypes(
+        fileToCheck: SourceFileInfo,
+        token: CancellationToken,
+        options?: { chainedByList?: SourceFileInfo[]; skipFileNeededCheck?: boolean }
+    ) {
+        // For very large programs, we may need to discard the evaluator and
+        // its cached types to avoid running out of heap space.
+        this._handleMemoryHighUsage();
+
         return this._logTracker.log(`analyzing: ${fileToCheck.uri}`, (logState) => {
             // If the file isn't needed because it was eliminated from the
             // transitive closure or deleted, skip the file rather than wasting
@@ -2026,7 +2037,7 @@ export class Program {
                 return false;
             }
 
-            if (!this._shouldCheckFile(fileToCheck)) {
+            if (!options?.skipFileNeededCheck && !this._shouldCheckFile(fileToCheck)) {
                 logState.suppress();
                 return false;
             }
@@ -2045,7 +2056,7 @@ export class Program {
             if (!this._disableChecker) {
                 // For ipython, make sure we check all its dependent files first since
                 // their results can affect this file's result.
-                const dependentFiles = this._checkDependentFiles(fileToCheck, chainedByList, token);
+                const dependentFiles = this._checkDependentFiles(fileToCheck, options?.chainedByList, token);
 
                 if (this._preCheckCallback) {
                     const parseResults = fileToCheck.sourceFile.getParserOutput();
@@ -2066,10 +2077,6 @@ export class Program {
                     );
                 }
             }
-
-            // For very large programs, we may need to discard the evaluator and
-            // its cached types to avoid running out of heap space.
-            this._handleMemoryHighUsage();
 
             // Detect import cycles that involve the file.
             if (this._configOptions.diagnosticRuleSet.reportImportCycles !== 'none') {
@@ -2134,7 +2141,7 @@ export class Program {
             const handle = this._cacheManager.pauseTracking();
             try {
                 for (let i = chainedByList.length - 1; i >= startIndex; i--) {
-                    this._checkTypes(chainedByList[i], token, chainedByList);
+                    this._checkTypes(chainedByList[i], token, { chainedByList });
                 }
             } finally {
                 handle.dispose();

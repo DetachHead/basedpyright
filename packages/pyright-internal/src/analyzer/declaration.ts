@@ -52,8 +52,8 @@ export type IntrinsicType =
     | 'str | None'
     | 'int'
     | 'MutableSequence[str]'
-    | 'type[self]'
-    | 'Dict[str, Any]'
+    | '__class__'
+    | 'dict[str, Any]'
     | 'IPython.display.display';
 
 export interface DeclarationBase {

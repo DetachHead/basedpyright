@@ -677,6 +677,7 @@ export interface DataClassBehaviors {
     generateOrder?: boolean;
     generateSlots?: boolean;
     generateHash?: boolean;
+    matchArgs?: boolean;
     keywordOnly?: boolean;
     frozen?: boolean;
     frozenDefault?: boolean;
