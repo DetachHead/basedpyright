@@ -2438,6 +2438,7 @@ export class ImportResolver {
                 implicitImports: undefined,
                 filteredImplicitImports: undefined,
                 nonStubImportResult: undefined,
+                isImplicitlyRelative: false,
             };
         }
 
