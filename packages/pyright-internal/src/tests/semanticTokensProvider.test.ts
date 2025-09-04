@@ -290,6 +290,21 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'function', modifiers: [], start: 87, length: 1 }, // f
         ]);
     });
+
+    test('builtins', () => {
+        const resultNoBuiltins = semanticTokenizeSampleFile('project_builtins.py');
+        expect(resultNoBuiltins).toStrictEqual([
+            { type: 'variable', modifiers: [], start: 0, length: 1 },
+            { type: 'variable', modifiers: [], start: 6, length: 1 },
+            { type: 'variable', modifiers: [], start: 10, length: 1 },
+            { type: 'variable', modifiers: ['builtin'], start: 14, length: 11 },
+            { type: 'function', modifiers: ['definition'], start: 31, length: 5 },
+            { type: 'variable', modifiers: [], start: 44, length: 11 },
+            { type: 'variable', modifiers: [], start: 64, length: 1 },
+            { type: 'variable', modifiers: [], start: 68, length: 1 },
+            { type: 'variable', modifiers: [], start: 72, length: 11 },
+        ]);
+    });
 } else {
     // prevent jest from failing because no tests were found
     test('windows placeholder', () => {});
