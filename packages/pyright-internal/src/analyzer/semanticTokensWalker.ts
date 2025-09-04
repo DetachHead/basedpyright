@@ -215,7 +215,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const semanticModifiers =
             node.nodeType === ParseNodeType.Name &&
             this._evaluator?.getProjectBuiltInType(node, node.d.value).category !== TypeCategory.Unknown
-                ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
+                ? [CustomSemanticTokenModifiers.builtin]
                 : [];
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         const paramNode = declarations?.find(isParamDeclaration)?.node;
