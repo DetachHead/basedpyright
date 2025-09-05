@@ -77,8 +77,12 @@ class BaselineDiff<T extends boolean> {
     };
 }
 
+type CachedBaselineData = {
+    data: BaselineData | undefined;
+};
 export class BaselineHandler {
     private _console: ConsoleInterface;
+    private _cached: CachedBaselineData | undefined;
 
     constructor(private _fs: FileSystem, public configOptions: ConfigOptions, console: ConsoleInterface | undefined) {
         this._console = console ?? new StandardConsole();
@@ -89,19 +93,17 @@ export class BaselineHandler {
     }
 
     getContents = (): BaselineData | undefined => {
-        let baselineFileContents: string | undefined;
-        try {
-            baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
-        } catch (e) {
-            // assume the file didn't exist
-            return undefined;
+        if (!this._cached) {
+            const baselineFilePath = this.fileUri;
+            this._console.log(`Parsing baseline file at ${baselineFilePath}`);
+            const data = this._getContentsUncached(baselineFilePath);
+            this._cached = {
+                data: data,
+            };
+        } else {
+            this._console.log('Reusing cached baseline data');
         }
-        try {
-            return JSON.parse(baselineFileContents);
-        } catch (e) {
-            this._console.error(`failed to parse baseline file - ${e}`);
-            return undefined;
-        }
+        return this._cached.data;
     };
 
     /**
@@ -169,6 +171,9 @@ export class BaselineHandler {
             this._console.error(`failed to write baseline file - ${e}`);
             return undefined;
         }
+        this._cached = {
+            data: result,
+        };
         return new BaselineDiff(this.configOptions, { files: previousBaselineFiles }, result, force);
     };
 
@@ -263,6 +268,22 @@ export class BaselineHandler {
             result = this.getContents()?.files[relativePath.toString()];
         }
         return result ?? [];
+    };
+
+    private _getContentsUncached = (baselineFilePath: Uri): BaselineData | undefined => {
+        let baselineFileContents: string | undefined;
+        try {
+            baselineFileContents = this._fs.readFileSync(baselineFilePath, 'utf8');
+        } catch (e) {
+            // assume the file didn't exist
+            return undefined;
+        }
+        try {
+            return JSON.parse(baselineFileContents);
+        } catch (e) {
+            this._console.error(`failed to parse baseline file - ${e}`);
+            return undefined;
+        }
     };
 
     private _filteredDiagnosticsToBaselineFormat = (filesWithDiagnostics: readonly FileDiagnostics[]): BaselineData => {
