@@ -170,39 +170,6 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
-    test('builtins', () => {
-        const result = semanticTokenizeSampleFile('builtin_identifiers.py');
-        expect(result).toStrictEqual([
-            // imports
-            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
-            { type: 'class', modifiers: [], start: 19, length: 4 }, // List
-            { type: 'class', modifiers: [], start: 25, length: 3 }, // Set
-            { type: 'class', modifiers: [], start: 30, length: 9 }, // TypeAlias
-            // type aliases
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 }, // Foo
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 47, length: 4 }, // list
-            { type: 'type', modifiers: [], start: 52, length: 3 }, // Bar
-            { type: 'class', modifiers: [], start: 58, length: 4 }, // List
-            { type: 'class', modifiers: [], start: 65, length: 3 }, // Set
-            { type: 'class', modifiers: [], start: 69, length: 3 }, // Old
-            { type: 'class', modifiers: [], start: 74, length: 9 }, // TypeAlias
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 86, length: 4 }, // dict
-            { type: 'keyword', modifiers: [], start: 91, length: 4 }, // type
-            { type: 'class', modifiers: [], start: 96, length: 3 }, // New
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 102, length: 5 }, // tuple
-            // builtin functions
-            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 109, length: 5 }, // print
-            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 115, length: 5 }, // input
-            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 121, length: 4 }, // func
-            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 128, length: 5 }, // print
-            // builtin types/classes
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 135, length: 3 }, // int
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 139, length: 3 }, // str
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 143, length: 10 }, // ValueError
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 154, length: 16 }, // EnvironmentError
-        ]);
-    });
-
     test('decorators', () => {
         const result = semanticTokenizeSampleFile('decorators.py');
         expect(result).toStrictEqual([
@@ -291,19 +258,64 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
-    test('builtins', () => {
-        const resultNoBuiltins = semanticTokenizeSampleFile('project_builtins.py');
-        expect(resultNoBuiltins).toStrictEqual([
-            { type: 'variable', modifiers: [], start: 0, length: 1 },
-            { type: 'variable', modifiers: [], start: 6, length: 1 },
-            { type: 'variable', modifiers: [], start: 10, length: 1 },
-            { type: 'variable', modifiers: ['builtin'], start: 14, length: 11 },
-            { type: 'function', modifiers: ['definition'], start: 31, length: 5 },
-            { type: 'variable', modifiers: [], start: 44, length: 11 },
-            { type: 'variable', modifiers: [], start: 64, length: 1 },
-            { type: 'variable', modifiers: [], start: 68, length: 1 },
-            { type: 'variable', modifiers: [], start: 72, length: 11 },
-        ]);
+    describe('builtins', () => {
+        test('real builtins', () => {
+            const result = semanticTokenizeSampleFile('builtin_identifiers.py');
+            expect(result).toStrictEqual([
+                // imports
+                { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+                { type: 'class', modifiers: [], start: 19, length: 4 }, // List
+                { type: 'class', modifiers: [], start: 25, length: 3 }, // Set
+                { type: 'class', modifiers: [], start: 30, length: 9 }, // TypeAlias
+                // type aliases
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 }, // Foo
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 47, length: 4 }, // list
+                { type: 'type', modifiers: [], start: 52, length: 3 }, // Bar
+                { type: 'class', modifiers: [], start: 58, length: 4 }, // List
+                { type: 'class', modifiers: [], start: 65, length: 3 }, // Set
+                { type: 'class', modifiers: [], start: 69, length: 3 }, // Old
+                { type: 'class', modifiers: [], start: 74, length: 9 }, // TypeAlias
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 86, length: 4 }, // dict
+                { type: 'keyword', modifiers: [], start: 91, length: 4 }, // type
+                { type: 'class', modifiers: [], start: 96, length: 3 }, // New
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 102, length: 5 }, // tuple
+                // builtin functions
+                { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 109, length: 5 }, // print
+                { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 115, length: 5 }, // input
+                { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 121, length: 4 }, // func
+                { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 128, length: 5 }, // print
+                // builtin types/classes
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 135, length: 3 }, // int
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 139, length: 3 }, // str
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 143, length: 10 }, // ValueError
+                { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 154, length: 16 }, // EnvironmentError
+            ]);
+        });
+
+        test('project builtins', () => {
+            const resultNoBuiltins = semanticTokenizeSampleFile('project_builtins.py');
+            expect(resultNoBuiltins).toStrictEqual([
+                { type: 'variable', modifiers: [], start: 0, length: 1 },
+                { type: 'variable', modifiers: [], start: 6, length: 1 },
+                { type: 'variable', modifiers: [], start: 10, length: 1 },
+                // this `some_global` is referrring to the the builtin
+                { type: 'variable', modifiers: ['builtin'], start: 14, length: 11 },
+                // inside scope()...
+                { type: 'function', modifiers: ['definition'], start: 31, length: 5 },
+                // this `some_global` is redefined inside the function scope
+                { type: 'variable', modifiers: [], start: 44, length: 11 },
+                { type: 'variable', modifiers: [], start: 64, length: 1 },
+                { type: 'variable', modifiers: [], start: 68, length: 1 },
+                // so this `some_global` refers to the redefined one, not to the builtin
+                { type: 'variable', modifiers: [], start: 72, length: 11 },
+                // inside in_function()...
+                { type: 'function', modifiers: ['definition'], start: 90, length: 11 },
+                { type: 'variable', modifiers: [], start: 109, length: 1 },
+                { type: 'variable', modifiers: [], start: 113, length: 1 },
+                // this function is similar to scope(), but we don't redefine some_global, so it refers to the builtin
+                { type: 'variable', modifiers: ['builtin'], start: 117, length: 11 },
+            ]);
+        });
     });
 } else {
     // prevent jest from failing because no tests were found
