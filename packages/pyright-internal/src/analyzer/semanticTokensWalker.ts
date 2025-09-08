@@ -215,7 +215,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
         const semanticModifiers =
             node.nodeType === ParseNodeType.Name &&
-            declarations?.some((declaration) => declaration.moduleName.split(".").pop() === "__builtins__")
+            declarations?.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
                 ? [CustomSemanticTokenModifiers.builtin]
                 : [];
         const paramNode = declarations?.find(isParamDeclaration)?.node;
