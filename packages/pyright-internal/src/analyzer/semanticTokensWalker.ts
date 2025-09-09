@@ -211,15 +211,21 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
         }
+
         const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
+        const semanticModifiers =
+            node.nodeType === ParseNodeType.Name &&
+            declarations?.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
+                ? [CustomSemanticTokenModifiers.builtin]
+                : [];
         const paramNode = declarations?.find(isParamDeclaration)?.node;
         if (paramNode) {
-            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), []);
+            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), semanticModifiers);
         } else if (type.category === TypeCategory.TypeVar && !TypeBase.isInstance(type)) {
             // `cls` method parameter is treated as a TypeVar in some special methods (methods
             // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
             // check first if it's a parameter before checking that it's a TypeVar
-            this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, []);
+            this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, semanticModifiers);
             return;
         } else if (
             (type.category === TypeCategory.Unknown || type.category === TypeCategory.Any) &&
@@ -227,9 +233,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         ) {
             return;
         } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
-            this._addItemForNameNode(node, SemanticTokenTypes.variable, [SemanticTokenModifiers.readonly]);
+            this._addItemForNameNode(node, SemanticTokenTypes.variable, [
+                ...semanticModifiers,
+                SemanticTokenModifiers.readonly,
+            ]);
         } else {
-            this._addItemForNameNode(node, SemanticTokenTypes.variable, []);
+            this._addItemForNameNode(node, SemanticTokenTypes.variable, semanticModifiers);
         }
     }
 
