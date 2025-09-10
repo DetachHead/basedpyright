@@ -1394,8 +1394,11 @@ export class Binder extends ParseTreeWalker {
                 this._sysImportAliases
             );
 
-            this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
-
+            this._bindConditional(node.d.testExpr, thenLabel, elseLabel, [
+                ParseNodeType.AssignmentExpression,
+                ParseNodeType.Index,
+                ParseNodeType.MemberAccess,
+            ]);
             // Handle the if clause.
             if (constExprValue === false) {
                 this._currentFlowNode =
@@ -1424,7 +1427,10 @@ export class Binder extends ParseTreeWalker {
             if (node.d.elseSuite) {
                 this.walk(node.d.elseSuite);
             } else {
+                const savedExpressions = new Set(this._currentScopeCodeFlowExpressions);
                 this._bindNeverCondition(node.d.testExpr, postIfLabel, /* isPositiveTest */ false);
+                this._currentScopeCodeFlowExpressions!.clear();
+                savedExpressions.forEach((it) => this._currentScopeCodeFlowExpressions!.add(it));
             }
             this._addAntecedent(postIfLabel, this._currentFlowNode);
             this._currentFlowNode = this._finishFlowLabel(postIfLabel);
@@ -3014,7 +3020,12 @@ export class Binder extends ParseTreeWalker {
         }
     }
 
-    private _bindConditional(node: ExpressionNode, trueTarget: FlowLabel, falseTarget: FlowLabel) {
+    private _bindConditional(
+        node: ExpressionNode,
+        trueTarget: FlowLabel,
+        falseTarget: FlowLabel,
+        nodeTypeFilter?: ParseNodeType[]
+    ) {
         this._setTrueFalseTargets(trueTarget, falseTarget, () => {
             this.walk(node);
         });
@@ -3022,11 +3033,11 @@ export class Binder extends ParseTreeWalker {
         if (!this._isLogicalExpression(node)) {
             this._addAntecedent(
                 trueTarget,
-                this._createFlowConditional(FlowFlags.TrueCondition, this._currentFlowNode!, node)
+                this._createFlowConditional(FlowFlags.TrueCondition, this._currentFlowNode!, node, nodeTypeFilter)
             );
             this._addAntecedent(
                 falseTarget,
-                this._createFlowConditional(FlowFlags.FalseCondition, this._currentFlowNode!, node)
+                this._createFlowConditional(FlowFlags.FalseCondition, this._currentFlowNode!, node, nodeTypeFilter)
             );
         }
     }
@@ -3051,7 +3062,12 @@ export class Binder extends ParseTreeWalker {
         this._currentFalseTarget = savedFalseTarget;
     }
 
-    private _createFlowConditional(flags: FlowFlags, antecedent: FlowNode, expression: ExpressionNode): FlowNode {
+    private _createFlowConditional(
+        flags: FlowFlags,
+        antecedent: FlowNode,
+        expression: ExpressionNode,
+        nodeTypeFilter?: ParseNodeType[]
+    ): FlowNode {
         if (antecedent.flags & FlowFlags.Unreachable) {
             return antecedent;
         }
@@ -3080,7 +3096,9 @@ export class Binder extends ParseTreeWalker {
 
         expressionList.forEach((expr) => {
             const referenceKey = createKeyForReference(expr);
-            this._currentScopeCodeFlowExpressions!.add(referenceKey);
+            if (!nodeTypeFilter || nodeTypeFilter.includes(expr.nodeType)) {
+                this._currentScopeCodeFlowExpressions!.add(referenceKey);
+            }
         });
 
         // Select the first name expression.
