@@ -29,11 +29,13 @@ export type SemanticTokenItem = {
     length: number;
 };
 
+type Modifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
+
 export class SemanticTokensWalker extends ParseTreeWalker {
     builtinModules = new Set<string>(['builtins', '__builtins__']);
     items: SemanticTokenItem[] = [];
 
-    constructor(private readonly _evaluator?: TypeEvaluator) {
+    constructor(private readonly _evaluator: TypeEvaluator) {
         super();
     }
     override visitClass(node: ClassNode): boolean {
@@ -58,7 +60,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     override visitParameter(node: ParameterNode): boolean {
         if (node.d.name) {
-            const type = this._evaluator?.getType(node.d.name);
+            const type = this._evaluator.getType(node.d.name);
             this._addItemForNameNode(node.d.name, this._getParamSemanticToken(node, type), [
                 SemanticTokenModifiers.definition,
             ]);
@@ -89,7 +91,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     override visitImportFromAs(node: ImportFromAsNode): boolean {
-        const type = this._evaluator?.getType(node.d.alias ?? node.d.name);
+        const type = this._evaluator.getType(node.d.alias ?? node.d.name);
         if (type) {
             this._visitNameWithType(node.d.name, type);
             if (node.d.alias) {
@@ -117,7 +119,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id) &&
             (parentType !== ParseNodeType.Parameter || node.parent.d.name?.id !== node.id)
         ) {
-            const type = this._evaluator?.getType(node);
+            const type = this._evaluator.getType(node);
             if (type) {
                 this._visitNameWithType(node, type);
             }
@@ -165,14 +167,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 }
                 break;
             case TypeCategory.Class:
-                //type annotations handled by visitTypeAnnotation
+                // type annotations handled by visitTypeAnnotation
                 if (!TypeBase.isInstance(type)) {
                     // Exclude type aliases:
                     // PEP 613 > Name: TypeAlias = Types
                     // PEP 695 > type Name = Types
-                    const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
+                    const declarations = this._evaluator.getDeclInfoForNameNode(node)?.decls;
                     const isPEP613TypeAlias = declarations?.some((declaration) =>
-                        this._evaluator?.isExplicitTypeAliasDeclaration(declaration)
+                        this._evaluator.isExplicitTypeAliasDeclaration(declaration)
                     );
                     const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
 
@@ -193,9 +195,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             default:
                 assertNever(type);
         }
-        const symbol = this._evaluator?.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
+        const symbol = this._evaluator.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
         if (type.category === TypeCategory.Never && symbol) {
-            const typeResult = this._evaluator?.getEffectiveTypeOfSymbolForUsage(symbol, node);
+            const typeResult = this._evaluator.getEffectiveTypeOfSymbolForUsage(symbol, node);
             if (
                 // check for new python 3.12 type alias syntax
                 (typeResult.type.props?.specialForm &&
@@ -212,34 +214,32 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
         }
 
-        const declarations = this._evaluator?.getDeclInfoForNameNode(node)?.decls;
-        const semanticModifiers =
+        const declarations = this._evaluator.getDeclInfoForNameNode(node)?.decls ?? [];
+        const modifiers: Modifiers[] =
             node.nodeType === ParseNodeType.Name &&
-            declarations?.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
+            declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
                 ? [CustomSemanticTokenModifiers.builtin]
                 : [];
-        const paramNode = declarations?.find(isParamDeclaration)?.node;
+        const paramNode = declarations.find(isParamDeclaration)?.node;
         if (paramNode) {
-            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), semanticModifiers);
+            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), modifiers);
+            return;
         } else if (type.category === TypeCategory.TypeVar && !TypeBase.isInstance(type)) {
             // `cls` method parameter is treated as a TypeVar in some special methods (methods
             // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
             // check first if it's a parameter before checking that it's a TypeVar
-            this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, semanticModifiers);
+            this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, modifiers);
             return;
         } else if (
             (type.category === TypeCategory.Unknown || type.category === TypeCategory.Any) &&
-            (declarations === undefined || declarations.length === 0 || declarations.every(isAliasDeclaration))
+            declarations.every(isAliasDeclaration)
         ) {
             return;
-        } else if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
-            this._addItemForNameNode(node, SemanticTokenTypes.variable, [
-                ...semanticModifiers,
-                SemanticTokenModifiers.readonly,
-            ]);
-        } else {
-            this._addItemForNameNode(node, SemanticTokenTypes.variable, semanticModifiers);
         }
+        if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
+            modifiers.push(SemanticTokenModifiers.readonly);
+        }
+        this._addItemForNameNode(node, SemanticTokenTypes.variable, modifiers);
     }
 
     private _visitFunctionWithType(node: NameNode, type: FunctionType) {
@@ -266,7 +266,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.parameter;
         }
 
-        const parentType = this._evaluator?.getType(node.parent.d.name);
+        const parentType = this._evaluator.getType(node.parent.d.name);
         const isMethodParam =
             parentType?.category === TypeCategory.Function &&
             (FunctionType.isClassMethod(parentType) ||
