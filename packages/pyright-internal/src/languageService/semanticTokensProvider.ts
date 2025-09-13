@@ -40,10 +40,11 @@ export const tokenTypes: string[] = [
 ];
 
 export const tokenModifiers: string[] = [
-    SemanticTokenModifiers.definition,
     SemanticTokenModifiers.declaration,
-    SemanticTokenModifiers.async,
+    SemanticTokenModifiers.definition,
     SemanticTokenModifiers.readonly,
+    SemanticTokenModifiers.static,
+    SemanticTokenModifiers.async,
     SemanticTokenModifiers.defaultLibrary,
     CustomSemanticTokenModifiers.builtin,
 ];
