@@ -39,12 +39,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         super();
     }
     override visitClass(node: ClassNode): boolean {
-        this._addItemForNameNode(node.d.name, SemanticTokenTypes.class, [SemanticTokenModifiers.definition]);
+        this._addItemForNameNode(node.d.name, SemanticTokenTypes.class, [SemanticTokenModifiers.declaration]);
         return super.visitClass(node);
     }
 
     override visitFunction(node: FunctionNode): boolean {
-        const modifiers = [SemanticTokenModifiers.definition];
+        const modifiers = [SemanticTokenModifiers.declaration];
         if (node.d.isAsync) {
             modifiers.push(SemanticTokenModifiers.async);
         }
@@ -62,7 +62,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (node.d.name) {
             const type = this._evaluator.getType(node.d.name);
             this._addItemForNameNode(node.d.name, this._getParamSemanticToken(node, type), [
-                SemanticTokenModifiers.definition,
+                SemanticTokenModifiers.declaration,
             ]);
         }
         return super.visitParameter(node);
