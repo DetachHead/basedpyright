@@ -22,26 +22,29 @@ export enum CustomSemanticTokenModifiers {
 }
 
 export const tokenTypes: string[] = [
+    SemanticTokenTypes.namespace,
+    SemanticTokenTypes.type,
     SemanticTokenTypes.class,
-    SemanticTokenTypes.parameter,
+    SemanticTokenTypes.enum,
     SemanticTokenTypes.typeParameter,
+    SemanticTokenTypes.parameter,
+    SemanticTokenTypes.variable,
+    SemanticTokenTypes.property,
+    SemanticTokenTypes.enumMember,
     SemanticTokenTypes.function,
     SemanticTokenTypes.method,
-    SemanticTokenTypes.decorator,
-    SemanticTokenTypes.property,
-    SemanticTokenTypes.namespace,
-    SemanticTokenTypes.variable,
-    SemanticTokenTypes.type,
     SemanticTokenTypes.keyword,
+    SemanticTokenTypes.decorator,
     CustomSemanticTokenTypes.selfParameter,
     CustomSemanticTokenTypes.clsParameter,
 ];
 
 export const tokenModifiers: string[] = [
-    SemanticTokenModifiers.definition,
     SemanticTokenModifiers.declaration,
-    SemanticTokenModifiers.async,
+    SemanticTokenModifiers.definition,
     SemanticTokenModifiers.readonly,
+    SemanticTokenModifiers.static,
+    SemanticTokenModifiers.async,
     SemanticTokenModifiers.defaultLibrary,
     CustomSemanticTokenModifiers.builtin,
 ];

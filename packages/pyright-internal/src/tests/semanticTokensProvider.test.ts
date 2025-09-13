@@ -59,33 +59,33 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 49, length: 1 },
             { type: 'variable', modifiers: ['readonly'], start: 55, length: 2 },
             { type: 'class', modifiers: [], start: 59, length: 5 },
-            { type: 'class', modifiers: ['definition'], start: 76, length: 3 },
-            { type: 'method', modifiers: ['definition'], start: 103, length: 3 },
+            { type: 'class', modifiers: ['declaration'], start: 76, length: 3 },
+            { type: 'property', modifiers: ['declaration'], start: 103, length: 3 },
             { type: 'decorator', modifiers: [], start: 85, length: 1 },
             { type: 'decorator', modifiers: [], start: 86, length: 8 },
-            { type: 'selfParameter', modifiers: ['definition'], start: 107, length: 4 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 107, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 116, length: 3 },
-            { type: 'method', modifiers: ['definition'], start: 148, length: 3 },
+            { type: 'property', modifiers: ['declaration'], start: 148, length: 3 },
             { type: 'decorator', modifiers: [], start: 130, length: 1 },
             { type: 'decorator', modifiers: [], start: 131, length: 8 },
-            { type: 'selfParameter', modifiers: ['definition'], start: 152, length: 4 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 152, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 161, length: 3 },
-            { type: 'method', modifiers: ['definition'], start: 194, length: 3 },
+            { type: 'property', modifiers: ['declaration'], start: 194, length: 3 },
             { type: 'decorator', modifiers: [], start: 174, length: 1 },
-            { type: 'variable', modifiers: [], start: 175, length: 3 },
+            { type: 'property', modifiers: [], start: 175, length: 3 },
             { type: 'function', modifiers: [], start: 179, length: 6 },
-            { type: 'selfParameter', modifiers: ['definition'], start: 198, length: 4 },
-            { type: 'parameter', modifiers: ['definition'], start: 204, length: 5 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 198, length: 4 },
+            { type: 'parameter', modifiers: ['declaration'], start: 204, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 211, length: 3 },
             { type: 'class', modifiers: [], start: 223, length: 3 },
-            { type: 'variable', modifiers: ['readonly'], start: 229, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 229, length: 3 },
             { type: 'class', modifiers: [], start: 233, length: 3 },
-            { type: 'variable', modifiers: [], start: 239, length: 3 },
+            { type: 'property', modifiers: [], start: 239, length: 3 },
             { type: 'variable', modifiers: [], start: 244, length: 3 },
             { type: 'class', modifiers: [], start: 250, length: 3 },
             { type: 'variable', modifiers: [], start: 256, length: 1 },
             { type: 'variable', modifiers: [], start: 260, length: 3 },
-            { type: 'variable', modifiers: ['readonly'], start: 264, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 264, length: 3 },
         ]);
     });
 
@@ -98,10 +98,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'type', modifiers: [], start: 31, length: 5 }, // Never
             { type: 'type', modifiers: [], start: 37, length: 3 }, // bar
             { type: 'type', modifiers: [], start: 43, length: 5 }, // Never
-            { type: 'function', modifiers: ['definition'], start: 54, length: 3 }, // baz
+            { type: 'function', modifiers: ['declaration'], start: 54, length: 3 }, // baz
             { type: 'type', modifiers: [], start: 63, length: 5 }, // Never
-            { type: 'function', modifiers: ['definition'], start: 83, length: 4 }, // asdf
-            { type: 'parameter', modifiers: ['definition'], start: 88, length: 3 }, // foo
+            { type: 'function', modifiers: ['declaration'], start: 83, length: 4 }, // asdf
+            { type: 'parameter', modifiers: ['declaration'], start: 88, length: 3 }, // foo
             { type: 'type', modifiers: [], start: 93, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 105, length: 5 }, // value
             { type: 'type', modifiers: [], start: 112, length: 5 }, // Never
@@ -111,7 +111,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'type', modifiers: [], start: 142, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 148, length: 5 }, // value
             { type: 'type', modifiers: [], start: 155, length: 4 }, // Type
-            { type: 'function', modifiers: ['definition'], start: 169, length: 8 }, // inferred
+            { type: 'function', modifiers: ['declaration'], start: 169, length: 8 }, // inferred
             { type: 'variable', modifiers: [], start: 185, length: 5 }, // value
             { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 207, length: 10 }, // isinstance
             { type: 'variable', modifiers: [], start: 218, length: 5 }, // value
@@ -136,11 +136,11 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 },
             { type: 'class', modifiers: [], start: 19, length: 8 },
-            { type: 'function', modifiers: ['definition'], start: 34, length: 3 },
-            { type: 'parameter', modifiers: ['definition'], start: 38, length: 1 },
+            { type: 'function', modifiers: ['declaration'], start: 34, length: 3 },
+            { type: 'parameter', modifiers: ['declaration'], start: 38, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 },
-            { type: 'parameter', modifiers: ['definition'], start: 47, length: 1 },
-            { type: 'parameter', modifiers: ['definition'], start: 52, length: 1 },
+            { type: 'parameter', modifiers: ['declaration'], start: 47, length: 1 },
+            { type: 'parameter', modifiers: ['declaration'], start: 52, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 58, length: 3 },
             { type: 'function', modifiers: [], start: 72, length: 3 },
             { type: 'type', modifiers: [], start: 79, length: 3 },
@@ -180,23 +180,23 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'namespace', modifiers: [], start: 75, length: 6 }, // typing
             { type: 'function', modifiers: [], start: 89, length: 5 }, // final
 
-            { type: 'class', modifiers: ['definition'], start: 115, length: 1 }, // A
+            { type: 'class', modifiers: ['declaration'], start: 115, length: 1 }, // A
             { type: 'decorator', modifiers: [], start: 96, length: 1 }, // @
             { type: 'function', modifiers: [], start: 97, length: 9 },
 
-            { type: 'class', modifiers: ['definition'], start: 154, length: 1 }, // B
+            { type: 'class', modifiers: ['declaration'], start: 154, length: 1 }, // B
             { type: 'decorator', modifiers: [], start: 123, length: 1 }, // @
             { type: 'namespace', modifiers: [], start: 124, length: 11 }, // dataclasses
             { type: 'function', modifiers: [], start: 136, length: 9 }, // dataclass
-            { type: 'method', modifiers: ['definition'], start: 176, length: 6 }, // method
+            { type: 'method', modifiers: ['declaration'], start: 176, length: 6 }, // method
             { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
-            { type: 'selfParameter', modifiers: ['definition'], start: 183, length: 4 }, // self
-            { type: 'method', modifiers: ['definition'], start: 220, length: 6 }, // static
+            { type: 'selfParameter', modifiers: ['declaration'], start: 183, length: 4 }, // self
+            { type: 'method', modifiers: ['declaration', 'static'], start: 220, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 199, length: 12 },
 
-            { type: 'function', modifiers: ['definition'], start: 256, length: 6 }, // cached
+            { type: 'function', modifiers: ['declaration'], start: 256, length: 6 }, // cached
             { type: 'decorator', modifiers: [], start: 235, length: 1 }, // @
             { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
             { type: 'function', modifiers: [], start: 246, length: 5 }, // cache
@@ -207,25 +207,25 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('parameters.py');
         expect(result).toStrictEqual([
             // method
-            { type: 'class', modifiers: ['definition'], start: 6, length: 1 }, // C
-            { type: 'method', modifiers: ['definition'], start: 17, length: 8 }, // __init__
-            { type: 'selfParameter', modifiers: ['definition'], start: 26, length: 4 }, // self
-            { type: 'parameter', modifiers: ['definition'], start: 32, length: 1 }, // x
+            { type: 'class', modifiers: ['declaration'], start: 6, length: 1 }, // C
+            { type: 'method', modifiers: ['declaration'], start: 17, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration'], start: 26, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration'], start: 32, length: 1 }, // x
             { type: 'selfParameter', modifiers: [], start: 44, length: 4 }, // self
-            { type: 'variable', modifiers: [], start: 49, length: 1 }, // x
+            { type: 'property', modifiers: [], start: 49, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 53, length: 1 }, // x
-            { type: 'method', modifiers: ['definition'], start: 81, length: 1 }, // m
+            { type: 'method', modifiers: ['declaration'], start: 81, length: 1 }, // m
             { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 61, length: 11 },
-            { type: 'clsParameter', modifiers: ['definition'], start: 83, length: 3 }, // cls
+            { type: 'clsParameter', modifiers: ['declaration'], start: 83, length: 3 }, // cls
             { type: 'clsParameter', modifiers: [], start: 104, length: 3 }, // cls
             // function
-            { type: 'function', modifiers: ['definition'], start: 116, length: 1 }, // f
-            { type: 'parameter', modifiers: ['definition'], start: 118, length: 1 }, // x
-            { type: 'parameter', modifiers: ['definition'], start: 121, length: 1 }, // y
+            { type: 'function', modifiers: ['declaration'], start: 116, length: 1 }, // f
+            { type: 'parameter', modifiers: ['declaration'], start: 118, length: 1 }, // x
+            { type: 'parameter', modifiers: ['declaration'], start: 121, length: 1 }, // y
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 124, length: 3 }, // int
-            { type: 'function', modifiers: ['definition'], start: 138, length: 1 }, // g
-            { type: 'parameter', modifiers: ['definition'], start: 140, length: 1 }, // x
+            { type: 'function', modifiers: ['declaration'], start: 138, length: 1 }, // g
+            { type: 'parameter', modifiers: ['declaration'], start: 140, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 159, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 163, length: 1 }, // y
             { type: 'variable', modifiers: [], start: 169, length: 1 }, // z
@@ -233,8 +233,8 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'function', modifiers: [], start: 190, length: 1 }, // g
             { type: 'variable', modifiers: [], start: 192, length: 1 }, // z
             // lambda
-            { type: 'parameter', modifiers: ['definition'], start: 203, length: 1 }, // a
-            { type: 'parameter', modifiers: ['definition'], start: 206, length: 1 }, // b
+            { type: 'parameter', modifiers: ['declaration'], start: 203, length: 1 }, // a
+            { type: 'parameter', modifiers: ['declaration'], start: 206, length: 1 }, // b
             { type: 'parameter', modifiers: [], start: 209, length: 1 }, // a
             { type: 'parameter', modifiers: [], start: 213, length: 1 }, // b
         ]);
@@ -245,8 +245,8 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
             { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
-            { type: 'function', modifiers: ['definition'], start: 28, length: 1 }, // f
-            { type: 'parameter', modifiers: ['definition'], start: 30, length: 1 }, // l
+            { type: 'function', modifiers: ['declaration'], start: 28, length: 1 }, // f
+            { type: 'parameter', modifiers: ['declaration'], start: 30, length: 1 }, // l
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
             { type: 'type', modifiers: [], start: 42, length: 3 }, // Any
             { type: 'variable', modifiers: [], start: 51, length: 1 }, // v
@@ -301,7 +301,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 // this `some_global` is referrring to the the builtin
                 { type: 'variable', modifiers: ['builtin'], start: 14, length: 11 },
                 // inside scope()...
-                { type: 'function', modifiers: ['definition'], start: 31, length: 5 },
+                { type: 'function', modifiers: ['declaration'], start: 31, length: 5 },
                 // this `some_global` is redefined inside the function scope
                 { type: 'variable', modifiers: [], start: 44, length: 11 },
                 { type: 'variable', modifiers: [], start: 64, length: 1 },
@@ -309,7 +309,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 // so this `some_global` refers to the redefined one, not to the builtin
                 { type: 'variable', modifiers: [], start: 72, length: 11 },
                 // inside in_function()...
-                { type: 'function', modifiers: ['definition'], start: 90, length: 11 },
+                { type: 'function', modifiers: ['declaration'], start: 90, length: 11 },
                 { type: 'variable', modifiers: [], start: 109, length: 1 },
                 { type: 'variable', modifiers: [], start: 113, length: 1 },
                 // this function is similar to scope(), but we don't redefine some_global, so it refers to the builtin
