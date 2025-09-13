@@ -16,11 +16,18 @@ import {
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
-import { isFunctionDeclaration, isAliasDeclaration, isParamDeclaration } from './declaration';
+import {
+    isFunctionDeclaration,
+    isAliasDeclaration,
+    isParamDeclaration,
+    Declaration,
+    isVariableDeclaration,
+} from './declaration';
 import { getScopeForNode } from './scopeUtils';
 import { ScopeType } from './scope';
 import { assertNever } from '../common/debug';
 import { getDeclaration } from './analyzerNodeInfo';
+import { isDeclInEnumClass } from './enums';
 
 export type SemanticTokenItem = {
     type: string;
@@ -39,7 +46,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         super();
     }
     override visitClass(node: ClassNode): boolean {
-        this._addItemForNameNode(node.d.name, SemanticTokenTypes.class, [SemanticTokenModifiers.declaration]);
+        // differentiate enum classes
+        const tokenType = this._getClassTokenType(this._evaluator.getTypeOfClass(node)?.classType);
+        this._addItemForNameNode(node.d.name, tokenType, [SemanticTokenModifiers.declaration]);
         return super.visitClass(node);
     }
 
@@ -188,7 +197,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     const modifiers = isBuiltIn
                         ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
                         : [];
-                    this._addItemForNameNode(node, SemanticTokenTypes.class, modifiers);
+                    this._addItemForNameNode(node, this._getClassTokenType(type), modifiers);
                     return;
                 }
                 break;
@@ -239,7 +248,25 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (isConstantName(node.d.value) || (symbol && this._evaluator.isFinalVariable(symbol))) {
             modifiers.push(SemanticTokenModifiers.readonly);
         }
-        this._addItemForNameNode(node, SemanticTokenTypes.variable, modifiers);
+
+        const tokenType = this._getVariableTokenType(declarations);
+        this._addItemForNameNode(node, tokenType, modifiers);
+    }
+
+    private _getClassTokenType(classType: ClassType | undefined): SemanticTokenTypes {
+        return classType && ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
+    }
+
+    private _getVariableTokenType(declarations: Declaration[]): SemanticTokenTypes {
+        // mark as enumMember if any declaration is in enum class
+        const isEnumMember = declarations.some(
+            (decl) => isVariableDeclaration(decl) && isDeclInEnumClass(this._evaluator, decl)
+        );
+        if (isEnumMember) {
+            return SemanticTokenTypes.enumMember;
+        }
+
+        return SemanticTokenTypes.variable;
     }
 
     private _visitFunctionWithType(node: NameNode, type: FunctionType) {
