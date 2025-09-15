@@ -480,6 +480,12 @@ async function processArgs(): Promise<ExitStatus> {
     return runSingleThreaded(args, options, service, minSeverityLevel, output);
 }
 
+const filterOutBaselinedDiagnostics = (filesWithDiagnostics: readonly FileDiagnostics[]): readonly FileDiagnostics[] =>
+    filesWithDiagnostics.map((file) => ({
+        ...file,
+        diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselined),
+    }));
+
 const outputResults = (
     args: CommandLineOptions,
     options: PyrightCommandLineOptions,
@@ -488,8 +494,11 @@ const outputResults = (
     minSeverityLevel: SeverityLevel,
     output: ConsoleInterface
 ) => {
-    const baselineFile = service.backgroundAnalysisProgram.program.baselineHandler;
-    const baselineDiffMessage = baselineFile.write(args.writebaseline, true, results.diagnostics)?.getSummaryMessage();
+    const baselineDiffMessage = service.backgroundAnalysisProgram.writeBaseline(
+        args.writebaseline,
+        true,
+        results.diagnostics
+    );
     if (baselineDiffMessage) {
         console.info(baselineDiffMessage);
     }
@@ -498,7 +507,7 @@ const outputResults = (
     const fileDiagnostics = [...results.diagnostics].sort((a, b) =>
         a.fileUri.toString() < b.fileUri.toString() ? -1 : 1
     );
-    const filteredDiagnostics = baselineFile.filterOutBaselinedDiagnostics(fileDiagnostics);
+    const filteredDiagnostics = filterOutBaselinedDiagnostics(fileDiagnostics);
 
     const treatWarningsAsErrors =
         !!args.warnings ||

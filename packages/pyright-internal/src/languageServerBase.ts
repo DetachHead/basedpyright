@@ -1746,8 +1746,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (!workspace.rootUri) {
                 continue;
             }
-            const baseline = workspace.service.backgroundAnalysisProgram.program.baselineHandler;
-            const baselineDiffSummary = baseline.write(false, false, files)?.getSummaryMessage();
+            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline(false, false, files);
             if (baselineDiffSummary) {
                 this.console.info(
                     `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`

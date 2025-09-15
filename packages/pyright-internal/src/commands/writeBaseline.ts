@@ -33,7 +33,6 @@ export class WriteBaselineCommand implements ServerCommand {
         if (workspace) {
             const workspaceRoot = workspace.rootUri;
             if (workspaceRoot) {
-                const baselineHandler = workspace.service.backgroundAnalysisProgram.program.baselineHandler;
                 const configOptions = workspace.service.getConfigOptions();
                 // filter out excluded files. ideally they shouldn't be present at all. see
                 // https://github.com/DetachHead/basedpyright/issues/31
@@ -46,10 +45,9 @@ export class WriteBaselineCommand implements ServerCommand {
                             matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider))
                     )
                     .map(([_, diagnostics]) => diagnostics);
-                const newBaseline = baselineHandler.write(true, true, filteredFiles);
-                workspace.service.baselineUpdated();
-                if (newBaseline) {
-                    this._ls.window.showInformationMessage(newBaseline.getSummaryMessage());
+                const newBaselineSummaryMessage = workspace.service.writeBaseline(true, true, filteredFiles);
+                if (newBaselineSummaryMessage) {
+                    this._ls.window.showInformationMessage(newBaselineSummaryMessage);
                 }
                 return;
             }

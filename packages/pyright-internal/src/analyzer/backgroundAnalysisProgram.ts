@@ -155,6 +155,15 @@ export class BackgroundAnalysisProgram {
         this._program.markFilesDirty(fileUris, evenIfContentsAreSame);
     }
 
+    writeBaseline = <T extends boolean>(
+        force: T,
+        removeDeletedFiles: boolean,
+        filesWithDiagnostics: readonly FileDiagnostics[]
+    ) => {
+        this._backgroundAnalysis?.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+        return this._program.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+    };
+
     setCompletionCallback(callback?: AnalysisCompleteCallback) {
         this._onAnalysisCompletion = callback;
         this._backgroundAnalysis?.setCompletionCallback(callback);
