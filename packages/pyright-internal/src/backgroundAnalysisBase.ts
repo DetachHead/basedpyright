@@ -61,6 +61,11 @@ export interface IBackgroundAnalysis extends Disposable {
     addInterimFile(fileUri: Uri): void;
     markAllFilesDirty(evenIfContentsAreSame: boolean): void;
     markFilesDirty(fileUris: Uri[], evenIfContentsAreSame: boolean): void;
+    writeBaseline: <T extends boolean>(
+        force: T,
+        removeDeletedFiles: boolean,
+        filesWithDiagnostics: readonly FileDiagnostics[]
+    ) => Promise<string | undefined>;
     startAnalysis(token: CancellationToken): void;
     analyzeFile(fileUri: Uri, token: CancellationToken): Promise<boolean>;
     analyzeFileAndGetDiagnostics(fileUri: Uri, token: CancellationToken): Promise<Diagnostic[]>;
@@ -188,6 +193,28 @@ export class BackgroundAnalysisBase implements IBackgroundAnalysis {
             data: serialize({ fileUris, evenIfContentsAreSame }),
         });
     }
+
+    writeBaseline = async <T extends boolean>(
+        force: T,
+        removeDeletedFiles: boolean,
+        filesWithDiagnostics: readonly FileDiagnostics[]
+    ) => {
+        const { port1, port2 } = createMessageChannel();
+        const waiter = getBackgroundWaiter<string | undefined>(port1);
+
+        this.enqueueRequest({
+            requestType: 'writeBaseline',
+            data: serialize({ force, removeDeletedFiles, filesWithDiagnostics }),
+            port: port2,
+        });
+
+        const result = await waiter;
+
+        port2.close();
+        port1.close();
+
+        return result;
+    };
 
     startAnalysis(token: CancellationToken) {
         const tokenId = getCancellationTokenId(token);
@@ -602,6 +629,18 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 break;
             }
 
+            case 'writeBaseline': {
+                run(() => {
+                    const { force, removeDeletedFiles, filesWithDiagnostics } = deserialize(msg.data);
+                    return this.handleWriteBaseline(
+                        force,
+                        removeDeletedFiles,
+                        convertFileDiagnostics(filesWithDiagnostics)
+                    );
+                }, msg.port!);
+                break;
+            }
+
             case 'invalidateAndForceReanalysis': {
                 const { reason } = deserialize(msg.data);
                 this.handleInvalidateAndForceReanalysis(reason);
@@ -620,6 +659,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             }
 
             default: {
+                msg.requestType satisfies never;
                 debug.fail(`${msg.requestType} is not expected. Message structure: ${JSON.stringify(msg)}`);
             }
         }
@@ -779,6 +819,12 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.program.markFilesDirty(fileUris, evenIfContentsAreSame);
     }
 
+    protected handleWriteBaseline = <T extends boolean>(
+        force: T,
+        removeDeletedFiles: boolean,
+        filesWithDiagnostics: readonly FileDiagnostics[]
+    ) => this.program.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+
     protected handleMarkAllFilesDirty(evenIfContentsAreSame: boolean) {
         this.program.markAllFilesDirty(evenIfContentsAreSame);
     }
@@ -860,8 +906,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
     }
 }
 
-function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
-    result.diagnostics = result.diagnostics.map((f: FileDiagnostics) => {
+const convertFileDiagnostics = (fileDiagnostics: readonly FileDiagnostics[]) =>
+    fileDiagnostics.map((f: FileDiagnostics) => {
         return {
             fileUri: Uri.fromJsonObj(f.fileUri),
             cell: f.cell,
@@ -871,6 +917,8 @@ function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
         };
     });
 
+function convertAnalysisResults(result: AnalysisResults): AnalysisResults {
+    result.diagnostics = convertFileDiagnostics(result.diagnostics);
     return result;
 }
 
@@ -901,6 +949,8 @@ function convertDiagnostics(diagnostics: Diagnostic[]) {
 }
 
 export type BackgroundRequestKind =
+    // basedpyright-specific:
+    | 'writeBaseline'
     // Browser usecase
     | 'initializeFileSystem'
     | 'createFile'

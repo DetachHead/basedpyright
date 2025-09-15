@@ -144,8 +144,7 @@ export class Program {
     private _preCheckCallback: PreCheckCallback | undefined;
     private _editModeTracker = new EditModeTracker();
     private _sourceFileFactory: ISourceFileFactory;
-
-    baselineHandler: BaselineHandler;
+    private _baselineHandler: BaselineHandler;
 
     constructor(
         initialImportResolver: ImportResolver,
@@ -161,7 +160,7 @@ export class Program {
         this._configOptions = initialConfigOptions;
 
         this._sourceFileFactory = serviceProvider.sourceFileFactory();
-        this.baselineHandler = new BaselineHandler(this.fileSystem, this._configOptions, this._console);
+        this._baselineHandler = new BaselineHandler(this.fileSystem, this._configOptions, this._console);
 
         this._cacheManager = serviceProvider.tryGet(ServiceKeys.cacheManager) ?? new CacheManager();
         this._cacheManager.registerCacheOwner(this);
@@ -268,7 +267,7 @@ export class Program {
     setConfigOptions(configOptions: ConfigOptions) {
         this._configOptions = configOptions;
         this._importResolver.setConfigOptions(configOptions);
-        this.baselineHandler.configOptions = configOptions;
+        this._baselineHandler.configOptions = configOptions;
 
         // Create a new evaluator with the updated config options.
         this._createNewEvaluator();
@@ -361,7 +360,7 @@ export class Program {
                     isThirdPartyImport,
                     isInPyTypedPackage,
                     this._editModeTracker,
-                    this.baselineHandler,
+                    this._baselineHandler,
                     () => sourceFileInfo.cellIndex(),
                     this._console,
                     this._logTracker,
@@ -391,7 +390,7 @@ export class Program {
                 isThirdPartyImport,
                 isInPyTypedPackage,
                 this._editModeTracker,
-                this.baselineHandler,
+                this._baselineHandler,
                 () => undefined,
                 this._console,
                 this._logTracker
@@ -424,7 +423,7 @@ export class Program {
                 /* isThirdPartyImport */ false,
                 moduleImportInfo.isThirdPartyPyTypedPresent,
                 this._editModeTracker,
-                this.baselineHandler,
+                this._baselineHandler,
                 () => sourceFileInfo?.cellIndex(),
                 this._console,
                 this._logTracker,
@@ -550,6 +549,12 @@ export class Program {
             this._createNewEvaluator();
         }
     }
+
+    writeBaseline = <T extends boolean>(
+        force: T,
+        removeDeletedFiles: boolean,
+        filesWithDiagnostics: readonly FileDiagnostics[]
+    ) => this._baselineHandler.write(force, removeDeletedFiles, filesWithDiagnostics);
 
     getFileCount(userFileOnly = true) {
         if (userFileOnly) {
@@ -687,7 +692,7 @@ export class Program {
     // to the smaller value to maintain responsiveness.
     analyze(maxTime?: MaxAnalysisTime, token: CancellationToken = CancellationToken.None): boolean {
         return this._runEvaluatorWithCancellationToken(token, () => {
-            this.baselineHandler.invalidateCache();
+            this._baselineHandler.invalidateCache();
             const elapsedTime = new Duration();
 
             const openFiles = this._sourceFileList.filter(
@@ -1593,7 +1598,7 @@ export class Program {
                         importInfo.isThirdPartyImport,
                         importInfo.isPyTypedPresent,
                         this._editModeTracker,
-                        this.baselineHandler,
+                        this._baselineHandler,
                         () => importedFileInfo?.cellIndex(),
                         this._console,
                         this._logTracker
@@ -1715,7 +1720,7 @@ export class Program {
             /* isThirdPartyImport */ false,
             /* isInPyTypedPackage */ false,
             this._editModeTracker,
-            this.baselineHandler,
+            this._baselineHandler,
             () => sourceFileInfo.cellIndex(),
             this._console,
             this._logTracker

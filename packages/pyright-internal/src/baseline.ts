@@ -40,42 +40,34 @@ type OptionalIfFalse<Bool extends boolean, T> = T | (Bool extends true ? never :
 /**
  * details about the difference between the previous version and the current version of the baseline file
  */
-class BaselineDiff<T extends boolean> {
-    readonly baselinedErrorCount: number;
-    readonly newErrorCount: number;
-    readonly diff: number;
-
-    constructor(
-        private _configOptions: ConfigOptions,
-        readonly previousBaseline: BaselineData,
-        readonly newBaseline: BaselineData,
-        private readonly _forced: T
-    ) {
-        this.baselinedErrorCount = Object.values(previousBaseline.files).flatMap((file) => file).length;
-        this.newErrorCount = Object.values(newBaseline.files).flatMap((file) => file).length;
-        this.diff = this.newErrorCount - this.baselinedErrorCount;
+const baselineSummaryMessage = <T extends boolean>(
+    configOptions: ConfigOptions,
+    previousBaseline: BaselineData,
+    newBaseline: BaselineData,
+    forced: T
+): OptionalIfFalse<T, string> => {
+    const baselinedErrorCount = Object.values(previousBaseline.files).flatMap((file) => file).length;
+    const newErrorCount = Object.values(newBaseline.files).flatMap((file) => file).length;
+    const diff = newErrorCount - baselinedErrorCount;
+    let message = '';
+    if (diff === 0) {
+        if (!forced) {
+            // if the error count didn't change and the baseline update was not explicitly requested by the user,
+            // that means nothing changed so don't show any message
+            return undefined as OptionalIfFalse<T, string>;
+        }
+        message += "error count didn't change";
+    } else if (diff > 0) {
+        message += `went up by ${diff}`;
+    } else {
+        message += `went down by ${diff * -1}`;
     }
 
-    getSummaryMessage = (): OptionalIfFalse<T, string> => {
-        let message = '';
-        if (this.diff === 0) {
-            if (!this._forced) {
-                // if the error count didn't change and the baseline update was not explicitly requested by the user,
-                // that means nothing changed so don't show any message
-                return undefined as OptionalIfFalse<T, string>;
-            }
-            message += "error count didn't change";
-        } else if (this.diff > 0) {
-            message += `went up by ${this.diff}`;
-        } else {
-            message += `went down by ${this.diff * -1}`;
-        }
-
-        return `updated ${this._configOptions.projectRoot.getRelativePath(
-            baselineFilePath(this._configOptions)
-        )} with ${pluralize(this.newErrorCount, 'error')} (${message})`;
-    };
-}
+    return `updated ${configOptions.projectRoot.getRelativePath(baselineFilePath(configOptions))} with ${pluralize(
+        newErrorCount,
+        'error'
+    )} (${message})`;
+};
 
 export class BaselineHandler {
     /**
@@ -120,7 +112,7 @@ export class BaselineHandler {
         force: T,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
-    ): BaselineDiff<T> | undefined => {
+    ): string | undefined => {
         const baselineData = this.getContents();
         if (!force) {
             if (!baselineData) {
@@ -172,7 +164,7 @@ export class BaselineHandler {
             return undefined;
         }
         this._setCache(result);
-        return new BaselineDiff(this.configOptions, { files: previousBaselineFiles }, result, force);
+        return baselineSummaryMessage(this.configOptions, { files: previousBaselineFiles }, result, force);
     };
 
     sortDiagnosticsAndMatchBaseline = (
@@ -238,16 +230,6 @@ export class BaselineHandler {
         }
         return result;
     };
-
-    /**
-     * filters out diagnostics that are baselined, but keeps any that have been turned into hints. so you will need
-     * to filter it further by removing diagnostics with {@link DiagnosticCategory.Hint} if you want those removed as well
-     */
-    filterOutBaselinedDiagnostics = (filesWithDiagnostics: readonly FileDiagnostics[]): readonly FileDiagnostics[] =>
-        filesWithDiagnostics.map((file) => ({
-            ...file,
-            diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselined),
-        }));
 
     private _getContents = (): BaselineData | undefined => {
         let baselineFileContents: string | undefined;
