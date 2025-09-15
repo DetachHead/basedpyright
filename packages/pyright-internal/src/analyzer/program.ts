@@ -687,6 +687,7 @@ export class Program {
     // to the smaller value to maintain responsiveness.
     analyze(maxTime?: MaxAnalysisTime, token: CancellationToken = CancellationToken.None): boolean {
         return this._runEvaluatorWithCancellationToken(token, () => {
+            this.baselineHandler.invalidateCache();
             const elapsedTime = new Duration();
 
             const openFiles = this._sourceFileList.filter(
