@@ -78,6 +78,10 @@ class BaselineDiff<T extends boolean> {
 }
 
 export class BaselineHandler {
+    /**
+     * project root can change and we need to invalidate the cache when that happens
+     */
+    private _cache?: { content: BaselineData | undefined; projectRoot: Uri };
     private _console: ConsoleInterface;
 
     constructor(private _fs: FileSystem, public configOptions: ConfigOptions, console: ConsoleInterface | undefined) {
@@ -89,19 +93,17 @@ export class BaselineHandler {
     }
 
     getContents = (): BaselineData | undefined => {
-        let baselineFileContents: string | undefined;
-        try {
-            baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
-        } catch (e) {
-            // assume the file didn't exist
-            return undefined;
+        if (!this._cache || this._cache.projectRoot !== this.configOptions.projectRoot) {
+            const result = this._getContents();
+            this._setCache(result);
+            return result;
+        } else {
+            return this._cache.content;
         }
-        try {
-            return JSON.parse(baselineFileContents);
-        } catch (e) {
-            this._console.error(`failed to parse baseline file - ${e}`);
-            return undefined;
-        }
+    };
+
+    invalidateCache = () => {
+        this._cache = undefined;
     };
 
     /**
@@ -169,6 +171,7 @@ export class BaselineHandler {
             this._console.error(`failed to write baseline file - ${e}`);
             return undefined;
         }
+        this._setCache(result);
         return new BaselineDiff(this.configOptions, { files: previousBaselineFiles }, result, force);
     };
 
@@ -245,6 +248,26 @@ export class BaselineHandler {
             ...file,
             diagnostics: file.diagnostics.filter((diagnostic) => !diagnostic.baselined),
         }));
+
+    private _getContents = (): BaselineData | undefined => {
+        let baselineFileContents: string | undefined;
+        try {
+            baselineFileContents = this._fs.readFileSync(this.fileUri, 'utf8');
+        } catch (e) {
+            // assume the file didn't exist
+            return undefined;
+        }
+        try {
+            return JSON.parse(baselineFileContents);
+        } catch (e) {
+            this._console.error(`failed to parse baseline file - ${e}`);
+            return undefined;
+        }
+    };
+
+    private _setCache = (content: BaselineData | undefined) => {
+        this._cache = { projectRoot: this.configOptions.projectRoot, content };
+    };
 
     private _formatUriForBaseline = (file: Uri) => {
         const relativePath = this.configOptions.projectRoot.getRelativePath(file);
