@@ -72,7 +72,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 161, length: 3 },
             { type: 'property', modifiers: ['declaration'], start: 194, length: 3 },
             { type: 'decorator', modifiers: [], start: 174, length: 1 },
-            { type: 'property', modifiers: [], start: 175, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 175, length: 3 },
             { type: 'function', modifiers: [], start: 179, length: 6 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 198, length: 4 },
             { type: 'parameter', modifiers: ['declaration'], start: 204, length: 5 },
