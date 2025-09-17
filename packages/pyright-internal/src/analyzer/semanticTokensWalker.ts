@@ -18,20 +18,21 @@ import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserve
 import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
 import {
+    Declaration,
+    DeclarationType,
     isFunctionDeclaration,
     isAliasDeclaration,
     isParamDeclaration,
-    Declaration,
     isVariableDeclaration,
 } from './declaration';
 import { getScopeForNode } from './scopeUtils';
 import { ScopeType } from './scope';
 import { assertNever } from '../common/debug';
 import { getDeclaration } from './analyzerNodeInfo';
-import { isMagicAttributeAccess } from './declarationUtils';
 import { isDeclInEnumClass } from './enums';
 import { getEnclosingClass } from './parseTreeUtils';
-import { ClassMember, isMaybeDescriptorInstance, lookUpClassMember, MemberAccessFlags } from './typeUtils';
+import { Symbol } from './symbol';
+import { ClassMember, MemberAccessFlags, isMaybeDescriptorInstance, lookUpClassMember } from './typeUtils';
 
 export type SemanticTokenItem = {
     type: string;
@@ -46,9 +47,8 @@ type Modifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
 // (e.g. “set” when the member access is the left-hand side of an assignment) stored separately
 interface MagicAttributeAccess {
     del: ClassMember | undefined;
-    set: ClassMember | undefined;
     get: ClassMember | undefined;
-    relevant: ClassMember | undefined;
+    set: ClassMember | undefined;
 }
 
 export class SemanticTokensWalker extends ParseTreeWalker {
@@ -255,15 +255,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return;
         }
 
-        if (
-            isConstantName(node.d.value) ||
-            (symbol && this._evaluator.isFinalVariable(symbol)) ||
-            declarations.some((decl) => this._evaluator.isFinalVariableDeclaration(decl))
-        ) {
-            modifiers.push(SemanticTokenModifiers.readonly);
-        }
-
-        const tokenType = this._getVariableTokenType(node, declarations, modifiers);
+        const tokenType = this._getVariableTokenType(node, symbol, declarations, modifiers);
         this._addItemForNameNode(node, tokenType, modifiers);
     }
 
@@ -273,28 +265,48 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     private _getVariableTokenType(
         node: NameNode,
+        symbol: Symbol | undefined,
         declarations: Declaration[],
         modifiers: Modifiers[]
     ): SemanticTokenTypes {
-        // mark as enumMember if any declaration is in enum class
+        // Mark as enumMember if any declaration is in enum class
         const isEnumMember = declarations.some(
             (decl) => isVariableDeclaration(decl) && isDeclInEnumClass(this._evaluator, decl)
         );
         if (isEnumMember) {
             return SemanticTokenTypes.enumMember;
         }
+        // Mark as “readonly” if one of the following applies:
+        // - the name implies a constant
+        // - the symbol represents a final variable
+        // - one of the declarations is final
+        if (
+            isConstantName(node.d.value) ||
+            (symbol && this._evaluator.isFinalVariable(symbol)) ||
+            declarations.some((decl) => this._isFinal(decl))
+        ) {
+            modifiers.push(SemanticTokenModifiers.readonly);
+        }
         // Mark as property if any declaration is within a class
+        // “property” is used even for class variables because there is no more appropriate token type
+        // (see https://github.com/DetachHead/basedpyright/issues/482#issuecomment-3172601227)
         const enclosingClass = declarations.some((decl) => getEnclosingClass(decl.node, /*stopAtFunction*/ true));
         if (enclosingClass) {
+            // if every declaration has a property type, but does not contain fset information, mark as “readonly”
+            if (declarations.every((d) => this._missingPropertySetter(d))) {
+                modifiers.push(SemanticTokenModifiers.readonly);
+            }
             return SemanticTokenTypes.property;
         }
         // All member accesses to variables are interpreted as properties
         const parent = node.parent;
         if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
             // This is quite a primitive heuristic for determining member accesses through magic methods,
-            // but since it is only used to check for a magic setter if there is a magic getter,
-            // it should be sufficient
+            // but since it is only used to check for read-only access, it should be sufficient
             if (declarations.length === 0) {
+                // If there are no declarations, we check whether the access uses magic methods
+                // To determine whether the magic method access is read-only, check if there is
+                // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
                 const access = this._getMagicAttributeAccess(parent);
                 if (access && access.get && !access.set) modifiers.push(SemanticTokenModifiers.readonly);
             }
@@ -303,25 +315,41 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return SemanticTokenTypes.variable;
     }
 
+    // For a given attribute access, gather information about the magic attribute methods
+    // which the left-hand side provides
     private _getMagicAttributeAccess(node: MemberAccessNode): MagicAttributeAccess | undefined {
         const baseType = this._evaluator.getType(node.d.leftExpr);
         if (baseType && baseType.category === TypeCategory.Class) {
-            const parent = node.parent;
-            const del = lookUpClassMember(baseType, '__delattr__', MemberAccessFlags.SkipBaseClasses);
-            const set = lookUpClassMember(baseType, '__setattr__', MemberAccessFlags.SkipBaseClasses);
+            // Skip the object base class because that always appears to contain these members
+            const del = lookUpClassMember(baseType, '__delattr__', MemberAccessFlags.SkipObjectBaseClass);
+            const set = lookUpClassMember(baseType, '__setattr__', MemberAccessFlags.SkipObjectBaseClass);
             const get =
-                lookUpClassMember(baseType, '__getattribute__', MemberAccessFlags.SkipBaseClasses) ??
-                lookUpClassMember(baseType, '__getattr__', MemberAccessFlags.SkipBaseClasses);
-
-            if (parent && parent.nodeType === ParseNodeType.Del) {
-                return { del: del, set: set, get: get, relevant: del };
-            } else if (parent && parent.nodeType === ParseNodeType.Assignment && node === parent.d.leftExpr) {
-                return { del: del, set: set, get: get, relevant: set };
-            } else {
-                return { del: del, set: set, get: get, relevant: get };
-            }
+                lookUpClassMember(baseType, '__getattribute__', MemberAccessFlags.SkipObjectBaseClass) ??
+                lookUpClassMember(baseType, '__getattr__', MemberAccessFlags.SkipObjectBaseClass);
+            return { del: del, get: get, set: set };
         }
         return undefined;
+    }
+
+    // Check whether “decl” is a final variable declaration (with alias resolution)
+    private _isFinal(decl: Declaration): boolean {
+        if (decl.type === DeclarationType.Alias) {
+            const rdecl = this._evaluator.resolveAliasDeclaration(decl, true);
+            if (rdecl) decl = rdecl;
+        }
+        if (decl.type === DeclarationType.Variable) {
+            return !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
+        }
+        return false;
+    }
+
+    // Check whether “decl” has a property type and does not contain fset information
+    private _missingPropertySetter(decl: Declaration): boolean {
+        const type = this._evaluator.getTypeForDeclaration(decl).type;
+        if (type?.category === TypeCategory.Class && ClassType.isPropertyClass(type)) {
+            return !type.priv.fsetInfo;
+        }
+        return false;
     }
 
     private _visitFunctionWithType(node: NameNode, type: FunctionType) {
@@ -350,11 +378,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 const declaredType = this._evaluator.getTypeForDeclaration(decl)?.type;
                 // the canonical check for properties (used e.g. in the hover message)
                 if (declaredType && isMaybeDescriptorInstance(declaredType)) {
-                    return SemanticTokenTypes.property;
-                }
-                // highlight magic attribute access (__getattr__ family and __getattribute__) as properties
-                const isMagic = isMagicAttributeAccess(decl);
-                if (isMagic) {
                     return SemanticTokenTypes.property;
                 }
                 return SemanticTokenTypes.method;
