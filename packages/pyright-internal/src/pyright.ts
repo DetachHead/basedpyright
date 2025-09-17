@@ -179,7 +179,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'stats', type: Boolean },
         { name: 'threads', type: parseThreadsArgValue },
         { name: 'typeshed-path', type: String },
-        { name: 'baseline-file', type: String },
+        { name: 'baselinefile', type: String },
         { name: 'typeshedpath', alias: 't', type: String },
         { name: 'venv-path', type: String },
         { name: 'venvpath', alias: 'v', type: String },
@@ -379,8 +379,8 @@ async function processArgs(): Promise<ExitStatus> {
         options.configSettings.typeshedPath = combinePaths(process.cwd(), normalizePath(args['typeshedpath']));
     }
 
-    if (args['baseline-file']) {
-        options.configSettings.baselineFile = combinePaths(process.cwd(), normalizePath(args['baseline-file']));
+    if (args['baselinefile']) {
+        options.configSettings.baselineFile = combinePaths(process.cwd(), normalizePath(args['baselinefile']));
     }
 
     if (args.createstub) {
