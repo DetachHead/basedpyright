@@ -17,7 +17,7 @@ this makes it far more convenient for python developers to use, since there's no
      or install it globally:
 
      ```
-     uv tool install basedpyright@latest
+     uv tool install basedpyright
      ```
 
 === "pdm"
