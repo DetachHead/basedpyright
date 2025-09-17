@@ -276,6 +276,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (isEnumMember) {
             return SemanticTokenTypes.enumMember;
         }
+        // Track whether “readonly” has already been added to “modifiers”
+        let readOnly = false;
         // Mark as “readonly” if one of the following applies:
         // - the name implies a constant
         // - the symbol represents a final variable
@@ -285,6 +287,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             (symbol && this._evaluator.isFinalVariable(symbol)) ||
             declarations.some((decl) => this._isFinal(decl))
         ) {
+            readOnly = true;
             modifiers.push(SemanticTokenModifiers.readonly);
         }
         // Mark as property if any declaration is within a class
@@ -293,7 +296,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const enclosingClass = declarations.some((decl) => getEnclosingClass(decl.node, /*stopAtFunction*/ true));
         if (enclosingClass) {
             // if every declaration has a property type, but does not contain fset information, mark as “readonly”
-            if (declarations.every((d) => this._missingPropertySetter(d))) {
+            if (!readOnly && declarations.every((d) => this._missingPropertySetter(d))) {
                 modifiers.push(SemanticTokenModifiers.readonly);
             }
             return SemanticTokenTypes.property;
@@ -308,7 +311,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 // To determine whether the magic method access is read-only, check if there is
                 // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
                 const access = this._getMagicAttributeAccess(parent);
-                if (access && access.get && !access.set) modifiers.push(SemanticTokenModifiers.readonly);
+                if (!readOnly && access && access.get && !access.set) {
+                    modifiers.push(SemanticTokenModifiers.readonly);
+                }
             }
             return SemanticTokenTypes.property;
         }
