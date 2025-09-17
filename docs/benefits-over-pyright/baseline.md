@@ -1,8 +1,8 @@
-# baseline (beta)
+# baseline
 
 have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly written or modified code get reported.
 
-to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in vscode. this will generate a baseline file at `./.basedpyright/baseline.json` your project. you should commit this file so others working on your project can benefit from it too.
+to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in your editor. this will generate a baseline file at `./.basedpyright/baseline.json` your project. you should commit this file so others working on your project can benefit from it too.
 
 you can customize the baseline file path [using the `baselineFile` setting](../configuration/config-files.md#baselineFile) or [using the `--baselinefile` CLI argument](../configuration/command-line.md#command-line).
 
@@ -23,7 +23,7 @@ each baselined error is stored and matched by the following details:
 -   its diagnostic rule name (eg. `reportGeneralTypeIssues`)
 -   the position of the error in the file (column only, which prevents errors from resurfacing when you add or remove lines in a file)
 
-no baseline matching strategy is perfect, so this is subject to change. baseline is in beta so if you have any feedback please [raise an issue](https://github.com/DetachHead/basedpyright/issues/new/choose).
+no baseline matching strategy is perfect, so sometimes old errors can resurface when you're moving code around. if that happens, you can explicitly regenerate the baseline file by running the _"basedpyright: Write new errors to baseline"_ command in your editor or [via the command line](https://docs.basedpyright.com/latest/configuration/command-line/#regenerating-the-baseline-file)
 
 ## how is this different to `# pyright: ignore` comments?
 
