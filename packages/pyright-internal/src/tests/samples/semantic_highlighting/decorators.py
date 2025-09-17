@@ -1,7 +1,8 @@
 import dataclasses
-from dataclasses import dataclass
 import functools
+from dataclasses import dataclass
 from typing import final
+
 
 @dataclass()
 class A: ...
@@ -15,3 +16,5 @@ class B:
 
 @functools.cache
 def cached(): ...
+
+B.static()

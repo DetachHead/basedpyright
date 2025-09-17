@@ -11,6 +11,21 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('enum', () => {
+        const result = semanticTokenizeSampleFile('enum.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 4 },
+            { type: 'enum', modifiers: [], start: 17, length: 7 },
+            { type: 'enum', modifiers: ['declaration'], start: 33, length: 11 },
+            { type: 'enum', modifiers: [], start: 45, length: 7 },
+            { type: 'enumMember', modifiers: [], start: 59, length: 3 },
+            { type: 'enumMember', modifiers: [], start: 71, length: 2 },
+            { type: 'variable', modifiers: [], start: 79, length: 1 },
+            { type: 'enum', modifiers: [], start: 83, length: 11 },
+            { type: 'enumMember', modifiers: [], start: 95, length: 3 },
+        ]);
+    });
+
     test('type annotation', () => {
         const result = semanticTokenizeSampleFile('type_annotation.py');
         expect(result).toStrictEqual([
@@ -51,41 +66,85 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('final', () => {
         const result = semanticTokenizeSampleFile('final.py');
         expect(result).toStrictEqual([
-            { type: 'namespace', modifiers: [], start: 5, length: 6 },
-            { type: 'class', modifiers: [], start: 19, length: 5 },
-            { type: 'variable', modifiers: ['readonly'], start: 26, length: 3 },
-            { type: 'variable', modifiers: ['readonly'], start: 34, length: 3 },
+            { type: 'namespace', modifiers: [], start: 5, length: 4 },
+            { type: 'variable', modifiers: ['readonly'], start: 17, length: 2 },
+            { type: 'namespace', modifiers: [], start: 25, length: 6 },
             { type: 'class', modifiers: [], start: 39, length: 5 },
-            { type: 'variable', modifiers: [], start: 49, length: 1 },
-            { type: 'variable', modifiers: ['readonly'], start: 55, length: 2 },
-            { type: 'class', modifiers: [], start: 59, length: 5 },
-            { type: 'class', modifiers: ['declaration'], start: 76, length: 3 },
-            { type: 'property', modifiers: ['declaration'], start: 103, length: 3 },
-            { type: 'decorator', modifiers: [], start: 85, length: 1 },
-            { type: 'decorator', modifiers: [], start: 86, length: 8 },
-            { type: 'selfParameter', modifiers: ['declaration'], start: 107, length: 4 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 116, length: 3 },
-            { type: 'property', modifiers: ['declaration'], start: 148, length: 3 },
-            { type: 'decorator', modifiers: [], start: 130, length: 1 },
-            { type: 'decorator', modifiers: [], start: 131, length: 8 },
-            { type: 'selfParameter', modifiers: ['declaration'], start: 152, length: 4 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 161, length: 3 },
-            { type: 'property', modifiers: ['declaration'], start: 194, length: 3 },
-            { type: 'decorator', modifiers: [], start: 174, length: 1 },
-            { type: 'property', modifiers: ['readonly'], start: 175, length: 3 },
-            { type: 'function', modifiers: [], start: 179, length: 6 },
-            { type: 'selfParameter', modifiers: ['declaration'], start: 198, length: 4 },
-            { type: 'parameter', modifiers: ['declaration'], start: 204, length: 5 },
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 211, length: 3 },
-            { type: 'class', modifiers: [], start: 223, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 229, length: 3 },
-            { type: 'class', modifiers: [], start: 233, length: 3 },
-            { type: 'property', modifiers: [], start: 239, length: 3 },
-            { type: 'variable', modifiers: [], start: 244, length: 3 },
-            { type: 'class', modifiers: [], start: 250, length: 3 },
-            { type: 'variable', modifiers: [], start: 256, length: 1 },
-            { type: 'variable', modifiers: [], start: 260, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 264, length: 3 },
+            { type: 'function', modifiers: [], start: 46, length: 8 },
+            { type: 'variable', modifiers: ['readonly'], start: 56, length: 3 },
+            { type: 'variable', modifiers: ['readonly'], start: 64, length: 3 },
+            { type: 'class', modifiers: [], start: 69, length: 5 },
+            { type: 'variable', modifiers: [], start: 79, length: 1 },
+            { type: 'variable', modifiers: ['readonly'], start: 85, length: 2 },
+            { type: 'class', modifiers: [], start: 89, length: 5 },
+            { type: 'class', modifiers: ['declaration'], start: 107, length: 3 },
+            { type: 'method', modifiers: ['declaration'], start: 120, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 129, length: 4 },
+            { type: 'selfParameter', modifiers: [], start: 144, length: 4 },
+            { type: 'property', modifiers: ['readonly'], start: 149, length: 8 },
+            { type: 'class', modifiers: [], start: 159, length: 5 },
+            { type: 'property', modifiers: ['declaration'], start: 193, length: 3 },
+            { type: 'decorator', modifiers: [], start: 175, length: 1 },
+            { type: 'decorator', modifiers: [], start: 176, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 197, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 206, length: 3 },
+            { type: 'property', modifiers: ['declaration'], start: 238, length: 3 },
+            { type: 'decorator', modifiers: [], start: 220, length: 1 },
+            { type: 'decorator', modifiers: [], start: 221, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 242, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 251, length: 3 },
+            { type: 'property', modifiers: ['declaration'], start: 284, length: 3 },
+            { type: 'decorator', modifiers: [], start: 264, length: 1 },
+            { type: 'property', modifiers: ['readonly'], start: 265, length: 3 },
+            { type: 'function', modifiers: [], start: 269, length: 6 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 288, length: 4 },
+            { type: 'parameter', modifiers: ['declaration'], start: 294, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 },
+            { type: 'method', modifiers: ['declaration'], start: 320, length: 11 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 332, length: 4 },
+            { type: 'parameter', modifiers: ['declaration'], start: 338, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 344, length: 3 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 352, length: 5 },
+            { type: 'variable', modifiers: ['readonly'], start: 374, length: 2 },
+            { type: 'class', modifiers: ['declaration'], start: 385, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 394, length: 3 },
+            { type: 'class', modifiers: [], start: 399, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 405, length: 3 },
+            { type: 'method', modifiers: ['declaration'], start: 425, length: 11 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 437, length: 4 },
+            { type: 'parameter', modifiers: ['declaration'], start: 443, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 449, length: 3 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 457, length: 3 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 477, length: 3 },
+            { type: 'parameter', modifiers: [], start: 481, length: 4 },
+            { type: 'method', modifiers: ['declaration'], start: 510, length: 11 },
+            { type: 'decorator', modifiers: [], start: 492, length: 1 },
+            { type: 'decorator', modifiers: [], start: 493, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration'], start: 522, length: 4 },
+            { type: 'parameter', modifiers: ['declaration'], start: 528, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 534, length: 3 },
+            { type: 'parameter', modifiers: ['declaration'], start: 539, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 546, length: 3 },
+            { type: 'class', modifiers: [], start: 567, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 573, length: 3 },
+            { type: 'class', modifiers: [], start: 577, length: 3 },
+            { type: 'property', modifiers: [], start: 583, length: 3 },
+            { type: 'variable', modifiers: [], start: 588, length: 3 },
+            { type: 'class', modifiers: [], start: 594, length: 3 },
+            { type: 'variable', modifiers: [], start: 600, length: 1 },
+            { type: 'variable', modifiers: [], start: 604, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 608, length: 3 },
+            { type: 'variable', modifiers: [], start: 612, length: 7 },
+            { type: 'variable', modifiers: [], start: 622, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 626, length: 8 },
+            { type: 'variable', modifiers: [], start: 635, length: 3 },
+            { type: 'variable', modifiers: [], start: 641, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 645, length: 2 },
+            { type: 'class', modifiers: [], start: 650, length: 3 },
+            { type: 'property', modifiers: ['readonly'], start: 654, length: 3 },
+            { type: 'variable', modifiers: [], start: 658, length: 3 },
+            { type: 'class', modifiers: [], start: 664, length: 3 },
+            { type: 'property', modifiers: [], start: 670, length: 4 },
         ]);
     });
 
@@ -174,32 +233,34 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('decorators.py');
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 7, length: 11 }, // dataclasses
-            { type: 'namespace', modifiers: [], start: 24, length: 11 }, // dataclasses
-            { type: 'function', modifiers: [], start: 43, length: 9 }, // dataclass
-            { type: 'namespace', modifiers: [], start: 60, length: 9 }, // functools
+            { type: 'namespace', modifiers: [], start: 26, length: 9 }, // functools
+            { type: 'namespace', modifiers: [], start: 41, length: 11 }, // dataclasses
+            { type: 'function', modifiers: [], start: 60, length: 9 }, // dataclasses
             { type: 'namespace', modifiers: [], start: 75, length: 6 }, // typing
             { type: 'function', modifiers: [], start: 89, length: 5 }, // final
 
-            { type: 'class', modifiers: ['declaration'], start: 115, length: 1 }, // A
-            { type: 'decorator', modifiers: [], start: 96, length: 1 }, // @
-            { type: 'function', modifiers: [], start: 97, length: 9 },
+            { type: 'class', modifiers: ['declaration'], start: 116, length: 1 }, // A
+            { type: 'decorator', modifiers: [], start: 97, length: 1 }, // @
+            { type: 'function', modifiers: [], start: 98, length: 9 },
 
-            { type: 'class', modifiers: ['declaration'], start: 154, length: 1 }, // B
-            { type: 'decorator', modifiers: [], start: 123, length: 1 }, // @
-            { type: 'namespace', modifiers: [], start: 124, length: 11 }, // dataclasses
-            { type: 'function', modifiers: [], start: 136, length: 9 }, // dataclass
-            { type: 'method', modifiers: ['declaration'], start: 176, length: 6 }, // method
-            { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 162, length: 5 }, // final
-            { type: 'selfParameter', modifiers: ['declaration'], start: 183, length: 4 }, // self
-            { type: 'method', modifiers: ['declaration', 'static'], start: 220, length: 6 }, // static
-            { type: 'decorator', modifiers: [], start: 198, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 199, length: 12 },
+            { type: 'class', modifiers: ['declaration'], start: 155, length: 1 }, // B
+            { type: 'decorator', modifiers: [], start: 124, length: 1 }, // @
+            { type: 'namespace', modifiers: [], start: 125, length: 11 }, // dataclasses
+            { type: 'function', modifiers: [], start: 137, length: 9 }, // dataclass
+            { type: 'method', modifiers: ['declaration'], start: 177, length: 6 }, // method
+            { type: 'decorator', modifiers: [], start: 162, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 163, length: 5 }, // final
+            { type: 'selfParameter', modifiers: ['declaration'], start: 184, length: 4 }, // self
+            { type: 'method', modifiers: ['declaration', 'static'], start: 221, length: 6 }, // static
+            { type: 'decorator', modifiers: [], start: 199, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 200, length: 12 },
 
-            { type: 'function', modifiers: ['declaration'], start: 256, length: 6 }, // cached
-            { type: 'decorator', modifiers: [], start: 235, length: 1 }, // @
-            { type: 'namespace', modifiers: [], start: 236, length: 9 }, // functools
-            { type: 'function', modifiers: [], start: 246, length: 5 }, // cache
+            { type: 'function', modifiers: ['declaration'], start: 257, length: 6 }, // cached
+            { type: 'decorator', modifiers: [], start: 236, length: 1 }, // @
+            { type: 'namespace', modifiers: [], start: 237, length: 9 }, // functools
+            { type: 'function', modifiers: [], start: 247, length: 5 }, // cache
+            { type: 'class', modifiers: [], start: 272, length: 1 }, // B
+            { type: 'method', modifiers: ['static'], start: 274, length: 6 }, // static
         ]);
     });
 
