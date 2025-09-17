@@ -22,7 +22,7 @@
     
     
       
-        <title>baseline (beta) - basedpyright</title>
+        <title>baseline - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#baseline-beta" class="md-skip">
+        <a href="#baseline" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              baseline (beta)
+              baseline
             
           </span>
         </div>
@@ -372,7 +372,7 @@
   
   
   <span class="md-ellipsis">
-    baseline (beta)
+    baseline
     
   </span>
   
@@ -385,7 +385,7 @@
   
   
   <span class="md-ellipsis">
-    baseline (beta)
+    baseline
     
   </span>
   
@@ -1625,9 +1625,9 @@
   
 
 
-<h1 id="baseline-beta">baseline (beta)</h1>
+<h1 id="baseline">baseline</h1>
 <p>have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly written or modified code get reported.</p>
-<p>to enable baseline, run <code>basedpyright --writebaseline</code> in your terminal or run the <em>"basedpyright: Write new errors to baseline"</em> task in vscode. this will generate a baseline file at <code>./.basedpyright/baseline.json</code> your project. you should commit this file so others working on your project can benefit from it too.</p>
+<p>to enable baseline, run <code>basedpyright --writebaseline</code> in your terminal or run the <em>"basedpyright: Write new errors to baseline"</em> task in your editor. this will generate a baseline file at <code>./.basedpyright/baseline.json</code> your project. you should commit this file so others working on your project can benefit from it too.</p>
 <p>you can customize the baseline file path <a href="../../configuration/config-files/#baselineFile">using the <code>baselineFile</code> setting</a> or <a href="../../configuration/command-line/#command-line">using the <code>--baselinefile</code> CLI argument</a>.</p>
 <h2 id="how-often-do-i-need-to-update-the-baseline-file">how often do i need to update the baseline file?</h2>
 <p>this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:</p>
@@ -1643,7 +1643,7 @@
 <li>its diagnostic rule name (eg. <code>reportGeneralTypeIssues</code>)</li>
 <li>the position of the error in the file (column only, which prevents errors from resurfacing when you add or remove lines in a file)</li>
 </ul>
-<p>no baseline matching strategy is perfect, so this is subject to change. baseline is in beta so if you have any feedback please <a href="https://github.com/DetachHead/basedpyright/issues/new/choose">raise an issue</a>.</p>
+<p>no baseline matching strategy is perfect, so sometimes old errors can resurface when you're moving code around. if that happens, you can explicitly regenerate the baseline file by running the <em>"basedpyright: Write new errors to baseline"</em> command in your editor or <a href="https://docs.basedpyright.com/latest/configuration/command-line/#regenerating-the-baseline-file">via the command line</a></p>
 <h2 id="how-is-this-different-to-pyright-ignore-comments">how is this different to <code># pyright: ignore</code> comments?</h2>
 <p>ignore comments are typically used to suppress a false positive or workaround some limitation in the type checker. baselining is a way to suppress many valid instances of an error across your whole project, to avoid the burden of having to update thousands of lines of old code just to adopt stricter checks on your new code.</p>
 <h2 id="credit">credit</h2>
