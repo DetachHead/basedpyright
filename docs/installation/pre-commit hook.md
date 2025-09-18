@@ -10,7 +10,7 @@ repos:
 
 ## should i use this?
 
-we don't recommend pre-commit as there are better alternatives for most of its use cases. also its maintainer is notoriously very rude to users.
+While pre-commit is a popular tool, we recommend exploring alternatives. We find that other tools are often better suited for common use cases, and there have been community concerns regarding maintainer interactions.
 
 we will continue to support pre-commit, however there are alternative approaches you may want to consider depending on your use case.
 
