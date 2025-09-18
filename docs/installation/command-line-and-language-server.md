@@ -14,10 +14,10 @@ this makes it far more convenient for python developers to use, since there's no
      uv add --dev basedpyright
      ```
 
-     or just install it:
+     or install it globally:
 
      ```
-     uv pip install basedpyright
+     uv tool install basedpyright
      ```
 
 === "pdm"
