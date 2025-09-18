@@ -1646,6 +1646,9 @@ export const enum FunctionTypeFlags {
 
     // Function defined in one of the core stdlib modules.
     BuiltIn = 1 << 20,
+
+    // BasedPyright: enforce positional argument variable names match parameter names
+    MatchPositionalArgNames = 1 << 21,
 }
 
 interface FunctionDetailsShared {

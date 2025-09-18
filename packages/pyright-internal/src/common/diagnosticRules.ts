@@ -104,6 +104,7 @@ export enum DiagnosticRule {
     reportUnreachable = 'reportUnreachable',
     reportShadowedImports = 'reportShadowedImports',
     reportImplicitOverride = 'reportImplicitOverride',
+    reportPositionalArgumentNameMismatch = 'reportPositionalArgumentNameMismatch',
 
     // basedpyright options:
     failOnWarnings = 'failOnWarnings',

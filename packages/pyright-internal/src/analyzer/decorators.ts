@@ -100,6 +100,11 @@ export function getFunctionInfoFromDecorators(
                 flags |= FunctionTypeFlags.NoTypeCheck;
             } else if (FunctionType.isBuiltIn(decoratorType, 'overload')) {
                 flags |= FunctionTypeFlags.Overloaded;
+            } else if (
+                decoratorType.shared.name === 'arguments_match_parameter_names' &&
+                decoratorType.shared.moduleName === 'annotations'
+            ) {
+                flags |= FunctionTypeFlags.MatchPositionalArgNames;
             }
         } else if (isClass(decoratorType)) {
             if (TypeBase.isInstantiable(decoratorType)) {
