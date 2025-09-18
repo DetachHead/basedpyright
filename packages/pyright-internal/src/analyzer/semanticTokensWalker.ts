@@ -31,7 +31,6 @@ import { assertNever } from '../common/debug';
 import { getDeclaration } from './analyzerNodeInfo';
 import { isDeclInEnumClass } from './enums';
 import { getEnclosingClass } from './parseTreeUtils';
-import { Symbol } from './symbol';
 import { ClassMember, MemberAccessFlags, isMaybeDescriptorInstance, lookUpClassMember } from './typeUtils';
 
 export type SemanticTokenItem = {
@@ -43,10 +42,8 @@ export type SemanticTokenItem = {
 
 type Modifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
 
-// the magic attribute methods that apply to a given member access, with the relevant one
-// (e.g. “set” when the member access is the left-hand side of an assignment) stored separately
+// the magic attribute methods that apply to a given member access
 interface MagicAttributeAccess {
-    del: ClassMember | undefined;
     get: ClassMember | undefined;
     set: ClassMember | undefined;
 }
@@ -255,7 +252,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return;
         }
 
-        const tokenType = this._getVariableTokenType(node, symbol, declarations, modifiers);
+        const tokenType = this._getVariableTokenType(node, declarations, modifiers);
         this._addItemForNameNode(node, tokenType, modifiers);
     }
 
@@ -265,7 +262,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     private _getVariableTokenType(
         node: NameNode,
-        symbol: Symbol | undefined,
         declarations: Declaration[],
         modifiers: Modifiers[]
     ): SemanticTokenTypes {
@@ -278,15 +274,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
         // Track whether “readonly” has already been added to “modifiers”
         let readOnly = false;
-        // Mark as “readonly” if one of the following applies:
-        // - the name implies a constant
-        // - the symbol represents a final variable
-        // - one of the declarations is final
-        if (
-            isConstantName(node.d.value) ||
-            (symbol && this._evaluator.isFinalVariable(symbol)) ||
-            declarations.some((decl) => this._isFinal(decl))
-        ) {
+        // Mark as “readonly” if the name implies a constant or one of the declarations is final
+        if (isConstantName(node.d.value) || declarations.some((decl) => this._isFinal(decl))) {
             readOnly = true;
             modifiers.push(SemanticTokenModifiers.readonly);
         }
@@ -326,12 +315,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const baseType = this._evaluator.getType(node.d.leftExpr);
         if (baseType && baseType.category === TypeCategory.Class) {
             // Skip the object base class because that always appears to contain these members
-            const del = lookUpClassMember(baseType, '__delattr__', MemberAccessFlags.SkipObjectBaseClass);
-            const set = lookUpClassMember(baseType, '__setattr__', MemberAccessFlags.SkipObjectBaseClass);
-            const get =
-                lookUpClassMember(baseType, '__getattribute__', MemberAccessFlags.SkipObjectBaseClass) ??
-                lookUpClassMember(baseType, '__getattr__', MemberAccessFlags.SkipObjectBaseClass);
-            return { del: del, get: get, set: set };
+            return {
+                get:
+                    lookUpClassMember(baseType, '__getattribute__', MemberAccessFlags.SkipObjectBaseClass) ??
+                    lookUpClassMember(baseType, '__getattr__', MemberAccessFlags.SkipObjectBaseClass),
+                set: lookUpClassMember(baseType, '__setattr__', MemberAccessFlags.SkipObjectBaseClass),
+            };
         }
         return undefined;
     }
