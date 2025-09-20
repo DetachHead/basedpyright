@@ -5,6 +5,9 @@ from functools import partial
 from subprocess import run as stupid_run
 from typing import TYPE_CHECKING
 
+# execution environment moment
+from build.py3_8.version import get  # pyright: ignore[reportMissingTypeStubs]
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -15,6 +18,7 @@ run = partial(stupid_run, check=True, capture_output=True)
 
 def define_env(env: MacrosPlugin):
     env.macro(generate_diagnostic_rule_table)  # pyright:ignore[reportUnknownMemberType]
+    env.macro(get, "basedpyright_version")  # pyright: ignore[reportUnknownMemberType]
 
 
 def generate_diagnostic_rule_table() -> str:

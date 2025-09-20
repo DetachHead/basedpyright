@@ -3,7 +3,7 @@
 ```yaml title=".pre-commit-config.yaml"
 repos:
     - repo: https://github.com/DetachHead/basedpyright-prek-mirror
-      rev: v1.13.0 # or whatever the latest version is at the time
+      rev: v{{ basedpyright_version() }}
       hooks:
           - id: basedpyright
 ```
