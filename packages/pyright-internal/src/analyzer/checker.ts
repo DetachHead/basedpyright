@@ -2484,7 +2484,15 @@ export class Checker extends ParseTreeWalker {
 
         localTypeVarUsage.forEach((usage) => {
             // Report error for local type variable that appears only once.
+            // Exempt the case where the single occurrence is solely in the return type
+            // annotation (e.g., def f[T]() -> T), which is considered valid.
             if (usage.nodes.length === 1 && !usage.isExempt) {
+                const onlyInReturn = usage.returnTypeUsageCount === 1 && usage.paramTypeUsageCount === 0;
+                // TODO: this check doesn't work with function type comments, this is a bug with the collection
+                //  def f(x):  # type: (T) -> None
+                if (onlyInReturn) {
+                    return;
+                }
                 let altTypeText: string;
 
                 if (isTypeVarTuple(usage.typeVar)) {

@@ -1,6 +1,6 @@
 # This sample tests the reporting of incorrect TypeVar usage within
 # a generic function. A TypeVar must appear at least twice to be
-# considered legitimate.
+# considered legitimate, except for the return position.
 
 # pyright: reportInvalidTypeVarUse=true
 
@@ -19,8 +19,8 @@ class A(Generic[_T]):
     # is a local typeVar and appears only once.
     def m2(self, v1: _S) -> None: ...
 
-    # This should generate an error because _S
-    # is a local typeVar and appears only once.
+    # This should not generate an error because despite _S
+    # being a local typeVar and appears only once, it's in a return position
     def m3(self, v1: _T) -> _S: ...
 
 
@@ -38,8 +38,8 @@ def f3(v1: _T) -> _T: ...
 def f4() -> dict[_T, _T]: ...
 
 
-# This should generate an error because _T
-# is a local typeVar and appears only once.
+# This should not generate an error because _T
+# is a local typeVar and appears only once, but in a return position.
 def f5() -> list[_T]: ...
 
 
@@ -61,7 +61,7 @@ def f8(v1: list[_T_Bound]): ...
 
 
 # Bound TypeVars as type arguments are not exempt when used in a
-# return annotation.
+# return annotation. well... they are, so.
 def f9() -> list[_T_Bound]: ...
 
 
@@ -136,6 +136,7 @@ def f18(
 
 
 # This should generate an error because _T appears only once.
+# currently broken, see TODO in checker.ts
 def f19(
     arg,
 ):  # type: (_T) -> int
