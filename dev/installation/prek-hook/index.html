@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/installation/pre-commit%20hook/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/installation/prek-hook/">
       
       
         <link rel="prev" href="../ides/">
@@ -22,7 +22,7 @@
     
     
       
-        <title>pre-commit hook - basedpyright</title>
+        <title>prek hook - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pre-commit-hook" class="md-skip">
+        <a href="#prek-hook" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pre-commit hook
+              prek hook
             
           </span>
         </div>
@@ -747,7 +747,7 @@
   
   
   <span class="md-ellipsis">
-    pre-commit hook
+    prek hook
     
   </span>
   
@@ -760,7 +760,7 @@
   
   
   <span class="md-ellipsis">
-    pre-commit hook
+    prek hook
     
   </span>
   
@@ -1637,26 +1637,25 @@
   
 
 
-<h1 id="pre-commit-hook">pre-commit hook</h1>
+<h1 id="prek-hook">prek hook</h1>
 <div class="highlight"><span class="filename">.pre-commit-config.yaml</span><pre><span></span><code><span class="nt">repos</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DetachHead/basedpyright-pre-commit-mirror</span>
-<span class="w">      </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.13.0</span><span class="w"> </span><span class="c1"># or whatever the latest version is at the time</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/DetachHead/basedpyright-prek-mirror</span>
+<span class="w">      </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.4</span>
 <span class="w">      </span><span class="nt">hooks</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basedpyright</span>
 </code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">prek vs pre-commit</p>
+<p><a href="https://github.com/j178/prek">prek</a> is a drop-in replacement for pre-commit written in rust, and with much better support from its maintainer. we highly recommend using it instead of pre-commit.</p>
+</div>
 <h2 id="should-i-use-this">should i use this?</h2>
-<p>we don't recommend pre-commit as there are better alternatives for most of its use cases. also its maintainer is notoriously very rude to users.</p>
-<p>we will continue to support pre-commit, however there are alternative approaches you may want to consider depending on your use case.</p>
+<p>there are alternative approaches to commit hooks you may want to consider depending on your use case.</p>
 <h3 id="checking-your-code-before-committing">checking your code before committing</h3>
 <p>we instead recommend <a href="../ides/">integrating basedpyright with your IDE</a>. doing so will show errors on your code as you write it, instead of waiting until you go to commit your changes.</p>
 <h3 id="running-non-python-tools-in-a-python-project">running non-python tools in a python project</h3>
-<p>pre-commit can be useful when the tool does not have a pypi package, because it can automatically manage nodejs and install npm packages for you without you ever having to install nodejs yourself. basedpyright already solves this problem with pyright by <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/">bundling the npm package as a pypi package</a>, so you don't need to use pre-commit.</p>
+<p>prek can be useful when the tool does not have a pypi package, because it can automatically manage nodejs and install npm packages for you without you ever having to install nodejs yourself. basedpyright already solves this problem with pyright by <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/">bundling the npm package as a pypi package</a>, so you don't need to use prek.</p>
 <h3 id="running-basedpyright-in-the-ci">running basedpyright in the CI</h3>
 <p>basedpyright already <a href="../../benefits-over-pyright/improved-ci-integration/">integrates well with CI by default</a> when using the pypi package.</p>
-<div class="admonition tip">
-<p class="admonition-title">if you still want to use the pre-commit hook</p>
-<p>you may want to check out <a href="https://github.com/j178/prek">prek</a> instead, which is a drop-in replacement for pre-commit written in rust (🚀)</p>
-</div>
 
 
 
