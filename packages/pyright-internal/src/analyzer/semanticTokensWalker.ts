@@ -4,6 +4,7 @@ import {
     ClassType,
     FunctionType,
     getTypeAliasInfo,
+    isClassInstance,
     isTypeVar,
     OverloadedType,
     Type,
@@ -453,16 +454,24 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
         }
 
-        // This condition is true if the member access uses “__getattr__” or “__getattribute__”
-        // and the resulting type is a function type
-        // For consistency with other callable attributes, these are highlighted like attributes
-        if (!decl && node.parent?.nodeType === ParseNodeType.MemberAccess) {
+        // Special handling for the right-hand side of a member accesses when there are no declarations
+        if (!decl && node.parent?.nodeType === ParseNodeType.MemberAccess && node.parent.d.member === node) {
+            // Check whether the member access uses “__getattr__” or “__getattribute__”
+            // and the resulting type is a function type
+            // For consistency with other callable attributes, these are highlighted like attributes
             const access = this._getMagicAttributeAccess(node.parent);
             if (access?.get) {
                 if (!access.set) {
                     modifiers.push(SemanticTokenModifiers.readonly);
                 }
                 return SemanticTokenTypes.property;
+            }
+
+            // Check whether the left-hand side is a class instance, in which case the function
+            // is highlighted as a method
+            const lhsType = this._evaluator.getType(node.parent.d.leftExpr);
+            if (lhsType && isClassInstance(lhsType)) {
+                return SemanticTokenTypes.method;
             }
         }
 
