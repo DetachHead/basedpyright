@@ -186,7 +186,7 @@ test('CodeFlow7', () => {
 test('CodeFlow8', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['codeFlow8.py']);
 
-    TestUtils.validateResults(analysisResults, 0);
+    TestUtils.validateResults(analysisResults, 2); // https://github.com/DetachHead/basedpyright/issues/1491
 });
 
 test('CodeFlow9', () => {
