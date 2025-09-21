@@ -1875,44 +1875,7 @@ Then add the following to your <a href="https://docs.helix-editor.com/languages.
 </code></pre></div>
 <p>You can verify the active configuration by running <code>hx --health python</code></p>
 <h2 id="zed">Zed</h2>
-<p>Install the <a href="https://github.com/m1guer/basedpyright-zed">BasedPyright extension</a> through Zed's extension manager.</p>
-<p>Enable and configure basedpyright under Zed settings:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;languages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;Python&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;language_servers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="s2">&quot;basedpyright&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="c1">// disable the other python language servers</span>
-<span class="w">                </span><span class="s2">&quot;!pyright&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;!pylsp&quot;</span>
-<span class="w">            </span><span class="p">]</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<details class="tip">
-<summary>if adding basedpyright as a development dependency to your project</summary>
-<p>we recommend using project settings (<code>.zed/settings.json</code>) with the following:</p>
-<ul>
-<li>set the path to the language server located inside your venv so that it uses the correct version of basedpyright instead of a globally installed version</li>
-<li>add basedpyright to <code>auto_install_extensions</code> so that it's automatically installed for other contributors working on your project</li>
-</ul>
-<div class="highlight"><span class="filename">.zed/settings.json</span><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;lsp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;basedpyright&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;binary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.venv/bin/basedpyright-langserver&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--stdio&quot;</span><span class="p">]</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;auto_install_extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;basedpyright&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>you should commit this file so that these settings are automatically applied for other contributors.</p>
-</details>
+<p>basedpyright is the default language server for python in zed. <a href="https://zed.dev/docs/languages/python#basedpyright">see the docs</a> for more information.</p>
 
 
 
