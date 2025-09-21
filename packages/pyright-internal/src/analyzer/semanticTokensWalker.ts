@@ -4,8 +4,10 @@ import {
     ClassType,
     FunctionType,
     getTypeAliasInfo,
+    isAny,
     isClassInstance,
     isTypeVar,
+    isUnknown,
     OverloadedType,
     Type,
     TypeBase,
@@ -160,10 +162,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (primaryDecl?.type) {
             case DeclarationType.Variable: {
                 const type = this._evaluator.getType(node);
-                let tokenType: TokenTypes = SemanticTokenTypes.variable;
+                let tokenType: TokenTypes | undefined = undefined;
                 const modifiers: TokenModifiers[] = [];
                 if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
-                this._addItemForNameNode(node, tokenType, modifiers);
+                if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
                 return;
             }
             case DeclarationType.Param: {
@@ -276,7 +278,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         const modifiers: TokenModifiers[] = [];
         const tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
-        this._addItemForNameNode(node, tokenType, modifiers);
+        if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
     }
 
     private _getNameNodeDeclarations(node: NameNode): Declaration[] {
@@ -323,7 +325,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         type: Type,
         declarations: Declaration[],
         modifiers: TokenModifiers[]
-    ): TokenTypes {
+    ): TokenTypes | undefined {
+        // Do not highlight variables whose type is unknown or whose type is Any and which have no declarations
+        if (isUnknown(type) || (isAny(type) && declarations.length === 0)) return;
+
         if (
             node.nodeType === ParseNodeType.Name &&
             declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
