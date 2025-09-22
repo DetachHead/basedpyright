@@ -897,7 +897,7 @@ test('TypeVar8', () => {
 test('TypeVar9', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVar9.py']);
 
-    TestUtils.validateResults(analysisResults, 9);
+    TestUtils.validateResults(analysisResults, 10);
 });
 
 test('TypeVar10', () => {

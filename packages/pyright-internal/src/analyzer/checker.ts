@@ -2489,8 +2489,8 @@ export class Checker extends ParseTreeWalker {
             if (usage.nodes.length === 1 && !usage.isExempt) {
                 const onlyInReturn = usage.returnTypeUsageCount === 1 && usage.paramTypeUsageCount === 0;
                 // TODO: this check doesn't work with function type comments, this is a bug with the collection
-                //  def f(x):  # type: (T) -> None
-                if (onlyInReturn) {
+                //  def f():  # type: () -> T
+                if (onlyInReturn && usage.nodes[0].parent?.nodeType !== ParseNodeType.FunctionAnnotation) {
                     return;
                 }
                 let altTypeText: string;

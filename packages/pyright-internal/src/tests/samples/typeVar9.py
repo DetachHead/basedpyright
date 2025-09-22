@@ -136,7 +136,6 @@ def f18(
 
 
 # This should generate an error because _T appears only once.
-# currently broken, see TODO in checker.ts
 def f19(
     arg,
 ):  # type: (_T) -> int
