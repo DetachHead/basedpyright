@@ -19,8 +19,8 @@ class A(Generic[_T]):
     # is a local typeVar and appears only once.
     def m2(self, v1: _S) -> None: ...
 
-    # This should not generate an error because despite _S
-    # being a local typeVar and appears only once, it's in a return position
+    # This should generate an error because _S
+    # is a local typeVar and appears only once.
     def m3(self, v1: _T) -> _S: ...
 
 

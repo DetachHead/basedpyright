@@ -2484,21 +2484,34 @@ export class Checker extends ParseTreeWalker {
 
         localTypeVarUsage.forEach((usage) => {
             // Report error for local type variable that appears only once.
-            // Exempt the case where the single occurrence is solely in the return type
-            // annotation (e.g., def f[T]() -> T), which is considered valid.
             if (usage.nodes.length === 1 && !usage.isExempt) {
-                const onlyInReturn = usage.returnTypeUsageCount === 1 && usage.paramTypeUsageCount === 0;
+                // Exempt the case where the single occurrence is solely in the return type
+                // annotation (e.g., def f[T]() -> list[T]), which is considered valid.
                 // TODO: this check doesn't work with function type comments, this is a bug with the collection
                 //  def f():  # type: () -> T
-                if (onlyInReturn && usage.nodes[0].parent?.nodeType !== ParseNodeType.FunctionAnnotation) {
+                const onlyInReturn =
+                    usage.returnTypeUsageCount === 1 &&
+                    usage.paramTypeUsageCount === 0 &&
+                    usage.nodes[0].parent?.nodeType !== ParseNodeType.FunctionAnnotation;
+
+                // ...unless it's the return type is just the generic itself (ie. `def f[T]() -> T`) in which case there's no way
+                // for the type to be instantiated safely at runtime. the only valid alternative is `Never`.
+                const returnTypeAnnotation = node.d.returnAnnotation
+                    ? this._evaluator.getType(node.d.returnAnnotation)
+                    : undefined;
+                const isOnlyReturn = onlyInReturn && returnTypeAnnotation && isTypeVar(returnTypeAnnotation);
+                if (onlyInReturn && !isOnlyReturn) {
                     return;
                 }
+
                 let altTypeText: string;
 
                 if (isTypeVarTuple(usage.typeVar)) {
                     altTypeText = '"tuple[object, ...]"';
                 } else if (usage.typeVar.shared.boundType) {
                     altTypeText = `"${this._evaluator.printType(convertToInstance(usage.typeVar.shared.boundType))}"`;
+                } else if (isOnlyReturn) {
+                    altTypeText = '"Never"';
                 } else {
                     altTypeText = '"object"';
                 }

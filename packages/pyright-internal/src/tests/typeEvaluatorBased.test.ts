@@ -195,3 +195,28 @@ test('`allowedUntypedLibraries` on overloaded functions', () => {
     analysisResults = typeAnalyzeSampleFiles(['based_overloaded_functions_module_name/foobar.py'], configOptions);
     validateResultsButBased(analysisResults, {});
 });
+
+test('`reportInvalidTypeVarUse`', () => {
+    const configOptions = new BasedConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+    const analysisResults = typeAnalyzeSampleFiles(['typeVarBased.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        warnings: [
+            {
+                line: 0,
+                code: DiagnosticRule.reportInvalidTypeVarUse,
+                message: 'TypeVar "T" appears only once in generic function signature\n  Use "Never" instead',
+            },
+            {
+                line: 1,
+                code: DiagnosticRule.reportInvalidTypeVarUse,
+                message: 'TypeVar "T" appears only once in generic function signature\n  Use "Never" instead',
+            },
+            {
+                line: 2,
+                code: DiagnosticRule.reportInvalidTypeVarUse,
+                message: 'TypeVar "T" appears only once in generic function signature\n  Use "object" instead',
+            },
+        ],
+    });
+});
