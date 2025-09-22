@@ -1631,8 +1631,18 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             // other string types that can't be used with f-strings
             !(node.d.token.flags & (StringTokenFlags.Bytes | StringTokenFlags.Unicode | StringTokenFlags.Template))
         ) {
-            const position = convertOffsetToPosition(node?.start, parseResults.tokenizerOutput.lines);
-            return [{ range: { start: position, end: position }, newText: 'f' }];
+            // don't do it if the previous characters are "\N{" because the user is likely trying to use a named unicode character, not an f-string
+            const dontConvertToFstringIfPrefix = '\\N{';
+            const positionInString = offset - node.start - node.d.token.quoteMarkLength;
+            if (
+                node.d.token.escapedValue.slice(
+                    positionInString - dontConvertToFstringIfPrefix.length,
+                    positionInString
+                ) !== dontConvertToFstringIfPrefix
+            ) {
+                const position = convertOffsetToPosition(node?.start, parseResults.tokenizerOutput.lines);
+                return [{ range: { start: position, end: position }, newText: 'f' }];
+            }
         }
         return;
     };
