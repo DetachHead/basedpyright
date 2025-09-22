@@ -12,6 +12,7 @@ import {
     CompletionRequest,
     ConfigurationItem,
     DiagnosticSeverity,
+    DidChangeTextDocumentNotification,
     DocumentOnTypeFormattingRequest,
     InitializedNotification,
     InitializeRequest,
@@ -191,11 +192,19 @@ describe(`Basic language server tests`, () => {
             const fileUri = marker.fileUri;
             const text = info.testData.files.find((d) => d.fileName === marker.fileName)!.content;
             const parseResult = getParseResults(text);
+            const position = convertOffsetToPosition(marker.position, parseResult.tokenizerOutput.lines);
+            // need to send this notification first before onTypeFormatting.
+            // see https://github.com/microsoft/language-server-protocol/issues/1053#issuecomment-725468469
+            await info.connection.sendNotification(DidChangeTextDocumentNotification.type, {
+                textDocument: { uri: fileUri.toString(), version: 2 },
+                contentChanges: [{ range: { start: position, end: position }, text: '{}' }],
+            });
             const onTypeFormattingRequest = await info.connection.sendRequest(
                 DocumentOnTypeFormattingRequest.type,
                 {
                     textDocument: { uri: fileUri.toString() },
-                    position: convertOffsetToPosition(marker.position, parseResult.tokenizerOutput.lines),
+                    // need to add 1 to the position because it's inserting a character (i think)
+                    position: { line: position.line, character: position.character + 1 },
                     ch: '{',
                     options: { insertSpaces: true, tabSize: 4 },
                 },
