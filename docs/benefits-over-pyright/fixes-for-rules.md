@@ -40,6 +40,13 @@ the reason we added `reportUnreachable` to basedpyright was not just to identify
 pyright incorrectly report an error when a function contains a type var only in the return position:
 
 ```py
+# error: TypeVar "T" appears only once in generic function signature
+#   Use "object" instead
 def empty_list[T]() -> list[T]:
     return []
+
+# using `object` as suggestde will cause an error here:
+foo: list[int] = empty_list()
 ```
+
+basedpyright will correctly only report the error if the usage is located inside the parameters
