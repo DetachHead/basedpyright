@@ -343,7 +343,13 @@ export function synthesizeDataClassMethods(
                             defaultExpr = defaultFactoryArg.d.valueExpr;
                         }
 
-                        const aliasArg = statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
+                        // Prefer `validation_alias` over `alias` if both are provided.
+                        const validationAliasArg = statement.d.rightExpr.d.args.find(
+                            (arg) => arg.d.name?.d.value === 'validation_alias'
+                        );
+                        const aliasArg =
+                            validationAliasArg ??
+                            statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
                         if (aliasArg) {
                             const valueType = evaluator.getTypeOfExpression(aliasArg.d.valueExpr).type;
                             if (
