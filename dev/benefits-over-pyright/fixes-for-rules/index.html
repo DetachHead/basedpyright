@@ -494,6 +494,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportinvalidtypevaruse" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportInvalidTypeVarUse
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1570,6 +1579,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportinvalidtypevaruse" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportInvalidTypeVarUse
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1611,6 +1629,32 @@
     <span class="mi">1</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span> <span class="c1"># no error</span>
 </code></pre></div></p>
 <p>normally <code>1 + ""</code> would be reported as a type error but pyright doesn't complain here, because unreachable code doesn't get type checked at all! this is bad of course, because chances are if your code contains an <code>if</code> statement like this, you're expecting it to be run on multiple different python versions.</p>
+</div>
+<h2 id="reportinvalidtypevaruse"><code>reportInvalidTypeVarUse</code></h2>
+<p>pyright incorrectly reports an error when a function contains a type var only in the return position, in cases where there's no valid alternative:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># error: TypeVar &quot;T&quot; appears only once in generic function signature</span>
+<span class="c1">#   Use &quot;object&quot; instead</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">empty_list</span><span class="p">[</span><span class="n">T</span><span class="p">]()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">[]</span>
+
+<span class="c1"># using `object` as suggested will cause an error here:</span>
+<span class="n">foo</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">empty_list</span><span class="p">()</span>
+</code></pre></div>
+</div>
+<p>basedpyright will not report this error if the type var is used only in the return position, as long as it's possible for the function to safely return that type at runtime.</p>
+<p>however the error will still be reported if the function's return type is just the type var itself, for example:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># error: TypeVar &quot;T&quot; appears only once in generic function signature</span>
+<span class="c1">#   Use &quot;Never&quot; instead</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fn</span><span class="p">[</span><span class="n">T</span><span class="p">]()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="n">foo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">fn</span><span class="p">()</span>
+</code></pre></div>
+<p>here, pyright will incorrectly suggest returning <code>object</code> instead, of <code>Never</code>. there's no way for this function to safely return a <code>T</code>, but changing its return type to <code>object</code> will cause an error on the usage. basedpyright will correctly suggest changing the return type to <code>Never</code> instead.</p>
 </div>
 
 
