@@ -20,6 +20,7 @@ import { Uri } from '../common/uri/uri';
 import { convertToWorkspaceEdit } from '../common/workspaceEditUtils';
 import { ReferencesProvider, ReferencesResult } from '../languageService/referencesProvider';
 import { ParseFileResults } from '../parser/parser';
+import { Tokenizer } from '../parser/tokenizer';
 import { IPythonMode } from '../analyzer/sourceFile';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 
@@ -81,6 +82,16 @@ export class RenameProvider {
             isDefaultWorkspace,
             isUntitled
         );
+
+        // not returning `null` on error because that shows an extra "No Result" message
+        if (Tokenizer.isPythonKeyword(newName)) {
+            this._ls.window.showWarningMessage(`Cannot rename to ${newName}: it's a Python keyword`);
+            return {};
+        }
+        if (!Tokenizer.isPythonIdentifier(newName)) {
+            this._ls.window.showWarningMessage(`Can only rename to a valid Python identitifer, got: ${newName}`);
+            return {};
+        }
 
         switch (renameMode) {
             case 'singleFileMode':
