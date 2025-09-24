@@ -1509,10 +1509,14 @@ export class TestState {
                 changes: FileEditAction[];
             };
         },
-        isUntitled = false
+        isUntitled = false,
+        allowedMessages?: { error?: string[]; warning?: string[] }
     ) {
         this.analyze();
-        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs, undefined, {
+            error: allowedMessages?.error ?? [],
+            warning: allowedMessages?.warning ?? [],
+        });
         for (const marker of this.getMarkers()) {
             const fileName = marker.fileName;
             const name = this.getMarkerName(marker);
