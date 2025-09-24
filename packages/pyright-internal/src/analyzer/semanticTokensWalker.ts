@@ -16,10 +16,8 @@ import {
 import {
     ClassNode,
     DecoratorNode,
+    ExpressionNode,
     FunctionNode,
-    ImportAsNode,
-    ImportFromAsNode,
-    ImportFromNode,
     MemberAccessNode,
     NameNode,
     ParameterNode,
@@ -86,7 +84,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     override visitParameter(node: ParameterNode): boolean {
         if (node.d.name) {
-            const type = this._evaluator.getType(node.d.name);
+            const type = this._getType(node.d.name);
             this._addItemForNameNode(node.d.name, this._getParamSemanticToken(node, type), [
                 SemanticTokenModifiers.declaration,
             ]);
@@ -106,38 +104,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return super.visitDecorator(node);
     }
 
-    override visitImportAs(node: ImportAsNode): boolean {
-        for (const part of node.d.module.d.nameParts) {
-            this._addItemForNameNode(part, SemanticTokenTypes.namespace, []);
-        }
-        if (node.d.alias) {
-            this._addItemForNameNode(node.d.alias, SemanticTokenTypes.namespace, []);
-        }
-        return super.visitImportAs(node);
-    }
-
-    override visitImportFromAs(node: ImportFromAsNode): boolean {
-        this._visitNameWithDeclarations(node.d.name, this._getNameNodeDeclarations(node.d.name));
-        if (node.d.alias) {
-            this._visitNameWithDeclarations(node.d.alias, this._getNameNodeDeclarations(node.d.alias));
-        }
-        return super.visitImportFromAs(node);
-    }
-
-    override visitImportFrom(node: ImportFromNode): boolean {
-        for (const part of node.d.module.d.nameParts) {
-            this._addItemForNameNode(part, SemanticTokenTypes.namespace, []);
-        }
-        return super.visitImportFrom(node);
-    }
-
     override visitName(node: NameNode): boolean {
         const parentType = node.parent?.nodeType;
         if (
             parentType !== ParseNodeType.Class &&
             parentType !== ParseNodeType.Decorator &&
-            parentType !== ParseNodeType.ImportAs &&
-            parentType !== ParseNodeType.ImportFromAs &&
             // Ensure only `parent.d.name` is skipped, e.g. don't skip `returnAnnotation` in `FunctionNode`
             (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id) &&
             (parentType !== ParseNodeType.Parameter || node.parent.d.name?.id !== node.id)
@@ -159,9 +130,17 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _visitNameWithDeclarations(node: NameNode, declarations: Declaration[]) {
         // Treat the first declaration as the primary one, similar to HoverProvider
         const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
+
+        // For nodes whose parent is a “ModuleName” node, TypeEvaluator.getType returns a type
+        // very inconsistently, and they are always modules anyway, so they are caught early
+        if (node.parent?.nodeType === ParseNodeType.ModuleName) {
+            this._addItemForNameNode(node, SemanticTokenTypes.namespace, []);
+            return;
+        }
+
         switch (primaryDecl?.type) {
             case DeclarationType.Variable: {
-                const type = this._evaluator.getType(node);
+                const type = this._getType(node);
                 let tokenType: TokenTypes | undefined = undefined;
                 const modifiers: TokenModifiers[] = [];
                 if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
@@ -169,7 +148,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
             case DeclarationType.Param: {
-                const type = this._evaluator.getType(node);
+                const type = this._getType(node);
                 const tokenType = this._getParamSemanticToken(primaryDecl.node, type);
                 this._addItemForNameNode(node, tokenType, []);
                 return;
@@ -183,7 +162,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
             case DeclarationType.Function: {
-                const type = this._evaluator.getType(node);
+                const type = this._getType(node);
                 const modifiers: TokenModifiers[] = [];
                 const tokenType = this._getFunctionTokenType(
                     node,
@@ -196,7 +175,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
             case DeclarationType.Class:
             case DeclarationType.SpecialBuiltInClass: {
-                const type = this._evaluator.getType(node);
+                const type = this._getType(node);
                 const modifiers: TokenModifiers[] = [];
                 let tokenType: TokenTypes = SemanticTokenTypes.type;
                 if (type?.category === TypeCategory.Class) {
@@ -211,7 +190,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
 
         // Use the type-based case distinction as the fallback
-        const type = this._evaluator.getType(node);
+        const type = this._getType(node);
         if (type) this._visitNameWithType(node, type, declarations);
     }
 
@@ -289,6 +268,19 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return decl;
         });
         return nameDecls ?? [];
+    }
+
+    private _getType(node: ExpressionNode): Type | undefined {
+        let type = this._evaluator.getType(node);
+        if (type) return type;
+        // In the case of “from a import b as c”, “b” sometimes ends up without type,
+        // e.g. in “from os import path as something”, but the alias (“c”) ends up with
+        // the real type, which is used instead
+        const parent = node.parent;
+        if (parent?.nodeType === ParseNodeType.ImportFromAs && parent.d.alias) {
+            type = this._evaluator.getType(parent.d.alias);
+        }
+        return type;
     }
 
     // “checkBuiltIn” can be set to “false” to disable checking whether the class is built-in
@@ -396,7 +388,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     // For a given attribute access, gather information about the magic attribute methods
     // which the left-hand side provides
     private _getMagicAttributeAccess(node: MemberAccessNode): MagicAttributeAccess | undefined {
-        const baseType = this._evaluator.getType(node.d.leftExpr);
+        const baseType = this._getType(node.d.leftExpr);
         if (baseType && baseType.category === TypeCategory.Class) {
             // Skip the object base class because that always appears to contain these members
             return {
@@ -474,7 +466,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
             // Check whether the left-hand side is a class instance, in which case the function
             // is highlighted as a method
-            const lhsType = this._evaluator.getType(node.parent.d.leftExpr);
+            const lhsType = this._getType(node.parent.d.leftExpr);
             if (lhsType && isClassInstance(lhsType)) {
                 return SemanticTokenTypes.method;
             }
@@ -491,7 +483,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.parameter;
         }
 
-        const parentType = this._evaluator.getType(node.parent.d.name);
+        const parentType = this._getType(node.parent.d.name);
         const isMethodParam =
             parentType?.category === TypeCategory.Function &&
             (FunctionType.isClassMethod(parentType) ||
