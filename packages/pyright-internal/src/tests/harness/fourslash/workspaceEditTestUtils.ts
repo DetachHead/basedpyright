@@ -71,7 +71,7 @@ export function verifyDocumentEdits(
     expected: (TextDocumentEdit | CreateFile | RenameFile | DeleteFile)[],
     actual: (TextDocumentEdit | CreateFile | RenameFile | DeleteFile)[]
 ) {
-    assert.strictEqual(expected.length, actual.length);
+    assert.strictEqual(actual.length, expected.length);
 
     for (const op of expected) {
         assert(
