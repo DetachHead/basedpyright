@@ -5,7 +5,13 @@ import {
     FunctionType,
     getTypeAliasInfo,
     isAny,
+    isClass,
     isClassInstance,
+    isFunction,
+    isInstantiableClass,
+    isModule,
+    isNever,
+    isOverloaded,
     isTypeVar,
     isUnknown,
     NeverType,
@@ -142,7 +148,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (primaryDecl?.type) {
             case DeclarationType.Variable: {
                 const type = this._getType(node);
-                let tokenType: TokenTypes | undefined = undefined;
+                // If there is no type information, use “variable” by default
+                let tokenType: TokenTypes | undefined = SemanticTokenTypes.variable;
                 const modifiers: TokenModifiers[] = [];
                 if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
                 if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
@@ -159,7 +166,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
             case DeclarationType.TypeAlias: {
-                this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+                // Pylance uses “class” for type aliases
+                this._addItemForNameNode(node, SemanticTokenTypes.class, []);
                 return;
             }
             case DeclarationType.Function: {
@@ -179,7 +187,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             case DeclarationType.SpecialBuiltInClass: {
                 const type = this._getType(node);
                 const modifiers: TokenModifiers[] = [];
-                let tokenType: TokenTypes = SemanticTokenTypes.type;
+                // If there is no type information, use “class” by default (which is what Pylance uses)
+                let tokenType: TokenTypes = SemanticTokenTypes.class;
                 if (type?.category === TypeCategory.Class) {
                     tokenType = this._getClassTokenType(type, declarations, modifiers) ?? tokenType;
                 }
@@ -338,15 +347,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             modifiers.push(SemanticTokenModifiers.readonly);
         }
 
-        // Detect type aliases
-        if (type.props?.typeAliasInfo) {
-            return SemanticTokenTypes.type;
-        }
-        // Handle variables that have been assigned a “TypeVar”
-        if (isTypeVar(type)) {
-            return SemanticTokenTypes.typeParameter;
-        }
-
         // Mark as property if any declaration is within a class
         // “property” is used even for class variables because there is no more appropriate token type
         // (see https://github.com/DetachHead/basedpyright/issues/482#issuecomment-3172601227)
@@ -374,6 +374,55 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 }
             }
             return SemanticTokenTypes.property;
+        }
+
+        // Handle variables that have been assigned a “TypeVar”
+        // There are weird cases in which bogus type variables are synthesized
+        // Example: Left-hand side “x” of “self.x = x” in “parameters.py”
+        if (isTypeVar(type) && !type.shared.isSynthesized) {
+            return SemanticTokenTypes.typeParameter;
+        }
+
+        // Detect type aliases
+        // The “typeAliasInfo” condition is required for aliases to typing-only constructs such as “Callable”
+        // Module aliases also provide “typeAliasInfo” (for some reason), so an additional check is necessary
+        // This follows Pylance’s somewhat peculiar rules: Variables are marked as type aliases very liberally,
+        // but “property” etc. take precedence
+        if (
+            (type.props?.typeAliasInfo || isInstantiableClass(type)) &&
+            ![
+                TypeCategory.Unbound,
+                TypeCategory.Unknown,
+                TypeCategory.Any,
+                TypeCategory.Never,
+                TypeCategory.Module,
+                TypeCategory.TypeVar,
+            ].includes(type.category)
+        ) {
+            if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
+            // Pylance uses “class” for type aliases
+            return SemanticTokenTypes.class;
+        }
+
+        // Detect variables that store a function or an overloaded function
+        const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
+        if (isFunction(type)) {
+            return this._getFunctionTokenType(node, primaryDecl, declarations, type, modifiers);
+        }
+        if (isOverloaded(type)) {
+            const functionType = OverloadedType.getOverloads(type)[0];
+            return this._getFunctionTokenType(node, primaryDecl, declarations, functionType, modifiers);
+        }
+
+        // Detect module variables
+        if (isModule(type)) {
+            return SemanticTokenTypes.namespace;
+        }
+
+        // Detect “Never”/“NoReturn” type aliases
+        if (isNever(type)) {
+            const tokenType = this._getNeverTokenType(node, type);
+            if (tokenType) return tokenType;
         }
 
         return SemanticTokenTypes.variable;
