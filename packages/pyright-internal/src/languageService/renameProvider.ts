@@ -83,14 +83,16 @@ export class RenameProvider {
             isUntitled
         );
 
-        // not returning `null` on error because that shows an extra "No Result" message
+        // not returning `null` on error because that shows an extra "No Result" message. we could just send {}
+        // but that breaks the fourslash tests
+        const noChanges = { documentChanges: [] };
         if (Tokenizer.isPythonKeyword(newName)) {
-            this._ls.window.showWarningMessage(`Cannot rename to ${newName}: it's a Python keyword`);
-            return {};
+            this._ls.window.showWarningMessage(`Cannot rename to "${newName}": it's a Python keyword`);
+            return noChanges;
         }
         if (!Tokenizer.isPythonIdentifier(newName)) {
-            this._ls.window.showWarningMessage(`Can only rename to a valid Python identitifer, got: ${newName}`);
-            return {};
+            this._ls.window.showWarningMessage(`Can only rename to a valid Python identitifer, got: "${newName}"`);
+            return noChanges;
         }
 
         switch (renameMode) {

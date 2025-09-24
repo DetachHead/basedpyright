@@ -72,7 +72,7 @@ export class TestFeatures implements HostSpecificFeatures {
 }
 
 export class TestLanguageService implements LanguageServerInterface {
-    readonly window = new TestWindow();
+    readonly window: TestWindow;
     readonly supportAdvancedEdits = true;
     readonly serviceProvider: ServiceProvider;
     readonly documentsWithDiagnostics: Record<string, FileDiagnostics> = {};
@@ -84,8 +84,23 @@ export class TestLanguageService implements LanguageServerInterface {
         workspace: Workspace,
         readonly console: ConsoleInterface,
         readonly fs: FileSystem,
-        options?: AnalyzerServiceOptions
+        options?: AnalyzerServiceOptions,
+        // TODO: this currently only errors if an unexpected message appears (hence the name "allowed" instead of "expected"),
+        // there should also be an error if an allowed message doesn't appear
+        allowedMessages?: { error: string[]; warning: string[] }
     ) {
+        this.window = new TestWindow((message, type) => {
+            const expectedMessagesWithType = allowedMessages?.[type];
+            if (expectedMessagesWithType) {
+                if (!expectedMessagesWithType.includes(message)) {
+                    debug.fail(
+                        `unexpected ${type}: "${message}", expected one of ${JSON.stringify(expectedMessagesWithType)}`
+                    );
+                }
+            } else {
+                this.window.defaultMessageHandler(message, type);
+            }
+        });
         this._workspace = workspace;
         this.serviceProvider = this._workspace.service.serviceProvider;
 
@@ -161,17 +176,21 @@ export class TestLanguageService implements LanguageServerInterface {
     }
 }
 
+type MessageHandler = (message: string, type: 'error' | 'warning') => void;
+
 class TestWindow implements WindowInterface {
+    constructor(private _onMessage: MessageHandler = this.defaultMessageHandler) {}
+
     showErrorMessage(message: string): void;
     showErrorMessage(message: string, ...actions: MessageAction[]): Promise<MessageAction | undefined>;
     showErrorMessage(message: string, ...actions: MessageAction[]): Promise<MessageAction | undefined> | void {
-        debug.fail("shouldn't be called");
+        this._onMessage(message, 'error');
     }
 
     showWarningMessage(message: string): void;
     showWarningMessage(message: string, ...actions: MessageAction[]): Promise<MessageAction | undefined>;
     showWarningMessage(message: string, ...actions: MessageAction[]): Promise<MessageAction | undefined> | void {
-        debug.fail("shouldn't be called");
+        this._onMessage(message, 'warning');
     }
 
     showInformationMessage(message: string): void;
@@ -179,4 +198,7 @@ class TestWindow implements WindowInterface {
     showInformationMessage(message: string, ...actions: MessageAction[]): Promise<MessageAction | undefined> | void {
         // Don't do anything
     }
+
+    defaultMessageHandler: MessageHandler = (message, type) =>
+        debug.fail(`unexpected ${type} occurred in TestWindow: "${message}"`);
 }

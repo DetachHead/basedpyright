@@ -353,7 +353,8 @@ declare namespace _ {
                     changes: FileEditAction[];
                 };
             },
-            isUntitled?: boolean
+            isUntitled?: boolean,
+            allowedMessages?: { error?: string[]; warning?: string[] }
         ): void;
         verifyTypeVerifierResults(
             packageName: string,
