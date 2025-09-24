@@ -238,7 +238,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             case TypeCategory.Union:
                 if (!TypeBase.isInstance(type)) {
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+                    this._addItemForNameNode(node, SemanticTokenTypes.class, []);
                     return;
                 }
                 break;
