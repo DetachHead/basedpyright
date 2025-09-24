@@ -209,7 +209,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (type.category) {
             case TypeCategory.Any:
                 if (type.props?.specialForm) {
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+                    this._addItemForNameNode(node, SemanticTokenTypes.class, []);
                 }
                 return;
             // these are handled below
@@ -464,7 +464,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _visitFunctionWithType(node: NameNode, type: FunctionType, declarations: Declaration[]) {
         // type alias to Callable
         if (!TypeBase.isInstance(type)) {
-            this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+            this._addItemForNameNode(node, SemanticTokenTypes.class, []);
             return;
         }
         const modifiers: TokenModifiers[] = [];
