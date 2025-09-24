@@ -11,14 +11,14 @@
 from pydantic.main import BaseModel, Field
 
 
-class M(BaseModel):
+class M1(BaseModel):
     a1: str = Field(alias="b1")
     a2: str = Field(validation_alias="b2")
     a3: str = Field(alias="z", validation_alias="b3")
 
 # These should generate errors because the constructor expects keywords "b1", "b2", and "b3"
 # (from alias/validation_alias), not "a1", "a2", or "a3".
-m1 = M(
+_ = M1(
     a1="hello",
     a2="hello",
     a3="hello",
@@ -27,7 +27,7 @@ m1 = M(
 # These should not generate an error for b1, b2, and b3. The use of "z" below should
 # generate an error because for a3 the constructor accepts the validation_alias ("b3")
 # and does not accept the alias ("z").
-m2 = M(
+m1 = M1(
     b1="hello",
     b2="hello",
     b3="hello",
@@ -35,13 +35,34 @@ m2 = M(
 )
 
 # Access via the declared field name should be fine.
-_: str = m2.a1
-_: str = m2.a2
-_: str = m2.a3
+_: str = m1.a1
+_: str = m1.a2
+_: str = m1.a3
 
 # These should generate errors because the instance exposes attributes a1, a2, and a3.
 # Aliases/validation_aliases (b1, b2, b3, z) are not attribute names on the instance.
-_ = m2.b1
-_ = m2.b2
-_ = m2.b3
-_ = m2.z
+_ = m1.b1
+_ = m1.b2
+_ = m1.b3
+_ = m1.z
+
+
+class M2(BaseModel):
+    """validation_alias with AliasChoices"""
+    a: int = Field(validation_alias=AliasChoices("b", "c"))
+
+_ = M2(
+    c=1,  # expect no error because it's dynamic
+)
+
+
+class M3(BaseModel):
+    """alias_generator produces dynamic aliases"""
+    model_config = ConfigDict(
+        alias_generator=lambda s: s.upper(),
+    )
+    a: int
+
+_ = M3(
+    A=1,  # expect no error because it's dynamic
+)

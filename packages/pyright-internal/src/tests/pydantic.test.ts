@@ -25,3 +25,13 @@ test('aliases', () => {
         ],
     });
 });
+
+
+test('other features', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['pydanticFeatures.py']);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+
+        ],
+    });
+});
