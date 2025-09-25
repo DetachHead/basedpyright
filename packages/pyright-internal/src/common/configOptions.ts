@@ -204,6 +204,9 @@ export interface DiagnosticRuleSet {
     // Report issues related to call expressions?
     reportCallIssue: DiagnosticLevel;
 
+    // Report mismatch between positional argument names and parameter names when requested by decorator?
+    reportPositionalArgumentNameMismatch: DiagnosticLevel;
+
     // Report inconsistencies with function overload signatures?
     reportInconsistentOverload: DiagnosticLevel;
 
@@ -621,6 +624,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAssignmentType: 'none',
         reportAttributeAccessIssue: 'none',
         reportCallIssue: 'none',
+        reportPositionalArgumentNameMismatch: 'none',
         reportInconsistentOverload: 'none',
         reportIndexIssue: 'none',
         reportInvalidTypeArguments: 'none',
@@ -740,6 +744,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAssignmentType: 'error',
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
+        reportPositionalArgumentNameMismatch: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
@@ -859,6 +864,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAssignmentType: 'error',
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
+        reportPositionalArgumentNameMismatch: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
@@ -1053,6 +1059,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'warning',
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
+    reportPositionalArgumentNameMismatch: 'warning',
     allowedUntypedLibraries: [],
 });
 
@@ -1168,6 +1175,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'error',
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
+    reportPositionalArgumentNameMismatch: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1208,6 +1216,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAssignmentType: 'error',
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
+        reportPositionalArgumentNameMismatch: 'warning',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
