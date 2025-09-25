@@ -1,9 +1,8 @@
 # pyright: reportMissingModuleSource=false
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
 
-from pydantic.main import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class M1(BaseModel):
@@ -11,10 +10,16 @@ class M1(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     a: int = Field(alias="b")
 
-# With populate_by_name=True, we can pass the field name "a" even though the alias is "b"
-m5 = M1(
-    a=1,  # this is fine
-    b=1,  # this should be an error
+# With populate_by_name=True, we can pass either the field name "a" or the alias name "b"
+_ = M1(
+    a=1,
+)
+_ = M1(
+    b=1,
+)
+# but not other things
+_ = M1(
+    z=1,  # expect an error
 )
 
 class M7(BaseModel):
@@ -32,7 +37,7 @@ M8().b = 2  # this should report an error
 
 
 class M9(BaseModel):
-    "private attribute starting with underscore is not a field"
+    "attribute starting with an underscore is not a field"
     _a: int
     b: int
 

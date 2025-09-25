@@ -173,6 +173,9 @@ export function synthesizeDataClassMethods(
     type EntryTypeEvaluator = () => Type;
     const localEntryTypeEvaluator: { entry: DataClassEntry; evaluator: EntryTypeEvaluator }[] = [];
     let sawKeywordOnlySeparator = false;
+    // Indicates that at least one field uses a dynamic alias (e.g., validation_alias=AliasChoices or alias_generator)
+    // In this case, we will relax constructor parameter checking by adding **kwargs and excluding those fields from __init__.
+    let sawDynamicAlias = false;
 
     ClassType.getSymbolTable(classType).forEach((symbol, name) => {
         if (symbol.isIgnoredForProtocolMatch()) {
@@ -331,6 +334,14 @@ export function synthesizeDataClassMethods(
                         if (defaultValueArg?.d.valueExpr) {
                             defaultExpr = defaultValueArg.d.valueExpr;
                         }
+                        // Support positional default as the first argument to Field(...)
+                        if (!hasDefault) {
+                            const firstPositional = statement.d.rightExpr.d.args.find((arg) => !arg.d.name);
+                            if (firstPositional?.d.valueExpr) {
+                                hasDefault = true;
+                                defaultExpr = firstPositional.d.valueExpr;
+                            }
+                        }
 
                         const defaultFactoryArg = statement.d.rightExpr.d.args.find(
                             (arg) => arg.d.name?.d.value === 'default_factory' || arg.d.name?.d.value === 'factory'
@@ -343,21 +354,40 @@ export function synthesizeDataClassMethods(
                             defaultExpr = defaultFactoryArg.d.valueExpr;
                         }
 
-                        // Prefer `validation_alias` over `alias` if both are provided.
+                        // Prefer `validation_alias` over `alias` if both are provided. for pydantic
                         const validationAliasArg = statement.d.rightExpr.d.args.find(
                             (arg) => arg.d.name?.d.value === 'validation_alias'
                         );
                         const aliasArg =
                             validationAliasArg ??
                             statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
-                        if (aliasArg) {
+                        if (aliasArg && aliasArg.d.valueExpr) {
                             const valueType = evaluator.getTypeOfExpression(aliasArg.d.valueExpr).type;
                             if (
                                 isClassInstance(valueType) &&
                                 ClassType.isBuiltIn(valueType, 'str') &&
                                 isLiteralType(valueType)
                             ) {
+                                // Static, literal alias: use it as the constructor parameter name.
                                 aliasName = valueType.priv.literalValue as string;
+                            } else {
+                                // Dynamic alias (e.g., AliasChoices or computed). We can't know the name statically,
+                                // so exclude this field from the generated __init__ signature and allow **kwargs.
+                                includeInInit = false;
+                                sawDynamicAlias = true;
+                            }
+                        }
+
+                        // Detect pydantic model_config alias_generator on this class.
+                        if (
+                            variableNameNode?.d.value === 'model_config' &&
+                            statement.d.rightExpr.nodeType === ParseNodeType.Call
+                        ) {
+                            const hasAliasGen = !!statement.d.rightExpr.d.args.find(
+                                (arg) => arg.d.name?.d.value === 'alias_generator'
+                            );
+                            if (hasAliasGen) {
+                                sawDynamicAlias = true;
                             }
                         }
 
@@ -367,6 +397,20 @@ export function synthesizeDataClassMethods(
                         if (converterArg && converterArg.d.valueExpr) {
                             converter = converterArg;
                         }
+                    }
+                }
+
+                // Detect pydantic model_config alias_generator on this class assignment
+                if (
+                    name === 'model_config' &&
+                    statement.nodeType === ParseNodeType.Assignment &&
+                    statement.d.rightExpr.nodeType === ParseNodeType.Call
+                ) {
+                    const hasAliasGen = !!statement.d.rightExpr.d.args.find(
+                        (arg) => arg.d.name?.d.value === 'alias_generator'
+                    );
+                    if (hasAliasGen) {
+                        sawDynamicAlias = true;
                     }
                 }
             } else if (statement.nodeType === ParseNodeType.TypeAnnotation) {
@@ -571,7 +615,7 @@ export function synthesizeDataClassMethods(
     if (!skipSynthesizeInit && !hasExistingInitMethod) {
         if (allAncestorsKnown) {
             fullDataClassEntries.forEach((entry) => {
-                if (entry.includeInInit) {
+                if (entry.includeInInit && !sawDynamicAlias) {
                     let defaultType: Type | undefined;
 
                     // If the type refers to Self of the parent class, we need to
@@ -677,6 +721,20 @@ export function synthesizeDataClassMethods(
                     }
                 }
             });
+
+            // If we saw any dynamic aliases, add a **kwargs parameter to relax parameter checking
+            if (sawDynamicAlias) {
+                const kwargsParam = FunctionParam.create(
+                    ParamCategory.KwargsDict,
+                    UnknownType.create(),
+                    FunctionParamFlags.TypeDeclared,
+                    'kwargs'
+                );
+                FunctionType.addParam(constructorType, kwargsParam);
+                if (replaceType) {
+                    FunctionType.addParam(replaceType, kwargsParam);
+                }
+            }
 
             if (keywordOnlyParams.length > 0) {
                 FunctionType.addKeywordOnlyParamSeparator(constructorType);

@@ -8,39 +8,34 @@
 #
 # pyright: reportMissingModuleSource=false
 
-from pydantic.main import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices, ConfigDict
 
-
-class M1(BaseModel):
+class M(BaseModel):
     a1: str = Field(alias="b1")
     a2: str = Field(validation_alias="b2")
     a3: str = Field(alias="z", validation_alias="b3")
 
-# These should generate errors because the constructor expects keywords "b1", "b2", and "b3"
-# (from alias/validation_alias), not "a1", "a2", or "a3".
-_ = M1(
+# These should generate errors because of aliases used on the fields
+_ = M(
     a1="hello",
     a2="hello",
     a3="hello",
+    z="hello",  # "z" is an alias, but if overridden by `validation_alias`
 )
 
-# These should not generate an error for b1, b2, and b3. The use of "z" below should
-# generate an error because for a3 the constructor accepts the validation_alias ("b3")
-# and does not accept the alias ("z").
-m1 = M1(
+# These should not generate an error.
+m1 = M(
     b1="hello",
     b2="hello",
     b3="hello",
-    z="hello",  # This should generate an error ("z" is an alias, not an accepted constructor param when validation_alias is present).
 )
 
 # Access via the declared field name should be fine.
-_: str = m1.a1
-_: str = m1.a2
-_: str = m1.a3
+s: str = m1.a1
+s = m1.a2
+s = m1.a3
 
-# These should generate errors because the instance exposes attributes a1, a2, and a3.
-# Aliases/validation_aliases (b1, b2, b3, z) are not attribute names on the instance.
+# These should generate errors because the instance exposes attributes, the aliases are not accessable
 _ = m1.b1
 _ = m1.b2
 _ = m1.b3
@@ -66,3 +61,4 @@ class M3(BaseModel):
 _ = M3(
     A=1,  # expect no error because it's dynamic
 )
+
