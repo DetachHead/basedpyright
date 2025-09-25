@@ -6,9 +6,7 @@ import {
     getTypeAliasInfo,
     isAny,
     isClass,
-    isClassInstance,
     isFunction,
-    isInstantiableClass,
     isModule,
     isNever,
     isOverloaded,
@@ -362,18 +360,24 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // All member accesses to variables are interpreted as properties
         const parent = node.parent;
         if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
-            // This is quite a primitive heuristic for determining member accesses through magic methods,
-            // but since it is only used to check for read-only access, it should be sufficient
-            if (declarations.length === 0) {
-                // If there are no declarations, we check whether the access uses magic methods
-                // To determine whether the magic method access is read-only, check if there is
-                // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
-                const access = this._getMagicAttributeAccess(parent);
-                if (!readOnly && access && access.get && !access.set) {
-                    modifiers.push(SemanticTokenModifiers.readonly);
-                }
+            let leftType = this._getType(parent.d.leftExpr);
+            if (leftType && isTypeVar(leftType) && leftType.shared.boundType) {
+                leftType = leftType.shared.boundType;
             }
-            return SemanticTokenTypes.property;
+            if (leftType && isClass(leftType)) {
+                // This is quite a primitive heuristic for determining member accesses through magic methods,
+                // but since it is only used to check for read-only access, it should be sufficient
+                if (declarations.length === 0) {
+                    // If there are no declarations, we check whether the access uses magic methods
+                    // To determine whether the magic method access is read-only, check if there is
+                    // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
+                    const access = this._getMagicAttributeAccess(parent);
+                    if (!readOnly && access && access.get && !access.set) {
+                        modifiers.push(SemanticTokenModifiers.readonly);
+                    }
+                }
+                return SemanticTokenTypes.property;
+            }
         }
 
         // Handle variables that have been assigned a “TypeVar”
@@ -389,7 +393,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // This follows Pylance’s somewhat peculiar rules: Variables are marked as type aliases very liberally,
         // but “property” etc. take precedence
         if (
-            (type.props?.typeAliasInfo || isInstantiableClass(type)) &&
+            (type.props?.typeAliasInfo?.shared.isTypeAliasType || TypeBase.isInstantiable(type)) &&
             ![
                 TypeCategory.Unbound,
                 TypeCategory.Unknown,
@@ -462,11 +466,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     }
 
     private _visitFunctionWithType(node: NameNode, type: FunctionType, declarations: Declaration[]) {
-        // type alias to Callable
-        if (!TypeBase.isInstance(type)) {
-            this._addItemForNameNode(node, SemanticTokenTypes.class, []);
-            return;
-        }
         const modifiers: TokenModifiers[] = [];
         const tokenType = this._getFunctionTokenType(node, type.shared.declaration, declarations, type, modifiers);
         this._addItemForNameNode(node, tokenType, modifiers);
@@ -479,6 +478,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         functionType: FunctionType | undefined,
         modifiers: TokenModifiers[]
     ): SemanticTokenTypes {
+        // type alias to Callable
+        if (functionType && !TypeBase.isInstance(functionType)) {
+            return SemanticTokenTypes.class;
+        }
+
         if (functionType && this.builtinModules.has(functionType.shared.moduleName))
             modifiers.push(SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin);
         if (decl && isFunctionDeclaration(decl)) {
@@ -514,7 +518,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             // Check whether the left-hand side is a class instance, in which case the function
             // is highlighted as a method
             const lhsType = this._getType(node.parent.d.leftExpr);
-            if (lhsType && isClassInstance(lhsType)) {
+            if (lhsType && isClass(lhsType)) {
                 return SemanticTokenTypes.method;
             }
         }
