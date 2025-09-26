@@ -1,5 +1,7 @@
 # prek hook
 
+<!-- prevent macro syntax from getting formatted  -->
+<!-- prettier-ignore -->
 ```yaml title=".pre-commit-config.yaml"
 repos:
     - repo: https://github.com/DetachHead/basedpyright-prek-mirror
