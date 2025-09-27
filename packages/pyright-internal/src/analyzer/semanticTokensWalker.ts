@@ -1,13 +1,28 @@
 import { ParseTreeWalker } from './parseTreeWalker';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, FunctionType, getTypeAliasInfo, OverloadedType, Type, TypeBase, TypeCategory } from './types';
+import {
+    ClassType,
+    FunctionType,
+    getTypeAliasInfo,
+    isAny,
+    isClass,
+    isFunction,
+    isModule,
+    isNever,
+    isOverloaded,
+    isTypeVar,
+    isUnknown,
+    NeverType,
+    OverloadedType,
+    Type,
+    TypeBase,
+    TypeCategory,
+} from './types';
 import {
     ClassNode,
     DecoratorNode,
+    ExpressionNode,
     FunctionNode,
-    ImportAsNode,
-    ImportFromAsNode,
-    ImportFromNode,
     MemberAccessNode,
     NameNode,
     ParameterNode,
@@ -15,16 +30,8 @@ import {
     TypeAliasNode,
 } from '../parser/parseNodes';
 import { SemanticTokenModifiers, SemanticTokenTypes } from 'vscode-languageserver';
-import { isConstantName } from './symbolNameUtils';
 import { CustomSemanticTokenModifiers, CustomSemanticTokenTypes } from '../languageService/semanticTokensProvider';
-import {
-    Declaration,
-    DeclarationType,
-    isFunctionDeclaration,
-    isAliasDeclaration,
-    isParamDeclaration,
-    isVariableDeclaration,
-} from './declaration';
+import { Declaration, DeclarationType, isFunctionDeclaration, isVariableDeclaration } from './declaration';
 import { getScopeForNode } from './scopeUtils';
 import { ScopeType } from './scope';
 import { assertNever } from '../common/debug';
@@ -33,14 +40,15 @@ import { isDeclInEnumClass } from './enums';
 import { getEnclosingClass } from './parseTreeUtils';
 import { ClassMember, MemberAccessFlags, isMaybeDescriptorInstance, lookUpClassMember } from './typeUtils';
 
+type TokenTypes = SemanticTokenTypes | CustomSemanticTokenTypes;
+type TokenModifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
+
 export type SemanticTokenItem = {
-    type: string;
-    modifiers: string[];
+    type: TokenTypes;
+    modifiers: TokenModifiers[];
     start: number;
     length: number;
 };
-
-type Modifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
 
 // the magic attribute methods that apply to a given member access
 interface MagicAttributeAccess {
@@ -56,18 +64,24 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         super();
     }
     override visitClass(node: ClassNode): boolean {
-        const tokenType = this._getClassTokenType(this._evaluator.getTypeOfClass(node)?.classType);
-        this._addItemForNameNode(node.d.name, tokenType, [SemanticTokenModifiers.declaration]);
+        const decls = this._getNameNodeDeclarations(node.d.name);
+        const modifiers: TokenModifiers[] = [SemanticTokenModifiers.declaration];
+        const classType = this._evaluator.getTypeOfClass(node)?.classType;
+        const tokenType = classType
+            ? this._getClassTokenType(classType, decls, modifiers, false)
+            : SemanticTokenTypes.class;
+        this._addItemForNameNode(node.d.name, tokenType, modifiers);
         return super.visitClass(node);
     }
 
     override visitFunction(node: FunctionNode): boolean {
+        const decls = this._getNameNodeDeclarations(node.d.name);
         const modifiers = [SemanticTokenModifiers.declaration];
         if (node.d.isAsync) {
             modifiers.push(SemanticTokenModifiers.async);
         }
         const decl = getDeclaration(node);
-        const tokenType = this._getFunctionTokenType(decl, undefined, modifiers);
+        const tokenType = this._getFunctionTokenType(node.d.name, decl, decls, undefined, modifiers);
         this._addItemForNameNode(node.d.name, tokenType, modifiers);
         // parameters & return type are covered by visitName
         return super.visitFunction(node);
@@ -75,8 +89,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     override visitParameter(node: ParameterNode): boolean {
         if (node.d.name) {
-            const type = this._evaluator.getType(node.d.name);
-            this._addItemForNameNode(node.d.name, this._getParamSemanticToken(node, type), [
+            const type = this._getType(node.d.name);
+            this._addItemForNameNode(node.d.name, this._getParamTokenType(node, type), [
                 SemanticTokenModifiers.declaration,
             ]);
         }
@@ -95,49 +109,16 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return super.visitDecorator(node);
     }
 
-    override visitImportAs(node: ImportAsNode): boolean {
-        for (const part of node.d.module.d.nameParts) {
-            this._addItemForNameNode(part, SemanticTokenTypes.namespace, []);
-        }
-        if (node.d.alias) {
-            this._addItemForNameNode(node.d.alias, SemanticTokenTypes.namespace, []);
-        }
-        return super.visitImportAs(node);
-    }
-
-    override visitImportFromAs(node: ImportFromAsNode): boolean {
-        const type = this._evaluator.getType(node.d.alias ?? node.d.name);
-        if (type) {
-            this._visitNameWithType(node.d.name, type);
-            if (node.d.alias) {
-                this._visitNameWithType(node.d.alias, type);
-            }
-        }
-        return super.visitImportFromAs(node);
-    }
-
-    override visitImportFrom(node: ImportFromNode): boolean {
-        for (const part of node.d.module.d.nameParts) {
-            this._addItemForNameNode(part, SemanticTokenTypes.namespace, []);
-        }
-        return super.visitImportFrom(node);
-    }
-
     override visitName(node: NameNode): boolean {
         const parentType = node.parent?.nodeType;
         if (
             parentType !== ParseNodeType.Class &&
             parentType !== ParseNodeType.Decorator &&
-            parentType !== ParseNodeType.ImportAs &&
-            parentType !== ParseNodeType.ImportFromAs &&
             // Ensure only `parent.d.name` is skipped, e.g. don't skip `returnAnnotation` in `FunctionNode`
             (parentType !== ParseNodeType.Function || node.parent.d.name?.id !== node.id) &&
             (parentType !== ParseNodeType.Parameter || node.parent.d.name?.id !== node.id)
         ) {
-            const type = this._evaluator.getType(node);
-            if (type) {
-                this._visitNameWithType(node, type);
-            }
+            this._visitNameWithDeclarations(node, this._getNameNodeDeclarations(node));
         }
         return super.visitName(node);
     }
@@ -151,120 +132,200 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return super.visitTypeAlias(node);
     }
 
-    private _visitNameWithType(node: NameNode, type: Type) {
+    private _visitNameWithDeclarations(node: NameNode, declarations: Declaration[]) {
+        // Treat the first declaration as the primary one, similar to HoverProvider
+        const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
+
+        // For nodes whose parent is a “ModuleName” node, TypeEvaluator.getType returns a type
+        // very inconsistently, and they are always modules anyway, so they are caught early
+        if (node.parent?.nodeType === ParseNodeType.ModuleName) {
+            this._addItemForNameNode(node, SemanticTokenTypes.namespace, []);
+            return;
+        }
+
+        switch (primaryDecl?.type) {
+            case DeclarationType.Variable: {
+                const type = this._getType(node);
+                // If there is no type information, use “variable” by default
+                let tokenType: TokenTypes | undefined = SemanticTokenTypes.variable;
+                const modifiers: TokenModifiers[] = [];
+                if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
+                if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
+                return;
+            }
+            case DeclarationType.Param: {
+                const type = this._getType(node);
+                const tokenType = this._getParamTokenType(primaryDecl.node, type);
+                this._addItemForNameNode(node, tokenType, []);
+                return;
+            }
+            case DeclarationType.TypeParam: {
+                this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, []);
+                return;
+            }
+            case DeclarationType.TypeAlias: {
+                // Pylance uses “class” for type aliases
+                this._addItemForNameNode(node, SemanticTokenTypes.class, []);
+                return;
+            }
+            case DeclarationType.Function: {
+                const type = this._getType(node);
+                const functionType =
+                    type?.category === TypeCategory.Function
+                        ? type
+                        : type?.category === TypeCategory.Overloaded
+                        ? OverloadedType.getOverloads(type)[0]
+                        : undefined;
+                const modifiers: TokenModifiers[] = [];
+                const tokenType = this._getFunctionTokenType(node, primaryDecl, declarations, functionType, modifiers);
+                this._addItemForNameNode(node, tokenType, modifiers);
+                return;
+            }
+            case DeclarationType.Class:
+            case DeclarationType.SpecialBuiltInClass: {
+                const type = this._getType(node);
+                const modifiers: TokenModifiers[] = [];
+                // If there is no type information, use “class” by default (which is what Pylance uses)
+                let tokenType: TokenTypes = SemanticTokenTypes.class;
+                if (type?.category === TypeCategory.Class) {
+                    tokenType = this._getClassTokenType(type, declarations, modifiers) ?? tokenType;
+                }
+                this._addItemForNameNode(node, tokenType, modifiers);
+                return;
+            }
+            default: {
+                break;
+            }
+        }
+
+        // Use the type-based case distinction as the fallback
+        const type = this._getType(node);
+        if (type) this._visitNameWithType(node, type, declarations);
+    }
+
+    private _visitNameWithType(node: NameNode, type: Type, declarations: Declaration[]) {
         switch (type.category) {
             case TypeCategory.Any:
                 if (type.props?.specialForm) {
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+                    this._addItemForNameNode(node, SemanticTokenTypes.class, []);
+                }
+                return;
+            // these are handled below
+            case TypeCategory.Unknown:
+                return;
+            case TypeCategory.TypeVar:
+                break;
+            case TypeCategory.Never: {
+                const neverToken = this._getNeverTokenType(node, type);
+                if (neverToken) {
+                    this._addItemForNameNode(node, neverToken, []);
                     return;
                 }
                 break;
-            // these are handled below
-            case TypeCategory.Unknown:
-            case TypeCategory.TypeVar:
-            case TypeCategory.Never:
-                break;
+            }
             case TypeCategory.Unbound:
                 return;
             case TypeCategory.Function:
-                this._visitFunctionWithType(node, type);
+                this._visitFunctionWithType(node, type, declarations);
                 return;
             case TypeCategory.Overloaded:
-                this._visitFunctionWithType(node, OverloadedType.getOverloads(type)[0]);
+                this._visitFunctionWithType(node, OverloadedType.getOverloads(type)[0], declarations);
                 return;
             case TypeCategory.Module:
                 this._addItemForNameNode(node, SemanticTokenTypes.namespace, []);
                 return;
             case TypeCategory.Union:
                 if (!TypeBase.isInstance(type)) {
-                    this._addItemForNameNode(node, SemanticTokenTypes.type, []);
+                    this._addItemForNameNode(node, SemanticTokenTypes.class, []);
                     return;
                 }
                 break;
             case TypeCategory.Class:
                 // type annotations handled by visitTypeAnnotation
                 if (!TypeBase.isInstance(type)) {
-                    // Exclude type aliases:
-                    // PEP 613 > Name: TypeAlias = Types
-                    // PEP 695 > type Name = Types
-                    const declarations = this._evaluator.getDeclInfoForNameNode(node)?.decls;
-                    const isPEP613TypeAlias = declarations?.some((declaration) =>
-                        this._evaluator.isExplicitTypeAliasDeclaration(declaration)
-                    );
-                    const isTypeAlias = isPEP613TypeAlias || type.props?.typeAliasInfo?.shared.isTypeAliasType;
-
-                    const isBuiltIn =
-                        (!isTypeAlias &&
-                            this.builtinModules.has(type.shared.moduleName) &&
-                            type.priv.aliasName === undefined) ||
-                        (type.props?.typeAliasInfo?.shared.moduleName &&
-                            this.builtinModules.has(type.props.typeAliasInfo.shared.moduleName));
-
-                    const modifiers = isBuiltIn
-                        ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
-                        : [];
-                    this._addItemForNameNode(node, this._getClassTokenType(type), modifiers);
+                    const modifiers: TokenModifiers[] = [];
+                    const tokenType = this._getClassTokenType(type, declarations, modifiers);
+                    this._addItemForNameNode(node, tokenType, modifiers);
                     return;
                 }
                 break;
             default:
                 assertNever(type);
         }
-        const symbol = this._evaluator.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
-        if (type.category === TypeCategory.Never && symbol) {
-            const typeResult = this._evaluator.getEffectiveTypeOfSymbolForUsage(symbol, node);
-            if (
-                // check for new python 3.12 type alias syntax
-                (typeResult.type.props?.specialForm &&
-                    ClassType.isBuiltIn(typeResult.type.props.specialForm, 'TypeAliasType')) ||
-                // for some reason Never is considered both instantiable and an instance, so we need a way
-                // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
-                // this is probably extremely cringe since i have no idea what this is doing and i literally
-                // just brute forced random shit until all the tests passed
-                (typeResult.type.category === TypeCategory.Never && !typeResult.includesVariableDecl) ||
-                (getTypeAliasInfo(type) && !typeResult.includesIllegalTypeAliasDecl)
-            ) {
-                this._addItemForNameNode(node, SemanticTokenTypes.type, []);
-                return;
-            }
-        }
 
-        const declarations = this._evaluator.getDeclInfoForNameNode(node)?.decls ?? [];
-        const modifiers: Modifiers[] =
-            node.nodeType === ParseNodeType.Name &&
-            declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
-                ? [CustomSemanticTokenModifiers.builtin]
-                : [];
-        const paramNode = declarations.find(isParamDeclaration)?.node;
-        if (paramNode) {
-            this._addItemForNameNode(node, this._getParamSemanticToken(paramNode, type), modifiers);
-            return;
-        } else if (type.category === TypeCategory.TypeVar && !TypeBase.isInstance(type)) {
-            // `cls` method parameter is treated as a TypeVar in some special methods (methods
-            // with @classmethod decorator, `__new__`, `__init_subclass__`, etc.) so we need to
-            // check first if it's a parameter before checking that it's a TypeVar
-            this._addItemForNameNode(node, SemanticTokenTypes.typeParameter, modifiers);
-            return;
-        } else if (
-            (type.category === TypeCategory.Unknown || type.category === TypeCategory.Any) &&
-            declarations.every(isAliasDeclaration)
-        ) {
-            return;
-        }
-
-        const tokenType = this._getVariableTokenType(node, declarations, modifiers);
-        this._addItemForNameNode(node, tokenType, modifiers);
+        const modifiers: TokenModifiers[] = [];
+        const tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
+        if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
     }
 
-    private _getClassTokenType(classType: ClassType | undefined): SemanticTokenTypes {
-        return classType && ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
+    private _getNameNodeDeclarations(node: NameNode): Declaration[] {
+        const nameDecls = this._evaluator.getDeclInfoForNameNode(node)?.decls?.map((decl) => {
+            if (decl.type === DeclarationType.Alias) {
+                return this._evaluator.resolveAliasDeclaration(decl, true) ?? decl;
+            }
+            return decl;
+        });
+        return nameDecls ?? [];
+    }
+
+    private _getType(node: ExpressionNode): Type | undefined {
+        let type = this._evaluator.getType(node);
+        if (type) return type;
+        // In the case of “from a import b as c”, “b” sometimes ends up without type,
+        // e.g. in “from os import path as something”, but the alias (“c”) ends up with
+        // the real type, which is used instead
+        const parent = node.parent;
+        if (parent?.nodeType === ParseNodeType.ImportFromAs && parent.d.alias) {
+            type = this._evaluator.getType(parent.d.alias);
+        }
+        return type;
+    }
+
+    // “checkBuiltIn” can be set to “false” to disable checking whether the class is built-in
+    private _getClassTokenType(
+        classType: ClassType,
+        declarations: Declaration[],
+        modifiers: TokenModifiers[],
+        checkBuiltIn: boolean = true
+    ): SemanticTokenTypes {
+        if (checkBuiltIn) {
+            // Exclude type aliases:
+            // PEP 613 > Name: TypeAlias = Types
+            // PEP 695 > type Name = Types
+            const isPEP613TypeAlias = declarations.some((declaration) =>
+                this._evaluator.isExplicitTypeAliasDeclaration(declaration)
+            );
+            const isTypeAlias = isPEP613TypeAlias || classType.props?.typeAliasInfo?.shared.isTypeAliasType;
+
+            const isBuiltIn =
+                (!isTypeAlias &&
+                    this.builtinModules.has(classType.shared.moduleName) &&
+                    classType.priv.aliasName === undefined) ||
+                (classType.props?.typeAliasInfo?.shared.moduleName &&
+                    this.builtinModules.has(classType.props.typeAliasInfo.shared.moduleName));
+
+            if (isBuiltIn) modifiers.push(SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin);
+        }
+
+        return ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
     }
 
     private _getVariableTokenType(
         node: NameNode,
+        type: Type,
         declarations: Declaration[],
-        modifiers: Modifiers[]
-    ): SemanticTokenTypes {
+        modifiers: TokenModifiers[]
+    ): TokenTypes | undefined {
+        // Do not highlight variables whose type is unknown or Any and which have no declarations
+        if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return;
+
+        if (
+            node.nodeType === ParseNodeType.Name &&
+            declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
+        ) {
+            modifiers.push(CustomSemanticTokenModifiers.builtin);
+        }
+
         // Mark as enumMember if any declaration is in enum class
         const isEnumMember = declarations.some(
             (decl) => isVariableDeclaration(decl) && isDeclInEnumClass(this._evaluator, decl)
@@ -272,13 +333,18 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (isEnumMember) {
             return SemanticTokenTypes.enumMember;
         }
+
         // Track whether “readonly” has already been added to “modifiers”
         let readOnly = false;
-        // Mark as “readonly” if the name implies a constant or one of the declarations is final
-        if (isConstantName(node.d.value) || declarations.some((decl) => this._isFinal(decl))) {
+        // Mark as “readonly” one of the declarations is final
+        // Originally, “readonly” was also added if the name implied a constant (i.e. all caps with underscores),
+        // but this heuristic does not always work (e.g. matrices are sometimes named using capital letters)
+        // and results in a bogus “readonly” on type variables
+        if (declarations.some((decl) => this._isFinal(decl))) {
             readOnly = true;
             modifiers.push(SemanticTokenModifiers.readonly);
         }
+
         // Mark as property if any declaration is within a class
         // “property” is used even for class variables because there is no more appropriate token type
         // (see https://github.com/DetachHead/basedpyright/issues/482#issuecomment-3172601227)
@@ -290,29 +356,86 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
             return SemanticTokenTypes.property;
         }
+
         // All member accesses to variables are interpreted as properties
         const parent = node.parent;
         if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
-            // This is quite a primitive heuristic for determining member accesses through magic methods,
-            // but since it is only used to check for read-only access, it should be sufficient
-            if (declarations.length === 0) {
-                // If there are no declarations, we check whether the access uses magic methods
-                // To determine whether the magic method access is read-only, check if there is
-                // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
-                const access = this._getMagicAttributeAccess(parent);
-                if (!readOnly && access && access.get && !access.set) {
-                    modifiers.push(SemanticTokenModifiers.readonly);
-                }
+            let leftType = this._getType(parent.d.leftExpr);
+            if (leftType && isTypeVar(leftType) && leftType.shared.boundType) {
+                leftType = leftType.shared.boundType;
             }
-            return SemanticTokenTypes.property;
+            if (leftType && isClass(leftType)) {
+                // This is quite a primitive heuristic for determining member accesses through magic methods,
+                // but since it is only used to check for read-only access, it should be sufficient
+                if (declarations.length === 0) {
+                    // If there are no declarations, we check whether the access uses magic methods
+                    // To determine whether the magic method access is read-only, check if there is
+                    // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
+                    const access = this._getMagicAttributeAccess(parent);
+                    if (!readOnly && access && access.get && !access.set) {
+                        modifiers.push(SemanticTokenModifiers.readonly);
+                    }
+                }
+                return SemanticTokenTypes.property;
+            }
         }
+
+        // Handle variables that have been assigned a “TypeVar”
+        // There are weird cases in which bogus type variables are synthesized
+        // Example: Left-hand side “x” of “self.x = x” in “parameters.py”
+        if (isTypeVar(type) && !type.shared.isSynthesized) {
+            return SemanticTokenTypes.typeParameter;
+        }
+
+        // Detect type aliases
+        // The “typeAliasInfo” condition is required for aliases to typing-only constructs such as “Callable”
+        // Module aliases also provide “typeAliasInfo” (for some reason), so an additional check is necessary
+        // This follows Pylance’s somewhat peculiar rules: Variables are marked as type aliases very liberally,
+        // but “property” etc. take precedence
+        if (
+            (type.props?.typeAliasInfo?.shared.isTypeAliasType || TypeBase.isInstantiable(type)) &&
+            ![
+                TypeCategory.Unbound,
+                TypeCategory.Unknown,
+                TypeCategory.Any,
+                TypeCategory.Never,
+                TypeCategory.Module,
+                TypeCategory.TypeVar,
+            ].includes(type.category)
+        ) {
+            if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
+            // Pylance uses “class” for type aliases
+            return SemanticTokenTypes.class;
+        }
+
+        // Detect variables that store a function or an overloaded function
+        const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
+        if (isFunction(type)) {
+            return this._getFunctionTokenType(node, primaryDecl, declarations, type, modifiers);
+        }
+        if (isOverloaded(type)) {
+            const functionType = OverloadedType.getOverloads(type)[0];
+            return this._getFunctionTokenType(node, primaryDecl, declarations, functionType, modifiers);
+        }
+
+        // Detect module variables
+        if (isModule(type)) {
+            return SemanticTokenTypes.namespace;
+        }
+
+        // Detect “Never”/“NoReturn” type aliases
+        if (isNever(type)) {
+            const tokenType = this._getNeverTokenType(node, type);
+            if (tokenType) return tokenType;
+        }
+
         return SemanticTokenTypes.variable;
     }
 
     // For a given attribute access, gather information about the magic attribute methods
     // which the left-hand side provides
     private _getMagicAttributeAccess(node: MemberAccessNode): MagicAttributeAccess | undefined {
-        const baseType = this._evaluator.getType(node.d.leftExpr);
+        const baseType = this._getType(node.d.leftExpr);
         if (baseType && baseType.category === TypeCategory.Class) {
             // Skip the object base class because that always appears to contain these members
             return {
@@ -327,12 +450,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     // Check whether “decl” is a final variable declaration (with alias resolution)
     private _isFinal(decl: Declaration): boolean {
-        if (decl.type === DeclarationType.Alias) {
-            const rdecl = this._evaluator.resolveAliasDeclaration(decl, true);
-            if (rdecl) decl = rdecl;
-        }
         if (decl.type === DeclarationType.Variable) {
-            return !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
+            return !!decl.isConstant || !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
         }
         return false;
     }
@@ -346,24 +465,26 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return false;
     }
 
-    private _visitFunctionWithType(node: NameNode, type: FunctionType) {
-        // type alias to Callable
-        if (!TypeBase.isInstance(type)) {
-            this._addItemForNameNode(node, SemanticTokenTypes.type, []);
-            return;
-        }
-        const modifiers = this.builtinModules.has(type.shared.moduleName)
-            ? [SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin]
-            : [];
-        const tokenType = this._getFunctionTokenType(type.shared.declaration, type, modifiers);
+    private _visitFunctionWithType(node: NameNode, type: FunctionType, declarations: Declaration[]) {
+        const modifiers: TokenModifiers[] = [];
+        const tokenType = this._getFunctionTokenType(node, type.shared.declaration, declarations, type, modifiers);
         this._addItemForNameNode(node, tokenType, modifiers);
     }
 
     private _getFunctionTokenType(
+        node: NameNode,
         decl: Declaration | undefined,
+        declarations: Declaration[],
         functionType: FunctionType | undefined,
-        modifiers: Modifiers[]
+        modifiers: TokenModifiers[]
     ): SemanticTokenTypes {
+        // type alias to Callable
+        if (functionType && !TypeBase.isInstance(functionType)) {
+            return SemanticTokenTypes.class;
+        }
+
+        if (functionType && this.builtinModules.has(functionType.shared.moduleName))
+            modifiers.push(SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin);
         if (decl && isFunctionDeclaration(decl)) {
             if (!functionType) functionType = this._evaluator.getTypeOfFunction(decl.node)?.functionType;
             if (functionType && FunctionType.isStaticMethod(functionType))
@@ -372,15 +493,40 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 const declaredType = this._evaluator.getTypeForDeclaration(decl)?.type;
                 // the canonical check for properties (used e.g. in the hover message)
                 if (declaredType && isMaybeDescriptorInstance(declaredType)) {
+                    if (declarations.every((d) => this._missingPropertySetter(d))) {
+                        modifiers.push(SemanticTokenModifiers.readonly);
+                    }
                     return SemanticTokenTypes.property;
                 }
                 return SemanticTokenTypes.method;
             }
         }
+
+        // Special handling for the right-hand side of a member accesses when there are no declarations
+        if (!decl && node.parent?.nodeType === ParseNodeType.MemberAccess && node.parent.d.member === node) {
+            // Check whether the member access uses “__getattr__” or “__getattribute__”
+            // and the resulting type is a function type
+            // For consistency with other callable attributes, these are highlighted like attributes
+            const access = this._getMagicAttributeAccess(node.parent);
+            if (access?.get) {
+                if (!access.set) {
+                    modifiers.push(SemanticTokenModifiers.readonly);
+                }
+                return SemanticTokenTypes.property;
+            }
+
+            // Check whether the left-hand side is a class instance, in which case the function
+            // is highlighted as a method
+            const lhsType = this._getType(node.parent.d.leftExpr);
+            if (lhsType && isClass(lhsType)) {
+                return SemanticTokenTypes.method;
+            }
+        }
+
         return SemanticTokenTypes.function;
     }
 
-    private _getParamSemanticToken(node: ParameterNode, type?: Type): string {
+    private _getParamTokenType(node: ParameterNode, type?: Type): TokenTypes {
         if (node.parent?.nodeType !== ParseNodeType.Function) {
             return SemanticTokenTypes.parameter;
         }
@@ -388,7 +534,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.parameter;
         }
 
-        const parentType = this._evaluator.getType(node.parent.d.name);
+        const parentType = this._getType(node.parent.d.name);
         const isMethodParam =
             parentType?.category === TypeCategory.Function &&
             (FunctionType.isClassMethod(parentType) ||
@@ -404,10 +550,31 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             : CustomSemanticTokenTypes.selfParameter;
     }
 
-    private _addItemForNameNode = (node: NameNode, type: string, modifiers: string[]) =>
+    private _getNeverTokenType(node: NameNode, type: NeverType): TokenTypes | undefined {
+        const symbol = this._evaluator.lookUpSymbolRecursive(node, node.d.value, false)?.symbol;
+        if (symbol) {
+            const typeResult = this._evaluator.getEffectiveTypeOfSymbolForUsage(symbol, node);
+            if (
+                // check for new python 3.12 type alias syntax
+                (typeResult.type.props?.specialForm &&
+                    ClassType.isBuiltIn(typeResult.type.props.specialForm, 'TypeAliasType')) ||
+                // for some reason Never is considered both instantiable and an instance, so we need a way
+                // to differentiate between "instances" of `Never` and type aliases/annotations of Never.
+                // this is probably extremely cringe since i have no idea what this is doing and i literally
+                // just brute forced random shit until all the tests passed
+                (typeResult.type.category === TypeCategory.Never && !typeResult.includesVariableDecl) ||
+                (getTypeAliasInfo(type) && !typeResult.includesIllegalTypeAliasDecl)
+            ) {
+                return SemanticTokenTypes.class;
+            }
+        }
+        return undefined;
+    }
+
+    private _addItemForNameNode = (node: NameNode, type: TokenTypes, modifiers: TokenModifiers[]) =>
         this._addItem(node.d.token.start, node.d.token.length, type, modifiers);
 
-    private _addItem(start: number, length: number, type: string, modifiers: string[]) {
+    private _addItem(start: number, length: number, type: TokenTypes, modifiers: TokenModifiers[]) {
         this.items.push({ type, modifiers, start, length });
     }
 }

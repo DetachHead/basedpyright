@@ -16,7 +16,7 @@ class Foo:
 
     @property
     def bar(self) -> int: ...
-    @foo.setter
+    @bar.setter
     def bar(self, value: int): ...
 
     def __getattr__(self, name: str) -> float:

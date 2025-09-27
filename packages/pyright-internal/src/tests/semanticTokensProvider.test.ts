@@ -54,7 +54,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'function', modifiers: [], start: 111, length: 1 }, // s
             { type: 'variable', modifiers: ['readonly'], start: 114, length: 10 }, // IGNORECASE
             { type: 'namespace', modifiers: [], start: 130, length: 6 }, // typing
-            { type: 'type', modifiers: [], start: 144, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 144, length: 5 }, // Never
             { type: 'class', modifiers: [], start: 151, length: 8 }, // Iterable
             { type: 'class', modifiers: [], start: 163, length: 3 }, // Foo
             { type: 'namespace', modifiers: [], start: 172, length: 11 }, // collections
@@ -66,24 +66,27 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('final', () => {
         const result = semanticTokenizeSampleFile('final.py');
         expect(result).toStrictEqual([
+            // imports
             { type: 'namespace', modifiers: [], start: 5, length: 4 },
             { type: 'variable', modifiers: ['readonly'], start: 17, length: 2 },
             { type: 'namespace', modifiers: [], start: 25, length: 6 },
             { type: 'class', modifiers: [], start: 39, length: 5 },
             { type: 'function', modifiers: [], start: 46, length: 8 },
+            // variable definitions
             { type: 'variable', modifiers: ['readonly'], start: 56, length: 3 },
             { type: 'variable', modifiers: ['readonly'], start: 64, length: 3 },
             { type: 'class', modifiers: [], start: 69, length: 5 },
             { type: 'variable', modifiers: [], start: 79, length: 1 },
             { type: 'variable', modifiers: ['readonly'], start: 85, length: 2 },
             { type: 'class', modifiers: [], start: 89, length: 5 },
+            // Foo
             { type: 'class', modifiers: ['declaration'], start: 107, length: 3 },
             { type: 'method', modifiers: ['declaration'], start: 120, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 129, length: 4 },
             { type: 'selfParameter', modifiers: [], start: 144, length: 4 },
             { type: 'property', modifiers: ['readonly'], start: 149, length: 8 },
             { type: 'class', modifiers: [], start: 159, length: 5 },
-            { type: 'property', modifiers: ['declaration'], start: 193, length: 3 },
+            { type: 'property', modifiers: ['declaration', 'readonly'], start: 193, length: 3 },
             { type: 'decorator', modifiers: [], start: 175, length: 1 },
             { type: 'decorator', modifiers: [], start: 176, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 197, length: 4 },
@@ -95,8 +98,8 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 251, length: 3 },
             { type: 'property', modifiers: ['declaration'], start: 284, length: 3 },
             { type: 'decorator', modifiers: [], start: 264, length: 1 },
-            { type: 'property', modifiers: ['readonly'], start: 265, length: 3 },
-            { type: 'function', modifiers: [], start: 269, length: 6 },
+            { type: 'property', modifiers: [], start: 265, length: 3 },
+            { type: 'method', modifiers: [], start: 269, length: 6 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 288, length: 4 },
             { type: 'parameter', modifiers: ['declaration'], start: 294, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 },
@@ -106,6 +109,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 344, length: 3 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 352, length: 5 },
             { type: 'variable', modifiers: ['readonly'], start: 374, length: 2 },
+            // Bar
             { type: 'class', modifiers: ['declaration'], start: 385, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 394, length: 3 },
             { type: 'class', modifiers: [], start: 399, length: 5 },
@@ -125,23 +129,30 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 534, length: 3 },
             { type: 'parameter', modifiers: ['declaration'], start: 539, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 546, length: 3 },
+            // Foo().foo
             { type: 'class', modifiers: [], start: 567, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 573, length: 3 },
+            // Foo().bar
             { type: 'class', modifiers: [], start: 577, length: 3 },
             { type: 'property', modifiers: [], start: 583, length: 3 },
+            // baz = Foo()
             { type: 'variable', modifiers: [], start: 588, length: 3 },
             { type: 'class', modifiers: [], start: 594, length: 3 },
+            // _ = baz.foo
             { type: 'variable', modifiers: [], start: 600, length: 1 },
             { type: 'variable', modifiers: [], start: 604, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 608, length: 3 },
+            // meaning = baz.constant
             { type: 'variable', modifiers: [], start: 612, length: 7 },
             { type: 'variable', modifiers: [], start: 622, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 626, length: 8 },
+            // bam = baz.pi + Bar.fir
             { type: 'variable', modifiers: [], start: 635, length: 3 },
             { type: 'variable', modifiers: [], start: 641, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 645, length: 2 },
             { type: 'class', modifiers: [], start: 650, length: 3 },
             { type: 'property', modifiers: ['readonly'], start: 654, length: 3 },
+            // bar = Bar().beef
             { type: 'variable', modifiers: [], start: 658, length: 3 },
             { type: 'class', modifiers: [], start: 664, length: 3 },
             { type: 'property', modifiers: [], start: 670, length: 4 },
@@ -152,24 +163,24 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('never.py');
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
-            { type: 'type', modifiers: [], start: 19, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 19, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 26, length: 3 }, // foo
-            { type: 'type', modifiers: [], start: 31, length: 5 }, // Never
-            { type: 'type', modifiers: [], start: 37, length: 3 }, // bar
-            { type: 'type', modifiers: [], start: 43, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 31, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 37, length: 3 }, // bar
+            { type: 'class', modifiers: [], start: 43, length: 5 }, // Never
             { type: 'function', modifiers: ['declaration'], start: 54, length: 3 }, // baz
-            { type: 'type', modifiers: [], start: 63, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 63, length: 5 }, // Never
             { type: 'function', modifiers: ['declaration'], start: 83, length: 4 }, // asdf
             { type: 'parameter', modifiers: ['declaration'], start: 88, length: 3 }, // foo
-            { type: 'type', modifiers: [], start: 93, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 93, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 105, length: 5 }, // value
-            { type: 'type', modifiers: [], start: 112, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 112, length: 5 }, // Never
             { type: 'parameter', modifiers: [], start: 120, length: 3 }, // foo
             { type: 'variable', modifiers: [], start: 128, length: 5 }, // value
-            { type: 'type', modifiers: [], start: 135, length: 4 }, // Type
-            { type: 'type', modifiers: [], start: 142, length: 5 }, // Never
+            { type: 'class', modifiers: [], start: 135, length: 4 }, // Type
+            { type: 'class', modifiers: [], start: 142, length: 5 }, // Never
             { type: 'variable', modifiers: [], start: 148, length: 5 }, // value
-            { type: 'type', modifiers: [], start: 155, length: 4 }, // Type
+            { type: 'class', modifiers: [], start: 155, length: 4 }, // Type
             { type: 'function', modifiers: ['declaration'], start: 169, length: 8 }, // inferred
             { type: 'variable', modifiers: [], start: 185, length: 5 }, // value
             { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 207, length: 10 }, // isinstance
@@ -183,10 +194,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 }, // str
             { type: 'variable', modifiers: [], start: 315, length: 6 }, // value2
             { type: 'keyword', modifiers: [], start: 323, length: 4 }, // type
-            { type: 'type', modifiers: [], start: 328, length: 3 }, // Baz
-            { type: 'type', modifiers: [], start: 334, length: 5 }, // Never
-            { type: 'variable', modifiers: [], start: 340, length: 3 }, // baz
-            { type: 'type', modifiers: [], start: 345, length: 3 }, // Baz
+            { type: 'class', modifiers: [], start: 328, length: 3 }, // Baz
+            { type: 'class', modifiers: [], start: 334, length: 5 }, // Never
+            { type: 'function', modifiers: [], start: 340, length: 3 }, // baz
+            { type: 'class', modifiers: [], start: 345, length: 3 }, // Baz
         ]);
     });
 
@@ -202,7 +213,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'parameter', modifiers: ['declaration'], start: 52, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 58, length: 3 },
             { type: 'function', modifiers: [], start: 72, length: 3 },
-            { type: 'type', modifiers: [], start: 79, length: 3 },
+            { type: 'class', modifiers: [], start: 79, length: 3 },
             { type: 'class', modifiers: [], start: 85, length: 8 },
             { type: 'function', modifiers: [], start: 105, length: 3 },
             { type: 'class', modifiers: [], start: 110, length: 8 },
@@ -241,7 +252,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
 
             { type: 'class', modifiers: ['declaration'], start: 116, length: 1 }, // A
             { type: 'decorator', modifiers: [], start: 97, length: 1 }, // @
-            { type: 'function', modifiers: [], start: 98, length: 9 },
+            { type: 'function', modifiers: [], start: 98, length: 9 }, // dataclass
 
             { type: 'class', modifiers: ['declaration'], start: 155, length: 1 }, // B
             { type: 'decorator', modifiers: [], start: 124, length: 1 }, // @
@@ -253,7 +264,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'selfParameter', modifiers: ['declaration'], start: 184, length: 4 }, // self
             { type: 'method', modifiers: ['declaration', 'static'], start: 221, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 199, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 200, length: 12 },
+            { type: 'decorator', modifiers: [], start: 200, length: 12 }, // staticmethod
 
             { type: 'function', modifiers: ['declaration'], start: 257, length: 6 }, // cached
             { type: 'decorator', modifiers: [], start: 236, length: 1 }, // @
@@ -277,7 +288,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'parameter', modifiers: [], start: 53, length: 1 }, // x
             { type: 'method', modifiers: ['declaration'], start: 81, length: 1 }, // m
             { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 61, length: 11 },
+            { type: 'decorator', modifiers: [], start: 61, length: 11 }, // classmethod
             { type: 'clsParameter', modifiers: ['declaration'], start: 83, length: 3 }, // cls
             { type: 'clsParameter', modifiers: [], start: 104, length: 3 }, // cls
             // function
@@ -305,17 +316,35 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         const result = semanticTokenizeSampleFile('unknown.py');
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
-            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 19, length: 3 }, // Any
             { type: 'function', modifiers: ['declaration'], start: 28, length: 1 }, // f
             { type: 'parameter', modifiers: ['declaration'], start: 30, length: 1 }, // l
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
-            { type: 'type', modifiers: [], start: 42, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 42, length: 3 }, // Any
             { type: 'variable', modifiers: [], start: 51, length: 1 }, // v
             { type: 'parameter', modifiers: [], start: 55, length: 1 }, // l
             { type: 'variable', modifiers: [], start: 71, length: 1 }, // v
-            // `g` and `foo` should be ignored
-            { type: 'variable', modifiers: [], start: 81, length: 3 }, // bar
-            { type: 'function', modifiers: [], start: 87, length: 1 }, // f
+            { type: 'function', modifiers: ['declaration'], start: 79, length: 2 }, // f1
+            { type: 'parameter', modifiers: ['declaration'], start: 82, length: 1 }, // a
+            { type: 'parameter', modifiers: [], start: 90, length: 1 }, // a
+            { type: 'parameter', modifiers: [], start: 94, length: 1 }, // a
+            // `T` and `maximum` should be ignored
+            { type: 'function', modifiers: ['declaration'], start: 114, length: 2 }, // f2
+            { type: 'parameter', modifiers: ['declaration'], start: 117, length: 1 }, // b
+            { type: 'class', modifiers: [], start: 120, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 128, length: 3 }, // Any
+            { type: 'parameter', modifiers: [], start: 144, length: 1 }, // b
+            // `as_integer_ratio`, `g`, and `foo` should be ignored
+            { type: 'variable', modifiers: [], start: 174, length: 3 }, // bar
+            { type: 'function', modifiers: [], start: 180, length: 1 }, // f
+            { type: 'variable', modifiers: [], start: 188, length: 1 }, // a
+            { type: 'variable', modifiers: [], start: 191, length: 1 }, // b
+            { type: 'function', modifiers: [], start: 195, length: 2 }, // f2
+            { type: 'variable', modifiers: [], start: 202, length: 1 }, // c
+            { type: 'variable', modifiers: [], start: 206, length: 1 }, // a
+            // `bit_length` should be ignored
+            { type: 'variable', modifiers: [], start: 223, length: 1 }, // b
+            // `bit_length` should be ignored
         ]);
     });
 
@@ -331,7 +360,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 // type aliases
                 { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 }, // Foo
                 { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 47, length: 4 }, // list
-                { type: 'type', modifiers: [], start: 52, length: 3 }, // Bar
+                { type: 'class', modifiers: [], start: 52, length: 3 }, // Bar
                 { type: 'class', modifiers: [], start: 58, length: 4 }, // List
                 { type: 'class', modifiers: [], start: 65, length: 3 }, // Set
                 { type: 'class', modifiers: [], start: 69, length: 3 }, // Old
