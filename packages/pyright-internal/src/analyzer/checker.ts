@@ -207,6 +207,7 @@ import {
     partiallySpecializeType,
     selfSpecializeClass,
     transformPossibleRecursiveTypeAlias,
+    someSubtypes,
 } from './typeUtils';
 
 interface TypeVarUsageInfo {
@@ -2830,25 +2831,28 @@ export class Checker extends ParseTreeWalker {
             constraints
         );
 
-        const returnDiag = new DiagnosticAddendum();
-        if (
-            !isNever(overloadReturnType) &&
-            !this._evaluator.assignType(
+        // based overload consistency part 1: The implementation return type must overlap with each overload
+        // when distributing unions (i.e., at least one member of the impl union is assignable to the overload).
+        if (!isNever(overloadReturnType)) {
+            const returnDiag = new DiagnosticAddendum();
+            // Succeeds if any union member of the implementation overlaps with the overload return type.
+            const ok = someSubtypes(
                 implReturnType,
-                overloadReturnType,
-                returnDiag.createAddendum(),
-                constraints,
-                AssignTypeFlags.Default
-            )
-        ) {
-            returnDiag.addMessage(
-                LocAddendum.functionReturnTypeMismatch().format({
-                    sourceType: this._evaluator.printType(overloadReturnType),
-                    destType: this._evaluator.printType(implReturnType),
-                })
+                (sub) =>
+                    this._evaluator.assignType(overloadReturnType, sub) ||
+                    this._evaluator.assignType(sub, overloadReturnType)
             );
-            diag?.addAddendum(returnDiag);
-            isConsistent = false;
+
+            if (!ok) {
+                returnDiag.addMessage(
+                    LocAddendum.functionReturnTypeMismatch().format({
+                        sourceType: this._evaluator.printType(implReturnType),
+                        destType: this._evaluator.printType(overloadReturnType),
+                    })
+                );
+                diag?.addAddendum(returnDiag);
+                isConsistent = false;
+            }
         }
 
         return isConsistent;
@@ -3307,6 +3311,48 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         });
+
+        // based overload consistency part 2: Implementation return type must be a subtype of the union of overload return types.
+        if (
+            this._importResolver.getConfigOptions().strictOverloadConsistency &&
+            implementation &&
+            isFunction(implementation)
+        ) {
+            const implNode = implementation.shared.declaration?.node?.parent;
+            let implBound = implementation;
+            if (implNode) {
+                const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(implNode);
+                implBound = makeTypeVarsBound(implementation, liveScopeIds);
+            }
+
+            const implReturnType =
+                FunctionType.getEffectiveReturnType(implBound) ?? this._evaluator.getInferredReturnType(implBound);
+
+            const mappedReturnUnion = combineTypes(
+                OverloadedType.getOverloads(type).map((overloadType) => {
+                    const result =
+                        FunctionType.getEffectiveReturnType(overloadType) ??
+                        this._evaluator.getInferredReturnType(overloadType);
+                    // special case CoroutineType, as it's a known instance of a "single covariant" type parameter
+                    //  see: https://github.com/DetachHead/basedpyright/issues/1523
+                    if (isClass(result) && result.shared.fullName === 'types.CoroutineType') {
+                        return result.shared.typeParams[2];
+                    }
+                    return result;
+                })
+            );
+
+            const extraDiag = new DiagnosticAddendum();
+            const isAssignable = this._evaluator.assignType(mappedReturnUnion, implReturnType, extraDiag);
+
+            if (!isAssignable && implementation.shared.declaration) {
+                this._evaluator.addDiagnostic(
+                    DiagnosticRule.reportInconsistentOverload,
+                    LocMessage.overloadImplementationTooWide() + extraDiag.getString(),
+                    implementation.shared.declaration.node.d.name
+                );
+            }
+        }
     }
 
     private _reportFinalInLoop(symbol: Symbol) {
