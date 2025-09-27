@@ -18359,7 +18359,8 @@ export function createTypeEvaluator(
             }
 
             // Synthesize dataclass methods.
-            if (ClassType.isDataClass(classType) || isNamedTupleSubclass) {
+            // Also synthesize for classes that receive dataclass-like behaviors via dataclass_transform.
+            if (ClassType.isDataClass(classType) || isNamedTupleSubclass || !!classType.shared.dataClassBehaviors) {
                 const skipSynthesizedInit = ClassType.isDataClassSkipGenerateInit(classType);
                 let hasExistingInitMethod = skipSynthesizedInit;
 
