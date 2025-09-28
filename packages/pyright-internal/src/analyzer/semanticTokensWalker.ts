@@ -166,7 +166,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
             case DeclarationType.TypeAlias: {
                 // Pylance uses “class” for type aliases
-                this._addItemForNameNode(node, SemanticTokenTypes.class, []);
+                const type = this._getType(node);
+                this._addItemForNameNode(
+                    node,
+                    type && isUnion(type) ? SemanticTokenTypes.type : SemanticTokenTypes.class,
+                    []
+                );
                 return;
             }
             case DeclarationType.Function: {
