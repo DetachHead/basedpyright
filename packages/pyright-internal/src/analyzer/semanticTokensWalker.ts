@@ -11,6 +11,7 @@ import {
     isNever,
     isOverloaded,
     isTypeVar,
+    isUnion,
     isUnknown,
     NeverType,
     OverloadedType,
@@ -271,8 +272,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _getType(node: ExpressionNode): Type | undefined {
         let type = this._evaluator.getType(node);
         if (type) return type;
-        // In the case of “from a import b as c”, “b” sometimes ends up without type,
-        // e.g. in “from os import path as something”, but the alias (“c”) ends up with
+        // In the case of “from a import b as c”, “b” sometimes ends up with an incorrect type,
+        // e.g. “path” in “from os import path as something”, but the alias (“c”) ends up with
         // the real type, which is used instead
         const parent = node.parent;
         if (parent?.nodeType === ParseNodeType.ImportFromAs && parent.d.alias) {
@@ -281,7 +282,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return type;
     }
 
-    // “checkBuiltIn” can be set to “false” to disable checking whether the class is built-in
+    /**
+     * @param checkBuiltIn can be set to `false` to disable checking whether the class is built-in
+     */
     private _getClassTokenType(
         classType: ClassType,
         declarations: Declaration[],
@@ -317,6 +320,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         modifiers: TokenModifiers[]
     ): TokenTypes | undefined {
         // Do not highlight variables whose type is unknown or Any and which have no declarations
+        // The check for unknown/Any is required for situations such as attribute access using “__getattr__”,
+        // which has no declarations (because there are no variable declarations) but whose type is (hopefully) not unknown/Any
         if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return;
 
         if (
@@ -336,10 +341,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Track whether “readonly” has already been added to “modifiers”
         let readOnly = false;
-        // Mark as “readonly” one of the declarations is final
-        // Originally, “readonly” was also added if the name implied a constant (i.e. all caps with underscores),
-        // but this heuristic does not always work (e.g. matrices are sometimes named using capital letters)
-        // and results in a bogus “readonly” on type variables
+        // Mark as “readonly” if one of the declarations is final
         if (declarations.some((decl) => this._isFinal(decl))) {
             readOnly = true;
             modifiers.push(SemanticTokenModifiers.readonly);
@@ -404,8 +406,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             ].includes(type.category)
         ) {
             if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
-            // Pylance uses “class” for type aliases
-            return SemanticTokenTypes.class;
+            // Pylance uses “class” for type aliases, we use “type” for unions
+            return isUnion(type) ? SemanticTokenTypes.type : SemanticTokenTypes.class;
         }
 
         // Detect variables that store a function or an overloaded function
@@ -448,7 +450,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return undefined;
     }
 
-    // Check whether “decl” is a final variable declaration (with alias resolution)
+    // Check whether “decl” is a final variable declaration
     private _isFinal(decl: Declaration): boolean {
         if (decl.type === DeclarationType.Variable) {
             return !!decl.isConstant || !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
