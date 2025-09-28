@@ -11,7 +11,6 @@ import {
     isNever,
     isOverloaded,
     isTypeVar,
-    isUnion,
     isUnknown,
     NeverType,
     OverloadedType,
@@ -169,7 +168,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 const type = this._getType(node);
                 this._addItemForNameNode(
                     node,
-                    type && isUnion(type) ? SemanticTokenTypes.type : SemanticTokenTypes.class,
+                    type && isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type,
                     []
                 );
                 return;
@@ -412,7 +411,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         ) {
             if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
             // Pylance uses “class” for type aliases, we use “type” for unions
-            return isUnion(type) ? SemanticTokenTypes.type : SemanticTokenTypes.class;
+            return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
         }
 
         // Detect variables that store a function or an overloaded function
