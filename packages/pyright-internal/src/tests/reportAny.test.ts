@@ -62,3 +62,20 @@ test('reportExplicitAny', () => {
         })),
     });
 });
+
+
+
+test('reportAnyBareClassVar', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportAny = 'error';
+    // Ensure unrelated warnings don't interfere with expectations
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+    const analysisResults = typeAnalyzeSampleFiles(['reportAnyClassVar.py'], configOptions);
+
+    validateResultsButBased(analysisResults, {
+        errors: [
+            { line: 12, code: DiagnosticRule.reportAny, message: LocMessage.typeAny().format({ name: 'a' }) },
+            { line: 12, code: DiagnosticRule.reportAny },
+        ],
+    });
+});

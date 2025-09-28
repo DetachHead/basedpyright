@@ -23601,7 +23601,9 @@ export function createTypeEvaluator(
         } else {
             // We can encounter this situation in the case of a bare ClassVar annotation.
             if (symbol.isClassVar()) {
-                type = UnknownType.create();
+                // Treat a bare ClassVar as having an "Any" type rather than "Unknown" so that
+                // usages can be flagged by the `reportAny` diagnostic when enabled.
+                type = AnyType.create();
                 isIncomplete = false;
             } else {
                 type = UnboundType.create();

@@ -17,7 +17,7 @@ class A:
         cls.c = ""
 
 
-reveal_type(A.a, expected_text="Unknown")
+reveal_type(A.a, expected_text="Any")
 A.a = 3
 A.a = ""
 
@@ -27,7 +27,7 @@ A.b = 2
 # This should generate an error
 A.b = ""
 
-reveal_type(A.c, expected_text="Unknown")
+reveal_type(A.c, expected_text="Any")
 A.c = 2
 A.c = ""
 
