@@ -194,10 +194,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 }, // str
             { type: 'variable', modifiers: [], start: 315, length: 6 }, // value2
             { type: 'keyword', modifiers: [], start: 323, length: 4 }, // type
-            { type: 'class', modifiers: [], start: 328, length: 3 }, // Baz
+            { type: 'type', modifiers: [], start: 328, length: 3 }, // Baz
             { type: 'class', modifiers: [], start: 334, length: 5 }, // Never
             { type: 'function', modifiers: [], start: 340, length: 3 }, // baz
-            { type: 'class', modifiers: [], start: 345, length: 3 }, // Baz
+            { type: 'type', modifiers: [], start: 345, length: 3 }, // Baz
         ]);
     });
 
@@ -213,7 +213,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'parameter', modifiers: ['declaration'], start: 52, length: 1 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 58, length: 3 },
             { type: 'function', modifiers: [], start: 72, length: 3 },
-            { type: 'class', modifiers: [], start: 79, length: 3 },
+            { type: 'type', modifiers: [], start: 79, length: 3 },
             { type: 'class', modifiers: [], start: 85, length: 8 },
             { type: 'function', modifiers: [], start: 105, length: 3 },
             { type: 'class', modifiers: [], start: 110, length: 8 },
@@ -360,7 +360,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 // type aliases
                 { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 41, length: 3 }, // Foo
                 { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 47, length: 4 }, // list
-                { type: 'class', modifiers: [], start: 52, length: 3 }, // Bar
+                { type: 'type', modifiers: [], start: 52, length: 3 }, // Bar
                 { type: 'class', modifiers: [], start: 58, length: 4 }, // List
                 { type: 'class', modifiers: [], start: 65, length: 3 }, // Set
                 { type: 'class', modifiers: [], start: 69, length: 3 }, // Old
