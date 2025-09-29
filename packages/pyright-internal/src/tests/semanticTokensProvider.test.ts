@@ -11,6 +11,117 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('class_members', () => {
+        const result = semanticTokenizeSampleFile('class_members.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 7, length: 2 }, // os
+            { type: 'namespace', modifiers: [], start: 15, length: 6 }, // typing
+            { type: 'class', modifiers: [], start: 29, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 34, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 44, length: 5 }, // Final
+            { type: 'class', modifiers: [], start: 51, length: 7 }, // TypeVar
+            // class A
+            { type: 'class', modifiers: ['declaration'], start: 67, length: 1 }, // A
+            // cvar
+            { type: 'property', modifiers: ['classMember'], start: 74, length: 4 }, // cvar
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 80, length: 3 }, // int
+            // __init__
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 97, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration'], start: 106, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration'], start: 112, length: 1 }, // f
+            { type: 'class', modifiers: [], start: 115, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 128, length: 3 }, // int
+            { type: 'parameter', modifiers: ['declaration'], start: 134, length: 1 }, // t
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 137, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 142, length: 3 }, // int
+            { type: 'selfParameter', modifiers: [], start: 157, length: 4 }, // self
+            { type: 'function', modifiers: ['readonly', 'classMember'], start: 162, length: 1 }, // f
+            { type: 'class', modifiers: [], start: 165, length: 5 }, // Final
+            { type: 'class', modifiers: [], start: 171, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 184, length: 3 }, // int
+            { type: 'parameter', modifiers: [], start: 192, length: 1 }, // f
+            { type: 'selfParameter', modifiers: [], start: 202, length: 4 }, // self
+            { type: 'class', modifiers: ['classMember', 'defaultLibrary', 'builtin'], start: 207, length: 1 }, // t
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 210, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 215, length: 3 }, // int
+            { type: 'parameter', modifiers: [], start: 222, length: 1 }, // t
+            // b
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 247, length: 1 }, // b
+            { type: 'decorator', modifiers: [], start: 229, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 230, length: 8 }, // property
+            { type: 'selfParameter', modifiers: ['declaration'], start: 249, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 258, length: 3 }, // int
+            { type: 'selfParameter', modifiers: [], start: 278, length: 4 }, // self
+            { type: 'function', modifiers: ['readonly', 'classMember'], start: 283, length: 1 }, // f
+            // b.setter
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 310, length: 1 }, // b
+            { type: 'decorator', modifiers: [], start: 292, length: 1 }, // @
+            { type: 'property', modifiers: ['classMember'], start: 293, length: 1 }, // b
+            { type: 'method', modifiers: ['classMember'], start: 295, length: 6 }, // setter
+            { type: 'selfParameter', modifiers: ['declaration'], start: 312, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration'], start: 318, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 325, length: 3 }, // int
+            // d
+            { type: 'method', modifiers: ['declaration', 'static', 'classMember'], start: 379, length: 1 }, // d
+            { type: 'decorator', modifiers: [], start: 357, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 358, length: 12 }, // staticmethod
+            { type: 'parameter', modifiers: ['declaration'], start: 381, length: 1 }, // i
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 384, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 392, length: 5 }, // float
+            { type: 'parameter', modifiers: [], start: 414, length: 1 }, // i
+            // __getattr__
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 431, length: 11 }, // __getattr__
+            { type: 'selfParameter', modifiers: ['declaration'], start: 443, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration'], start: 449, length: 4 }, // name
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 455, length: 3 }, // str
+            { type: 'class', modifiers: [], start: 463, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 476, length: 5 }, // float
+            // ufun0
+            { type: 'function', modifiers: ['declaration'], start: 517, length: 5 }, // ufun0
+            { type: 'parameter', modifiers: ['declaration'], start: 523, length: 1 }, // a
+            { type: 'parameter', modifiers: [], start: 531, length: 1 }, // a
+            { type: 'parameter', modifiers: [], start: 535, length: 1 }, // a
+            // ufun1
+            { type: 'function', modifiers: ['declaration'], start: 555, length: 5 }, // ufun1
+            { type: 'parameter', modifiers: ['declaration'], start: 561, length: 1 }, // b
+            { type: 'class', modifiers: [], start: 564, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 572, length: 3 }, // Any
+            { type: 'parameter', modifiers: [], start: 588, length: 1 }, // b
+            // a = A(lambda: int(A.d(3)), int)
+            { type: 'variable', modifiers: [], start: 611, length: 1 }, // a
+            { type: 'class', modifiers: [], start: 615, length: 1 }, // A
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 625, length: 3 }, // int
+            { type: 'class', modifiers: [], start: 629, length: 1 }, // A
+            { type: 'method', modifiers: ['static', 'classMember'], start: 631, length: 1 }, // d
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 638, length: 3 }, // int
+            // print(a.b, a.f, os.path.pardir)
+            { type: 'function', modifiers: ['defaultLibrary', 'builtin'], start: 643, length: 5 }, // print
+            { type: 'variable', modifiers: [], start: 649, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember'], start: 651, length: 1 }, // b
+            { type: 'variable', modifiers: [], start: 654, length: 1 }, // a
+            { type: 'function', modifiers: ['readonly', 'classMember'], start: 656, length: 1 }, // f
+            { type: 'namespace', modifiers: [], start: 659, length: 2 }, // os
+            { type: 'namespace', modifiers: [], start: 662, length: 4 }, // path
+            { type: 'variable', modifiers: [], start: 667, length: 6 }, // pardir
+            // c = a.t
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 675, length: 1 }, // a
+            { type: 'variable', modifiers: [], start: 679, length: 1 }, // a
+            { type: 'class', modifiers: ['classMember', 'defaultLibrary', 'builtin'], start: 681, length: 1 }, // t
+            // d: Any = a.abc()
+            { type: 'variable', modifiers: [], start: 683, length: 1 }, // d
+            { type: 'class', modifiers: [], start: 686, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 692, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember', 'readonly'], start: 694, length: 3 }, // abc
+            // A.cvar = 4 + d.is_integer()
+            { type: 'class', modifiers: [], start: 700, length: 1 }, // A
+            { type: 'property', modifiers: ['classMember'], start: 702, length: 4 }, // cvar
+            { type: 'variable', modifiers: [], start: 713, length: 1 }, // d
+            // e = ufun1(12)
+            { type: 'variable', modifiers: [], start: 728, length: 1 }, // e
+            { type: 'function', modifiers: [], start: 732, length: 5 }, // ufun1
+        ]);
+    });
+
     test('enum', () => {
         const result = semanticTokenizeSampleFile('enum.py');
         expect(result).toStrictEqual([
@@ -81,29 +192,29 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: [], start: 89, length: 5 },
             // Foo
             { type: 'class', modifiers: ['declaration'], start: 107, length: 3 },
-            { type: 'method', modifiers: ['declaration'], start: 120, length: 8 },
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 120, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 129, length: 4 },
             { type: 'selfParameter', modifiers: [], start: 144, length: 4 },
-            { type: 'property', modifiers: ['readonly'], start: 149, length: 8 },
+            { type: 'property', modifiers: ['readonly', 'classMember'], start: 149, length: 8 },
             { type: 'class', modifiers: [], start: 159, length: 5 },
-            { type: 'property', modifiers: ['declaration', 'readonly'], start: 193, length: 3 },
+            { type: 'property', modifiers: ['declaration', 'classMember', 'readonly'], start: 193, length: 3 },
             { type: 'decorator', modifiers: [], start: 175, length: 1 },
             { type: 'decorator', modifiers: [], start: 176, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 197, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 206, length: 3 },
-            { type: 'property', modifiers: ['declaration'], start: 238, length: 3 },
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 238, length: 3 },
             { type: 'decorator', modifiers: [], start: 220, length: 1 },
             { type: 'decorator', modifiers: [], start: 221, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 242, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 251, length: 3 },
-            { type: 'property', modifiers: ['declaration'], start: 284, length: 3 },
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 284, length: 3 },
             { type: 'decorator', modifiers: [], start: 264, length: 1 },
-            { type: 'property', modifiers: [], start: 265, length: 3 },
-            { type: 'method', modifiers: [], start: 269, length: 6 },
+            { type: 'property', modifiers: ['classMember'], start: 265, length: 3 },
+            { type: 'method', modifiers: ['classMember'], start: 269, length: 6 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 288, length: 4 },
             { type: 'parameter', modifiers: ['declaration'], start: 294, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 301, length: 3 },
-            { type: 'method', modifiers: ['declaration'], start: 320, length: 11 },
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 320, length: 11 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 332, length: 4 },
             { type: 'parameter', modifiers: ['declaration'], start: 338, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 344, length: 3 },
@@ -111,17 +222,17 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: ['readonly'], start: 374, length: 2 },
             // Bar
             { type: 'class', modifiers: ['declaration'], start: 385, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 394, length: 3 },
+            { type: 'property', modifiers: ['readonly', 'classMember'], start: 394, length: 3 },
             { type: 'class', modifiers: [], start: 399, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 405, length: 3 },
-            { type: 'method', modifiers: ['declaration'], start: 425, length: 11 },
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 425, length: 11 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 437, length: 4 },
             { type: 'parameter', modifiers: ['declaration'], start: 443, length: 4 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 449, length: 3 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 457, length: 3 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 477, length: 3 },
             { type: 'parameter', modifiers: [], start: 481, length: 4 },
-            { type: 'method', modifiers: ['declaration'], start: 510, length: 11 },
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 510, length: 11 },
             { type: 'decorator', modifiers: [], start: 492, length: 1 },
             { type: 'decorator', modifiers: [], start: 493, length: 8 },
             { type: 'selfParameter', modifiers: ['declaration'], start: 522, length: 4 },
@@ -131,31 +242,31 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 546, length: 3 },
             // Foo().foo
             { type: 'class', modifiers: [], start: 567, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 573, length: 3 },
+            { type: 'property', modifiers: ['classMember', 'readonly'], start: 573, length: 3 },
             // Foo().bar
             { type: 'class', modifiers: [], start: 577, length: 3 },
-            { type: 'property', modifiers: [], start: 583, length: 3 },
+            { type: 'property', modifiers: ['classMember'], start: 583, length: 3 },
             // baz = Foo()
             { type: 'variable', modifiers: [], start: 588, length: 3 },
             { type: 'class', modifiers: [], start: 594, length: 3 },
             // _ = baz.foo
             { type: 'variable', modifiers: [], start: 600, length: 1 },
             { type: 'variable', modifiers: [], start: 604, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 608, length: 3 },
+            { type: 'property', modifiers: ['classMember', 'readonly'], start: 608, length: 3 },
             // meaning = baz.constant
             { type: 'variable', modifiers: [], start: 612, length: 7 },
             { type: 'variable', modifiers: [], start: 622, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 626, length: 8 },
+            { type: 'property', modifiers: ['readonly', 'classMember'], start: 626, length: 8 },
             // bam = baz.pi + Bar.fir
             { type: 'variable', modifiers: [], start: 635, length: 3 },
             { type: 'variable', modifiers: [], start: 641, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 645, length: 2 },
+            { type: 'property', modifiers: ['readonly', 'classMember'], start: 645, length: 2 },
             { type: 'class', modifiers: [], start: 650, length: 3 },
-            { type: 'property', modifiers: ['readonly'], start: 654, length: 3 },
+            { type: 'property', modifiers: ['readonly', 'classMember'], start: 654, length: 3 },
             // bar = Bar().beef
             { type: 'variable', modifiers: [], start: 658, length: 3 },
             { type: 'class', modifiers: [], start: 664, length: 3 },
-            { type: 'property', modifiers: [], start: 670, length: 4 },
+            { type: 'property', modifiers: ['classMember'], start: 670, length: 4 },
         ]);
     });
 
@@ -258,11 +369,11 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'decorator', modifiers: [], start: 124, length: 1 }, // @
             { type: 'namespace', modifiers: [], start: 125, length: 11 }, // dataclasses
             { type: 'function', modifiers: [], start: 137, length: 9 }, // dataclass
-            { type: 'method', modifiers: ['declaration'], start: 177, length: 6 }, // method
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 177, length: 6 }, // method
             { type: 'decorator', modifiers: [], start: 162, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 163, length: 5 }, // final
             { type: 'selfParameter', modifiers: ['declaration'], start: 184, length: 4 }, // self
-            { type: 'method', modifiers: ['declaration', 'static'], start: 221, length: 6 }, // static
+            { type: 'method', modifiers: ['declaration', 'static', 'classMember'], start: 221, length: 6 }, // static
             { type: 'decorator', modifiers: [], start: 199, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 200, length: 12 }, // staticmethod
 
@@ -271,7 +382,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'namespace', modifiers: [], start: 237, length: 9 }, // functools
             { type: 'function', modifiers: [], start: 247, length: 5 }, // cache
             { type: 'class', modifiers: [], start: 272, length: 1 }, // B
-            { type: 'method', modifiers: ['static'], start: 274, length: 6 }, // static
+            { type: 'method', modifiers: ['static', 'classMember'], start: 274, length: 6 }, // static
         ]);
     });
 
@@ -280,13 +391,13 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             // method
             { type: 'class', modifiers: ['declaration'], start: 6, length: 1 }, // C
-            { type: 'method', modifiers: ['declaration'], start: 17, length: 8 }, // __init__
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 17, length: 8 }, // __init__
             { type: 'selfParameter', modifiers: ['declaration'], start: 26, length: 4 }, // self
             { type: 'parameter', modifiers: ['declaration'], start: 32, length: 1 }, // x
             { type: 'selfParameter', modifiers: [], start: 44, length: 4 }, // self
-            { type: 'property', modifiers: [], start: 49, length: 1 }, // x
+            { type: 'property', modifiers: ['classMember'], start: 49, length: 1 }, // x
             { type: 'parameter', modifiers: [], start: 53, length: 1 }, // x
-            { type: 'method', modifiers: ['declaration'], start: 81, length: 1 }, // m
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 81, length: 1 }, // m
             { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 61, length: 11 }, // classmethod
             { type: 'clsParameter', modifiers: ['declaration'], start: 83, length: 3 }, // cls
