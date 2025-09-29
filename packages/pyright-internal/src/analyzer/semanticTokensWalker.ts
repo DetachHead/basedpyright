@@ -521,18 +521,22 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Special handling for the right-hand side of a member accesses when there are no declarations
         if (!decl && node.parent?.nodeType === ParseNodeType.MemberAccess && node.parent.d.member === node) {
-            // Either case that is checked later only applies to class members
-            modifiers.push(CustomSemanticTokenModifiers.classMember);
+            // Check if the left-hand side is a class and add `classMember` if so
+            if (this._getType(node.parent.d.leftExpr)?.category === TypeCategory.Class) {
+                modifiers.push(CustomSemanticTokenModifiers.classMember);
+            }
 
             // Check whether the member access uses “__getattr__” or “__getattribute__”
             // and the resulting type is a function type
-            // For consistency with other callable attributes, these are highlighted like attributes
             const access = this._getMagicAttributeAccess(node.parent);
             if (access?.get) {
                 if (!access.set) {
                     modifiers.push(SemanticTokenModifiers.readonly);
                 }
-                return SemanticTokenTypes.property;
+                // Return the token type `function` or `method`
+                return functionType && functionType.shared.methodClass
+                    ? SemanticTokenTypes.method
+                    : SemanticTokenTypes.function;
             }
 
             // Check whether the left-hand side is a class instance, in which case the function
