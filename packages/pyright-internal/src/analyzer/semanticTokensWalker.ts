@@ -7,6 +7,7 @@ import {
     isAny,
     isClass,
     isFunction,
+    isInstantiableClass,
     isModule,
     isNever,
     isOverloaded,
@@ -56,6 +57,11 @@ interface MagicAttributeAccess {
     set: ClassMember | undefined;
 }
 
+interface ClassMemberAccess {
+    readOnly: boolean;
+    isClassMember?: boolean;
+}
+
 export class SemanticTokensWalker extends ParseTreeWalker {
     builtinModules = new Set<string>(['builtins', '__builtins__']);
     items: SemanticTokenItem[] = [];
@@ -68,7 +74,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         const modifiers: TokenModifiers[] = [SemanticTokenModifiers.declaration];
         const classType = this._evaluator.getTypeOfClass(node)?.classType;
         const tokenType = classType
-            ? this._getClassTokenType(classType, decls, modifiers, false)
+            ? this._getClassTokenType(node.d.name, classType, decls, modifiers, false)
             : SemanticTokenTypes.class;
         this._addItemForNameNode(node.d.name, tokenType, modifiers);
         return super.visitClass(node);
@@ -193,7 +199,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 // If there is no type information, use “class” by default (which is what Pylance uses)
                 let tokenType: TokenTypes = SemanticTokenTypes.class;
                 if (type?.category === TypeCategory.Class) {
-                    tokenType = this._getClassTokenType(type, declarations, modifiers) ?? tokenType;
+                    tokenType = this._getClassTokenType(node, type, declarations, modifiers) ?? tokenType;
                 }
                 this._addItemForNameNode(node, tokenType, modifiers);
                 return;
@@ -249,7 +255,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 // type annotations handled by visitTypeAnnotation
                 if (!TypeBase.isInstance(type)) {
                     const modifiers: TokenModifiers[] = [];
-                    const tokenType = this._getClassTokenType(type, declarations, modifiers);
+                    const tokenType = this._getClassTokenType(node, type, declarations, modifiers);
                     this._addItemForNameNode(node, tokenType, modifiers);
                     return;
                 }
@@ -286,14 +292,79 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return type;
     }
 
+    private _getClassMemberAccessInfo(node: NameNode, declarations: Declaration[]): ClassMemberAccess | undefined {
+        // Mark as a class member if any declaration is within a class
+        const enclosingClass = declarations
+            .map((decl) => getEnclosingClass(decl.node, /*stopAtFunction*/ true))
+            .find((node) => node);
+        if (enclosingClass) {
+            // If every declaration has a property type, but does not contain fset information, mark as “readonly”
+            const readOnly = declarations.every((d) => this._missingPropertySetter(d));
+            // If the enclosing class has a member of the given name, return that information
+            const classType = this._getType(enclosingClass.d.name);
+            const isClassMember = !!classType && !!isClass(classType) && !!lookUpClassMember(classType, node.d.value);
+            return { readOnly, isClassMember };
+        }
+
+        // A symbol on the right-hand side of a member access whose left-hand side is a class
+        // is interpreted as a class member
+        const parent = node.parent;
+        if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
+            let leftType = this._getType(parent.d.leftExpr);
+            // If the type of the left-hand side is a type variable, try to get the bound type
+            if (leftType && isTypeVar(leftType) && leftType.shared.boundType) {
+                leftType = leftType.shared.boundType;
+            }
+            if (leftType && isClass(leftType)) {
+                let readOnly = false;
+                let isClassMember = false;
+                // This is quite a primitive heuristic for determining member accesses through magic methods,
+                // but since it is only used to check for read-only access, it should be sufficient
+                if (declarations.length === 0) {
+                    // If there are no declarations, we check whether the access uses magic methods
+                    // To determine whether the magic method access is read-only, check if there is
+                    // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
+                    const access = this._getMagicAttributeAccess(parent);
+                    if (access && access.get && !access.set) {
+                        readOnly = true;
+                    }
+                } else if (isInstantiableClass(leftType)) {
+                    isClassMember = true;
+                }
+                return { readOnly, isClassMember };
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * @returns Whether class member access is taking place
+     */
+    private _applyClassMemberAccessModifiers(
+        node: NameNode,
+        declarations: Declaration[],
+        modifiers: TokenModifiers[],
+        alreadyReadOnly: boolean = false
+    ): boolean {
+        const memberInfo = this._getClassMemberAccessInfo(node, declarations);
+        if (memberInfo) {
+            if (!alreadyReadOnly && memberInfo.readOnly) modifiers.push(SemanticTokenModifiers.readonly);
+            modifiers.push(CustomSemanticTokenModifiers.classMember);
+            if (memberInfo.isClassMember) modifiers.push(SemanticTokenModifiers.static);
+        }
+        return !!memberInfo;
+    }
+
     /**
      * @param checkBuiltIn can be set to `false` to disable checking whether the class is built-in
      */
     private _getClassTokenType(
+        node: NameNode,
         classType: ClassType,
         declarations: Declaration[],
         modifiers: TokenModifiers[],
-        checkBuiltIn: boolean = true
+        checkBuiltIn: boolean = true,
+        applyClassMemberAccess: boolean = true
     ): SemanticTokenTypes {
         if (checkBuiltIn) {
             // Exclude type aliases:
@@ -314,6 +385,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             if (isBuiltIn) modifiers.push(SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin);
         }
 
+        if (applyClassMemberAccess) this._applyClassMemberAccessModifiers(node, declarations, modifiers);
         return ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
     }
 
@@ -345,8 +417,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Track whether “readonly” has already been added to “modifiers”
         let readOnly = false;
-        // Track whether the variable is a class member, i.e. a class/instance variable
-        let isClassMember = false;
 
         // Mark as “readonly” if one of the declarations is final
         if (declarations.some((decl) => this._isFinal(decl))) {
@@ -354,43 +424,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             modifiers.push(SemanticTokenModifiers.readonly);
         }
 
-        // Mark as a class member if any declaration is within a class
-        const enclosingClass = declarations.some((decl) => getEnclosingClass(decl.node, /*stopAtFunction*/ true));
-        if (enclosingClass) {
-            // if every declaration has a property type, but does not contain fset information, mark as “readonly”
-            if (!readOnly && declarations.every((d) => this._missingPropertySetter(d))) {
-                modifiers.push(SemanticTokenModifiers.readonly);
-            }
-            isClassMember = true;
-            modifiers.push(CustomSemanticTokenModifiers.classMember);
-        }
-
-        // A variable on the right-hand side of a member access whose left-hand side is a class
-        // is interpreted as a class member
-        const parent = node.parent;
-        if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
-            let leftType = this._getType(parent.d.leftExpr);
-            if (leftType && isTypeVar(leftType) && leftType.shared.boundType) {
-                leftType = leftType.shared.boundType;
-            }
-            if (leftType && isClass(leftType)) {
-                // This is quite a primitive heuristic for determining member accesses through magic methods,
-                // but since it is only used to check for read-only access, it should be sufficient
-                if (declarations.length === 0) {
-                    // If there are no declarations, we check whether the access uses magic methods
-                    // To determine whether the magic method access is read-only, check if there is
-                    // a magic getter (__getattr__ or __getattribute__) but no magic setter (__setattr__)
-                    const access = this._getMagicAttributeAccess(parent);
-                    if (!readOnly && access && access.get && !access.set) {
-                        modifiers.push(SemanticTokenModifiers.readonly);
-                    }
-                }
-                if (!isClassMember) {
-                    isClassMember = true;
-                    modifiers.push(CustomSemanticTokenModifiers.classMember);
-                }
-            }
-        }
+        // Store whether the variable is a class member, i.e. a class/instance variable
+        const isClassMember = this._applyClassMemberAccessModifiers(node, declarations, modifiers, readOnly);
 
         // Handle variables that have been assigned a “TypeVar”
         // There are weird cases in which bogus type variables are synthesized
@@ -415,7 +450,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 TypeCategory.TypeVar,
             ].includes(type.category)
         ) {
-            if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
+            if (isClass(type)) return this._getClassTokenType(node, type, declarations, modifiers, true, false);
             // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
             return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
         }
