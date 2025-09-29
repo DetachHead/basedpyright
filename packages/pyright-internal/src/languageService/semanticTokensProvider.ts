@@ -19,6 +19,8 @@ export enum CustomSemanticTokenTypes {
 
 export enum CustomSemanticTokenModifiers {
     builtin = 'builtin', // parity with pylance
+    // custom modifier to distinguish class/instance variables which store a type/function/type variable/etc.
+    classMember = 'classMember',
 }
 
 export const tokenTypes: string[] = [
@@ -47,6 +49,7 @@ export const tokenModifiers: string[] = [
     SemanticTokenModifiers.async,
     SemanticTokenModifiers.defaultLibrary,
     CustomSemanticTokenModifiers.builtin,
+    CustomSemanticTokenModifiers.classMember,
 ];
 
 export const SemanticTokensProviderLegend = {

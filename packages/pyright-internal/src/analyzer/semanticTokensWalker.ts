@@ -164,7 +164,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 return;
             }
             case DeclarationType.TypeAlias: {
-                // Pylance uses “class” for type aliases
+                // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
                 const type = this._getType(node);
                 this._addItemForNameNode(
                     node,
@@ -276,7 +276,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
     private _getType(node: ExpressionNode): Type | undefined {
         let type = this._evaluator.getType(node);
         if (type) return type;
-        // In the case of “from a import b as c”, “b” sometimes ends up with an incorrect type,
+        // In the case of “from a import b as c”, “b” sometimes ends up without a type,
         // e.g. “path” in “from os import path as something”, but the alias (“c”) ends up with
         // the real type, which is used instead
         const parent = node.parent;
@@ -345,25 +345,28 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Track whether “readonly” has already been added to “modifiers”
         let readOnly = false;
+        // Track whether the variable is a class member, i.e. a class/instance variable
+        let isClassMember = false;
+
         // Mark as “readonly” if one of the declarations is final
         if (declarations.some((decl) => this._isFinal(decl))) {
             readOnly = true;
             modifiers.push(SemanticTokenModifiers.readonly);
         }
 
-        // Mark as property if any declaration is within a class
-        // “property” is used even for class variables because there is no more appropriate token type
-        // (see https://github.com/DetachHead/basedpyright/issues/482#issuecomment-3172601227)
+        // Mark as a class member if any declaration is within a class
         const enclosingClass = declarations.some((decl) => getEnclosingClass(decl.node, /*stopAtFunction*/ true));
         if (enclosingClass) {
             // if every declaration has a property type, but does not contain fset information, mark as “readonly”
             if (!readOnly && declarations.every((d) => this._missingPropertySetter(d))) {
                 modifiers.push(SemanticTokenModifiers.readonly);
             }
-            return SemanticTokenTypes.property;
+            isClassMember = true;
+            modifiers.push(CustomSemanticTokenModifiers.classMember);
         }
 
-        // All member accesses to variables are interpreted as properties
+        // A variable on the right-hand side of a member access whose left-hand side is a class
+        // is interpreted as a class member
         const parent = node.parent;
         if (parent?.nodeType === ParseNodeType.MemberAccess && parent.d.member === node) {
             let leftType = this._getType(parent.d.leftExpr);
@@ -382,7 +385,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         modifiers.push(SemanticTokenModifiers.readonly);
                     }
                 }
-                return SemanticTokenTypes.property;
+                if (!isClassMember) {
+                    isClassMember = true;
+                    modifiers.push(CustomSemanticTokenModifiers.classMember);
+                }
             }
         }
 
@@ -410,7 +416,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             ].includes(type.category)
         ) {
             if (isClass(type)) return this._getClassTokenType(type, declarations, modifiers);
-            // Pylance uses “class” for type aliases, we use “type” for unions
+            // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
             return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
         }
 
@@ -435,7 +441,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             if (tokenType) return tokenType;
         }
 
-        return SemanticTokenTypes.variable;
+        // If the variable is a class member and not handled by any other case, use “property”
+        return isClassMember ? SemanticTokenTypes.property : SemanticTokenTypes.variable;
     }
 
     // For a given attribute access, gather information about the magic attribute methods
@@ -495,7 +502,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             if (!functionType) functionType = this._evaluator.getTypeOfFunction(decl.node)?.functionType;
             if (functionType && FunctionType.isStaticMethod(functionType))
                 modifiers.push(SemanticTokenModifiers.static);
+
             if (decl.isMethod) {
+                // A method is, by definition, a class member
+                modifiers.push(CustomSemanticTokenModifiers.classMember);
+
                 const declaredType = this._evaluator.getTypeForDeclaration(decl)?.type;
                 // the canonical check for properties (used e.g. in the hover message)
                 if (declaredType && isMaybeDescriptorInstance(declaredType)) {
@@ -510,6 +521,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Special handling for the right-hand side of a member accesses when there are no declarations
         if (!decl && node.parent?.nodeType === ParseNodeType.MemberAccess && node.parent.d.member === node) {
+            // Either case that is checked later only applies to class members
+            modifiers.push(CustomSemanticTokenModifiers.classMember);
+
             // Check whether the member access uses “__getattr__” or “__getattribute__”
             // and the resulting type is a function type
             // For consistency with other callable attributes, these are highlighted like attributes
