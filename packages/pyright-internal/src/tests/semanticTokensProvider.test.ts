@@ -23,7 +23,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             // class A
             { type: 'class', modifiers: ['declaration'], start: 67, length: 1 }, // A
             // cvar
-            { type: 'property', modifiers: ['classMember'], start: 74, length: 4 }, // cvar
+            { type: 'property', modifiers: ['classMember', 'static'], start: 74, length: 4 }, // cvar
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 80, length: 3 }, // int
             // __init__
             { type: 'method', modifiers: ['declaration', 'classMember'], start: 97, length: 8 }, // __init__
@@ -111,10 +111,10 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 683, length: 1 }, // d
             { type: 'class', modifiers: [], start: 686, length: 3 }, // Any
             { type: 'variable', modifiers: [], start: 692, length: 1 }, // a
-            { type: 'property', modifiers: ['classMember', 'readonly'], start: 694, length: 3 }, // abc
+            { type: 'function', modifiers: ['classMember', 'readonly'], start: 694, length: 3 }, // abc
             // A.cvar = 4 + d.is_integer()
             { type: 'class', modifiers: [], start: 700, length: 1 }, // A
-            { type: 'property', modifiers: ['classMember'], start: 702, length: 4 }, // cvar
+            { type: 'property', modifiers: ['classMember', 'static'], start: 702, length: 4 }, // cvar
             { type: 'variable', modifiers: [], start: 713, length: 1 }, // d
             // e = ufun1(12)
             { type: 'variable', modifiers: [], start: 728, length: 1 }, // e
@@ -222,7 +222,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: ['readonly'], start: 374, length: 2 },
             // Bar
             { type: 'class', modifiers: ['declaration'], start: 385, length: 3 },
-            { type: 'property', modifiers: ['readonly', 'classMember'], start: 394, length: 3 },
+            { type: 'property', modifiers: ['readonly', 'classMember', 'static'], start: 394, length: 3 },
             { type: 'class', modifiers: [], start: 399, length: 5 },
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 405, length: 3 },
             { type: 'method', modifiers: ['declaration', 'classMember'], start: 425, length: 11 },
@@ -262,7 +262,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'variable', modifiers: [], start: 641, length: 3 },
             { type: 'property', modifiers: ['readonly', 'classMember'], start: 645, length: 2 },
             { type: 'class', modifiers: [], start: 650, length: 3 },
-            { type: 'property', modifiers: ['readonly', 'classMember'], start: 654, length: 3 },
+            { type: 'property', modifiers: ['readonly', 'classMember', 'static'], start: 654, length: 3 },
             // bar = Bar().beef
             { type: 'variable', modifiers: [], start: 658, length: 3 },
             { type: 'class', modifiers: [], start: 664, length: 3 },
