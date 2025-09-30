@@ -434,13 +434,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.typeParameter;
         }
 
-        // Detect type aliases
-        // The “typeAliasInfo” condition is required for aliases to typing-only constructs such as “Callable”
-        // Module aliases also provide “typeAliasInfo” (for some reason), so an additional check is necessary
-        // This follows Pylance’s somewhat peculiar rules: Variables are marked as type aliases very liberally,
-        // but “property” etc. take precedence
+        // Detect variables that store a type (i.e. something that can be instantiated)
+        // and do not fall into a category that is handled elsewhere
         if (
-            (type.props?.typeAliasInfo?.shared.isTypeAliasType || TypeBase.isInstantiable(type)) &&
+            TypeBase.isInstantiable(type) &&
             ![
                 TypeCategory.Unbound,
                 TypeCategory.Unknown,
