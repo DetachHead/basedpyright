@@ -64,6 +64,12 @@ export function isEnumClassWithMembers(evaluator: TypeEvaluator, classType: Clas
     let definesMember = false;
 
     ClassType.getSymbolTable(classType).forEach((symbol, name) => {
+        if (definesMember) {
+            // This short-circuits the forEach loop since once we've found
+            // one member, we know the answer.
+            return;
+        }
+
         const symbolType = transformTypeForEnumMember(evaluator, classType, name);
         if (
             symbolType &&
