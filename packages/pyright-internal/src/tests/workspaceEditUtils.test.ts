@@ -19,6 +19,7 @@ import { AnalyzerServiceExecutor } from '../languageService/analyzerServiceExecu
 import { TestLanguageService } from './harness/fourslash/testLanguageService';
 import { TestState, parseAndGetTestState } from './harness/fourslash/testState';
 import { verifyWorkspaceEdit } from './harness/fourslash/workspaceEditTestUtils';
+import { convertUriToLspUriString } from '../common/uri/uriUtils';
 
 test('test applyWorkspaceEdits changes', async () => {
     const code = `
@@ -361,7 +362,7 @@ test('test convertToWorkspaceEdit omits annotationId without changeAnnotations',
         ],
     };
 
-    const ws = convertToWorkspaceEdit(state.workspace.service.fs, editActions);
+    const ws = convertToWorkspaceEdit(convertUriToLspUriString, state.workspace.service.fs, editActions);
     assert.strictEqual(ws.changeAnnotations, undefined);
     const tde = ws.documentChanges!.find((d) => TextDocumentEdit.is(d)) as TextDocumentEdit;
     const anyEdit = tde.edits[0] as any;
@@ -418,7 +419,13 @@ test('test convertToWorkspaceEdit includes annotationId with changeAnnotations',
         default: { label: 'label', description: 'desc', needsConfirmation: false },
     };
 
-    const ws = convertToWorkspaceEdit(state.workspace.service.fs, editActions, changeAnnotations, 'default');
+    const ws = convertToWorkspaceEdit(
+        convertUriToLspUriString,
+        state.workspace.service.fs,
+        editActions,
+        changeAnnotations,
+        'default'
+    );
     assert.ok(ws.changeAnnotations);
     assert.ok(ws.changeAnnotations!['default']);
     const tde = ws.documentChanges!.find((d) => TextDocumentEdit.is(d)) as TextDocumentEdit;

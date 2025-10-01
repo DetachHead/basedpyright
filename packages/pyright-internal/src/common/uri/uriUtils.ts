@@ -389,6 +389,16 @@ export function getRootUri(csdOrSp: CaseSensitivityDetector | ServiceProvider): 
     return undefined;
 }
 
+/**
+ * Convert to a URI string that the LSP client understands (mapped files are only local to the server).
+ *
+ * if you have a language server instance, use the `convertUriToLspUriString` method there instead as it
+ * has additional logic for handling notebooks.
+ */
+export function convertUriToLspUriString(fs: ReadOnlyFileSystem, uri: Uri): string {
+    return fs.getOriginalUri(uri).toString();
+}
+
 export namespace UriEx {
     export function file(path: string): Uri;
     export function file(path: string, isCaseSensitive: boolean, checkRelative?: boolean): Uri;

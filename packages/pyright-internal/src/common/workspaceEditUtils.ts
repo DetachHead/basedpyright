@@ -30,6 +30,8 @@ import { TextRangeCollection } from './textRangeCollection';
 import { Uri } from './uri/uri';
 import { LanguageServerInterface } from './languageServerInterface';
 
+type LspUriConverter = (fs: ReadOnlyFileSystem, uri: Uri) => string;
+
 export function convertToTextEdits(editActions: TextEditAction[]): TextEdit[] {
     return editActions.map((editAction) => ({
         range: editAction.range,
@@ -48,17 +50,17 @@ export function convertToFileTextEdits(fileUri: Uri, editActions: TextEditAction
 }
 
 export function convertToWorkspaceEdit(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditAction[]
 ): WorkspaceEdit;
 export function convertToWorkspaceEdit(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditActions
 ): WorkspaceEdit;
 export function convertToWorkspaceEdit(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditActions,
     changeAnnotations: {
@@ -67,7 +69,7 @@ export function convertToWorkspaceEdit(
     defaultAnnotationId: string
 ): WorkspaceEdit;
 export function convertToWorkspaceEdit(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditActions | FileEditAction[],
     changeAnnotations?: {
@@ -76,20 +78,20 @@ export function convertToWorkspaceEdit(
     defaultAnnotationId = 'default'
 ): WorkspaceEdit {
     if (isArray(edits)) {
-        return _convertToWorkspaceEditWithChanges(ls, fs, edits);
+        return _convertToWorkspaceEditWithChanges(uriConverter, fs, edits);
     }
 
-    return _convertToWorkspaceEditWithDocumentChanges(ls, fs, edits, changeAnnotations, defaultAnnotationId);
+    return _convertToWorkspaceEditWithDocumentChanges(uriConverter, fs, edits, changeAnnotations, defaultAnnotationId);
 }
 
 export function appendToWorkspaceEdit(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditAction[],
     workspaceEdit: WorkspaceEdit
 ) {
     edits.forEach((edit) => {
-        const uri = ls.convertUriToLspUriString(fs, edit.fileUri);
+        const uri = uriConverter(fs, edit.fileUri);
         workspaceEdit.changes![uri] = workspaceEdit.changes![uri] || [];
         workspaceEdit.changes![uri].push({ range: edit.range, newText: edit.replacementText });
     });
@@ -219,7 +221,7 @@ export function generateWorkspaceEdit(
 }
 
 function _convertToWorkspaceEditWithChanges(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     edits: FileEditAction[]
 ) {
@@ -227,12 +229,12 @@ function _convertToWorkspaceEditWithChanges(
         changes: {},
     };
 
-    appendToWorkspaceEdit(ls, fs, edits, workspaceEdit);
+    appendToWorkspaceEdit(uriConverter, fs, edits, workspaceEdit);
     return workspaceEdit;
 }
 
 function _convertToWorkspaceEditWithDocumentChanges(
-    ls: LanguageServerInterface,
+    uriConverter: LspUriConverter,
     fs: ReadOnlyFileSystem,
     editActions: FileEditActions,
     changeAnnotations?: {
@@ -252,7 +254,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'create':
                 workspaceEdit.documentChanges!.push(
                     CreateFile.create(
-                        ls.convertUriToLspUriString(fs, operation.fileUri),
+                        uriConverter(fs, operation.fileUri),
                         /* options */ undefined,
                         changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )
@@ -267,7 +269,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
     }
 
     // Text edit's file path must refer to original file paths unless it is a new file just created.
-    const mapPerFile = createMapFromItems(editActions.edits, (e) => ls.convertUriToLspUriString(fs, e.fileUri));
+    const mapPerFile = createMapFromItems(editActions.edits, (e) => uriConverter(fs, e.fileUri));
     for (const [uri, value] of mapPerFile) {
         workspaceEdit.documentChanges!.push(
             TextDocumentEdit.create(
@@ -290,8 +292,8 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'rename':
                 workspaceEdit.documentChanges!.push(
                     RenameFile.create(
-                        ls.convertUriToLspUriString(fs, operation.oldFileUri),
-                        ls.convertUriToLspUriString(fs, operation.newFileUri),
+                        uriConverter(fs, operation.oldFileUri),
+                        uriConverter(fs, operation.newFileUri),
                         /* options */ undefined,
                         changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )
@@ -300,7 +302,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
             case 'delete':
                 workspaceEdit.documentChanges!.push(
                     DeleteFile.create(
-                        ls.convertUriToLspUriString(fs, operation.fileUri),
+                        uriConverter(fs, operation.fileUri),
                         /* options */ undefined,
                         changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )

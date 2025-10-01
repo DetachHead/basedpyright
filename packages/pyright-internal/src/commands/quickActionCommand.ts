@@ -33,7 +33,7 @@ export class QuickActionCommand implements ServerCommand {
             }, token);
 
             return convertToWorkspaceEdit(
-                this._ls,
+                this._ls.convertUriToLspUriString,
                 workspace.service.fs,
                 convertToFileTextEdits(docUri, editActions ?? [])
             );

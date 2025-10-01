@@ -124,7 +124,7 @@ export class CodeActionProvider {
                     continue;
                 }
                 const workspaceEdit = convertToWorkspaceEdit(
-                    ls,
+                    ls.convertUriToLspUriString,
                     completer.importResolver.fileSystem,
                     convertToFileTextEdits(fileUri, convertToTextEditActions(textEdits))
                 );
@@ -201,7 +201,7 @@ export class CodeActionProvider {
                 CodeAction.create(
                     title,
                     convertToWorkspaceEdit(
-                        ls,
+                        ls.convertUriToLspUriString,
                         fs,
                         convertToFileTextEdits(
                             fileUri,

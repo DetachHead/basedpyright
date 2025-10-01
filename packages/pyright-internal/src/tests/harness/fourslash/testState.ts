@@ -1545,7 +1545,10 @@ export class TestState {
             ).renameSymbol(expected.newName, /* isDefaultWorkspace */ false, isUntitled);
 
             verifyWorkspaceEdit(
-                convertToWorkspaceEdit(ls, this.program.fileSystem, { edits: expected.changes, fileOperations: [] }),
+                convertToWorkspaceEdit(ls.convertUriToLspUriString, this.program.fileSystem, {
+                    edits: expected.changes,
+                    fileOperations: [],
+                }),
                 actual ?? { documentChanges: [] }
             );
         }

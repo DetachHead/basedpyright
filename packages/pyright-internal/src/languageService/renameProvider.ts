@@ -154,7 +154,10 @@ export class RenameProvider {
             });
         });
 
-        return convertToWorkspaceEdit(this._ls, this._program.fileSystem, { edits, fileOperations: [] });
+        return convertToWorkspaceEdit(this._ls.convertUriToLspUriString, this._program.fileSystem, {
+            edits,
+            fileOperations: [],
+        });
     }
 
     static getRenameSymbolMode(
