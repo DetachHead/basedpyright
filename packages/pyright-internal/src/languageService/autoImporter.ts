@@ -158,9 +158,9 @@ export function buildModuleSymbolsMap(program: ProgramView, files: readonly Sour
                         continue;
                     }
 
-                    if (declaration.type === DeclarationType.Alias && isUserCode(file)) {
+                    if (declaration.type === DeclarationType.Alias && isUserCode(file) && !symbol.isInDunderAll()) {
                         // We don't include import alias in auto import
-                        // for workspace files.
+                        // for workspace files, unless they're in '__all__'
                         continue;
                     }
 
