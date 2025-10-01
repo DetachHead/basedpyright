@@ -1649,7 +1649,7 @@
 <p>If an import statement targets a multi-part module name and does not use an alias, all modules within the multi-part module name are assumed to be loaded. For example, the statement <code>import a.b.c</code> is treated as though it is three back-to-back import statements: <code>import a</code>, <code>import a.b</code> and <code>import a.b.c</code>. This allows for subsequent use of all symbols in <code>a</code>, <code>a.b</code>, and <code>a.b.c</code>. If an alias is used (e.g. <code>import a.b.c as abc</code>), this is assumed to load only module <code>c</code>. A subsequent <code>import a</code> would not provide access to <code>a.b</code> or <code>a.b.c</code>.</p>
 </li>
 <li>
-<p>If an <code>__init__.py</code> file includes an import statement of the form <code>from .a import b</code>, the local variable <code>a</code> is assigned a reference to submodule <code>a</code>. This statement form is treated as though it is two back-to-back import statements: <code>from . import a</code> followed by <code>from .a import b</code>.</p>
+<p>If an <code>__init__.py</code> file includes an import statement of the form <code>from . import a</code>, the local variable <code>a</code> is assigned a reference to submodule <code>a</code>. Similarly, if an <code>__init__.py</code> file includes an import statement of the form <code>from .a import b</code>, the local variable <code>a</code> is assigned a reference to submodule <code>a</code>. This statement form is treated as though it is two back-to-back import statements: <code>from . import a</code> followed by <code>from .a import b</code>.</p>
 </li>
 </ol>
 <h3 id="unsupported-loader-side-effects">Unsupported Loader Side Effects</h3>
