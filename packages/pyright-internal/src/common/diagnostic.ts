@@ -29,10 +29,6 @@ export interface TaskListToken {
     priority: TaskListPriority;
 }
 
-export const enum ActionKind {
-    RenameShadowedFileAction = 'renameShadowedFile',
-}
-
 export const enum DiagnosticCategory {
     Error,
     Warning,
@@ -74,12 +70,6 @@ export interface DiagnosticWithinFile {
 export interface CreateTypeStubFileAction extends DiagnosticAction {
     action: Commands.createTypeStub;
     moduleName: string;
-}
-
-export interface RenameShadowedFileAction extends DiagnosticAction {
-    action: ActionKind.RenameShadowedFileAction;
-    oldUri: Uri;
-    newUri: Uri;
 }
 
 export interface ImportAction extends DiagnosticAction {

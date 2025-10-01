@@ -12,8 +12,7 @@
         "filesToAnalyzeCount": "{count} files to analyze",
         "filesToAnalyzeOne": "1 file to analyze",
         "findingReferences": "Finding references",
-        "organizeImports": "Organize Imports",
-        "renameShadowedFile": "Rename \"{oldFile}\" to \"{newFile}\""
+        "organizeImports": "Organize Imports"
     },
     "Completion": {
         "autoImportDetail": "Auto-import",
@@ -154,6 +153,7 @@
         },
         "classNotRuntimeSubscriptable": "Subscript for class \"{name}\" will generate runtime exception; enclose type expression in quotes",
         "classPatternBuiltInArgPositional": "Class pattern accepts only positional sub-pattern",
+        "classPatternNewType": "\"{type}\" cannot be used in a class pattern because it is defined using NewType",
         "classPatternPositionalArgCount": "Too many positional patterns for class \"{type}\"; expected {expected} but received {received}",
         "classPatternTypeAlias": "\"{type}\" cannot be used in a class pattern because it is a specialized type alias",
         "classPropertyDeprecated": "Class properties are deprecated in Python 3.11 and will not be supported in Python 3.13",
@@ -1234,10 +1234,6 @@
         "staticClsSelfParam": {
             "message": "Static methods should not take a \"self\" or \"cls\" parameter",
             "comment": "{Locked='self','cls'}"
-        },
-        "stdlibModuleOverridden": {
-            "message": "\"{path}\" is overriding the stdlib module \"{name}\"",
-            "comment": "{Locked='stdlib'}"
         },
         "stringNonAsciiBytes": {
             "message": "Non-ASCII character not allowed in bytes string literal",

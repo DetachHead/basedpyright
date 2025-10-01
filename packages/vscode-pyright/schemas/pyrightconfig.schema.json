@@ -500,11 +500,6 @@
       "title": "Controls reporting of 'match' statements that do not exhaustively match all possible values",
       "default": "none"
     },
-    "reportShadowedImports": {
-      "$ref": "#/definitions/diagnostic",
-      "title": "Controls reporting of shadowed imports of stdlib modules",
-      "default": "none"
-    },
     "reportImplicitOverride": {
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting overridden methods that are missing an `@override` decorator",
@@ -931,9 +926,6 @@
     "reportMatchNotExhaustive": {
       "$ref": "#/definitions/reportMatchNotExhaustive"
     },
-    "reportShadowedImports": {
-      "$ref": "#/definitions/reportShadowedImports"
-    },
     "reportImplicitOverride": {
       "$ref": "#/definitions/reportImplicitOverride"
     },
@@ -1295,9 +1287,6 @@
           },
           "reportMatchNotExhaustive": {
             "$ref": "#/definitions/reportMatchNotExhaustive"
-          },
-          "reportShadowedImports": {
-            "$ref": "#/definitions/reportShadowedImports"
           },
           "reportImplicitOverride": {
             "$ref": "#/definitions/reportImplicitOverride"

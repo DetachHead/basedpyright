@@ -312,6 +312,8 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.classNotRuntimeSubscriptable'));
         export const classPatternBuiltInArgPositional = () =>
             getRawString('Diagnostic.classPatternBuiltInArgPositional');
+        export const classPatternNewType = () =>
+            new ParameterizedString<{ type: string }>(getRawString('Diagnostic.classPatternNewType'));
         export const classPatternPositionalArgCount = () =>
             new ParameterizedString<{ type: string; expected: number; received: number }>(
                 getRawString('Diagnostic.classPatternPositionalArgCount')
@@ -934,8 +936,6 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.slotsClassVarConflict'));
         export const starStarWildcardNotAllowed = () => getRawString('Diagnostic.starStarWildcardNotAllowed');
         export const staticClsSelfParam = () => getRawString('Diagnostic.staticClsSelfParam');
-        export const stdlibModuleOverridden = () =>
-            new ParameterizedString<{ name: string; path: string }>(getRawString('Diagnostic.stdlibModuleOverridden'));
         export const stringNonAsciiBytes = () => getRawString('Diagnostic.stringNonAsciiBytes');
         export const stringNotSubscriptable = () => getRawString('Diagnostic.stringNotSubscriptable');
         export const stringUnsupportedEscape = () => getRawString('Diagnostic.stringUnsupportedEscape');
@@ -1697,10 +1697,6 @@ export namespace Localizer {
             new ParameterizedString<{ count: number }>(getRawString('CodeAction.filesToAnalyzeCount'));
         export const findingReferences = () => getRawString('CodeAction.findingReferences');
         export const organizeImports = () => getRawString('CodeAction.organizeImports');
-        export const renameShadowedFile = () =>
-            new ParameterizedString<{ newFile: string; oldFile: string }>(
-                getRawString('CodeAction.renameShadowedFile')
-            );
     }
 
     export namespace Completion {

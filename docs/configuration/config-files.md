@@ -61,7 +61,7 @@ these settings are discouraged in basedpyright. [see here for more info](../bene
 The following settings determine how different types should be evaluated.
 
 - <a name="strictListInference"></a> **strictListInference** [boolean]: When inferring the type of a list, use strict type assumptions. For example, the expression `[1, 'a', 3.4]` could be inferred to be of type `list[Any]` or `list[int | str | float]`. If this setting is true, it will use the latter (stricter) type.
-  
+
 - <a name="strictDictionaryInference"></a> **strictDictionaryInference** [boolean]: When inferring the type of a dictionary’s keys and values, use strict type assumptions. For example, the expression `{'a': 1, 'b': 'a'}` could be inferred to be of type `dict[str, Any]` or `dict[str, int | str]`. If this setting is true, it will use the latter (stricter) type.
 
 - <a name="strictSetInference"></a> **strictSetInference** [boolean]: When inferring the type of a set, use strict type assumptions. For example, the expression `{1, 'a', 3.4}` could be inferred to be of type `set[Any]` or `set[int | str | float]`. If this setting is true, it will use the latter (stricter) type.
@@ -278,8 +278,6 @@ The following settings allow more fine grained control over the **typeCheckingMo
 - <a name="reportUnreachable"></a> **reportUnreachable** [boolean or string, optional]: Generate or suppress diagnostics for code that is determined to be structurally unreachable or unreachable by type analysis.
 
 - <a name="reportImplicitOverride"></a> **reportImplicitOverride** [boolean or string, optional]: Generate or suppress diagnostics for overridden methods in a class that are missing an explicit `@override` decorator.
-
-- <a name="reportShadowedImports"></a> **reportShadowedImports** [boolean or string, optional]: Generate or suppress diagnostics for files that are overriding a module in the stdlib.
 
 ### basedpyright exclusive settings
 

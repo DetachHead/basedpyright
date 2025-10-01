@@ -2482,6 +2482,9 @@ export class CompletionProvider {
                 ? parentAndChild.child
                 : undefined;
 
+        const offset = convertPositionToOffset(this.position, this.parseResults.tokenizerOutput.lines)!;
+        const inCallArg = !!getCallNodeAndActiveParamIndex(parseNode, offset, this.parseResults.tokenizerOutput.tokens);
+
         if (nodeForExpectedType) {
             const expectedTypeResult = this.evaluator.getExpectedType(nodeForExpectedType);
             if (expectedTypeResult && containsLiteralType(expectedTypeResult.type)) {
@@ -2492,7 +2495,10 @@ export class CompletionProvider {
                     postText,
                     completionMap
                 );
-                return true;
+
+                if (!inCallArg) {
+                    return true;
+                }
             }
         }
 

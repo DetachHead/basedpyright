@@ -5634,6 +5634,7 @@ export function createTypeEvaluator(
                         match.priv.scopeName,
                         match.priv.scopeType
                     );
+                    type.shared.declaredVariance = match.shared.declaredVariance;
                     return {
                         type,
                         scopeNode,
@@ -6048,7 +6049,16 @@ export function createTypeEvaluator(
             }
 
             case TypeCategory.Module: {
-                const symbol = ModuleType.getField(baseType, memberName);
+                let symbol = ModuleType.getField(baseType, memberName);
+
+                // If the symbol isn't found in the module's symbol table,
+                // see if it's defined in the `ModuleType` class. This is
+                // needed for modules that are synthesized for namespace
+                // packages.
+                if (!symbol && prefetched?.moduleTypeClass && isInstantiableClass(prefetched.moduleTypeClass)) {
+                    symbol = ClassType.getSymbolTable(prefetched.moduleTypeClass).get(memberName);
+                }
+
                 if (symbol && !symbol.isExternallyHidden()) {
                     if (usage.method === 'get') {
                         setSymbolAccessed(fileInfo, symbol, node.d.member);
@@ -8264,12 +8274,8 @@ export function createTypeEvaluator(
             }
         }
 
-        // Follow PEP 637 rules for positional and keyword arguments.
-        const positionalArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.Simple && !item.d.name);
+        const positionalArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.Simple);
         const unpackedListArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.UnpackedList);
-
-        const keywordArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.Simple && !!item.d.name);
-        const unpackedDictArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.UnpackedDictionary);
 
         let positionalIndexType: Type;
         let isPositionalIndexTypeIncomplete = false;
@@ -8281,29 +8287,93 @@ export function createTypeEvaluator(
             if (typeResult.isIncomplete) {
                 isPositionalIndexTypeIncomplete = true;
             }
-        } else if (positionalArgs.length === 0 && unpackedListArgs.length === 0) {
-            // Handle the case where there are no positionals provided but there are keywords.
-            positionalIndexType = makeTupleObject(evaluatorInterface, []);
         } else {
             // Package up all of the positionals into a tuple.
             const tupleTypeArgs: TupleTypeArg[] = [];
-            positionalArgs.forEach((arg) => {
-                const typeResult = getTypeOfExpression(arg.d.valueExpr);
-                tupleTypeArgs.push({ type: typeResult.type, isUnbounded: false });
-                if (typeResult.isIncomplete) {
-                    isPositionalIndexTypeIncomplete = true;
+
+            const getDeterministicTupleEntries = (type: Type): TupleTypeArg[] | undefined => {
+                let aggregatedArgs: TupleTypeArg[] | undefined;
+                let isDeterministic = true;
+
+                doForEachSubtype(type, (subtype) => {
+                    if (!isDeterministic) {
+                        return;
+                    }
+
+                    const tupleType = getSpecializedTupleType(subtype);
+                    const tupleTypeArgs = tupleType?.priv.tupleTypeArgs;
+
+                    if (
+                        !tupleTypeArgs ||
+                        tupleTypeArgs.some((entry) => entry.isUnbounded || isTypeVarTuple(entry.type))
+                    ) {
+                        isDeterministic = false;
+                        return;
+                    }
+
+                    if (!aggregatedArgs) {
+                        aggregatedArgs = tupleTypeArgs.map((entry) => ({ type: entry.type, isUnbounded: false }));
+                        return;
+                    }
+
+                    if (aggregatedArgs.length !== tupleTypeArgs.length) {
+                        isDeterministic = false;
+                        return;
+                    }
+
+                    for (let i = 0; i < aggregatedArgs.length; i++) {
+                        aggregatedArgs[i] = {
+                            type: combineTypes([aggregatedArgs[i].type, tupleTypeArgs[i].type]),
+                            isUnbounded: false,
+                        };
+                    }
+                });
+
+                if (!isDeterministic || !aggregatedArgs) {
+                    return undefined;
+                }
+
+                return aggregatedArgs;
+            };
+
+            node.d.items.forEach((arg) => {
+                if (arg.d.argCategory === ArgCategory.Simple) {
+                    const typeResult = getTypeOfExpression(arg.d.valueExpr);
+                    tupleTypeArgs.push({ type: typeResult.type, isUnbounded: false });
+                    if (typeResult.isIncomplete) {
+                        isPositionalIndexTypeIncomplete = true;
+                    }
+                    return;
+                }
+
+                if (arg.d.argCategory === ArgCategory.UnpackedList) {
+                    const typeResult = getTypeOfExpression(arg.d.valueExpr);
+                    if (typeResult.isIncomplete) {
+                        isPositionalIndexTypeIncomplete = true;
+                    }
+
+                    const deterministicEntries = getDeterministicTupleEntries(typeResult.type);
+                    if (deterministicEntries) {
+                        appendArray(tupleTypeArgs, deterministicEntries);
+                        return;
+                    }
+
+                    const iterableType =
+                        getTypeOfIterator(typeResult, /* isAsync */ false, arg.d.valueExpr)?.type ??
+                        UnknownType.create();
+                    tupleTypeArgs.push({ type: iterableType, isUnbounded: true });
                 }
             });
 
-            unpackedListArgs.forEach((arg) => {
-                const typeResult = getTypeOfExpression(arg.d.valueExpr);
-                if (typeResult.isIncomplete) {
-                    isPositionalIndexTypeIncomplete = true;
-                }
-                const iterableType =
-                    getTypeOfIterator(typeResult, /* isAsync */ false, arg.d.valueExpr)?.type ?? UnknownType.create();
-                tupleTypeArgs.push({ type: iterableType, isUnbounded: true });
-            });
+            const unboundedCount = tupleTypeArgs.filter((typeArg) => typeArg.isUnbounded).length;
+            if (unboundedCount > 1) {
+                const firstUnboundedIndex = tupleTypeArgs.findIndex((typeArg) => typeArg.isUnbounded);
+                const removedEntries = tupleTypeArgs.splice(firstUnboundedIndex);
+                tupleTypeArgs.push({
+                    type: combineTypes(removedEntries.map((entry) => entry.type)),
+                    isUnbounded: true,
+                });
+            }
 
             positionalIndexType = makeTupleObject(evaluatorInterface, tupleTypeArgs);
         }
@@ -8336,23 +8406,6 @@ export function createTypeEvaluator(
                 },
             });
         }
-
-        keywordArgs.forEach((arg) => {
-            argList.push({
-                argCategory: ArgCategory.Simple,
-                valueExpression: arg.d.valueExpr,
-                node: arg,
-                name: arg.d.name,
-            });
-        });
-
-        unpackedDictArgs.forEach((arg) => {
-            argList.push({
-                argCategory: ArgCategory.UnpackedDictionary,
-                valueExpression: arg.d.valueExpr,
-                node: arg,
-            });
-        });
 
         const callResult = validateCallArgs(
             node,

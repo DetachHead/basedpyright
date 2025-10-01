@@ -399,9 +399,6 @@ export interface DiagnosticRuleSet {
     // Report code that is determined to be unreachable via type analysis.
     reportUnreachable: DiagnosticLevel;
 
-    // Report files that match stdlib modules.
-    reportShadowedImports: DiagnosticLevel;
-
     // Report missing @override decorator.
     reportImplicitOverride: DiagnosticLevel;
 
@@ -546,7 +543,6 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnnecessaryTypeIgnoreComment,
         DiagnosticRule.reportMatchNotExhaustive,
         DiagnosticRule.reportUnreachable,
-        DiagnosticRule.reportShadowedImports,
         DiagnosticRule.reportImplicitOverride,
         DiagnosticRule.reportAny,
         DiagnosticRule.reportExplicitAny,
@@ -681,7 +677,6 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
         reportUnreachable: 'hint',
-        reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
@@ -800,7 +795,6 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
         reportUnreachable: 'hint',
-        reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
@@ -919,7 +913,6 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'none',
         reportUnreachable: 'hint',
-        reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,
@@ -1036,7 +1029,6 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedExpression: 'warning',
     reportUnnecessaryTypeIgnoreComment: 'warning',
     reportMatchNotExhaustive: 'warning',
-    reportShadowedImports: 'warning',
     reportImplicitOverride: 'warning',
     failOnWarnings: true,
     strictGenericNarrowing: true,
@@ -1151,7 +1143,6 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnusedExpression: 'error',
     reportUnnecessaryTypeIgnoreComment: 'error',
     reportMatchNotExhaustive: 'error',
-    reportShadowedImports: 'error',
     reportImplicitOverride: 'error',
     failOnWarnings: true,
     strictGenericNarrowing: true,
@@ -1268,7 +1259,6 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnnecessaryTypeIgnoreComment: 'none',
         reportMatchNotExhaustive: 'error',
         reportUnreachable: 'hint',
-        reportShadowedImports: 'none',
         reportImplicitOverride: 'none',
         failOnWarnings: false,
         strictGenericNarrowing: false,

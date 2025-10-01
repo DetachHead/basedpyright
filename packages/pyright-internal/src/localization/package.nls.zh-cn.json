@@ -6,8 +6,7 @@
         "filesToAnalyzeCount": "正在分析 {count} 个文件",
         "filesToAnalyzeOne": "正在分析 1 个文件",
         "findingReferences": "正在查找引用",
-        "organizeImports": "整理导入项",
-        "renameShadowedFile": "将 \"{oldFile}\" 重命名为 \"{newFile}\""
+        "organizeImports": "整理导入项"
     },
     "Completion": {
         "autoImportDetail": "自动导入",
@@ -482,7 +481,6 @@
         "starPatternInOrPattern": "解包模式表达式不能与同其他进行 `|` 操作的模式使用",
         "starStarWildcardNotAllowed": "`**` 不能与通配符 `_` 一起使用",
         "staticClsSelfParam": "静态方法不应采用 `self` 或 `cls` 参数",
-        "stdlibModuleOverridden": "\"{path}\" 覆盖了标准库模块 \"{name}\"",
         "stringNonAsciiBytes": "不允许使用含有非 ASCII 字符（以字节为单位）的字符串字面量",
         "stringNotSubscriptable": "不能对着字符串形式的类型表达式取下标；建议将整个注解括在引号中",
         "stringUnsupportedEscape": "字符串字面量中有不受支持的转义序列",

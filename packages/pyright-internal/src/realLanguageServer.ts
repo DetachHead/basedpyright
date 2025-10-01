@@ -329,7 +329,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
         let displayingProgress = false;
         let workDoneProgress: Promise<WorkDoneProgressServerReporter> | undefined;
         return {
-            isDisplayingProgess: () => displayingProgress,
+            isDisplayingProgress: () => displayingProgress,
             isEnabled: (data: AnalysisResults) => true,
             begin: () => {
                 displayingProgress = true;

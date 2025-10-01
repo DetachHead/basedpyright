@@ -254,7 +254,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
                     CreateFile.create(
                         ls.convertUriToLspUriString(fs, operation.fileUri),
                         /* options */ undefined,
-                        defaultAnnotationId
+                        changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )
                 );
                 break;
@@ -293,7 +293,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
                         ls.convertUriToLspUriString(fs, operation.oldFileUri),
                         ls.convertUriToLspUriString(fs, operation.newFileUri),
                         /* options */ undefined,
-                        defaultAnnotationId
+                        changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )
                 );
                 break;
@@ -302,7 +302,7 @@ function _convertToWorkspaceEditWithDocumentChanges(
                     DeleteFile.create(
                         ls.convertUriToLspUriString(fs, operation.fileUri),
                         /* options */ undefined,
-                        defaultAnnotationId
+                        changeAnnotations !== undefined ? defaultAnnotationId : undefined
                     )
                 );
                 break;

@@ -102,7 +102,6 @@ export enum DiagnosticRule {
     reportUnnecessaryTypeIgnoreComment = 'reportUnnecessaryTypeIgnoreComment',
     reportMatchNotExhaustive = 'reportMatchNotExhaustive',
     reportUnreachable = 'reportUnreachable',
-    reportShadowedImports = 'reportShadowedImports',
     reportImplicitOverride = 'reportImplicitOverride',
 
     // basedpyright options:
