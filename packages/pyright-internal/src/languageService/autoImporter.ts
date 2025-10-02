@@ -158,9 +158,18 @@ export function buildModuleSymbolsMap(program: ProgramView, files: readonly Sour
                         continue;
                     }
 
-                    if (declaration.type === DeclarationType.Alias && isUserCode(file) && !symbol.isInDunderAll()) {
-                        // We don't include import alias in auto import
-                        // for workspace files, unless they're in '__all__'
+                    if (
+                        // We don't include import aliases in auto import for workspace files...
+                        declaration.type === DeclarationType.Alias &&
+                        isUserCode(file) &&
+                        // ... unless they're in '__all__'...
+                        !symbol.isInDunderAll() &&
+                        // ... or unless they're an 'explicit re-export' (alias with the same name, see #772)
+                        !(
+                            declaration.node.nodeType === ParseNodeType.ImportFromAs &&
+                            declaration.node.d.alias?.d.value === name
+                        )
+                    ) {
                         continue;
                     }
 
