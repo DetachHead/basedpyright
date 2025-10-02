@@ -6602,7 +6602,7 @@ export class Checker extends ParseTreeWalker {
                     // not an issue on final classes/attributes and enums because they can't be subtyped
                     !ClassType.isFinal(classType) &&
                     !this._evaluator.isFinalVariable(symbol) &&
-                    !isEnumClassWithMembers(this._evaluator, classType)
+                    !ClassType.isEnumClass(classType)
                 ) {
                     this._evaluator.addDiagnostic(
                         DiagnosticRule.reportUnannotatedClassAttribute,
