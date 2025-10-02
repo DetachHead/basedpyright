@@ -95,10 +95,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
     override visitParameter(node: ParameterNode): boolean {
         if (node.d.name) {
+            const decls = this._getNameNodeDeclarations(node.d.name);
             const type = this._getType(node.d.name);
-            this._addItemForNameNode(node.d.name, this._getParamTokenType(node, type), [
-                SemanticTokenModifiers.declaration,
-            ]);
+            let tokenType: TokenTypes = SemanticTokenTypes.parameter;
+            const modifiers: TokenModifiers[] = [SemanticTokenModifiers.declaration];
+            if (type) tokenType = this._getParamTokenType(node, type, decls, modifiers);
+            this._addItemForNameNode(node.d.name, tokenType, modifiers);
         }
         return super.visitParameter(node);
     }
@@ -161,8 +163,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
             case DeclarationType.Param: {
                 const type = this._getType(node);
-                const tokenType = this._getParamTokenType(primaryDecl.node, type);
-                this._addItemForNameNode(node, tokenType, []);
+                let tokenType: TokenTypes | undefined = SemanticTokenTypes.parameter;
+                const modifiers: TokenModifiers[] = [];
+                if (type) tokenType = this._getParamTokenType(primaryDecl.node, type, declarations, modifiers);
+                this._addItemForNameNode(node, tokenType, modifiers);
                 return;
             }
             case DeclarationType.TypeParam: {
@@ -436,17 +440,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
         // Detect variables that store a type (i.e. something that can be instantiated)
         // and do not fall into a category that is handled elsewhere
-        if (
-            TypeBase.isInstantiable(type) &&
-            ![
-                TypeCategory.Unbound,
-                TypeCategory.Unknown,
-                TypeCategory.Any,
-                TypeCategory.Never,
-                TypeCategory.Module,
-                TypeCategory.TypeVar,
-            ].includes(type.category)
-        ) {
+        if (this._variableContainsType(type)) {
             if (isClass(type)) return this._getClassTokenType(node, type, declarations, modifiers, true, false);
             // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
             return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
@@ -499,6 +493,20 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return !!decl.isConstant || !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
         }
         return false;
+    }
+
+    private _variableContainsType(type: Type): boolean {
+        return (
+            TypeBase.isInstantiable(type) &&
+            ![
+                TypeCategory.Unbound,
+                TypeCategory.Unknown,
+                TypeCategory.Any,
+                TypeCategory.Never,
+                TypeCategory.Module,
+                TypeCategory.TypeVar,
+            ].includes(type.category)
+        );
     }
 
     // Check whether “decl” has a property type and does not contain fset information
@@ -571,8 +579,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     : SemanticTokenTypes.function;
             }
 
-            // Check whether the left-hand side is a class instance, in which case the function
-            // is highlighted as a method
+            // Check whether the left-hand side is a class instance, in which case the function is highlighted as a method
+            // This is relevant in cases in which there are no declarations for synthesized functions, e.g. `setter`
+            // in `@x.setter` for some property `x`, which would otherwise be highlighted as `function` through the base case
             const lhsType = this._getType(node.parent.d.leftExpr);
             if (lhsType && isClass(lhsType)) {
                 return SemanticTokenTypes.method;
@@ -582,12 +591,16 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return SemanticTokenTypes.function;
     }
 
-    private _getParamTokenType(node: ParameterNode, type?: Type): TokenTypes {
-        if (node.parent?.nodeType !== ParseNodeType.Function) {
-            return SemanticTokenTypes.parameter;
-        }
-        if (node.parent.d.params[0].id !== node.id) {
-            return SemanticTokenTypes.parameter;
+    private _getParamTokenType(
+        node: ParameterNode,
+        type: Type,
+        declarations: Declaration[],
+        modifiers: TokenModifiers[]
+    ): TokenTypes {
+        modifiers.push(CustomSemanticTokenModifiers.argument);
+
+        if (node.parent?.nodeType !== ParseNodeType.Function || node.parent.d.params[0].id !== node.id) {
+            return this._getParamTokenTypeBase(node, type, declarations, modifiers);
         }
 
         const parentType = this._getType(node.parent.d.name);
@@ -598,12 +611,57 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 FunctionType.isConstructorMethod(parentType));
 
         if (!(isMethodParam && getScopeForNode(node)?.type === ScopeType.Class)) {
-            return SemanticTokenTypes.parameter;
+            return this._getParamTokenTypeBase(node, type, declarations, modifiers);
         }
 
         return type && TypeBase.isInstantiable(type)
             ? CustomSemanticTokenTypes.clsParameter
             : CustomSemanticTokenTypes.selfParameter;
+    }
+
+    private _getParamTokenTypeBase(
+        node: ParameterNode,
+        type: Type,
+        declarations: Declaration[],
+        modifiers: TokenModifiers[]
+    ): TokenTypes {
+        // This is a simplified version of the variable token implementation with some cases removed
+        // More detailed explanations can be found there
+        const name = node.d.name;
+
+        // Use default highlighting for variables whose type is unknown or Any and which have no declarations
+        if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return SemanticTokenTypes.parameter;
+
+        // Mark as “readonly” if a declarations is final
+        if (declarations.some((decl) => this._isFinal(decl))) {
+            modifiers.push(SemanticTokenModifiers.readonly);
+        }
+
+        // Detect variables that store a type (i.e. something that can be instantiated)
+        // and do not fall into a category that is handled elsewhere
+        if (this._variableContainsType(type)) {
+            if (isClass(type) && name) return this._getClassTokenType(name, type, declarations, modifiers, true, false);
+            // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
+            return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
+        }
+
+        // Detect variables that store a function or an overloaded function
+        const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
+        if (isFunction(type) && name) {
+            return this._getFunctionTokenType(name, primaryDecl, declarations, type, modifiers);
+        }
+        if (isOverloaded(type) && name) {
+            const functionType = OverloadedType.getOverloads(type)[0];
+            return this._getFunctionTokenType(name, primaryDecl, declarations, functionType, modifiers);
+        }
+
+        // Detect “Never”/“NoReturn” type aliases
+        if (isNever(type) && name) {
+            const tokenType = this._getNeverTokenType(name, type);
+            if (tokenType) return tokenType;
+        }
+
+        return SemanticTokenTypes.parameter;
     }
 
     private _getNeverTokenType(node: NameNode, type: NeverType): TokenTypes | undefined {
