@@ -61,20 +61,17 @@ export function isEnumClassWithMembers(evaluator: TypeEvaluator, classType: Clas
     }
 
     // Determine whether the enum class defines a member.
-    let definesMember = false;
-
-    ClassType.getSymbolTable(classType).forEach((symbol, name) => {
+    for (const name of ClassType.getSymbolTable(classType).keys()) {
         const symbolType = transformTypeForEnumMember(evaluator, classType, name);
         if (
             symbolType &&
             isClassInstance(symbolType) &&
             ClassType.isSameGenericClass(symbolType, ClassType.cloneAsInstance(classType))
         ) {
-            definesMember = true;
+            return true;
         }
-    });
-
-    return definesMember;
+    }
+    return false;
 }
 
 // Creates a new custom enum class with named values.
