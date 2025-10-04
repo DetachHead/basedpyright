@@ -23,4 +23,4 @@ def inferred():
         value2
 
 type Baz = Never
-baz: Baz
+bat: Baz

@@ -18,7 +18,17 @@ export enum CustomSemanticTokenTypes {
 }
 
 export enum CustomSemanticTokenModifiers {
-    builtin = 'builtin', // parity with pylance
+    /** built-in symbols (parity with pylance) */
+    builtin = 'builtin',
+    /** distinguishes class/instance variables, especially when these are types/functions/etc. */
+    classMember = 'classMember',
+    /**
+     * Distinguishes function parameters.
+     * Note that this custom modifier exists despite the `parameter` token type so that a parameter
+     * with another token type (e.g. `function` or `class`) can still retain the information
+     * about whether or not it is a parameter.
+     */
+    parameter = 'parameter',
 }
 
 export const tokenTypes: string[] = [
@@ -47,6 +57,8 @@ export const tokenModifiers: string[] = [
     SemanticTokenModifiers.async,
     SemanticTokenModifiers.defaultLibrary,
     CustomSemanticTokenModifiers.builtin,
+    CustomSemanticTokenModifiers.classMember,
+    CustomSemanticTokenModifiers.parameter,
 ];
 
 export const SemanticTokensProviderLegend = {
