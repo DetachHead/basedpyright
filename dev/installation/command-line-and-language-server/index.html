@@ -737,9 +737,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pypi-package-recommended" class="md-nav__link">
+  <a href="#pypi-package" class="md-nav__link">
     <span class="md-ellipsis">
-      pypi package (recommended)
+      pypi package
     </span>
   </a>
   
@@ -1562,9 +1562,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pypi-package-recommended" class="md-nav__link">
+  <a href="#pypi-package" class="md-nav__link">
     <span class="md-ellipsis">
-      pypi package (recommended)
+      pypi package
     </span>
   </a>
   
@@ -1608,10 +1608,10 @@
 
 
 <h1 id="command-line-language-server">Command-line &amp; language server</h1>
-<h2 id="pypi-package-recommended">pypi package (recommended)</h2>
+<h2 id="pypi-package">pypi package</h2>
 <p>unlike pyright, the basedpyright CLI and language server are available as a <a href="https://pypi.org/project/basedpyright/">pypi package</a>.</p>
 <p>this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">uv</label><label for="__tabbed_1_2">pdm</label><label for="__tabbed_1_3">pip</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">uv (recommended)</label><label for="__tabbed_1_2">pip</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>add it to your project's dev dependencies (recommended):</p>
@@ -1619,10 +1619,6 @@
 </code></pre></div>
 <p>or install it globally:</p>
 <div class="highlight"><pre><span></span><code>uv tool install basedpyright
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>pdm add --dev basedpyright
 </code></pre></div>
 </div>
 <div class="tabbed-block">
