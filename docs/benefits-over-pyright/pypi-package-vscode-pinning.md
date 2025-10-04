@@ -8,7 +8,7 @@ python developers should not be expected to install nodejs in order to typecheck
 
 this is why basedpyright is [officially published on pypi](https://pypi.org/project/basedpyright/), which comes bundled with the npm package using [nodejs-wheel](https://github.com/njzjz/nodejs-wheel).
 
-see [the installation instructions](../installation/command-line-and-language-server.md#pypi-package-recommended) for more information.
+see [the installation instructions](../installation/command-line-and-language-server.md#pypi-package) for more information.
 
 ## ability to pin the version used by vscode
 

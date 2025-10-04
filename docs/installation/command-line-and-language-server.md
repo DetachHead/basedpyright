@@ -1,12 +1,12 @@
 # Command-line & language server
 
-## pypi package (recommended)
+## pypi package
 
 unlike pyright, the basedpyright CLI and language server are available as a [pypi package](https://pypi.org/project/basedpyright/).
 
 this makes it far more convenient for python developers to use, since there's no need to install any additional tools. just install it normally via your package manager of choice:
 
-=== "uv"
+=== "uv (recommended)"
 
      add it to your project's dev dependencies (recommended):
 
@@ -18,12 +18,6 @@ this makes it far more convenient for python developers to use, since there's no
 
      ```
      uv tool install basedpyright
-     ```
-
-=== "pdm"
-
-     ```
-     pdm add --dev basedpyright
      ```
 
 === "pip"
