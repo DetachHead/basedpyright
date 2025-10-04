@@ -393,30 +393,37 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
     }
 
+    /** This is used for both variables and parameters, as specified by `isParam`. */
     private _getVariableTokenType(
-        node: NameNode,
+        node: NameNode | undefined,
         type: Type,
         declarations: Declaration[],
-        modifiers: TokenModifiers[]
+        modifiers: TokenModifiers[],
+        isParam: boolean = false
     ): TokenTypes | undefined {
+        // `node` is always defined for variables
+        if (!node) return SemanticTokenTypes.parameter;
+
         // Do not highlight variables whose type is unknown or Any and which have no declarations
         // The check for unknown/Any is required for situations such as attribute access using “__getattr__”,
         // which has no declarations (because there are no variable declarations) but whose type is (hopefully) not unknown/Any
         if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return;
 
-        if (
-            node.nodeType === ParseNodeType.Name &&
-            declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
-        ) {
-            modifiers.push(CustomSemanticTokenModifiers.builtin);
-        }
+        if (!isParam) {
+            if (
+                node.nodeType === ParseNodeType.Name &&
+                declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
+            ) {
+                modifiers.push(CustomSemanticTokenModifiers.builtin);
+            }
 
-        // Mark as enumMember if any declaration is in enum class
-        const isEnumMember = declarations.some(
-            (decl) => isVariableDeclaration(decl) && isDeclInEnumClass(this._evaluator, decl)
-        );
-        if (isEnumMember) {
-            return SemanticTokenTypes.enumMember;
+            // Mark as enumMember if any declaration is in enum class
+            const isEnumMember = declarations.some(
+                (decl) => isVariableDeclaration(decl) && isDeclInEnumClass(this._evaluator, decl)
+            );
+            if (isEnumMember) {
+                return SemanticTokenTypes.enumMember;
+            }
         }
 
         // Track whether “readonly” has already been added to “modifiers”
@@ -429,13 +436,16 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
 
         // Store whether the variable is a class member, i.e. a class/instance variable
-        const isClassMember = this._applyClassMemberAccessModifiers(node, declarations, modifiers, readOnly);
+        const isClassMember =
+            !isParam && this._applyClassMemberAccessModifiers(node, declarations, modifiers, readOnly);
 
-        // Handle variables that have been assigned a “TypeVar”
-        // There are weird cases in which bogus type variables are synthesized
-        // Example: Left-hand side “x” of “self.x = x” in “parameters.py”
-        if (isTypeVar(type) && !type.shared.isSynthesized) {
-            return SemanticTokenTypes.typeParameter;
+        if (!isParam) {
+            // Handle variables that have been assigned a “TypeVar”
+            // There are weird cases in which bogus type variables are synthesized
+            // Example: Left-hand side “x” of “self.x = x” in “parameters.py”
+            if (isTypeVar(type) && !type.shared.isSynthesized) {
+                return SemanticTokenTypes.typeParameter;
+            }
         }
 
         // Detect variables that store a type (i.e. something that can be instantiated)
@@ -457,7 +467,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
 
         // Detect module variables
-        if (isModule(type)) {
+        if (!isParam && isModule(type)) {
             return SemanticTokenTypes.namespace;
         }
 
@@ -467,8 +477,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             if (tokenType) return tokenType;
         }
 
-        // If the variable is a class member and not handled by any other case, use “property”
-        return isClassMember ? SemanticTokenTypes.property : SemanticTokenTypes.variable;
+        // If a variable is a class member and not handled by any other case, use “property”
+        return isParam
+            ? SemanticTokenTypes.parameter
+            : isClassMember
+            ? SemanticTokenTypes.property
+            : SemanticTokenTypes.variable;
     }
 
     // For a given attribute access, gather information about the magic attribute methods
@@ -600,7 +614,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         modifiers.push(CustomSemanticTokenModifiers.argument);
 
         if (node.parent?.nodeType !== ParseNodeType.Function || node.parent.d.params[0].id !== node.id) {
-            return this._getParamTokenTypeBase(node, type, declarations, modifiers);
+            return (
+                this._getVariableTokenType(node.d.name, type, declarations, modifiers, true) ??
+                SemanticTokenTypes.parameter
+            );
         }
 
         const parentType = this._getType(node.parent.d.name);
@@ -611,57 +628,15 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 FunctionType.isConstructorMethod(parentType));
 
         if (!(isMethodParam && getScopeForNode(node)?.type === ScopeType.Class)) {
-            return this._getParamTokenTypeBase(node, type, declarations, modifiers);
+            return (
+                this._getVariableTokenType(node.d.name, type, declarations, modifiers, true) ??
+                SemanticTokenTypes.parameter
+            );
         }
 
         return type && TypeBase.isInstantiable(type)
             ? CustomSemanticTokenTypes.clsParameter
             : CustomSemanticTokenTypes.selfParameter;
-    }
-
-    private _getParamTokenTypeBase(
-        node: ParameterNode,
-        type: Type,
-        declarations: Declaration[],
-        modifiers: TokenModifiers[]
-    ): TokenTypes {
-        // This is a simplified version of the variable token implementation with some cases removed
-        // More detailed explanations can be found there
-        const name = node.d.name;
-
-        // Use default highlighting for variables whose type is unknown or Any and which have no declarations
-        if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return SemanticTokenTypes.parameter;
-
-        // Mark as “readonly” if a declarations is final
-        if (declarations.some((decl) => this._isFinal(decl))) {
-            modifiers.push(SemanticTokenModifiers.readonly);
-        }
-
-        // Detect variables that store a type (i.e. something that can be instantiated)
-        // and do not fall into a category that is handled elsewhere
-        if (this._variableContainsType(type)) {
-            if (isClass(type) && name) return this._getClassTokenType(name, type, declarations, modifiers, true, false);
-            // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
-            return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
-        }
-
-        // Detect variables that store a function or an overloaded function
-        const primaryDecl = declarations.length > 0 ? declarations[0] : undefined;
-        if (isFunction(type) && name) {
-            return this._getFunctionTokenType(name, primaryDecl, declarations, type, modifiers);
-        }
-        if (isOverloaded(type) && name) {
-            const functionType = OverloadedType.getOverloads(type)[0];
-            return this._getFunctionTokenType(name, primaryDecl, declarations, functionType, modifiers);
-        }
-
-        // Detect “Never”/“NoReturn” type aliases
-        if (isNever(type) && name) {
-            const tokenType = this._getNeverTokenType(name, type);
-            if (tokenType) return tokenType;
-        }
-
-        return SemanticTokenTypes.parameter;
     }
 
     private _getNeverTokenType(node: NameNode, type: NeverType): TokenTypes | undefined {
