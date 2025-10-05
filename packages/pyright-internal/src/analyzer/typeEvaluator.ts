@@ -29,6 +29,7 @@ import {
     PythonVersion,
     pythonVersion3_11,
     pythonVersion3_13,
+    pythonVersion3_14,
     pythonVersion3_6,
     pythonVersion3_7,
     pythonVersion3_9,
@@ -1040,7 +1041,16 @@ export function createTypeEvaluator(
                 getTypeCheckerInternalsType(node, 'TypedDictFallback') ?? getTypingType(node, '_TypedDict');
             prefetched.awaitableClass = getTypingType(node, 'Awaitable');
             prefetched.mappingClass = getTypingType(node, 'Mapping');
-            prefetched.templateClass = getTypeOfModule(node, 'Template', ['string', 'templatelib']);
+            if (
+                // if the configured pythonVersion is <3.14 but we're running in a python >=3.14 environment, this will cause
+                // templatelib.py to be incorrectly imported and treated as user code
+                PythonVersion.isGreaterOrEqualTo(
+                    AnalyzerNodeInfo.getFileInfo(node).executionEnvironment.pythonVersion,
+                    pythonVersion3_14
+                )
+            ) {
+                prefetched.templateClass = getTypeOfModule(node, 'Template', ['string', 'templatelib']);
+            }
 
             prefetched.supportsKeysAndGetItemClass = getTypeshedType(node, 'SupportsKeysAndGetItem');
             if (!prefetched.supportsKeysAndGetItemClass) {
