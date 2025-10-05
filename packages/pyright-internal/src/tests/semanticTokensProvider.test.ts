@@ -104,7 +104,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'namespace', modifiers: [], start: 662, length: 4 }, // path
             { type: 'variable', modifiers: [], start: 667, length: 6 }, // pardir
             // c = a.t
-            { type: 'class', modifiers: [], start: 675, length: 1 }, // a
+            { type: 'class', modifiers: [], start: 675, length: 1 }, // c
             { type: 'variable', modifiers: [], start: 679, length: 1 }, // a
             { type: 'class', modifiers: ['classMember'], start: 681, length: 1 }, // t
             // d: Any = a.abc()
