@@ -26,7 +26,7 @@
         "pylint": "uv run --no-sync pylint basedpyright build pdm_build.py",
         "test-python": "uv run --no-sync pytest tests",
         "generate-docstubs": "uv run --no-sync build/py3_8/generate_docstubs.py",
-        "localization-helper": "uv run --no-sync build/py3_13/localization_helper.py",
+        "localization-helper": "uv run --no-sync build/py_latest/localization_helper.py",
         "docs": "uv run --no-sync mkdocs serve",
         "lsp-inspect": "uv run --no-sync lsp-devtools inspect",
         "lsp-client": "uv run --no-sync lsp-devtools client -- node packages/pyright/langserver.index.js --stdio"
