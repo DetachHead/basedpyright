@@ -28,6 +28,7 @@ import { convertOffsetsToRange, convertOffsetToPosition } from '../common/positi
 import {
     PythonVersion,
     pythonVersion3_11,
+    pythonVersion3_12,
     pythonVersion3_13,
     pythonVersion3_6,
     pythonVersion3_7,
@@ -472,6 +473,7 @@ const nonSubscriptableTypes: Map<string, PythonVersion> = new Map([
     ['contextlib.AbstractContextManager', pythonVersion3_9],
     ['contextlib.AbstractAsyncContextManager', pythonVersion3_9],
     ['queue.Queue', pythonVersion3_9],
+    ['array.array', pythonVersion3_12],
 ]);
 
 // Some types that do not inherit from others are still considered
