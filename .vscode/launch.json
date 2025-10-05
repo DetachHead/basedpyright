@@ -178,7 +178,7 @@
             "name": "localization helper",
             "type": "debugpy",
             "request": "launch",
-            "program": "build/py3_13/localization_helper.py",
+            "program": "build/py_latest/localization_helper.py",
             "console": "externalTerminal",
         }
     ]

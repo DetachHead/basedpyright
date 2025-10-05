@@ -1,6 +1,6 @@
 {
     "files": {
-        "./build/py3_13/docs_macros.py": [
+        "./build/py_latest/docs_macros.py": [
             {
                 "code": "reportAny",
                 "range": {
@@ -10,7 +10,7 @@
                 }
             }
         ],
-        "./build/py3_13/generateUnicodeTables.py": [
+        "./build/py_latest/generateUnicodeTables.py": [
             {
                 "code": "reportUnusedCallResult",
                 "range": {
@@ -124,7 +124,7 @@
                 }
             }
         ],
-        "./build/py3_13/localization_helper.py": [
+        "./build/py_latest/localization_helper.py": [
             {
                 "code": "reportDeprecated",
                 "range": {

@@ -15,6 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -199,8 +200,8 @@ reportIncompatibleUnannotatedOverride = 'error'
 reportUnannotatedClassAttribute = 'none'
 
 executionEnvironments = [
-    { root = 'build/py3_13', pythonVersion = '3.13' },
-    { root = 'tests', pythonVersion = '3.13' },
+    { root = 'build/py_latest', pythonVersion = '3.14' },
+    { root = 'tests', pythonVersion = '3.14' },
 ]
 
 
@@ -215,7 +216,7 @@ extend-exclude = [
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
     "packages/pyright-internal/src/tests/samples",
-    "build/py3_13/generateUnicodeTables.py",       # comes from upstream
+    "build/py_latest/generateUnicodeTables.py",    # comes from upstream
 ]
 
 [tool.ruff.lint]

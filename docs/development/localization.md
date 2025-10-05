@@ -8,7 +8,7 @@ Here are some guidelines for contributors who would like to help improve the tra
 
 ## Tools for localization
 
-A TUI tool `build/py3_13/localization_helper.py` script is provided to help you with the localization process. It can be used to:
+A TUI tool `build/py_latest/localization_helper.py` script is provided to help you with the localization process. It can be used to:
 
 -   Check every message in comparison with the corresponding English message.
 -   Compare message keys with the English version and find out which messages are missing and which ones are redundant.
@@ -19,7 +19,7 @@ Run the script:
 
 ```shell
 # use uv
-./pw uv run build/py3_13/localization_helper.py
+./pw uv run build/py_latest/localization_helper.py
 # or from inside the venv
 npm run localization-helper
 ```
