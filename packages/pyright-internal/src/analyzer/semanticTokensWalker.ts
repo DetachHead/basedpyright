@@ -463,11 +463,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
 
         // If a variable is a class member and not handled by any other case, use “property”
-        return isParam
-            ? SemanticTokenTypes.parameter
-            : isClassMember
-            ? SemanticTokenTypes.property
-            : SemanticTokenTypes.variable;
+        if (isParam) {
+            return SemanticTokenTypes.parameter;
+        }
+        return isClassMember ? SemanticTokenTypes.property : SemanticTokenTypes.variable;
     }
 
     // For a given attribute access, gather information about the magic attribute methods
