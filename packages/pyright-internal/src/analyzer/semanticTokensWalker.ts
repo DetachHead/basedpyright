@@ -433,12 +433,28 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             }
         }
 
-        // Detect variables that store a type (i.e. something that can be instantiated)
+        // Detect variables that store a type form. note that `type`s (classes that can be instantiated) should get `class` token
+        // and everything else (`TypeForm`s) should get the `type` token
         // and do not fall into a category that is handled elsewhere
-        if (this._variableContainsType(type)) {
-            if (isClass(type)) return this._getClassTokenType(node, type, declarations, modifiers, true, false);
+        if (
+            TypeBase.isInstantiable(type) &&
+            ![
+                TypeCategory.Unbound,
+                TypeCategory.Unknown,
+                TypeCategory.Any, // handled below
+                TypeCategory.Never, // handled below
+                TypeCategory.Module, // handled below
+                TypeCategory.TypeVar, // handled in _visitNameWithDeclarations
+            ].includes(type.category)
+        ) {
             // Use “class” if the type is a class and “type” otherwise (e.g. unions or “Literal”)
-            return isClass(type) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
+            if (isClass(type)) return this._getClassTokenType(node, type, declarations, modifiers, true, false);
+            return SemanticTokenTypes.type;
+        }
+
+        // handle Any, since instances of Any are considered instantiable we need to prevent them from being highlighted as a type
+        if (isAny(type) && type.props?.specialForm) {
+            return SemanticTokenTypes.type;
         }
 
         // Detect variables that store a function or an overloaded function
@@ -491,20 +507,6 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return !!decl.isConstant || !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
         }
         return false;
-    }
-
-    private _variableContainsType(type: Type): boolean {
-        return (
-            TypeBase.isInstantiable(type) &&
-            ![
-                TypeCategory.Unbound,
-                TypeCategory.Unknown,
-                TypeCategory.Any,
-                TypeCategory.Never,
-                TypeCategory.Module,
-                TypeCategory.TypeVar,
-            ].includes(type.category)
-        );
     }
 
     // Check whether “decl” has a property type and does not contain fset information

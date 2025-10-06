@@ -428,34 +428,43 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         expect(result).toStrictEqual([
             { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
             { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
-            { type: 'function', modifiers: ['declaration'], start: 28, length: 1 }, // f
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 30, length: 1 }, // l
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 33, length: 4 }, // list
-            { type: 'type', modifiers: [], start: 42, length: 3 }, // Any
-            { type: 'variable', modifiers: [], start: 51, length: 1 }, // v
-            { type: 'parameter', modifiers: ['parameter'], start: 55, length: 1 }, // l
-            { type: 'variable', modifiers: [], start: 71, length: 1 }, // v
-            { type: 'function', modifiers: ['declaration'], start: 79, length: 2 }, // f1
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 82, length: 1 }, // a
-            { type: 'parameter', modifiers: ['parameter'], start: 90, length: 1 }, // a
-            { type: 'parameter', modifiers: ['parameter'], start: 94, length: 1 }, // a
+            { type: 'class', modifiers: [], start: 24, length: 9 }, // TypeAlias
+            { type: 'function', modifiers: ['declaration'], start: 39, length: 1 }, // f
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 41, length: 1 }, // l
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 44, length: 4 }, // list
+            { type: 'type', modifiers: [], start: 53, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 62, length: 1 }, // v
+            { type: 'parameter', modifiers: ['parameter'], start: 66, length: 1 }, // l
+            { type: 'variable', modifiers: [], start: 82, length: 1 }, // v
+            { type: 'function', modifiers: ['declaration'], start: 90, length: 2 }, // f1
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 93, length: 1 }, // a
+            { type: 'parameter', modifiers: ['parameter'], start: 101, length: 1 }, // a
+            { type: 'parameter', modifiers: ['parameter'], start: 105, length: 1 }, // a
             // `T` and `maximum` should be ignored
-            { type: 'function', modifiers: ['declaration'], start: 114, length: 2 }, // f2
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 117, length: 1 }, // b
-            { type: 'type', modifiers: [], start: 120, length: 3 }, // Any
-            { type: 'type', modifiers: [], start: 128, length: 3 }, // Any
-            { type: 'parameter', modifiers: ['parameter'], start: 144, length: 1 }, // b
+            { type: 'function', modifiers: ['declaration'], start: 125, length: 2 }, // f2
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 128, length: 1 }, // b
+            { type: 'type', modifiers: [], start: 131, length: 3 }, // Any
+            { type: 'type', modifiers: [], start: 139, length: 3 }, // Any
+            { type: 'parameter', modifiers: ['parameter'], start: 155, length: 1 }, // b
             // `as_integer_ratio`, `g`, and `foo` should be ignored
-            { type: 'variable', modifiers: [], start: 174, length: 3 }, // bar
-            { type: 'function', modifiers: [], start: 180, length: 1 }, // f
-            { type: 'variable', modifiers: [], start: 188, length: 1 }, // a
-            { type: 'variable', modifiers: [], start: 191, length: 1 }, // b
-            { type: 'function', modifiers: [], start: 195, length: 2 }, // f2
-            { type: 'variable', modifiers: [], start: 202, length: 1 }, // c
-            { type: 'variable', modifiers: [], start: 206, length: 1 }, // a
+            { type: 'variable', modifiers: [], start: 185, length: 3 }, // bar
+            { type: 'function', modifiers: [], start: 191, length: 1 }, // f
+            { type: 'variable', modifiers: [], start: 199, length: 1 }, // a
+            { type: 'variable', modifiers: [], start: 202, length: 1 }, // b
+            { type: 'function', modifiers: [], start: 206, length: 2 }, // f2
+            { type: 'variable', modifiers: [], start: 213, length: 1 }, // c
+            { type: 'variable', modifiers: [], start: 217, length: 1 }, // a
             // `bit_length` should be ignored
-            { type: 'variable', modifiers: [], start: 223, length: 1 }, // b
+            { type: 'variable', modifiers: [], start: 234, length: 1 }, // b
             // `bit_length` should be ignored
+            { type: 'type', modifiers: [], start: 250, length: 3 }, // Foo
+            { type: 'type', modifiers: [], start: 256, length: 3 }, // Any
+            { type: 'type', modifiers: [], start: 260, length: 3 }, // Bar
+            { type: 'class', modifiers: [], start: 265, length: 9 }, // TypeAlias
+            { type: 'type', modifiers: [], start: 277, length: 3 }, // Any
+            { type: 'keyword', modifiers: [], start: 281, length: 4 }, // type
+            { type: 'type', modifiers: [], start: 286, length: 3 }, // Baz
+            { type: 'type', modifiers: [], start: 292, length: 3 }, // Any
         ]);
     });
 

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypeAlias
 
 def f(l: list) -> Any:
     v = l[0]
@@ -18,3 +18,7 @@ bar = f(...)
 
 a, b = f2(12)
 c = a.bit_length() + b.bit_length()
+
+Foo = Any
+Bar: TypeAlias = Any
+type Baz = Any
