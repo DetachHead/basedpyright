@@ -124,6 +124,7 @@ load-plugins = [
 disable = ["R", "C", "E", "F", "W", "I"]
 enable = [
     "useless-suppression",
+    "fatal",
     # rules that have not yet been implemented in ruff. once all of these are implemented in ruff, we should remove pylint
     # (see https://github.com/astral-sh/ruff/issues/970):
     "access-member-before-definition",
