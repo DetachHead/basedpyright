@@ -486,8 +486,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return isClassMember ? SemanticTokenTypes.property : SemanticTokenTypes.variable;
     }
 
-    // For a given attribute access, gather information about the magic attribute methods
-    // which the left-hand side provides
+    /**
+     * @returns information about the magic attribute methods which the left-hand side provides
+     * for a given attribute access
+     */
     private _getMagicAttributeAccess(node: MemberAccessNode): MagicAttributeAccess | undefined {
         const baseType = this._getType(node.d.leftExpr);
         if (baseType && baseType.category === TypeCategory.Class) {
@@ -502,7 +504,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return undefined;
     }
 
-    // Check whether “decl” is a final variable declaration
+    /** @returns whether “decl” is a final variable declaration */
     private _isFinal(decl: Declaration): boolean {
         if (decl.type === DeclarationType.Variable) {
             return !!decl.isConstant || !!decl.isFinal || this._evaluator.isFinalVariableDeclaration(decl);
@@ -510,13 +512,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         return false;
     }
 
-    // Check whether “decl” has a property type and does not contain fset information
+    /** @returns whether “decl” has a property type and does not contain fset information */
     private _missingPropertySetter(decl: Declaration): boolean {
         const type = this._evaluator.getTypeForDeclaration(decl).type;
         return !!type && isClass(type) && ClassType.isPropertyClass(type) && !type.priv.fsetInfo;
     }
 
-    // Get the `fget`/`fset` information (depending on `isWriteAccess`) if `decl` is a property declaration
+    /** @returns `fget`/`fset` information (depending on `isWriteAccess`) if `decl` is a property declaration */
     private _getPropertyInfo(decl: Declaration, isWriteAccess: boolean): PropertyMethodInfo | undefined {
         const type = this._evaluator.getTypeForDeclaration(decl).type;
         if (type && isClass(type) && ClassType.isPropertyClass(type)) {
@@ -572,12 +574,14 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     modifiers.push(SemanticTokenModifiers.readonly);
                 }
 
+                // determine whether `node` is part of an assignment, in which case the type
+                // of the second parameter of the setter is used instead of the return type of the getter
                 const isWrite = isWriteAccess(node);
-                let funType: Type | undefined;
+                let methodType: Type | undefined;
                 if (isProp) {
                     // since `__get__`/`__set__` cannot be found for properties, try to find the first
                     // `fget`/`fset` information and use its method type if it exists
-                    funType = declarations
+                    methodType = declarations
                         .map((decl) => this._getPropertyInfo(decl, isWrite))
                         .find((i) => i)?.methodType;
                 } else {
@@ -587,35 +591,36 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     const member = isClass(declaredType)
                         ? this._evaluator.getTypeOfBoundMember(node, declaredType, memberName, { method: method })
                         : undefined;
-                    funType = member?.type;
+                    methodType = member?.type;
                 }
-                let effType: Type | undefined = undefined;
+                let effectiveType: Type | undefined = undefined;
                 if (isWrite) {
                     // for the setter, get the second argument (not counting `self`), which is the new value,
                     // and use its type
-                    if (funType && isFunction(funType) && funType.shared.parameters.length >= 2) {
-                        effType = FunctionType.getParamType(funType, 1);
+                    if (methodType && isFunction(methodType) && methodType.shared.parameters.length >= 2) {
+                        effectiveType = FunctionType.getParamType(methodType, 1);
                     }
                 } else {
                     // for the getter, use the return type
-                    if (funType && isFunction(funType)) effType = FunctionType.getEffectiveReturnType(funType);
+                    if (methodType && isFunction(methodType))
+                        effectiveType = FunctionType.getEffectiveReturnType(methodType);
                 }
 
-                if (effType && isFunction(effType)) {
-                    const isMethod = effType.shared.declaration?.isMethod;
+                if (effectiveType && isFunction(effectiveType)) {
+                    const isMethod = effectiveType.shared.declaration?.isMethod;
                     return isMethod ? SemanticTokenTypes.method : SemanticTokenTypes.function;
                 }
-                if (effType && isOverloaded(effType)) {
+                if (effectiveType && isOverloaded(effectiveType)) {
                     // check whether any overload has a method declaration
-                    const isMethod = OverloadedType.getOverloads(effType).some(
+                    const isMethod = OverloadedType.getOverloads(effectiveType).some(
                         (fType) => fType.shared.declaration?.isMethod
                     );
                     return isMethod ? SemanticTokenTypes.method : SemanticTokenTypes.function;
                 }
-                if (effType && TypeBase.isInstantiable(effType)) {
+                if (effectiveType && TypeBase.isInstantiable(effectiveType)) {
                     // resolve type variables to their bound types
-                    if (isTypeVar(effType)) effType = effType.shared.boundType ?? effType;
-                    return isClass(effType) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
+                    if (isTypeVar(effectiveType)) effectiveType = effectiveType.shared.boundType ?? effectiveType;
+                    return isClass(effectiveType) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
                 }
                 return SemanticTokenTypes.property;
             }
