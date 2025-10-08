@@ -103,6 +103,7 @@ export enum DiagnosticRule {
     reportMatchNotExhaustive = 'reportMatchNotExhaustive',
     reportUnreachable = 'reportUnreachable',
     reportImplicitOverride = 'reportImplicitOverride',
+    reportPositionalArgumentNameMismatch = 'reportPositionalArgumentNameMismatch',
 
     // basedpyright options:
     failOnWarnings = 'failOnWarnings',
