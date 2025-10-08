@@ -115,7 +115,7 @@ The following settings control pyright’s diagnostic output (warnings or errors
 
 ### Type Check Rule Overrides
 
-The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"hint"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level. [see above for more information](#diagnostic-categories)
+The following settings allow more fine grained control over the **typeCheckingMode**. Unless otherwise specified, each diagnostic setting can specify a boolean value (`false` indicating that no error is generated and `true` indicating that an error is generated). Alternatively, a string value of `"none"`, `"hint"`, `"warning"`, `"information"`, or `"error"` can be used to specify the diagnostic level. [see above for more information](#diagnostic-categories), and check the [language server discouraged settings](./language-server-settings.md#discouraged-settings) to learn how to use them in your config (note that as the name implies, you should avoid doing that : use preferably the modes available for **typeCheckingMode**).
 
 - <a name="reportGeneralTypeIssues"></a> **reportGeneralTypeIssues** [boolean or string, optional]: Generate or suppress diagnostics for general type inconsistencies, unsupported operations, argument/parameter mismatches, etc. This covers all of the basic type-checking rules not covered by other rules. It does not include syntax errors.
 
