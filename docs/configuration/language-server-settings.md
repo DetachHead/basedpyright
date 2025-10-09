@@ -108,8 +108,10 @@ the basedpyright language server settings can be configured using a workspace or
 {
     "basedpyright.analysis.diagnosticMode": "openFilesOnly",
     "basedpyright.analysis.typeCheckingMode": "standard",
-    "basedpyright.analysis.diagnosticSeverityOverrides.reportCallIssue": "warning",
-    "basedpyright.analysis.diagnosticSeverityOverrides.reportArgumentType": "warning"
+    "basedpyright.analysis.diagnosticSeverityOverrides": {
+        "reportCallIssue": "warning",
+        "reportArgumentType": false
+    }
 }
 ```
 
