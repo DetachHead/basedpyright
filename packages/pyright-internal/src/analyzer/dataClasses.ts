@@ -683,7 +683,7 @@ export function synthesizeDataClassMethods(
         symbolTable.set('__init__', Symbol.createWithType(SymbolFlags.ClassMember, initType));
         symbolTable.set('__new__', Symbol.createWithType(SymbolFlags.ClassMember, newType));
 
-        if (replaceType) {
+        if (replaceType && !ClassType.isDataClassSkipReplace(classType)) {
             symbolTable.set('__replace__', Symbol.createWithType(SymbolFlags.ClassMember, replaceType));
         }
     }
@@ -1211,6 +1211,7 @@ export function validateDataClassTransformDecorator(
         generateOrder: false,
         generateSlots: false,
         generateHash: false,
+        skipReplace: false,
         keywordOnly: false,
         frozen: false,
         frozenDefault: false,
@@ -1347,6 +1348,33 @@ export function validateDataClassTransformDecorator(
                         }
                     }
                 });
+                break;
+            }
+
+            case 'skip_replace': {
+                if (!AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures) {
+                    evaluator.addDiagnostic(
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        LocMessage.dataClassTransformUnknownArgument().format({ name: arg.d.name.d.value }),
+                        arg.d.valueExpr
+                    );
+                    break;
+                }
+
+                const value = evaluateStaticBoolExpression(
+                    arg.d.valueExpr,
+                    fileInfo.executionEnvironment,
+                    fileInfo.definedConstants
+                );
+                if (value === undefined) {
+                    evaluator.addDiagnostic(
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        LocMessage.dataClassTransformExpectedBoolLiteral(),
+                        arg.d.valueExpr
+                    );
+                    return;
+                }
+                behaviors.skipReplace = value;
                 break;
             }
 

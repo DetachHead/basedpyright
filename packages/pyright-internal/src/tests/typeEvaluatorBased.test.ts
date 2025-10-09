@@ -220,3 +220,43 @@ test('`reportInvalidTypeVarUse`', () => {
         ],
     });
 });
+
+test('dataclass_transform skip_replace', () => {
+    const analysisResults = typeAnalyzeSampleFiles(['based_dataclass_skip_replace/sample.py']);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                code: DiagnosticRule.reportCallIssue,
+                line: 30,
+                message: 'No parameter named "z"',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 41,
+                message:
+                    'Cannot access attribute "__replace__" for class "B"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 52,
+                message:
+                    'Cannot access attribute "__replace__" for class "C"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 64,
+                message:
+                    'Cannot access attribute "__replace__" for class "D"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAssignmentType,
+                line: 76,
+                message:
+                    'Type "Box[int]" is not assignable to declared type "Box[bool]"\n' +
+                    '  "Box[int]" is not assignable to "Box[bool]"\n' +
+                    '    Type parameter "T@Box" is covariant, but "int" is not a subtype of "bool"\n' +
+                    '      "int" is not assignable to "bool"',
+            },
+        ],
+    });
+});
