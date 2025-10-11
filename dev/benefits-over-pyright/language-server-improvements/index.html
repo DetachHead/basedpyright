@@ -1623,7 +1623,7 @@
 <div class="admonition warning">
 <p class="admonition-title">important information for library developers</p>
 <p>using <code>typing_extensions</code> creates a runtime dependency on the <a href="https://pypi.org/project/typing-extensions/"><code>typing_extensions</code></a> pypi package, so you must declare it as a project dependency. this is why <code>basedpyright.analysis.useTypingExtensions</code> is disabled by default to prevent users from unknowingly adding a new dependency to their project.</p>
-<p>such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using <a href="https://docs.gauge.sh/usage/commands#tach-check-external">tach</a> to detect issues like these)</p>
+<p>such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using <a href="https://detachhead.github.io/dtach/usage/commands/#tach-check-external">DTach</a> to detect issues like these)</p>
 </div>
 <h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
 <p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../fixes-for-rules/#reportunreachable">the diagnostic is not reported in most cases where the hint is reported</a>).</p>
