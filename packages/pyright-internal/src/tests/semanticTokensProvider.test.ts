@@ -122,6 +122,189 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('descriptors', () => {
+        const result = semanticTokenizeSampleFile('descriptors.py');
+        expect(result).toStrictEqual([
+            // from typing import Callable, Concatenate
+            { type: 'namespace', modifiers: [], start: 5, length: 6 },
+            { type: 'class', modifiers: [], start: 19, length: 8 },
+            { type: 'class', modifiers: [], start: 29, length: 11 },
+            // class DecFun[T, **P, R]:
+            { type: 'class', modifiers: ['declaration'], start: 49, length: 6 },
+            { type: 'typeParameter', modifiers: [], start: 56, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 61, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 64, length: 1 },
+            // def __init__(self, fn: Callable[Concatenate[T, P], R]) -> None:
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 76, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 85, length: 4 },
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 91, length: 2 },
+            { type: 'class', modifiers: [], start: 95, length: 8 },
+            { type: 'class', modifiers: [], start: 104, length: 11 },
+            { type: 'typeParameter', modifiers: [], start: 116, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 119, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 123, length: 1 },
+            // self.fn = fn
+            { type: 'selfParameter', modifiers: ['parameter'], start: 144, length: 4 },
+            { type: 'function', modifiers: ['classMember'], start: 149, length: 2 },
+            { type: 'function', modifiers: ['parameter'], start: 154, length: 2 },
+            // def __get__(self, instance: T, owner: type[T]) -> Callable[P, R]:
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 166, length: 7 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 174, length: 4 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 180, length: 8 },
+            { type: 'typeParameter', modifiers: [], start: 190, length: 1 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 193, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 200, length: 4 },
+            { type: 'typeParameter', modifiers: [], start: 205, length: 1 },
+            { type: 'class', modifiers: [], start: 212, length: 8 },
+            { type: 'typeParameter', modifiers: [], start: 221, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 224, length: 1 },
+            // def fun(*args: P.args, **kwargs: P.kwargs) -> R:
+            { type: 'function', modifiers: ['declaration'], start: 240, length: 3 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 245, length: 4 },
+            { type: 'typeParameter', modifiers: [], start: 251, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 253, length: 4 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 261, length: 6 },
+            { type: 'typeParameter', modifiers: [], start: 269, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 271, length: 6 },
+            { type: 'typeParameter', modifiers: [], start: 282, length: 1 },
+            // return self.fn(instance, *args, **kwargs)
+            { type: 'selfParameter', modifiers: ['parameter'], start: 304, length: 4 },
+            { type: 'function', modifiers: ['classMember'], start: 309, length: 2 },
+            { type: 'parameter', modifiers: ['parameter'], start: 312, length: 8 },
+            { type: 'parameter', modifiers: ['parameter'], start: 323, length: 4 },
+            { type: 'parameter', modifiers: ['parameter'], start: 331, length: 6 },
+            // return fun
+            { type: 'function', modifiers: [], start: 355, length: 3 },
+            // class DecType[T, **P, R]:
+            { type: 'class', modifiers: ['declaration'], start: 367, length: 7 },
+            { type: 'typeParameter', modifiers: [], start: 375, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 380, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 383, length: 1 },
+            // def __init__(self, fn: Callable[Concatenate[T, P], R]) -> None:
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 395, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 404, length: 4 },
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 410, length: 2 },
+            { type: 'class', modifiers: [], start: 414, length: 8 },
+            { type: 'class', modifiers: [], start: 423, length: 11 },
+            { type: 'typeParameter', modifiers: [], start: 435, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 438, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 442, length: 1 },
+            // self.fn = fn
+            { type: 'selfParameter', modifiers: ['parameter'], start: 463, length: 4 },
+            { type: 'function', modifiers: ['classMember'], start: 468, length: 2 },
+            { type: 'function', modifiers: ['parameter'], start: 473, length: 2 },
+            // def __get__(self, instance: T, owner: type[T]) -> type[T]:
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 485, length: 7 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 493, length: 4 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 499, length: 8 },
+            { type: 'typeParameter', modifiers: [], start: 509, length: 1 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 512, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 519, length: 4 },
+            { type: 'typeParameter', modifiers: [], start: 524, length: 1 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 531, length: 4 },
+            { type: 'typeParameter', modifiers: [], start: 536, length: 1 },
+            // return owner
+            { type: 'parameter', modifiers: ['parameter'], start: 555, length: 5 },
+            // class DecSet[T, **P, R]:
+            { type: 'class', modifiers: ['declaration'], start: 569, length: 6 },
+            { type: 'typeParameter', modifiers: [], start: 576, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 581, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 584, length: 1 },
+            // def __init__(self, fn: Callable[Concatenate[T, P], R]) -> None:
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 596, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 605, length: 4 },
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 611, length: 2 },
+            { type: 'class', modifiers: [], start: 615, length: 8 },
+            { type: 'class', modifiers: [], start: 624, length: 11 },
+            { type: 'typeParameter', modifiers: [], start: 636, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 639, length: 1 },
+            { type: 'typeParameter', modifiers: [], start: 643, length: 1 },
+            // self.fn = fn
+            { type: 'selfParameter', modifiers: ['parameter'], start: 664, length: 4 },
+            { type: 'function', modifiers: ['classMember'], start: 669, length: 2 },
+            { type: 'function', modifiers: ['parameter'], start: 674, length: 2 },
+            // def __get__(self, instance: T, owner: type[T]):
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 686, length: 7 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 694, length: 4 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 700, length: 8 },
+            { type: 'typeParameter', modifiers: [], start: 710, length: 1 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 713, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 720, length: 4 },
+            { type: 'typeParameter', modifiers: [], start: 725, length: 1 },
+            // return self.__get__
+            { type: 'selfParameter', modifiers: ['parameter'], start: 745, length: 4 },
+            { type: 'method', modifiers: ['classMember'], start: 750, length: 7 },
+            // def __set__(self, instance: T, value: int):
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 767, length: 7 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 775, length: 4 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 781, length: 8 },
+            { type: 'typeParameter', modifiers: [], start: 791, length: 1 },
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 794, length: 5 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 801, length: 3 },
+            // class Bar:
+            { type: 'class', modifiers: ['declaration'], start: 828, length: 3 },
+            // @DecFun def desc0(self): ...
+            { type: 'function', modifiers: ['declaration', 'classMember', 'readonly'], start: 853, length: 5 },
+            { type: 'decorator', modifiers: [], start: 837, length: 1 },
+            { type: 'decorator', modifiers: [], start: 838, length: 6 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 859, length: 4 },
+            // @property def desc1(self) -> int: return 1
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 893, length: 5 },
+            { type: 'decorator', modifiers: [], start: 875, length: 1 },
+            { type: 'decorator', modifiers: [], start: 876, length: 8 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 899, length: 4 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 908, length: 3 },
+            // @desc1.setter def desc1(self, value: Callable[[], int]): _ = value()
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 957, length: 5 },
+            { type: 'decorator', modifiers: [], start: 935, length: 1 },
+            { type: 'property', modifiers: ['classMember'], start: 936, length: 5 },
+            { type: 'method', modifiers: ['classMember'], start: 942, length: 6 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 963, length: 4 },
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 969, length: 5 },
+            { type: 'class', modifiers: [], start: 976, length: 8 },
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 989, length: 3 },
+            { type: 'variable', modifiers: [], start: 1004, length: 1 },
+            { type: 'function', modifiers: ['parameter'], start: 1008, length: 5 },
+            // @DecType def desc2(self): ...
+            { type: 'class', modifiers: ['declaration', 'classMember', 'readonly'], start: 1038, length: 5 },
+            { type: 'decorator', modifiers: [], start: 1021, length: 1 },
+            { type: 'decorator', modifiers: [], start: 1022, length: 7 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 1044, length: 4 },
+            // @DecSet def desc3(self): ...
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 1076, length: 5 },
+            { type: 'decorator', modifiers: [], start: 1060, length: 1 },
+            { type: 'decorator', modifiers: [], start: 1061, length: 6 },
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 1082, length: 4 },
+            // bar = Bar()
+            { type: 'variable', modifiers: [], start: 1095, length: 3 },
+            { type: 'class', modifiers: [], start: 1101, length: 3 },
+            // a = bar.desc0
+            { type: 'function', modifiers: [], start: 1107, length: 1 },
+            { type: 'variable', modifiers: [], start: 1111, length: 3 },
+            { type: 'function', modifiers: ['classMember', 'readonly'], start: 1115, length: 5 },
+            // a()
+            { type: 'function', modifiers: [], start: 1121, length: 1 },
+            // b = bar.desc1
+            { type: 'variable', modifiers: [], start: 1125, length: 1 },
+            { type: 'variable', modifiers: [], start: 1129, length: 3 },
+            { type: 'property', modifiers: ['classMember'], start: 1133, length: 5 },
+            // bar.desc1 = lambda: 1
+            { type: 'variable', modifiers: [], start: 1139, length: 3 },
+            { type: 'function', modifiers: ['classMember'], start: 1143, length: 5 },
+            // c = bar.desc2
+            { type: 'class', modifiers: [], start: 1161, length: 1 },
+            { type: 'variable', modifiers: [], start: 1165, length: 3 },
+            { type: 'class', modifiers: ['classMember', 'readonly'], start: 1169, length: 5 },
+            // d = bar.desc3
+            { type: 'function', modifiers: [], start: 1175, length: 1 },
+            { type: 'variable', modifiers: [], start: 1179, length: 3 },
+            { type: 'method', modifiers: ['classMember'], start: 1183, length: 5 },
+            // bar.desc3 = 1
+            { type: 'variable', modifiers: [], start: 1189, length: 3 },
+            { type: 'property', modifiers: ['classMember'], start: 1193, length: 5 },
+        ]);
+    });
+
     test('enum', () => {
         const result = semanticTokenizeSampleFile('enum.py');
         expect(result).toStrictEqual([
