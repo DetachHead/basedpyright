@@ -1205,14 +1205,14 @@ export function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: st
  * If the given node doesn't have `enableBasedFeatures`, issues a given
  * diagnostic and a note explaining how to enable based experimental features.
  *
- * Returns `true` if the base feature is not supposed to be used here.
+ * @returns `true` if the base feature is not supposed to be used here
  */
 function guardBasedFeature(
     evaluator: TypeEvaluator,
     node: ParseNode,
     makeDiagnostic: () => [DiagnosticRule, string]
 ): boolean {
-    // XXX: find better module for this when we have a new based experiment
+    // TODO: find better module for this when we have a new based experiment
     if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableBasedFeatures) {
         return false;
     } else {

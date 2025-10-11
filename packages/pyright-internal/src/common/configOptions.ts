@@ -128,10 +128,6 @@ export interface DiagnosticRuleSet {
     // Use strict type rules for parameters assigned default of None?
     strictParameterNoneValue: boolean;
 
-    // Enable basedpyright-specific experimental features that
-    //  are not part of the official Python typing spec?
-    enableBasedFeatures: boolean;
-
     // Enable experimental features that are not yet part of the
     // official Python typing spec?
     enableExperimentalFeatures: boolean;
@@ -417,6 +413,7 @@ export interface DiagnosticRuleSet {
      */
     failOnWarnings: boolean;
     strictGenericNarrowing: boolean;
+    enableBasedFeatures: boolean;
     reportAny: DiagnosticLevel;
     reportExplicitAny: DiagnosticLevel;
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
