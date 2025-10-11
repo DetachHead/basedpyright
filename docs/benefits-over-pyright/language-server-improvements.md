@@ -19,7 +19,7 @@ autocomplete suggestions for method overrides will automatically add the `@overr
 
     using `typing_extensions` creates a runtime dependency on the [`typing_extensions`](https://pypi.org/project/typing-extensions/) pypi package, so you must declare it as a project dependency. this is why `basedpyright.analysis.useTypingExtensions` is disabled by default to prevent users from unknowingly adding a new dependency to their project.
 
-    such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using [tach](https://docs.gauge.sh/usage/commands#tach-check-external) to detect issues like these)
+    such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using [DTach](https://detachhead.github.io/dtach/usage/commands/#tach-check-external) to detect issues like these)
 
 ## improved diagnostic severity system
 
