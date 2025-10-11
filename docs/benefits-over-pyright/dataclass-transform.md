@@ -1,4 +1,4 @@
-# extra `dataclass_transform` features
+# Extra `dataclass_transform` features
 
 `typing.dataclass_transform` is a bit strange.
 It is a compromise to fulfill the urgent need to support dataclass-like objects
@@ -8,7 +8,7 @@ mechanism for defining your own `dataclass_transform`.
 If your use case deviates from what `dataclass_transform` explicitly supports,
 it can be difficult or impossible to work around that.
 
-Luckily, `dataclass_transform` accepts arbitrary keywords arguments at runtime
+Luckily, `dataclass_transform` accepts arbitrary keyword arguments at runtime
 to allow type checkers to add their own little hacks on top of the standard ones.
 
 `basedpyright` currently supports these options:
