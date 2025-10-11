@@ -12352,6 +12352,30 @@ export function createTypeEvaluator(
             skipUnknownArgCheck = true;
         }
 
+        matchResults.argParams.forEach((argParam) => {
+            const a = argParam.argument;
+            if (
+                a.argCategory === ArgCategory.Simple &&
+                !a.name &&
+                a.valueExpression &&
+                a.valueExpression.nodeType === ParseNodeType.Name &&
+                argParam.paramCategory === ParamCategory.Simple &&
+                !argParam.mapsToVarArgList &&
+                argParam.paramName &&
+                !argParam.isParamNameSynthesized
+            ) {
+                const passedName = (a.valueExpression as NameNode).d.value;
+                const paramName = argParam.paramName;
+                if (passedName !== paramName) {
+                    addDiagnostic(
+                        DiagnosticRule.reportPositionalArgumentNameMismatch,
+                        `Positional argument "${passedName}" does not match parameter name "${paramName}"; pass as a keyword argument to avoid confusion`,
+                        a.valueExpression
+                    );
+                }
+            }
+        });
+
         // Run through all args and validate them against their matched parameter.
         // We'll do two phases. The first one establishes constraints for type
         // variables. The second perform type validation using the solved
