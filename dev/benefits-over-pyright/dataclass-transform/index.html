@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/better-defaults/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/benefits-over-pyright/dataclass-transform/">
       
       
-        <link rel="prev" href="../baseline/">
+        <link rel="prev" href="../better-defaults/">
       
       
-        <link rel="next" href="../dataclass-transform/">
+        <link rel="next" href="../errors-on-invalid-configuration/">
       
       
       <link rel="icon" href="../../img/favicon.ico">
@@ -22,7 +22,7 @@
     
     
       
-        <title>better defaults - basedpyright</title>
+        <title>Extra dataclass_transform features - basedpyright</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#better-defaults" class="md-skip">
+        <a href="#extra-dataclass_transform-features" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              better defaults
+              Extra dataclass_transform features
             
           </span>
         </div>
@@ -380,6 +380,29 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../better-defaults/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    better defaults
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -392,90 +415,7 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    better defaults
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    better defaults
-    
-  </span>
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#typecheckingmode" class="md-nav__link">
-    <span class="md-ellipsis">
-      typeCheckingMode
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pythonplatform" class="md-nav__link">
-    <span class="md-ellipsis">
-      pythonPlatform
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-value-for-pythonpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      default value for pythonPath
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dataclass-transform/" class="md-nav__link">
         
   
   
@@ -486,6 +426,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1580,41 +1521,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#typecheckingmode" class="md-nav__link">
-    <span class="md-ellipsis">
-      typeCheckingMode
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pythonplatform" class="md-nav__link">
-    <span class="md-ellipsis">
-      pythonPlatform
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-value-for-pythonpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      default value for pythonPath
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1632,21 +1538,44 @@
   
 
 
-<h1 id="better-defaults">better defaults</h1>
-<p>we believe that type checkers and linters should be as strict as possible by default. this ensures that the user aware of all the available rules so they can more easily make informed decisions about which rules they don't want enabled in their project. that's why the following defaults have been changed in basedpyright.</p>
-<h2 id="typecheckingmode"><code>typeCheckingMode</code></h2>
-<p>used to be <code>"basic"</code>, but now defaults to <code>"recommended"</code>, which enables all diagnostic rules by default. this may seem daunting at first, however we have some solutions to address some concerns users may have with this mode:</p>
+<h1 id="extra-dataclass_transform-features">Extra <code>dataclass_transform</code> features</h1>
+<p><code>typing.dataclass_transform</code> is a bit strange.
+It is a compromise to fulfill the urgent need to support dataclass-like objects
+(mostly in <code>pydantic</code> and <code>attrs</code>) to some extent without adding a generic and flexible
+mechanism for defining your own <code>dataclass_transform</code>.</p>
+<p>If your use case deviates from what <code>dataclass_transform</code> explicitly supports,
+it can be difficult or impossible to work around that.</p>
+<p>Luckily, <code>dataclass_transform</code> accepts arbitrary keyword arguments at runtime
+to allow type checkers to add their own little hacks on top of the standard ones.</p>
+<p><code>basedpyright</code> currently supports these options:</p>
 <ul>
-<li>less severe diagnostic rules are reported as warnings instead of errors. this reduces <a href="https://en.wikipedia.org/wiki/Alarm_fatigue">alarm fatigue</a> while still ensuring that you're aware of all potentential issues that basedpyright can detect. <a href="../../configuration/config-files/#failOnWarnings"><code>failOnWarnings</code></a> is also enabled by default in this mode, which causes the CLI to exit with a non-zero exit code if any warnings are detected. you disable this behavior by setting <code>failOnWarnings</code> to <code>false</code>.</li>
-<li>we support <a href="../baseline/">baselining</a> to allow for easy adoption of more strict rules in existing codebases.</li>
-<li>we've added a new setting, <a href="../../configuration/config-files/#allowedUntypedLibraries"><code>allowedUntypedLibraries</code></a> which allows you to turn off rules about unknown types on a per-module basis, which can be useful when working with third party packages that aren't properly typed.</li>
+<li>
+<p><code>skip_replace</code>: setting this to <code>True</code> disables the synthesis of the <code>__replace__</code> method.</p>
+<p>Pyright (and basedpyright) assumes that classes produced by a dataclass transform
+define a <code>__replace__</code> method, as long as the class is not marked with <code>init=False</code> and does
+not define a custom <code>__init__</code> method.
+However, <code>typing.dataclass_transform</code> doesn't require that the <code>__replace__</code> method is defined.</p>
+<p>In addition, <code>__replace__</code> messes with the variance inference of frozen dataclasses (see
+<a href="https://discuss.python.org/t/make-replace-stop-interfering-with-variance-inference/96092">this discourse thread</a>
+for details). Here's a recipe you can use to work around this:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass_transform</span>
+
+<span class="nd">@dataclass_transform</span><span class="p">(</span><span class="n">skip_replace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen_default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">frozen</span><span class="p">[</span><span class="n">T</span><span class="p">:</span> <span class="nb">type</span><span class="p">](</span><span class="n">t</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">t</span><span class="p">)</span>
+
+<span class="c1"># check that this enables covariance:</span>
+<span class="nd">@frozen</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Box</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">T</span>
+
+<span class="n">box1</span><span class="p">:</span> <span class="n">Box</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Box</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="n">box2</span><span class="p">:</span> <span class="n">Box</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">box1</span>
+</code></pre></div>
+</li>
 </ul>
-<h2 id="pythonplatform"><code>pythonPlatform</code></h2>
-<p>used to assume that the operating system pyright is being run on is the only operating system your code will run on, which is rarely the case. in basedpyright, <code>pythonPlatform</code> defaults to <code>All</code>, which assumes your code can run on any operating system.</p>
-<h2 id="default-value-for-pythonpath">default value for <code>pythonPath</code></h2>
-<p>configuring your python interpreter in pyright is needlessly confusing. if you aren't using vscode or you aren't running it from inside a virtual environment, you'll likely encounter errors for unresolved imports as a result of pyright using the wrong interpreter. to fix this you'd have to use the <code>venv</code> and <code>venvPath</code> settings which are unnecessarily difficult to use. for example <code>venv</code> can only be set in either <a href="../../configuration/config-files/">the config file</a> or <a href="../../configuration/language-server-settings/">the language server settings</a> but <code>venvPath</code> can only be set in the language server settings or <a href="../../configuration/command-line/">the command line</a>.</p>
-<p>most of the time your virtual environment is located in the same spot: a folder named <code>.venv</code> in your project root. this is the case if you're using <a href="https://docs.astral.sh/uv/">uv</a> (which you should be, it's far better than any alternative).</p>
-<p>so why not just check for this known common venv path and use that by default? that's exactly what basedpyright does. if neither <code>pythonPath</code> or <code>venvPath</code>/<code>venv</code> are set, basedpyright will check for a venv at <code>./.venv</code> and if it finds one, it will use its python interpreter as the value for <code>pythonPath</code>.</p>
+<p>All of these options require the <a href="../../configuration/config-files/#enableBasedFeatures"><code>enableBasedFeatures</code></a>
+configuration option to be set to <code>true</code>.</p>
 
 
 

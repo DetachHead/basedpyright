@@ -318,6 +318,8 @@
       
         
       
+        
+      
     
     
     
@@ -385,6 +387,29 @@
   
   <span class="md-ellipsis">
     better defaults
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benefits-over-pyright/dataclass-transform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Extra dataclass_transform features
     
   </span>
   
@@ -2024,7 +2049,16 @@
 </ul>
 <h3 id="basedpyright-exclusive-settings_1">basedpyright exclusive settings</h3>
 <ul>
-<li><a name="strictGenericNarrowing"></a> <strong>strictGenericNarrowing</strong> [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an <code>isinstance</code> check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of <code>Any</code>. <a href="../../benefits-over-pyright/improved-generic-narrowing/">more info</a></li>
+<li>
+<p><a name="strictGenericNarrowing"></a> <strong>strictGenericNarrowing</strong> [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an <code>isinstance</code> check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of <code>Any</code>. <a href="../../benefits-over-pyright/improved-generic-narrowing/">more info</a></p>
+</li>
+<li>
+<p><a name="enableBasedFeatures"></a> <strong>enableBasedFeatures</strong> [boolean, optional]:
+  Enable Basedpyright-specific features that are not officially supported in the python type system and can't be toggled via a diagnostic rule. You should keep this disabled if you're developing a library targeting users who may not be using basedpyright. This currently includes:</p>
+<ul>
+<li><a href="../../benefits-over-pyright/dataclass-transform/">Extra <code>dataclass_transform</code> features</a></li>
+</ul>
+</li>
 </ul>
 <h3 id="discouraged-settings_1">Discouraged settings</h3>
 <p>there are options in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.</p>
@@ -2519,6 +2553,15 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
 <td style="text-align: left;">true</td>
+</tr>
+<tr>
+<td style="text-align: left;">enableBasedFeatures</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
+<td style="text-align: left;">false</td>
 </tr>
 <tr>
 <td style="text-align: left;">enableExperimentalFeatures</td>
