@@ -80,6 +80,11 @@ The following settings determine how different types should be evaluated.
 
 - <a name="strictGenericNarrowing"></a> **strictGenericNarrowing** [boolean]: When a type is narrowed in such a way that its type parameters are not known (eg. using an `isinstance` check), basedpyright will resolve the type parameter to the generic's bound or constraint instead of `Any`. [more info](../benefits-over-pyright/improved-generic-narrowing.md)
 
+- <a name="enableBasedFeatures"></a> **enableBasedFeatures** [boolean, optional]:
+  Enable Basedpyright-specific features that are not officially supported in the python type system and can't be toggled via a diagnostic rule. You should keep this disabled if you're developing a library targeting users who may not be using basedpyright. This currently includes:
+
+    - [Extra `dataclass_transform` features](../benefits-over-pyright/dataclass-transform.md)
+
 ### Discouraged settings
 
 there are options in pyright that are discouraged in basedpyright because we provide a better alternative. these options are still available for backwards compatibility, but you shouldn't use them.
@@ -304,6 +309,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 - <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless `reportIncompatibleUnannotatedOverride` is enabled. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
 
 - <a name="reportInvalidAbstractMethod"></a> **reportInvalidAbstractMethod** [boolean or string, optional]: Generate or suppress diagnostics for usages of `@abstractmethod` on a non-abstract class. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidabstractmethod)
+
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.

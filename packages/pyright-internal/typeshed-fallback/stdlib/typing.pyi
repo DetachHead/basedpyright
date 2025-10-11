@@ -987,6 +987,7 @@ if sys.version_info >= (3, 11):
         kw_only_default: bool = False,
         frozen_default: bool = False,  # on 3.11, runtime accepts it as part of kwargs
         field_specifiers: tuple[type[Any] | Callable[..., Any], ...] = (),
+        skip_replace: bool = False,
         **kwargs: Any,
     ) -> IdentityFunction: ...
 

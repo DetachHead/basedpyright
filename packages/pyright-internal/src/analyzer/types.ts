@@ -677,6 +677,7 @@ export interface DataClassBehaviors {
     generateOrder?: boolean;
     generateSlots?: boolean;
     generateHash?: boolean;
+    skipReplace?: boolean;
     matchArgs?: boolean;
     keywordOnly?: boolean;
     frozen?: boolean;
@@ -1198,6 +1199,10 @@ export namespace ClassType {
 
     export function isDataClassGenerateHash(classType: ClassType) {
         return !!classType.shared.dataClassBehaviors?.generateHash;
+    }
+
+    export function isDataClassSkipReplace(classType: ClassType) {
+        return !!classType.shared.dataClassBehaviors?.skipReplace;
     }
 
     export function isTypeCheckOnly(classType: ClassType) {

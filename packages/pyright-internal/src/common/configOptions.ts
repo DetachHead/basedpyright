@@ -413,6 +413,7 @@ export interface DiagnosticRuleSet {
      */
     failOnWarnings: boolean;
     strictGenericNarrowing: boolean;
+    enableBasedFeatures: boolean;
     reportAny: DiagnosticLevel;
     reportExplicitAny: DiagnosticLevel;
     reportIgnoreCommentWithoutRule: DiagnosticLevel;
@@ -442,6 +443,7 @@ export function getBooleanDiagnosticRules(includeNonOverridable = false) {
         DiagnosticRule.strictDictionaryInference,
         DiagnosticRule.analyzeUnannotatedFunctions,
         DiagnosticRule.strictParameterNoneValue,
+        DiagnosticRule.enableBasedFeatures,
         DiagnosticRule.enableExperimentalFeatures,
         DiagnosticRule.deprecateTypingAliases,
         DiagnosticRule.disableBytesTypePromotions,
@@ -592,6 +594,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         strictDictionaryInference: false,
         analyzeUnannotatedFunctions: true, // required for completions
         strictParameterNoneValue: false,
+        enableBasedFeatures: false,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
         enableReachabilityAnalysis: false,
@@ -710,6 +713,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         strictDictionaryInference: false,
         analyzeUnannotatedFunctions: true,
         strictParameterNoneValue: true,
+        enableBasedFeatures: false,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
         enableReachabilityAnalysis: true,
@@ -828,6 +832,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         strictDictionaryInference: false,
         analyzeUnannotatedFunctions: true,
         strictParameterNoneValue: true,
+        enableBasedFeatures: false,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true,
         enableReachabilityAnalysis: true,
@@ -945,6 +950,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     strictDictionaryInference: true,
     analyzeUnannotatedFunctions: true,
     strictParameterNoneValue: true,
+    enableBasedFeatures: false,
     enableExperimentalFeatures: false,
     enableTypeIgnoreComments: false,
     enableReachabilityAnalysis: true,
@@ -1059,6 +1065,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     strictDictionaryInference: true,
     analyzeUnannotatedFunctions: true,
     strictParameterNoneValue: true,
+    enableBasedFeatures: false,
     enableExperimentalFeatures: false,
     enableTypeIgnoreComments: false,
     enableReachabilityAnalysis: true,
@@ -1174,6 +1181,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         strictDictionaryInference: true,
         analyzeUnannotatedFunctions: true,
         strictParameterNoneValue: true,
+        enableBasedFeatures: false,
         enableExperimentalFeatures: false,
         enableTypeIgnoreComments: true, // Not overridden by strict mode
         enableReachabilityAnalysis: true, // Not overridden by strict mode

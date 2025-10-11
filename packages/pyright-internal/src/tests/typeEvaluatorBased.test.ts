@@ -220,3 +220,60 @@ test('`reportInvalidTypeVarUse`', () => {
         ],
     });
 });
+
+test('dataclass_transform skip_replace', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.enableBasedFeatures = true;
+    const analysisResults = typeAnalyzeSampleFiles(['based_dataclass_skip_replace/sample.py'], configOptions);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                code: DiagnosticRule.reportCallIssue,
+                line: 28,
+                message: 'No parameter named "z"',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 39,
+                message:
+                    'Cannot access attribute "__replace__" for class "B"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 50,
+                message:
+                    'Cannot access attribute "__replace__" for class "C"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAttributeAccessIssue,
+                line: 62,
+                message:
+                    'Cannot access attribute "__replace__" for class "D"\n' + '  Attribute "__replace__" is unknown',
+            },
+            {
+                code: DiagnosticRule.reportAssignmentType,
+                line: 74,
+                message:
+                    'Type "Box[int]" is not assignable to declared type "Box[bool]"\n' +
+                    '  "Box[int]" is not assignable to "Box[bool]"\n' +
+                    '    Type parameter "T@Box" is covariant, but "int" is not a subtype of "bool"\n' +
+                    '      "int" is not assignable to "bool"',
+            },
+        ],
+    });
+});
+
+test('enableBasedFeatures', () => {
+    const analysisResults = typeAnalyzeSampleFiles(['enable_based_features.py']);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                code: DiagnosticRule.reportGeneralTypeIssues,
+                line: 4,
+                message:
+                    'Argument "skip_replace" is not supported by dataclass_transform\n' +
+                    '  set the `enableBasedFeatures` configuration option to `true` to enable this feature',
+            },
+        ],
+    });
+});

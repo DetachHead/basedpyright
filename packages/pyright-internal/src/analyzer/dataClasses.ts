@@ -12,7 +12,7 @@ import { assert } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { PythonVersion, pythonVersion3_13 } from '../common/pythonVersion';
-import { LocMessage } from '../localization/localize';
+import { LocAddendum, LocMessage } from '../localization/localize';
 import {
     ArgCategory,
     ArgumentNode,
@@ -683,7 +683,7 @@ export function synthesizeDataClassMethods(
         symbolTable.set('__init__', Symbol.createWithType(SymbolFlags.ClassMember, initType));
         symbolTable.set('__new__', Symbol.createWithType(SymbolFlags.ClassMember, newType));
 
-        if (replaceType) {
+        if (replaceType && !ClassType.isDataClassSkipReplace(classType)) {
             symbolTable.set('__replace__', Symbol.createWithType(SymbolFlags.ClassMember, replaceType));
         }
     }
@@ -1201,6 +1201,30 @@ export function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: st
     return fieldDescriptorNames.some((name) => name === callName);
 }
 
+/**
+ * If the given node doesn't have `enableBasedFeatures`, issues a given
+ * diagnostic and a note explaining how to enable based experimental features.
+ *
+ * @returns `true` if the base feature is not supposed to be used here
+ */
+function guardBasedFeature(
+    evaluator: TypeEvaluator,
+    node: ParseNode,
+    makeDiagnostic: () => [DiagnosticRule, string]
+): boolean {
+    // TODO: find better module for this when we have a new based experiment
+    if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableBasedFeatures) {
+        return false;
+    } else {
+        const diagAddendum = new DiagnosticAddendum();
+        diagAddendum.addMessage(LocAddendum.enableBasedFeatures());
+
+        const [diagRule, message] = makeDiagnostic();
+        evaluator.addDiagnostic(diagRule, message + diagAddendum.getString(), node);
+        return true;
+    }
+}
+
 export function validateDataClassTransformDecorator(
     evaluator: TypeEvaluator,
     node: CallNode
@@ -1211,6 +1235,7 @@ export function validateDataClassTransformDecorator(
         generateOrder: false,
         generateSlots: false,
         generateHash: false,
+        skipReplace: false,
         keywordOnly: false,
         frozen: false,
         frozenDefault: false,
@@ -1347,6 +1372,33 @@ export function validateDataClassTransformDecorator(
                         }
                     }
                 });
+                break;
+            }
+
+            case 'skip_replace': {
+                if (
+                    guardBasedFeature(evaluator, arg.d.valueExpr, () => [
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        LocMessage.dataClassTransformUnknownArgument().format({ name: arg.d.name!.d.value }),
+                    ])
+                ) {
+                    break;
+                }
+
+                const value = evaluateStaticBoolExpression(
+                    arg.d.valueExpr,
+                    fileInfo.executionEnvironment,
+                    fileInfo.definedConstants
+                );
+                if (value === undefined) {
+                    evaluator.addDiagnostic(
+                        DiagnosticRule.reportGeneralTypeIssues,
+                        LocMessage.dataClassTransformExpectedBoolLiteral(),
+                        arg.d.valueExpr
+                    );
+                    return;
+                }
+                behaviors.skipReplace = value;
                 break;
             }
 

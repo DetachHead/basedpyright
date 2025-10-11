@@ -1685,6 +1685,7 @@ export namespace Localizer {
             );
         export const installStubs = () =>
             new ParameterizedString<{ packageName: string }>(getRawString('DiagnosticAddendum.installStubs'));
+        export const enableBasedFeatures = () => getRawString('DiagnosticAddendum.enableBasedFeatures');
     }
 
     export namespace CodeAction {

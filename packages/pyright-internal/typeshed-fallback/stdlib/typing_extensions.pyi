@@ -356,6 +356,7 @@ else:
         kw_only_default: bool = False,
         frozen_default: bool = False,
         field_specifiers: tuple[type[Any] | Callable[..., Any], ...] = (),
+        skip_replace: bool = False,
         **kwargs: object,
     ) -> IdentityFunction: ...
 
