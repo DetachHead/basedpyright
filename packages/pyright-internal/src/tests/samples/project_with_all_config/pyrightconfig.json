@@ -20,6 +20,7 @@
     "strict": ["test"],
     "deprecateTypingAliases": true,
     "disableBytesTypePromotions": true,
+    "enableBasedFeatures": true,
     "enableExperimentalFeatures": true,
     "enableTypeIgnoreComments": false,
     "stubPath": "test",

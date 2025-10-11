@@ -863,7 +863,8 @@
         "varianceMismatchForTypeAlias": "Вариантность аргумента типа \"{typeVarName}\" несовместимо с \"{typeAliasParam}\"",
         "explicitRelativeImportSuggestion": "Используйте относительный импорт: `.{importName}`",
         "fullPathImportSuggestion": "или укажите полный путь: `{importName}`",
-        "installStubs": "чтобы исправить это, установите `{packageName}-stubs` из PyPI"
+        "installStubs": "чтобы исправить это, установите `{packageName}-stubs` из PyPI",
+        "enableBasedFeatures": "установите параметр конфигурации `enableBasedFeatures` на `true`, чтобы использовать данную фичу"
     },
     "Service": {
         "longOperation": "Перечисление исходных файлов рабочей области занимает много времени. Вместо этого рассмотрите возможность открыть вложенную папку. [Подробнее](https://aka.ms/workspace-too-many-files)"

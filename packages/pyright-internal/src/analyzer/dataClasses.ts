@@ -12,7 +12,7 @@ import { assert } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { PythonVersion, pythonVersion3_13 } from '../common/pythonVersion';
-import { LocMessage } from '../localization/localize';
+import { LocAddendum, LocMessage } from '../localization/localize';
 import {
     ArgCategory,
     ArgumentNode,
@@ -1201,6 +1201,30 @@ export function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: st
     return fieldDescriptorNames.some((name) => name === callName);
 }
 
+/**
+ * If the given node doesn't have `enableBasedFeatures`, issues a given
+ * diagnostic and a note explaining how to enable based experimental features.
+ *
+ * Returns `true` if the base feature is not supposed to be used here.
+ */
+function guardBasedFeature(
+    evaluator: TypeEvaluator,
+    node: ParseNode,
+    makeDiagnostic: () => [DiagnosticRule, string]
+): boolean {
+    // XXX: find better module for this when we have a new based experiment
+    if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableBasedFeatures) {
+        return false;
+    } else {
+        const diagAddendum = new DiagnosticAddendum();
+        diagAddendum.addMessage(LocAddendum.enableBasedFeatures());
+
+        const [diagRule, message] = makeDiagnostic();
+        evaluator.addDiagnostic(diagRule, message + diagAddendum.getString(), node);
+        return true;
+    }
+}
+
 export function validateDataClassTransformDecorator(
     evaluator: TypeEvaluator,
     node: CallNode
@@ -1352,12 +1376,12 @@ export function validateDataClassTransformDecorator(
             }
 
             case 'skip_replace': {
-                if (!AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableExperimentalFeatures) {
-                    evaluator.addDiagnostic(
+                if (
+                    guardBasedFeature(evaluator, arg.d.valueExpr, () => [
                         DiagnosticRule.reportGeneralTypeIssues,
-                        LocMessage.dataClassTransformUnknownArgument().format({ name: arg.d.name.d.value }),
-                        arg.d.valueExpr
-                    );
+                        LocMessage.dataClassTransformUnknownArgument().format({ name: arg.d.name!.d.value }),
+                    ])
+                ) {
                     break;
                 }
 

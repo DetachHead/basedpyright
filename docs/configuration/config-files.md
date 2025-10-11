@@ -305,6 +305,12 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportInvalidAbstractMethod"></a> **reportInvalidAbstractMethod** [boolean or string, optional]: Generate or suppress diagnostics for usages of `@abstractmethod` on a non-abstract class. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidabstractmethod)
 
+- <a name="enableBasedFeatures"></a> **enableBasedFeatures** [boolean, optional]:
+  Enable experimental Basedpyright-specific features. This currently includes:
+
+    - [Extra `dataclass_transform` features](../benefits-over-pyright/dataclass-transform.md)
+
+
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
 
