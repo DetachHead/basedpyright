@@ -17,11 +17,17 @@ import {
     VariableDeclaration,
     isUnresolvedAliasDeclaration,
 } from '../analyzer/declaration';
+import {
+    getTypeOfAugmentedAssignment,
+    getTypeOfBinaryOperation,
+    getTypeOfIndex,
+    getTypeOfUnaryOperation,
+} from '../analyzer/operations';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { isBuiltInModule } from '../analyzer/typeDocStringUtils';
-import { PrintTypeOptions, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { EvalFlags, PrintTypeOptions, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { convertToInstance, doForEachSubtype, isMaybeDescriptorInstance } from '../analyzer/typeUtils';
 import {
     ClassType,
@@ -44,6 +50,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ExpressionNode, NameNode, ParseNode, ParseNodeType, StringNode } from '../parser/parseNodes';
+import { getInfoNode } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 import {
     getClassAndConstructorTypes,
@@ -270,72 +277,109 @@ export class HoverProvider {
             return null;
         }
 
-        const node = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
-        if (node === undefined) {
+        const rawNode = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
+        if (rawNode === undefined) {
             return null;
+        }
+        const node = getInfoNode(rawNode);
+
+        // extend the range highlighted when hovering, including the whole assignment (`__setitem__`)
+        // or the whole `del` statement (`__delitem__` with a single target)
+        let rangeNode = node;
+        if (
+            node.nodeType === ParseNodeType.Index &&
+            ((node.parent?.nodeType === ParseNodeType.Assignment && node.parent.d.leftExpr === node) ||
+                (node.parent?.nodeType === ParseNodeType.Del && node.parent.d.targets.length === 1))
+        ) {
+            rangeNode = node.parent;
         }
 
         const results: HoverResults = {
             parts: [],
             range: {
-                start: convertOffsetToPosition(node.start, this._parseResults.tokenizerOutput.lines),
-                end: convertOffsetToPosition(TextRange.getEnd(node), this._parseResults.tokenizerOutput.lines),
+                start: convertOffsetToPosition(rangeNode.start, this._parseResults.tokenizerOutput.lines),
+                end: convertOffsetToPosition(TextRange.getEnd(rangeNode), this._parseResults.tokenizerOutput.lines),
             },
         };
 
-        if (node.nodeType === ParseNodeType.Name) {
-            const declInfo = this._evaluator.getDeclInfoForNameNode(node);
-            const declarations = declInfo?.decls;
+        switch (node.nodeType) {
+            case ParseNodeType.Name: {
+                const declInfo = this._evaluator.getDeclInfoForNameNode(node);
+                const declarations = declInfo?.decls;
 
-            if (declarations && declarations.length > 0) {
-                const primaryDeclaration = HoverProvider.getPrimaryDeclaration(declarations);
-                this._addResultsForDeclaration(results.parts, primaryDeclaration, node);
-            } else if (declInfo && declInfo.synthesizedTypes.length > 0) {
-                const nameNode = node;
-                declInfo?.synthesizedTypes.forEach((type) => {
-                    this._addResultsForSynthesizedType(results.parts, type, nameNode);
-                });
-                this._addDocumentationPart(results.parts, node, /* resolvedDecl */ undefined);
-            } else if (!node.parent || node.parent.nodeType !== ParseNodeType.ModuleName) {
-                // If we had no declaration, see if we can provide a minimal tooltip. We'll skip
-                // this if it's part of a module name, since a module name part with no declaration
-                // is a directory (a namespace package), and we don't want to provide any hover
-                // information in that case.
-                if (results.parts.length === 0) {
-                    const type = this._getType(node);
-                    let typeText: string;
-                    if (isModule(type)) {
-                        // Handle modules specially because submodules aren't associated with
-                        // declarations, but we want them to be presented in the same way as
-                        // the top-level module, which does have a declaration.
-                        typeText = '(module) ' + node.d.value;
-                    } else {
-                        let label = 'function';
-                        let isProperty = false;
+                if (declarations && declarations.length > 0) {
+                    const primaryDeclaration = HoverProvider.getPrimaryDeclaration(declarations);
+                    this._addResultsForDeclaration(results.parts, primaryDeclaration, node);
+                } else if (declInfo && declInfo.synthesizedTypes.length > 0) {
+                    const nameNode = node;
+                    declInfo?.synthesizedTypes.forEach((type) => {
+                        this._addResultsForSynthesizedType(results.parts, type, nameNode);
+                    });
+                    this._addDocumentationPart(results.parts, node, /* resolvedDecl */ undefined);
+                } else if (!node.parent || node.parent.nodeType !== ParseNodeType.ModuleName) {
+                    // If we had no declaration, see if we can provide a minimal tooltip. We'll skip
+                    // this if it's part of a module name, since a module name part with no declaration
+                    // is a directory (a namespace package), and we don't want to provide any hover
+                    // information in that case.
+                    if (results.parts.length === 0) {
+                        const type = this._getType(node);
+                        let typeText: string;
+                        if (isModule(type)) {
+                            // Handle modules specially because submodules aren't associated with
+                            // declarations, but we want them to be presented in the same way as
+                            // the top-level module, which does have a declaration.
+                            typeText = '(module) ' + node.d.value;
+                        } else {
+                            let label = 'function';
+                            let isProperty = false;
 
-                        if (isMaybeDescriptorInstance(type, /* requireSetter */ false)) {
-                            isProperty = true;
-                            label = 'property';
+                            if (isMaybeDescriptorInstance(type, /* requireSetter */ false)) {
+                                isProperty = true;
+                                label = 'property';
+                            }
+
+                            typeText = getToolTipForType(
+                                type,
+                                label,
+                                node.d.value,
+                                this._evaluator,
+                                isProperty,
+                                this._functionSignatureDisplay
+                            );
                         }
 
-                        typeText = getToolTipForType(
-                            type,
-                            label,
-                            node.d.value,
-                            this._evaluator,
-                            isProperty,
-                            this._functionSignatureDisplay
-                        );
+                        this._addResultsPart(results.parts, typeText, /* python */ true);
+                        this._addDocumentationPart(results.parts, node, /* resolvedDecl */ undefined);
                     }
-
-                    this._addResultsPart(results.parts, typeText, /* python */ true);
-                    this._addDocumentationPart(results.parts, node, /* resolvedDecl */ undefined);
                 }
+                break;
             }
-        } else if (node.nodeType === ParseNodeType.String) {
-            const type = this._evaluator.getExpectedType(node)?.type;
-            if (type !== undefined) {
-                this._tryAddPartsForTypedDictKey(node, type, results.parts);
+            case ParseNodeType.String: {
+                const type = this._evaluator.getExpectedType(node)?.type;
+                if (type !== undefined) {
+                    this._tryAddPartsForTypedDictKey(node, type, results.parts);
+                }
+                break;
+            }
+            case ParseNodeType.UnaryOperation: {
+                const typeResult = getTypeOfUnaryOperation(this._evaluator, node, EvalFlags.None, undefined);
+                this._addResultsForTypeResult(results.parts, typeResult);
+                break;
+            }
+            case ParseNodeType.BinaryOperation: {
+                const typeResult = getTypeOfBinaryOperation(this._evaluator, node, EvalFlags.None, undefined);
+                this._addResultsForTypeResult(results.parts, typeResult);
+                break;
+            }
+            case ParseNodeType.AugmentedAssignment: {
+                const typeResult = getTypeOfAugmentedAssignment(this._evaluator, node, undefined);
+                this._addResultsForTypeResult(results.parts, typeResult);
+                break;
+            }
+            case ParseNodeType.Index: {
+                const typeResult = getTypeOfIndex(this._evaluator, node);
+                this._addResultsForTypeResult(results.parts, typeResult);
+                break;
             }
         }
 
@@ -481,6 +525,19 @@ export class HoverProvider {
             default:
                 assertNever(resolvedDecl);
         }
+    }
+
+    private _addResultsForTypeResult(parts: HoverTextPart[], typeResult: TypeResult): void {
+        const overloads = typeResult.overloadsUsedForCall ?? [];
+        const declarations = overloads.map((type) => type.shared.declaration).filter((decl) => decl !== undefined);
+        declarations.forEach((decl) => {
+            // if we have already added parts for another declaration, e.g. for a union,
+            // we need to add a separator to prevent a visual bug
+            if (parts.length > 0) {
+                parts.push({ text: '\n\n---\n' });
+            }
+            this._addResultsForDeclaration(parts, decl, decl.node.d.name);
+        });
     }
 
     private _addResultsForSynthesizedType(parts: HoverTextPart[], typeInfo: SynthesizedTypeInfo, hoverNode: NameNode) {

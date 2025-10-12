@@ -19,10 +19,16 @@ import {
     isFunctionDeclaration,
     isUnresolvedAliasDeclaration,
 } from '../analyzer/declaration';
+import {
+    getTypeOfAugmentedAssignment,
+    getTypeOfBinaryOperation,
+    getTypeOfIndex,
+    getTypeOfUnaryOperation,
+} from '../analyzer/operations';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
-import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { EvalFlags, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
 import { OverloadedType, TypeCategory, isOverloaded } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -36,6 +42,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
+import { getInfoNode } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 
 export enum DefinitionFilter {
@@ -170,17 +177,42 @@ class DefinitionProviderBase {
 
         // There should be only one 'definition', so only if extensions failed should we try again.
         if (definitions.length === 0) {
-            if (node.nodeType === ParseNodeType.Name) {
-                const declInfo = this.evaluator.getDeclInfoForNameNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+            node = getInfoNode(node);
+            switch (node.nodeType) {
+                case ParseNodeType.Name: {
+                    const declInfo = this.evaluator.getDeclInfoForNameNode(node);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
                 }
-            } else if (node.nodeType === ParseNodeType.String) {
-                const declInfo = this.evaluator.getDeclInfoForStringNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                case ParseNodeType.String: {
+                    const declInfo = this.evaluator.getDeclInfoForStringNode(node);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
+                }
+                case ParseNodeType.UnaryOperation: {
+                    const result = getTypeOfUnaryOperation(this.evaluator, node, EvalFlags.None, undefined);
+                    this.resolveTypeResult(result, definitions);
+                    break;
+                }
+                case ParseNodeType.BinaryOperation: {
+                    const result = getTypeOfBinaryOperation(this.evaluator, node, EvalFlags.None, undefined);
+                    this.resolveTypeResult(result, definitions);
+                    break;
+                }
+                case ParseNodeType.AugmentedAssignment: {
+                    const result = getTypeOfAugmentedAssignment(this.evaluator, node, undefined);
+                    this.resolveTypeResult(result, definitions);
+                    break;
+                }
+                case ParseNodeType.Index: {
+                    this.resolveTypeResult(getTypeOfIndex(this.evaluator, node), definitions);
+                    break;
                 }
             }
         }
@@ -194,6 +226,12 @@ class DefinitionProviderBase {
 
     protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
         addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
+    }
+    protected resolveTypeResult(typeResult: TypeResult, definitions: DocumentRange[]) {
+        const declarations = typeResult.overloadsUsedForCall
+            ?.map((type) => type.shared.declaration)
+            .filter((decl) => decl !== undefined);
+        this.resolveDeclarations(declarations, definitions);
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {

@@ -22,6 +22,7 @@ import {
     DecoratorNode,
     ExpressionNode,
     FunctionNode,
+    IndexNode,
     MatchNode,
     NameNode,
     ParamCategory,
@@ -783,6 +784,7 @@ export interface TypeEvaluator {
         argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
+    getTypeOfIndex: (node: IndexNode, usage?: EvaluatorUsage, flags?: EvalFlags) => TypeResult;
     getTypeOfMember: (member: ClassMember) => Type;
     getTypeOfBoundMember(
         errorNode: ExpressionNode,
