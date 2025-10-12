@@ -1254,7 +1254,8 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.Index: {
-                typeResult = getTypeOfIndex(node, flags);
+                // This is the placeholder that has been used before
+                typeResult = getTypeOfIndex(node, { method: 'get' }, flags);
                 break;
             }
 
@@ -7166,7 +7167,11 @@ export function createTypeEvaluator(
         };
     }
 
-    function getTypeOfIndex(node: IndexNode, flags = EvalFlags.None): TypeResult {
+    function getTypeOfIndex(
+        node: IndexNode,
+        usage: EvaluatorUsage = { method: 'get' },
+        flags = EvalFlags.None
+    ): TypeResult {
         const baseTypeResult = getTypeOfExpression(node.d.leftExpr, flags | EvalFlags.IndexBaseDefaults);
 
         // If this is meant to be a type and the base expression is a string expression,
@@ -7212,7 +7217,7 @@ export function createTypeEvaluator(
             }
         }
 
-        const indexTypeResult = getTypeOfIndexWithBaseType(node, baseTypeResult, { method: 'get' }, flags);
+        const indexTypeResult = getTypeOfIndexWithBaseType(node, baseTypeResult, usage, flags);
 
         if (isCodeFlowSupportedForReference(node)) {
             // We limit type narrowing for index expressions to built-in types that are
@@ -7828,6 +7833,7 @@ export function createTypeEvaluator(
         let isRequired = false;
         let isNotRequired = false;
         let isReadOnly = false;
+        const overloadsUsedForCall: FunctionType[] = [];
 
         const type = mapSubtypesExpandTypeVars(
             baseTypeResult.type,
@@ -7890,7 +7896,11 @@ export function createTypeEvaluator(
                         }
 
                         if (itemMethodType) {
-                            return getTypeOfIndexedObjectOrClass(node, concreteSubtype, selfType, usage).type;
+                            const typeResult = getTypeOfIndexedObjectOrClass(node, concreteSubtype, selfType, usage);
+                            if (typeResult.overloadsUsedForCall) {
+                                overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                            }
+                            return typeResult.type;
                         }
                     }
 
@@ -8030,6 +8040,9 @@ export function createTypeEvaluator(
                     if (typeResult.isIncomplete) {
                         isIncomplete = true;
                     }
+                    if (typeResult.overloadsUsedForCall) {
+                        overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                    }
                     return typeResult.type;
                 }
 
@@ -8063,7 +8076,7 @@ export function createTypeEvaluator(
             });
         }
 
-        return { type, isIncomplete, isReadOnly, isRequired, isNotRequired };
+        return { type, isIncomplete, isReadOnly, isRequired, isNotRequired, overloadsUsedForCall };
     }
 
     // Determines the effective variance of the type parameters for a generic
@@ -8431,6 +8444,7 @@ export function createTypeEvaluator(
         return {
             type: callResult.returnType ?? UnknownType.create(),
             isIncomplete: !!callResult.isTypeIncomplete,
+            overloadsUsedForCall: callResult.overloadsUsedForCall,
         };
     }
 
@@ -29078,6 +29092,7 @@ export function createTypeEvaluator(
         getInferredReturnType,
         getBestOverloadForArgs,
         getBuiltInType,
+        getTypeOfIndex,
         getTypeOfMember,
         getTypeOfBoundMember,
         getBoundMagicMethod,

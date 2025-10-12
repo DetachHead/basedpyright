@@ -16,6 +16,7 @@ import {
     AugmentedAssignmentNode,
     BinaryOperationNode,
     ExpressionNode,
+    IndexNode,
     ParseNodeType,
     TernaryNode,
     UnaryOperationNode,
@@ -49,6 +50,7 @@ import {
 } from './typeUtils';
 import {
     ClassType,
+    FunctionType,
     NeverType,
     Type,
     TypeBase,
@@ -120,6 +122,7 @@ export function validateBinaryOperation(
     const isIncomplete = !!leftTypeResult.isIncomplete || !!rightTypeResult.isIncomplete;
     let type: Type | undefined;
     let concreteLeftType = evaluator.makeTopLevelTypeVarsConcrete(leftType);
+    const overloadsUsedForCall: FunctionType[] = [];
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     if (booleanOperatorMap[operator] !== undefined) {
@@ -183,6 +186,8 @@ export function validateBinaryOperation(
             if (result.magicMethodDeprecationInfo) {
                 deprecatedInfo = result.magicMethodDeprecationInfo;
             }
+            const overloads = result?.overloadsUsedForCall;
+            if (overloads) overloadsUsedForCall.push(...overloads);
 
             type = result.type;
 
@@ -215,34 +220,44 @@ export function validateBinaryOperation(
             return { type: NeverType.createNever() };
         }
 
-        // Handle certain operations on certain homogenous literal types
-        // using special-case math. For example, Literal[1, 2] + Literal[3, 4]
-        // should result in Literal[4, 5, 6].
-        if (options.isLiteralMathAllowed) {
-            type = calcLiteralForBinaryOp(operator, leftType, rightType);
-        }
-
-        if (!type) {
-            const result = validateArithmeticOperation(
+        const validateArithmetic = (context: InferenceContext | undefined, addendum: DiagnosticAddendum | undefined) =>
+            validateArithmeticOperation(
                 evaluator,
                 operator,
                 leftTypeResult,
                 rightTypeResult,
                 errorNode,
-                inferenceContext,
-                diag,
+                context,
+                addendum,
                 options
             );
+
+        // Handle certain operations on certain homogenous literal types
+        // using special-case math. For example, Literal[1, 2] + Literal[3, 4]
+        // should result in Literal[4, 5, 6].
+        if (options.isLiteralMathAllowed) {
+            type = calcLiteralForBinaryOp(operator, leftType, rightType);
+            const result = validateArithmetic(undefined, undefined);
+            overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
+        }
+
+        if (!type) {
+            const result = validateArithmetic(inferenceContext, diag);
 
             if (result.magicMethodDeprecationInfo) {
                 deprecatedInfo = result.magicMethodDeprecationInfo;
             }
+            overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
 
             type = result.type;
         }
     }
 
-    return { type: type ?? UnknownType.create(isIncomplete), magicMethodDeprecationInfo: deprecatedInfo };
+    return {
+        type: type ?? UnknownType.create(isIncomplete),
+        overloadsUsedForCall,
+        magicMethodDeprecationInfo: deprecatedInfo,
+    };
 }
 
 export function getTypeOfBinaryOperation(
@@ -483,6 +498,7 @@ export function getTypeOfBinaryOperation(
         type: typeResult.type,
         isIncomplete,
         typeErrors,
+        overloadsUsedForCall: typeResult.overloadsUsedForCall,
         magicMethodDeprecationInfo: typeResult.magicMethodDeprecationInfo,
     };
 }
@@ -511,6 +527,7 @@ export function getTypeOfAugmentedAssignment(
     let type: Type | undefined;
     let typeResult: TypeResult | undefined;
     const diag = new DiagnosticAddendum();
+    const overloadsUsedForCall: FunctionType[] = [];
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     const leftTypeResult = evaluator.getTypeOfExpression(node.d.leftExpr);
@@ -610,6 +627,8 @@ export function getTypeOfAugmentedAssignment(
                         if (returnTypeResult?.magicMethodDeprecationInfo) {
                             deprecatedInfo = returnTypeResult.magicMethodDeprecationInfo;
                         }
+                        const overloads = returnTypeResult?.overloadsUsedForCall;
+                        if (overloads) overloadsUsedForCall.push(...overloads);
 
                         return returnTypeResult?.type;
                     }
@@ -633,7 +652,7 @@ export function getTypeOfAugmentedAssignment(
             }
         }
 
-        typeResult = { type, isIncomplete, magicMethodDeprecationInfo: deprecatedInfo };
+        typeResult = { type, isIncomplete, overloadsUsedForCall, magicMethodDeprecationInfo: deprecatedInfo };
     }
 
     evaluator.assignTypeToExpression(node.d.destExpr, typeResult, node.d.rightExpr);
@@ -671,6 +690,7 @@ export function getTypeOfUnaryOperation(
     };
 
     let type: Type | undefined;
+    const overloadsUsedForCall: FunctionType[] = [];
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
 
     if (node.d.operator !== OperatorType.Not) {
@@ -686,12 +706,23 @@ export function getTypeOfUnaryOperation(
         }
     }
 
+    const magic = (subtypeExpanded: Type, magicMethodName: string) =>
+        evaluator.getTypeOfMagicMethodCall(subtypeExpanded, magicMethodName, [], node, undefined);
+
     // Handle certain operations on certain literal types
     // using special-case math. Do not apply this if the input type
     // is incomplete because we may be evaluating an expression within
     // a loop, so the literal value may change each time.
     if (!exprTypeResult.isIncomplete) {
         type = calcLiteralForUnaryOp(node.d.operator, exprType);
+
+        const magicMethodName = unaryOperatorMap[node.d.operator];
+        evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
+            const typeResult = magic(subtypeExpanded, magicMethodName);
+            const overloads = typeResult?.overloadsUsedForCall;
+            if (overloads) overloadsUsedForCall.push(...overloads);
+            return undefined;
+        });
     }
 
     if (!type) {
@@ -702,13 +733,7 @@ export function getTypeOfUnaryOperation(
             let isResultValid = true;
 
             type = evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
-                const typeResult = evaluator.getTypeOfMagicMethodCall(
-                    subtypeExpanded,
-                    magicMethodName,
-                    [],
-                    node,
-                    inferenceContext
-                );
+                const typeResult = magic(subtypeExpanded, magicMethodName);
 
                 if (!typeResult) {
                     isResultValid = false;
@@ -717,6 +742,9 @@ export function getTypeOfUnaryOperation(
                 if (typeResult?.magicMethodDeprecationInfo) {
                     deprecatedInfo = typeResult.magicMethodDeprecationInfo;
                 }
+
+                const overloads = typeResult?.overloadsUsedForCall;
+                if (overloads) overloadsUsedForCall.push(...overloads);
 
                 return typeResult?.type;
             });
@@ -762,7 +790,7 @@ export function getTypeOfUnaryOperation(
         }
     }
 
-    return { type, isIncomplete, magicMethodDeprecationInfo: deprecatedInfo };
+    return { type, isIncomplete, overloadsUsedForCall, magicMethodDeprecationInfo: deprecatedInfo };
 }
 
 export function getTypeOfTernaryOperation(
@@ -813,6 +841,22 @@ export function getTypeOfTernaryOperation(
     }
 
     return { type: combineTypes(typesToCombine), isIncomplete, typeErrors };
+}
+
+/**
+ * Get the type of an index node, taking into accound whether the parent is an assignment (`__setitem__`),
+ * a `del` statement (`__delitem__`), or neither (`__getitem__`).
+ */
+export function getTypeOfIndex(evaluator: TypeEvaluator, node: IndexNode): TypeResult {
+    let method: 'get' | 'set' | 'del';
+    if (node.parent?.nodeType === ParseNodeType.Assignment && node === node.parent.d.leftExpr) {
+        method = 'set';
+    } else if (node.parent?.nodeType === ParseNodeType.Del) {
+        method = 'del';
+    } else {
+        method = 'get';
+    }
+    return evaluator.getTypeOfIndex(node, { method });
 }
 
 function createUnionType(
@@ -1182,6 +1226,7 @@ function validateContainmentOperation(
     diag: DiagnosticAddendum
 ): TypeResult {
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
+    const overloadsUsedForCall: FunctionType[] = [];
 
     const type = evaluator.mapSubtypesExpandTypeVars(
         rightTypeResult.type,
@@ -1231,6 +1276,10 @@ function validateContainmentOperation(
                     if (returnTypeResult?.magicMethodDeprecationInfo) {
                         deprecatedInfo = returnTypeResult.magicMethodDeprecationInfo;
                     }
+                    const overloads = returnTypeResult?.overloadsUsedForCall;
+                    if (overloads) {
+                        overloadsUsedForCall.push(...overloads);
+                    }
 
                     return returnTypeResult?.type ?? evaluator.getBuiltInObject(errorNode, 'bool');
                 }
@@ -1238,7 +1287,7 @@ function validateContainmentOperation(
         }
     );
 
-    return { type, magicMethodDeprecationInfo: deprecatedInfo };
+    return { type, overloadsUsedForCall, magicMethodDeprecationInfo: deprecatedInfo };
 }
 
 function validateArithmeticOperation(
@@ -1248,10 +1297,11 @@ function validateArithmeticOperation(
     rightTypeResult: TypeResult,
     errorNode: ExpressionNode,
     inferenceContext: InferenceContext | undefined,
-    diag: DiagnosticAddendum,
+    diag: DiagnosticAddendum | undefined,
     options: BinaryOperationOptions
 ): TypeResult {
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
+    const overloadsUsedForCall: FunctionType[] = [];
     const isIncomplete = !!leftTypeResult.isIncomplete || !!rightTypeResult.isIncomplete;
 
     const type = evaluator.mapSubtypesExpandTypeVars(
@@ -1290,6 +1340,16 @@ function validateArithmeticOperation(
                             !isUnboundedTupleClass(leftSubtypeExpanded) ||
                             !isUnboundedTupleClass(rightSubtypeExpanded)
                         ) {
+                            const result = evaluator.getTypeOfMagicMethodCall(
+                                leftSubtypeExpanded,
+                                '__add__',
+                                [{ type: rightSubtypeUnexpanded, isIncomplete: rightTypeResult.isIncomplete }],
+                                errorNode,
+                                undefined
+                            );
+                            const overloads = result?.overloadsUsedForCall;
+                            if (overloads) overloadsUsedForCall.push(...overloads);
+
                             return ClassType.cloneAsInstance(
                                 specializeTupleClass(tupleClassType, [
                                     ...leftSubtypeExpanded.priv.tupleTypeArgs,
@@ -1369,7 +1429,7 @@ function validateArithmeticOperation(
                         }
                     }
 
-                    if (!resultTypeResult) {
+                    if (!resultTypeResult && diag) {
                         if (inferenceContext && !isAnyOrUnknown(inferenceContext.expectedType)) {
                             diag.addMessage(
                                 LocMessage.typeNotSupportBinaryOperatorBidirectional().format({
@@ -1393,6 +1453,10 @@ function validateArithmeticOperation(
                     if (resultTypeResult?.magicMethodDeprecationInfo) {
                         deprecatedInfo = resultTypeResult.magicMethodDeprecationInfo;
                     }
+                    const overloads = resultTypeResult?.overloadsUsedForCall;
+                    if (overloads) {
+                        overloadsUsedForCall.push(...overloads);
+                    }
 
                     return resultTypeResult?.type ?? UnknownType.create(isIncomplete);
                 }
@@ -1400,5 +1464,5 @@ function validateArithmeticOperation(
         }
     );
 
-    return { type, magicMethodDeprecationInfo: deprecatedInfo };
+    return { type, overloadsUsedForCall, magicMethodDeprecationInfo: deprecatedInfo };
 }
