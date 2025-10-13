@@ -285,6 +285,8 @@ export class HoverProvider {
 
         // extend the range highlighted when hovering, including the whole assignment (`__setitem__`)
         // or the whole `del` statement (`__delitem__` with a single target)
+        // without this, the hover message is shown when hovering over the entire assignment
+        // or single-target `del` statement (unless blocked), but only the subscription is highlighted
         let rangeNode = node;
         if (
             node.nodeType === ParseNodeType.Index &&
@@ -531,11 +533,7 @@ export class HoverProvider {
         const overloads = typeResult.overloadsUsedForCall ?? [];
         const declarations = overloads.map((type) => type.shared.declaration).filter((decl) => decl !== undefined);
         declarations.forEach((decl) => {
-            // if we have already added parts for another declaration, e.g. for a union,
-            // we need to add a separator to prevent a visual bug
-            if (parts.length > 0) {
-                parts.push({ text: '\n\n---\n' });
-            }
+            this._addSeparator(parts);
             this._addResultsForDeclaration(parts, decl, decl.node.d.name);
         });
     }
@@ -571,11 +569,7 @@ export class HoverProvider {
             if (isClassInstance(subtype) && ClassType.isTypedDictClass(subtype)) {
                 const entry = subtype.shared.typedDictEntries?.knownItems.get(node.d.value);
                 if (entry) {
-                    // If we have already added parts for another declaration (e.g. for a union of TypedDicts that share the same key)
-                    // then we need to add a separator to prevent a visual bug.
-                    if (parts.length > 0) {
-                        parts.push({ text: '\n\n---\n' });
-                    }
+                    this._addSeparator(parts);
 
                     // e.g. (key) name: str
                     const text = '(key) ' + node.d.value + ': ' + this._evaluator.printType(entry.valueType);
@@ -654,5 +648,15 @@ export class HoverProvider {
             python,
             text,
         });
+    }
+
+    /**
+     * If we have already added parts for another declaration, e.g. for a union,
+     * we need to add a separator to prevent a visual bug.
+     */
+    private _addSeparator(parts: HoverTextPart[]) {
+        if (parts.length > 0) {
+            parts.push({ text: '\n\n---\n' });
+        }
     }
 }
