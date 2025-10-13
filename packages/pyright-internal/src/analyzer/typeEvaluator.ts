@@ -1255,7 +1255,7 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.Index: {
-                // This is the placeholder that has been used before
+                // before the access method was configurable, `get` was always used
                 typeResult = getTypeOfIndex(node, { method: 'get' }, flags);
                 break;
             }

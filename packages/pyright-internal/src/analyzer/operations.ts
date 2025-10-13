@@ -26,7 +26,7 @@ import { getFileInfo } from './analyzerNodeInfo';
 import { getEnclosingLambda, isWithinLoop, operatorSupportsChaining, printOperator } from './parseTreeUtils';
 import { getScopeForNode } from './scopeUtils';
 import { evaluateStaticBoolExpression } from './staticExpressions';
-import { EvalFlags, MagicMethodDeprecationInfo, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
+import { EvalFlags, MagicMethodDeprecationInfo, AccessMethod, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
 import {
     InferenceContext,
     convertToInstantiable,
@@ -848,7 +848,7 @@ export function getTypeOfTernaryOperation(
  * a `del` statement (`__delitem__`), or neither (`__getitem__`).
  */
 export function getTypeOfIndex(evaluator: TypeEvaluator, node: IndexNode): TypeResult {
-    let method: 'get' | 'set' | 'del';
+    let method: AccessMethod;
     if (node.parent?.nodeType === ParseNodeType.Assignment && node === node.parent.d.leftExpr) {
         method = 'set';
     } else if (node.parent?.nodeType === ParseNodeType.Del) {
