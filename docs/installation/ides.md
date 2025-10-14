@@ -18,7 +18,7 @@ for information on how to configure the language server in your IDE, [see here](
 
         if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.
 
-        basepyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:
+        basedpyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:
 
         ```json title=".vscode/settings.json"
         {
@@ -159,7 +159,7 @@ Emacs users have 3 options:
     ![](pycharm-recommended-dependency.png)
 
 
-    you should then commit the following generated config files, so that others working on your repo are promted to install the plugin and don't have to manually configure it themselves:
+    you should then commit the following generated config files, so that others working on your repo are prompted to install the plugin and don't have to manually configure it themselves:
 
     - `.idea/pyright-overrides.xml`
     - `.idea/pyright.xml`
