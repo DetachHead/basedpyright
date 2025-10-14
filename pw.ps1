@@ -1,0 +1,1 @@
+python "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\pw" @args
