@@ -277,3 +277,21 @@ test('enableBasedFeatures', () => {
         ],
     });
 });
+
+test('self cannot have default value', () => {
+    const analysisResults = typeAnalyzeSampleFiles(['based_self_default.py']);
+    validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                code: DiagnosticRule.reportGeneralTypeIssues,
+                line: 6,
+                message: 'Parameter "self" must not have a default value',
+            },
+            {
+                code: DiagnosticRule.reportGeneralTypeIssues,
+                line: 10,
+                message: 'Parameter "cls" must not have a default value',
+            },
+        ],
+    });
+});
