@@ -279,16 +279,18 @@ test('enableBasedFeatures', () => {
 });
 
 test('self cannot have default value', () => {
-    const analysisResults = typeAnalyzeSampleFiles(['based_self_default.py']);
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportSelfClsDefault = 'error';
+    const analysisResults = typeAnalyzeSampleFiles(['based_self_default.py'], configOptions);
     validateResultsButBased(analysisResults, {
         errors: [
             {
-                code: DiagnosticRule.reportGeneralTypeIssues,
+                code: DiagnosticRule.reportSelfClsDefault,
                 line: 6,
                 message: 'Parameter "self" must not have a default value',
             },
             {
-                code: DiagnosticRule.reportGeneralTypeIssues,
+                code: DiagnosticRule.reportSelfClsDefault,
                 line: 10,
                 message: 'Parameter "cls" must not have a default value',
             },

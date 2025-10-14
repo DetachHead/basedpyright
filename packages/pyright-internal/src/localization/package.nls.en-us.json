@@ -1813,7 +1813,7 @@
         "unannotatedClassAttribute": "Type annotation for attribute `{name}` is required because this class is not decorated with `@final`",
         "explicitAny": "Type `Any` is not allowed",
         "reportInvalidAbstractMethod": "`@abstractmethod` decorator is not allowed because this class is not abstract. Add `ABC` to its base classes or use `metaclass=ABCMeta`",
-        "clsSelfParamDefaultNotAllowed": "Parameter \"{name}\" must not have a default value"
+        "reportSelfClsDefault": "Parameter \"{name}\" must not have a default value"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": {

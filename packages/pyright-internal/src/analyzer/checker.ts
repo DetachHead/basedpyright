@@ -7666,8 +7666,8 @@ export class Checker extends ParseTreeWalker {
         const { defaultValue, name } = node.d.params[0].d;
         if (name && defaultValue) {
             this._evaluator.addDiagnostic(
-                DiagnosticRule.reportGeneralTypeIssues,
-                LocMessage.clsSelfParamDefaultNotAllowed().format({
+                DiagnosticRule.reportSelfClsDefault,
+                LocMessage.reportSelfClsDefault().format({
                     name: name.d.value,
                 }),
                 defaultValue
