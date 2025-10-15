@@ -1795,6 +1795,23 @@
                                 true,
                                 false
                             ]
+                        },
+                        "reportSelfClsDefault": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for providing a default value for a `self` or `cls` parameter",
+                            "default": "none",
+                            "enum": [
+                                "none",
+                                "hint",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
                         }
                     }
                 },

@@ -574,6 +574,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting diagnostics for usages of `@abstractmethod` on a non-abstract class",
       "default": "none"
+    },
+    "reportSelfClsDefault": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting diagnostics for providing a default value for a `self` or `cls` parameter",
+      "default": "none"
     }
   },
   "properties": {
@@ -973,6 +978,9 @@
     "reportInvalidAbstractMethod": {
       "$ref": "#/definitions/reportInvalidAbstractMethod"
     },
+    "reportSelfClsDefault": {
+      "$ref": "#/definitions/reportSelfClsDefault"
+    },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
     },
@@ -1334,6 +1342,9 @@
           },
           "reportInvalidAbstractMethod": {
             "$ref": "#/definitions/reportInvalidAbstractMethod"
+          },
+          "reportSelfClsDefault": {
+            "$ref": "#/definitions/reportSelfClsDefault"
           },
           "extraPaths": {
             "$ref": "#/definitions/extraPaths"

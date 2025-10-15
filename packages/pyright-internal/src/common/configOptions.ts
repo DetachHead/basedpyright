@@ -426,7 +426,7 @@ export interface DiagnosticRuleSet {
     reportUnannotatedClassAttribute: DiagnosticLevel;
     reportIncompatibleUnannotatedOverride: DiagnosticLevel;
     reportInvalidAbstractMethod: DiagnosticLevel;
-    reportSelfClsDefault: DiagnosticLevel,
+    reportSelfClsDefault: DiagnosticLevel;
     allowedUntypedLibraries: string[];
 }
 
@@ -817,7 +817,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
-        reportSelfClsDefault: 'warning',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -937,7 +937,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
-        reportSelfClsDefault: 'warning',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 
