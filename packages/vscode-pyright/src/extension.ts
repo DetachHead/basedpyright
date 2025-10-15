@@ -268,7 +268,7 @@ export async function activate(context: ExtensionContext) {
     };
 
     // Create the language client and start the client.
-    const client = new LanguageClient('python', toolName, serverOptions, clientOptions);
+    const client = new LanguageClient('basedpyright', toolName, serverOptions, clientOptions);
     languageClient = client;
 
     // Register our custom commands.
