@@ -1767,7 +1767,7 @@
 <summary>using basedpyright with pylance (not recommended)</summary>
 <p>unless you depend on any pylance-exclusive features that haven't yet been re-implemented in basedpyright, it's recommended to disable/uninstall the pylance extension.</p>
 <p>if you do want to continue using pylance, all of the options and commands in basedpyright have been renamed to avoid any conflicts with the pylance extension.</p>
-<p>basepyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:</p>
+<p>basedpyright will automatically disable pylance if it's installed. however if you would like to use basedpyright's diagnostics with pylance's language server, you can change the following settings:</p>
 <div class="highlight"><span class="filename">.vscode/settings.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="c1">// disable pylance&#39;s type checking and only use its language server</span>
 <span class="w">    </span><span class="nt">&quot;python.analysis.typeCheckingMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
@@ -1883,7 +1883,7 @@ their docs, linked above.</p>
 <p class="admonition-title">Tip</p>
 <p>if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Appearance &amp; Behavior &gt; Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:</p>
 <p><img alt="" src="../pycharm-recommended-dependency.png" /></p>
-<p>you should then commit the following generated config files, so that others working on your repo are promted to install the plugin and don't have to manually configure it themselves:</p>
+<p>you should then commit the following generated config files, so that others working on your repo are prompted to install the plugin and don't have to manually configure it themselves:</p>
 <ul>
 <li><code>.idea/pyright-overrides.xml</code></li>
 <li><code>.idea/pyright.xml</code></li>

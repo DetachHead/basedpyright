@@ -1870,7 +1870,7 @@
 <li>the config should be the same for everybody working on your project. you should commit the config file so that other contributors don't have to manually configure their language server to match yours.</li>
 <li>it ensures that the basedpyright language server behaves the same as the <code>basedpyright</code> CLI, which is useful if you have <a href="../../benefits-over-pyright/improved-ci-integration/">your CI configured to type check your code</a> (you should!)</li>
 </ul>
-<p>however these settings are still suppored to maintain compatibility with pyright.</p>
+<p>however these settings are still supported to maintain compatibility with pyright.</p>
 <p><strong>basedpyright.analysis.diagnosticSeverityOverrides</strong> [map]: Allows a user to override the severity levels for individual diagnostic rules. "reportXXX" rules in the type check diagnostics settings in <a href="../config-files/#type-check-diagnostics-settings">configuration</a> are supported. Use the rule name as a key and one of "error," "warning," "information," "true," "false," or "none" as value.</p>
 <p><strong>basedpyright.analysis.exclude</strong> [array of paths]: Paths of directories or files that should not be included. This can be overridden in the configuration file.</p>
 <p><strong>basedpyright.analysis.extraPaths</strong> [array of paths]: Paths to add to the default execution environment extra paths if there are no execution environments defined in the config file.</p>
