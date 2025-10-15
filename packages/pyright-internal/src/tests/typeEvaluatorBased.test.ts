@@ -291,7 +291,12 @@ test('self cannot have default value', () => {
             },
             {
                 code: DiagnosticRule.reportSelfClsDefault,
-                line: 10,
+                line: 9,
+                message: 'Parameter "self" must not have a default value',
+            },
+            {
+                code: DiagnosticRule.reportSelfClsDefault,
+                line: 13,
                 message: 'Parameter "cls" must not have a default value',
             },
         ],

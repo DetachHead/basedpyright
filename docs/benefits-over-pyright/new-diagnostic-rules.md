@@ -253,3 +253,15 @@ _ = Foo()  # no error
 this is allegedly for [performance reasons](https://github.com/microsoft/pyright/issues/5026#issuecomment-1526479622), but basedpyright's `reportInvalidAbstractMethod` rule is reported on the method definition instead of the usage, so it doesn't have to check every method when instantiating every non-abstract class.
 
 it also just makes more sense to report the error on the method definition anyway. methods decorated with `@abstractmethod` on classes that do not extend `ABC` will not raise a runtime error if they are instantiated, making them less safe.
+
+## `reportSelfClsDefault`
+
+Pyright allows specifying a default value for `self` in instance methods and `cls` in class methods.
+
+```py
+class Foo:
+    def foo(self=1):
+        ...
+```
+
+This is almost certainly a mistake, so `reportSelfClsDefault` warns about it.
