@@ -221,7 +221,7 @@ this rule will report an error in such cases.
 
     the reason pyright does not check for cases like this is allegedly because it would be "very slow" to do so. in our testing, we have not noticed any performance impact with this rule enabled, but just in case, it's disabled by default in [the "recommended" diagnostic ruleset](../configuration/config-files.md#recommended-and-all) for now.
 
-    we intend to enable this rule by default in the future once we are more confident with it. please [open an issue](https://github.com/DetachHead/basedpyright/issues/new?template=issue.yaml) if you notice basedpyright running noticably slower with this rule enabled.
+    we intend to enable this rule by default in the future once we are more confident with it. please [open an issue](https://github.com/DetachHead/basedpyright/issues/new?template=issue.yaml) if you notice basedpyright running noticeably slower with this rule enabled.
 
     if you encounter any performance issues with this rule, you may want to disable it and use [`reportUnannotatedClassAttribute`](#reportunannotatedclassattribute) instead.
 

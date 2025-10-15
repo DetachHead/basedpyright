@@ -70,7 +70,7 @@ these options can also be configured [using a config file](./config-files.md). i
 - the config should be the same for everybody working on your project. you should commit the config file so that other contributors don't have to manually configure their language server to match yours.
 - it ensures that the basedpyright language server behaves the same as the `basedpyright` CLI, which is useful if you have [your CI configured to type check your code](../benefits-over-pyright/improved-ci-integration.md) (you should!)
 
-however these settings are still suppored to maintain compatibility with pyright.
+however these settings are still supported to maintain compatibility with pyright.
 
 **basedpyright.analysis.diagnosticSeverityOverrides** [map]: Allows a user to override the severity levels for individual diagnostic rules. "reportXXX" rules in the type check diagnostics settings in [configuration](config-files.md#type-check-diagnostics-settings) are supported. Use the rule name as a key and one of "error," "warning," "information," "true," "false," or "none" as value.
 

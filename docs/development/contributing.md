@@ -47,7 +47,7 @@ To debug the VS Code extension in watch mode, you can do the above, but select â
 
 ### Language server
 
-you may want to debug the language server without the VSCcode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using [LSP-inspector](https://github.com/swyddfa/lsp-devtools)'s client by running the `npm: lsp-client` task or the "LSP client" launch config
+you may want to debug the language server without the VSCode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using [LSP-inspector](https://github.com/swyddfa/lsp-devtools)'s client by running the `npm: lsp-client` task or the "LSP client" launch config
 
 !!! note "for windows users"
 
