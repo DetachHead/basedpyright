@@ -1467,6 +1467,8 @@ export class ConfigOptions {
     // Overrides the default timeout for file enumeration operations.
     fileEnumerationTimeoutInSec?: number;
 
+    strictOverloadConsistency = true;
+
     // https://github.com/microsoft/TypeScript/issues/3841
     declare ['constructor']: typeof ConfigOptions;
 
