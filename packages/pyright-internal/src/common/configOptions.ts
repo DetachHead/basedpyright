@@ -426,6 +426,7 @@ export interface DiagnosticRuleSet {
     reportUnannotatedClassAttribute: DiagnosticLevel;
     reportIncompatibleUnannotatedOverride: DiagnosticLevel;
     reportInvalidAbstractMethod: DiagnosticLevel;
+    reportSelfClsDefault: DiagnosticLevel;
     allowedUntypedLibraries: string[];
 }
 
@@ -558,6 +559,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnannotatedClassAttribute,
         DiagnosticRule.reportIncompatibleUnannotatedOverride,
         DiagnosticRule.reportInvalidAbstractMethod,
+        DiagnosticRule.reportSelfClsDefault,
     ];
 }
 
@@ -695,6 +697,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -814,6 +817,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -933,6 +937,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1051,6 +1056,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'warning',
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
+    reportSelfClsDefault: 'warning',
     allowedUntypedLibraries: [],
 });
 
@@ -1166,6 +1172,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportUnannotatedClassAttribute: 'error',
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
+    reportSelfClsDefault: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1282,6 +1289,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnannotatedClassAttribute: 'none',
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
+        reportSelfClsDefault: 'none',
         allowedUntypedLibraries: [],
     };
 

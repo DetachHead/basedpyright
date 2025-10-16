@@ -120,4 +120,5 @@ export enum DiagnosticRule {
     reportUnannotatedClassAttribute = 'reportUnannotatedClassAttribute',
     reportIncompatibleUnannotatedOverride = 'reportIncompatibleUnannotatedOverride',
     reportInvalidAbstractMethod = 'reportInvalidAbstractMethod',
+    reportSelfClsDefault = 'reportSelfClsDefault',
 }

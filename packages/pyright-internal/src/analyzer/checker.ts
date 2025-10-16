@@ -7386,6 +7386,7 @@ export class Checker extends ParseTreeWalker {
             }
 
             this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
+            this._disallowDefaultInClsSelfParam(node);
             return;
         }
 
@@ -7422,6 +7423,7 @@ export class Checker extends ParseTreeWalker {
             }
 
             this._validateClsSelfParamType(node, functionType, classType, /* isCls */ true);
+            this._disallowDefaultInClsSelfParam(node);
             return;
         }
 
@@ -7464,6 +7466,7 @@ export class Checker extends ParseTreeWalker {
         }
 
         this._validateClsSelfParamType(node, functionType, classType, /* isCls */ false);
+        this._disallowDefaultInClsSelfParam(node);
     }
 
     // Determines whether the method properly calls through to the same method in all
@@ -7565,7 +7568,7 @@ export class Checker extends ParseTreeWalker {
         }
 
         // If there is no type annotation, there's nothing to check because
-        // the type will be inferred.d.typeAnnotation
+        // the type will be inferred.
         const paramInfo = functionType.shared.parameters[0];
         const paramType = FunctionType.getParamType(functionType, 0);
         const paramAnnotation = node.d.params[0].d.annotation ?? node.d.params[0].d.annotationComment;
@@ -7651,6 +7654,24 @@ export class Checker extends ParseTreeWalker {
                     paramAnnotation
                 );
             }
+        }
+    }
+
+    // Warn when `self` or `cls` parameter has a default value
+    private _disallowDefaultInClsSelfParam(node: FunctionNode) {
+        if (node.d.params.length < 1) {
+            return;
+        }
+
+        const { defaultValue, name } = node.d.params[0].d;
+        if (name && defaultValue) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportSelfClsDefault,
+                LocMessage.reportSelfClsDefault().format({
+                    name: name.d.value,
+                }),
+                defaultValue
+            );
         }
     }
 

@@ -686,7 +686,8 @@
         "multipleInheritance": "Множественное наследование не разрешено, потому что следующие классы содержат `__init__` или `__new__`, которые потенциально не будут вызваны: {classes}",
         "unannotatedClassAttribute": "Для атрибута `{name}` требуется аннотация, так как класс не помечен как `@final`",
         "explicitAny": "Тип `Any` запрещен",
-        "reportInvalidAbstractMethod": "Декоратор `@abstractmethod` можно использовать только в абстрактном классе. Наследуйте класс от `ABC` или укажите `metaclass=ABCMeta`"
+        "reportInvalidAbstractMethod": "Декоратор `@abstractmethod` можно использовать только в абстрактном классе. Наследуйте класс от `ABC` или укажите `metaclass=ABCMeta`",
+        "reportSelfClsDefault": "Параметр \"{name}\" не может иметь значение по умолчанию"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "Специальную форму \"Annotated\" нельзя использовать для проверки в isinstance и issubclass",
