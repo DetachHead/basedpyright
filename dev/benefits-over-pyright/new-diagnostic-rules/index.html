@@ -747,6 +747,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportselfclsdefault" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportSelfClsDefault
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1775,6 +1784,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reportselfclsdefault" class="md-nav__link">
+    <span class="md-ellipsis">
+      reportSelfClsDefault
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1963,6 +1981,13 @@
 </code></pre></div>
 <p>this is allegedly for <a href="https://github.com/microsoft/pyright/issues/5026#issuecomment-1526479622">performance reasons</a>, but basedpyright's <code>reportInvalidAbstractMethod</code> rule is reported on the method definition instead of the usage, so it doesn't have to check every method when instantiating every non-abstract class.</p>
 <p>it also just makes more sense to report the error on the method definition anyway. methods decorated with <code>@abstractmethod</code> on classes that do not extend <code>ABC</code> will not raise a runtime error if they are instantiated, making them less safe.</p>
+<h2 id="reportselfclsdefault"><code>reportSelfClsDefault</code></h2>
+<p>Pyright allows specifying a default value for <code>self</code> in instance methods and <code>cls</code> in class methods.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="o">...</span>
+</code></pre></div>
+<p>This is almost certainly a mistake, so <code>reportSelfClsDefault</code> warns about it.</p>
 
 
 

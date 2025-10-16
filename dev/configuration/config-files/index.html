@@ -2381,6 +2381,9 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 <li>
 <p><a name="reportInvalidAbstractMethod"></a> <strong>reportInvalidAbstractMethod</strong> [boolean or string, optional]: Generate or suppress diagnostics for usages of <code>@abstractmethod</code> on a non-abstract class. <a href="../../benefits-over-pyright/new-diagnostic-rules/#reportinvalidabstractmethod">more info</a></p>
 </li>
+<li>
+<p><a name="reportSelfClsDefault"></a> <strong>reportSelfClsDefault</strong> [boolean or string, optional]: Generate or suppress diagnostics for a class or instance method having a default value for the first parameter.</p>
+</li>
 </ul>
 <h2 id="execution-environment-options">Execution Environment Options</h2>
 <p>Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.</p>
@@ -3456,6 +3459,15 @@ to report them as "unnecessary" or "deprecated" <a href="https://microsoft.githu
 </tr>
 <tr>
 <td style="text-align: left;">reportInvalidAbstractMethod</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"none"</td>
+<td style="text-align: left;">"warning"</td>
+<td style="text-align: left;">"error"</td>
+</tr>
+<tr>
+<td style="text-align: left;">reportSelfClsDefault</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
 <td style="text-align: left;">"none"</td>
