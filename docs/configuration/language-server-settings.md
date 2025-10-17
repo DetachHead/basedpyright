@@ -106,7 +106,12 @@ the basedpyright language server settings can be configured using a workspace or
 
 ```json title="./.vscode/settings.json"
 {
-    "basedpyright.analysis.diagnosticMode": "openFilesOnly"
+    "basedpyright.analysis.diagnosticMode": "openFilesOnly",
+    "basedpyright.analysis.typeCheckingMode": "standard",
+    "basedpyright.analysis.diagnosticSeverityOverrides": {
+        "reportCallIssue": "warning",
+        "reportArgumentType": false
+    }
 }
 ```
 
@@ -120,6 +125,11 @@ require("lspconfig").basedpyright.setup {
     basedpyright = {
       analysis = {
         diagnosticMode = "openFilesOnly",
+        typeCheckingMode = "standard",
+        diagnosticSeverityOverrides = {
+            reportCallIssue = "warning",
+            reportArgumentType = false
+        },
         inlayHints = {
           callArgumentNames = true
         }
@@ -138,6 +148,9 @@ args = ["--stdio"]
 
 [language-server.basedpyright.config]
 basedpyright.analysis.diagnosticMode = "openFilesOnly"
+basedpyright.analysis.typeCheckingMode = "standard"
+basedpyright.analysis.diagnosticSeverityOverrides.reportCallIssue = "warning"
+basedpyright.analysis.diagnosticSeverityOverrides.reportArgumentType = false
 ```
 
 ### zed
@@ -156,7 +169,12 @@ basedpyright.analysis.diagnosticMode = "openFilesOnly"
                     "pythonPath": ".venv/bin/python"
                 },
                 "basedpyright.analysis": {
-                    "diagnosticMode": "openFilesOnly"
+                    "diagnosticMode": "openFilesOnly",
+                    "typeCheckingMode": "standard",
+                    "diagnosticSeverityOverrides": {
+                        "reportCallIssue": "warning",
+                        "reportArgumentType": false
+                    }
                 }
             }
         }
