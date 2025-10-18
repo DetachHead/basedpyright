@@ -22,6 +22,7 @@ import {
     DecoratorNode,
     ExpressionNode,
     FunctionNode,
+    IndexNode,
     MatchNode,
     NameNode,
     ParamCategory,
@@ -294,12 +295,14 @@ export interface TypeResultWithNode extends TypeResult {
     node: ParseNode;
 }
 
+export type AccessMethod = 'get' | 'set' | 'del';
+
 // Describes deprecation details about a symbol accessed via a member
 // access expression, perhaps through a property or descriptor accessor
 // method.
 export interface MemberAccessDeprecationInfo {
     accessType: 'property' | 'descriptor';
-    accessMethod: 'get' | 'set' | 'del';
+    accessMethod: AccessMethod;
     deprecatedMessage: string;
 }
 
@@ -310,7 +313,7 @@ export interface MagicMethodDeprecationInfo {
 }
 
 export interface EvaluatorUsage {
-    method: 'get' | 'set' | 'del';
+    method: AccessMethod;
 
     // Used only for set methods
     setType?: TypeResult | undefined;
@@ -783,6 +786,7 @@ export interface TypeEvaluator {
         argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
+    getTypeOfIndex: (node: IndexNode, usage?: EvaluatorUsage, flags?: EvalFlags) => TypeResult;
     getTypeOfMember: (member: ClassMember) => Type;
     getTypeOfBoundMember(
         errorNode: ExpressionNode,

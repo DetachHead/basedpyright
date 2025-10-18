@@ -22,6 +22,7 @@ import {
     Location,
     MarkupContent,
     MarkupKind,
+    Range as LspRange,
     TextEdit,
     WorkspaceEdit,
 } from 'vscode-languageserver';
@@ -955,6 +956,44 @@ export class TestState {
 
             if (MarkupContent.is(actual!.contents)) {
                 assert.equal(actual!.contents.value, expected);
+                assert.equal(actual!.contents.kind, kind);
+            } else {
+                assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);
+            }
+        }
+    }
+
+    verifyHoverRanges(kind: MarkupKind, map: { [marker: string]: [string, LspRange] | null }): void {
+        // Do not force analyze, it can lead to test passing while it doesn't work in product
+        for (const range of this.getRanges()) {
+            const name = this.getMarkerName(range.marker!);
+            const expected = map[name];
+            if (expected === undefined) {
+                continue;
+            }
+
+            const rangePos = this.convertOffsetsToRange(range.fileName, range.pos, range.end);
+            const provider = new HoverProvider(
+                this.program,
+                range.fileUri,
+                rangePos.start,
+                kind,
+                CancellationToken.None
+            );
+            const actual = provider.getHover();
+
+            // if expected is null then there should be nothing shown on hover
+            if (expected === null) {
+                assert.equal(actual, undefined);
+                continue;
+            }
+
+            assert.ok(actual);
+
+            assert.deepEqual(actual!.range, expected[1]);
+
+            if (MarkupContent.is(actual!.contents)) {
+                assert.equal(actual!.contents.value, expected[0]);
                 assert.equal(actual!.contents.kind, kind);
             } else {
                 assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);

@@ -8,7 +8,7 @@
  * ParseNodeType is a const enum which strips out the string keys
  * This file is used to map the string keys to the const enum values.
  */
-import { ParseNodeType } from './parseNodes';
+import { ParseNode, ParseNodeType } from './parseNodes';
 import { OperatorType } from './tokenizerTypes';
 
 type ParseNodeEnumStringKeys = Exclude<keyof typeof ParseNodeType, `${number}`>;
@@ -159,3 +159,27 @@ export const OperatorTypeNameMap: Record<OperatorType, ParseNodeEnumStringKeys> 
 }, {} as Record<OperatorType, ParseNodeEnumStringKeys>);
 
 export type OperatorTypeMapKey = keyof typeof OperatorTypeMap;
+
+/**
+ * Determine the node that should be handled when hovering over/clicking `node` to simplify the case distinctions using it.
+ * Most importantly, number literals are ignored and uses of `__setitem__`/`__delitem__` are resolved to the `IndexNode`.
+ */
+export function getInfoNode(node: ParseNode): ParseNode {
+    if (node.nodeType === ParseNodeType.Number && node.parent) {
+        node = node.parent;
+    }
+    if (node.nodeType === ParseNodeType.Argument && node.parent) {
+        node = node.parent;
+    }
+    if (node.nodeType === ParseNodeType.Assignment && node.d.leftExpr.nodeType === ParseNodeType.Index) {
+        node = node.d.leftExpr;
+    }
+    if (
+        node.nodeType === ParseNodeType.Del &&
+        node.d.targets.length === 1 &&
+        node.d.targets[0].nodeType === ParseNodeType.Index
+    ) {
+        node = node.d.targets[0];
+    }
+    return node;
+}
