@@ -438,3 +438,65 @@ test('hover on __call__ method', async () => {
         marker2: '```python\n(variable) def foo(a: int) -> int\n```',
     });
 });
+
+test('hover on operators', async () => {
+    const code = `
+// @filename: test.py
+//// class A:
+////     pass
+//// class B:
+////     def __radd__(self, lhs: A) -> "B":
+////         return B()
+//// A() [|/*marker1*/+|] B()
+//// a = 1 [|/*marker2*/+|] 2
+//// a [|/*marker3*/+=|] 3
+//// b = ([|/*marker4*/~|]a [|/*marker5*/&|] 255,)
+//// c = 4 [|/*marker6*/*|] b
+//// d = 5 [|/*marker7*/not|] in c
+//// e = a [|/*marker8*/<|] b[[|/*marker9*/0|]]
+//// f = e [|/*marker10*/or|] [|/*marker11*/not|] a
+//// g = [1, 2, 3]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+    const marker1 = state.getMarkerByName('marker1');
+
+    state.openFile(marker1.fileName);
+
+    state.verifyHoverRanges('markdown', {
+        marker1: [
+            '```python\n(method) def __radd__(self: Self@B, lhs: A) -> B\n```',
+            { start: { line: 5, character: 0 }, end: { line: 5, character: 9 } },
+        ],
+        marker2: [
+            '```python\n(method) def __add__(self: Self@int, value: int, /) -> int\n```',
+            { start: { line: 6, character: 4 }, end: { line: 6, character: 9 } },
+        ],
+        marker3: [
+            '```python\n(method) def __add__(self: Self@int, value: int, /) -> int\n```',
+            { start: { line: 7, character: 0 }, end: { line: 7, character: 6 } },
+        ],
+        marker4: [
+            '```python\n(method) def __invert__(self: Self@int) -> int\n```',
+            { start: { line: 8, character: 5 }, end: { line: 8, character: 7 } },
+        ],
+        marker6: [
+            '```python\n(method) def __rmul__(self: Self@tuple[_T_co@tuple], value: SupportsIndex, /) -> tuple[_T_co@tuple, ...]\n```',
+            { start: { line: 9, character: 4 }, end: { line: 9, character: 9 } },
+        ],
+        marker7: [
+            '```python\n(method) def __contains__(self: Self@tuple[_T_co@tuple], key: object, /) -> bool\n```',
+            { start: { line: 10, character: 4 }, end: { line: 10, character: 14 } },
+        ],
+        marker8: [
+            '```python\n(method) def __lt__(self: Self@int, value: int, /) -> bool\n```',
+            { start: { line: 11, character: 4 }, end: { line: 11, character: 12 } },
+        ],
+        marker9: null,
+        marker10: null,
+        marker11: [
+            '```python\n(method) def __bool__(self: Self@int) -> bool\n```',
+            { start: { line: 12, character: 9 }, end: { line: 12, character: 14 } },
+        ],
+    });
+});
