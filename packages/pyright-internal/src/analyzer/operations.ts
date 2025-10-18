@@ -238,7 +238,9 @@ export function validateBinaryOperation(
         if (options.isLiteralMathAllowed) {
             type = calcLiteralForBinaryOp(operator, leftType, rightType);
             const result = validateArithmetic(undefined, undefined);
-            overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
+            if (type) {
+                overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
+            }
         }
 
         if (!type) {
@@ -716,13 +718,15 @@ export function getTypeOfUnaryOperation(
     if (!exprTypeResult.isIncomplete) {
         type = calcLiteralForUnaryOp(node.d.operator, exprType);
 
-        const magicMethodName = unaryOperatorMap[node.d.operator];
-        evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
-            const typeResult = magic(subtypeExpanded, magicMethodName);
-            const overloads = typeResult?.overloadsUsedForCall;
-            if (overloads) overloadsUsedForCall.push(...overloads);
-            return undefined;
-        });
+        if (type) {
+            const magicMethodName = unaryOperatorMap[node.d.operator];
+            evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
+                const typeResult = magic(subtypeExpanded, magicMethodName);
+                const overloads = typeResult?.overloadsUsedForCall;
+                if (overloads) overloadsUsedForCall.push(...overloads);
+                return undefined;
+            });
+        }
     }
 
     if (!type) {
