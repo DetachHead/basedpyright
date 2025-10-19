@@ -8229,15 +8229,23 @@ export function createTypeEvaluator(
         selfType: ClassType | TypeVarType | undefined,
         usage: EvaluatorUsage
     ): TypeResult {
+        const magicMethodName = getIndexAccessMagicMethodName(usage);
+
         // Handle index operations for TypedDict classes specially.
         if (isClassInstance(baseType) && ClassType.isTypedDictClass(baseType)) {
             const typeFromTypedDict = getTypeOfIndexedTypedDict(evaluatorInterface, node, baseType, usage);
             if (typeFromTypedDict) {
+                const dictType = getDictClassType();
+                const magicSymbol = dictType ? ClassType.getSymbolTable(dictType).get(magicMethodName) : undefined;
+                const magicType = magicSymbol ? getEffectiveTypeOfSymbol(magicSymbol) : undefined;
+                if (magicType?.category === TypeCategory.Function) {
+                    typeFromTypedDict.overloadsUsedForCall = [magicType];
+                }
+
                 return typeFromTypedDict;
             }
         }
 
-        const magicMethodName = getIndexAccessMagicMethodName(usage);
         const itemMethodType = getBoundMagicMethod(baseType, magicMethodName, selfType, node.d.leftExpr);
 
         if (!itemMethodType) {
@@ -8256,48 +8264,50 @@ export function createTypeEvaluator(
         // the index is a constant number (integer) or a slice with integer
         // start and end values. In these cases, we can determine
         // the exact type by indexing into the tuple type array.
-        if (
-            node.d.items.length === 1 &&
-            !node.d.trailingComma &&
-            !node.d.items[0].d.name &&
-            node.d.items[0].d.argCategory === ArgCategory.Simple &&
-            isClassInstance(baseType)
-        ) {
-            const index0Expr = node.d.items[0].d.valueExpr;
-            const valueType = getTypeOfExpression(index0Expr).type;
-
+        // This is a lambda to minimize the diff from the upstream repository.
+        const tupleConstIndexType = () => {
             if (
-                isClassInstance(valueType) &&
-                ClassType.isBuiltIn(valueType, 'int') &&
-                isLiteralType(valueType) &&
-                typeof valueType.priv.literalValue === 'number'
+                node.d.items.length === 1 &&
+                !node.d.trailingComma &&
+                !node.d.items[0].d.name &&
+                node.d.items[0].d.argCategory === ArgCategory.Simple &&
+                isClassInstance(baseType)
             ) {
-                const indexValue = valueType.priv.literalValue;
-                const tupleType = getSpecializedTupleType(baseType);
+                const index0Expr = node.d.items[0].d.valueExpr;
+                const valueType = getTypeOfExpression(index0Expr).type;
 
-                if (tupleType && tupleType.priv.tupleTypeArgs) {
-                    if (isTupleIndexUnambiguous(tupleType, indexValue)) {
-                        if (indexValue >= 0 && indexValue < tupleType.priv.tupleTypeArgs.length) {
-                            return { type: tupleType.priv.tupleTypeArgs[indexValue].type };
-                        } else if (indexValue < 0 && tupleType.priv.tupleTypeArgs.length + indexValue >= 0) {
-                            return {
-                                type: tupleType.priv.tupleTypeArgs[tupleType.priv.tupleTypeArgs.length + indexValue]
-                                    .type,
-                            };
+                if (
+                    isClassInstance(valueType) &&
+                    ClassType.isBuiltIn(valueType, 'int') &&
+                    isLiteralType(valueType) &&
+                    typeof valueType.priv.literalValue === 'number'
+                ) {
+                    const indexValue = valueType.priv.literalValue;
+                    const tupleType = getSpecializedTupleType(baseType);
+
+                    if (tupleType && tupleType.priv.tupleTypeArgs) {
+                        if (isTupleIndexUnambiguous(tupleType, indexValue)) {
+                            if (indexValue >= 0 && indexValue < tupleType.priv.tupleTypeArgs.length) {
+                                return tupleType.priv.tupleTypeArgs[indexValue].type;
+                            } else if (indexValue < 0 && tupleType.priv.tupleTypeArgs.length + indexValue >= 0) {
+                                return tupleType.priv.tupleTypeArgs[tupleType.priv.tupleTypeArgs.length + indexValue]
+                                    .type;
+                            }
+                        }
+                    }
+                } else if (isClassInstance(valueType) && ClassType.isBuiltIn(valueType, 'slice')) {
+                    const tupleType = getSpecializedTupleType(baseType);
+
+                    if (tupleType && index0Expr.nodeType === ParseNodeType.Slice) {
+                        const slicedTupleType = getSlicedTupleType(evaluatorInterface, tupleType, index0Expr);
+                        if (slicedTupleType) {
+                            return slicedTupleType;
                         }
                     }
                 }
-            } else if (isClassInstance(valueType) && ClassType.isBuiltIn(valueType, 'slice')) {
-                const tupleType = getSpecializedTupleType(baseType);
-
-                if (tupleType && index0Expr.nodeType === ParseNodeType.Slice) {
-                    const slicedTupleType = getSlicedTupleType(evaluatorInterface, tupleType, index0Expr);
-                    if (slicedTupleType) {
-                        return { type: slicedTupleType };
-                    }
-                }
             }
-        }
+            return undefined;
+        };
 
         const positionalArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.Simple);
         const unpackedListArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.UnpackedList);
@@ -8442,7 +8452,7 @@ export function createTypeEvaluator(
         );
 
         return {
-            type: callResult.returnType ?? UnknownType.create(),
+            type: tupleConstIndexType() ?? callResult.returnType ?? UnknownType.create(),
             isIncomplete: !!callResult.isTypeIncomplete,
             overloadsUsedForCall: callResult.overloadsUsedForCall,
         };
