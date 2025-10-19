@@ -395,7 +395,7 @@
         "paramAlreadyAssigned": "\"{name}\" 参数已赋值",
         "paramAnnotationMissing": "\"{name}\" 参数缺少类型注解",
         "paramAssignmentMismatch": "无法将 \"{sourceType}\" 类型的表达式赋值给 \"{paramType}\" 类型的参数",
-        "paramNameMissing": "缺少名为 \"{name}\" 的参数",
+        "paramNameMissing": "\"{name}\" 参数不存在",
         "paramSpecArgsKwargsDuplicate": "ParamSpec \"{type}\" 的参数已提供过",
         "paramSpecArgsKwargsUsage": "`ParamSpec` 的 `args` 和 `kwargs` 属性必须同时出现在函数签名中",
         "paramSpecArgsMissing": "缺少 `ParamSpec` 的 \"{type}\" 参数",
