@@ -247,6 +247,9 @@ export interface TypeResult<T extends Type = Type> {
     unpackedType?: Type | undefined;
     typeList?: TypeResultWithNode[] | undefined;
 
+    // The declaration which this type information originates from.
+    originatingDeclarations?: Declaration[];
+
     // Type consistency errors detected when evaluating this type.
     typeErrors?: boolean | undefined;
 

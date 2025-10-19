@@ -146,6 +146,11 @@ class DefinitionProviderBase {
         throwIfCancellationRequested(this.token);
 
         const definitions: DocumentRange[] = [];
+        // The originating definitions are tracked separately to allow them to be filtered separately.
+        // Otherwise, the information `dict` member called by accessing a member of a `TypedDict`
+        // (which are only available through typeshed’s stubs) may be filtered away if the declaration
+        // of the `TypedDict` entry is available in a source file.
+        const originatingDefinitions: DocumentRange[] = [];
 
         const factories = this._serviceProvider?.tryGet(ServiceKeys.symbolDefinitionProvider);
         if (factories) {
@@ -180,22 +185,22 @@ class DefinitionProviderBase {
                 }
                 case ParseNodeType.UnaryOperation: {
                     const result = getTypeOfUnaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions);
+                    this.resolveTypeResult(result, definitions, originatingDefinitions);
                     break;
                 }
                 case ParseNodeType.BinaryOperation: {
                     const result = getTypeOfBinaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions);
+                    this.resolveTypeResult(result, definitions, originatingDefinitions);
                     break;
                 }
                 case ParseNodeType.AugmentedAssignment: {
                     const result = getTypeOfAugmentedAssignment(this.evaluator, infoNode, undefined);
-                    this.resolveTypeResult(result, definitions);
+                    this.resolveTypeResult(result, definitions, originatingDefinitions);
                     break;
                 }
                 case ParseNodeType.Index: {
                     const result = getTypeOfIndex(this.evaluator, infoNode);
-                    this.resolveTypeResult(result, definitions);
+                    this.resolveTypeResult(result, definitions, originatingDefinitions);
                     break;
                 }
             }
@@ -209,21 +214,30 @@ class DefinitionProviderBase {
             currentNode = currentNode.parent;
         }
 
-        if (definitions.length === 0) {
+        if (definitions.length + originatingDefinitions.length === 0) {
             return undefined;
         }
 
-        return filterDefinitions(this._filter, definitions);
+        return [
+            ...filterDefinitions(this._filter, definitions),
+            ...filterDefinitions(this._filter, originatingDefinitions),
+        ];
     }
 
     protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
         addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
     }
-    protected resolveTypeResult(typeResult: TypeResult, definitions: DocumentRange[]) {
-        const declarations = typeResult.overloadsUsedForCall
+    protected resolveTypeResult(
+        typeResult: TypeResult,
+        definitions: DocumentRange[],
+        originatingDefinitions: DocumentRange[]
+    ) {
+        const overloadDeclarations = typeResult.overloadsUsedForCall
             ?.map((type) => type.shared.declaration)
             .filter((decl) => decl !== undefined);
-        this.resolveDeclarations(declarations, definitions);
+        const originatingDeclarations = typeResult.originatingDeclarations ?? [];
+        this.resolveDeclarations(overloadDeclarations, definitions);
+        this.resolveDeclarations(originatingDeclarations, originatingDefinitions);
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {

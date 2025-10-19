@@ -829,6 +829,7 @@ export function getTypedDictMembersForClass(
         if (ClassType.isTypedDictMarkedClosed(classType) && !entries.extraItems) {
             entries.extraItems = {
                 valueType: NeverType.createNever(),
+                declaration: undefined,
                 isReadOnly: false,
                 isRequired: false,
                 isProvided: false,
@@ -1071,6 +1072,7 @@ function getTypedDictMembersForClassRecursive(
     if (ClassType.isTypedDictMarkedClosed(classType)) {
         entries.extraItems = {
             valueType: NeverType.createNever(),
+            declaration: undefined,
             isReadOnly: false,
             isRequired: false,
             isProvided: false,
@@ -1083,6 +1085,7 @@ function getTypedDictMembersForClassRecursive(
 
         entries.extraItems = {
             valueType: convertToInstance(extraItemsTypeResult.type),
+            declaration: undefined,
             isReadOnly: !!extraItemsTypeResult.isReadOnly,
             isRequired: false,
             isProvided: true,
@@ -1114,6 +1117,7 @@ function getTypedDictMembersForClassRecursive(
 
                 const tdEntry: TypedDictEntry = {
                     valueType,
+                    declaration: lastDecl,
                     isReadOnly,
                     isRequired,
                     isProvided: false,
@@ -1133,6 +1137,7 @@ export function getEffectiveExtraItemsEntryType(evaluator: TypeEvaluator, classT
     if (!ClassType.isTypedDictMarkedClosed(classType)) {
         return {
             valueType: evaluator.getObjectType(),
+            declaration: undefined,
             isReadOnly: true,
             isRequired: false,
             isProvided: false,
@@ -1145,6 +1150,7 @@ export function getEffectiveExtraItemsEntryType(evaluator: TypeEvaluator, classT
 
     return {
         valueType: NeverType.createNever(),
+        declaration: undefined,
         isReadOnly: true,
         isRequired: false,
         isProvided: false,
@@ -1451,6 +1457,7 @@ export function assignToTypedDict(
                 if (!symbolEntry.isRequired) {
                     narrowedEntries.set(keyValue, {
                         valueType: valueTypes[index].type,
+                        declaration: symbolEntry.declaration,
                         isReadOnly: !!valueTypes[index].isReadOnly,
                         isRequired: false,
                         isProvided: true,
@@ -1521,6 +1528,7 @@ export function getTypeOfIndexedTypedDict(
     let diag = new DiagnosticAddendum();
     let allDiagsInvolveNotRequiredKeys = true;
 
+    const originatingDeclarations: VariableDeclaration[] = [];
     const resultingType = mapSubtypes(indexType, (subtype) => {
         if (isAnyOrUnknown(subtype)) {
             return subtype;
@@ -1574,6 +1582,9 @@ export function getTypeOfIndexedTypedDict(
                 allDiagsInvolveNotRequiredKeys = false;
             }
 
+            if (entry.declaration) {
+                originatingDeclarations.push(entry.declaration);
+            }
             return entry.valueType;
         }
 
@@ -1608,7 +1619,7 @@ export function getTypeOfIndexedTypedDict(
         );
     }
 
-    return { type: resultingType, isIncomplete: !!indexTypeResult.isIncomplete };
+    return { type: resultingType, originatingDeclarations, isIncomplete: !!indexTypeResult.isIncomplete };
 }
 
 // If the specified type has a non-required key, this method marks the
@@ -1639,6 +1650,7 @@ export function narrowForKeyAssignment(classType: ClassType, key: string) {
         isRequired: false,
         isReadOnly: tdEntry.isReadOnly,
         valueType: tdEntry.valueType,
+        declaration: tdEntry.declaration,
     });
 
     return ClassType.cloneForNarrowedTypedDictEntries(classType, narrowedEntries);
