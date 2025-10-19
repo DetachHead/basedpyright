@@ -457,6 +457,22 @@ test('hover on operators', async () => {
 //// f = e [|/*marker10*/or|] [|/*marker11*/not|] a
 //// g = [1, 2, 3]
 //// g[[|/*marker12*/0|]] = h = g[[|/*marker13*/2|]] = h = g[[|/*marker14*/1|]]
+//// from typing import NotRequired, TypedDict
+//// class C(TypedDict): a: int; b: NotRequired[float]
+//// i: C = {"a": 2, "b": 1.2}
+//// i[[|/*marker15*/"b"|]] = i[[|/*marker16*/"a"|]]
+//// del i[[|/*marker17*/"b"|]]
+//// class D(TypedDict):
+////     a: int
+////     """an integer"""
+////     b: NotRequired[float]
+//// j: D | C = {[|/*marker18*/"a"|]: 2}
+//// k = j[[|/*marker19*/"a"|]]
+//// l = c[[|/*marker20*/1:2|]]
+//// from enum import Enum
+//// class E(Enum): A = 1; B = 2
+//// m = E[[|/*marker21*/"A"|]]
+//// n = "abc"[[|/*marker22*/1|]]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -513,6 +529,38 @@ test('hover on operators', async () => {
         marker14: [
             '```python\n(method) def __getitem__(self: Self@list[_T@list], i: SupportsIndex, /) -> _T@list\n```',
             { start: { line: 14, character: 22 }, end: { line: 14, character: 26 } },
+        ],
+        marker15: [
+            '```python\n(variable) b: float\n```\n\n\n---\n```python\n(method) def __setitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, value: _VT@dict, /) -> None\n```',
+            { start: { line: 18, character: 0 }, end: { line: 18, character: 15 } },
+        ],
+        marker16: [
+            '```python\n(variable) a: int\n```\n\n\n---\n```python\n(method) def __getitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, /) -> _VT@dict\n```',
+            { start: { line: 18, character: 9 }, end: { line: 18, character: 15 } },
+        ],
+        marker17: [
+            '```python\n(variable) b: float\n```\n\n\n---\n```python\n(method) def __delitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, /) -> None\n```',
+            { start: { line: 19, character: 0 }, end: { line: 19, character: 10 } },
+        ],
+        marker18: [
+            '```python\n(key) a: int\n```\n---\nan integer\n\n---\n```python\n(key) a: int\n```',
+            { start: { line: 24, character: 12 }, end: { line: 24, character: 15 } },
+        ],
+        marker19: [
+            '```python\n(variable) a: int\n```\n---\nan integer\n\n---\n```python\n(method) def __getitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, /) -> _VT@dict\n```\n\n\n---\n```python\n(variable) a: int\n```\n\n\n---\n```python\n(method) def __getitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, /) -> _VT@dict\n```',
+            { start: { line: 25, character: 4 }, end: { line: 25, character: 10 } },
+        ],
+        marker20: [
+            '```python\n(method) def __getitem__(self: Self@tuple[_T_co@tuple], key: slice[Any, Any, Any], /) -> tuple[_T_co@tuple, ...]\n```',
+            { start: { line: 26, character: 4 }, end: { line: 26, character: 10 } },
+        ],
+        marker21: [
+            '```python\n(method) def __getitem__(self: type[_EnumMemberT@__getitem__], name: str) -> _EnumMemberT@__getitem__\n```',
+            { start: { line: 29, character: 4 }, end: { line: 29, character: 10 } },
+        ],
+        marker22: [
+            '```python\n(method) def __getitem__(self: LiteralString, key: SupportsIndex | slice[Any, Any, Any], /) -> LiteralString\n```',
+            { start: { line: 30, character: 4 }, end: { line: 30, character: 12 } },
         ],
     });
 });

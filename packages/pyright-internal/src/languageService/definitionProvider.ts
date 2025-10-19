@@ -146,11 +146,11 @@ class DefinitionProviderBase {
         throwIfCancellationRequested(this.token);
 
         const definitions: DocumentRange[] = [];
-        // The originating definitions are tracked separately to allow them to be filtered separately.
-        // Otherwise, the information `dict` member called by accessing a member of a `TypedDict`
-        // (which are only available through typeshed’s stubs) may be filtered away if the declaration
-        // of the `TypedDict` entry is available in a source file.
-        const originatingDefinitions: DocumentRange[] = [];
+        // Definitions that should not be filtered. These are treated separately so that the `dict`
+        // member called by accessing a member of a `TypedDict` (which is only available through
+        // typeshed stubs) is not filtered away if the declaration of the `TypedDict` entry is
+        // available in a non-stub file.
+        const unfilteredDefinitions: DocumentRange[] = [];
 
         const factories = this._serviceProvider?.tryGet(ServiceKeys.symbolDefinitionProvider);
         if (factories) {
@@ -163,7 +163,7 @@ class DefinitionProviderBase {
         // There should be only one 'definition', so only if extensions failed should we try again.
         // Go up the parse tree until we find a node that we can a definition for.
         let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
-        while (definitions.length === 0 && currentNode) {
+        while (definitions.length + unfilteredDefinitions.length === 0 && currentNode) {
             const infoNode: ParseNode | undefined = getInfoNode(currentNode);
 
             switch (infoNode.nodeType) {
@@ -185,22 +185,22 @@ class DefinitionProviderBase {
                 }
                 case ParseNodeType.UnaryOperation: {
                     const result = getTypeOfUnaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions, originatingDefinitions);
+                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
                     break;
                 }
                 case ParseNodeType.BinaryOperation: {
                     const result = getTypeOfBinaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions, originatingDefinitions);
+                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
                     break;
                 }
                 case ParseNodeType.AugmentedAssignment: {
                     const result = getTypeOfAugmentedAssignment(this.evaluator, infoNode, undefined);
-                    this.resolveTypeResult(result, definitions, originatingDefinitions);
+                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
                     break;
                 }
                 case ParseNodeType.Index: {
                     const result = getTypeOfIndex(this.evaluator, infoNode);
-                    this.resolveTypeResult(result, definitions, originatingDefinitions);
+                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
                     break;
                 }
             }
@@ -208,20 +208,17 @@ class DefinitionProviderBase {
             // In an assignment, the parents represent sub-assignments, i.e. for an assignment `a = b = 2`,
             // if `currentNode` represents the assignment to `a`, its parent represents the assignment to `b`.
             // Therefore, going to the parent to find definitions is not sensible for assignments.
-            if (infoNode.nodeType === ParseNodeType.Assignment) {
+            if (currentNode.nodeType === ParseNodeType.Assignment) {
                 break;
             }
             currentNode = currentNode.parent;
         }
 
-        if (definitions.length + originatingDefinitions.length === 0) {
+        if (definitions.length + unfilteredDefinitions.length === 0) {
             return undefined;
         }
 
-        return [
-            ...filterDefinitions(this._filter, definitions),
-            ...filterDefinitions(this._filter, originatingDefinitions),
-        ];
+        return [...filterDefinitions(this._filter, definitions), ...unfilteredDefinitions];
     }
 
     protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
@@ -230,14 +227,20 @@ class DefinitionProviderBase {
     protected resolveTypeResult(
         typeResult: TypeResult,
         definitions: DocumentRange[],
-        originatingDefinitions: DocumentRange[]
+        unfilteredDefinitions: DocumentRange[]
     ) {
-        const overloadDeclarations = typeResult.overloadsUsedForCall
-            ?.map((type) => type.shared.declaration)
-            .filter((decl) => decl !== undefined);
-        const originatingDeclarations = typeResult.originatingDeclarations ?? [];
-        this.resolveDeclarations(overloadDeclarations, definitions);
-        this.resolveDeclarations(originatingDeclarations, originatingDefinitions);
+        // If there is information about the `TypedDict` items used, that takes precedence.
+        if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
+            const declarations = typeResult.typedDictItemInfos
+                .flatMap((member) => [member.magicMethod.shared.declaration, member.declaration])
+                .filter((decl) => decl !== undefined);
+            this.resolveDeclarations(declarations, unfilteredDefinitions);
+        } else {
+            const declarations = typeResult.overloadsUsedForCall
+                ?.map((type) => type.shared.declaration)
+                .filter((decl) => decl !== undefined);
+            this.resolveDeclarations(declarations, definitions);
+        }
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {

@@ -35,6 +35,7 @@ import {
     Arg,
     AssignTypeFlags,
     EvaluatorUsage,
+    TypedDictItemInfo,
     TypeEvaluator,
     TypeResult,
     TypeResultWithNode,
@@ -51,6 +52,7 @@ import {
     isAnyOrUnknown,
     isClass,
     isClassInstance,
+    isFunction,
     isInstantiableClass,
     isNever,
     maxTypeRecursionCount,
@@ -1528,7 +1530,7 @@ export function getTypeOfIndexedTypedDict(
     let diag = new DiagnosticAddendum();
     let allDiagsInvolveNotRequiredKeys = true;
 
-    const originatingDeclarations: VariableDeclaration[] = [];
+    const itemInfos: TypedDictItemInfo[] = [];
     const resultingType = mapSubtypes(indexType, (subtype) => {
         if (isAnyOrUnknown(subtype)) {
             return subtype;
@@ -1583,7 +1585,13 @@ export function getTypeOfIndexedTypedDict(
             }
 
             if (entry.declaration) {
-                originatingDeclarations.push(entry.declaration);
+                const dictType = evaluator.getDictClassType();
+                const magicMethodName = evaluator.getIndexAccessMagicMethodName(usage);
+                const magicSymbol = dictType ? ClassType.getSymbolTable(dictType).get(magicMethodName) : undefined;
+                const magicMethod = magicSymbol ? evaluator.getEffectiveTypeOfSymbol(magicSymbol) : undefined;
+                if (magicMethod && isFunction(magicMethod)) {
+                    itemInfos.push({ magicMethod, declaration: entry.declaration });
+                }
             }
             return entry.valueType;
         }
@@ -1619,7 +1627,7 @@ export function getTypeOfIndexedTypedDict(
         );
     }
 
-    return { type: resultingType, originatingDeclarations, isIncomplete: !!indexTypeResult.isIncomplete };
+    return { type: resultingType, typedDictItemInfos: itemInfos, isIncomplete: !!indexTypeResult.isIncomplete };
 }
 
 // If the specified type has a non-required key, this method marks the

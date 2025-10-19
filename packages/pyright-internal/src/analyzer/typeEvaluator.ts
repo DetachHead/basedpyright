@@ -232,6 +232,7 @@ import {
     SymbolDeclInfo,
     TypeEvaluator,
     TypeResult,
+    TypedDictItemInfo,
     TypeResultWithNode,
     ValidateArgTypeParams,
     ValidateTypeArgsOptions,
@@ -7834,7 +7835,7 @@ export function createTypeEvaluator(
         let isNotRequired = false;
         let isReadOnly = false;
         const overloadsUsedForCall: FunctionType[] = [];
-        const originatingDeclarations: Declaration[] = [];
+        const typedDictItemInfos: TypedDictItemInfo[] = [];
 
         const type = mapSubtypesExpandTypeVars(
             baseTypeResult.type,
@@ -7901,8 +7902,8 @@ export function createTypeEvaluator(
                             if (typeResult.overloadsUsedForCall) {
                                 overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
                             }
-                            if (typeResult.originatingDeclarations) {
-                                originatingDeclarations.push(...typeResult.originatingDeclarations);
+                            if (typeResult.typedDictItemInfos) {
+                                typedDictItemInfos.push(...typeResult.typedDictItemInfos);
                             }
                             return typeResult.type;
                         }
@@ -8047,8 +8048,8 @@ export function createTypeEvaluator(
                     if (typeResult.overloadsUsedForCall) {
                         overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
                     }
-                    if (typeResult.originatingDeclarations) {
-                        originatingDeclarations.push(...typeResult.originatingDeclarations);
+                    if (typeResult.typedDictItemInfos) {
+                        typedDictItemInfos.push(...typeResult.typedDictItemInfos);
                     }
                     return typeResult.type;
                 }
@@ -8090,7 +8091,7 @@ export function createTypeEvaluator(
             isRequired,
             isNotRequired,
             overloadsUsedForCall,
-            originatingDeclarations,
+            typedDictItemInfos,
         };
     }
 
@@ -8244,23 +8245,15 @@ export function createTypeEvaluator(
         selfType: ClassType | TypeVarType | undefined,
         usage: EvaluatorUsage
     ): TypeResult {
-        const magicMethodName = getIndexAccessMagicMethodName(usage);
-
         // Handle index operations for TypedDict classes specially.
         if (isClassInstance(baseType) && ClassType.isTypedDictClass(baseType)) {
             const typeFromTypedDict = getTypeOfIndexedTypedDict(evaluatorInterface, node, baseType, usage);
             if (typeFromTypedDict) {
-                const dictType = getDictClassType();
-                const magicSymbol = dictType ? ClassType.getSymbolTable(dictType).get(magicMethodName) : undefined;
-                const magicType = magicSymbol ? getEffectiveTypeOfSymbol(magicSymbol) : undefined;
-                if (magicType?.category === TypeCategory.Function) {
-                    typeFromTypedDict.overloadsUsedForCall = [magicType];
-                }
-
                 return typeFromTypedDict;
             }
         }
 
+        const magicMethodName = getIndexAccessMagicMethodName(usage);
         const itemMethodType = getBoundMagicMethod(baseType, magicMethodName, selfType, node.d.leftExpr);
 
         if (!itemMethodType) {
@@ -29117,6 +29110,7 @@ export function createTypeEvaluator(
         getInferredReturnType,
         getBestOverloadForArgs,
         getBuiltInType,
+        getIndexAccessMagicMethodName,
         getTypeOfIndex,
         getTypeOfMember,
         getTypeOfBoundMember,
