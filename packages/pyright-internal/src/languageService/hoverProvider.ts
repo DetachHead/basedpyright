@@ -550,20 +550,31 @@ export class HoverProvider {
     }
 
     private _addResultsForTypeResult(parts: HoverTextPart[], typeResult: TypeResult): void {
-        const originatingDeclarations = typeResult.originatingDeclarations ?? [];
-        const overloads = typeResult.overloadsUsedForCall ?? [];
-
-        const declarations = [
-            ...originatingDeclarations,
-            ...overloads.map((type) => type.shared.declaration).filter((decl) => decl !== undefined),
-        ];
-        declarations.forEach((decl) => {
+        const handleDeclaration = (decl: Declaration) => {
             const name = getNameNodeForDeclaration(decl);
             if (name) {
                 this._addSeparator(parts);
                 this._addResultsForDeclaration(parts, decl, name);
             }
-        });
+        };
+
+        // If there is information about the `TypedDict` items used, that takes precedence.
+        if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
+            typeResult.typedDictItemInfos.forEach((member) => {
+                if (member.declaration) {
+                    handleDeclaration(member.declaration);
+                }
+                if (member.magicMethod.shared.declaration) {
+                    handleDeclaration(member.magicMethod.shared.declaration);
+                }
+            });
+        } else {
+            typeResult.overloadsUsedForCall?.forEach((functionType) => {
+                if (functionType.shared.declaration) {
+                    handleDeclaration(functionType.shared.declaration);
+                }
+            });
+        }
     }
 
     private _addResultsForSynthesizedType(parts: HoverTextPart[], typeInfo: SynthesizedTypeInfo, hoverNode: NameNode) {

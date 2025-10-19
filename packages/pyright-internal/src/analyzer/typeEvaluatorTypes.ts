@@ -33,7 +33,7 @@ import {
 import { AnalyzerFileInfo } from './analyzerFileInfo';
 import { CodeFlowReferenceExpressionNode, FlowNode } from './codeFlowTypes';
 import { ConstraintTracker } from './constraintTracker';
-import { Declaration } from './declaration';
+import { Declaration, VariableDeclaration } from './declaration';
 import { ResolvedAliasInfo } from './declarationUtils';
 import { SymbolWithScope } from './scope';
 import { Symbol, SynthesizedTypeInfo } from './symbol';
@@ -230,6 +230,13 @@ export interface PrefetchedTypes {
     templateClass?: Type;
 }
 
+export interface TypedDictItemInfo {
+    /** The magic method used for accessing a `TypedDict` entry */
+    magicMethod: FunctionType;
+    /** The declaration of the `TypedDict` item corresponding to a given `TypedDict` access */
+    declaration: VariableDeclaration;
+}
+
 export interface TypeResult<T extends Type = Type> {
     type: T;
 
@@ -246,9 +253,6 @@ export interface TypeResult<T extends Type = Type> {
 
     unpackedType?: Type | undefined;
     typeList?: TypeResultWithNode[] | undefined;
-
-    // The declaration which this type information originates from.
-    originatingDeclarations?: Declaration[];
 
     // Type consistency errors detected when evaluating this type.
     typeErrors?: boolean | undefined;
@@ -285,6 +289,9 @@ export interface TypeResult<T extends Type = Type> {
 
     // If a call expression, which overloads were used to satisfy it?
     overloadsUsedForCall?: FunctionType[];
+
+    /** For an access to a `TypedDict` item, information about the items determining this type result */
+    typedDictItemInfos?: TypedDictItemInfo[];
 
     // For member access expressions, deprecation messages related to
     // magic methods invoked via the member access
@@ -789,6 +796,7 @@ export interface TypeEvaluator {
         argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
+    getIndexAccessMagicMethodName: (usage: EvaluatorUsage) => string;
     getTypeOfIndex: (node: IndexNode, usage?: EvaluatorUsage, flags?: EvalFlags) => TypeResult;
     getTypeOfMember: (member: ClassMember) => Type;
     getTypeOfBoundMember(
