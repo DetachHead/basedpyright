@@ -17,6 +17,7 @@ import {
     VariableDeclaration,
     isUnresolvedAliasDeclaration,
 } from '../analyzer/declaration';
+import { getNameNodeForDeclaration } from '../analyzer/declarationUtils';
 import {
     getTypeOfAugmentedAssignment,
     getTypeOfBinaryOperation,
@@ -549,11 +550,19 @@ export class HoverProvider {
     }
 
     private _addResultsForTypeResult(parts: HoverTextPart[], typeResult: TypeResult): void {
+        const originatingDeclarations = typeResult.originatingDeclarations ?? [];
         const overloads = typeResult.overloadsUsedForCall ?? [];
-        const declarations = overloads.map((type) => type.shared.declaration).filter((decl) => decl !== undefined);
+
+        const declarations = [
+            ...originatingDeclarations,
+            ...overloads.map((type) => type.shared.declaration).filter((decl) => decl !== undefined),
+        ];
         declarations.forEach((decl) => {
-            this._addSeparator(parts);
-            this._addResultsForDeclaration(parts, decl, decl.node.d.name);
+            const name = getNameNodeForDeclaration(decl);
+            if (name) {
+                this._addSeparator(parts);
+                this._addResultsForDeclaration(parts, decl, name);
+            }
         });
     }
 

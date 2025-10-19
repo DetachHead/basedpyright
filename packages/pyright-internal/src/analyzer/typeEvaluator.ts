@@ -7834,6 +7834,7 @@ export function createTypeEvaluator(
         let isNotRequired = false;
         let isReadOnly = false;
         const overloadsUsedForCall: FunctionType[] = [];
+        const originatingDeclarations: Declaration[] = [];
 
         const type = mapSubtypesExpandTypeVars(
             baseTypeResult.type,
@@ -7899,6 +7900,9 @@ export function createTypeEvaluator(
                             const typeResult = getTypeOfIndexedObjectOrClass(node, concreteSubtype, selfType, usage);
                             if (typeResult.overloadsUsedForCall) {
                                 overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                            }
+                            if (typeResult.originatingDeclarations) {
+                                originatingDeclarations.push(...typeResult.originatingDeclarations);
                             }
                             return typeResult.type;
                         }
@@ -8043,6 +8047,9 @@ export function createTypeEvaluator(
                     if (typeResult.overloadsUsedForCall) {
                         overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
                     }
+                    if (typeResult.originatingDeclarations) {
+                        originatingDeclarations.push(...typeResult.originatingDeclarations);
+                    }
                     return typeResult.type;
                 }
 
@@ -8076,7 +8083,15 @@ export function createTypeEvaluator(
             });
         }
 
-        return { type, isIncomplete, isReadOnly, isRequired, isNotRequired, overloadsUsedForCall };
+        return {
+            type,
+            isIncomplete,
+            isReadOnly,
+            isRequired,
+            isNotRequired,
+            overloadsUsedForCall,
+            originatingDeclarations,
+        };
     }
 
     // Determines the effective variance of the type parameters for a generic

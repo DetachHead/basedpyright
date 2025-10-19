@@ -620,6 +620,7 @@ function narrowTypeBasedOnMappingPattern(
                                         );
                                         newNarrowedEntriesMap.set(keySubtype.priv.literalValue as string, {
                                             valueType: valueEntry.valueType,
+                                            declaration: valueEntry.declaration,
                                             isReadOnly: valueEntry.isReadOnly,
                                             isRequired: false,
                                             isProvided: true,
