@@ -46,11 +46,20 @@ export enum DefinitionFilter {
     PreferStubs = 'preferStubs',
 }
 
+class Definition {
+    /**
+     * @param unfiltered Whether this definition should be ignored (and always retained)
+     *                   when filtering definitions.
+     */
+    constructor(readonly range: DocumentRange, readonly unfiltered: boolean) {}
+}
+
 export function addDeclarationsToDefinitions(
     evaluator: TypeEvaluator,
     sourceMapper: SourceMapper,
     declarations: Declaration[] | undefined,
-    definitions: DocumentRange[]
+    definitions: Definition[],
+    unfiltered: boolean
 ) {
     if (!declarations) {
         return;
@@ -84,10 +93,7 @@ export function addDeclarationsToDefinitions(
             resolvedDecl = resolvedDecl.submoduleFallback;
         }
 
-        _addIfUnique(definitions, {
-            uri: resolvedDecl.uri,
-            range: resolvedDecl.range,
-        });
+        _addIfUnique(definitions, { uri: resolvedDecl.uri, range: resolvedDecl.range }, unfiltered);
 
         if (!isStubFile(resolvedDecl.uri)) {
             return;
@@ -99,36 +105,36 @@ export function addDeclarationsToDefinitions(
                 .findModules(resolvedDecl.uri)
                 .map((m) => getFileInfo(m)?.fileUri)
                 .filter(isDefined)
-                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f)));
+                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f), unfiltered));
             return;
         }
 
         const implDecls = sourceMapper.findDeclarations(resolvedDecl);
         for (const implDecl of implDecls) {
             if (implDecl && !implDecl.uri.isEmpty()) {
-                _addIfUnique(definitions, {
-                    uri: implDecl.uri,
-                    range: implDecl.range,
-                });
+                _addIfUnique(definitions, { uri: implDecl.uri, range: implDecl.range }, unfiltered);
             }
         }
     });
 }
 
-export function filterDefinitions(filter: DefinitionFilter, definitions: DocumentRange[]) {
+export function filterDefinitions(filter: DefinitionFilter, definitions: Definition[]) {
     if (filter === DefinitionFilter.All) {
-        return definitions;
+        return definitions.map((definition) => definition.range);
     }
 
     // If go-to-declaration is supported, attempt to only show only pyi files in go-to-declaration
     // and none in go-to-definition, unless filtering would produce an empty list.
+    // Definitions marked as `unfiltered` are ignored when deciding whether to filter and are
+    // always retained when filtering.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
-    const wantedFile = (v: DocumentRange) => preferStubs === isStubFile(v.uri);
-    if (definitions.find(wantedFile)) {
-        return definitions.filter(wantedFile);
+    if (definitions.find((definition) => !definition.unfiltered && preferStubs === isStubFile(definition.range.uri))) {
+        return definitions
+            .filter((definition) => definition.unfiltered || preferStubs === isStubFile(definition.range.uri))
+            .map((definition) => definition.range);
     }
 
-    return definitions;
+    return definitions.map((definition) => definition.range);
 }
 
 class DefinitionProviderBase {
@@ -145,12 +151,7 @@ class DefinitionProviderBase {
     getDefinitionsForNode(node: ParseNode, offset: number) {
         throwIfCancellationRequested(this.token);
 
-        const definitions: DocumentRange[] = [];
-        // Definitions that should not be filtered. These are treated separately so that the `dict`
-        // member called by accessing a member of a `TypedDict` (which is only available through
-        // typeshed stubs) is not filtered away if the declaration of the `TypedDict` entry is
-        // available in a non-stub file.
-        const unfilteredDefinitions: DocumentRange[] = [];
+        const definitions: Definition[] = [];
 
         const factories = this._serviceProvider?.tryGet(ServiceKeys.symbolDefinitionProvider);
         if (factories) {
@@ -163,7 +164,7 @@ class DefinitionProviderBase {
         // There should be only one 'definition', so only if extensions failed should we try again.
         // Go up the parse tree until we find a node that we can a definition for.
         let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
-        while (definitions.length + unfilteredDefinitions.length === 0 && currentNode) {
+        while (definitions.length === 0 && currentNode) {
             const infoNode: ParseNode | undefined = getInfoNode(currentNode);
 
             switch (infoNode.nodeType) {
@@ -185,22 +186,22 @@ class DefinitionProviderBase {
                 }
                 case ParseNodeType.UnaryOperation: {
                     const result = getTypeOfUnaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
+                    this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.BinaryOperation: {
                     const result = getTypeOfBinaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
+                    this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.AugmentedAssignment: {
                     const result = getTypeOfAugmentedAssignment(this.evaluator, infoNode, undefined);
-                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
+                    this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.Index: {
                     const result = getTypeOfIndex(this.evaluator, infoNode);
-                    this.resolveTypeResult(result, definitions, unfilteredDefinitions);
+                    this.resolveTypeResult(result, definitions);
                     break;
                 }
             }
@@ -214,27 +215,31 @@ class DefinitionProviderBase {
             currentNode = currentNode.parent;
         }
 
-        if (definitions.length + unfilteredDefinitions.length === 0) {
+        if (definitions.length === 0) {
             return undefined;
         }
 
-        return [...filterDefinitions(this._filter, definitions), ...unfilteredDefinitions];
+        return filterDefinitions(this._filter, definitions);
     }
 
-    protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
-        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
-    }
-    protected resolveTypeResult(
-        typeResult: TypeResult,
-        definitions: DocumentRange[],
-        unfilteredDefinitions: DocumentRange[]
+    protected resolveDeclarations(
+        declarations: Declaration[] | undefined,
+        definitions: Definition[],
+        unfiltered: boolean = false
     ) {
+        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions, unfiltered);
+    }
+    protected resolveTypeResult(typeResult: TypeResult, definitions: Definition[]) {
         // If there is information about the `TypedDict` items used, that takes precedence.
         if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
-            const declarations = typeResult.typedDictItemInfos
-                .flatMap((member) => [member.magicMethod.shared.declaration, member.declaration])
-                .filter((decl) => decl !== undefined);
-            this.resolveDeclarations(declarations, unfilteredDefinitions);
+            typeResult.typedDictItemInfos.forEach((member) => {
+                if (member.magicMethod.shared.declaration) {
+                    this.resolveDeclarations([member.magicMethod.shared.declaration], definitions, false);
+                }
+                if (member.declaration) {
+                    this.resolveDeclarations([member.declaration], definitions, true);
+                }
+            });
         } else {
             const declarations = typeResult.overloadsUsedForCall
                 ?.map((type) => type.shared.declaration)
@@ -243,7 +248,7 @@ class DefinitionProviderBase {
         }
     }
 
-    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {
+    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: Definition[]) {
         for (const synthType of synthTypes) {
             if (!synthType.node) {
                 continue;
@@ -256,7 +261,7 @@ class DefinitionProviderBase {
                 fileInfo.lines
             );
 
-            definitions.push({ uri: fileInfo.fileUri, range });
+            definitions.push(new Definition({ uri: fileInfo.fileUri, range }, false));
         }
     }
 }
@@ -322,7 +327,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        const definitions: DocumentRange[] = [];
+        const definitions: Definition[] = [];
 
         if (this.node.nodeType === ParseNodeType.Name) {
             const type = this.evaluator.getType(this.node);
@@ -356,7 +361,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        return definitions;
+        return definitions.map((definition) => definition.range);
     }
 }
 
@@ -383,12 +388,12 @@ function _createModuleEntry(uri: Uri): DocumentRange {
     };
 }
 
-function _addIfUnique(definitions: DocumentRange[], itemToAdd: DocumentRange) {
+function _addIfUnique(definitions: Definition[], itemToAdd: DocumentRange, unfiltered: boolean) {
     for (const def of definitions) {
-        if (def.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range, itemToAdd.range)) {
+        if (def.range.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range.range, itemToAdd.range)) {
             return;
         }
     }
 
-    definitions.push(itemToAdd);
+    definitions.push(new Definition(itemToAdd, unfiltered));
 }

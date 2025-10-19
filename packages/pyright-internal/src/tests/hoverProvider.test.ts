@@ -497,6 +497,10 @@ test('hover on operators', async () => {
             '```python\n(method) def __invert__(self: Self@int) -> int\n```',
             { start: { line: 8, character: 5 }, end: { line: 8, character: 7 } },
         ],
+        marker5: [
+            '```python\n(method) def __and__(self: Self@int, value: int, /) -> int\n```',
+            { start: { line: 8, character: 5 }, end: { line: 8, character: 13 } },
+        ],
         marker6: [
             '```python\n(method) def __rmul__(self: Self@tuple[_T_co@tuple], value: SupportsIndex, /) -> tuple[_T_co@tuple, ...]\n```',
             { start: { line: 9, character: 4 }, end: { line: 9, character: 9 } },
