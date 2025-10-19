@@ -456,6 +456,7 @@ test('hover on operators', async () => {
 //// e = a [|/*marker8*/<|] b[[|/*marker9*/0|]]
 //// f = e [|/*marker10*/or|] [|/*marker11*/not|] a
 //// g = [1, 2, 3]
+//// g[[|/*marker12*/0|]] = h = g[[|/*marker13*/2|]] = h = g[[|/*marker14*/1|]]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -492,11 +493,26 @@ test('hover on operators', async () => {
             '```python\n(method) def __lt__(self: Self@int, value: int, /) -> bool\n```',
             { start: { line: 11, character: 4 }, end: { line: 11, character: 12 } },
         ],
-        marker9: null,
+        marker9: [
+            '```python\n(method) def __getitem__(self: Self@tuple[_T_co@tuple], key: SupportsIndex, /) -> _T_co@tuple\n```',
+            { start: { line: 11, character: 8 }, end: { line: 11, character: 12 } },
+        ],
         marker10: null,
         marker11: [
             '```python\n(method) def __bool__(self: Self@int) -> bool\n```',
             { start: { line: 12, character: 9 }, end: { line: 12, character: 14 } },
+        ],
+        marker12: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 0 }, end: { line: 14, character: 26 } },
+        ],
+        marker13: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
+        ],
+        marker14: [
+            '```python\n(method) def __getitem__(self: Self@list[_T@list], i: SupportsIndex, /) -> _T@list\n```',
+            { start: { line: 14, character: 22 }, end: { line: 14, character: 26 } },
         ],
     });
 });

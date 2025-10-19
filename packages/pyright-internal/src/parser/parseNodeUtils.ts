@@ -8,6 +8,7 @@
  * ParseNodeType is a const enum which strips out the string keys
  * This file is used to map the string keys to the const enum values.
  */
+import { TextRange } from '../common/textRange';
 import { ParseNode, ParseNodeType } from './parseNodes';
 import { OperatorType } from './tokenizerTypes';
 
@@ -162,15 +163,9 @@ export type OperatorTypeMapKey = keyof typeof OperatorTypeMap;
 
 /**
  * Determine the node that should be handled when hovering over/clicking `node` to simplify the case distinctions using it.
- * Most importantly, number literals are ignored and uses of `__setitem__`/`__delitem__` are resolved to the `IndexNode`.
+ * Currently, this means that uses of `__setitem__` and single-target `__delitem__` are resolved to the `IndexNode`.
  */
 export function getInfoNode(node: ParseNode): ParseNode {
-    if (node.nodeType === ParseNodeType.Number && node.parent) {
-        node = node.parent;
-    }
-    if (node.nodeType === ParseNodeType.Argument && node.parent) {
-        node = node.parent;
-    }
     if (node.nodeType === ParseNodeType.Assignment && node.d.leftExpr.nodeType === ParseNodeType.Index) {
         node = node.d.leftExpr;
     }
@@ -180,6 +175,48 @@ export function getInfoNode(node: ParseNode): ParseNode {
         node.d.targets[0].nodeType === ParseNodeType.Index
     ) {
         node = node.d.targets[0];
+    }
+    return node;
+}
+
+/**
+ * Determine the actual range of the node in question: While `start` and `length` are _generally_ reliable,
+ * this is not really true for chained assignments, where each left-hand side gets its own node, all of which
+ * have the same range. To distinguish between these, this function determines the range from the start
+ * of the left-hand side which this node represents to the end of the right-hand side.
+ *
+ * This is useful for determining which of the `Assignment` nodes representing an assignment is the most _appropriate_
+ * for a given offset; in `a = b = 10`, for instance, an offset pointing to the second `=` should handle
+ * the assignment node with `b` as the left-hand side, not the one with `a` (which is what `findNodeByOffset` returns).
+ */
+export function nodeRange(node: ParseNode): TextRange {
+    if (node.nodeType === ParseNodeType.Assignment) {
+        const left = node.d.leftExpr;
+        const right = node.d.rightExpr;
+        return TextRange.create(left.start, TextRange.getEnd(right) - left.start);
+    }
+    return TextRange.create(node.start, node.length);
+}
+
+/**
+ * If `node` is an `Assignment` node that represents a chained assignment, determines the most appropriate sub-assignment
+ * (which are `node`’s parents in the parse tree) for `offset`, i.e. the sub-assignment with the smallest range
+ * that still includes `offsets`.
+ *
+ * For example, in `a = b = c = 10` with `offset` pointing at the second `=`, this function starts at the assignment
+ * to `a`, chooses to the assignment to `b` (which still includes `offset`), but does not choose the assignment to `c`
+ * (which does not include `offset` anymore). Note that Python does indeed assign to the left-hand sides from left to right.
+ *
+ * This function **does not** check the children of `node` for an expanded chained assignment, which is unnecessary
+ * e.g. if `node` was determined using `findNodeByOffset`.
+ */
+export function improveNodeByOffset(node: ParseNode, offset: number): ParseNode {
+    while (
+        node.nodeType === ParseNodeType.Assignment &&
+        node.parent?.nodeType === ParseNodeType.Assignment &&
+        TextRange.contains(nodeRange(node), offset)
+    ) {
+        node = node.parent;
     }
     return node;
 }

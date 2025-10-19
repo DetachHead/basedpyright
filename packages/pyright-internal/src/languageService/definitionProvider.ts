@@ -13,12 +13,7 @@
 import { CancellationToken } from 'vscode-languageserver';
 
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
-import {
-    Declaration,
-    DeclarationType,
-    isFunctionDeclaration,
-    isUnresolvedAliasDeclaration,
-} from '../analyzer/declaration';
+import { Declaration, DeclarationType, isUnresolvedAliasDeclaration } from '../analyzer/declaration';
 import {
     getTypeOfAugmentedAssignment,
     getTypeOfBinaryOperation,
@@ -30,7 +25,7 @@ import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { EvalFlags, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
-import { OverloadedType, TypeCategory, isOverloaded } from '../analyzer/types';
+import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -42,7 +37,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
-import { getInfoNode } from '../parser/parseNodeUtils';
+import { getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 
 export enum DefinitionFilter {
@@ -93,21 +88,6 @@ export function addDeclarationsToDefinitions(
             uri: resolvedDecl.uri,
             range: resolvedDecl.range,
         });
-
-        if (isFunctionDeclaration(resolvedDecl)) {
-            // Handle overloaded function case
-            const functionType = evaluator.getTypeForDeclaration(resolvedDecl)?.type;
-            if (functionType && isOverloaded(functionType)) {
-                for (const overloadDecl of OverloadedType.getOverloads(functionType)
-                    .map((o) => o.shared.declaration)
-                    .filter(isDefined)) {
-                    _addIfUnique(definitions, {
-                        uri: overloadDecl.uri,
-                        range: overloadDecl.range,
-                    });
-                }
-            }
-        }
 
         if (!isStubFile(resolvedDecl.uri)) {
             return;
@@ -176,11 +156,14 @@ class DefinitionProviderBase {
         }
 
         // There should be only one 'definition', so only if extensions failed should we try again.
-        if (definitions.length === 0) {
-            node = getInfoNode(node);
-            switch (node.nodeType) {
+        // Go up the parse tree until we find a node that we can a definition for.
+        let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
+        while (definitions.length === 0 && currentNode) {
+            const infoNode: ParseNode | undefined = getInfoNode(currentNode);
+
+            switch (infoNode.nodeType) {
                 case ParseNodeType.Name: {
-                    const declInfo = this.evaluator.getDeclInfoForNameNode(node);
+                    const declInfo = this.evaluator.getDeclInfoForNameNode(infoNode);
                     if (declInfo) {
                         this.resolveDeclarations(declInfo.decls, definitions);
                         this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
@@ -188,7 +171,7 @@ class DefinitionProviderBase {
                     break;
                 }
                 case ParseNodeType.String: {
-                    const declInfo = this.evaluator.getDeclInfoForStringNode(node);
+                    const declInfo = this.evaluator.getDeclInfoForStringNode(infoNode);
                     if (declInfo) {
                         this.resolveDeclarations(declInfo.decls, definitions);
                         this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
@@ -196,25 +179,34 @@ class DefinitionProviderBase {
                     break;
                 }
                 case ParseNodeType.UnaryOperation: {
-                    const result = getTypeOfUnaryOperation(this.evaluator, node, EvalFlags.None, undefined);
+                    const result = getTypeOfUnaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
                     this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.BinaryOperation: {
-                    const result = getTypeOfBinaryOperation(this.evaluator, node, EvalFlags.None, undefined);
+                    const result = getTypeOfBinaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
                     this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.AugmentedAssignment: {
-                    const result = getTypeOfAugmentedAssignment(this.evaluator, node, undefined);
+                    const result = getTypeOfAugmentedAssignment(this.evaluator, infoNode, undefined);
                     this.resolveTypeResult(result, definitions);
                     break;
                 }
                 case ParseNodeType.Index: {
-                    this.resolveTypeResult(getTypeOfIndex(this.evaluator, node), definitions);
+                    const result = getTypeOfIndex(this.evaluator, infoNode);
+                    this.resolveTypeResult(result, definitions);
                     break;
                 }
             }
+
+            // In an assignment, the parents represent sub-assignments, i.e. for an assignment `a = b = 2`,
+            // if `currentNode` represents the assignment to `a`, its parent represents the assignment to `b`.
+            // Therefore, going to the parent to find definitions is not sensible for assignments.
+            if (infoNode.nodeType === ParseNodeType.Assignment) {
+                break;
+            }
+            currentNode = currentNode.parent;
         }
 
         if (definitions.length === 0) {
