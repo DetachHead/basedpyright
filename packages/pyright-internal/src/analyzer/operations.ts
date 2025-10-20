@@ -237,8 +237,8 @@ export function validateBinaryOperation(
         // should result in Literal[4, 5, 6].
         if (options.isLiteralMathAllowed) {
             type = calcLiteralForBinaryOp(operator, leftType, rightType);
-            const result = validateArithmetic(undefined, undefined);
             if (type) {
+                const result = validateArithmetic(undefined, undefined);
                 overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
             }
         }
@@ -249,7 +249,7 @@ export function validateBinaryOperation(
             if (result.magicMethodDeprecationInfo) {
                 deprecatedInfo = result.magicMethodDeprecationInfo;
             }
-            overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
+            overloadsUsedForCall.push(...(result.overloadsUsedForCall ?? []));
 
             type = result.type;
         }
@@ -708,7 +708,7 @@ export function getTypeOfUnaryOperation(
         }
     }
 
-    const magic = (subtypeExpanded: Type, magicMethodName: string) =>
+    const getTypeOfMagicMethodCall = (subtypeExpanded: Type, magicMethodName: string) =>
         evaluator.getTypeOfMagicMethodCall(subtypeExpanded, magicMethodName, [], node, undefined);
 
     // Handle certain operations on certain literal types
@@ -721,7 +721,7 @@ export function getTypeOfUnaryOperation(
         if (type) {
             const magicMethodName = unaryOperatorMap[node.d.operator];
             evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
-                const typeResult = magic(subtypeExpanded, magicMethodName);
+                const typeResult = getTypeOfMagicMethodCall(subtypeExpanded, magicMethodName);
                 const overloads = typeResult?.overloadsUsedForCall;
                 if (overloads) overloadsUsedForCall.push(...overloads);
                 return undefined;
@@ -737,7 +737,7 @@ export function getTypeOfUnaryOperation(
             let isResultValid = true;
 
             type = evaluator.mapSubtypesExpandTypeVars(exprType, /* options */ undefined, (subtypeExpanded) => {
-                const typeResult = magic(subtypeExpanded, magicMethodName);
+                const typeResult = getTypeOfMagicMethodCall(subtypeExpanded, magicMethodName);
 
                 if (!typeResult) {
                     isResultValid = false;

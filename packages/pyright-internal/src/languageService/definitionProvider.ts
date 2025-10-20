@@ -14,16 +14,10 @@ import { CancellationToken } from 'vscode-languageserver';
 
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
 import { Declaration, DeclarationType, isUnresolvedAliasDeclaration } from '../analyzer/declaration';
-import {
-    getTypeOfAugmentedAssignment,
-    getTypeOfBinaryOperation,
-    getTypeOfIndex,
-    getTypeOfUnaryOperation,
-} from '../analyzer/operations';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
-import { EvalFlags, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
+import { TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
 import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -39,6 +33,7 @@ import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
+import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 
 export enum DefinitionFilter {
     All = 'all',
@@ -46,13 +41,11 @@ export enum DefinitionFilter {
     PreferStubs = 'preferStubs',
 }
 
-class Definition {
-    /**
-     * @param unfiltered Whether this definition should be ignored (and always retained)
-     *                   when filtering definitions.
-     */
-    constructor(readonly range: DocumentRange, readonly unfiltered: boolean) {}
-}
+type Definition = {
+    range: DocumentRange;
+    /** Whether this definition should be ignored (and always retained) when filtering definitions. */
+    unfiltered: boolean;
+};
 
 export function addDeclarationsToDefinitions(
     evaluator: TypeEvaluator,
@@ -162,7 +155,7 @@ class DefinitionProviderBase {
         }
 
         // There should be only one 'definition', so only if extensions failed should we try again.
-        // Go up the parse tree until we find a node that we can a definition for.
+        // Go up the parse tree until we find a node that we can determine a definition for.
         let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
         while (definitions.length === 0 && currentNode) {
             const infoNode: ParseNode | undefined = getInfoNode(currentNode);
@@ -184,23 +177,11 @@ class DefinitionProviderBase {
                     }
                     break;
                 }
-                case ParseNodeType.UnaryOperation: {
-                    const result = getTypeOfUnaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions);
-                    break;
-                }
-                case ParseNodeType.BinaryOperation: {
-                    const result = getTypeOfBinaryOperation(this.evaluator, infoNode, EvalFlags.None, undefined);
-                    this.resolveTypeResult(result, definitions);
-                    break;
-                }
-                case ParseNodeType.AugmentedAssignment: {
-                    const result = getTypeOfAugmentedAssignment(this.evaluator, infoNode, undefined);
-                    this.resolveTypeResult(result, definitions);
-                    break;
-                }
+                case ParseNodeType.UnaryOperation:
+                case ParseNodeType.BinaryOperation:
+                case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
-                    const result = getTypeOfIndex(this.evaluator, infoNode);
+                    const result = getTypeOfOperatorNode(this.evaluator, infoNode);
                     this.resolveTypeResult(result, definitions);
                     break;
                 }
@@ -230,22 +211,9 @@ class DefinitionProviderBase {
         addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions, unfiltered);
     }
     protected resolveTypeResult(typeResult: TypeResult, definitions: Definition[]) {
-        // If there is information about the `TypedDict` items used, that takes precedence.
-        if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
-            typeResult.typedDictItemInfos.forEach((member) => {
-                if (member.magicMethod.shared.declaration) {
-                    this.resolveDeclarations([member.magicMethod.shared.declaration], definitions, false);
-                }
-                if (member.declaration) {
-                    this.resolveDeclarations([member.declaration], definitions, true);
-                }
-            });
-        } else {
-            const declarations = typeResult.overloadsUsedForCall
-                ?.map((type) => type.shared.declaration)
-                .filter((decl) => decl !== undefined);
-            this.resolveDeclarations(declarations, definitions);
-        }
+        forEachDeclaration(typeResult, (declarations, unfiltered) =>
+            this.resolveDeclarations(declarations, definitions, unfiltered)
+        );
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: Definition[]) {
@@ -261,7 +229,7 @@ class DefinitionProviderBase {
                 fileInfo.lines
             );
 
-            definitions.push(new Definition({ uri: fileInfo.fileUri, range }, false));
+            definitions.push({ range: { uri: fileInfo.fileUri, range }, unfiltered: false });
         }
     }
 }
@@ -395,5 +363,5 @@ function _addIfUnique(definitions: Definition[], itemToAdd: DocumentRange, unfil
         }
     }
 
-    definitions.push(new Definition(itemToAdd, unfiltered));
+    definitions.push({ range: itemToAdd, unfiltered });
 }
