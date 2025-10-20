@@ -18,17 +18,12 @@ import {
     isUnresolvedAliasDeclaration,
 } from '../analyzer/declaration';
 import { getNameNodeForDeclaration } from '../analyzer/declarationUtils';
-import {
-    getTypeOfAugmentedAssignment,
-    getTypeOfBinaryOperation,
-    getTypeOfIndex,
-    getTypeOfUnaryOperation,
-} from '../analyzer/operations';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { isBuiltInModule } from '../analyzer/typeDocStringUtils';
-import { EvalFlags, PrintTypeOptions, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
+import { PrintTypeOptions, TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
+import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 import { convertToInstance, doForEachSubtype, isMaybeDescriptorInstance } from '../analyzer/typeUtils';
 import {
     ClassType,
@@ -349,24 +344,11 @@ export class HoverProvider {
                     }
                     break;
                 }
-                case ParseNodeType.UnaryOperation: {
-                    const typeResult = getTypeOfUnaryOperation(this._evaluator, infoNode, EvalFlags.None, undefined);
-                    this._addResultsForTypeResult(parts, typeResult);
-                    break;
-                }
-                case ParseNodeType.BinaryOperation: {
-                    const typeResult = getTypeOfBinaryOperation(this._evaluator, infoNode, EvalFlags.None, undefined);
-                    this._addResultsForTypeResult(parts, typeResult);
-                    break;
-                }
-                case ParseNodeType.AugmentedAssignment: {
-                    const typeResult = getTypeOfAugmentedAssignment(this._evaluator, infoNode, undefined);
-                    this._addResultsForTypeResult(parts, typeResult);
-                    break;
-                }
+                case ParseNodeType.UnaryOperation:
+                case ParseNodeType.BinaryOperation:
+                case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
-                    const typeResult = getTypeOfIndex(this._evaluator, infoNode);
-                    this._addResultsForTypeResult(parts, typeResult);
+                    this._addResultsForTypeResult(parts, getTypeOfOperatorNode(this._evaluator, infoNode));
                     break;
                 }
             }
@@ -558,23 +540,7 @@ export class HoverProvider {
             }
         };
 
-        // If there is information about the `TypedDict` items used, that takes precedence.
-        if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
-            typeResult.typedDictItemInfos.forEach((member) => {
-                if (member.declaration) {
-                    handleDeclaration(member.declaration);
-                }
-                if (member.magicMethod.shared.declaration) {
-                    handleDeclaration(member.magicMethod.shared.declaration);
-                }
-            });
-        } else {
-            typeResult.overloadsUsedForCall?.forEach((functionType) => {
-                if (functionType.shared.declaration) {
-                    handleDeclaration(functionType.shared.declaration);
-                }
-            });
-        }
+        forEachDeclaration(typeResult, (declarations) => declarations.forEach(handleDeclaration));
     }
 
     private _addResultsForSynthesizedType(parts: HoverTextPart[], typeInfo: SynthesizedTypeInfo, hoverNode: NameNode) {
