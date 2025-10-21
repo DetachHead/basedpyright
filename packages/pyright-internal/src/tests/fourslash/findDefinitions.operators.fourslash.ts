@@ -60,6 +60,14 @@
 //// class str:
 ////   def [|/*LitStrGetItem*/__getitem__|](self, key: int | slice, /): ...
 
+// @filename: typeshed-fallback/stdlib/enum.py
+//// from typing import TypeVar
+////
+//// _EnumMemberT = TypeVar("_EnumMemberT")
+////
+//// class EnumMeta(type):
+////     def [|/*EnumGetItem*/__getitem__|](self: type[_EnumMemberT], name: str) -> _EnumMemberT: ...
+
 // @filename: test.py
 //// from classes import A, B, C, D, E
 ////
@@ -125,8 +133,7 @@
             marker18: { definitions: [nameToDoc('Da'), nameToDoc('Ca')] },
             marker19: { definitions: [nameToDoc('DictGetItem'), nameToDoc('Da'), nameToDoc('Ca')] },
             marker20: { definitions: [nameToDoc('tupleGetItem')] },
-            // marker21: I do not know how to test the enumeration here, as overwriting it
-            // does not seem to work the same way as for built-ins
+            marker21: { definitions: [nameToDoc('EnumGetItem')] },
             marker22: { definitions: [nameToDoc('LitStrGetItem')] },
         },
         'preferSource'
