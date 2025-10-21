@@ -54,6 +54,7 @@ import {
     NeverType,
     Type,
     TypeBase,
+    TypeCategory,
     UnknownType,
     combineTypes,
     isAnyOrUnknown,
@@ -220,7 +221,7 @@ export function validateBinaryOperation(
             return { type: NeverType.createNever() };
         }
 
-        const validateArithmetic = (context: InferenceContext | undefined, addendum: DiagnosticAddendum | undefined) =>
+        const validateArithmetic = (context: InferenceContext | undefined, addendum: DiagnosticAddendum) =>
             validateArithmeticOperation(
                 evaluator,
                 operator,
@@ -236,10 +237,10 @@ export function validateBinaryOperation(
         // using special-case math. For example, Literal[1, 2] + Literal[3, 4]
         // should result in Literal[4, 5, 6].
         if (options.isLiteralMathAllowed) {
-            type = calcLiteralForBinaryOp(operator, leftType, rightType);
-            if (type) {
-                const result = validateArithmetic(undefined, undefined);
-                overloadsUsedForCall.push(...(result?.overloadsUsedForCall ?? []));
+            const result = calcLiteralForBinaryOp(evaluator, errorNode, operator, leftType, rightType);
+            if (result?.overloadsUsedForCall) {
+                overloadsUsedForCall.push(...result.overloadsUsedForCall);
+                type = result.type;
             }
         }
 
@@ -1012,7 +1013,13 @@ function calcLiteralForUnaryOp(operator: OperatorType, operandType: Type): Type 
 }
 
 // Attempts to apply "literal math" for two literal operands.
-function calcLiteralForBinaryOp(operator: OperatorType, leftType: Type, rightType: Type): Type | undefined {
+function calcLiteralForBinaryOp(
+    evaluator: TypeEvaluator,
+    errorNode: ExpressionNode,
+    operator: OperatorType,
+    leftType: Type,
+    rightType: Type
+): TypeResult | undefined {
     const leftLiteralClassName = getLiteralTypeClassName(leftType);
     if (
         !leftLiteralClassName ||
@@ -1032,20 +1039,31 @@ function calcLiteralForBinaryOp(operator: OperatorType, leftType: Type, rightTyp
         return undefined;
     }
 
+    const overloadsUsedForCall: FunctionType[] = [];
+
     // Handle str and bytes literals.
     if (leftLiteralClassName === 'str' || leftLiteralClassName === 'bytes') {
         if (operator === OperatorType.Add) {
-            return mapSubtypes(leftType, (leftSubtype) => {
-                return mapSubtypes(rightType, (rightSubtype) => {
-                    const leftClassSubtype = leftSubtype as ClassType;
-                    const rightClassSubtype = rightSubtype as ClassType;
+            return {
+                type: mapSubtypes(leftType, (leftSubtype) => {
+                    return mapSubtypes(rightType, (rightSubtype) => {
+                        const leftClassSubtype = leftSubtype as ClassType;
+                        const rightClassSubtype = rightSubtype as ClassType;
 
-                    return ClassType.cloneWithLiteral(
-                        leftClassSubtype,
-                        ((leftClassSubtype.priv.literalValue as string) + rightClassSubtype.priv.literalValue) as string
-                    );
-                });
-            });
+                        const overload = evaluator.getBoundMagicMethod(leftClassSubtype, '__add__');
+                        if (overload && overload.category === TypeCategory.Function) {
+                            overloadsUsedForCall.push(overload);
+                        }
+
+                        return ClassType.cloneWithLiteral(
+                            leftClassSubtype,
+                            ((leftClassSubtype.priv.literalValue as string) +
+                                rightClassSubtype.priv.literalValue) as string
+                        );
+                    });
+                }),
+                overloadsUsedForCall,
+            };
         }
     }
 
@@ -1077,6 +1095,18 @@ function calcLiteralForBinaryOp(operator: OperatorType, leftType: Type, rightTyp
                     const rightClassSubtype = rightSubtype as ClassType;
                     const leftLiteralValue = BigInt(leftClassSubtype.priv.literalValue as number | bigint);
                     const rightLiteralValue = BigInt(rightClassSubtype.priv.literalValue as number | bigint);
+
+                    const typeResult = evaluator.getTypeOfMagicMethodCall(
+                        leftClassSubtype,
+                        // we assume all of these literal operations only rely on left hand operator dunders (index 0)
+                        binaryOperatorMap[operator][0],
+                        [{ type: rightClassSubtype }],
+                        errorNode,
+                        undefined
+                    );
+                    if (typeResult?.overloadsUsedForCall) {
+                        overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                    }
 
                     let newValue: number | bigint | undefined;
                     if (operator === OperatorType.Add) {
@@ -1153,7 +1183,7 @@ function calcLiteralForBinaryOp(operator: OperatorType, leftType: Type, rightTyp
         });
 
         if (isValidResult) {
-            return type;
+            return { type, overloadsUsedForCall };
         }
     }
 
@@ -1301,7 +1331,7 @@ function validateArithmeticOperation(
     rightTypeResult: TypeResult,
     errorNode: ExpressionNode,
     inferenceContext: InferenceContext | undefined,
-    diag: DiagnosticAddendum | undefined,
+    diag: DiagnosticAddendum,
     options: BinaryOperationOptions
 ): TypeResult {
     let deprecatedInfo: MagicMethodDeprecationInfo | undefined;
@@ -1433,7 +1463,7 @@ function validateArithmeticOperation(
                         }
                     }
 
-                    if (!resultTypeResult && diag) {
+                    if (!resultTypeResult) {
                         if (inferenceContext && !isAnyOrUnknown(inferenceContext.expectedType)) {
                             diag.addMessage(
                                 LocMessage.typeNotSupportBinaryOperatorBidirectional().format({

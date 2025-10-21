@@ -473,6 +473,7 @@ test('hover on operators', async () => {
 //// class E(Enum): A = 1; B = 2
 //// m = E[[|/*marker21*/"A"|]]
 //// n = "abc"[[|/*marker22*/1|]]
+//// o = 1 [|/*marker23*/**|] 2
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -565,6 +566,10 @@ test('hover on operators', async () => {
         marker22: [
             '```python\n(method) def __getitem__(self: LiteralString, key: SupportsIndex | slice[Any, Any, Any], /) -> LiteralString\n```',
             { start: { line: 30, character: 4 }, end: { line: 30, character: 12 } },
+        ],
+        marker23: [
+            '```python\n(method) def __pow__(self: Self@int, value: _PositiveInteger, mod: None = None, /) -> int\n```',
+            { start: { line: 31, character: 4 }, end: { line: 31, character: 10 } },
         ],
     });
 });
