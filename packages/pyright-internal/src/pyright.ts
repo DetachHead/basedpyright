@@ -457,6 +457,7 @@ async function processArgs(): Promise<ExitStatus> {
         hostFactory: () => new FullAccessHost(serviceProvider),
         // Refresh service 2 seconds after the last library file change is detected.
         libraryReanalysisTimeProvider: () => 2 * 1000,
+        shouldRunAnalysis: () => true,
     });
 
     if ('threads' in args) {
@@ -594,7 +595,7 @@ async function runSingleThreaded(
 
         checkForErrors(exitStatus, output);
 
-        if (args.createstub && results.requiringAnalysisCount.files === 0) {
+        if (args.createstub) {
             try {
                 service.writeTypeStub(cancellationNone);
                 service.dispose();
@@ -868,6 +869,7 @@ function runWorkerMessageLoop(workerNum: number, tempFolderName: string) {
                     hostFactory: () => new FullAccessHost(serviceProvider!),
                     // Refresh service 2 seconds after the last library file change is detected.
                     libraryReanalysisTimeProvider: () => 2 * 1000,
+                    shouldRunAnalysis: () => true,
                 });
 
                 service.setCompletionCallback((results) => {

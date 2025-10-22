@@ -117,6 +117,7 @@ export class TestLanguageService implements LanguageServerInterface {
                     importResolverFactory: AnalyzerService.createImportResolver,
                     configOptions: new ConfigOptions(Uri.empty()),
                     fileSystem: this.fs,
+                    shouldRunAnalysis: () => true,
                 }
             ),
             disableLanguageServices: false,
