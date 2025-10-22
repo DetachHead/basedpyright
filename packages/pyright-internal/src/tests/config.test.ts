@@ -232,7 +232,7 @@ describe(`config test'}`, () => {
             const sp = createServiceProvider(fs, console);
             configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
 
-            assert.deepStrictEqual(console.errors, ['unknown config option: asdf']);
+            assert.deepStrictEqual(console.errors, ['Config contains unrecognized setting "asdf".']);
         });
         test('unknown value for top-level option', () => {
             const cwd = UriEx.file(normalizePath(process.cwd()));
@@ -420,7 +420,7 @@ describe(`config test'}`, () => {
             'src/tests/samples/project_with_invalid_option_name_in_pyproject_toml'
         );
         assert(!('asdf' in configOptions));
-        assert.deepStrictEqual(consoleErrors, ['unknown config option: asdf']);
+        assert.deepStrictEqual(consoleErrors, ['Config contains unrecognized setting "asdf".']);
         assert(!analysisResult?.fatalErrorOccurred);
     });
 
