@@ -762,7 +762,7 @@
         "namedTupleNotAllowed": "NamedTuple не может использоваться для проверок экземпляров или классов",
         "newMethodLocation": "Метод __new__ определен в классе \"{type}\"",
         "newMethodSignature": "Сигнатура метода __new__ требует \"{type}\"",
-        "newTypeClassNotAllowed": "Type created with NewType cannot be used with instance and class checks",
+        "newTypeClassNotAllowed": "Тип, созданный с NewType, нельзя использовать в isinstance и issubclass",
         "noOverloadAssignable": "Нет перегруженной функции, соответствующей типу \"{type}\"",
         "noneNotAllowed": "None невозможно использовать в \"isinstance\" или \"issubclass\".",
         "orPatternMissingName": "Отсутствуют имена: {name}",
