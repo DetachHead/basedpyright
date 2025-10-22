@@ -2030,9 +2030,6 @@ export class ConfigOptions {
         configExtraPaths: Uri[]
     ): ExecutionEnvironment | undefined {
         try {
-            const envObjKeys = envObj && typeof envObj === 'object' ? Object.getOwnPropertyNames(envObj) : [];
-            const unusedEnvKeys = new Set<string>(envObjKeys);
-
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
                 configDirUri,
@@ -2043,7 +2040,6 @@ export class ConfigOptions {
             );
 
             // Validate the root.
-            unusedEnvKeys.delete('root');
             if (envObj.root && typeof envObj.root === 'string') {
                 newExecEnv.root = configDirUri.resolvePaths(envObj.root);
             } else {
@@ -2051,7 +2047,6 @@ export class ConfigOptions {
             }
 
             // Validate the extraPaths.
-            unusedEnvKeys.delete('extraPaths');
             if (envObj.extraPaths) {
                 if (!Array.isArray(envObj.extraPaths)) {
                     console.error(
@@ -2077,7 +2072,6 @@ export class ConfigOptions {
             }
 
             // Validate the pythonVersion.
-            unusedEnvKeys.delete('pythonVersion');
             if (envObj.pythonVersion) {
                 if (typeof envObj.pythonVersion === 'string') {
                     const version = PythonVersion.fromString(envObj.pythonVersion);
@@ -2094,7 +2088,6 @@ export class ConfigOptions {
             }
 
             // Validate the pythonPlatform.
-            unusedEnvKeys.delete('pythonPlatform');
             if (envObj.pythonPlatform) {
                 if (typeof envObj.pythonPlatform === 'string') {
                     newExecEnv.pythonPlatform = envObj.pythonPlatform;
@@ -2104,7 +2097,6 @@ export class ConfigOptions {
             }
 
             // Validate the name.
-            unusedEnvKeys.delete('name');
             if (envObj.name) {
                 if (typeof envObj.name === 'string') {
                     newExecEnv.name = envObj.name;
@@ -2115,7 +2107,6 @@ export class ConfigOptions {
 
             // Apply overrides from the config file for the boolean overrides.
             getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
-                unusedEnvKeys.delete(ruleName);
                 (newExecEnv.diagnosticRuleSet as any)[ruleName] = this._convertBoolean(
                     envObj[ruleName],
                     ruleName,
@@ -2125,17 +2116,12 @@ export class ConfigOptions {
 
             // Apply overrides from the config file for the diagnostic level overrides.
             getDiagLevelDiagnosticRules().forEach((ruleName) => {
-                unusedEnvKeys.delete(ruleName);
                 (newExecEnv.diagnosticRuleSet as any)[ruleName] = this._convertDiagnosticLevel(
                     envObj[ruleName],
                     ruleName,
                     newExecEnv.diagnosticRuleSet[ruleName] as DiagnosticLevel,
                     console
                 );
-            });
-
-            Array.from(unusedEnvKeys).forEach((unknownKey) => {
-                console.error(`Config executionEnvironments index ${index}: unrecognized setting "${unknownKey}".`);
             });
 
             return newExecEnv;
