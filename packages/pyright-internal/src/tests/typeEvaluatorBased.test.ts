@@ -221,45 +221,69 @@ test('`reportInvalidTypeVarUse`', () => {
     });
 });
 
-test('dataclass_transform skip_replace', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
-    configOptions.diagnosticRuleSet.enableBasedFeatures = true;
-    const analysisResults = typeAnalyzeSampleFiles(['based_dataclass_skip_replace/sample.py'], configOptions);
-    validateResultsButBased(analysisResults, {
-        errors: [
-            {
-                code: DiagnosticRule.reportCallIssue,
-                line: 28,
-                message: 'No parameter named "z"',
-            },
-            {
-                code: DiagnosticRule.reportAttributeAccessIssue,
-                line: 39,
-                message:
-                    'Cannot access attribute "__replace__" for class "B"\n' + '  Attribute "__replace__" is unknown',
-            },
-            {
-                code: DiagnosticRule.reportAttributeAccessIssue,
-                line: 50,
-                message:
-                    'Cannot access attribute "__replace__" for class "C"\n' + '  Attribute "__replace__" is unknown',
-            },
-            {
-                code: DiagnosticRule.reportAttributeAccessIssue,
-                line: 62,
-                message:
-                    'Cannot access attribute "__replace__" for class "D"\n' + '  Attribute "__replace__" is unknown',
-            },
-            {
-                code: DiagnosticRule.reportAssignmentType,
-                line: 74,
-                message:
-                    'Type "Box[int]" is not assignable to declared type "Box[bool]"\n' +
-                    '  "Box[int]" is not assignable to "Box[bool]"\n' +
-                    '    Type parameter "T@Box" is covariant, but "int" is not a subtype of "bool"\n' +
-                    '      "int" is not assignable to "bool"',
-            },
-        ],
+describe('dataclass_transform', () => {
+    test('skip_replace', () => {
+        const configOptions = new ConfigOptions(Uri.empty());
+        configOptions.diagnosticRuleSet.enableBasedFeatures = true;
+        const analysisResults = typeAnalyzeSampleFiles(['based_dataclass_skip_replace/sample.py'], configOptions);
+        validateResultsButBased(analysisResults, {
+            errors: [
+                {
+                    code: DiagnosticRule.reportCallIssue,
+                    line: 28,
+                    message: 'No parameter named "z"',
+                },
+                {
+                    code: DiagnosticRule.reportAttributeAccessIssue,
+                    line: 39,
+                    message:
+                        'Cannot access attribute "__replace__" for class "B"\n' +
+                        '  Attribute "__replace__" is unknown',
+                },
+                {
+                    code: DiagnosticRule.reportAttributeAccessIssue,
+                    line: 50,
+                    message:
+                        'Cannot access attribute "__replace__" for class "C"\n' +
+                        '  Attribute "__replace__" is unknown',
+                },
+                {
+                    code: DiagnosticRule.reportAttributeAccessIssue,
+                    line: 62,
+                    message:
+                        'Cannot access attribute "__replace__" for class "D"\n' +
+                        '  Attribute "__replace__" is unknown',
+                },
+                {
+                    code: DiagnosticRule.reportAssignmentType,
+                    line: 74,
+                    message:
+                        'Type "Box[int]" is not assignable to declared type "Box[bool]"\n' +
+                        '  "Box[int]" is not assignable to "Box[bool]"\n' +
+                        '    Type parameter "T@Box" is covariant, but "int" is not a subtype of "bool"\n' +
+                        '      "int" is not assignable to "bool"',
+                },
+            ],
+        });
+    });
+    test('returns a callable protocol', () => {
+        // test for an issue that was fixed upstream but didn't have a test. see https://github.com/microsoft/pyright/issues/11015
+        const configOptions = new ConfigOptions(Uri.empty());
+        const analysisResults = typeAnalyzeSampleFiles(['dataclass_transform_callable_protocol.py'], configOptions);
+        validateResultsButBased(analysisResults, {});
+    });
+    test('changes return type to something else', () => {
+        // when the function decorated with `@dataclass_transform` is annotated as returning a different type, we want to ignore it
+        // because `dataclass_transform`'s purpose is to transform the decorated class into a dataclass, not some other type.
+        // ideally this should be an error, but pydantic (and presumably other libraries that use dataclass_transform) depend on
+        // the behavior prior to pyright 1.1.407, which fixed the scenario in the 'returns a callable protocol' test but broke this one.
+        // in basedpyright we modify the logic to fix the original issue without introducing a breaking change.
+        const configOptions = new ConfigOptions(Uri.empty());
+        const analysisResults = typeAnalyzeSampleFiles(
+            ['based_dataclass_transform_changes_return_type.py'],
+            configOptions
+        );
+        validateResultsButBased(analysisResults, {});
     });
 });
 
