@@ -59,7 +59,7 @@ for information on how to configure the language server in your IDE, [see here](
 
 the basedpyright extension will automatically look for the pypi package in your python environment.
 
-??? tip "if adding basedpyright as a development dependency to your project"
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
     we recommend adding it to the recommended extensions list in your workspace:
 
@@ -163,9 +163,9 @@ Emacs users have 3 options:
     3. set "Running mode" to "Native LSP client":\
         ![](./native-lsp.png)
 
-!!! tip
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
-    if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
+    we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
 
     ![](pycharm-recommended-dependency.png)
 
@@ -195,7 +195,7 @@ You can verify the active configuration by running `hx --health python`
 
 basedpyright is the default language server for python in zed. [see the docs](https://zed.dev/docs/languages/python#basedpyright) for more information.
 
-!!! tip "adding basedpyright as a development dependency to your project"
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
     we highly recommend installing and pinning basedpyright as a dev dependency for your project and using project settings (`.zed/settings.json`) to confiigure zed to use the that version instead of a globally installed version.
 
