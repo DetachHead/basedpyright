@@ -1778,15 +1778,21 @@
 <span class="p">}</span>
 </code></pre></div>
 </details>
+<details class="warning">
+<summary>if using basedpyright without the microsoft python extension</summary>
+<p>If <code>basedpyright</code> is installed within a virtual environment and the official Python extension (<a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python"><code>ms-python</code></a>) is not installed, the VSCode extension will crash on load. This is a known issue (<a href="https://github.com/detachhead/basedpyright/issues/1188">#1188</a>) because the automatic python interpreter detection is provided only by <code>ms-python</code>.</p>
+<p>The <code>basedpyright</code> VSCode extension by design does not depend explicitly on <code>ms-python</code>, due to concerns about telemetry.</p>
+<p>There are two workarounds for this problem:</p>
+<ul>
+<li>Manually install <code>ms-python</code></li>
+<li>Set <code>basedpyright.importStrategy</code> to <code>useBundled</code> in your <code>.vscode/settings.json</code></li>
+</ul>
+</details>
 </div>
 <div class="tabbed-block">
 <p>install the extension from <a href="https://open-vsx.org/extension/detachhead/basedpyright">the open VSX registry</a></p>
-</div>
-</div>
-</div>
-<p>the basedpyright extension will automatically look for the pypi package in your python environment.</p>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
+<p class="admonition-title">if using basedpyright without the microsoft python extension</p>
 <p>If <code>basedpyright</code> is installed within a virtual environment and the official Python extension (<a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python"><code>ms-python</code></a>) is not installed, the VSCode extension will crash on load. This is a known issue (<a href="https://github.com/detachhead/basedpyright/issues/1188">#1188</a>) because the automatic python interpreter detection is provided only by <code>ms-python</code>.</p>
 <p>The <code>basedpyright</code> VSCode extension by design does not depend explicitly on <code>ms-python</code>, due to concerns about telemetry.</p>
 <p>There are two workarounds for this problem:</p>
@@ -1795,15 +1801,19 @@
 <li>Set <code>basedpyright.importStrategy</code> to <code>useBundled</code> in your <code>.vscode/settings.json</code></li>
 </ul>
 </div>
-<details class="tip">
-<summary>if adding basedpyright as a development dependency to your project</summary>
+</div>
+</div>
+</div>
+<p>the basedpyright extension will automatically look for the pypi package in your python environment.</p>
+<div class="admonition tip">
+<p class="admonition-title">pinning basedpyright as a development dependency to your project (recommended)</p>
 <p>we recommend adding it to the recommended extensions list in your workspace:</p>
 <div class="highlight"><span class="filename">.vscode/extensions.json</span><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;recommendations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;detachhead.basedpyright&quot;</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>you should commit this file so that it prompts others working on your repo to install the extension as well.</p>
-</details>
+</div>
 <h2 id="neovim">Neovim</h2>
 <p>You need to install the LSP client adapter plugin,
 <a href="https://github.com/neovim/nvim-lspconfig">nvim-lspconfig</a>, for setting up the
@@ -1880,8 +1890,8 @@ their docs, linked above.</p>
 </div>
 </div>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Appearance &amp; Behavior &gt; Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:</p>
+<p class="admonition-title">pinning basedpyright as a development dependency to your project (recommended)</p>
+<p>we recommend configuring these settings as overrides in the "Appearance &amp; Behavior &gt; Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:</p>
 <p><img alt="" src="../pycharm-recommended-dependency.png" /></p>
 <p>you should then commit the following generated config files, so that others working on your repo are prompted to install the plugin and don't have to manually configure it themselves:</p>
 <ul>
@@ -1901,6 +1911,23 @@ Then add the following to your <a href="https://docs.helix-editor.com/languages.
 <p>You can verify the active configuration by running <code>hx --health python</code></p>
 <h2 id="zed">Zed</h2>
 <p>basedpyright is the default language server for python in zed. <a href="https://zed.dev/docs/languages/python#basedpyright">see the docs</a> for more information.</p>
+<div class="admonition tip">
+<p class="admonition-title">pinning basedpyright as a development dependency to your project (recommended)</p>
+<p>we highly recommend installing and pinning basedpyright as a dev dependency for your project and using project settings (<code>.zed/settings.json</code>) to confiigure zed to use the that version instead of a globally installed version.</p>
+<p>this ensures that zed doesn't automatically update basedpyright unexpectedly to a version that your project may not be ready to use.</p>
+<div class="highlight"><span class="filename">.zed/settings.json</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;lsp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;basedpyright&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;binary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.venv/bin/basedpyright-langserver&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--stdio&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>you should commit this file so that these settings are automatically applied for other developers working on your project.</p>
+</div>
 
 
 
