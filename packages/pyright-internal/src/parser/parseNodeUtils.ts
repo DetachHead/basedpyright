@@ -9,7 +9,7 @@
  * This file is used to map the string keys to the const enum values.
  */
 import { TextRange } from '../common/textRange';
-import { ParseNode, ParseNodeType } from './parseNodes';
+import { ArgumentNode, ParseNode, ParseNodeType } from './parseNodes';
 import { OperatorType } from './tokenizerTypes';
 
 type ParseNodeEnumStringKeys = Exclude<keyof typeof ParseNodeType, `${number}`>;
@@ -219,4 +219,22 @@ export function improveNodeByOffset(node: ParseNode, offset: number): ParseNode 
         node = node.parent;
     }
     return node;
+}
+
+/**
+ * If `node` is an `ArgumentNode` node or a literal node with an `ArgumentNode` parent, return that
+ * `ArgumentNode`.
+ */
+export function getArgumentNode(node: ParseNode): ArgumentNode | undefined {
+    switch (node.nodeType) {
+        case ParseNodeType.Argument:
+            return node;
+        case ParseNodeType.Number:
+        case ParseNodeType.String:
+        case ParseNodeType.StringList:
+            return node.parent ? getArgumentNode(node.parent) : undefined;
+        default:
+            break;
+    }
+    return undefined;
 }
