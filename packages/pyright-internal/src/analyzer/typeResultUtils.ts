@@ -15,33 +15,43 @@ import {
 import { EvalFlags, TypeEvaluator, TypeResult } from './typeEvaluatorTypes';
 
 /**
- * Iterate over the declarations within `typeResult`, where `unfiltered` represents the declaration
- * should always be kept even when declarations are filtered, which applies to the item declaration
- * of a `TypedDict` item.
+ * Iterate over the declarations within `typeResult`, where `isTypedDictItem` represents whether
+ * the `declaration` is the item declaration of a `TypedDict` item. If `typeResult` represents a
+ * `TypedDict` item, `isArgument` determines whether the `TypedDict` item declaration or the
+ * declaration of the corresponding `dict` magic methods is used for the callbacks.
  *
  * These declarations include information about `TypedDict` items or, if that is not available,
  * the declarations of the overloads used to determine the `TypeResult`.
+ *
+ * @returns An object where `isTypedDictItem` denotes whether `typeResult` represents a `TypedDict`
+ *          item.
  */
 export function forEachDeclaration(
     typeResult: TypeResult,
-    callback: (declarations: Declaration[], unfiltered: boolean) => void
-): void {
+    callback: (declaration: Declaration, isTypedDictItem: boolean) => void,
+    isArgument: boolean
+): { isTypedDictItem: boolean } {
     if (typeResult.typedDictItemInfos && typeResult.typedDictItemInfos.length > 0) {
-        typeResult.typedDictItemInfos.forEach((member) => {
-            if (member.declaration) {
-                callback([member.declaration], true);
-            }
-            if (member.magicMethod.shared.declaration) {
-                callback([member.magicMethod.shared.declaration], false);
-            }
-        });
+        // Use the `TypedDict` item information when available.
+        if (isArgument) {
+            // Use the declarations of the `TypedDict` items.
+            typeResult.typedDictItemInfos.forEach((member) => {
+                if (member.declaration) callback(member.declaration, true);
+            });
+        } else {
+            // Use the declarations of the de-duplicated `dict` magic methods.
+            const declarations = typeResult.typedDictItemInfos.map((member) => member.magicMethod.shared.declaration);
+            declarations.forEach((decl, i) => {
+                if (decl && declarations.indexOf(decl) === i) callback(decl, false);
+            });
+        }
+        return { isTypedDictItem: true };
     } else {
         const declarations = typeResult.overloadsUsedForCall
             ?.map((type) => type.shared.declaration)
             .filter((decl) => decl !== undefined);
-        if (declarations && declarations.length > 0) {
-            callback(declarations, false);
-        }
+        declarations?.forEach((decl) => callback(decl, false));
+        return { isTypedDictItem: false };
     }
 }
 

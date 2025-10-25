@@ -925,51 +925,8 @@ export class TestState {
         }
     }
 
-    verifyHoverBase<T>(
-        kind: MarkupKind,
-        map: { [marker: string]: T | null },
-        computeRange: (expected: T, rangePos: PositionRange) => LspRange,
-        computeValue: (expected: T) => string
-    ): void {
-        // Do not force analyze, it can lead to test passing while it doesn't work in product
-        for (const range of this.getRanges()) {
-            const name = this.getMarkerName(range.marker!);
-            const expected = map[name];
-            if (expected === undefined) {
-                continue;
-            }
-
-            const rangePos = this.convertOffsetsToRange(range.fileName, range.pos, range.end);
-            const provider = new HoverProvider(
-                this.program,
-                range.fileUri,
-                rangePos.start,
-                kind,
-                CancellationToken.None
-            );
-            const actual = provider.getHover();
-
-            // if expected is null then there should be nothing shown on hover
-            if (expected === null) {
-                assert.equal(actual, undefined);
-                continue;
-            }
-
-            assert.ok(actual);
-
-            assert.deepEqual(actual!.range, computeRange(expected, rangePos));
-
-            if (MarkupContent.is(actual!.contents)) {
-                assert.equal(actual!.contents.value, computeValue(expected));
-                assert.equal(actual!.contents.kind, kind);
-            } else {
-                assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);
-            }
-        }
-    }
-
     verifyHover(kind: MarkupKind, map: { [marker: string]: string | null }): void {
-        this.verifyHoverBase(
+        this._verifyHoverBase(
             kind,
             map,
             (_expected, rangePos) => rangePos,
@@ -978,7 +935,7 @@ export class TestState {
     }
 
     verifyHoverRanges(kind: MarkupKind, map: { [marker: string]: [string, LspRange] | null }): void {
-        this.verifyHoverBase(
+        this._verifyHoverBase(
             kind,
             map,
             (expected) => expected[1],
@@ -1810,6 +1767,49 @@ export class TestState {
         );
 
         return service;
+    }
+
+    private _verifyHoverBase<T>(
+        kind: MarkupKind,
+        map: { [marker: string]: T | null },
+        computeRange: (expected: T, rangePos: PositionRange) => LspRange,
+        computeValue: (expected: T) => string
+    ): void {
+        // Do not force analyze, it can lead to test passing while it doesn't work in product
+        for (const range of this.getRanges()) {
+            const name = this.getMarkerName(range.marker!);
+            const expected = map[name];
+            if (expected === undefined) {
+                continue;
+            }
+
+            const rangePos = this.convertOffsetsToRange(range.fileName, range.pos, range.end);
+            const provider = new HoverProvider(
+                this.program,
+                range.fileUri,
+                rangePos.start,
+                kind,
+                CancellationToken.None
+            );
+            const actual = provider.getHover();
+
+            // if expected is null then there should be nothing shown on hover
+            if (expected === null) {
+                assert.equal(actual, undefined);
+                continue;
+            }
+
+            assert.ok(actual);
+
+            assert.deepEqual(actual!.range, computeRange(expected, rangePos));
+
+            if (MarkupContent.is(actual!.contents)) {
+                assert.equal(actual!.contents.value, computeValue(expected));
+                assert.equal(actual!.contents.kind, kind);
+            } else {
+                assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);
+            }
+        }
     }
 
     private _convertGlobalOptionsToConfigOptions(projectRoot: string, mountPaths?: Map<string, string>): ConfigOptions {

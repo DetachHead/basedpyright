@@ -31,7 +31,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
-import { getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
+import { getArgumentNode, getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 
@@ -41,18 +41,11 @@ export enum DefinitionFilter {
     PreferStubs = 'preferStubs',
 }
 
-type Definition = {
-    range: DocumentRange;
-    /** Whether this definition should be ignored (and always retained) when filtering definitions. */
-    unfiltered: boolean;
-};
-
 export function addDeclarationsToDefinitions(
     evaluator: TypeEvaluator,
     sourceMapper: SourceMapper,
     declarations: Declaration[] | undefined,
-    definitions: Definition[],
-    unfiltered: boolean
+    definitions: DocumentRange[]
 ) {
     if (!declarations) {
         return;
@@ -86,7 +79,7 @@ export function addDeclarationsToDefinitions(
             resolvedDecl = resolvedDecl.submoduleFallback;
         }
 
-        _addIfUnique(definitions, { uri: resolvedDecl.uri, range: resolvedDecl.range }, unfiltered);
+        _addIfUnique(definitions, { uri: resolvedDecl.uri, range: resolvedDecl.range });
 
         if (!isStubFile(resolvedDecl.uri)) {
             return;
@@ -98,22 +91,22 @@ export function addDeclarationsToDefinitions(
                 .findModules(resolvedDecl.uri)
                 .map((m) => getFileInfo(m)?.fileUri)
                 .filter(isDefined)
-                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f), unfiltered));
+                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f)));
             return;
         }
 
         const implDecls = sourceMapper.findDeclarations(resolvedDecl);
         for (const implDecl of implDecls) {
             if (implDecl && !implDecl.uri.isEmpty()) {
-                _addIfUnique(definitions, { uri: implDecl.uri, range: implDecl.range }, unfiltered);
+                _addIfUnique(definitions, { uri: implDecl.uri, range: implDecl.range });
             }
         }
     });
 }
 
-export function filterDefinitions(filter: DefinitionFilter, definitions: Definition[]) {
+export function filterDefinitions(filter: DefinitionFilter, definitions: DocumentRange[]) {
     if (filter === DefinitionFilter.All) {
-        return definitions.map((definition) => definition.range);
+        return definitions;
     }
 
     // If go-to-declaration is supported, attempt to only show only pyi files in go-to-declaration
@@ -121,13 +114,11 @@ export function filterDefinitions(filter: DefinitionFilter, definitions: Definit
     // Definitions marked as `unfiltered` are ignored when deciding whether to filter and are
     // always retained when filtering.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
-    if (definitions.find((definition) => !definition.unfiltered && preferStubs === isStubFile(definition.range.uri))) {
-        return definitions
-            .filter((definition) => definition.unfiltered || preferStubs === isStubFile(definition.range.uri))
-            .map((definition) => definition.range);
+    if (definitions.find((definition) => preferStubs === isStubFile(definition.uri))) {
+        return definitions.filter((definition) => preferStubs === isStubFile(definition.uri));
     }
 
-    return definitions.map((definition) => definition.range);
+    return definitions;
 }
 
 class DefinitionProviderBase {
@@ -144,7 +135,7 @@ class DefinitionProviderBase {
     getDefinitionsForNode(node: ParseNode, offset: number) {
         throwIfCancellationRequested(this.token);
 
-        const definitions: Definition[] = [];
+        const definitions: DocumentRange[] = [];
 
         const factories = this._serviceProvider?.tryGet(ServiceKeys.symbolDefinitionProvider);
         if (factories) {
@@ -156,6 +147,7 @@ class DefinitionProviderBase {
 
         // There should be only one 'definition', so only if extensions failed should we try again.
         // Go up the parse tree until we find a node that we can determine a definition for.
+        const isArgumentNode = getArgumentNode(node) !== undefined;
         let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
         while (definitions.length === 0 && currentNode) {
             const infoNode: ParseNode | undefined = getInfoNode(currentNode);
@@ -182,7 +174,7 @@ class DefinitionProviderBase {
                 case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
                     const result = getTypeOfOperatorNode(this.evaluator, infoNode);
-                    this.resolveTypeResult(result, definitions);
+                    this.resolveTypeResult(result, definitions, isArgumentNode);
                     break;
                 }
             }
@@ -203,20 +195,14 @@ class DefinitionProviderBase {
         return filterDefinitions(this._filter, definitions);
     }
 
-    protected resolveDeclarations(
-        declarations: Declaration[] | undefined,
-        definitions: Definition[],
-        unfiltered: boolean = false
-    ) {
-        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions, unfiltered);
+    protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
+        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
     }
-    protected resolveTypeResult(typeResult: TypeResult, definitions: Definition[]) {
-        forEachDeclaration(typeResult, (declarations, unfiltered) =>
-            this.resolveDeclarations(declarations, definitions, unfiltered)
-        );
+    protected resolveTypeResult(typeResult: TypeResult, definitions: DocumentRange[], isArgumentNode: boolean) {
+        forEachDeclaration(typeResult, (decl) => this.resolveDeclarations([decl], definitions), isArgumentNode);
     }
 
-    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: Definition[]) {
+    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {
         for (const synthType of synthTypes) {
             if (!synthType.node) {
                 continue;
@@ -229,7 +215,7 @@ class DefinitionProviderBase {
                 fileInfo.lines
             );
 
-            definitions.push({ range: { uri: fileInfo.fileUri, range }, unfiltered: false });
+            definitions.push({ uri: fileInfo.fileUri, range });
         }
     }
 }
@@ -295,7 +281,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        const definitions: Definition[] = [];
+        const definitions: DocumentRange[] = [];
 
         if (this.node.nodeType === ParseNodeType.Name) {
             const type = this.evaluator.getType(this.node);
@@ -329,7 +315,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        return definitions.map((definition) => definition.range);
+        return definitions;
     }
 }
 
@@ -356,12 +342,12 @@ function _createModuleEntry(uri: Uri): DocumentRange {
     };
 }
 
-function _addIfUnique(definitions: Definition[], itemToAdd: DocumentRange, unfiltered: boolean) {
+function _addIfUnique(definitions: DocumentRange[], itemToAdd: DocumentRange) {
     for (const def of definitions) {
-        if (def.range.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range.range, itemToAdd.range)) {
+        if (def.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range, itemToAdd.range)) {
             return;
         }
     }
 
-    definitions.push({ range: itemToAdd, unfiltered });
+    definitions.push(itemToAdd);
 }

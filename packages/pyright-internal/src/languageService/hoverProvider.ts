@@ -46,7 +46,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ExpressionNode, NameNode, ParseNode, ParseNodeType, StringNode } from '../parser/parseNodes';
-import { getInfoNode, improveNodeByOffset, nodeRange } from '../parser/parseNodeUtils';
+import { getArgumentNode, getInfoNode, improveNodeByOffset, nodeRange } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 import {
     getClassAndConstructorTypes,
@@ -163,11 +163,12 @@ export function getVariableTypeText(
     name: string,
     type: Type,
     typeNode: ExpressionNode,
-    functionSignatureDisplay: SignatureDisplayType
+    functionSignatureDisplay: SignatureDisplayType,
+    isTypedDictKey: boolean = false
 ) {
-    let label = 'variable';
+    let label = isTypedDictKey ? 'key' : 'variable';
     if (declaration) {
-        label = declaration.isConstant || evaluator.isFinalVariableDeclaration(declaration) ? 'constant' : 'variable';
+        label = declaration.isConstant || evaluator.isFinalVariableDeclaration(declaration) ? 'constant' : label;
     }
 
     let typeVarName: string | undefined;
@@ -273,13 +274,16 @@ export class HoverProvider {
             return null;
         }
 
-        let currentNode = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
-        if (currentNode === undefined) {
+        const baseNode = ParseTreeUtils.findNodeByOffset(this._parseResults.parserOutput.parseTree, offset);
+        if (baseNode === undefined) {
             return null;
         }
-        currentNode = improveNodeByOffset(currentNode, offset);
+        const argumentNode = getArgumentNode(baseNode);
 
         // Go up the parse tree until we find a node that we can determine a hover message for.
+        let currentNode: ParseNode | undefined = improveNodeByOffset(baseNode, offset);
+        // When hovering over the key of a `TypedDict` item access, use the argument for highlighting.
+        let rangeOverride: ParseNode | undefined = undefined;
         while (currentNode) {
             const infoNode = getInfoNode(currentNode);
 
@@ -348,7 +352,14 @@ export class HoverProvider {
                 case ParseNodeType.BinaryOperation:
                 case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
-                    this._addResultsForTypeResult(parts, getTypeOfOperatorNode(this._evaluator, infoNode));
+                    const result = this._addResultsForTypeResult(
+                        parts,
+                        getTypeOfOperatorNode(this._evaluator, infoNode),
+                        argumentNode !== undefined
+                    );
+                    if (result.isTypedDictItem) {
+                        rangeOverride = argumentNode;
+                    }
                     break;
                 }
             }
@@ -368,7 +379,7 @@ export class HoverProvider {
                     rangeNode = infoNode.parent;
                 }
 
-                const range = nodeRange(rangeNode);
+                const range = nodeRange(rangeOverride ?? rangeNode);
                 return {
                     parts,
                     range: {
@@ -390,7 +401,12 @@ export class HoverProvider {
         return null;
     }
 
-    private _addResultsForDeclaration(parts: HoverTextPart[], declaration: Declaration, node: NameNode): void {
+    private _addResultsForDeclaration(
+        parts: HoverTextPart[],
+        declaration: Declaration,
+        node: NameNode,
+        isTypedDictKey: boolean = false
+    ): void {
         const resolvedDecl =
             declaration.type === DeclarationType.Alias
                 ? this._evaluator.resolveAliasDeclaration(declaration, /* resolveLocalNames */ true)
@@ -442,7 +458,8 @@ export class HoverProvider {
                     node.d.value,
                     type,
                     typeNode,
-                    this._functionSignatureDisplay
+                    this._functionSignatureDisplay,
+                    isTypedDictKey
                 );
 
                 this._addResultsPart(parts, typeText, /* python */ true);
@@ -531,16 +548,20 @@ export class HoverProvider {
         }
     }
 
-    private _addResultsForTypeResult(parts: HoverTextPart[], typeResult: TypeResult): void {
-        const handleDeclaration = (decl: Declaration) => {
+    private _addResultsForTypeResult(
+        parts: HoverTextPart[],
+        typeResult: TypeResult,
+        isArgument: boolean
+    ): { isTypedDictItem: boolean } {
+        const handleDeclaration = (decl: Declaration, isTypedDictKey: boolean) => {
             const name = getNameNodeForDeclaration(decl);
             if (name) {
                 this._addSeparator(parts);
-                this._addResultsForDeclaration(parts, decl, name);
+                this._addResultsForDeclaration(parts, decl, name, isTypedDictKey);
             }
         };
 
-        forEachDeclaration(typeResult, (declarations) => declarations.forEach(handleDeclaration));
+        return forEachDeclaration(typeResult, handleDeclaration, isArgument);
     }
 
     private _addResultsForSynthesizedType(parts: HoverTextPart[], typeInfo: SynthesizedTypeInfo, hoverNode: NameNode) {
