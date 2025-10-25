@@ -232,6 +232,7 @@ import {
     SymbolDeclInfo,
     TypeEvaluator,
     TypeResult,
+    TypedDictItemInfo,
     TypeResultWithNode,
     ValidateArgTypeParams,
     ValidateTypeArgsOptions,
@@ -1255,7 +1256,8 @@ export function createTypeEvaluator(
             }
 
             case ParseNodeType.Index: {
-                typeResult = getTypeOfIndex(node, flags);
+                // before the access method was configurable, `get` was always used
+                typeResult = getTypeOfIndex(node, { method: 'get' }, flags);
                 break;
             }
 
@@ -7181,7 +7183,11 @@ export function createTypeEvaluator(
         };
     }
 
-    function getTypeOfIndex(node: IndexNode, flags = EvalFlags.None): TypeResult {
+    function getTypeOfIndex(
+        node: IndexNode,
+        usage: EvaluatorUsage = { method: 'get' },
+        flags = EvalFlags.None
+    ): TypeResult {
         const baseTypeResult = getTypeOfExpression(node.d.leftExpr, flags | EvalFlags.IndexBaseDefaults);
 
         // If this is meant to be a type and the base expression is a string expression,
@@ -7227,7 +7233,7 @@ export function createTypeEvaluator(
             }
         }
 
-        const indexTypeResult = getTypeOfIndexWithBaseType(node, baseTypeResult, { method: 'get' }, flags);
+        const indexTypeResult = getTypeOfIndexWithBaseType(node, baseTypeResult, usage, flags);
 
         if (isCodeFlowSupportedForReference(node)) {
             // We limit type narrowing for index expressions to built-in types that are
@@ -7843,6 +7849,8 @@ export function createTypeEvaluator(
         let isRequired = false;
         let isNotRequired = false;
         let isReadOnly = false;
+        const overloadsUsedForCall: FunctionType[] = [];
+        const typedDictItemInfos: TypedDictItemInfo[] = [];
 
         const type = mapSubtypesExpandTypeVars(
             baseTypeResult.type,
@@ -7905,7 +7913,14 @@ export function createTypeEvaluator(
                         }
 
                         if (itemMethodType) {
-                            return getTypeOfIndexedObjectOrClass(node, concreteSubtype, selfType, usage).type;
+                            const typeResult = getTypeOfIndexedObjectOrClass(node, concreteSubtype, selfType, usage);
+                            if (typeResult.overloadsUsedForCall) {
+                                overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                            }
+                            if (typeResult.typedDictItemInfos) {
+                                typedDictItemInfos.push(...typeResult.typedDictItemInfos);
+                            }
+                            return typeResult.type;
                         }
                     }
 
@@ -8045,6 +8060,12 @@ export function createTypeEvaluator(
                     if (typeResult.isIncomplete) {
                         isIncomplete = true;
                     }
+                    if (typeResult.overloadsUsedForCall) {
+                        overloadsUsedForCall.push(...typeResult.overloadsUsedForCall);
+                    }
+                    if (typeResult.typedDictItemInfos) {
+                        typedDictItemInfos.push(...typeResult.typedDictItemInfos);
+                    }
                     return typeResult.type;
                 }
 
@@ -8078,7 +8099,15 @@ export function createTypeEvaluator(
             });
         }
 
-        return { type, isIncomplete, isReadOnly, isRequired, isNotRequired };
+        return {
+            type,
+            isIncomplete,
+            isReadOnly,
+            isRequired,
+            isNotRequired,
+            overloadsUsedForCall,
+            typedDictItemInfos,
+        };
     }
 
     // Determines the effective variance of the type parameters for a generic
@@ -8258,48 +8287,50 @@ export function createTypeEvaluator(
         // the index is a constant number (integer) or a slice with integer
         // start and end values. In these cases, we can determine
         // the exact type by indexing into the tuple type array.
-        if (
-            node.d.items.length === 1 &&
-            !node.d.trailingComma &&
-            !node.d.items[0].d.name &&
-            node.d.items[0].d.argCategory === ArgCategory.Simple &&
-            isClassInstance(baseType)
-        ) {
-            const index0Expr = node.d.items[0].d.valueExpr;
-            const valueType = getTypeOfExpression(index0Expr).type;
-
+        // This is a lambda to minimize the diff from the upstream repository.
+        const tupleConstIndexType = () => {
             if (
-                isClassInstance(valueType) &&
-                ClassType.isBuiltIn(valueType, 'int') &&
-                isLiteralType(valueType) &&
-                typeof valueType.priv.literalValue === 'number'
+                node.d.items.length === 1 &&
+                !node.d.trailingComma &&
+                !node.d.items[0].d.name &&
+                node.d.items[0].d.argCategory === ArgCategory.Simple &&
+                isClassInstance(baseType)
             ) {
-                const indexValue = valueType.priv.literalValue;
-                const tupleType = getSpecializedTupleType(baseType);
+                const index0Expr = node.d.items[0].d.valueExpr;
+                const valueType = getTypeOfExpression(index0Expr).type;
 
-                if (tupleType && tupleType.priv.tupleTypeArgs) {
-                    if (isTupleIndexUnambiguous(tupleType, indexValue)) {
-                        if (indexValue >= 0 && indexValue < tupleType.priv.tupleTypeArgs.length) {
-                            return { type: tupleType.priv.tupleTypeArgs[indexValue].type };
-                        } else if (indexValue < 0 && tupleType.priv.tupleTypeArgs.length + indexValue >= 0) {
-                            return {
-                                type: tupleType.priv.tupleTypeArgs[tupleType.priv.tupleTypeArgs.length + indexValue]
-                                    .type,
-                            };
+                if (
+                    isClassInstance(valueType) &&
+                    ClassType.isBuiltIn(valueType, 'int') &&
+                    isLiteralType(valueType) &&
+                    typeof valueType.priv.literalValue === 'number'
+                ) {
+                    const indexValue = valueType.priv.literalValue;
+                    const tupleType = getSpecializedTupleType(baseType);
+
+                    if (tupleType && tupleType.priv.tupleTypeArgs) {
+                        if (isTupleIndexUnambiguous(tupleType, indexValue)) {
+                            if (indexValue >= 0 && indexValue < tupleType.priv.tupleTypeArgs.length) {
+                                return tupleType.priv.tupleTypeArgs[indexValue].type;
+                            } else if (indexValue < 0 && tupleType.priv.tupleTypeArgs.length + indexValue >= 0) {
+                                return tupleType.priv.tupleTypeArgs[tupleType.priv.tupleTypeArgs.length + indexValue]
+                                    .type;
+                            }
+                        }
+                    }
+                } else if (isClassInstance(valueType) && ClassType.isBuiltIn(valueType, 'slice')) {
+                    const tupleType = getSpecializedTupleType(baseType);
+
+                    if (tupleType && index0Expr.nodeType === ParseNodeType.Slice) {
+                        const slicedTupleType = getSlicedTupleType(evaluatorInterface, tupleType, index0Expr);
+                        if (slicedTupleType) {
+                            return slicedTupleType;
                         }
                     }
                 }
-            } else if (isClassInstance(valueType) && ClassType.isBuiltIn(valueType, 'slice')) {
-                const tupleType = getSpecializedTupleType(baseType);
-
-                if (tupleType && index0Expr.nodeType === ParseNodeType.Slice) {
-                    const slicedTupleType = getSlicedTupleType(evaluatorInterface, tupleType, index0Expr);
-                    if (slicedTupleType) {
-                        return { type: slicedTupleType };
-                    }
-                }
             }
-        }
+            return undefined;
+        };
 
         const positionalArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.Simple);
         const unpackedListArgs = node.d.items.filter((item) => item.d.argCategory === ArgCategory.UnpackedList);
@@ -8444,8 +8475,9 @@ export function createTypeEvaluator(
         );
 
         return {
-            type: callResult.returnType ?? UnknownType.create(),
+            type: tupleConstIndexType() ?? callResult.returnType ?? UnknownType.create(),
             isIncomplete: !!callResult.isTypeIncomplete,
+            overloadsUsedForCall: callResult.overloadsUsedForCall,
         };
     }
 
@@ -29093,6 +29125,8 @@ export function createTypeEvaluator(
         getInferredReturnType,
         getBestOverloadForArgs,
         getBuiltInType,
+        getIndexAccessMagicMethodName,
+        getTypeOfIndex,
         getTypeOfMember,
         getTypeOfBoundMember,
         getBoundMagicMethod,

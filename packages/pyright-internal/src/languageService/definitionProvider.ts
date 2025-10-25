@@ -13,18 +13,13 @@
 import { CancellationToken } from 'vscode-languageserver';
 
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
-import {
-    Declaration,
-    DeclarationType,
-    isFunctionDeclaration,
-    isUnresolvedAliasDeclaration,
-} from '../analyzer/declaration';
+import { Declaration, DeclarationType, isUnresolvedAliasDeclaration } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
-import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
-import { OverloadedType, TypeCategory, isOverloaded } from '../analyzer/types';
+import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -36,7 +31,9 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
+import { getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
+import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 
 export enum DefinitionFilter {
     All = 'all',
@@ -44,11 +41,18 @@ export enum DefinitionFilter {
     PreferStubs = 'preferStubs',
 }
 
+type Definition = {
+    range: DocumentRange;
+    /** Whether this definition should be ignored (and always retained) when filtering definitions. */
+    unfiltered: boolean;
+};
+
 export function addDeclarationsToDefinitions(
     evaluator: TypeEvaluator,
     sourceMapper: SourceMapper,
     declarations: Declaration[] | undefined,
-    definitions: DocumentRange[]
+    definitions: Definition[],
+    unfiltered: boolean
 ) {
     if (!declarations) {
         return;
@@ -82,25 +86,7 @@ export function addDeclarationsToDefinitions(
             resolvedDecl = resolvedDecl.submoduleFallback;
         }
 
-        _addIfUnique(definitions, {
-            uri: resolvedDecl.uri,
-            range: resolvedDecl.range,
-        });
-
-        if (isFunctionDeclaration(resolvedDecl)) {
-            // Handle overloaded function case
-            const functionType = evaluator.getTypeForDeclaration(resolvedDecl)?.type;
-            if (functionType && isOverloaded(functionType)) {
-                for (const overloadDecl of OverloadedType.getOverloads(functionType)
-                    .map((o) => o.shared.declaration)
-                    .filter(isDefined)) {
-                    _addIfUnique(definitions, {
-                        uri: overloadDecl.uri,
-                        range: overloadDecl.range,
-                    });
-                }
-            }
-        }
+        _addIfUnique(definitions, { uri: resolvedDecl.uri, range: resolvedDecl.range }, unfiltered);
 
         if (!isStubFile(resolvedDecl.uri)) {
             return;
@@ -112,36 +98,36 @@ export function addDeclarationsToDefinitions(
                 .findModules(resolvedDecl.uri)
                 .map((m) => getFileInfo(m)?.fileUri)
                 .filter(isDefined)
-                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f)));
+                .forEach((f) => _addIfUnique(definitions, _createModuleEntry(f), unfiltered));
             return;
         }
 
         const implDecls = sourceMapper.findDeclarations(resolvedDecl);
         for (const implDecl of implDecls) {
             if (implDecl && !implDecl.uri.isEmpty()) {
-                _addIfUnique(definitions, {
-                    uri: implDecl.uri,
-                    range: implDecl.range,
-                });
+                _addIfUnique(definitions, { uri: implDecl.uri, range: implDecl.range }, unfiltered);
             }
         }
     });
 }
 
-export function filterDefinitions(filter: DefinitionFilter, definitions: DocumentRange[]) {
+export function filterDefinitions(filter: DefinitionFilter, definitions: Definition[]) {
     if (filter === DefinitionFilter.All) {
-        return definitions;
+        return definitions.map((definition) => definition.range);
     }
 
     // If go-to-declaration is supported, attempt to only show only pyi files in go-to-declaration
     // and none in go-to-definition, unless filtering would produce an empty list.
+    // Definitions marked as `unfiltered` are ignored when deciding whether to filter and are
+    // always retained when filtering.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
-    const wantedFile = (v: DocumentRange) => preferStubs === isStubFile(v.uri);
-    if (definitions.find(wantedFile)) {
-        return definitions.filter(wantedFile);
+    if (definitions.find((definition) => !definition.unfiltered && preferStubs === isStubFile(definition.range.uri))) {
+        return definitions
+            .filter((definition) => definition.unfiltered || preferStubs === isStubFile(definition.range.uri))
+            .map((definition) => definition.range);
     }
 
-    return definitions;
+    return definitions.map((definition) => definition.range);
 }
 
 class DefinitionProviderBase {
@@ -158,7 +144,7 @@ class DefinitionProviderBase {
     getDefinitionsForNode(node: ParseNode, offset: number) {
         throwIfCancellationRequested(this.token);
 
-        const definitions: DocumentRange[] = [];
+        const definitions: Definition[] = [];
 
         const factories = this._serviceProvider?.tryGet(ServiceKeys.symbolDefinitionProvider);
         if (factories) {
@@ -169,20 +155,45 @@ class DefinitionProviderBase {
         }
 
         // There should be only one 'definition', so only if extensions failed should we try again.
-        if (definitions.length === 0) {
-            if (node.nodeType === ParseNodeType.Name) {
-                const declInfo = this.evaluator.getDeclInfoForNameNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+        // Go up the parse tree until we find a node that we can determine a definition for.
+        let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
+        while (definitions.length === 0 && currentNode) {
+            const infoNode: ParseNode | undefined = getInfoNode(currentNode);
+
+            switch (infoNode.nodeType) {
+                case ParseNodeType.Name: {
+                    const declInfo = this.evaluator.getDeclInfoForNameNode(infoNode);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
                 }
-            } else if (node.nodeType === ParseNodeType.String) {
-                const declInfo = this.evaluator.getDeclInfoForStringNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                case ParseNodeType.String: {
+                    const declInfo = this.evaluator.getDeclInfoForStringNode(infoNode);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
+                }
+                case ParseNodeType.UnaryOperation:
+                case ParseNodeType.BinaryOperation:
+                case ParseNodeType.AugmentedAssignment:
+                case ParseNodeType.Index: {
+                    const result = getTypeOfOperatorNode(this.evaluator, infoNode);
+                    this.resolveTypeResult(result, definitions);
+                    break;
                 }
             }
+
+            // In an assignment, the parents represent sub-assignments, i.e. for an assignment `a = b = 2`,
+            // if `currentNode` represents the assignment to `a`, its parent represents the assignment to `b`.
+            // Therefore, going to the parent to find definitions is not sensible for assignments.
+            if (currentNode.nodeType === ParseNodeType.Assignment) {
+                break;
+            }
+            currentNode = currentNode.parent;
         }
 
         if (definitions.length === 0) {
@@ -192,11 +203,20 @@ class DefinitionProviderBase {
         return filterDefinitions(this._filter, definitions);
     }
 
-    protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
-        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
+    protected resolveDeclarations(
+        declarations: Declaration[] | undefined,
+        definitions: Definition[],
+        unfiltered: boolean = false
+    ) {
+        addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions, unfiltered);
+    }
+    protected resolveTypeResult(typeResult: TypeResult, definitions: Definition[]) {
+        forEachDeclaration(typeResult, (declarations, unfiltered) =>
+            this.resolveDeclarations(declarations, definitions, unfiltered)
+        );
     }
 
-    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {
+    protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: Definition[]) {
         for (const synthType of synthTypes) {
             if (!synthType.node) {
                 continue;
@@ -209,7 +229,7 @@ class DefinitionProviderBase {
                 fileInfo.lines
             );
 
-            definitions.push({ uri: fileInfo.fileUri, range });
+            definitions.push({ range: { uri: fileInfo.fileUri, range }, unfiltered: false });
         }
     }
 }
@@ -275,7 +295,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        const definitions: DocumentRange[] = [];
+        const definitions: Definition[] = [];
 
         if (this.node.nodeType === ParseNodeType.Name) {
             const type = this.evaluator.getType(this.node);
@@ -309,7 +329,7 @@ export class TypeDefinitionProvider extends DefinitionProviderBase {
             return undefined;
         }
 
-        return definitions;
+        return definitions.map((definition) => definition.range);
     }
 }
 
@@ -336,12 +356,12 @@ function _createModuleEntry(uri: Uri): DocumentRange {
     };
 }
 
-function _addIfUnique(definitions: DocumentRange[], itemToAdd: DocumentRange) {
+function _addIfUnique(definitions: Definition[], itemToAdd: DocumentRange, unfiltered: boolean) {
     for (const def of definitions) {
-        if (def.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range, itemToAdd.range)) {
+        if (def.range.uri.equals(itemToAdd.uri) && rangesAreEqual(def.range.range, itemToAdd.range)) {
             return;
         }
     }
 
-    definitions.push(itemToAdd);
+    definitions.push({ range: itemToAdd, unfiltered });
 }

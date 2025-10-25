@@ -22,6 +22,7 @@ import {
     Location,
     MarkupContent,
     MarkupKind,
+    Range as LspRange,
     TextEdit,
     WorkspaceEdit,
 } from 'vscode-languageserver';
@@ -924,7 +925,12 @@ export class TestState {
         }
     }
 
-    verifyHover(kind: MarkupKind, map: { [marker: string]: string | null }): void {
+    verifyHoverBase<T>(
+        kind: MarkupKind,
+        map: { [marker: string]: T | null },
+        computeRange: (expected: T, rangePos: PositionRange) => LspRange,
+        computeValue: (expected: T) => string
+    ): void {
         // Do not force analyze, it can lead to test passing while it doesn't work in product
         for (const range of this.getRanges()) {
             const name = this.getMarkerName(range.marker!);
@@ -951,15 +957,33 @@ export class TestState {
 
             assert.ok(actual);
 
-            assert.deepEqual(actual!.range, rangePos);
+            assert.deepEqual(actual!.range, computeRange(expected, rangePos));
 
             if (MarkupContent.is(actual!.contents)) {
-                assert.equal(actual!.contents.value, expected);
+                assert.equal(actual!.contents.value, computeValue(expected));
                 assert.equal(actual!.contents.kind, kind);
             } else {
                 assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);
             }
         }
+    }
+
+    verifyHover(kind: MarkupKind, map: { [marker: string]: string | null }): void {
+        this.verifyHoverBase(
+            kind,
+            map,
+            (_expected, rangePos) => rangePos,
+            (expected) => expected
+        );
+    }
+
+    verifyHoverRanges(kind: MarkupKind, map: { [marker: string]: [string, LspRange] | null }): void {
+        this.verifyHoverBase(
+            kind,
+            map,
+            (expected) => expected[1],
+            (expected) => expected[0]
+        );
     }
 
     verifyCaretAtMarker(markerName = '') {
@@ -1455,7 +1479,7 @@ export class TestState {
                 CancellationToken.None
             ).getDefinitions();
 
-            assert.equal(actual?.length ?? 0, expected.length, `No definitions found for marker "${name}"`);
+            assert.equal(actual?.length ?? 0, expected.length, `Incorrect number of definitions for marker "${name}"`);
             actual = this.fixupDefinitionsToMatchExpected(actual!);
 
             for (const r of expected) {

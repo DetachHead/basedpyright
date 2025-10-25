@@ -35,6 +35,7 @@ import {
     Arg,
     AssignTypeFlags,
     EvaluatorUsage,
+    TypedDictItemInfo,
     TypeEvaluator,
     TypeResult,
     TypeResultWithNode,
@@ -51,6 +52,7 @@ import {
     isAnyOrUnknown,
     isClass,
     isClassInstance,
+    isFunction,
     isInstantiableClass,
     isNever,
     maxTypeRecursionCount,
@@ -829,6 +831,7 @@ export function getTypedDictMembersForClass(
         if (ClassType.isTypedDictMarkedClosed(classType) && !entries.extraItems) {
             entries.extraItems = {
                 valueType: NeverType.createNever(),
+                declaration: undefined,
                 isReadOnly: false,
                 isRequired: false,
                 isProvided: false,
@@ -1071,6 +1074,7 @@ function getTypedDictMembersForClassRecursive(
     if (ClassType.isTypedDictMarkedClosed(classType)) {
         entries.extraItems = {
             valueType: NeverType.createNever(),
+            declaration: undefined,
             isReadOnly: false,
             isRequired: false,
             isProvided: false,
@@ -1083,6 +1087,7 @@ function getTypedDictMembersForClassRecursive(
 
         entries.extraItems = {
             valueType: convertToInstance(extraItemsTypeResult.type),
+            declaration: undefined,
             isReadOnly: !!extraItemsTypeResult.isReadOnly,
             isRequired: false,
             isProvided: true,
@@ -1114,6 +1119,7 @@ function getTypedDictMembersForClassRecursive(
 
                 const tdEntry: TypedDictEntry = {
                     valueType,
+                    declaration: lastDecl,
                     isReadOnly,
                     isRequired,
                     isProvided: false,
@@ -1133,6 +1139,7 @@ export function getEffectiveExtraItemsEntryType(evaluator: TypeEvaluator, classT
     if (!ClassType.isTypedDictMarkedClosed(classType)) {
         return {
             valueType: evaluator.getObjectType(),
+            declaration: undefined,
             isReadOnly: true,
             isRequired: false,
             isProvided: false,
@@ -1145,6 +1152,7 @@ export function getEffectiveExtraItemsEntryType(evaluator: TypeEvaluator, classT
 
     return {
         valueType: NeverType.createNever(),
+        declaration: undefined,
         isReadOnly: true,
         isRequired: false,
         isProvided: false,
@@ -1451,6 +1459,7 @@ export function assignToTypedDict(
                 if (!symbolEntry.isRequired) {
                     narrowedEntries.set(keyValue, {
                         valueType: valueTypes[index].type,
+                        declaration: symbolEntry.declaration,
                         isReadOnly: !!valueTypes[index].isReadOnly,
                         isRequired: false,
                         isProvided: true,
@@ -1521,6 +1530,7 @@ export function getTypeOfIndexedTypedDict(
     let diag = new DiagnosticAddendum();
     let allDiagsInvolveNotRequiredKeys = true;
 
+    const itemInfos: TypedDictItemInfo[] = [];
     const resultingType = mapSubtypes(indexType, (subtype) => {
         if (isAnyOrUnknown(subtype)) {
             return subtype;
@@ -1574,6 +1584,15 @@ export function getTypeOfIndexedTypedDict(
                 allDiagsInvolveNotRequiredKeys = false;
             }
 
+            if (entry.declaration) {
+                const dictType = evaluator.getDictClassType();
+                const magicMethodName = evaluator.getIndexAccessMagicMethodName(usage);
+                const magicSymbol = dictType ? ClassType.getSymbolTable(dictType).get(magicMethodName) : undefined;
+                const magicMethod = magicSymbol ? evaluator.getEffectiveTypeOfSymbol(magicSymbol) : undefined;
+                if (magicMethod && isFunction(magicMethod)) {
+                    itemInfos.push({ magicMethod, declaration: entry.declaration });
+                }
+            }
             return entry.valueType;
         }
 
@@ -1608,7 +1627,7 @@ export function getTypeOfIndexedTypedDict(
         );
     }
 
-    return { type: resultingType, isIncomplete: !!indexTypeResult.isIncomplete };
+    return { type: resultingType, typedDictItemInfos: itemInfos, isIncomplete: !!indexTypeResult.isIncomplete };
 }
 
 // If the specified type has a non-required key, this method marks the
@@ -1639,6 +1658,7 @@ export function narrowForKeyAssignment(classType: ClassType, key: string) {
         isRequired: false,
         isReadOnly: tdEntry.isReadOnly,
         valueType: tdEntry.valueType,
+        declaration: tdEntry.declaration,
     });
 
     return ClassType.cloneForNarrowedTypedDictEntries(classType, narrowedEntries);
