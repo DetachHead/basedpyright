@@ -183,3 +183,24 @@ You can verify the active configuration by running `hx --health python`
 ## Zed
 
 basedpyright is the default language server for python in zed. [see the docs](https://zed.dev/docs/languages/python#basedpyright) for more information.
+
+!!! tip "adding basedpyright as a development dependency to your project"
+
+    we highly recommend installing and pinning basedpyright as a dev dependency for your project and using project settings (`.zed/settings.json`) to confiigure zed to use the that version instead of a globally installed version.
+
+    this ensures that zed doesn't automatically update basedpyright unexpectedly to a version that your project may not be ready to use.
+
+    ```json title=".zed/settings.json"
+    {
+        "lsp": {
+            "basedpyright": {
+                "binary": {
+                    "path": ".venv/bin/basedpyright-langserver",
+                    "arguments": ["--stdio"]
+                }
+            }
+        }
+    }
+    ```
+
+    you should commit this file so that these settings are automatically applied for other developers working on your project.
