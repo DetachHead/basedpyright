@@ -35,6 +35,16 @@
 ////     [|/*EA*/A|] = 1
 ////     [|/*EB*/B|] = 2
 
+// @filename: stubs/__init__.py
+// @library: true
+//// from typing import overload
+////
+//// class S0:
+////     @overload
+////     def __getitem__(self, i: int) -> float: ...
+////     @overload
+////     def [|/*S0GetItemSlice*/__getitem__|](self, i: slice) -> list[float]: ...
+
 // @filename: typeshed-fallback/stdlib/builtins.py
 //// class int:
 ////   def [|/*intAdd*/__add__|](self, other: int) -> "int": ...
@@ -70,13 +80,14 @@
 
 // @filename: test.py
 //// from classes import A, B, C, D, E
+//// from stubs import S0
 ////
 //// A() [|/*marker1*/+|] B()
 //// a = 1 [|/*marker2*/+|] 2
 //// a [|/*marker3*/+=|] 3
 //// b = ([|/*marker4a*/~|]a [|/*marker4b*/&|] 255,)
 //// c = 4 [|/*marker5*/*|] b
-//// d = 5 [|/*marker6*/not|] in c
+//// d = 5 not [|/*marker6*/in|] c
 //// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
@@ -89,6 +100,7 @@
 //// l = c[[|/*marker14*/1:2|]]
 //// m = E[[|/*marker15*/"A"|]]
 //// n = "abc"[[|/*marker16*/1|]]
+//// o = S0()[[|/*marker17*/0:2|]]
 
 {
     const rangeMap = helper.getRangesByText();
@@ -139,6 +151,7 @@
             marker14: { definitions: [nameToDoc('tupleGetItem')] },
             marker15: { definitions: [nameToDoc('EnumGetItem')] },
             marker16: { definitions: [nameToDoc('LitStrGetItem')] },
+            marker17: { definitions: [nameToDoc('S0GetItemSlice')] },
         },
         'preferSource'
     );
