@@ -114,6 +114,25 @@ the basedpyright language server settings can be configured using a workspace or
 
 The language server can be configured in your neovim settings:
 
+For Neovim 0.11+
+
+```lua title="lsp/basedpyright.lua"
+return {
+  settings = {
+    basedpyright = {
+      analysis = {
+        diagnosticMode = "openFilesOnly",
+        inlayHints = {
+          callArgumentNames = true
+        }
+      }
+    }
+  }
+}
+```
+
+For Neovim 0.10 (legacy)
+
 ```lua
 require("lspconfig").basedpyright.setup {
   settings = {
