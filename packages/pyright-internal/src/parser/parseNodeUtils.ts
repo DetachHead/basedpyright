@@ -214,7 +214,7 @@ export function improveNodeByOffset(node: ParseNode, offset: number): ParseNode 
     while (
         node.nodeType === ParseNodeType.Assignment &&
         node.parent?.nodeType === ParseNodeType.Assignment &&
-        TextRange.contains(nodeRange(node), offset)
+        TextRange.contains(nodeRange(node.parent), offset)
     ) {
         node = node.parent;
     }
