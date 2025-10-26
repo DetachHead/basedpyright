@@ -113,7 +113,7 @@ export function filterDefinitions(filter: DefinitionFilter, definitions: Documen
     // and none in go-to-definition, unless filtering would produce an empty list.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
     const filtered = definitions.filter((definition) => preferStubs === isStubFile(definition.uri));
-    if (filtered) {
+    if (filtered.length > 0) {
         return filtered;
     }
 
