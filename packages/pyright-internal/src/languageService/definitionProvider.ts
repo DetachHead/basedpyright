@@ -111,11 +111,10 @@ export function filterDefinitions(filter: DefinitionFilter, definitions: Documen
 
     // If go-to-declaration is supported, attempt to only show only pyi files in go-to-declaration
     // and none in go-to-definition, unless filtering would produce an empty list.
-    // Definitions marked as `unfiltered` are ignored when deciding whether to filter and are
-    // always retained when filtering.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
-    if (definitions.find((definition) => preferStubs === isStubFile(definition.uri))) {
-        return definitions.filter((definition) => preferStubs === isStubFile(definition.uri));
+    const filtered = definitions.filter((definition) => preferStubs === isStubFile(definition.uri));
+    if (filtered) {
+        return filtered;
     }
 
     return definitions;
