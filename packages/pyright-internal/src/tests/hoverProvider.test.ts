@@ -456,7 +456,7 @@ test('hover on operators', async () => {
 //// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[[|/*marker9a*/0|]] = h = g[[|/*marker9b*/2|]] = h = g[[|/*marker9c*/1|]]
+//// g[[|/*marker9a*/0|]] [|/*marker9b*/=|] h [|/*marker9c*/=|] g[[|/*marker9d*/2|]] [|/*marker9e*/=|] h [|/*marker9f*/=|] g[[|/*marker9g*/1|]]
 //// from typing import NotRequired, TypedDict
 //// class C(TypedDict): a: int; b: NotRequired[float]
 //// i: C = {"a": 2, "b": 1.2}
@@ -529,9 +529,19 @@ test('hover on operators', async () => {
         ],
         marker9b: [
             '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 0 }, end: { line: 14, character: 26 } },
+        ],
+        marker9c: null,
+        marker9d: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
             { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
         ],
-        marker9c: [
+        marker9e: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
+        ],
+        marker9f: null,
+        marker9g: [
             '```python\n(method) def __getitem__(self: Self@list[_T@list], i: SupportsIndex, /) -> _T@list\n```',
             { start: { line: 14, character: 22 }, end: { line: 14, character: 26 } },
         ],
