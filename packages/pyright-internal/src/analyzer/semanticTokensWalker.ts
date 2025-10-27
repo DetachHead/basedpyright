@@ -426,10 +426,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             !isParam && this._applyClassMemberAccessModifiers(node, declarations, modifiers, readOnly);
 
         if (!isParam) {
-            // Handle variables that have been assigned a “TypeVar”
+            // Handle variables that have been assigned a `TypeVar` (not those whose type is a `TypeVar`)
             // There are weird cases in which bogus type variables are synthesized
-            // Example: Left-hand side “x” of “self.x = x” in “parameters.py”
-            if (isTypeVar(type) && !type.shared.isSynthesized) {
+            // Example: Left-hand side `x` of `self.x = x` in `parameters.py`
+            if (isTypeVar(type) && !type.shared.isSynthesized && TypeBase.isInstantiable(type)) {
                 return SemanticTokenTypes.typeParameter;
             }
         }

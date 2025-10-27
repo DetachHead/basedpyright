@@ -330,6 +330,31 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('type variables', () => {
+        const result = semanticTokenizeSampleFile('type_var.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'class', modifiers: [], start: 19, length: 7 }, // TypeVar
+            { type: 'function', modifiers: ['declaration'], start: 33, length: 3 }, // foo
+            { type: 'typeParameter', modifiers: [], start: 37, length: 1 }, // T
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 40, length: 5 }, // value
+            { type: 'typeParameter', modifiers: [], start: 47, length: 1 }, // T
+            { type: 'variable', modifiers: [], start: 55, length: 4 }, // _bar
+            { type: 'typeParameter', modifiers: [], start: 61, length: 1 }, // T
+            { type: 'parameter', modifiers: ['parameter'], start: 65, length: 5 }, // value
+            { type: 'typeParameter', modifiers: ['readonly'], start: 73, length: 2 }, // _T
+            { type: 'class', modifiers: [], start: 78, length: 7 }, // TypeVar
+            { type: 'function', modifiers: ['declaration'], start: 98, length: 4 }, // fooo
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 103, length: 5 }, // value
+            { type: 'typeParameter', modifiers: ['readonly'], start: 110, length: 2 }, // _T
+            { type: 'typeParameter', modifiers: ['readonly'], start: 117, length: 2 }, // _T
+            { type: 'variable', modifiers: [], start: 125, length: 4 }, // _bar
+            { type: 'typeParameter', modifiers: ['readonly'], start: 131, length: 2 }, // _T
+            { type: 'parameter', modifiers: ['parameter'], start: 136, length: 5 }, // value
+            { type: 'variable', modifiers: [], start: 153, length: 4 }, // _bar
+        ]);
+    });
+
     test('imports', () => {
         const result = semanticTokenizeSampleFile('imports.py');
         expect(result).toStrictEqual([
