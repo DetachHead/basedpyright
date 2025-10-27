@@ -91,7 +91,7 @@
 //// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[[|/*marker9a*/0|]] = h = g[[|/*marker9b*/2|]] = h = g[[|/*marker9c*/1|]]
+//// g[[|/*marker9a*/0|]] [|/*marker9b*/=|] h [|/*marker9c*/=|] g[[|/*marker9d*/2|]] [|/*marker9e*/=|] h [|/*marker9f*/=|] g[[|/*marker9g*/1|]]
 //// i: C = {"a": 2, "b": 1.2}
 //// i[[|/*marker10a*/"b"|]] [|/*marker10b*/=|] i[[|/*marker10c*/"a"|]][|/*marker10d*/|]
 //// [|/*marker11a*/del|] i[[|/*marker11b*/"b"|]]
@@ -138,7 +138,11 @@
             marker8b: { definitions: [nameToDoc('intBool')] },
             marker9a: { definitions: [nameToDoc('listSetItem')] },
             marker9b: { definitions: [nameToDoc('listSetItem')] },
-            marker9c: { definitions: [nameToDoc('listGetItem')] },
+            marker9c: { definitions: [] },
+            marker9d: { definitions: [nameToDoc('listSetItem')] },
+            marker9e: { definitions: [nameToDoc('listSetItem')] },
+            marker9f: { definitions: [] },
+            marker9g: { definitions: [nameToDoc('listGetItem')] },
             marker10a: { definitions: [nameToDoc('Cb')] },
             marker10b: { definitions: [nameToDoc('DictSetItem')] },
             marker10c: { definitions: [nameToDoc('Ca')] },
