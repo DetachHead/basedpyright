@@ -173,6 +173,11 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                     serverSettings.baselineFile = resolvePathWithEnvVariables(workspace, baselineFile, workspaces);
                 }
 
+                const configFilePath = pythonAnalysisSection.configFilePath;
+                if (configFilePath && isString(configFilePath)) {
+                    serverSettings.configFilePath = resolvePathWithEnvVariables(workspace, configFilePath, workspaces);
+                }
+
                 const diagnosticSeverityOverrides = pythonAnalysisSection.diagnosticSeverityOverrides;
                 if (diagnosticSeverityOverrides) {
                     for (const [name, value] of Object.entries(diagnosticSeverityOverrides)) {

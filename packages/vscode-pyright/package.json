@@ -170,6 +170,12 @@
                     "markdownDescription": "Path to the baseline file. Defaults to `./.basedpyright/baseline.json`",
                     "scope": "resource"
                 },
+                "basedpyright.analysis.configFilePath": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory. Example: `${workspaceFolder}/backend`",
+                    "scope": "resource"
+                },
                 "basedpyright.analysis.diagnosticMode": {
                     "type": "string",
                     "default": "openFilesOnly",

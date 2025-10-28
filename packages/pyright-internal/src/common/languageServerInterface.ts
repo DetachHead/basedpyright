@@ -28,6 +28,7 @@ export interface ServerSettings {
     typeCheckingMode?: string | undefined;
     useLibraryCodeForTypes?: boolean | undefined;
     baselineFile?: Uri | undefined;
+    configFilePath?: Uri | undefined;
     disableLanguageServices?: boolean | undefined;
     disableTaggedHints?: boolean | undefined;
     disableOrganizeImports?: boolean | undefined;
