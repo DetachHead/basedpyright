@@ -96,6 +96,8 @@ as mentioned [above](#discouraged-settings), it's recommended to configure these
 
 **basedpyright.analysis.baselineFile** [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`. [more info](../benefits-over-pyright/baseline.md)
 
+**basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.
+
 ## where do i configure these settings?
 
 the way you configure the basedpyright language server depends on your IDE. below are some examples for [some of the supported editors](../installation/ides.md). this is not a comprehensive list, so if your editor is missing, consult the documentation for its language server support.
@@ -107,6 +109,14 @@ the basedpyright language server settings can be configured using a workspace or
 ```json title="./.vscode/settings.json"
 {
     "basedpyright.analysis.diagnosticMode": "openFilesOnly"
+}
+```
+
+For monorepo projects where your Python code is in a subdirectory:
+
+```json title="./.vscode/settings.json"
+{
+    "basedpyright.analysis.configFilePath": "${workspaceFolder}/backend"
 }
 ```
 
@@ -125,6 +135,20 @@ return {
         inlayHints = {
           callArgumentNames = true
         }
+      }
+    }
+  }
+}
+```
+
+For monorepo projects where your Python code is in a subdirectory:
+
+```lua title="lsp/basedpyright.lua"
+return {
+  settings = {
+    basedpyright = {
+      analysis = {
+        configFilePath = vim.fn.getcwd() .. "/backend"
       }
     }
   }
