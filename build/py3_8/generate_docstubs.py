@@ -8,13 +8,15 @@ from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
 from typing_extensions import override
 
 KEEP_FLOAT = frozenset((
-    "stdlib/math.pyi/sqrt",
-    "stdlib/math.pyi/e",
-    "stdlib/math.pyi/pi",
-    "stdlib/math.pyi/inf",
-    "stdlib/math.pyi/nan",
-    "stdlib/math.pyi/tau",
+    # Example:
+    # If we didn't want to change the type of the `priority` parameter
+    # of the `register` function in the `Registry` class of markdown/util.pyi
+
+    # "stubs/Markdown/markdown/util.pyi/Registry.register.priority",
+
+    # See implementation `_node_path` for details on this identifier string.
 ))
+""" identifiers for `float` that we don't want to change to `float | int` """
 
 
 def name_for_target(node: ast.AnnAssign) -> str:
@@ -77,7 +79,7 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
 
     @override
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        assert len(ns := list(ast.iter_fields(node))) == 4 and not isinstance(ns[3], ast.AST), ns
+        assert len(list(ast.iter_fields(node))) == 4, list(ast.iter_fields(node))
         # I don't know what the 4th field "simple" is, but it's not an AST.
 
         self.visit(node.target)
@@ -101,6 +103,7 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
 
     # NOTE: assuming function return values are actually float if annotated as such.
     # If we don't want to assume that, uncomment this:
+    # (probably would also want `visit_AsyncFunctionDef`)
 
     # @override
     # def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
@@ -119,6 +122,7 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
     #                 self.in_ann = None
 
     def _node_path(self) -> str:
+        """ a string that identifies the current node (from `self.parent_stack`) """
         strs = [
             name_for_node(n)
             for n in self.parent_stack
@@ -131,6 +135,7 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
         return self.module + "/" + ".".join(strs)
 
     def _with_int(self) -> bool:
+        """ `float | int` already """
         assert isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float", self.parent_stack
         index = len(self.parent_stack) - 2
         while index >= 0:
@@ -190,11 +195,28 @@ def float_expand(stubs_with_docs_path: Path) -> None:
 
             if len(v.floats) > 0:
                 print(file_path)
-            v.floats.sort(key=lambda n: (n.lineno, n.col_offset))
-            for fl in v.floats:
-                assert fl.end_lineno == fl.lineno, fl  # always within 1 line
-                assert fl.end_col_offset == fl.col_offset + 5, fl  # always "float" 5 chars
-                print(f"{file_path}:{fl.lineno}")
+                # compute start offset of each line in file
+                lines = file_bytes.split(b"\n")
+                line_starts = [0]
+                for line in lines:
+                    line_starts.append(line_starts[-1] + len(line) + 1)  # +1 for newline
+
+                # process in reverse order to avoid offset changes affecting subsequent replacements
+                v.floats.sort(key=lambda n: (n.lineno, n.col_offset), reverse=True)
+                for fl in v.floats:
+                    assert fl.end_lineno == fl.lineno, fl  # always within 1 line
+                    assert fl.end_col_offset and fl.end_col_offset == fl.col_offset + 5, fl  # always "float" 5 chars
+
+                    # calculate offsets in file (from offsets in line)
+                    line_start = line_starts[fl.lineno - 1]
+                    start_offset = line_start + fl.col_offset
+                    end_offset = line_start + fl.end_col_offset
+
+                    assert file_bytes[start_offset:end_offset] == b"float", file_bytes[start_offset:end_offset]
+
+                    file_bytes = file_bytes[:start_offset] + b"float | int" + file_bytes[end_offset:]
+
+                _ = Path(file_path).write_bytes(file_bytes)
 
 
 def main(*, overwrite: bool):
@@ -221,7 +243,7 @@ def main(*, overwrite: bool):
     elif not stubs_with_docs_path.exists():
         copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
     float_expand(stubs_with_docs_path)
-    # docify([str(stubs_with_docs_path / "stdlib"), "--if-needed", "--in-place"])
+    docify([str(stubs_with_docs_path / "stdlib"), "--if-needed", "--in-place"])
 
 
 if __name__ == "__main__":
