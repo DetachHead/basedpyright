@@ -11,9 +11,7 @@ KEEP_FLOAT = frozenset((
     # Example:
     # If we didn't want to change the type of the `priority` parameter
     # of the `register` function in the `Registry` class of markdown/util.pyi
-
     # "stubs/Markdown/markdown/util.pyi/Registry.register.priority",
-
     # See implementation `_node_path` for details on this identifier string.
 ))
 """ identifiers for `float` that we don't want to change to `float | int` """
@@ -30,7 +28,12 @@ def name_for_target(node: ast.AnnAssign) -> str:
 
 
 def name_for_node(
-    node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef | ast.arg | ast.Name | ast.AnnAssign
+    node: ast.ClassDef
+    | ast.FunctionDef
+    | ast.AsyncFunctionDef
+    | ast.arg
+    | ast.Name
+    | ast.AnnAssign,
 ) -> str:
     return (
         node.name
@@ -122,21 +125,31 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
     #                 self.in_ann = None
 
     def _node_path(self) -> str:
-        """ a string that identifies the current node (from `self.parent_stack`) """
+        """a string that identifies the current node (from `self.parent_stack`)"""
         strs = [
             name_for_node(n)
             for n in self.parent_stack
-            if isinstance(n, (
-                ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef, ast.arg, ast.Name, ast.AnnAssign
-            ))
+            if isinstance(
+                n,
+                (
+                    ast.ClassDef,
+                    ast.FunctionDef,
+                    ast.AsyncFunctionDef,
+                    ast.arg,
+                    ast.Name,
+                    ast.AnnAssign,
+                ),
+            )
         ]
         if len(strs) > 0 and strs[-1] == "float":
             _ = strs.pop()
         return self.module + "/" + ".".join(strs)
 
     def _with_int(self) -> bool:
-        """ `float | int` already """
-        assert isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float", self.parent_stack
+        """`float | int` already"""
+        assert (
+            isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float"
+        ), self.parent_stack
         index = len(self.parent_stack) - 2
         while index >= 0:
             traverse_node = self.parent_stack[index]
@@ -150,10 +163,16 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
         return False
 
     def _is_final(self) -> bool:
-        assert isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float", self.parent_stack
+        assert (
+            isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float"
+        ), self.parent_stack
         if len(self.parent_stack) > 1:
             parent = self.parent_stack[-2]
-            if isinstance(parent, ast.Subscript) and isinstance(parent.value, ast.Name) and parent.value.id == "Final":
+            if (
+                isinstance(parent, ast.Subscript)
+                and isinstance(parent.value, ast.Name)
+                and parent.value.id == "Final"
+            ):
                 assert parent.slice is self.parent_stack[-1], parent.slice
                 return True
         return False
@@ -179,7 +198,7 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
 
 
 def float_expand(stubs_with_docs_path: Path) -> None:
-    """ change stubs in the given directory from `float` to `float | int` """
+    """change stubs in the given directory from `float` to `float | int`"""
     import os
 
     for dir_path, _dir_names, file_names in os.walk(stubs_with_docs_path):
@@ -205,16 +224,22 @@ def float_expand(stubs_with_docs_path: Path) -> None:
                 v.floats.sort(key=lambda n: (n.lineno, n.col_offset), reverse=True)
                 for fl in v.floats:
                     assert fl.end_lineno == fl.lineno, fl  # always within 1 line
-                    assert fl.end_col_offset and fl.end_col_offset == fl.col_offset + 5, fl  # always "float" 5 chars
+                    assert (
+                        fl.end_col_offset and fl.end_col_offset == fl.col_offset + 5
+                    )  # always "float" 5 chars
 
                     # calculate offsets in file (from offsets in line)
                     line_start = line_starts[fl.lineno - 1]
                     start_offset = line_start + fl.col_offset
                     end_offset = line_start + fl.end_col_offset
 
-                    assert file_bytes[start_offset:end_offset] == b"float", file_bytes[start_offset:end_offset]
+                    assert file_bytes[start_offset:end_offset] == b"float", file_bytes[
+                        start_offset:end_offset
+                    ]
 
-                    file_bytes = file_bytes[:start_offset] + b"float | int" + file_bytes[end_offset:]
+                    file_bytes = (
+                        file_bytes[:start_offset] + b"float | int" + file_bytes[end_offset:]
+                    )
 
                 _ = Path(file_path).write_bytes(file_bytes)
 
