@@ -3,11 +3,12 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 from shutil import copytree, rmtree
+from typing import Final
 
 from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
 from typing_extensions import override
 
-KEEP_FLOAT = frozenset((
+KEEP_FLOAT: Final[frozenset[str]] = frozenset((
     # Example:
     # If we didn't want to change the type of the `priority` parameter
     # of the `register` function in the `Registry` class of markdown/util.pyi
