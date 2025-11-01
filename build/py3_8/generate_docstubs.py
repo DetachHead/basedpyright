@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 from shutil import copytree, rmtree
 from typing import Final
@@ -148,9 +149,8 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
 
     def _with_int(self) -> bool:
         """`float | int` already"""
-        assert (
-            isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float"
-        ), self.parent_stack
+        assert isinstance(self.parent_stack[-1], ast.Name), self.parent_stack
+        assert self.parent_stack[-1].id == "float", self.parent_stack[-1].id
         index = len(self.parent_stack) - 2
         while index >= 0:
             traverse_node = self.parent_stack[index]
@@ -164,9 +164,8 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
         return False
 
     def _is_final(self) -> bool:
-        assert (
-            isinstance(self.parent_stack[-1], ast.Name) and self.parent_stack[-1].id == "float"
-        ), self.parent_stack
+        assert isinstance(self.parent_stack[-1], ast.Name), self.parent_stack
+        assert self.parent_stack[-1].id == "float", self.parent_stack
         if len(self.parent_stack) > 1:
             parent = self.parent_stack[-2]
             if (
@@ -186,13 +185,9 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
             if self._with_int() or self._is_final():
                 # There's already some already float | int in typeshed
                 # and assuming `Final[float]` is really float
-                # print(self._node_path())
                 pass
             else:
                 node_path = self._node_path()
-                # if node_path == "stubs/aiofiles/aiofiles/ospath.pyi/float":
-                #     print("break point for debugging")
-
                 if node_path not in KEEP_FLOAT:
                     self.floats.append(node)
         super().generic_visit(node)
@@ -200,13 +195,11 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
 
 def float_expand(stubs_with_docs_path: Path) -> None:
     """change stubs in the given directory from `float` to `float | int`"""
-    import os
-
     for dir_path, _dir_names, file_names in os.walk(stubs_with_docs_path):
         for file_name in file_names:
             if not file_name.endswith(".pyi"):
                 continue
-            file_path = os.path.join(dir_path, file_name)
+            file_path = Path(dir_path) / file_name
             rel_path = Path(os.path.relpath(file_path, stubs_with_docs_path)).as_posix()
             file_bytes = Path(file_path).read_bytes()
             file_parsed = ast.parse(file_bytes)
@@ -214,7 +207,7 @@ def float_expand(stubs_with_docs_path: Path) -> None:
             v.visit(file_parsed)
 
             if len(v.floats) > 0:
-                print(file_path)
+                print(file_path.as_posix())
                 # compute start offset of each line in file
                 lines = file_bytes.split(b"\n")
                 line_starts = [0]
@@ -225,9 +218,8 @@ def float_expand(stubs_with_docs_path: Path) -> None:
                 v.floats.sort(key=lambda n: (n.lineno, n.col_offset), reverse=True)
                 for fl in v.floats:
                     assert fl.end_lineno == fl.lineno, fl  # always within 1 line
-                    assert (
-                        fl.end_col_offset and fl.end_col_offset == fl.col_offset + 5
-                    )  # always "float" 5 chars
+                    assert fl.end_col_offset is not None
+                    assert fl.end_col_offset == fl.col_offset + 5  # always "float" 5 chars
 
                     # calculate offsets in file (from offsets in line)
                     line_start = line_starts[fl.lineno - 1]
