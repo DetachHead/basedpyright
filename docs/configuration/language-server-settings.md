@@ -63,6 +63,9 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.autoFormatStrings** [boolean]: Whether to automatically insert an `f` in front of a string when typing a `{` inside it. Defaults to `true`. [more info](../benefits-over-pyright/pylance-features.md#automatic-conversion-to-f-string-when-typing-inside-a-string)
 
+**basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.
+
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
@@ -95,8 +98,6 @@ however these settings are still supported to maintain compatibility with pyrigh
 as mentioned [above](#discouraged-settings), it's recommended to configure these settings [using a config file](./config-files.md) instead.
 
 **basedpyright.analysis.baselineFile** [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`. [more info](../benefits-over-pyright/baseline.md)
-
-**basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.
 
 ## where do i configure these settings?
 
