@@ -54,34 +54,35 @@ About the interface:
 -   Буква Ё/ё не используется
 -   Знак препинания `;` заменяется на точку
 -   Не стоит в точности повторять структуру английского сообщения, если она неестественна для русского языка.
-    В частности избегайте конструкции `X является Y` (`класс Foo является абстрактным` -> `класс Foo абстрактный`)
+    В частности, избегайте конструкции `X является Y` (`класс Foo является абстрактным` -> `класс Foo абстрактный`)
 -   По возможности делайте структуру сообщения проще
 
 #### Глоссарий
 
 | English term               | Canonical translation                              |
 | -------------------------- | -------------------------------------------------- |
-| Type annotation            | Аннотация типа                                     |
-| Comprehension              | Включение                                          |
-| set (встроенный тип)       | Множество                                          |
-| tuple                      | Кортеж                                             |
-| Type variable              | Переменная типа                                    |
-| Final                      | `Final` (как есть)                                 |
 | @final / final class       | `@final` (как есть)                                |
-| Data class                 | Датакласс                                          |
-| Enum                       | Перечисление                                       |
-| f-string                   | f-строка                                           |
-| Format string literal      | f-строка                                           |
-| XYZ is deprecated          | XYZ [больше] не рекомендуется                      |
-| Complex [number]           | Комплексное число                                  |
-| keyword argument/parameter | Именованный аргумент/параметр                      |
-| mapping                    | mapping (нет перевода)                             |
+| async function             | асинхронная функция                                |
 | awaitable                  | awaitable (нет перевода) или: поддерживающий await |
-| positional-only            | только позиционный                                 |
-| keyword-only               | только именованный                                 |
+| complex [number]           | комплексное число                                  |
+| comprehension              | включение                                          |
+| dataclass, data class      | датакласс                                          |
+| XYZ is deprecated          | XYZ [больше] не рекомендуется                      |
+| Enum                       | перечисление                                       |
+| f-string                   | f-строка                                           |
+| Final                      | `Final` (как есть)                                 |
+| format string literal      | f-строка                                           |
 | generic                    | обобщенный                                         |
-| type alias                 | псевдоним типа                                     |
 | generic type alias         | обобщенный псевдоним типа                          |
+| keyword argument/parameter | именованный аргумент/параметр                      |
+| keyword-only               | (исключительно) именованный                        |
+| mapping                    | mapping (нет перевода)                             |
+| positional-only            | (исключительно) позиционный                        |
+| set (built-in type)        | множество                                          |
+| tuple                      | кортеж                                             |
+| type alias                 | псевдоним типа                                     |
+| type annotation            | аннотация типа                                     |
+| type variable              | переменная типа                                    |
 
 ### Chinese
 
