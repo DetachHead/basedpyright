@@ -1864,6 +1864,7 @@
 <p><strong>basedpyright.analysis.useTypingExtensions</strong> [boolean]: Whether to rely on imports from the <code>typing_extensions</code> module when targeting older versions of python that do not include certain typing features such as the <code>@override</code> decorator. Defaults to <code>false</code>. <a href="../../benefits-over-pyright/language-server-improvements/#autocomplete-improvements">more info</a></p>
 <p><strong>basedpyright.analysis.fileEnumerationTimeout</strong> [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.</p>
 <p><strong>basedpyright.analysis.autoFormatStrings</strong> [boolean]: Whether to automatically insert an <code>f</code> in front of a string when typing a <code>{</code> inside it. Defaults to <code>true</code>. <a href="../../benefits-over-pyright/pylance-features/#automatic-conversion-to-f-string-when-typing-inside-a-string">more info</a></p>
+<p><strong>basedpyright.analysis.configFilePath</strong> [path]: Path to the directory or file containing the Pyright configuration (<code>pyrightconfig.json</code> or <code>pyproject.toml</code>). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a <code>backend/</code> subdirectory with its own <code>pyproject.toml</code>, you can set this to <code>${workspaceFolder}/backend</code> to make basedpyright use that configuration file instead of searching from the workspace root.</p>
 <h3 id="discouraged-settings">discouraged settings</h3>
 <p>these options can also be configured <a href="../config-files/">using a config file</a>. it's recommended to use either a <code>pyproject.toml</code> or <code>pyrightconfig.json</code> file instead of the language server to configure type checking for the following reasons:</p>
 <ul>
@@ -1891,6 +1892,11 @@
 <span class="w">    </span><span class="nt">&quot;basedpyright.analysis.diagnosticMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openFilesOnly&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>For monorepo projects where your Python code is in a subdirectory:</p>
+<div class="highlight"><span class="filename">./.vscode/settings.json</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;basedpyright.analysis.configFilePath&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}/backend&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="neovim">neovim</h3>
 <p>The language server can be configured in your neovim settings:</p>
 <p>For Neovim 0.11+</p>
@@ -1902,6 +1908,17 @@
 <span class="w">        </span><span class="nv">inlayHints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nv">callArgumentNames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>For monorepo projects where your Python code is in a subdirectory:</p>
+<div class="highlight"><span class="filename">lsp/basedpyright.lua</span><pre><span></span><code><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nv">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nv">basedpyright</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nv">analysis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">configFilePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">vim</span><span class="p">.</span><span class="py">fn</span><span class="p">.</span><span class="nf">getcwd</span><span class="p">()</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="s2">&quot;/backend&quot;</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
