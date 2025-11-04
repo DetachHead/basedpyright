@@ -687,7 +687,8 @@
         "multipleInheritance": "当前的基类不允许进行多继承；因为基类 \"{classes}\" 具有的 `__init__` 或 `__new__` 方法可能不会被执行",
         "unannotatedClassAttribute": "由于这个类未使用 `@final` 装饰，其 `{name}` 属性需要类型注解",
         "explicitAny": "不允许使用 `Any` 类型",
-        "reportInvalidAbstractMethod": "`@abstractmethod` 装饰器不能用于非抽象类。应向基类中添加 `ABC` 或使用 `metaclass=ABCMeta`"
+        "reportInvalidAbstractMethod": "`@abstractmethod` 装饰器不能用于非抽象类。应向基类中添加 `ABC` 或使用 `metaclass=ABCMeta`",
+        "reportSelfClsDefault": "\"{name}\" 参数不能设置默认值"
     },
     "DiagnosticAddendum": {
         "annotatedNotAllowed": "特化的 `Annotated` 形式不能用于 `isinstance()` 或 `issubclass()`",
@@ -842,7 +843,8 @@
         "typedDictClassNotAllowed": "`TypedDict` 类不能用于 `isinstance()` 或 `issubclass()`",
         "typedDictClosedExtraNotAllowed": "无法添加项 \"{name}\"",
         "typedDictClosedExtraTypeMismatch": "无法添加 \"{type}\" 类型的项 \"{name}\"",
-        "typedDictClosedFieldNotRequired": "无法添加项 \"{name}\"，因为它必须是 `NotRequired`",
+        "typedDictClosedFieldNotReadOnly": "项 \"{name}\" 必须声明为 `ReadOnly`",
+        "typedDictClosedFieldNotRequired": "项 \"{name}\" 必须声明为 `NotRequired`",
         "typedDictExtraFieldNotAllowed": "\"{type}\" 中不存在 \"{name}\"",
         "typedDictExtraFieldTypeMismatch": "\"{name}\" 的类型与 \"{type}\" 中的 `extra_items` 类型不兼容",
         "typedDictFieldMissing": "\"{type}\" 中缺少 \"{name}\"",
@@ -864,7 +866,8 @@
         "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的可变性与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 \".{importName}\" 作为相对导入",
         "fullPathImportSuggestion": "或指定完整模块路径：\"{importName}\"",
-        "installStubs": "从 PyPI 安装 `{packageName}-stubs` 以修复此问题"
+        "installStubs": "从 PyPI 安装 `{packageName}-stubs` 以修复此问题",
+        "enableBasedFeatures": "将 `enableBasedFeatures` 配置项设为 `true` 以启用此功能"
     },
     "Service": {
         "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
