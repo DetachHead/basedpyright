@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import os
+from collections.abc import Iterable
 from pathlib import Path
 from shutil import copytree, rmtree
 from typing import Final
@@ -107,24 +108,24 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
         self.in_ann = None
 
     # NOTE: assuming function return values are actually float if annotated as such.
-    # If we don't want to assume that, uncomment this:
+    # If we don't want to assume that, rename this to `visit_FunctionDef`:
     # (probably would also want `visit_AsyncFunctionDef`)
 
     # @override
-    # def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-    #     # Copied from implementation of base generic_visit
-    #     # and modified for "returns"
-    #     for field, value in ast.iter_fields(node):
-    #         if isinstance(value, list):
-    #             for item in value:
-    #                 if isinstance(item, ast.AST):
-    #                     self.visit(item)
-    #         elif isinstance(value, ast.AST):
-    #             if field == "returns":
-    #                 self.in_ann = "returns"
-    #             self.visit(value)
-    #             if field == "returns":
-    #                 self.in_ann = None
+    def _unused(self, node: ast.FunctionDef) -> None:
+        # Copied from implementation of base generic_visit
+        # and modified for "returns"
+        for field, value in ast.iter_fields(node):  # pyright: ignore[reportAny]
+            if isinstance(value, ast.AST):
+                if field == "returns":
+                    self.in_ann = "returns"
+                self.visit(value)
+                if field == "returns":
+                    self.in_ann = None
+            elif isinstance(value, Iterable):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.visit(item)
 
     def _node_path(self) -> str:
         """a string that identifies the current node (from `self.parent_stack`)"""
