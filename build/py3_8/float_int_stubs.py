@@ -192,14 +192,14 @@ class AnnotationTrackingVisitor(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-def float_expand(stubs_with_docs_path: Path) -> None:
+def float_expand(stubs: Path) -> None:
     """change stubs in the given directory from `float` to `float | int`"""
-    for dir_path, _dir_names, file_names in os.walk(stubs_with_docs_path):
+    for dir_path, _dir_names, file_names in os.walk(stubs):
         for file_name in file_names:
             if not file_name.endswith(".pyi"):
                 continue
             file_path = Path(dir_path) / file_name
-            rel_path = Path(os.path.relpath(file_path, stubs_with_docs_path)).as_posix()
+            rel_path = Path(os.path.relpath(file_path, stubs)).as_posix()
             file_bytes = Path(file_path).read_bytes()
             file_parsed = ast.parse(file_bytes)
             v = AnnotationTrackingVisitor(rel_path)
