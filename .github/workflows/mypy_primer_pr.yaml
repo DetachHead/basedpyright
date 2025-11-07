@@ -21,6 +21,9 @@ on:
     paths:
       - 'packages/pyright/**'
       - 'packages/pyright-internal/src/**'
+      - '!packages/pyright-internal/src/localization/**' # first exclude localization data
+      - 'packages/pyright-internal/src/localization/*.ts' # then re-include *.ts
+      - 'packages/pyright-internal/src/localization/package.nls.en-us.json' # re-include en-us data
       - 'packages/pyright-internal/typeshed-fallback/**'
       - '.github/workflows/mypy_primer_*.yaml'
 
