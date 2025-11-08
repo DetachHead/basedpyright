@@ -126,6 +126,12 @@ basedpyright implements the `autoFormatStrings` setting from pylance ([`basedpyr
 
 ![](./autoformatstrings.gif)
 
+## hover and "go to definition" on operators
+
+pylance supports "go to definition" on some operators. basedpyright supports this and takes it a step further by also showing hover information as well:
+
+![](./operators.png)
+
 ## Pylance features missing from basedpyright
 
 See the [open issues](https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22) related to feature parity with Pylance.
