@@ -345,7 +345,7 @@
         "newTypeNameMismatch": "`NewType` 必须赋值给同名变量",
         "newTypeNotAClass": "`NewType` 的第二个参数应为类",
         "newTypeParamCount": "`NewType` 需要两个位置参数",
-        "newTypeProtocolClass": "`NewType` 不能与结构化类型（`Structural Typing`，Python 中指 `Protocol` 或 `TypedDict`）一起使用",
+        "newTypeProtocolClass": "`NewType` 不能与结构化类型（Structural Typing，Python 中指 `Protocol` 或 `TypedDict`）一起使用",
         "noOverload": "\"{name}\" 的重载与提供的参数不匹配",
         "noReturnContainsReturn": "返回类型为 `NoReturn` 的函数不能包含 `return` 语句",
         "noReturnContainsYield": "返回类型为 `NoReturn` 的函数不能包含 `yield` 语句",
