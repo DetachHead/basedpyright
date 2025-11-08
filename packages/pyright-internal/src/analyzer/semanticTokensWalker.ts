@@ -40,7 +40,7 @@ import { assertNever } from '../common/debug';
 import { getDeclaration } from './analyzerNodeInfo';
 import { isDeclInEnumClass } from './enums';
 import { getEnclosingClass, isWriteAccess } from './parseTreeUtils';
-import { ClassMember, MemberAccessFlags, isMaybeDescriptorInstance, isProperty, lookUpClassMember } from './typeUtils';
+import { ClassMember, MemberAccessFlags, isProperty, lookUpClassMember } from './typeUtils';
 
 type TokenTypes = SemanticTokenTypes | CustomSemanticTokenTypes;
 type TokenModifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
@@ -558,47 +558,58 @@ export class SemanticTokensWalker extends ParseTreeWalker {
 
                 const declaredType = this._evaluator.getTypeForDeclaration(decl)?.type;
 
-                // if there is no type information or it is not (potentially) a descriptor instance,
-                // use the default `method` token type
-                if (!declaredType || !isMaybeDescriptorInstance(declaredType)) {
+                // if there is no type information, use the default `method` token type
+                if (!declaredType) {
                     return SemanticTokenTypes.method;
                 }
 
                 const isProp = isProperty(declaredType);
-                // if the descriptor instance is a property, check the declarations for `fset` information
-                // if it is not a property, use a check for the presence of `__set__`
-                const isReadOnly = isProp
-                    ? declarations.every((d) => this._missingPropertySetter(d))
-                    : !isMaybeDescriptorInstance(declaredType, true);
-                if (isReadOnly) {
-                    modifiers.push(SemanticTokenModifiers.readonly);
-                }
 
                 // determine whether `node` is part of an assignment, in which case the type
-                // of the second parameter of the setter is used instead of the return type of the getter
+                // of the last parameter of the setter is used instead of the return type of the getter
                 const isWrite = isWriteAccess(node);
                 let methodType: Type | undefined;
+                let isReadOnly: boolean;
                 if (isProp) {
                     // since `__get__`/`__set__` cannot be found for properties, try to find the first
                     // `fget`/`fset` information and use its method type if it exists
                     methodType = declarations
                         .map((decl) => this._getPropertyInfo(decl, isWrite))
                         .find((i) => i)?.methodType;
+                    // check the declarations for `fset` information
+                    isReadOnly = declarations.every((d) => this._missingPropertySetter(d));
                 } else {
-                    // for non-properties, get the type of `__get__`/`__set__` of the descriptor instance
-                    const memberName = isWrite ? '__set__' : '__get__';
-                    const method = isWrite ? 'set' : 'get';
-                    const member = isClass(declaredType)
-                        ? this._evaluator.getTypeOfBoundMember(node, declaredType, memberName, { method: method })
-                        : undefined;
+                    // a descriptor type has to be a class type
+                    if (!isClass(declaredType)) {
+                        return SemanticTokenTypes.method;
+                    }
+
+                    // get the type of `__get__`/`__set__` of the descriptor instance
+                    const set = this._evaluator.getTypeOfBoundMember(node, declaredType, '__set__', { method: 'set' });
+                    const member = isWrite
+                        ? set
+                        : this._evaluator.getTypeOfBoundMember(node, declaredType, '__get__', { method: 'get' });
+                    // if this is not a property and does not provide the required descriptor methods,
+                    // use the default `method` token type
+                    if (!member) {
+                        return SemanticTokenTypes.method;
+                    }
+
                     methodType = member?.type;
+                    // a descriptor instance is read-only if `__set__` is not present
+                    isReadOnly = !set;
                 }
+                if (isReadOnly) {
+                    modifiers.push(SemanticTokenModifiers.readonly);
+                }
+
                 let effectiveType: Type | undefined = undefined;
                 if (isWrite) {
-                    // for the setter, get the second argument (not counting `self`), which is the new value,
-                    // and use its type
+                    // for the setter, get the last argument, which is the new value, and use its type
                     if (methodType && isFunction(methodType) && methodType.shared.parameters.length >= 2) {
-                        effectiveType = FunctionType.getParamType(methodType, 1);
+                        // For some reason, there is a dummy `Any` parameter between `self` and the value in some cases
+                        // However, the value parameter _appears_ to always be the last parameter
+                        effectiveType = FunctionType.getParamType(methodType, methodType.shared.parameters.length - 1);
                     }
                 } else {
                     // for the getter, use the return type
