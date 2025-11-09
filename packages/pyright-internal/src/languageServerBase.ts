@@ -132,7 +132,7 @@ import { fromLSPAny, isNullProgressReporter } from './common/lspUtils';
 import { ProgressReportTracker, ProgressReporter } from './common/progressReporter';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
-import { Position, Range } from './common/textRange';
+import { Position, Range, TextRange } from './common/textRange';
 import { Uri } from './common/uri/uri';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';
@@ -920,7 +920,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         token: CancellationToken,
         workDoneReporter: WorkDoneProgressReporter,
         resultReporter: ResultProgressReporter<Location[]> | undefined,
-        createDocumentRange?: (uri: Uri, result: CollectionResult, parseResults: ParseFileResults) => DocumentRange,
+        createDocumentRange?: (uri: Uri, range: TextRange, parseResults: ParseFileResults) => DocumentRange,
         convertToLocation?: (
             ls: LanguageServerInterface,
             fs: ReadOnlyFileSystem,
