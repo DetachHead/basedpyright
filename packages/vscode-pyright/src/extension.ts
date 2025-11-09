@@ -133,22 +133,16 @@ export async function activate(context: ExtensionContext) {
                 console.warn(`failed to create copy at ${copiedExecutablePath}, falling back to using the real one`);
                 copiedExecutablePath = executablePath;
             }
-            // don't do this if windows due to https://github.com/swyddfa/lsp-devtools/issues/125
-            const debugCommandPrefix =
+            const cliArgs = cancellationStrategy.getCommandLineArguments();
+            const [command, args] =
+                // don't do this if windows due to https://github.com/swyddfa/lsp-devtools/issues/125
                 context.extensionMode === ExtensionMode.Development && !isWindows
-                    ? `"${context.asAbsolutePath('../../.venv/bin/lsp-devtools')}" agent -- `
-                    : '';
-            serverOptions = {
-                // quotes are needed in case there's a space in the path. ideally we shouldnt need to do this
-                // but it's necessary because we use `shell: true`, see comment below
-                command: `${debugCommandPrefix}"${copiedExecutablePath}"`,
-                transport: TransportKind.stdio,
-                args: cancellationStrategy.getCommandLineArguments(),
-                options: {
-                    // workaround for https://github.com/astral-sh/uv/issues/6399, no idea why this works
-                    shell: true,
-                },
-            };
+                    ? [
+                          context.asAbsolutePath('../../.venv/bin/lsp-devtools'),
+                          ['agent', '--', copiedExecutablePath, ...cliArgs],
+                      ]
+                    : [copiedExecutablePath, cliArgs];
+            serverOptions = { command, transport: TransportKind.stdio, args };
         } else {
             console.warn('failed to find pyright executable, falling back to bundled:', executablePath);
         }
