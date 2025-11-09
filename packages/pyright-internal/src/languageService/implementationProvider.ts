@@ -9,30 +9,24 @@
 
 import { CancellationToken, Location, ResultProgressReporter } from 'vscode-languageserver';
 
-import { ClassDeclaration, Declaration, DeclarationType, isAliasDeclaration } from '../analyzer/declaration';
-import { getNameFromDeclaration } from '../analyzer/declarationUtils';
+import { DeclarationType } from '../analyzer/declaration';
+import { getNameNodeForDeclaration } from '../analyzer/declarationUtils';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
-import { Symbol } from '../analyzer/symbol';
-import { isVisibleExternally } from '../analyzer/symbolUtils';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
-import { ClassType, maxTypeRecursionCount, TypeCategory } from '../analyzer/types';
+import { ClassType } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
-import { isDefined } from '../common/core';
-import { assertNever } from '../common/debug';
 import { DocumentRange } from '../common/docRange';
-import { ProgramView, ReferenceUseCase, SymbolUsageProvider } from '../common/extensibility';
+import { ProgramView, ReferenceUseCase } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
-import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
-import { ServiceKeys } from '../common/serviceKeys';
-import { isRangeInRange, Position, Range, TextRange } from '../common/textRange';
+import { convertOffsetToPosition } from '../common/positionUtils';
+import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { ClassNode, NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
+import { ClassNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { convertDocumentRangesToLocation } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
-import { isConstructor } from '../analyzer/constructors';
 import { ReferencesProvider } from './referencesProvider';
 import { ParseTreeWalkerSkipExpr } from '../analyzer/parseTreeWalkerSkipExpr';
 
@@ -183,8 +177,8 @@ export class ImplementationProvider {
         }
 
         if (declaration.type === DeclarationType.Class) {
+            // for a class, we report all subclasses
             this._forEachSubClass(declaration.node, (foundNode, foundClass, uri, parseRes) => {
-                console.log(foundNode.d.name.d.value);  // TODO: this is one of our results
                 this._addResult(foundNode, foundNode.d.name.d.token, uri, parseRes);
             }, this._program.evaluator, invokedFromUserFile);
         }
@@ -192,6 +186,7 @@ export class ImplementationProvider {
             (declaration.type === DeclarationType.Function && declaration.isMethod) ||  // true for static and class methods
             declaration.type === DeclarationType.Variable
         ) {
+            // for methods and attributes, we report all overrides in subclasses
             let stopAtFunction = true;
             if (declaration.type === DeclarationType.Variable && declaration.isDefinedByMemberAccess) {
                 // something like `self.x = 5` inside `__init__`,
@@ -208,9 +203,9 @@ export class ImplementationProvider {
                     this._forEachSubClass(enclosingClass, (foundNode, foundClass, uri, parseRes) => {
                         const overrideDeclarations = foundClass.shared.fields.get(lookingForName)?.getDeclarations();
                         if (overrideDeclarations) {
-                            console.log(overrideDeclarations);  // TODO: these are some of our results
                             for (const decl of overrideDeclarations) {
-                                this._addResult(decl.node, decl.node, uri, parseRes);
+                                const declName = getNameNodeForDeclaration(decl) || decl.node;
+                                this._addResult(decl.node, declName, uri, parseRes);
                             }
                         }
                     }, this._program.evaluator, invokedFromUserFile);
