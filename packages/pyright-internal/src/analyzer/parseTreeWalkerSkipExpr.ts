@@ -31,19 +31,19 @@ import {
 export function getChildNodesSkipExpr(node: ParseNode): (ParseNode | undefined)[] {
     switch (node.nodeType) {
         case ParseNodeType.Case:
-            return [ /* node.d.pattern, node.d.guardExpr, */ node.d.suite];
+            return [/* node.d.pattern, node.d.guardExpr, */ node.d.suite];
 
         case ParseNodeType.Class:
-            return [ /* ...node.d.decorators, node.d.name, node.d.typeParams, ...node.d.arguments, */ node.d.suite];
+            return [/* ...node.d.decorators, node.d.name, node.d.typeParams, ...node.d.arguments, */ node.d.suite];
 
         case ParseNodeType.If:
-            return [ /* node.d.testExpr, */ node.d.ifSuite, node.d.elseSuite];
+            return [/* node.d.testExpr, */ node.d.ifSuite, node.d.elseSuite];
 
         case ParseNodeType.Except:
-            return [ /* node.d.typeExpr, node.d.name, */ node.d.exceptSuite];
+            return [/* node.d.typeExpr, node.d.name, */ node.d.exceptSuite];
 
         case ParseNodeType.For:
-            return [ /* node.d.targetExpr, node.d.iterableExpr, */ node.d.forSuite, node.d.elseSuite];
+            return [/* node.d.targetExpr, node.d.iterableExpr, */ node.d.forSuite, node.d.elseSuite];
 
         case ParseNodeType.Function:
             return [
@@ -59,7 +59,7 @@ export function getChildNodesSkipExpr(node: ParseNode): (ParseNode | undefined)[
             ];
 
         case ParseNodeType.Match:
-            return [ /* node.d.expr, */ ...node.d.cases];
+            return [/* node.d.expr, */ ...node.d.cases];
 
         case ParseNodeType.Module:
             return [...node.d.statements];
@@ -74,10 +74,10 @@ export function getChildNodesSkipExpr(node: ParseNode): (ParseNode | undefined)[
             return [node.d.trySuite, ...node.d.exceptClauses, node.d.elseSuite, node.d.finallySuite];
 
         case ParseNodeType.While:
-            return [ /* node.d.testExpr, */ node.d.whileSuite, node.d.elseSuite];
+            return [/* node.d.testExpr, */ node.d.whileSuite, node.d.elseSuite];
 
         case ParseNodeType.With:
-            return [ /* ...node.d.withItems, */ node.d.suite];
+            return [/* ...node.d.withItems, */ node.d.suite];
 
         default:
             return [];

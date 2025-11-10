@@ -30,7 +30,7 @@ import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ReferencesProvider } from './referencesProvider';
 import { ParseTreeWalkerSkipExpr } from '../analyzer/parseTreeWalkerSkipExpr';
 
-export type ImplementationCallback = (locations: DocumentRange[]) => void;  // TODO: verify used
+export type ImplementationCallback = (locations: DocumentRange[]) => void; // TODO: verify used
 
 export interface LocationWithNode {
     location: DocumentRange;
@@ -38,15 +38,14 @@ export interface LocationWithNode {
     node: ParseNode;
 }
 
-export class ImplementationsResult {  // TODO: go through this whole class later, skipping for now
+export class ImplementationsResult {
+    // TODO: go through this whole class later, skipping for now
     private readonly _results: LocationWithNode[] = [];
-    
+
     // ReferencesResult had some stuff about filtering out import declarations.
     // I don't think we need that stuff here, but if we find that we do, copy it from there.
 
-    constructor(
-        private readonly _reporter?: ImplementationCallback
-    ) {
+    constructor(private readonly _reporter?: ImplementationCallback) {
         // empty
     }
 
@@ -108,11 +107,7 @@ export class ImplementationProvider {
         this._resultQueue = [];
     }
 
-    reportImplementations(
-        fileUri: Uri,
-        position: Position,
-        resultReporter?: ResultProgressReporter<Location[]>
-    ) {
+    reportImplementations(fileUri: Uri, position: Position, resultReporter?: ResultProgressReporter<Location[]>) {
         const sourceFileInfo = this._program.getSourceFileInfo(fileUri);
         if (!sourceFileInfo) {
             return;
@@ -123,7 +118,7 @@ export class ImplementationProvider {
             return;
         }
 
-        if (! this._program.evaluator) {
+        if (!this._program.evaluator) {
             return;
         }
 
@@ -178,12 +173,16 @@ export class ImplementationProvider {
 
         if (declaration.type === DeclarationType.Class) {
             // for a class, we report all subclasses
-            this._forEachSubClass(declaration.node, (foundNode, foundClass, uri, parseRes) => {
-                this._addResult(foundNode, foundNode.d.name.d.token, uri, parseRes);
-            }, this._program.evaluator, invokedFromUserFile);
-        }
-        else if (
-            (declaration.type === DeclarationType.Function && declaration.isMethod) ||  // true for static and class methods
+            this._forEachSubClass(
+                declaration.node,
+                (foundNode, foundClass, uri, parseRes) => {
+                    this._addResult(foundNode, foundNode.d.name.d.token, uri, parseRes);
+                },
+                this._program.evaluator,
+                invokedFromUserFile
+            );
+        } else if (
+            (declaration.type === DeclarationType.Function && declaration.isMethod) || // true for static and class methods
             declaration.type === DeclarationType.Variable
         ) {
             // for methods and attributes, we report all overrides in subclasses
@@ -195,20 +194,30 @@ export class ImplementationProvider {
             }
             const enclosingClass = ParseTreeUtils.getEnclosingClass(declaration.node, stopAtFunction);
             if (enclosingClass) {
-                const lookingForName = (declaration.type === DeclarationType.Function)
-                    ? (declaration.node.d.name.d.value) : (declaration.node.nodeType === ParseNodeType.Name)
-                    ? (declaration.node.d.value) : undefined;
+                const lookingForName =
+                    declaration.type === DeclarationType.Function
+                        ? declaration.node.d.name.d.value
+                        : declaration.node.nodeType === ParseNodeType.Name
+                        ? declaration.node.d.value
+                        : undefined;
                 // I don't know what Python code would lead to `declaration.node` being a `StringListNode`
                 if (lookingForName) {
-                    this._forEachSubClass(enclosingClass, (foundNode, foundClass, uri, parseRes) => {
-                        const overrideDeclarations = foundClass.shared.fields.get(lookingForName)?.getDeclarations();
-                        if (overrideDeclarations) {
-                            for (const decl of overrideDeclarations) {
-                                const declName = getNameNodeForDeclaration(decl) || decl.node;
-                                this._addResult(decl.node, declName, uri, parseRes);
+                    this._forEachSubClass(
+                        enclosingClass,
+                        (foundNode, foundClass, uri, parseRes) => {
+                            const overrideDeclarations = foundClass.shared.fields
+                                .get(lookingForName)
+                                ?.getDeclarations();
+                            if (overrideDeclarations) {
+                                for (const decl of overrideDeclarations) {
+                                    const declName = getNameNodeForDeclaration(decl) || decl.node;
+                                    this._addResult(decl.node, declName, uri, parseRes);
+                                }
                             }
-                        }
-                    }, this._program.evaluator, invokedFromUserFile);
+                        },
+                        this._program.evaluator,
+                        invokedFromUserFile
+                    );
                 }
             }
         }
@@ -237,7 +246,7 @@ export class ImplementationProvider {
         subClassCallback: (foundNode: ClassNode, foundClass: ClassType, uri: Uri, parseRes: ParseFileResults) => void,
         evaluator: TypeEvaluator,
         invokedFromUserFile: boolean
-): void {
+    ): void {
         const baseClassType = evaluator.getTypeOfClass(node)?.classType;
         if (!baseClassType) {
             return;
@@ -259,16 +268,16 @@ export class ImplementationProvider {
                 // See if "class" is somewhere within the file.
                 // If not, we can skip additional processing for the file.
                 const fileContents = eachSourceFileInfo.contents;
-                if (fileContents.indexOf("class") >= 0) {
+                if (fileContents.indexOf('class') >= 0) {
                     const parseResults = this._program.getParseResults(eachSourceFileInfo.uri);
                     if (!parseResults) {
-                        continue
+                        continue;
                     }
                     const moduleNode = parseResults.parserOutput.parseTree;
                     if (moduleNode) {
                         const classTreeWalker = new ClassTreeWalker(eachSourceFileInfo.uri, parseResults, nodeCallback);
                         classTreeWalker.walk(moduleNode);
-                        this._processResultQueue();  // after each file, send results
+                        this._processResultQueue(); // after each file, send results
                     }
                 }
 
@@ -278,7 +287,7 @@ export class ImplementationProvider {
                 this._program.handleMemoryHighUsage();
             }
         }
-        this._processResultQueue();  // This shouldn't do anything, but just in case something was missed somehow.
+        this._processResultQueue(); // This shouldn't do anything, but just in case something was missed somehow.
     }
 
     private _processResultQueue() {
@@ -306,15 +315,9 @@ export class ImplementationProvider {
             location: this._createDocumentRange(uri, range, parseResults),
             parentRange: node.parent
                 ? {
-                        start: convertOffsetToPosition(
-                            node.parent.start,
-                            parseResults.tokenizerOutput.lines
-                        ),
-                        end: convertOffsetToPosition(
-                            TextRange.getEnd(node.parent),
-                            parseResults.tokenizerOutput.lines
-                        ),
-                    }
+                      start: convertOffsetToPosition(node.parent.start, parseResults.tokenizerOutput.lines),
+                      end: convertOffsetToPosition(TextRange.getEnd(node.parent), parseResults.tokenizerOutput.lines),
+                  }
                 : undefined,
         });
     }
