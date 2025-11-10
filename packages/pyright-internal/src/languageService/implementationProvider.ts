@@ -30,7 +30,7 @@ import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ReferencesProvider } from './referencesProvider';
 import { ParseTreeWalkerSkipExpr } from '../analyzer/parseTreeWalkerSkipExpr';
 
-export type ImplementationCallback = (locations: DocumentRange[]) => void; // TODO: verify used
+export type ImplementationCallback = (locations: DocumentRange[]) => void;
 
 export interface LocationWithNode {
     location: DocumentRange;
@@ -39,7 +39,6 @@ export interface LocationWithNode {
 }
 
 export class ImplementationsResult {
-    // TODO: go through this whole class later, skipping for now
     private readonly _results: LocationWithNode[] = [];
 
     // ReferencesResult had some stuff about filtering out import declarations.
