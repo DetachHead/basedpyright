@@ -1,5 +1,5 @@
 /*
- * implementationsProvider.ts
+ * implementationProvider.ts
  * Author: Doug Hoskisson
  *
  * Logic that finds all of the overrides of a symbol specified
