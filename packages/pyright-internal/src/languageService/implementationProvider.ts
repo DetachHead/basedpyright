@@ -28,7 +28,7 @@ import { ParseFileResults } from '../parser/parser';
 import { convertDocumentRangesToLocation } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ReferencesProvider } from './referencesProvider';
-import { ParseTreeWalkerSkipExpr } from '../analyzer/parseTreeWalkerSkipExpr';
+import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 
 export type ImplementationCallback = (locations: DocumentRange[]) => void;
 
@@ -69,7 +69,7 @@ export class ImplementationsResult {
     }
 }
 
-export class ClassTreeWalker extends ParseTreeWalkerSkipExpr {
+export class ClassTreeWalker extends ParseTreeWalker {
     constructor(
         private readonly uri: Uri,
         private readonly parseRes: ParseFileResults,
@@ -164,10 +164,6 @@ export class ImplementationProvider {
         const declaration = declarationResult.nonImportDeclarations.at(0);
         if (!declaration) {
             return;
-        }
-
-        if (declaration.type === DeclarationType.Variable) {
-            declaration.isDefinedByMemberAccess;
         }
 
         if (declaration.type === DeclarationType.Class) {
