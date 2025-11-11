@@ -396,7 +396,7 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'method', modifiers: ['classMember'], start: 686, length: 6 }, // setter
             { type: 'decorator', modifiers: [], start: 697, length: 1 }, // @
             { type: 'decorator', modifiers: [], start: 698, length: 4 }, // deco
-            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 715, length: 4 }, // sel
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 715, length: 4 }, // self
             { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 721, length: 5 }, // value
             { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 728, length: 3 }, // int
             { type: 'variable', modifiers: [], start: 740, length: 3 }, // foo
