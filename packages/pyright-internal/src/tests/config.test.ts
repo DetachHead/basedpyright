@@ -892,6 +892,37 @@ describe(`config test'}`, () => {
                 assert.strictEqual(configOptions.executionEnvironments.length, 1);
             }
         });
+
+        test('recommended mode in executionEnvironment applies basedpyright-specific rules', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
+            const configOptions = new ConfigOptions(cwd);
+
+            const json = {
+                typeCheckingMode: 'standard',
+                executionEnvironments: [
+                    {
+                        root: 'src/recommended_folder',
+                        typeCheckingMode: 'recommended',
+                    },
+                ],
+            };
+
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new NullConsole();
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+            configOptions.setupExecutionEnvironments(json, cwd, console);
+
+            const recommendedEnv = configOptions.executionEnvironments[0];
+
+            // Verify basedpyright-specific "recommended" settings are applied
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.deprecateTypingAliases, true);
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportAny, 'warning');
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportExplicitAny, 'warning');
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportImportCycles, 'error');
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.strictListInference, true);
+            assert.strictEqual(recommendedEnv.diagnosticRuleSet.failOnWarnings, true);
+        });
     });
 
     function createAnalyzer(console?: ConsoleInterface) {
