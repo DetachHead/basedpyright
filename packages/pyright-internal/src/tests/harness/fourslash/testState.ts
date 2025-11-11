@@ -69,6 +69,7 @@ import { CollectionResult } from '../../../languageService/documentSymbolCollect
 import { HoverProvider } from '../../../languageService/hoverProvider';
 import { convertDocumentRangesToLocation } from '../../../languageService/navigationUtils';
 import { ReferencesProvider } from '../../../languageService/referencesProvider';
+import { ImplementationProvider } from '../../../languageService/implementationProvider';
 import { RenameProvider } from '../../../languageService/renameProvider';
 import { SignatureHelpProvider } from '../../../languageService/signatureHelpProvider';
 import { ParseNode } from '../../../parser/parseNodes';
@@ -1269,7 +1270,53 @@ export class TestState {
         }
     }
 
-    // TODO: verifyFindAllImplementations
+    verifyFindAllImplementations(
+        map: {
+            [marker: string]: {
+                implementations: DocumentRange[];
+            };
+        },
+        createDocumentRange?: (fileUri: Uri, result: TextRange, parseResults: ParseFileResults) => DocumentRange,
+        convertToLocation?: (
+            ls: LanguageServerInterface,
+            fs: ReadOnlyFileSystem,
+            ranges: DocumentRange
+        ) => Location | undefined
+    ) {
+        this.analyze();
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
+        for (const name of this.getMarkerNames()) {
+            const marker = this.getMarkerByName(name);
+            const fileName = marker.fileName;
+
+            if (!(name in map)) {
+                continue;
+            }
+
+            let expected = map[name].implementations;
+            expected = expected.map((c) => {
+                return {
+                    ...c,
+                    uri: c.uri ?? Uri.file((c as any).path, this.serviceProvider),
+                };
+            });
+
+            const position = this.convertOffsetToPosition(fileName, marker.position);
+
+            const actual = new ImplementationProvider(
+                ls,
+                this.program,
+                CancellationToken.None,
+                createDocumentRange,
+                convertToLocation
+            ).reportImplementations(Uri.file(fileName, this.serviceProvider), position);
+            assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
+
+            for (const r of convertDocumentRangesToLocation(ls, this.program.fileSystem, expected, convertToLocation)) {
+                assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
+            }
+        }
+    }
 
     verifyShowCallHierarchyGetIncomingCalls(map: {
         [marker: string]: {
