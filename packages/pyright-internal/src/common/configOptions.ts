@@ -2030,10 +2030,34 @@ export class ConfigOptions {
         configExtraPaths: Uri[]
     ): ExecutionEnvironment | undefined {
         try {
+            // If typeCheckingMode is specified for this execution environment,
+            // use it to generate the base diagnostic rule set. Otherwise, use
+            // the config-level diagnostic rule set.
+            let baseDiagnosticRuleSet = configDiagnosticRuleSet;
+            if (envObj.typeCheckingMode !== undefined) {
+                if (typeof envObj.typeCheckingMode === 'string') {
+                    if ((allTypeCheckingModes as readonly string[]).includes(envObj.typeCheckingMode)) {
+                        baseDiagnosticRuleSet = this.constructor.getDiagnosticRuleSet(
+                            envObj.typeCheckingMode as TypeCheckingMode
+                        );
+                    } else {
+                        console.error(
+                            `Config executionEnvironments index ${index}: invalid "typeCheckingMode" value: "${
+                                envObj.typeCheckingMode
+                            }". Expected: ${userFacingOptionsList(allTypeCheckingModes)}`
+                        );
+                    }
+                } else {
+                    console.error(
+                        `Config executionEnvironments index ${index}: typeCheckingMode must be a string.`
+                    );
+                }
+            }
+
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
                 configDirUri,
-                configDiagnosticRuleSet,
+                baseDiagnosticRuleSet,
                 configPythonVersion,
                 configPythonPlatform,
                 configExtraPaths
