@@ -145,14 +145,16 @@ Emacs users have 3 options:
     ```
 
 ## PyCharm
+
 PyCharm users can enable native basedpyright support in the settings:
+
 1. Go to **Python | Tools | Pyright** in the Settings dialog.
 2. Select the **Enable** checkbox.
 3. In the Execution mode setting, select how PyCharm should search for the executable:
 
-    **Interpreter** mode: PyCharm searches for an executable installed in your interpreter. To install the basedpyright package for the selected interpreter, click *Install basedpyright*.
+    **Interpreter** mode: PyCharm searches for an executable installed in your interpreter. To install the basedpyright package for the selected interpreter, click _Install basedpyright_.
 
-    **Path** mode: PyCharm searches for an executable in `$PATH`. If the executable is not found, you can specify the path by clicking the  Browse... icon.
+    **Path** mode: PyCharm searches for an executable in `$PATH`. If the executable is not found, you can specify the path by clicking the Browse... icon.
 
 4. Select which options should be enabled.
 
