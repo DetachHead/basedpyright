@@ -1471,6 +1471,160 @@ test('enum with regular base type', async () => {
     });
 });
 
+test('enum assignment in __init__', async () => {
+    const code = `
+// @filename: test.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = [|/*foz*/|]
+////         self.b: Foz.Fox = [|/*fox*/|]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['foz']: {
+            completions: [
+                { label: 'Foz.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Foz.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['fox']: {
+            completions: [{ label: 'Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+    });
+});
+
+test('enum assignment with unions', async () => {
+    const code = `
+// @filename: lib.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+
+// @filename: test.py
+//// from enum import Enum
+//// from lib import Foz as Orb
+//// class Foo(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// def f():
+////     from lib import Foz as Fob
+////     a: Foo.Fox | Orb.Fox = [|/*a*/|]
+////     b: Foo | Orb = [|/*b*/|]
+////     return a, b
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'Foo.Fox.c', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.Fox.c', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.Fox.c', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['b']: {
+            completions: [
+                { label: 'Foo.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Foo.b', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.b', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+    });
+});
+
+test('enum assignment with import', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = Foz.a
+////         self.b: Foz.Fox = Foz.Fox.c
+
+// @filename: test.py
+//// import lib
+//// c = lib.C()
+//// c.a = /*a*/
+//// c.b = /*b*/
+//// d: lib.Foz.Fox = /*d*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'lib.Foz.a', kind: CompletionItemKind.EnumMember },
+                { label: 'lib.Foz.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['b']: {
+            completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+        ['c']: {
+            completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+    });
+});
+
+test('enum assignment with import from', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = Foz.a
+////         self.b: Foz.Fox = Foz.Fox.c
+
+// @filename: test.py
+//// from lib import C
+//// c = C()
+//// c.a = /*a*/
+//// c.b = /*b*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'Foz.a', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
+                { label: 'Foz.b', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
+            ],
+        },
+        ['b']: {
+            completions: [{ label: 'Foz.Fox.c', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' }],
+        },
+    });
+});
+
 test('import statements with implicit import', async () => {
     const code = `
 // @filename: test.py
