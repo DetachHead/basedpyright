@@ -1583,7 +1583,7 @@ test('enum assignment with import', async () => {
         ['b']: {
             completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
         },
-        ['c']: {
+        ['d']: {
             completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
         },
     });
@@ -1592,11 +1592,11 @@ test('enum assignment with import', async () => {
 test('enum assignment with import from', async () => {
     const code = `
 // @filename: lib/__init__.py
-//// from enum import Enum
-//// class Foz(Enum):
+//// from enum import IntEnum, StrEnum
+//// class Foz(StrEnum):
 ////     a = "1"
 ////     b = "2"
-////     class Fox(Enum):
+////     class Fox(IntEnum):
 ////         c = 3
 //// class C:
 ////     def __init__(self) -> None:
