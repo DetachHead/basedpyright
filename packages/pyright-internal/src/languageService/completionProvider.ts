@@ -1669,7 +1669,7 @@ export class CompletionProvider {
                     });
                 });
             } else {
-                // If the tyoe if the left-hand side cannot be accessed through any names local to
+                // If the type of the left-hand side cannot be accessed through any names local to
                 // the local scope, add completions for each symbol together with auto-import
                 // information.
                 // For nested classes, it is important to import the outermost class, i.e. the first
@@ -1701,7 +1701,11 @@ export class CompletionProvider {
         priorWord: string
     ): CompletionMap | undefined {
         const leftExpr = node.nodeType === ParseNodeType.Assignment ? node.d.leftExpr : node.d.name;
-        const leftDeclType = this.evaluator.getDeclaredTypeForExpression(leftExpr) ?? this.evaluator.getType(leftExpr);
+        // `getType` works as it should when assigning to a variable whose type has been established earlier,
+        // e.g. `a = E.a; a = …` (where `E` is an enumeration with value `a`), but it fails when assigning
+        // to a new variable with a type annotation, e.g. `a: E = …`.
+        // `getDeclaredTypeForExpression` works in this case and is therefore used as a fallback.
+        const leftDeclType = this.evaluator.getType(leftExpr) ?? this.evaluator.getDeclaredTypeForExpression(leftExpr);
         const completionMap = new CompletionMap();
         if (leftDeclType) {
             this.evaluator.mapSubtypesExpandTypeVars(leftDeclType, {}, (expanded, _unexpanded) => {

@@ -49,6 +49,19 @@ function getLocalTypeNameRec(
  * whose full name is a prefix of `type`’s full name. For each of these, it recursively searches the symbols
  * defined in that class/module for other classes/modules whose full name is a prefix of `type`’s full name
  * until a type with `type`’s full name is found.
+ *
+ * For example, consider the following definition:
+ * ```python
+ * class A:
+ *     class B: pass
+ * ```
+ * After this, the type representing `A.B` has the local names `['A.B']`. However, if that definition is
+ * in a different module called `lib`, we have a few different cases for the local names of `A.B`
+ * depending on how `lib`/its members have been imported:
+ * - `import lib`: The local names are `['lib.A.B']`.
+ * - `import lib as mod`: The local names are `['mod.A.B']`.
+ * - `import lib as mod; from lib import A`: The local names are `['mod.A.B', 'A.B']`.
+ * - `import lib as mod; from lib import A as C`: The local names are `['mod.A.B', 'C.B']`.
  */
 export function getLocalTypeNames(evaluator: TypeEvaluator, type: ClassType | ModuleType, scope: Scope): string[] {
     const out: string[] = [];
