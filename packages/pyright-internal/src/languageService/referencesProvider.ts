@@ -32,7 +32,7 @@ import { Uri } from '../common/uri/uri';
 import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
-import { deduplicateLocations, prepareFinder } from './navigationUtils';
+import { createDocRangeDefault, deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { isConstructor } from '../analyzer/constructors';
 
@@ -198,13 +198,7 @@ export class FindReferencesTreeWalker {
     }
 
     static createDocumentRange(fileUri: Uri, result: CollectionResult, parseResults: ParseFileResults): DocumentRange {
-        return {
-            uri: fileUri,
-            range: {
-                start: convertOffsetToPosition(result.range.start, parseResults.tokenizerOutput.lines),
-                end: convertOffsetToPosition(TextRange.getEnd(result.range), parseResults.tokenizerOutput.lines),
-            },
-        };
+        return createDocRangeDefault(fileUri, result.range, parseResults);
     }
 }
 

@@ -25,7 +25,7 @@ import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ClassNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
-import { deduplicateLocations, prepareFinder } from './navigationUtils';
+import { createDocRangeDefault, deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 
@@ -190,13 +190,7 @@ export class ImplementationProvider {
     }
 
     static createDocumentRange(fileUri: Uri, range: TextRange, parseResults: ParseFileResults): DocumentRange {
-        return {
-            uri: fileUri,
-            range: {
-                start: convertOffsetToPosition(range.start, parseResults.tokenizerOutput.lines),
-                end: convertOffsetToPosition(TextRange.getEnd(range), parseResults.tokenizerOutput.lines),
-            },
-        };
+        return createDocRangeDefault(fileUri, range, parseResults);
     }
 
     /**

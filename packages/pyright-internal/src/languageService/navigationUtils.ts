@@ -15,7 +15,9 @@ import { CancellationToken, ResultProgressReporter } from 'vscode-languageserver
 import { appendArray } from '../common/collectionUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
 import { ReferencesProvider, ReferencesResult } from './referencesProvider';
-import { Position } from '../common/textRange';
+import { Position, TextRange } from '../common/textRange';
+import { ParseFileResults } from '../parser/parser';
+import { convertOffsetToPosition } from '../common/positionUtils';
 
 export type ResultCallback = (locations: DocumentRange[]) => void;
 
@@ -108,4 +110,14 @@ export function deduplicateLocations(locations: Location[]) {
     }
 
     return dedupedLocations;
+}
+
+export function createDocRangeDefault(fileUri: Uri, range: TextRange, parseResults: ParseFileResults): DocumentRange {
+    return {
+        uri: fileUri,
+        range: {
+            start: convertOffsetToPosition(range.start, parseResults.tokenizerOutput.lines),
+            end: convertOffsetToPosition(TextRange.getEnd(range), parseResults.tokenizerOutput.lines),
+        },
+    };
 }
