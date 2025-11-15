@@ -1725,7 +1725,7 @@ export class ConfigOptions {
         // or supported. It was added specifically to improve initialization
         // performance for playgrounds or web-based environments where native
         // libraries will not be present.
-        if (configObj.skipNativeLibraries) {
+        if (configObj.skipNativeLibraries !== undefined) {
             if (typeof configObj.skipNativeLibraries === 'boolean') {
                 this.skipNativeLibraries = configObj.skipNativeLibraries;
             } else {
@@ -1856,7 +1856,7 @@ export class ConfigOptions {
         }
 
         for (const key of unusedConfigDetector.unreadOptions()) {
-            console.error(`unknown config option: ${key}`);
+            console.error(`Config contains unrecognized setting "${key}".`);
         }
     }
 

@@ -11,7 +11,12 @@ import { partition } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { Uri } from '../common/uri/uri';
 import { ArgumentNode, ExpressionNode, NameNode, ParamCategory, TypeAnnotationNode } from '../parser/parseNodes';
-import { ClassDeclaration, FunctionDeclaration, SpecialBuiltInClassDeclaration } from './declaration';
+import {
+    ClassDeclaration,
+    FunctionDeclaration,
+    SpecialBuiltInClassDeclaration,
+    VariableDeclaration,
+} from './declaration';
 import { Symbol, SymbolTable } from './symbol';
 
 export const enum TypeCategory {
@@ -559,6 +564,7 @@ export interface DataClassEntry {
 
 export interface TypedDictEntry {
     valueType: Type;
+    declaration: VariableDeclaration | undefined;
     isRequired: boolean;
     isReadOnly: boolean;
     isProvided: boolean;

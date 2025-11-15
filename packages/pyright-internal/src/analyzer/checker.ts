@@ -6512,6 +6512,12 @@ export class Checker extends ParseTreeWalker {
                                 type: this._evaluator.printType(entry.valueType),
                             })
                         );
+                    } else if (!baseTypedDictEntries.extraItems.isReadOnly && entry.isReadOnly) {
+                        diag.addMessage(
+                            LocAddendum.typedDictClosedFieldNotReadOnly().format({
+                                name,
+                            })
+                        );
                     } else if (!baseTypedDictEntries.extraItems.isReadOnly && entry.isRequired) {
                         diag.addMessage(
                             LocAddendum.typedDictClosedFieldNotRequired().format({

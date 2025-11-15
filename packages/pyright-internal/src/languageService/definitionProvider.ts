@@ -13,18 +13,13 @@
 import { CancellationToken } from 'vscode-languageserver';
 
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
-import {
-    Declaration,
-    DeclarationType,
-    isFunctionDeclaration,
-    isUnresolvedAliasDeclaration,
-} from '../analyzer/declaration';
+import { Declaration, DeclarationType, isUnresolvedAliasDeclaration } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
-import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
-import { OverloadedType, TypeCategory, isOverloaded } from '../analyzer/types';
+import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -36,7 +31,9 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
+import { getArgumentNode, getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
+import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 
 export enum DefinitionFilter {
     All = 'all',
@@ -82,25 +79,7 @@ export function addDeclarationsToDefinitions(
             resolvedDecl = resolvedDecl.submoduleFallback;
         }
 
-        _addIfUnique(definitions, {
-            uri: resolvedDecl.uri,
-            range: resolvedDecl.range,
-        });
-
-        if (isFunctionDeclaration(resolvedDecl)) {
-            // Handle overloaded function case
-            const functionType = evaluator.getTypeForDeclaration(resolvedDecl)?.type;
-            if (functionType && isOverloaded(functionType)) {
-                for (const overloadDecl of OverloadedType.getOverloads(functionType)
-                    .map((o) => o.shared.declaration)
-                    .filter(isDefined)) {
-                    _addIfUnique(definitions, {
-                        uri: overloadDecl.uri,
-                        range: overloadDecl.range,
-                    });
-                }
-            }
-        }
+        _addIfUnique(definitions, { uri: resolvedDecl.uri, range: resolvedDecl.range });
 
         if (!isStubFile(resolvedDecl.uri)) {
             return;
@@ -119,10 +98,7 @@ export function addDeclarationsToDefinitions(
         const implDecls = sourceMapper.findDeclarations(resolvedDecl);
         for (const implDecl of implDecls) {
             if (implDecl && !implDecl.uri.isEmpty()) {
-                _addIfUnique(definitions, {
-                    uri: implDecl.uri,
-                    range: implDecl.range,
-                });
+                _addIfUnique(definitions, { uri: implDecl.uri, range: implDecl.range });
             }
         }
     });
@@ -136,9 +112,9 @@ export function filterDefinitions(filter: DefinitionFilter, definitions: Documen
     // If go-to-declaration is supported, attempt to only show only pyi files in go-to-declaration
     // and none in go-to-definition, unless filtering would produce an empty list.
     const preferStubs = filter === DefinitionFilter.PreferStubs;
-    const wantedFile = (v: DocumentRange) => preferStubs === isStubFile(v.uri);
-    if (definitions.find(wantedFile)) {
-        return definitions.filter(wantedFile);
+    const filtered = definitions.filter((definition) => preferStubs === isStubFile(definition.uri));
+    if (filtered.length > 0) {
+        return filtered;
     }
 
     return definitions;
@@ -169,20 +145,46 @@ class DefinitionProviderBase {
         }
 
         // There should be only one 'definition', so only if extensions failed should we try again.
-        if (definitions.length === 0) {
-            if (node.nodeType === ParseNodeType.Name) {
-                const declInfo = this.evaluator.getDeclInfoForNameNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+        // Go up the parse tree until we find a node that we can determine a definition for.
+        const isArgumentNode = getArgumentNode(node) !== undefined;
+        let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
+        while (definitions.length === 0 && currentNode) {
+            const infoNode: ParseNode | undefined = getInfoNode(currentNode);
+
+            switch (infoNode.nodeType) {
+                case ParseNodeType.Name: {
+                    const declInfo = this.evaluator.getDeclInfoForNameNode(infoNode);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
                 }
-            } else if (node.nodeType === ParseNodeType.String) {
-                const declInfo = this.evaluator.getDeclInfoForStringNode(node);
-                if (declInfo) {
-                    this.resolveDeclarations(declInfo.decls, definitions);
-                    this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                case ParseNodeType.String: {
+                    const declInfo = this.evaluator.getDeclInfoForStringNode(infoNode);
+                    if (declInfo) {
+                        this.resolveDeclarations(declInfo.decls, definitions);
+                        this.addSynthesizedTypes(declInfo.synthesizedTypes, definitions);
+                    }
+                    break;
+                }
+                case ParseNodeType.UnaryOperation:
+                case ParseNodeType.BinaryOperation:
+                case ParseNodeType.AugmentedAssignment:
+                case ParseNodeType.Index: {
+                    const result = getTypeOfOperatorNode(this.evaluator, infoNode);
+                    this.resolveTypeResult(result, definitions, isArgumentNode);
+                    break;
                 }
             }
+
+            // In an assignment, the parents represent sub-assignments, i.e. for an assignment `a = b = 2`,
+            // if `currentNode` represents the assignment to `a`, its parent represents the assignment to `b`.
+            // Therefore, going to the parent to find definitions is not sensible for assignments.
+            if (currentNode.nodeType === ParseNodeType.Assignment) {
+                break;
+            }
+            currentNode = currentNode.parent;
         }
 
         if (definitions.length === 0) {
@@ -194,6 +196,9 @@ class DefinitionProviderBase {
 
     protected resolveDeclarations(declarations: Declaration[] | undefined, definitions: DocumentRange[]) {
         addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
+    }
+    protected resolveTypeResult(typeResult: TypeResult, definitions: DocumentRange[], isArgumentNode: boolean) {
+        forEachDeclaration(typeResult, (decl) => this.resolveDeclarations([decl], definitions), isArgumentNode);
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {

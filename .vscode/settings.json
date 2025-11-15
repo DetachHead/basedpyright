@@ -130,5 +130,7 @@
         "tag:yaml.org,2002:python/object/apply:pymdownx.slugs.slugify mapping"
     ],
     "telemetry.feedback.enabled": false,
-    "workbench.editor.revealIfOpen": true
+    "workbench.editor.revealIfOpen": true,
+    // https://github.com/microsoft/vscode-python/issues/25467
+    "python.terminal.shellIntegration.enabled": false
 }

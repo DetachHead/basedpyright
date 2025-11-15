@@ -31,24 +31,35 @@ for information on how to configure the language server in your IDE, [see here](
         }
         ```
 
+    ??? warning "if using basedpyright without the microsoft python extension"
+
+        If `basedpyright` is installed within a virtual environment and the official Python extension ([`ms-python`](https://marketplace.visualstudio.com/items?itemName=ms-python.python)) is not installed, the VSCode extension will crash on load. This is a known issue ([#1188](https://github.com/detachhead/basedpyright/issues/1188)) because the automatic python interpreter detection is provided only by `ms-python`.
+
+        The `basedpyright` VSCode extension by design does not depend explicitly on `ms-python`, due to concerns about telemetry.
+
+        There are two workarounds for this problem:
+
+        - Manually install `ms-python`
+        - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json`
+
 === "VSCodium"
 
     install the extension from [the open VSX registry](https://open-vsx.org/extension/detachhead/basedpyright)
 
+    !!! warning "if using basedpyright without the microsoft python extension"
+
+        If `basedpyright` is installed within a virtual environment and the official Python extension ([`ms-python`](https://marketplace.visualstudio.com/items?itemName=ms-python.python)) is not installed, the VSCode extension will crash on load. This is a known issue ([#1188](https://github.com/detachhead/basedpyright/issues/1188)) because the automatic python interpreter detection is provided only by `ms-python`.
+
+        The `basedpyright` VSCode extension by design does not depend explicitly on `ms-python`, due to concerns about telemetry.
+
+        There are two workarounds for this problem:
+
+        - Manually install `ms-python`
+        - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json`
+
 the basedpyright extension will automatically look for the pypi package in your python environment.
 
-!!! warning
-
-    If `basedpyright` is installed within a virtual environment and the official Python extension ([`ms-python`](https://marketplace.visualstudio.com/items?itemName=ms-python.python)) is not installed, the VSCode extension will crash on load. This is a known issue ([#1188](https://github.com/detachhead/basedpyright/issues/1188)) because the automatic python interpreter detection is provided only by `ms-python`.
-
-    The `basedpyright` VSCode extension by design does not depend explicitly on `ms-python`, due to concerns about telemetry.
-
-    There are two workarounds for this problem:
-
-    - Manually install `ms-python`
-    - Set `basedpyright.importStrategy` to `useBundled` in your `.vscode/settings.json`
-
-??? tip "if adding basedpyright as a development dependency to your project"
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
     we recommend adding it to the recommended extensions list in your workspace:
 
@@ -152,9 +163,9 @@ Emacs users have 3 options:
     3. set "Running mode" to "Native LSP client":\
         ![](./native-lsp.png)
 
-!!! tip
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
-    if you're adding basedpyright as a development dependency to your project, we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
+    we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
 
     ![](pycharm-recommended-dependency.png)
 
@@ -183,3 +194,24 @@ You can verify the active configuration by running `hx --health python`
 ## Zed
 
 basedpyright is the default language server for python in zed. [see the docs](https://zed.dev/docs/languages/python#basedpyright) for more information.
+
+!!! tip "pinning basedpyright as a development dependency to your project (recommended)"
+
+    we highly recommend installing and pinning basedpyright as a dev dependency for your project and using project settings (`.zed/settings.json`) to confiigure zed to use the that version instead of a globally installed version.
+
+    this ensures that zed doesn't automatically update basedpyright unexpectedly to a version that your project may not be ready to use.
+
+    ```json title=".zed/settings.json"
+    {
+        "lsp": {
+            "basedpyright": {
+                "binary": {
+                    "path": ".venv/bin/basedpyright-langserver",
+                    "arguments": ["--stdio"]
+                }
+            }
+        }
+    }
+    ```
+
+    you should commit this file so that these settings are automatically applied for other developers working on your project.

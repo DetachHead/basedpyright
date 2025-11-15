@@ -63,6 +63,9 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.autoFormatStrings** [boolean]: Whether to automatically insert an `f` in front of a string when typing a `{` inside it. Defaults to `true`. [more info](../benefits-over-pyright/pylance-features.md#automatic-conversion-to-f-string-when-typing-inside-a-string)
 
+**basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.
+
+
 ### discouraged settings
 
 these options can also be configured [using a config file](./config-files.md). it's recommended to use either a `pyproject.toml` or `pyrightconfig.json` file instead of the language server to configure type checking for the following reasons:
@@ -110,9 +113,50 @@ the basedpyright language server settings can be configured using a workspace or
 }
 ```
 
+For monorepo projects where your Python code is in a subdirectory:
+
+```json title="./.vscode/settings.json"
+{
+    "basedpyright.analysis.configFilePath": "${workspaceFolder}/backend"
+}
+```
+
 ### neovim
 
 The language server can be configured in your neovim settings:
+
+For Neovim 0.11+
+
+```lua title="lsp/basedpyright.lua"
+return {
+  settings = {
+    basedpyright = {
+      analysis = {
+        diagnosticMode = "openFilesOnly",
+        inlayHints = {
+          callArgumentNames = true
+        }
+      }
+    }
+  }
+}
+```
+
+For monorepo projects where your Python code is in a subdirectory:
+
+```lua title="lsp/basedpyright.lua"
+return {
+  settings = {
+    basedpyright = {
+      analysis = {
+        configFilePath = vim.fn.getcwd() .. "/backend"
+      }
+    }
+  }
+}
+```
+
+For Neovim 0.10 (legacy)
 
 ```lua
 require("lspconfig").basedpyright.setup {
