@@ -85,7 +85,7 @@ export class ClassTreeWalker extends ParseTreeWalker {
 }
 
 export class ImplementationProvider {
-    private _resultQueue: LocationWithNode[];
+    private _resultQueue: LocationWithNode[] = [];
     private _implementationsResult?: ImplementationsResult;
 
     constructor(
@@ -102,9 +102,7 @@ export class ImplementationProvider {
             fs: ReadOnlyFileSystem,
             ranges: DocumentRange
         ) => Location | undefined
-    ) {
-        this._resultQueue = [];
-    }
+    ) {}
 
     reportImplementations(fileUri: Uri, position: Position, resultReporter?: ResultProgressReporter<Location[]>) {
         const sourceFileInfo = this._program.getSourceFileInfo(fileUri);
