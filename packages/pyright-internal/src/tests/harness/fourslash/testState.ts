@@ -1216,39 +1216,25 @@ export class TestState {
             ranges: DocumentRange
         ) => Location | undefined
     ) {
-        this.analyze();
-        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
-        for (const name of this.getMarkerNames()) {
-            const marker = this.getMarkerByName(name);
-            const fileName = marker.fileName;
+        this._verifyFindAllBase(
+            (name) => {
+                if (!(name in map)) {
+                    return;
+                }
 
-            if (!(name in map)) {
-                continue;
-            }
-
-            let expected = map[name].references;
-            expected = expected.map((c) => {
-                return {
-                    ...c,
-                    uri: c.uri ?? Uri.file((c as any).path, this.serviceProvider),
-                };
-            });
-
-            const position = this.convertOffsetToPosition(fileName, marker.position);
-
-            const actual = new ReferencesProvider(
-                ls,
-                this.program,
-                CancellationToken.None,
-                createDocumentRange,
-                convertToLocation
-            ).reportReferences(Uri.file(fileName, this.serviceProvider), position, /* includeDeclaration */ true);
-            assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
-
-            for (const r of convertDocumentRangesToLocation(ls, this.program.fileSystem, expected, convertToLocation)) {
-                assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
-            }
-        }
+                return map[name].references;
+            },
+            (ls, fileName, position) => {
+                return new ReferencesProvider(
+                    ls,
+                    this.program,
+                    CancellationToken.None,
+                    createDocumentRange,
+                    convertToLocation
+                ).reportReferences(Uri.file(fileName, this.serviceProvider), position, /* includeDeclaration */ true);
+            },
+            convertToLocation
+        );
     }
 
     verifyFindAllImplementations(
@@ -1264,39 +1250,25 @@ export class TestState {
             ranges: DocumentRange
         ) => Location | undefined
     ) {
-        this.analyze();
-        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
-        for (const name of this.getMarkerNames()) {
-            const marker = this.getMarkerByName(name);
-            const fileName = marker.fileName;
+        this._verifyFindAllBase(
+            (name) => {
+                if (!(name in map)) {
+                    return;
+                }
 
-            if (!(name in map)) {
-                continue;
-            }
-
-            let expected = map[name].implementations;
-            expected = expected.map((c) => {
-                return {
-                    ...c,
-                    uri: c.uri ?? Uri.file((c as any).path, this.serviceProvider),
-                };
-            });
-
-            const position = this.convertOffsetToPosition(fileName, marker.position);
-
-            const actual = new ImplementationProvider(
-                ls,
-                this.program,
-                CancellationToken.None,
-                createDocumentRange,
-                convertToLocation
-            ).reportImplementations(Uri.file(fileName, this.serviceProvider), position);
-            assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
-
-            for (const r of convertDocumentRangesToLocation(ls, this.program.fileSystem, expected, convertToLocation)) {
-                assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
-            }
-        }
+                return map[name].implementations;
+            },
+            (ls, fileName, position) => {
+                return new ImplementationProvider(
+                    ls,
+                    this.program,
+                    CancellationToken.None,
+                    createDocumentRange,
+                    convertToLocation
+                ).reportImplementations(Uri.file(fileName, this.serviceProvider), position);
+            },
+            convertToLocation
+        );
     }
 
     verifyShowCallHierarchyGetIncomingCalls(map: {
@@ -1857,6 +1829,43 @@ export class TestState {
                 assert.equal(actual!.contents.kind, kind);
             } else {
                 assert.fail(`Unexpected type of contents object "${actual!.contents}", should be MarkupContent.`);
+            }
+        }
+    }
+
+    private _verifyFindAllBase(
+        expectedGetter: (name: string) => DocumentRange[] | undefined,
+        actualGetter: (ls: LanguageServerInterface, fileName: string, position: Position) => Location[] | undefined,
+        convertToLocation?: (
+            ls: LanguageServerInterface,
+            fs: ReadOnlyFileSystem,
+            ranges: DocumentRange
+        ) => Location | undefined
+    ) {
+        this.analyze();
+        const ls = new TestLanguageService(this.workspace, this.console, this.fs);
+        for (const name of this.getMarkerNames()) {
+            const marker = this.getMarkerByName(name);
+            const fileName = marker.fileName;
+
+            let expected = expectedGetter(name);
+            if (!expected) {
+                continue;
+            }
+            expected = expected.map((c) => {
+                return {
+                    ...c,
+                    uri: c.uri ?? Uri.file((c as any).path, this.serviceProvider),
+                };
+            });
+
+            const position = this.convertOffsetToPosition(fileName, marker.position);
+
+            const actual = actualGetter(ls, fileName, position);
+            assert.strictEqual(actual?.length ?? 0, expected.length, `${name} has failed`);
+
+            for (const r of convertDocumentRangesToLocation(ls, this.program.fileSystem, expected, convertToLocation)) {
+                assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
             }
         }
     }
