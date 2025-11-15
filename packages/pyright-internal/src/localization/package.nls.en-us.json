@@ -12,6 +12,7 @@
         "filesToAnalyzeCount": "{count} files to analyze",
         "filesToAnalyzeOne": "1 file to analyze",
         "findingReferences": "Finding references",
+        "findingImplementations": "Finding implementations",
         "organizeImports": "Organize Imports"
     },
     "Completion": {

@@ -318,6 +318,11 @@ declare namespace _ {
                 references: DocumentRange[];
             };
         }): void;
+        verifyFindAllImplementations(map: {
+            [marker: string]: {
+                implementations: DocumentRange[];
+            };
+        }): void;
         verifyShowCallHierarchyGetIncomingCalls(map: {
             [marker: string]: {
                 items: FourSlashCallHierarchyItem[];
