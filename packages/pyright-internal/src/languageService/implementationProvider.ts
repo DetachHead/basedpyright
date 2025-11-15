@@ -40,7 +40,8 @@ export class ImplementationsResult {
     private readonly _results: LocationWithNode[] = [];
 
     // ReferencesResult had some stuff about filtering out import declarations.
-    // I don't think we need that stuff here, but if we find that we do, copy it from there.
+    // I don't think we need that stuff here, but if we find that we do,
+    // find a good way to share that behavior without duplicating code.
 
     constructor(private readonly _reporter?: ImplementationCallback) {
         // empty
