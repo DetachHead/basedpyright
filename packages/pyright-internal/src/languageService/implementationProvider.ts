@@ -157,12 +157,12 @@ export class ImplementationProvider {
             }
             const enclosingClass = ParseTreeUtils.getEnclosingClass(declaration.node, stopAtFunction);
             if (enclosingClass) {
-                const lookingForName =
-                    declaration.type === DeclarationType.Function
-                        ? declaration.node.d.name.d.value
-                        : declaration.node.nodeType === ParseNodeType.Name
-                        ? declaration.node.d.value
-                        : undefined;
+                let lookingForName: string | undefined = undefined;
+                if (declaration.type === DeclarationType.Function) {
+                    lookingForName = declaration.node.d.name.d.value;
+                } else if (declaration.node.nodeType === ParseNodeType.Name) {
+                    lookingForName = declaration.node.d.value;
+                }
                 // I'm not sure what Python code would lead to `declaration.node` being a `StringListNode`
                 // __all__ declaration shouldn't have an enclosing class
                 if (lookingForName) {
