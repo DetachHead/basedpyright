@@ -20,7 +20,6 @@ import { appendArray } from '../common/collectionUtils';
 import { DocumentRange } from '../common/docRange';
 import { ProgramView } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
-import { convertOffsetToPosition } from '../common/positionUtils';
 import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ClassNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
@@ -262,12 +261,7 @@ export class ImplementationProvider {
         this._resultQueue.push({
             node: node,
             location: this._createDocumentRange(uri, range, parseResults),
-            parentRange: node.parent
-                ? {
-                      start: convertOffsetToPosition(node.parent.start, parseResults.tokenizerOutput.lines),
-                      end: convertOffsetToPosition(TextRange.getEnd(node.parent), parseResults.tokenizerOutput.lines),
-                  }
-                : undefined,
+            parentRange: node.parent ? createDocRangeDefault(uri, node.parent, parseResults).range : undefined,
         });
     }
 }
