@@ -163,7 +163,8 @@ export class ImplementationProvider {
                         : declaration.node.nodeType === ParseNodeType.Name
                         ? declaration.node.d.value
                         : undefined;
-                // I don't know what Python code would lead to `declaration.node` being a `StringListNode`
+                // I'm not sure what Python code would lead to `declaration.node` being a `StringListNode`
+                // __all__ declaration shouldn't have an enclosing class
                 if (lookingForName) {
                     this._forEachSubClass(
                         enclosingClass,
