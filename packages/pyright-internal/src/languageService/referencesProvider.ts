@@ -32,7 +32,7 @@ import { Uri } from '../common/uri/uri';
 import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
-import { convertDocumentRangesToLocation } from './navigationUtils';
+import { prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { isConstructor } from '../analyzer/constructors';
 
@@ -233,50 +233,20 @@ export class ReferencesProvider {
         includeDeclaration: boolean,
         resultReporter?: ResultProgressReporter<Location[]>
     ) {
-        const sourceFileInfo = this._program.getSourceFileInfo(fileUri);
-        if (!sourceFileInfo) {
-            return;
-        }
-
-        const parseResults = this._program.getParseResults(fileUri);
-        if (!parseResults) {
-            return;
-        }
-
-        const locations: Location[] = [];
-        const reporter: ReferenceCallback = resultReporter
-            ? (range) =>
-                  resultReporter.report(
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  )
-            : (range) =>
-                  appendArray(
-                      locations,
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  );
-
-        const invokedFromUserFile = isUserCode(sourceFileInfo);
-        const referencesResult = ReferencesProvider.getDeclarationForPosition(
+        const finder = prepareFinder(
             this._program,
             fileUri,
             position,
-            reporter,
-            ReferenceUseCase.References,
-            this._token
+            this._ls,
+            true,
+            this._token,
+            resultReporter,
+            this._convertToLocation
         );
-        if (!referencesResult) {
+        if (!finder) {
             return;
         }
+        const [sourceFileInfo, locations, , invokedFromUserFile, referencesResult] = finder;
 
         const node = referencesResult.nodeAtOffset;
         let checkConstructorUsagesForClass: ClassDeclaration | undefined;

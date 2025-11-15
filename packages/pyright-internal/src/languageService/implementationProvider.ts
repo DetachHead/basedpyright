@@ -18,16 +18,15 @@ import { ClassType } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { DocumentRange } from '../common/docRange';
-import { ProgramView, ReferenceUseCase } from '../common/extensibility';
+import { ProgramView } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
 import { convertOffsetToPosition } from '../common/positionUtils';
 import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ClassNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
-import { convertDocumentRangesToLocation } from './navigationUtils';
+import { prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
-import { ReferencesProvider } from './referencesProvider';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 
 export type ImplementationCallback = (locations: DocumentRange[]) => void;
@@ -105,55 +104,26 @@ export class ImplementationProvider {
     ) {}
 
     reportImplementations(fileUri: Uri, position: Position, resultReporter?: ResultProgressReporter<Location[]>) {
-        const sourceFileInfo = this._program.getSourceFileInfo(fileUri);
-        if (!sourceFileInfo) {
-            return;
-        }
-
-        const parseResults = this._program.getParseResults(fileUri);
-        if (!parseResults) {
-            return;
-        }
-
         if (!this._program.evaluator) {
             return;
         }
 
-        const locations: Location[] = [];
-        const reporter: ImplementationCallback = resultReporter
-            ? (range) =>
-                  resultReporter.report(
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  )
-            : (range) =>
-                  appendArray(
-                      locations,
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  );
-        this._implementationsResult = new ImplementationsResult(reporter);
-
-        const invokedFromUserFile = isUserCode(sourceFileInfo);
-        const declarationResult = ReferencesProvider.getDeclarationForPosition(
+        const finder = prepareFinder(
             this._program,
             fileUri,
             position,
-            undefined,
-            ReferenceUseCase.References,
-            this._token
+            this._ls,
+            false,
+            this._token,
+            resultReporter,
+            this._convertToLocation
         );
-        if (!declarationResult) {
+        if (!finder) {
             return;
         }
+        const [, locations, reporter, invokedFromUserFile, declarationResult] = finder;
+
+        this._implementationsResult = new ImplementationsResult(reporter);
 
         // I'm not sure of all the situations where
         // there might be more than 1 nonImportDeclarations.
