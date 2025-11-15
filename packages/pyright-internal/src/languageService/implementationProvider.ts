@@ -71,15 +71,15 @@ export class ImplementationsResult {
 
 export class ClassTreeWalker extends ParseTreeWalker {
     constructor(
-        private readonly uri: Uri,
-        private readonly parseRes: ParseFileResults,
+        private readonly _uri: Uri,
+        private readonly _parseRes: ParseFileResults,
         private readonly _callback: (node: ClassNode, uri: Uri, parseRes: ParseFileResults) => void
     ) {
         super();
     }
 
     override visitClass(node: ClassNode): boolean {
-        this._callback(node, this.uri, this.parseRes);
+        this._callback(node, this._uri, this._parseRes);
         return true;
     }
 }
@@ -231,6 +231,16 @@ export class ImplementationProvider {
         return dedupedLocations;
     }
 
+    static createDocumentRange(fileUri: Uri, range: TextRange, parseResults: ParseFileResults): DocumentRange {
+        return {
+            uri: fileUri,
+            range: {
+                start: convertOffsetToPosition(range.start, parseResults.tokenizerOutput.lines),
+                end: convertOffsetToPosition(TextRange.getEnd(range), parseResults.tokenizerOutput.lines),
+            },
+        };
+    }
+
     /**
      * The term "subclass" has some nuance here. It's not just nominal subclasses,
      * because we want to support finding implementations of Protocols too.
@@ -292,16 +302,6 @@ export class ImplementationProvider {
 
         this._implementationsResult?.addResults(...this._resultQueue);
         this._resultQueue.length = 0;
-    }
-
-    static createDocumentRange(fileUri: Uri, range: TextRange, parseResults: ParseFileResults): DocumentRange {
-        return {
-            uri: fileUri,
-            range: {
-                start: convertOffsetToPosition(range.start, parseResults.tokenizerOutput.lines),
-                end: convertOffsetToPosition(TextRange.getEnd(range), parseResults.tokenizerOutput.lines),
-            },
-        };
     }
 
     private _addResult(node: ParseNode, range: TextRange, uri: Uri, parseResults: ParseFileResults) {
