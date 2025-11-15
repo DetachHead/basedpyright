@@ -314,19 +314,21 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 
 ## Execution Environment Options
-Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
+Pyright allows multiple "execution environments" to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
 
 The following settings can be specified for each execution environment. Each source file within a project is associated with at most one execution environment -- the first one whose root directory contains that file.
 
 - **root** [string, required]: Root path for the code that will execute within this execution environment.
 
-- **extraPaths** [array of strings, optional]: Additional search paths (in addition to the root path) that will be used when searching for modules imported by files within this execution environment. If specified, this overrides the default extraPaths setting when resolving imports for files within this execution environment. Note that each file’s execution environment mapping is independent, so if file A is in one execution environment and imports a second file B within a second execution environment, any imports from B will use the extraPaths in the second execution environment.
+- **typeCheckingMode** [string, optional]: Specifies the type checking mode to use for this execution environment. This overrides the global `typeCheckingMode` setting. Valid values are the same as the global setting: `"off"`, `"basic"`, `"standard"`, `"strict"`, `"recommended"`, or `"all"`. If not specified, the global `typeCheckingMode` is used. This provides a cleaner alternative to specifying individual diagnostic rule overrides when you want to apply a different strictness level to specific folders.
+
+- **extraPaths** [array of strings, optional]: Additional search paths (in addition to the root path) that will be used when searching for modules imported by files within this execution environment. If specified, this overrides the default extraPaths setting when resolving imports for files within this execution environment. Note that each file's execution environment mapping is independent, so if file A is in one execution environment and imports a second file B within a second execution environment, any imports from B will use the extraPaths in the second execution environment.
 
 - **pythonVersion** [string, optional]: The version of Python used for this execution environment. If not specified, the global `pythonVersion` setting is used instead.
 
 - **pythonPlatform** [string, optional]: Specifies the target platform that will be used for this execution environment. If not specified, the global `pythonPlatform` setting is used instead.
 
-In addition, any of the [type check diagnostics settings](config-files.md#type-check-diagnostics-settings) listed above can be specified. These settings act as overrides for the files in this execution environment.
+In addition, any of the [type check diagnostics settings](config-files.md#type-check-diagnostics-settings) listed above can be specified. These settings act as overrides for the files in this execution environment. Individual diagnostic rule overrides take precedence over the `typeCheckingMode` setting.
 
 ## Sample Config File
 The following is an example of a pyright config file:
@@ -364,20 +366,22 @@ The following is an example of a pyright config file:
       "root": "src/web",
       "pythonVersion": "3.5",
       "pythonPlatform": "Windows",
+      "typeCheckingMode": "basic",
       "extraPaths": [
         "src/service_libs"
-      ],
-      "reportMissingImports": "warning"
+      ]
     },
     {
       "root": "src/sdk",
       "pythonVersion": "3.0",
+      "typeCheckingMode": "strict",
       "extraPaths": [
         "src/backend"
       ]
     },
     {
       "root": "src/tests",
+      "typeCheckingMode": "standard",
       "reportPrivateUsage": false,
       "extraPaths": [
         "src/tests/e2e",
@@ -411,9 +415,9 @@ pythonVersion = "3.6"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
-  { root = "src/web", pythonVersion = "3.5", pythonPlatform = "Windows", extraPaths = [ "src/service_libs" ], reportMissingImports = "warning" },
-  { root = "src/sdk", pythonVersion = "3.0", extraPaths = [ "src/backend" ] },
-  { root = "src/tests", reportPrivateUsage = false, extraPaths = ["src/tests/e2e", "src/sdk" ]},
+  { root = "src/web", pythonVersion = "3.5", pythonPlatform = "Windows", typeCheckingMode = "basic", extraPaths = [ "src/service_libs" ] },
+  { root = "src/sdk", pythonVersion = "3.0", typeCheckingMode = "strict", extraPaths = [ "src/backend" ] },
+  { root = "src/tests", typeCheckingMode = "standard", reportPrivateUsage = false, extraPaths = ["src/tests/e2e", "src/sdk" ]},
   { root = "src" }
 ]
 ```
