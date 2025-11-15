@@ -25,7 +25,7 @@ import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ClassNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
-import { prepareFinder } from './navigationUtils';
+import { deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
 
@@ -186,18 +186,7 @@ export class ImplementationProvider {
             }
         }
 
-        // Deduplicate locations before returning them.
-        const locationsSet = new Set<string>();
-        const dedupedLocations: Location[] = [];
-        for (const loc of locations) {
-            const key = `${loc.uri.toString()}:${loc.range.start.line}:${loc.range.start.character}`;
-            if (!locationsSet.has(key)) {
-                locationsSet.add(key);
-                dedupedLocations.push(loc);
-            }
-        }
-
-        return dedupedLocations;
+        return deduplicateLocations(locations);
     }
 
     static createDocumentRange(fileUri: Uri, range: TextRange, parseResults: ParseFileResults): DocumentRange {

@@ -32,7 +32,7 @@ import { Uri } from '../common/uri/uri';
 import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
-import { prepareFinder } from './navigationUtils';
+import { deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { isConstructor } from '../analyzer/constructors';
 
@@ -335,18 +335,7 @@ export class ReferencesProvider {
             }
         }
 
-        // Deduplicate locations before returning them.
-        const locationsSet = new Set<string>();
-        const dedupedLocations: Location[] = [];
-        for (const loc of locations) {
-            const key = `${loc.uri.toString()}:${loc.range.start.line}:${loc.range.start.character}`;
-            if (!locationsSet.has(key)) {
-                locationsSet.add(key);
-                dedupedLocations.push(loc);
-            }
-        }
-
-        return dedupedLocations;
+        return deduplicateLocations(locations);
     }
 
     addReferencesToResult(

@@ -94,3 +94,18 @@ export function prepareFinder(
 
     return [sourceFileInfo, locations, reporter, invokedFromUserFile, declarationResult];
 }
+
+/** Deduplicate locations according to their start character position. */
+export function deduplicateLocations(locations: Location[]) {
+    const locationsSet = new Set<string>();
+    const dedupedLocations: Location[] = [];
+    for (const loc of locations) {
+        const key = `${loc.uri.toString()}:${loc.range.start.line}:${loc.range.start.character}`;
+        if (!locationsSet.has(key)) {
+            locationsSet.add(key);
+            dedupedLocations.push(loc);
+        }
+    }
+
+    return dedupedLocations;
+}
