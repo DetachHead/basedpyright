@@ -250,7 +250,9 @@ export class ImplementationProvider {
                 this._program.handleMemoryHighUsage();
             }
         }
-        this._processResultQueue(); // This shouldn't do anything, but just in case something was missed somehow.
+        if (this._resultQueue.length !== 0) {
+            throw new Error('expected result result queue to be empty after finishing iteration through subtypes');
+        }
     }
 
     private _processResultQueue() {
