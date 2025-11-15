@@ -42,6 +42,16 @@ export interface CommonDetail {
 }
 
 export interface SymbolDetail extends CommonDetail {
+    /**
+     * Even when the completion is something nested, such as `A.B.C`,
+     * this is always the last part (`C` in the aforementioned example).
+     */
+    actualName?: string;
+    /**
+     * When auto-importing for some nested, such as `A.B.C` where `A` and `B` are classes,
+     * this is the least nested thing that can be imported (`A` in the aforementioned example).
+     */
+    autoImportName?: string;
     autoImportSource?: string;
     autoImportAlias?: string;
     boundObjectOrClass?: ClassType;
@@ -50,6 +60,11 @@ export interface SymbolDetail extends CommonDetail {
 export interface CompletionDetail extends CommonDetail {
     typeDetail?: string;
     documentation?: string;
+    /**
+     * When auto-importing for some nested, such as `A.B.C` where `A` and `B` are classes,
+     * this is the least nested thing that can be imported (`A` in the aforementioned example).
+     */
+    autoImportName?: string;
     autoImportText?: {
         source: string;
         importText: string;

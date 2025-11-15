@@ -533,7 +533,7 @@ test('literals support for binary operators without string node', async () => {
 //// Currency = Literal["USD", "EUR"]
 //// 
 //// def foo(c: Currency):
-////     if c != [|/*marker*/|]
+////     if c != /*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -706,7 +706,7 @@ test('literals support for match - error case', async () => {
 //// 
 //// def foo(c: Currency):
 ////     match c:
-////         case [|/*marker*/|]
+////         case /*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1197,7 +1197,7 @@ test('Enum member', async () => {
 ////     this = 1
 ////     that = 2
 //// 
-//// print(MyEnum.[|/*marker*/|])
+//// print(MyEnum./*marker*/)
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1224,7 +1224,7 @@ test('no member of Enum member', async () => {
 ////     this = 1
 ////     that = 2
 //// 
-//// print(MyEnum.this.[|/*marker*/|])
+//// print(MyEnum.this./*marker*/)
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1253,7 +1253,7 @@ test('default Enum member', async () => {
 //// class MyEnum(Enum):
 ////     MemberOne = []
 //// 
-//// MyEnum.MemberOne.[|/*marker*/|]
+//// MyEnum.MemberOne./*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1336,7 +1336,7 @@ test('typed dict key constructor completion', async () => {
 test('import from completion for namespace package', async () => {
     const code = `
 // @filename: test.py
-//// from nest1 import [|/*marker*/|]
+//// from nest1 import /*marker*/
 
 // @filename: nest1/nest2/__init__.py
 //// # empty
@@ -1381,7 +1381,7 @@ test('members off enum member', async () => {
 ////         G = 6.67300E-11
 ////         return G * self.mass / (self.radius * self.radius)
 ////
-//// Planet.EARTH.[|/*marker*/|]
+//// Planet.EARTH./*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1425,7 +1425,7 @@ test('handle missing close paren case', async () => {
     const code = `
 // @filename: test.py
 //// count=100
-//// while count <= (c[|/*marker*/|]
+//// while count <= (c/*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1450,7 +1450,7 @@ test('enum with regular base type', async () => {
 //// class Period(timedelta, Enum):
 ////     Today = -1
 ////
-//// Period.Today.[|/*marker*/|]
+//// Period.Today./*marker*/
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1467,6 +1467,160 @@ test('enum with regular base type', async () => {
                     kind: CompletionItemKind.Property,
                 },
             ],
+        },
+    });
+});
+
+test('enum assignment in __init__', async () => {
+    const code = `
+// @filename: test.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = /*foz*/
+////         self.b: Foz.Fox = /*fox*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['foz']: {
+            completions: [
+                { label: 'Foz.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Foz.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['fox']: {
+            completions: [{ label: 'Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+    });
+});
+
+test('enum assignment with unions', async () => {
+    const code = `
+// @filename: lib.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+
+// @filename: test.py
+//// from enum import Enum
+//// from lib import Foz as Orb
+//// class Foo(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// def f():
+////     from lib import Foz as Fob
+////     a: Foo.Fox | Orb.Fox = /*a*/
+////     b: Foo | Orb = /*b*/
+////     return a, b
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'Foo.Fox.c', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.Fox.c', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.Fox.c', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['b']: {
+            completions: [
+                { label: 'Foo.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Foo.b', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Orb.b', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.a', kind: CompletionItemKind.EnumMember },
+                { label: 'Fob.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+    });
+});
+
+test('enum assignment with import', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import Enum
+//// class Foz(Enum):
+////     a = "1"
+////     b = "2"
+////     class Fox(Enum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = Foz.a
+////         self.b: Foz.Fox = Foz.Fox.c
+
+// @filename: test.py
+//// import lib
+//// c = lib.C()
+//// c.a = /*a*/
+//// c.b = /*b*/
+//// d: lib.Foz.Fox = /*d*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'lib.Foz.a', kind: CompletionItemKind.EnumMember },
+                { label: 'lib.Foz.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['b']: {
+            completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+        ['d']: {
+            completions: [{ label: 'lib.Foz.Fox.c', kind: CompletionItemKind.EnumMember }],
+        },
+    });
+});
+
+test('enum assignment with import from', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import IntEnum, StrEnum
+//// class Foz(StrEnum):
+////     a = "1"
+////     b = "2"
+////     class Fox(IntEnum):
+////         c = 3
+//// class C:
+////     def __init__(self) -> None:
+////         self.a: Foz = Foz.a
+////         self.b: Foz.Fox = Foz.Fox.c
+
+// @filename: test.py
+//// from lib import C
+//// c = C()
+//// c.a = /*a*/
+//// c.b = /*b*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('exact', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'Foz.a', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
+                { label: 'Foz.b', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
+            ],
+        },
+        ['b']: {
+            completions: [{ label: 'Foz.Fox.c', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' }],
         },
     });
 });
@@ -1558,7 +1712,7 @@ test('dataclass field alias with invalid python identifier', async () => {
 ////     a: int = field(alias='foo bar')
 ////     b: str = field(alias='baz')
 ////
-//// Baz([|/*marker*/|])
+//// Baz(/*marker*/)
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1595,7 +1749,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
 ////
-//// asdfasd[|/*marker*/|]
+//// asdfasd/*marker*/
     `;
 
         const state = parseAndGetTestState(code).state;
@@ -1627,7 +1781,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
 ////
-//// asdfasd[|/*marker*/|]
+//// asdfasd/*marker*/
     `;
 
         const state = parseAndGetTestState(code).state;
@@ -1691,7 +1845,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// class Asdf: ...
 ////
-//// class Foo[T: Asd[|/*marker*/|] = str]:
+//// class Foo[T: Asd/*marker*/ = str]:
 ////     def __init__(self, default: tuple[T, ...] = (69,)) -> None:
 ////         pass
     `;
@@ -1765,11 +1919,11 @@ describe('useTypingExtensions', () => {
 // @filename: pyrightconfig.json
 //// { "pythonVersion": "3.9", "reportImplicitOverride": "error" }
 // @filename: test.py
-//// [|/*importMarker*/|]class Foo:
+//// /*importMarker*/class Foo:
 ////     def foo(self): ...
 ////
 //// class Bar(Foo):
-////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
+////     /*overrideMarker*/def [|fo/*marker*/|]
     `;
 
             const state = parseAndGetTestState(code).state;
@@ -1898,7 +2052,7 @@ describe('useTypingExtensions', () => {
 test('import from stdlib package', async () => {
     const code = `
 // @filename: test.py
-//// [|/*marker0*/|]
+//// /*marker0*/
 //// [|/*importMarker*/|][|JSONDecodeErr/*marker*/|]
     `;
 
