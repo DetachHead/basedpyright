@@ -735,8 +735,7 @@ describe(`config test'}`, () => {
 
             assert.strictEqual(configOptions.executionEnvironments.length, 2);
 
-            const strictEnv = configOptions.executionEnvironments[0];
-            const basicEnv = configOptions.executionEnvironments[1];
+            const [strictEnv, strictEnv] = configOptions.executionEnvironments;
 
             // Verify strict environment has strict settings
             assert.strictEqual(strictEnv.diagnosticRuleSet.strictListInference, true);
