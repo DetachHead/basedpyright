@@ -322,7 +322,7 @@ The following settings can be specified for each execution environment. Each sou
 
 - **typeCheckingMode** [string, optional]: Specifies the type checking mode to use for this execution environment. This overrides the global `typeCheckingMode` setting. Valid values are the same as [the global setting](#diagnostic-settings-defaults). If not specified, the global `typeCheckingMode` is used.
 
-- **extraPaths** [array of strings, optional]: Additional search paths (in addition to the root path) that will be used when searching for modules imported by files within this execution environment. If specified, this overrides the default extraPaths setting when resolving imports for files within this execution environment. Note that each file's execution environment mapping is independent, so if file A is in one execution environment and imports a second file B within a second execution environment, any imports from B will use the extraPaths in the second execution environment.
+- **extraPaths** [array of strings, optional]: Additional search paths (in addition to the root path) that will be used when searching for modules imported by files within this execution environment. If specified, this overrides the default extraPaths setting when resolving imports for files within this execution environment. Note that each file’s execution environment mapping is independent, so if file A is in one execution environment and imports a second file B within a second execution environment, any imports from B will use the extraPaths in the second execution environment.
 
 - **pythonVersion** [string, optional]: The version of Python used for this execution environment. If not specified, the global `pythonVersion` setting is used instead.
 
