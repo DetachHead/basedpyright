@@ -854,14 +854,14 @@ describe(`config test'}`, () => {
         });
 
         test('all typeCheckingMode values work in executionEnvironment', () => {
-            const modes: Array<'off' | 'basic' | 'standard' | 'strict' | 'recommended' | 'all'> = [
+            const modes = [
                 'off',
                 'basic',
                 'standard',
                 'strict',
                 'recommended',
                 'all',
-            ];
+            ] as const;
 
             for (const mode of modes) {
                 const cwd = UriEx.file(normalizePath(process.cwd()));
