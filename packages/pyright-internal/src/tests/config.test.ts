@@ -823,7 +823,7 @@ describe(`config test'}`, () => {
             configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
             configOptions.setupExecutionEnvironments(json, cwd, console);
 
-            assert(console.errors.length > 0);
+            assert(console.errors.length === 1);
             assert(console.errors[0].includes('typeCheckingMode must be a string'));
         });
 
