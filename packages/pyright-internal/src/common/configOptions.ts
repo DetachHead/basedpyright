@@ -61,6 +61,9 @@ export class ExecutionEnvironment {
     // Diagnostic rules with overrides.
     diagnosticRuleSet: DiagnosticRuleSet;
 
+    // The type checking mode specified for this execution environment, if any.
+    typeCheckingMode?: TypeCheckingMode;
+
     // Skip import resolution attempts for native libraries. These can
     // be expensive and are not needed for some use cases (e.g. web-based
     // tools or playgrounds).
@@ -1572,6 +1575,39 @@ export class ConfigOptions {
         }
     }
 
+    /**
+     * Validates a typeCheckingMode string and returns the corresponding DiagnosticRuleSet.
+     * Logs an error to the console if the value is invalid.
+     *
+     * @param typeCheckingMode - The typeCheckingMode value to validate (can be undefined)
+     * @param console_ - Console interface for logging errors
+     * @param errorContext - Context string for error messages (e.g., "Config executionEnvironments index 0")
+     * @returns DiagnosticRuleSet if valid, undefined if not specified or invalid
+     */
+    private static getDiagnosticRuleSetFromString(
+        typeCheckingMode: any,
+        console_: ConsoleInterface,
+        errorContext: string
+    ): DiagnosticRuleSet | undefined {
+        if (typeCheckingMode === undefined) {
+            return undefined;
+        }
+
+        if (typeof typeCheckingMode !== 'string') {
+            console_.error(`${errorContext}: typeCheckingMode must be a string.`);
+            return undefined;
+        }
+
+        if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
+            return ConfigOptions.getDiagnosticRuleSet(typeCheckingMode as TypeCheckingMode);
+        } else {
+            console_.error(
+                `${errorContext}: invalid "typeCheckingMode" value: "${typeCheckingMode}". Expected: ${userFacingOptionsList(allTypeCheckingModes)}`
+            );
+            return undefined;
+        }
+    }
+
     // Initialize the structure from a JSON object.
     initializeFromJson(configObj: any, configDirUri: Uri, serviceProvider: ServiceProvider, host: Host) {
         this.initializedFromJson = true;
@@ -2033,26 +2069,12 @@ export class ConfigOptions {
             // If typeCheckingMode is specified for this execution environment,
             // use it to generate the base diagnostic rule set. Otherwise, use
             // the config-level diagnostic rule set.
-            let baseDiagnosticRuleSet = configDiagnosticRuleSet;
-            if (envObj.typeCheckingMode !== undefined) {
-                if (typeof envObj.typeCheckingMode === 'string') {
-                    if ((allTypeCheckingModes as readonly string[]).includes(envObj.typeCheckingMode)) {
-                        baseDiagnosticRuleSet = this.constructor.getDiagnosticRuleSet(
-                            envObj.typeCheckingMode as TypeCheckingMode
-                        );
-                    } else {
-                        console.error(
-                            `Config executionEnvironments index ${index}: invalid "typeCheckingMode" value: "${
-                                envObj.typeCheckingMode
-                            }". Expected: ${userFacingOptionsList(allTypeCheckingModes)}`
-                        );
-                    }
-                } else {
-                    console.error(
-                        `Config executionEnvironments index ${index}: typeCheckingMode must be a string.`
-                    );
-                }
-            }
+            const baseDiagnosticRuleSet =
+                ConfigOptions.getDiagnosticRuleSetFromString(
+                    envObj.typeCheckingMode,
+                    console,
+                    `Config executionEnvironments index ${index}`
+                ) ?? configDiagnosticRuleSet;
 
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
@@ -2062,6 +2084,14 @@ export class ConfigOptions {
                 configPythonPlatform,
                 configExtraPaths
             );
+
+            // Store the typeCheckingMode if it was explicitly specified and valid.
+            if (
+                typeof envObj.typeCheckingMode === 'string' &&
+                (allTypeCheckingModes as readonly string[]).includes(envObj.typeCheckingMode)
+            ) {
+                newExecEnv.typeCheckingMode = envObj.typeCheckingMode as TypeCheckingMode;
+            }
 
             // Validate the root.
             if (envObj.root && typeof envObj.root === 'string') {

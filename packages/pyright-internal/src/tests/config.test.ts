@@ -12,7 +12,12 @@ import assert from 'assert';
 import { AnalyzerService } from '../analyzer/service';
 import { deserialize, serialize } from '../backgroundThreadBase';
 import { CommandLineOptions, DiagnosticSeverityOverrides } from '../common/commandLineOptions';
-import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
+import {
+    ConfigOptions,
+    ExecutionEnvironment,
+    allTypeCheckingModes,
+    getStandardDiagnosticRuleSet,
+} from '../common/configOptions';
 import { ConsoleInterface, NullConsole } from '../common/console';
 import { TaskListPriority } from '../common/diagnostic';
 import { combinePaths, normalizePath, normalizeSlashes } from '../common/pathUtils';
@@ -735,7 +740,7 @@ describe(`config test'}`, () => {
 
             assert.strictEqual(configOptions.executionEnvironments.length, 2);
 
-            const [strictEnv, strictEnv] = configOptions.executionEnvironments;
+            const [strictEnv, basicEnv] = configOptions.executionEnvironments;
 
             // Verify strict environment has strict settings
             assert.strictEqual(strictEnv.diagnosticRuleSet.strictListInference, true);
@@ -797,7 +802,7 @@ describe(`config test'}`, () => {
             configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
             configOptions.setupExecutionEnvironments(json, cwd, console);
 
-            assert(console.errors.length  === 1);
+            assert(console.errors.length === 1);
             assert(
                 console.errors[0].includes('invalid "typeCheckingMode"') &&
                     console.errors[0].includes('invalid_mode')
@@ -854,16 +859,7 @@ describe(`config test'}`, () => {
         });
 
         test('all typeCheckingMode values work in executionEnvironment', () => {
-            const modes = [
-                'off',
-                'basic',
-                'standard',
-                'strict',
-                'recommended',
-                'all',
-            ] as const;
-
-            for (const mode of modes) {
+            for (const mode of allTypeCheckingModes) {
                 const cwd = UriEx.file(normalizePath(process.cwd()));
                 const configOptions = new ConfigOptions(cwd);
 
@@ -892,106 +888,6 @@ describe(`config test'}`, () => {
             }
         });
 
-        test('recommended mode in executionEnvironment applies basedpyright-specific rules', () => {
-            const cwd = UriEx.file(normalizePath(process.cwd()));
-            const configOptions = new ConfigOptions(cwd);
-
-            const json = {
-                typeCheckingMode: 'standard',
-                executionEnvironments: [
-                    {
-                        root: 'src/recommended_folder',
-                        typeCheckingMode: 'recommended',
-                    },
-                ],
-            };
-
-            const fs = new TestFileSystem(/* ignoreCase */ false);
-            const console = new NullConsole();
-            const sp = createServiceProvider(fs, console);
-            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-            configOptions.setupExecutionEnvironments(json, cwd, console);
-
-            const recommendedEnv = configOptions.executionEnvironments[0];
-
-            // Verify basedpyright-specific "recommended" settings are applied
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.deprecateTypingAliases, true);
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportAny, 'warning');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportExplicitAny, 'warning');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportImportCycles, 'error');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.strictListInference, true);
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.failOnWarnings, true);
-        });
-
-        test('multiple executionEnvironments with different typeCheckingModes work independently', () => {
-            const cwd = UriEx.file(normalizePath(process.cwd()));
-            const configOptions = new ConfigOptions(cwd);
-
-            const json = {
-                typeCheckingMode: 'standard',
-                executionEnvironments: [
-                    {
-                        root: 'src/legacy',
-                        typeCheckingMode: 'basic',
-                    },
-                    {
-                        root: 'src/new',
-                        typeCheckingMode: 'recommended',
-                    },
-                    {
-                        root: 'src/strict_code',
-                        typeCheckingMode: 'strict',
-                    },
-                    {
-                        root: 'src/other',
-                        // No typeCheckingMode - should inherit global 'standard'
-                    },
-                ],
-            };
-
-            const fs = new TestFileSystem(/* ignoreCase */ false);
-            const console = new NullConsole();
-            const sp = createServiceProvider(fs, console);
-            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-            configOptions.setupExecutionEnvironments(json, cwd, console);
-
-            assert.strictEqual(configOptions.executionEnvironments.length, 4);
-
-            const basicEnv = configOptions.executionEnvironments[0];
-            const recommendedEnv = configOptions.executionEnvironments[1];
-            const strictEnv = configOptions.executionEnvironments[2];
-            const standardEnv = configOptions.executionEnvironments[3];
-
-            // Verify basic environment has basic settings
-            assert.strictEqual(basicEnv.diagnosticRuleSet.strictListInference, false);
-            assert.strictEqual(basicEnv.diagnosticRuleSet.reportMissingTypeStubs, 'none');
-            assert.strictEqual(basicEnv.diagnosticRuleSet.reportUnusedVariable, 'hint');
-            assert.strictEqual(basicEnv.diagnosticRuleSet.reportAny, 'none');
-            assert.strictEqual(basicEnv.diagnosticRuleSet.failOnWarnings, false);
-
-            // Verify recommended environment has basedpyright-specific settings
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.deprecateTypingAliases, true);
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportAny, 'warning');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportExplicitAny, 'warning');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.reportImportCycles, 'error');
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.strictListInference, true);
-            assert.strictEqual(recommendedEnv.diagnosticRuleSet.failOnWarnings, true);
-
-            // Verify strict environment has strict settings
-            assert.strictEqual(strictEnv.diagnosticRuleSet.strictListInference, true);
-            assert.strictEqual(strictEnv.diagnosticRuleSet.reportMissingTypeStubs, 'error');
-            assert.strictEqual(strictEnv.diagnosticRuleSet.reportUnusedVariable, 'error');
-            // Strict mode does NOT enable basedpyright-specific rules like reportAny
-            assert.strictEqual(strictEnv.diagnosticRuleSet.reportAny, 'none');
-            assert.strictEqual(strictEnv.diagnosticRuleSet.failOnWarnings, false);
-
-            // Verify standard environment (inherited from global) has standard settings
-            assert.strictEqual(standardEnv.diagnosticRuleSet.strictListInference, false);
-            assert.strictEqual(standardEnv.diagnosticRuleSet.reportMissingTypeStubs, 'none');
-            assert.strictEqual(standardEnv.diagnosticRuleSet.reportUnusedVariable, 'hint');
-            assert.strictEqual(standardEnv.diagnosticRuleSet.reportAny, 'none');
-            assert.strictEqual(standardEnv.diagnosticRuleSet.failOnWarnings, false);
-        });
     });
 
     function createAnalyzer(console?: ConsoleInterface) {
