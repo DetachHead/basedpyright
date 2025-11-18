@@ -13,7 +13,7 @@ import { DeclarationType } from '../analyzer/declaration';
 import { getNameNodeForDeclaration } from '../analyzer/declarationUtils';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
-import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { AssignTypeFlags, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { ClassType } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
@@ -211,7 +211,16 @@ export class ImplementationProvider {
 
         const nodeCallback = (foundNode: ClassNode, uri: Uri, parseRes: ParseFileResults) => {
             const foundClass = evaluator.getTypeOfClass(foundNode)?.classType;
-            if (foundClass && evaluator.assignType(baseClassType, foundClass)) {
+            if (
+                foundClass &&
+                evaluator.assignType(
+                    baseClassType,
+                    foundClass,
+                    undefined,
+                    undefined,
+                    AssignTypeFlags.DisallowSrcDerivedFromAny
+                )
+            ) {
                 subClassCallback(foundNode, foundClass, uri, parseRes);
             }
         };

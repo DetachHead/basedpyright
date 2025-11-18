@@ -648,6 +648,11 @@ export const enum AssignTypeFlags {
     // When assigning callables, should a kwargs with an unpacked TypedDict
     // disallow additional named arguments if it does not have extraItems?
     DisallowExtraKwargsForTd = 1 << 17,
+
+    /** If this flag is enabled, inheriting from Any
+     * `class Foo(Any):`
+     * doesn't allow you to be assigned to another type. */
+    DisallowSrcDerivedFromAny = 1 << 23,
 }
 
 export interface MatchArgsToParamsResult {
