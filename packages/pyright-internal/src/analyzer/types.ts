@@ -1443,7 +1443,8 @@ export namespace ClassType {
     export function isDerivedFrom(
         subclassType: ClassType,
         parentClassType: ClassType,
-        inheritanceChain?: InheritanceChain
+        inheritanceChain?: InheritanceChain,
+        allowAnyBase: boolean = true
     ): boolean {
         // Is it the exact same class?
         if (isSameGenericClass(subclassType, parentClassType)) {
@@ -1497,13 +1498,13 @@ export namespace ClassType {
 
         for (const baseClass of subclassType.shared.baseClasses) {
             if (isInstantiableClass(baseClass)) {
-                if (isDerivedFrom(baseClass, parentClassType, inheritanceChain)) {
+                if (isDerivedFrom(baseClass, parentClassType, inheritanceChain, allowAnyBase)) {
                     if (inheritanceChain) {
                         inheritanceChain.push(subclassType);
                     }
                     return true;
                 }
-            } else if (isAnyOrUnknown(baseClass)) {
+            } else if (allowAnyBase && isAnyOrUnknown(baseClass)) {
                 if (inheritanceChain) {
                     inheritanceChain.push(UnknownType.create());
                 }

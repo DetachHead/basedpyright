@@ -1703,6 +1703,7 @@ export namespace Localizer {
         export const filesToAnalyzeCount = () =>
             new ParameterizedString<{ count: number }>(getRawString('CodeAction.filesToAnalyzeCount'));
         export const findingReferences = () => getRawString('CodeAction.findingReferences');
+        export const findingImplementations = () => getRawString('CodeAction.findingImplementations');
         export const organizeImports = () => getRawString('CodeAction.organizeImports');
     }
 
