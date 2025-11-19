@@ -132,6 +132,12 @@ pylance supports "go to definition" on some operators. basedpyright supports thi
 
 ![](./operators.png)
 
+## go to implementations
+
+basedpyright supports "Go to Implementations" / "Find All Implementations" from pylance:
+
+![](./implementations.png)
+
 ## Pylance features missing from basedpyright
 
 See the [open issues](https://github.com/DetachHead/basedpyright/issues?q=is:issue+is:open+pylance+label:%22pylance+parity%22) related to feature parity with Pylance.
