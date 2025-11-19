@@ -76,13 +76,13 @@
     // even though python.terminal.activateEnvInCurrentTerminal is enabled, we still need to add the venv's script folder to the PATH
     // because vscode's npm tasks do not run with the activated venv
     "terminal.integrated.env.windows": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${env:PATH};${workspaceFolder}/.venv/Scripts"
+        "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${workspaceFolder}/.venv/Scripts;${env:PATH}"
     },
     "terminal.integrated.env.osx": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}:${workspaceFolder}/.venv/bin"
+        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
     },
     "terminal.integrated.env.linux": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${env:PATH}:${workspaceFolder}/.venv/bin"
+        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
