@@ -26,20 +26,12 @@ function handleSymbolTable(evaluator: TypeEvaluator, type: ClassType | ModuleTyp
     return symbols
         .filter((symbolInfo) => fullName.startsWith(symbolInfo.fullName))
         .flatMap((symbolInfo) =>
-            getLocalTypeNameRec(evaluator, type, symbolInfo.type).map((name) => `${symbolInfo.localName}.${name}`)
+            handleSymbolTable(
+                evaluator,
+                type,
+                isClass(symbolInfo.type) ? ClassType.getSymbolTable(symbolInfo.type) : symbolInfo.type.priv.fields
+            ).map((name) => `${symbolInfo.localName}.${name}`)
         );
-}
-
-function getLocalTypeNameRec(
-    evaluator: TypeEvaluator,
-    type: ClassType | ModuleType,
-    symbolType: ClassType | ModuleType
-) {
-    return handleSymbolTable(
-        evaluator,
-        type,
-        isClass(symbolType) ? ClassType.getSymbolTable(symbolType) : symbolType.priv.fields
-    );
 }
 
 /**
