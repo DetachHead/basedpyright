@@ -1,4 +1,4 @@
-import { getEnclosingClass } from './parseTreeUtils';
+import { ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { Scope } from './scope';
 import { SymbolTable } from './symbol';
 import { TypeEvaluator } from './typeEvaluatorTypes';
@@ -78,13 +78,19 @@ export function getLocalTypeNames(evaluator: TypeEvaluator, type: ClassType | Mo
  *
  * For example, if class `C` is defined in class `B`, which in turn is defined in class `A`,
  * this function returns `['A', 'B', 'C']`.
+ *
+ * If there is anything but classes between `type` and the module it is defined in, e.g. if `type`
+ * is defined within a function, this function returns `undefined`.
  */
-export function getNestedClassNameParts(type: ClassType): string[] {
-    const parts: string[] = [type.shared.name];
-    let enclosingNode = type.shared.declaration ? getEnclosingClass(type.shared.declaration?.node, false) : undefined;
-    while (enclosingNode) {
-        parts.push(enclosingNode.d.name.d.value);
-        enclosingNode = getEnclosingClass(enclosingNode, false);
+export function getNestedClassNameParts(type: ClassType): string[] | undefined {
+    const parts: string[] = [];
+    let enclosingNode: ParseNode | undefined = type.shared.declaration ? type.shared.declaration?.node : undefined;
+    while (enclosingNode?.nodeType === ParseNodeType.Class || enclosingNode?.nodeType === ParseNodeType.Suite) {
+        if (enclosingNode.nodeType === ParseNodeType.Class) parts.push(enclosingNode.d.name.d.value);
+        enclosingNode = enclosingNode.parent;
+    }
+    if (enclosingNode?.nodeType !== ParseNodeType.Module) {
+        return undefined;
     }
     return parts.reverse();
 }
