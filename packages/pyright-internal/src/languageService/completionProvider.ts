@@ -62,17 +62,18 @@ import {
     TypeCategory,
 } from '../analyzer/types';
 import {
-    containsLiteralType,
     doForEachSignature,
     doForEachSubtype,
     getMembersForClass,
     getMembersForModule,
+    isLiteralLikeType,
     isLiteralType,
     isMaybeDescriptorInstance,
     isNoneInstance,
     lookUpClassMember,
     MemberAccessFlags,
 } from '../analyzer/typeUtils';
+import { TypeWalker } from '../analyzer/typeWalker';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { ExecutionEnvironment } from '../common/configOptions';
@@ -91,8 +92,6 @@ import { convertToTextEdits } from '../common/workspaceEditUtils';
 import { Localizer } from '../localization/localize';
 import {
     ArgCategory,
-    AssignmentExpressionNode,
-    AssignmentNode,
     DecoratorNode,
     DictionaryKeyEntryNode,
     DictionaryNode,
@@ -206,8 +205,11 @@ enum SortCategory {
     // A module name used in an import statement.
     ImportModuleName,
 
-    // A literal string.
+    // A literal value.
     LiteralValue,
+
+    // An enum member.
+    EnumMember,
 
     // A named parameter in a call expression.
     NamedParameter,
@@ -220,9 +222,6 @@ enum SortCategory {
 
     // A keyword in the python syntax.
     Keyword,
-
-    // An enum member.
-    EnumMember,
 
     // A normal symbol.
     NormalSymbol,
@@ -1077,9 +1076,9 @@ export class CompletionProvider {
             completionItem.sortText = detail.sortText;
             completionItem.detail = detail.itemDetail;
         } else if (detail?.autoImportText) {
-            // Force auto-import entries to the end.
+            // Force auto-import entries to the end unless they are `Enum` members.
             completionItem.sortText = this._makeSortText(
-                SortCategory.AutoImport,
+                itemKind === CompletionItemKind.EnumMember ? SortCategory.EnumMember : SortCategory.AutoImport,
                 `${detail.autoImportName ?? name}.${this._formatInteger(detail.autoImportText.source.length, 2)}.${
                     detail.autoImportText.source
                 }`,
@@ -1316,7 +1315,7 @@ export class CompletionProvider {
             throwIfCancellationRequested(this.cancellationToken);
 
             if (curNode.nodeType === ParseNodeType.String) {
-                return this._getLiteralCompletions(curNode, offset, priorWord, priorText, postText);
+                return this._getValueCompletions(curNode, offset, priorWord, priorText, postText);
             }
 
             if (curNode.nodeType === ParseNodeType.StringList || curNode.nodeType === ParseNodeType.FormatString) {
@@ -1551,22 +1550,18 @@ export class CompletionProvider {
             curNode.parent.nodeType === ParseNodeType.Assignment ||
             curNode.parent.nodeType === ParseNodeType.AssignmentExpression
         ) {
-            // Get the same completions as in the case of an error node within an assignment/assignment expression
-            // and merge them with the the completions computed later (if any are computed)
-            const assignmentCompletions = this._getAssignmentCompletions(curNode.parent, priorWord);
-
             const leftNode =
                 curNode.parent.nodeType === ParseNodeType.AssignmentExpression
                     ? curNode.parent.d.name
                     : curNode.parent.d.leftExpr;
 
             if (leftNode !== curNode || priorWord.length === 0) {
-                return assignmentCompletions ?? false;
+                return false;
             }
 
             const decls = this.evaluator.getDeclInfoForNameNode(curNode)?.decls;
             if (decls?.length !== 1 || !isVariableDeclaration(decls[0]) || decls[0].node !== curNode) {
-                return assignmentCompletions ?? false;
+                return false;
             }
 
             const completionMap = this._getExpressionCompletions(curNode, priorWord, priorText, postText);
@@ -1574,10 +1569,7 @@ export class CompletionProvider {
                 completionMap.delete(curNode.d.value);
             }
 
-            if (assignmentCompletions && completionMap) {
-                assignmentCompletions.merge(completionMap);
-            }
-            return assignmentCompletions ?? completionMap;
+            return completionMap;
         }
 
         // Defining class variables.
@@ -1641,81 +1633,6 @@ export class CompletionProvider {
         }
     }
 
-    private _getTypedAssignmentCompletions(
-        leftExpr: ExpressionNode,
-        leftDeclType: Type,
-        priorWord: string,
-        completionMap: CompletionMap
-    ): void {
-        // If the left-hand side is an instance of an `Enum` class, provide the values of the enum
-        // as completions.
-        if (isClassInstance(leftDeclType) && ClassType.isEnumClass(leftDeclType)) {
-            const scope = getScopeForNode(leftExpr);
-            const symbolTable = ClassType.getSymbolTable(leftDeclType);
-
-            // Try to find names which the type of the left-hand side can be referenced by in the local scope.
-            const localTypeNames = scope ? getLocalTypeNames(this.evaluator, leftDeclType, scope) : [];
-            if (localTypeNames.length > 0) {
-                // If the type of the left-hand side already has a local name, add each combination of a local name
-                // and a value of the enumeration as a completion.
-                localTypeNames.forEach((className) => {
-                    symbolTable.forEach((symbol, name) => {
-                        if (this._isEnumMember(leftDeclType, name)) {
-                            this.addSymbol(`${className}.${name}`, symbol, priorWord, completionMap, {
-                                actualName: name,
-                                boundObjectOrClass: leftDeclType,
-                            });
-                        }
-                    });
-                });
-            } else {
-                // If the type of the left-hand side cannot be accessed through any names local to
-                // the local scope, add completions for each symbol together with auto-import
-                // information.
-                // For nested classes, it is important to import the outermost class, i.e. the first
-                // element returned by `getNestedClassNameParts`, while the enumeration type needs
-                // to be accessed prefixed with all enclosing types.
-                const nestedClassNameParts = getNestedClassNameParts(leftDeclType);
-                symbolTable.forEach((symbol, name) => {
-                    const className = nestedClassNameParts.join('.');
-                    if (this._isEnumMember(leftDeclType, name)) {
-                        this.addSymbol(`${className}.${name}`, symbol, priorWord, completionMap, {
-                            actualName: name,
-                            autoImportName: nestedClassNameParts[0],
-                            autoImportSource: leftDeclType.shared.moduleName,
-                            boundObjectOrClass: leftDeclType,
-                        });
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Determine completions for the given assignment based on the type of the left-hand side.
-     * If that type is a union, the completions for each option are combined, and type variables
-     * are expanded.
-     */
-    private _getAssignmentCompletions(
-        node: AssignmentNode | AssignmentExpressionNode,
-        priorWord: string
-    ): CompletionMap | undefined {
-        const leftExpr = node.nodeType === ParseNodeType.Assignment ? node.d.leftExpr : node.d.name;
-        // `getType` works as it should when assigning to a variable whose type has been established earlier,
-        // e.g. `a = E.a; a = …` (where `E` is an enumeration with value `a`), but it fails when assigning
-        // to a new variable with a type annotation, e.g. `a: E = …`.
-        // `getDeclaredTypeForExpression` works in this case and is therefore used as a fallback.
-        const leftDeclType = this.evaluator.getType(leftExpr) ?? this.evaluator.getDeclaredTypeForExpression(leftExpr);
-        const completionMap = new CompletionMap();
-        if (leftDeclType) {
-            this.evaluator.mapSubtypesExpandTypeVars(leftDeclType, {}, (expanded, _unexpanded) => {
-                this._getTypedAssignmentCompletions(leftExpr, expanded, priorWord, completionMap);
-                return undefined;
-            });
-        }
-        return completionMap.size > 0 ? completionMap : undefined;
-    }
-
     private _getExpressionErrorCompletions(
         node: ErrorNode,
         offset: number,
@@ -1748,14 +1665,6 @@ export class CompletionProvider {
                     // Skip dots on expressions.
                     if (token?.type === TokenType.Dot || token?.type === TokenType.Ellipsis) {
                         break;
-                    }
-
-                    if (
-                        node.parent?.nodeType === ParseNodeType.Assignment ||
-                        node.parent?.nodeType === ParseNodeType.AssignmentExpression
-                    ) {
-                        const completionMap = this._getAssignmentCompletions(node.parent, priorWord);
-                        if (completionMap) return completionMap;
                     }
 
                     // ex) class MyType:
@@ -1808,7 +1717,7 @@ export class CompletionProvider {
 
             case ErrorExpressionCategory.MissingPattern:
             case ErrorExpressionCategory.MissingIndexOrSlice: {
-                let completionResults = this._getLiteralCompletions(node, offset, priorWord, priorText, postText);
+                let completionResults = this._getValueCompletions(node, offset, priorWord, priorText, postText);
 
                 if (!completionResults) {
                     completionResults = this._getExpressionCompletions(node, priorWord, priorText, postText);
@@ -2223,8 +2132,8 @@ export class CompletionProvider {
             );
         }
 
-        // Add literal values if appropriate.
-        this._tryAddLiterals(parseNode, priorWord, priorText, postText, completionMap);
+        // Add values if appropriate.
+        this._tryAddValues(parseNode, priorWord, priorText, postText, completionMap);
 
         return completionMap;
     }
@@ -2276,13 +2185,21 @@ export class CompletionProvider {
                     this._addNamedParameters(signatureInfo, priorWord, completionMap);
                 }
 
-                // Add literals that apply to this parameter.
-                this._addLiteralValuesForArgument(signatureInfo, priorWord, priorText, postText, completionMap);
+                // Add values that apply to this parameter.
+                this._addLiteralValuesForArgument(
+                    parseNode,
+                    signatureInfo,
+                    priorWord,
+                    priorText,
+                    postText,
+                    completionMap
+                );
             }
         }
     }
 
     private _addLiteralValuesForArgument(
+        node: ParseNode,
         signatureInfo: CallSignatureInfo,
         priorWord: string,
         priorText: string,
@@ -2302,12 +2219,137 @@ export class CompletionProvider {
             }
 
             const paramType = FunctionType.getParamType(type, paramIndex);
-            this._addLiteralValuesForTargetType(paramType, priorWord, priorText, postText, completionMap);
+            this._addValuesForTargetType(node, paramType, priorWord, priorText, postText, completionMap);
             return undefined;
         });
     }
 
-    private _addLiteralValuesForTargetType(
+    private _addLocalEnumMember(
+        enumType: ClassType,
+        localTypeName: string,
+        symbol: Symbol,
+        memberName: string,
+        priorWord: string,
+        completionMap: CompletionMap
+    ) {
+        this.addSymbol(`${localTypeName}.${memberName}`, symbol, priorWord, completionMap, {
+            actualName: memberName,
+            boundObjectOrClass: enumType,
+        });
+    }
+
+    /**
+     * Add an auto-import completion for `enumType`’s member named `memberName`.
+     * For nested types, the outermost class (the first part in `nestedClassNameParts`)
+     * is imported while `memberName` is prefixed with the combination of all enclosing types.
+     */
+    private _addNonLocalEnumMember(
+        enumType: ClassType,
+        nestedClassNameParts: string[],
+        className: string,
+        symbol: Symbol,
+        memberName: string,
+        priorWord: string,
+        completionMap: CompletionMap
+    ) {
+        this.addSymbol(`${className}.${memberName}`, symbol, priorWord, completionMap, {
+            actualName: memberName,
+            autoImportName: nestedClassNameParts[0],
+            autoImportSource: enumType.shared.moduleName,
+            boundObjectOrClass: enumType,
+        });
+    }
+
+    private _getEnumMemberCompletions(
+        node: ParseNode,
+        enumType: ClassType,
+        memberName: string,
+        priorWord: string,
+        completionMap: CompletionMap
+    ): void {
+        const scope = getScopeForNode(node);
+        const symbol = ClassType.getSymbolTable(enumType).get(memberName);
+        if (!symbol) return;
+
+        // Try to find names which the type of the left-hand side can be referenced by in the local scope.
+        const localTypeNames = scope ? getLocalTypeNames(this.evaluator, enumType, scope) : [];
+        if (localTypeNames.length > 0) {
+            // Add each combination of a local name and `memberName` as a completion.
+            localTypeNames.forEach((className) =>
+                this._addLocalEnumMember(enumType, className, symbol, memberName, priorWord, completionMap)
+            );
+        } else {
+            // `enumType` does not have any local names: Try to add an auto-import completion.
+            const nestedClassNameParts = getNestedClassNameParts(enumType);
+            // If `getNestedClassNameParts` returns `undefined`, it was not able to find a way
+            // to import `enumType`, e.g. if `enumType` was defined within a function.
+            if (!nestedClassNameParts) return;
+            this._addNonLocalEnumMember(
+                enumType,
+                nestedClassNameParts,
+                nestedClassNameParts.join('.'),
+                symbol,
+                memberName,
+                priorWord,
+                completionMap
+            );
+        }
+    }
+
+    private _getEnumCompletions(
+        node: ParseNode,
+        enumType: ClassType,
+        priorWord: string,
+        completionMap: CompletionMap
+    ): void {
+        const scope = getScopeForNode(node);
+        const symbolTable = ClassType.getSymbolTable(enumType);
+
+        // Try to find names which the type of the left-hand side can be referenced by in the local scope.
+        const localTypeNames = scope ? getLocalTypeNames(this.evaluator, enumType, scope) : [];
+        if (localTypeNames.length > 0) {
+            // Add each combination of a local name and an `enumType` member as a completion.
+            localTypeNames.forEach((className) => {
+                symbolTable.forEach((symbol, name) => {
+                    if (this._isEnumMember(enumType, name)) {
+                        this._addLocalEnumMember(enumType, className, symbol, name, priorWord, completionMap);
+                    }
+                });
+            });
+        } else {
+            // `enumType` does not have any local names: Try to add auto-import completions for each member.
+            const nestedClassNameParts = getNestedClassNameParts(enumType);
+            // If `getNestedClassNameParts` returns `undefined`, it was not able to find a way
+            // to import `enumType`, e.g. if `enumType` was defined within a function.
+            if (!nestedClassNameParts) return;
+
+            const className = nestedClassNameParts.join('.');
+            symbolTable.forEach((symbol, name) => {
+                if (this._isEnumMember(enumType, name)) {
+                    this._addNonLocalEnumMember(
+                        enumType,
+                        nestedClassNameParts,
+                        className,
+                        symbol,
+                        name,
+                        priorWord,
+                        completionMap
+                    );
+                }
+            });
+        }
+    }
+
+    /**
+     * If `type` is a type whose values can be enumerated, or a union of such types, add completions
+     * for the values that `type` can exhibit.
+     * Currently, the values of a string/integer/Boolean/`Enum` literal, `bool`, or `Enum`s are added,
+     * including proper handling of nested classes and auto-imports for `Enum` classes.
+     *
+     * If quotes have already been entered, this function only adds completions for string literals.
+     */
+    private _addValuesForTargetType(
+        node: ParseNode,
         type: Type,
         priorWord: string,
         priorText: string,
@@ -2315,19 +2357,51 @@ export class CompletionProvider {
         completionMap: CompletionMap
     ) {
         const quoteValue = this._getQuoteInfo(priorWord, priorText);
-        this._getSubTypesWithLiteralValues(type).forEach((v) => {
-            if (ClassType.isBuiltIn(v, 'str')) {
-                const value = printLiteralValue(v, quoteValue.quoteCharacter, undefined);
-                if (quoteValue.stringValue === undefined) {
-                    this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
-                        sortText: this._makeSortText(SortCategory.LiteralValue, v.priv.literalValue as string),
-                    });
-                } else {
-                    this._addStringLiteralToCompletions(
-                        value.substr(1, value.length - 2),
-                        quoteValue,
-                        postText,
-                        completionMap
+        // If quotes have already been entered, `stringValue` is defined and we do not add
+        // completions for anything other than string literals.
+        const isString = quoteValue.stringValue !== undefined;
+        doForEachSubtype(type, (v) => {
+            if (!isClass(v)) {
+                return;
+            }
+            if (isLiteralType(v)) {
+                if (ClassType.isBuiltIn(v, 'str')) {
+                    const value = printLiteralValue(v, quoteValue.quoteCharacter, undefined);
+                    if (quoteValue.stringValue === undefined) {
+                        this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
+                            sortText: this._makeSortText(SortCategory.LiteralValue, v.priv.literalValue as string),
+                        });
+                    } else {
+                        this._addStringLiteralToCompletions(
+                            value.substr(1, value.length - 2),
+                            quoteValue,
+                            postText,
+                            completionMap
+                        );
+                    }
+                } else if (!isString) {
+                    if (typeof v.priv.literalValue === 'number' || typeof v.priv.literalValue === 'bigint') {
+                        const value = v.priv.literalValue.toString();
+                        this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
+                            sortText: this._makeSortText(SortCategory.LiteralValue, value),
+                        });
+                    } else if (typeof v.priv.literalValue === 'boolean') {
+                        const value = v.priv.literalValue ? 'True' : 'False';
+                        this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
+                            sortText: this._makeSortText(SortCategory.LiteralValue, value),
+                        });
+                    } else if (ClassType.isEnumClass(v) && v.priv.literalValue instanceof EnumLiteral) {
+                        this._getEnumMemberCompletions(node, v, v.priv.literalValue.itemName, priorWord, completionMap);
+                    }
+                }
+            } else if (!isString) {
+                if (ClassType.isEnumClass(v)) {
+                    this._getEnumCompletions(node, v, priorWord, completionMap);
+                } else if (ClassType.isBuiltIn(v, 'bool')) {
+                    ['True', 'False'].forEach((value) =>
+                        this.addNameToCompletions(value, CompletionItemKind.Constant, priorWord, completionMap, {
+                            sortText: this._makeSortText(SortCategory.LiteralValue, value),
+                        })
                     );
                 }
             }
@@ -2531,7 +2605,42 @@ export class CompletionProvider {
         return Array.from(keys);
     }
 
-    private _getLiteralCompletions(
+    /**
+     * Checks whether `type` contains a _categorical_ type, i.e. its type or one of the types
+     * in a union has a limited number of values that can be enumerated as completions.
+     * Currently, this applies to `Literal[…]`, `Enum`, and `bool`.
+     */
+    private _containsCategoricalType(type: Type, includeTypeArgs = false): boolean {
+        class ContainsValuesTypeWalker extends TypeWalker {
+            found = false;
+
+            constructor(private _includeTypeArgs: boolean) {
+                super();
+            }
+
+            override visitClass(classType: ClassType): void {
+                if (
+                    isClassInstance(classType) &&
+                    (isLiteralLikeType(classType) ||
+                        ClassType.isEnumClass(classType) ||
+                        ClassType.isBuiltIn(classType, 'bool'))
+                ) {
+                    this.found = true;
+                    this.cancelWalk();
+                }
+
+                if (this._includeTypeArgs) {
+                    super.visitClass(classType);
+                }
+            }
+        }
+
+        const walker = new ContainsValuesTypeWalker(includeTypeArgs);
+        walker.walk(type);
+        return walker.found;
+    }
+
+    private _getValueCompletions(
         parseNode: StringNode | ErrorNode,
         offset: number,
         priorWord: string,
@@ -2547,14 +2656,14 @@ export class CompletionProvider {
         }
 
         const completionMap = new CompletionMap();
-        if (!this._tryAddLiterals(parseNode, priorWord, priorText, postText, completionMap)) {
+        if (!this._tryAddValues(parseNode, priorWord, priorText, postText, completionMap)) {
             return undefined;
         }
 
         return completionMap;
     }
 
-    private _tryAddLiterals(
+    private _tryAddValues(
         parseNode: ParseNode,
         priorWord: string,
         priorText: string,
@@ -2582,8 +2691,9 @@ export class CompletionProvider {
 
         if (nodeForExpectedType) {
             const expectedTypeResult = this.evaluator.getExpectedType(nodeForExpectedType);
-            if (expectedTypeResult && containsLiteralType(expectedTypeResult.type)) {
-                this._addLiteralValuesForTargetType(
+            if (expectedTypeResult && this._containsCategoricalType(expectedTypeResult.type)) {
+                this._addValuesForTargetType(
+                    parseNode,
                     expectedTypeResult.type,
                     priorWord,
                     priorText,
@@ -2697,8 +2807,8 @@ export class CompletionProvider {
             supportedOperators.includes(comparison.d.operator)
         ) {
             const type = this.evaluator.getType(comparison.d.leftExpr);
-            if (type && containsLiteralType(type)) {
-                this._addLiteralValuesForTargetType(type, priorWord, priorText, postText, completionMap);
+            if (type && this._containsCategoricalType(type)) {
+                this._addValuesForTargetType(parseNode, type, priorWord, priorText, postText, completionMap);
                 return true;
             }
         }
@@ -2710,8 +2820,8 @@ export class CompletionProvider {
             assignmentExpression.d.rightExpr === parentAndChild.child
         ) {
             const type = this.evaluator.getType(assignmentExpression.d.name);
-            if (type && containsLiteralType(type)) {
-                this._addLiteralValuesForTargetType(type, priorWord, priorText, postText, completionMap);
+            if (type && this._containsCategoricalType(type)) {
+                this._addValuesForTargetType(parseNode, type, priorWord, priorText, postText, completionMap);
                 return true;
             }
         }
@@ -2728,8 +2838,8 @@ export class CompletionProvider {
             caseNode.parent?.nodeType === ParseNodeType.Match
         ) {
             const type = this.evaluator.getType(caseNode.parent.d.expr);
-            if (type && containsLiteralType(type)) {
-                this._addLiteralValuesForTargetType(type, priorWord, priorText, postText, completionMap);
+            if (type && this._containsCategoricalType(type)) {
+                this._addValuesForTargetType(parseNode, type, priorWord, priorText, postText, completionMap);
                 return true;
             }
         }
@@ -2746,8 +2856,8 @@ export class CompletionProvider {
             patternLiteral.parent.parent.parent?.nodeType === ParseNodeType.Match
         ) {
             const type = this.evaluator.getType(patternLiteral.parent.parent.parent.d.expr);
-            if (type && containsLiteralType(type)) {
-                this._addLiteralValuesForTargetType(type, priorWord, priorText, postText, completionMap);
+            if (type && this._containsCategoricalType(type)) {
+                this._addValuesForTargetType(parseNode, type, priorWord, priorText, postText, completionMap);
                 return true;
             }
         }

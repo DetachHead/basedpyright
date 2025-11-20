@@ -1488,7 +1488,7 @@ test('enum assignment in __init__', async () => {
 
     const state = parseAndGetTestState(code).state;
 
-    await state.verifyCompletion('exact', 'markdown', {
+    await state.verifyCompletion('included', 'markdown', {
         ['foz']: {
             completions: [
                 { label: 'Foz.a', kind: CompletionItemKind.EnumMember },
@@ -1528,7 +1528,7 @@ test('enum assignment with unions', async () => {
 
     const state = parseAndGetTestState(code).state;
 
-    await state.verifyCompletion('exact', 'markdown', {
+    await state.verifyCompletion('included', 'markdown', {
         ['a']: {
             completions: [
                 { label: 'Foo.Fox.c', kind: CompletionItemKind.EnumMember },
@@ -1573,7 +1573,7 @@ test('enum assignment with import', async () => {
 
     const state = parseAndGetTestState(code).state;
 
-    await state.verifyCompletion('exact', 'markdown', {
+    await state.verifyCompletion('included', 'markdown', {
         ['a']: {
             completions: [
                 { label: 'lib.Foz.a', kind: CompletionItemKind.EnumMember },
@@ -1612,7 +1612,7 @@ test('enum assignment with import from', async () => {
 
     const state = parseAndGetTestState(code).state;
 
-    await state.verifyCompletion('exact', 'markdown', {
+    await state.verifyCompletion('included', 'markdown', {
         ['a']: {
             completions: [
                 { label: 'Foz.a', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
