@@ -533,7 +533,7 @@ test('literals support for binary operators without string node', async () => {
 //// Currency = Literal["USD", "EUR"]
 //// 
 //// def foo(c: Currency):
-////     if c != /*marker*/
+////     if c != [|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -706,7 +706,7 @@ test('literals support for match - error case', async () => {
 //// 
 //// def foo(c: Currency):
 ////     match c:
-////         case /*marker*/
+////         case [|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1197,7 +1197,7 @@ test('Enum member', async () => {
 ////     this = 1
 ////     that = 2
 //// 
-//// print(MyEnum./*marker*/)
+//// print(MyEnum.[|/*marker*/|])
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1224,7 +1224,7 @@ test('no member of Enum member', async () => {
 ////     this = 1
 ////     that = 2
 //// 
-//// print(MyEnum.this./*marker*/)
+//// print(MyEnum.this.[|/*marker*/|])
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1253,7 +1253,7 @@ test('default Enum member', async () => {
 //// class MyEnum(Enum):
 ////     MemberOne = []
 //// 
-//// MyEnum.MemberOne./*marker*/
+//// MyEnum.MemberOne.[|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1336,7 +1336,7 @@ test('typed dict key constructor completion', async () => {
 test('import from completion for namespace package', async () => {
     const code = `
 // @filename: test.py
-//// from nest1 import /*marker*/
+//// from nest1 import [|/*marker*/|]
 
 // @filename: nest1/nest2/__init__.py
 //// # empty
@@ -1381,7 +1381,7 @@ test('members off enum member', async () => {
 ////         G = 6.67300E-11
 ////         return G * self.mass / (self.radius * self.radius)
 ////
-//// Planet.EARTH./*marker*/
+//// Planet.EARTH.[|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1425,7 +1425,7 @@ test('handle missing close paren case', async () => {
     const code = `
 // @filename: test.py
 //// count=100
-//// while count <= (c/*marker*/
+//// while count <= (c[|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1450,7 +1450,7 @@ test('enum with regular base type', async () => {
 //// class Period(timedelta, Enum):
 ////     Today = -1
 ////
-//// Period.Today./*marker*/
+//// Period.Today.[|/*marker*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1712,7 +1712,7 @@ test('dataclass field alias with invalid python identifier', async () => {
 ////     a: int = field(alias='foo bar')
 ////     b: str = field(alias='baz')
 ////
-//// Baz(/*marker*/)
+//// Baz([|/*marker*/|])
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -1749,7 +1749,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
 ////
-//// asdfasd/*marker*/
+//// asdfasd[|/*marker*/|]
     `;
 
         const state = parseAndGetTestState(code).state;
@@ -1781,7 +1781,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// def asdfasdf(): ...
 ////
-//// asdfasd/*marker*/
+//// asdfasd[|/*marker*/|]
     `;
 
         const state = parseAndGetTestState(code).state;
@@ -1845,7 +1845,7 @@ describe('deprecated', () => {
 //// @deprecated('asdf')
 //// class Asdf: ...
 ////
-//// class Foo[T: Asd/*marker*/ = str]:
+//// class Foo[T: Asd[|/*marker*/|] = str]:
 ////     def __init__(self, default: tuple[T, ...] = (69,)) -> None:
 ////         pass
     `;
@@ -1919,11 +1919,11 @@ describe('useTypingExtensions', () => {
 // @filename: pyrightconfig.json
 //// { "pythonVersion": "3.9", "reportImplicitOverride": "error" }
 // @filename: test.py
-//// /*importMarker*/class Foo:
+//// [|/*importMarker*/|]class Foo:
 ////     def foo(self): ...
 ////
 //// class Bar(Foo):
-////     /*overrideMarker*/def [|fo/*marker*/|]
+////     [|/*overrideMarker*/|]def [|fo/*marker*/|]
     `;
 
             const state = parseAndGetTestState(code).state;
@@ -2052,7 +2052,7 @@ describe('useTypingExtensions', () => {
 test('import from stdlib package', async () => {
     const code = `
 // @filename: test.py
-//// /*marker0*/
+//// [|/*marker0*/|]
 //// [|/*importMarker*/|][|JSONDecodeErr/*marker*/|]
     `;
 
