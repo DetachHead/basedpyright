@@ -1625,6 +1625,187 @@ test('enum assignment with import from', async () => {
     });
 });
 
+test('inaccessible enum', async () => {
+    const code = `
+// @filename: test.py
+//// from enum import IntEnum
+//// def f():
+////     class T:
+////         class E(IntEnum):
+////             a = 2
+////             b = 5
+////     return T.E.a
+//// a = f()
+//// _ = a == /*a*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('excluded', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'f.T.E.a', kind: CompletionItemKind.EnumMember },
+                { label: 'f.T.E.b', kind: CompletionItemKind.EnumMember },
+                { label: 'T.E.a', kind: CompletionItemKind.EnumMember },
+                { label: 'T.E.b', kind: CompletionItemKind.EnumMember },
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+                { label: 'E.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+    });
+});
+
+test('enum/bool/literal assignment', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import IntEnum
+//// from typing import Literal
+//// class Foz(IntEnum):
+////     a = 1
+////     b = 2
+
+// @filename: test.py
+//// from enum import Enum
+//// from typing import Literal
+//// import lib
+//// class E(Enum):
+////     a = "1"
+////     b = "2"
+//// a: Literal[E.a, "c"] = /*a*/
+//// b: Literal["a", "c", True] = /*b*/
+//// c: Literal["a", 3, lib.Foz.b] = /*c*/
+//// d: E | Literal["a", 3] | bool = /*d*/
+//// e: bool = /*e*/
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['a']: {
+            completions: [
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+                { label: '"c"', kind: CompletionItemKind.Constant },
+            ],
+        },
+        ['b']: {
+            completions: [
+                { label: '"a"', kind: CompletionItemKind.Constant },
+                { label: '"c"', kind: CompletionItemKind.Constant },
+                { label: 'True', kind: CompletionItemKind.Constant },
+            ],
+        },
+        ['c']: {
+            completions: [
+                { label: '"a"', kind: CompletionItemKind.Constant },
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'lib.Foz.b', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['d']: {
+            completions: [
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+                { label: 'E.b', kind: CompletionItemKind.EnumMember },
+                { label: '"a"', kind: CompletionItemKind.Constant },
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'True', kind: CompletionItemKind.Constant },
+                { label: 'False', kind: CompletionItemKind.Constant },
+            ],
+        },
+        ['e']: {
+            completions: [
+                { label: 'True', kind: CompletionItemKind.Constant },
+                { label: 'False', kind: CompletionItemKind.Constant },
+            ],
+        },
+    });
+});
+
+test('enum/bool/literal operators', async () => {
+    const code = `
+// @filename: test.py
+//// from enum import StrEnum
+//// from typing import Literal
+//// class E(StrEnum):
+////     a = "a"
+////     b = "b"
+//// def f(c: Literal[3, E.a, "c"], d: Literal[3, E.a]):
+////     _ = c == /*m0*/
+////     _ = d != /*m1*/
+////     (c := /*m2*/)
+////     match d:
+////         case E.a:
+////             ...
+////         case /*m3*/
+////     `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['m0']: {
+            completions: [
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+                { label: '"c"', kind: CompletionItemKind.Constant },
+            ],
+        },
+        ['m1']: {
+            completions: [
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+        ['m2']: {
+            completions: [
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+                { label: '"c"', kind: CompletionItemKind.Constant },
+            ],
+        },
+        ['m3']: {
+            completions: [
+                { label: '3', kind: CompletionItemKind.Constant },
+                { label: 'E.a', kind: CompletionItemKind.EnumMember },
+            ],
+        },
+    });
+});
+
+test('enum/bool/literal union in function parameter', async () => {
+    const code = `
+// @filename: lib/__init__.py
+//// from enum import Enum
+//// from typing import Literal
+//// class Foz:
+////     class Fox(Enum):
+////         c = 3
+////         d = 4.0
+//// def switch(a: Foz.Fox | bool | Literal[0, 1]):
+////     if isinstance(a, bool):
+////         return not a
+////     if isinstance(a, int):
+////         return 1 - a
+////     return Foz.Fox.d if a == Foz.Fox.c else Foz.Fox.c
+
+// @filename: test.py
+//// from lib import switch
+//// _ = switch(/*c*/)
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', 'markdown', {
+        ['c']: {
+            completions: [
+                { label: 'Foz.Fox.c', kind: CompletionItemKind.EnumMember, detail: 'Auto-import' },
+                { label: 'False', kind: CompletionItemKind.Constant },
+                { label: 'True', kind: CompletionItemKind.Constant },
+                { label: '0', kind: CompletionItemKind.Constant },
+                { label: '1', kind: CompletionItemKind.Constant },
+            ],
+        },
+    });
+});
+
 test('import statements with implicit import', async () => {
     const code = `
 // @filename: test.py
