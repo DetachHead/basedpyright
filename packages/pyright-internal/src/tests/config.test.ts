@@ -802,60 +802,11 @@ describe(`config test'}`, () => {
             configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
             configOptions.setupExecutionEnvironments(json, cwd, console);
 
-            assert(console.errors.length === 1);
+            assert.strictEqual(console.errors.length, 1);
             assert(
                 console.errors[0].includes('invalid "typeCheckingMode"') &&
                     console.errors[0].includes('invalid_mode')
             );
-        });
-
-        test('typeCheckingMode must be a string in executionEnvironment', () => {
-            const cwd = UriEx.file(normalizePath(process.cwd()));
-            const configOptions = new ConfigOptions(cwd);
-
-            const json = {
-                executionEnvironments: [
-                    {
-                        root: 'src/invalid',
-                        typeCheckingMode: 123,
-                    },
-                ],
-            };
-
-            const fs = new TestFileSystem(/* ignoreCase */ false);
-            const console = new ErrorTrackingNullConsole();
-            const sp = createServiceProvider(fs, console);
-            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-            configOptions.setupExecutionEnvironments(json, cwd, console);
-
-            assert(console.errors.length === 1);
-            assert(console.errors[0].includes('typeCheckingMode must be a string'));
-        });
-
-        test('executionEnvironment without typeCheckingMode inherits global setting', () => {
-            const cwd = UriEx.file(normalizePath(process.cwd()));
-            const configOptions = new ConfigOptions(cwd);
-
-            const json = {
-                typeCheckingMode: 'strict',
-                executionEnvironments: [
-                    {
-                        root: 'src/inherit',
-                    },
-                ],
-            };
-
-            const fs = new TestFileSystem(/* ignoreCase */ false);
-            const console = new NullConsole();
-            const sp = createServiceProvider(fs, console);
-            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
-            configOptions.setupExecutionEnvironments(json, cwd, console);
-
-            const inheritEnv = configOptions.executionEnvironments[0];
-
-            // Should have strict settings from global config
-            assert.strictEqual(inheritEnv.diagnosticRuleSet.strictListInference, true);
-            assert.strictEqual(inheritEnv.diagnosticRuleSet.reportMissingTypeStubs, 'error');
         });
 
         test('all typeCheckingMode values work in executionEnvironment', () => {

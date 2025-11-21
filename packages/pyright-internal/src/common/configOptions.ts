@@ -1562,17 +1562,45 @@ export class ConfigOptions {
      * @returns any errors that occurred
      */
     initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined, console_: ConsoleInterface) {
-        if (typeCheckingMode !== undefined) {
-            if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
-                this.initializeTypeCheckingMode(typeCheckingMode as TypeCheckingMode);
-            } else {
-                console_.error(
-                    `invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(
-                        allTypeCheckingModes
-                    )}`
-                );
-            }
+        const validatedMode = ConfigOptions.validateTypeCheckingMode(typeCheckingMode, console_, '');
+        if (validatedMode !== undefined) {
+            this.initializeTypeCheckingMode(validatedMode);
         }
+    }
+
+    /**
+     * Validates a typeCheckingMode value and returns the corresponding TypeCheckingMode enum.
+     * Logs an error to the console if the value is invalid.
+     *
+     * @param typeCheckingMode - The typeCheckingMode value to validate (can be undefined)
+     * @param console_ - Console interface for logging errors
+     * @param errorContext - Context string for error messages (e.g., "Config executionEnvironments index 0"). Pass empty string for global config.
+     * @returns TypeCheckingMode if valid, undefined if not specified or invalid
+     */
+    private static validateTypeCheckingMode(
+        typeCheckingMode: unknown,
+        console_: ConsoleInterface,
+        errorContext: string
+    ): TypeCheckingMode | undefined {
+        if (typeCheckingMode === undefined) {
+            return undefined;
+        }
+
+        if (typeof typeCheckingMode !== 'string') {
+            const prefix = errorContext ? `${errorContext}: ` : '';
+            console_.error(`${prefix}typeCheckingMode must be a string.`);
+            return undefined;
+        }
+
+        if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
+            return typeCheckingMode as TypeCheckingMode;
+        }
+
+        const prefix = errorContext ? `${errorContext}: ` : '';
+        console_.error(
+            `${prefix}invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(allTypeCheckingModes)}`
+        );
+        return undefined;
     }
 
     /**
@@ -1585,27 +1613,12 @@ export class ConfigOptions {
      * @returns DiagnosticRuleSet if valid, undefined if not specified or invalid
      */
     private static getDiagnosticRuleSetFromString(
-        typeCheckingMode: any,
+        typeCheckingMode: unknown,
         console_: ConsoleInterface,
         errorContext: string
     ): DiagnosticRuleSet | undefined {
-        if (typeCheckingMode === undefined) {
-            return undefined;
-        }
-
-        if (typeof typeCheckingMode !== 'string') {
-            console_.error(`${errorContext}: typeCheckingMode must be a string.`);
-            return undefined;
-        }
-
-        if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
-            return ConfigOptions.getDiagnosticRuleSet(typeCheckingMode as TypeCheckingMode);
-        } else {
-            console_.error(
-                `${errorContext}: invalid "typeCheckingMode" value: "${typeCheckingMode}". Expected: ${userFacingOptionsList(allTypeCheckingModes)}`
-            );
-            return undefined;
-        }
+        const validatedMode = ConfigOptions.validateTypeCheckingMode(typeCheckingMode, console_, errorContext);
+        return validatedMode !== undefined ? ConfigOptions.getDiagnosticRuleSet(validatedMode) : undefined;
     }
 
     // Initialize the structure from a JSON object.
@@ -2067,14 +2080,16 @@ export class ConfigOptions {
     ): ExecutionEnvironment | undefined {
         try {
             // If typeCheckingMode is specified for this execution environment,
-            // use it to generate the base diagnostic rule set. Otherwise, use
-            // the config-level diagnostic rule set.
-            const baseDiagnosticRuleSet =
-                ConfigOptions.getDiagnosticRuleSetFromString(
-                    envObj.typeCheckingMode,
-                    console,
-                    `Config executionEnvironments index ${index}`
-                ) ?? configDiagnosticRuleSet;
+            // validate it once and use it to generate the base diagnostic rule set.
+            // Otherwise, use the config-level diagnostic rule set.
+            const validatedMode = ConfigOptions.validateTypeCheckingMode(
+                envObj.typeCheckingMode,
+                console,
+                `Config executionEnvironments index ${index}`
+            );
+            const baseDiagnosticRuleSet = validatedMode !== undefined
+                ? ConfigOptions.getDiagnosticRuleSet(validatedMode)
+                : configDiagnosticRuleSet;
 
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
@@ -2085,12 +2100,9 @@ export class ConfigOptions {
                 configExtraPaths
             );
 
-            // Store the typeCheckingMode if it was explicitly specified and valid.
-            if (
-                typeof envObj.typeCheckingMode === 'string' &&
-                (allTypeCheckingModes as readonly string[]).includes(envObj.typeCheckingMode)
-            ) {
-                newExecEnv.typeCheckingMode = envObj.typeCheckingMode as TypeCheckingMode;
+            // Store the validated typeCheckingMode if it was specified and valid.
+            if (validatedMode !== undefined) {
+                newExecEnv.typeCheckingMode = validatedMode;
             }
 
             // Validate the root.
