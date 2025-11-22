@@ -281,6 +281,15 @@ const similarityLimit = 0.25;
 // We'll remember this many completions in the MRU list.
 const maxRecentCompletions = 128;
 
+interface LocalEnumInfo {
+    isLocal: true;
+    localTypeNames: string[];
+}
+interface NonLocalEnumInfo {
+    isLocal: false;
+    nestedClassNameParts: string[];
+}
+
 export class CompletionProvider {
     private static _mostRecentCompletions: RecentCompletionInfo[] = [];
 
@@ -2260,6 +2269,26 @@ export class CompletionProvider {
         });
     }
 
+    /** If `enumType` has local names, return those, otherwise return the nested class name part */
+    private _getEnumClassInfo(node: ParseNode, enumType: ClassType): LocalEnumInfo | NonLocalEnumInfo | undefined {
+        const scope = getScopeForNode(node);
+
+        // Try to find names which the type of the left-hand side can be referenced by in the local scope.
+        const localTypeNames = scope ? getLocalTypeNames(this.evaluator, enumType, scope) : [];
+        if (localTypeNames.length > 0) {
+            return { isLocal: true, localTypeNames };
+        } else {
+            // `enumType` does not have any local names: Try to add an auto-import completion.
+            const nestedClassNameParts = getNestedClassNameParts(enumType);
+            // If `getNestedClassNameParts` returns `undefined`, it was not able to find a way
+            // to import `enumType`, e.g. if `enumType` was defined within a function.
+            if (nestedClassNameParts) {
+                return { isLocal: false, nestedClassNameParts };
+            }
+            return undefined;
+        }
+    }
+
     private _getEnumMemberCompletions(
         node: ParseNode,
         enumType: ClassType,
@@ -2267,32 +2296,33 @@ export class CompletionProvider {
         priorWord: string,
         completionMap: CompletionMap
     ): void {
-        const scope = getScopeForNode(node);
         const symbol = ClassType.getSymbolTable(enumType).get(memberName);
         if (!symbol) return;
 
-        // Try to find names which the type of the left-hand side can be referenced by in the local scope.
-        const localTypeNames = scope ? getLocalTypeNames(this.evaluator, enumType, scope) : [];
-        if (localTypeNames.length > 0) {
-            // Add each combination of a local name and `memberName` as a completion.
-            localTypeNames.forEach((className) =>
-                this._addLocalEnumMember(enumType, className, symbol, memberName, priorWord, completionMap)
-            );
-        } else {
-            // `enumType` does not have any local names: Try to add an auto-import completion.
-            const nestedClassNameParts = getNestedClassNameParts(enumType);
-            // If `getNestedClassNameParts` returns `undefined`, it was not able to find a way
-            // to import `enumType`, e.g. if `enumType` was defined within a function.
-            if (!nestedClassNameParts) return;
-            this._addNonLocalEnumMember(
-                enumType,
-                nestedClassNameParts,
-                nestedClassNameParts.join('.'),
-                symbol,
-                memberName,
-                priorWord,
-                completionMap
-            );
+        const info = this._getEnumClassInfo(node, enumType);
+        switch (info?.isLocal) {
+            case undefined: {
+                return;
+            }
+            case true: {
+                // Add each combination of a local name and `memberName` as a completion.
+                info.localTypeNames.forEach((className) =>
+                    this._addLocalEnumMember(enumType, className, symbol, memberName, priorWord, completionMap)
+                );
+                return;
+            }
+            case false: {
+                this._addNonLocalEnumMember(
+                    enumType,
+                    info.nestedClassNameParts,
+                    info.nestedClassNameParts.join('.'),
+                    symbol,
+                    memberName,
+                    priorWord,
+                    completionMap
+                );
+                return;
+            }
         }
     }
 
@@ -2302,41 +2332,41 @@ export class CompletionProvider {
         priorWord: string,
         completionMap: CompletionMap
     ): void {
-        const scope = getScopeForNode(node);
         const symbolTable = ClassType.getSymbolTable(enumType);
 
-        // Try to find names which the type of the left-hand side can be referenced by in the local scope.
-        const localTypeNames = scope ? getLocalTypeNames(this.evaluator, enumType, scope) : [];
-        if (localTypeNames.length > 0) {
-            // Add each combination of a local name and an `enumType` member as a completion.
-            localTypeNames.forEach((className) => {
+        const info = this._getEnumClassInfo(node, enumType);
+        switch (info?.isLocal) {
+            case undefined: {
+                return;
+            }
+            case true: {
+                // Add each combination of a local name and an `enumType` member as a completion.
+                info.localTypeNames.forEach((className) => {
+                    symbolTable.forEach((symbol, name) => {
+                        if (this._isEnumMember(enumType, name)) {
+                            this._addLocalEnumMember(enumType, className, symbol, name, priorWord, completionMap);
+                        }
+                    });
+                });
+                return;
+            }
+            case false: {
+                const className = info.nestedClassNameParts.join('.');
                 symbolTable.forEach((symbol, name) => {
                     if (this._isEnumMember(enumType, name)) {
-                        this._addLocalEnumMember(enumType, className, symbol, name, priorWord, completionMap);
+                        this._addNonLocalEnumMember(
+                            enumType,
+                            info.nestedClassNameParts,
+                            className,
+                            symbol,
+                            name,
+                            priorWord,
+                            completionMap
+                        );
                     }
                 });
-            });
-        } else {
-            // `enumType` does not have any local names: Try to add auto-import completions for each member.
-            const nestedClassNameParts = getNestedClassNameParts(enumType);
-            // If `getNestedClassNameParts` returns `undefined`, it was not able to find a way
-            // to import `enumType`, e.g. if `enumType` was defined within a function.
-            if (!nestedClassNameParts) return;
-
-            const className = nestedClassNameParts.join('.');
-            symbolTable.forEach((symbol, name) => {
-                if (this._isEnumMember(enumType, name)) {
-                    this._addNonLocalEnumMember(
-                        enumType,
-                        nestedClassNameParts,
-                        className,
-                        symbol,
-                        name,
-                        priorWord,
-                        completionMap
-                    );
-                }
-            });
+                return;
+            }
         }
     }
 
