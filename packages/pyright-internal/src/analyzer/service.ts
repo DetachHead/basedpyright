@@ -1073,7 +1073,7 @@ export class AnalyzerService {
 
         if (languageServerOptions.maxLiteralStringLength !== undefined) {
             const maxLiteralStringLength = languageServerOptions.maxLiteralStringLength;
-            if (Number.isInteger(maxLiteralStringLength) && maxLiteralStringLength > 0) {
+            if (maxLiteralStringLength > 0) {
                 configOptions.maxLiteralStringLength = maxLiteralStringLength;
             }
         }

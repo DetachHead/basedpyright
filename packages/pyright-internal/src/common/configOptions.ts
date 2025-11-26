@@ -1837,7 +1837,7 @@ export class ConfigOptions {
 
         if (configObj.maxLiteralStringLength !== undefined) {
             const val = Number(configObj.maxLiteralStringLength);
-            if (Number.isInteger(val) && val > 0) {
+            if (val > 0) {
                 this.maxLiteralStringLength = val;
             }
         }
