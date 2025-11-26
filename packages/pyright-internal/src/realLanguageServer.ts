@@ -237,6 +237,10 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                     serverSettings.fileEnumerationTimeoutInSec = pythonAnalysisSection.fileEnumerationTimeout;
                 }
 
+                if (pythonAnalysisSection.maxLiteralStringLength !== undefined) {
+                    serverSettings.maxLiteralStringLength = pythonAnalysisSection.maxLiteralStringLength;
+                }
+
                 if (pythonAnalysisSection.autoFormatStrings !== undefined) {
                     serverSettings.autoFormatStrings = pythonAnalysisSection.autoFormatStrings;
                 }

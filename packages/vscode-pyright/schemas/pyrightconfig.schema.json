@@ -1354,6 +1354,12 @@
           },
           "pythonPlatform": {
             "$ref": "#/definitions/pythonPlatform"
+          },
+          "maxLiteralStringLength": {
+            "type": "integer",
+            "description": "Maximum length of string literals when displayed in hovers, completions, etc.",
+            "minimum": 1,
+            "default": 50
           }
         }
       }

@@ -441,6 +441,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.disableTaggedHints = !!serverSettings.disableTaggedHints;
             workspace.disableOrganizeImports = !!serverSettings.disableOrganizeImports;
             workspace.inlayHints = serverSettings.inlayHints;
+            workspace.maxLiteralStringLength = serverSettings.maxLiteralStringLength;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
             workspace.autoFormatStrings = serverSettings.autoFormatStrings ?? true;
@@ -1123,6 +1124,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
 
         return workspace.service.run((program) => {
+            workspace.inlayHints;
             const completions = new CompletionProvider(
                 program,
                 uri,
@@ -1134,6 +1136,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     triggerCharacter: params?.context?.triggerCharacter,
                     checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                     useTypingExtensions: workspace.useTypingExtensions,
+                    maxLiteralStringLength: workspace.maxLiteralStringLength,
                 },
                 token,
                 false
@@ -1166,6 +1169,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         lazyEdit: false,
                         checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                         useTypingExtensions: workspace.useTypingExtensions,
+                        maxLiteralStringLength: workspace.maxLiteralStringLength,
                     },
                     token,
                     false

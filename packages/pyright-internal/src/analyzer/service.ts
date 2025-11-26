@@ -1071,6 +1071,13 @@ export class AnalyzerService {
             configOptions.fileEnumerationTimeoutInSec = languageServerOptions.fileEnumerationTimeoutInSec;
         }
 
+        if (languageServerOptions.maxLiteralStringLength !== undefined) {
+            const maxLiteralStringLength = languageServerOptions.maxLiteralStringLength;
+            if (Number.isInteger(maxLiteralStringLength) && maxLiteralStringLength > 0) {
+                configOptions.maxLiteralStringLength = maxLiteralStringLength;
+            }
+        }
+
         // Special case, the language service can also set a pythonPath. It should override any other setting.
         if (languageServerOptions.pythonPath) {
             this._console.info(

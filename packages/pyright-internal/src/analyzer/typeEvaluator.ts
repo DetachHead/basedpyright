@@ -602,6 +602,7 @@ export interface EvaluatorOptions {
     minimumLoggingThreshold: number;
     evaluateUnknownImportsAsAny: boolean;
     verifyTypeCacheEvaluatorFlags: boolean;
+    maxLiteralStringLength: number;
 }
 
 // Describes a "deferred class completion" that is run when a class type is
@@ -28865,13 +28866,15 @@ export function createTypeEvaluator(
             type,
             evaluatorOptions.printTypeFlags,
             getEffectiveReturnType,
-            undefined
+            { maxLiteralStringLength: evaluatorOptions.maxLiteralStringLength }
         );
     }
 
     function printFunctionParts(type: FunctionType, extraFlags?: TypePrinter.PrintTypeFlags): [string[], string] {
         const flags = extraFlags ? evaluatorOptions.printTypeFlags | extraFlags : evaluatorOptions.printTypeFlags;
-        return TypePrinter.printFunctionParts(type, flags, getEffectiveReturnType);
+        return TypePrinter.printFunctionParts(type, flags, getEffectiveReturnType, {
+            maxLiteralStringLength: evaluatorOptions.maxLiteralStringLength,
+        });
     }
 
     // Prints two types and determines whether they need to be output in
@@ -28929,7 +28932,10 @@ export function createTypeEvaluator(
         if (options?.useFullyQualifiedNames) {
             flags |= TypePrinter.PrintTypeFlags.UseFullyQualifiedNames;
         }
-        const result = TypePrinter.printType(type, flags, getEffectiveReturnType, options?.importTracker);
+        const result = TypePrinter.printType(type, flags, getEffectiveReturnType, {
+            importTracker: options?.importTracker,
+            maxLiteralStringLength: options?.maxLiteralStringLength ?? evaluatorOptions.maxLiteralStringLength,
+        });
         return result;
     }
 
