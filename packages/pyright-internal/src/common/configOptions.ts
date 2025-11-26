@@ -1406,6 +1406,9 @@ export class ConfigOptions {
     // Minimum threshold for type eval logging
     typeEvaluationTimeThreshold = 50;
 
+    // Maximum number of characters to show for string literals in hovers/completions.
+    maxLiteralStringLength: number | undefined = undefined;
+
     // Was this config initialized from JSON (pyrightconfig/pyproject)?
     initializedFromJson = false;
 
@@ -1829,6 +1832,13 @@ export class ConfigOptions {
                 console.error(`Config "typeEvaluationTimeThreshold" field must be a number.`);
             } else {
                 this.typeEvaluationTimeThreshold = configObj.typeEvaluationTimeThreshold;
+            }
+        }
+
+        if (configObj.maxLiteralStringLength !== undefined) {
+            const val = Number(configObj.maxLiteralStringLength);
+            if (val > 0) {
+                this.maxLiteralStringLength = val;
             }
         }
 

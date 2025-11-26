@@ -53,6 +53,7 @@ export interface ServerSettings {
     useTypingExtensions?: boolean;
     fileEnumerationTimeoutInSec?: number | undefined;
     autoFormatStrings?: boolean;
+    maxLiteralStringLength?: number | undefined;
 }
 
 export interface MessageAction {

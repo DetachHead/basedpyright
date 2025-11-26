@@ -444,6 +444,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
             workspace.autoFormatStrings = serverSettings.autoFormatStrings ?? true;
+            workspace.maxLiteralStringLength =
+                workspace.service.getConfigOptions().maxLiteralStringLength ?? serverSettings.maxLiteralStringLength;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -1123,6 +1125,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
 
         return workspace.service.run((program) => {
+            workspace.inlayHints;
             const completions = new CompletionProvider(
                 program,
                 uri,
@@ -1134,6 +1137,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     triggerCharacter: params?.context?.triggerCharacter,
                     checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                     useTypingExtensions: workspace.useTypingExtensions,
+                    maxLiteralStringLength: workspace.maxLiteralStringLength,
                 },
                 token,
                 false
@@ -1166,6 +1170,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         lazyEdit: false,
                         checkDeprecatedWhenResolving: this.client.completionItemResolveSupportsTags,
                         useTypingExtensions: workspace.useTypingExtensions,
+                        maxLiteralStringLength: workspace.maxLiteralStringLength,
                     },
                     token,
                     false

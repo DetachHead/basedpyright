@@ -107,31 +107,42 @@ export function printType(
     type: Type,
     printTypeFlags: PrintTypeFlags,
     returnTypeCallback: FunctionReturnTypeCallback,
-    importTracker?: ImportTracker
+    options?: TypePrintOptions
 ): string {
-    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback, importTracker?.fileUri);
+    const typePrintOptions = options ?? {};
+    const uniqueNameMap = new UniqueNameMap(
+        printTypeFlags,
+        returnTypeCallback,
+        typePrintOptions.importTracker?.fileUri
+    );
     uniqueNameMap.build(type);
-    return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0, importTracker);
+    return printTypeInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0, typePrintOptions);
 }
 
 export function printFunctionParts(
     type: FunctionType,
     printTypeFlags: PrintTypeFlags,
-    returnTypeCallback: FunctionReturnTypeCallback
+    returnTypeCallback: FunctionReturnTypeCallback,
+    options?: TypePrintOptions
 ): [string[], string] {
-    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback);
+    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback, options?.importTracker?.fileUri);
     uniqueNameMap.build(type);
 
-    return printFunctionPartsInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0);
+    return printFunctionPartsInternal(type, printTypeFlags, returnTypeCallback, uniqueNameMap, [], 0, options ?? {});
 }
 
 export function printObjectTypeForClass(
     type: ClassType,
     printTypeFlags: PrintTypeFlags,
     returnTypeCallback: FunctionReturnTypeCallback,
-    importTracker: ImportTracker | undefined
+    options?: TypePrintOptions
 ): string {
-    const uniqueNameMap = new UniqueNameMap(printTypeFlags, returnTypeCallback, importTracker?.fileUri);
+    const typePrintOptions = options ?? {};
+    const uniqueNameMap = new UniqueNameMap(
+        printTypeFlags,
+        returnTypeCallback,
+        typePrintOptions.importTracker?.fileUri
+    );
     uniqueNameMap.build(type);
 
     return printObjectTypeForClassInternal(
@@ -141,13 +152,30 @@ export function printObjectTypeForClass(
         uniqueNameMap,
         [],
         0,
-        importTracker
+        typePrintOptions
     );
 }
 
-const maxLiteralStringLength = 50;
+export interface TypePrintOptions {
+    importTracker?: ImportTracker;
+    maxLiteralStringLength?: number;
+}
 
-export function isLiteralValueTruncated(type: ClassType): boolean {
+const defaultMaxLiteralStringLength = 50;
+
+function getMaxLiteralStringLength(options?: TypePrintOptions) {
+    const maxLiteralStringLength = options?.maxLiteralStringLength;
+
+    if (maxLiteralStringLength && maxLiteralStringLength > 0) {
+        return maxLiteralStringLength;
+    }
+
+    return defaultMaxLiteralStringLength;
+}
+
+export function isLiteralValueTruncated(type: ClassType, options?: TypePrintOptions): boolean {
+    const maxLiteralStringLength = getMaxLiteralStringLength(options);
+
     if (typeof type.priv.literalValue === 'string') {
         if (type.priv.literalValue.length > maxLiteralStringLength) {
             return true;
@@ -157,7 +185,8 @@ export function isLiteralValueTruncated(type: ClassType): boolean {
     return false;
 }
 
-export function printLiteralValueTruncated(type: ClassType, importTracker: ImportTracker | undefined): string {
+export function printLiteralValueTruncated(type: ClassType, options?: TypePrintOptions): string {
+    const importTracker = options?.importTracker;
     if (type.shared.name === 'bytes') {
         return 'bytes';
     }
@@ -168,15 +197,17 @@ export function printLiteralValueTruncated(type: ClassType, importTracker: Impor
     return name;
 }
 
-export function printLiteralValue(type: ClassType, quotation = "'", importTracker: ImportTracker | undefined): string {
+export function printLiteralValue(type: ClassType, quotation = "'", options?: TypePrintOptions): string {
     const literalValue = type.priv.literalValue;
     if (literalValue === undefined) {
         return '';
     }
 
+    const importTracker = options?.importTracker;
     let literalStr: string;
     if (typeof literalValue === 'string') {
         let effectiveLiteralValue = literalValue;
+        const maxLiteralStringLength = getMaxLiteralStringLength(options);
 
         // Limit the length of the string literal.
         if (literalValue.length > maxLiteralStringLength) {
@@ -273,8 +304,9 @@ function printTypeInternal(
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
     recursionCount: number,
-    importTracker: ImportTracker | undefined
+    options: TypePrintOptions
 ): string {
+    const importTracker = options.importTracker;
     if (recursionCount > maxTypeRecursionCount) {
         if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
             importTracker?.addTypingImport('Any');
@@ -351,7 +383,7 @@ function printTypeInternal(
                                                 uniqueNameMap,
                                                 recursionTypes,
                                                 recursionCount,
-                                                importTracker
+                                                options
                                             )
                                         );
                                     });
@@ -364,7 +396,7 @@ function printTypeInternal(
                                             uniqueNameMap,
                                             recursionTypes,
                                             recursionCount,
-                                            importTracker
+                                            options
                                         )
                                     );
                                 }
@@ -385,7 +417,7 @@ function printTypeInternal(
                                         uniqueNameMap,
                                         recursionTypes,
                                         recursionCount,
-                                        importTracker
+                                        options
                                     )
                                 );
                             });
@@ -452,7 +484,7 @@ function printTypeInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    importTracker
+                    options
                 );
             } finally {
                 recursionTypes.pop();
@@ -502,13 +534,16 @@ function printTypeInternal(
             case TypeCategory.Class: {
                 if (TypeBase.isInstance(type)) {
                     if (type.priv.literalValue !== undefined) {
-                        if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                            return printLiteralValueTruncated(type, importTracker);
+                        if (
+                            isLiteralValueTruncated(type, options) &&
+                            (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0
+                        ) {
+                            return printLiteralValueTruncated(type, options);
                         } else if (type.priv.literalValue instanceof SentinelLiteral) {
                             return type.priv.literalValue.className;
                         } else {
                             importTracker?.addTypingImport('Literal');
-                            return `Literal[${printLiteralValue(type, "'", importTracker)}]`;
+                            return `Literal[${printLiteralValue(type, "'", options)}]`;
                         }
                     }
 
@@ -519,19 +554,20 @@ function printTypeInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     )}${getConditionalIndicator(type)}`;
                 } else {
                     let typeToWrap: string;
 
                     if (type.priv.literalValue !== undefined) {
                         if (isLiteralValueTruncated(type) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                            typeToWrap = printLiteralValueTruncated(type, importTracker);
+                            typeToWrap = printLiteralValueTruncated(type, options);
                         } else if (type.priv.literalValue instanceof SentinelLiteral) {
                             return type.priv.literalValue.className;
                         } else {
                             importTracker?.addTypingImport('Literal');
-                            typeToWrap = `Literal[${printLiteralValue(type, "'", importTracker)}]`;
+                            typeToWrap = `Literal[${printLiteralValue(type, "'", options)}]`;
                         }
 
                         return printWrappedType(type, typeToWrap);
@@ -545,7 +581,8 @@ function printTypeInternal(
                             uniqueNameMap,
                             recursionTypes,
                             recursionCount,
-                            importTracker
+
+                            options
                         );
 
                         return specialFormText;
@@ -558,7 +595,8 @@ function printTypeInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     );
 
                     return printWrappedType(type, typeToWrap);
@@ -574,7 +612,8 @@ function printTypeInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     );
                     return `type[${typeString}]`;
                 }
@@ -586,7 +625,8 @@ function printTypeInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    importTracker
+
+                    options
                 );
             }
 
@@ -599,7 +639,8 @@ function printTypeInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     )
                 );
 
@@ -627,7 +668,8 @@ function printTypeInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     );
 
                     return specialFormText;
@@ -647,7 +689,8 @@ function printTypeInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    importTracker
+
+                    options
                 );
             }
 
@@ -670,7 +713,8 @@ function printTypeInternal(
                                 uniqueNameMap,
                                 recursionTypes,
                                 recursionCount,
-                                importTracker
+
+                                options
                             );
                         }
                         return type.shared.recursiveAlias.name;
@@ -687,7 +731,8 @@ function printTypeInternal(
                             uniqueNameMap,
                             recursionTypes,
                             recursionCount,
-                            importTracker
+
+                            options
                         );
 
                         if (!isAnyOrUnknown(type.shared.boundType)) {
@@ -788,8 +833,9 @@ function printUnionType(
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
     recursionCount: number,
-    importTracker: ImportTracker | undefined
+    options: TypePrintOptions
 ) {
+    const importTracker = options.importTracker;
     // Allocate a set that refers to subtypes in the union by
     // their indices. If the index is within the set, it is already
     // accounted for in the output.
@@ -839,7 +885,8 @@ function printUnionType(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     )
                 );
                 indicesCoveredByTypeAlias.forEach((index) => subtypeHandledSet.add(index));
@@ -861,7 +908,8 @@ function printUnionType(
             uniqueNameMap,
             recursionTypes,
             recursionCount,
-            importTracker
+
+            options
         );
 
         if (printTypeFlags & PrintTypeFlags.PEP604) {
@@ -882,9 +930,9 @@ function printUnionType(
         if (!subtypeHandledSet.has(index)) {
             if (isClassInstance(subtype) && subtype.priv.literalValue !== undefined && !isSentinelLiteral(subtype)) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    subtypeStrings.add(printLiteralValueTruncated(subtype, importTracker));
+                    subtypeStrings.add(printLiteralValueTruncated(subtype, options));
                 } else {
-                    literalObjectStrings.add(printLiteralValue(subtype, "'", importTracker));
+                    literalObjectStrings.add(printLiteralValue(subtype, "'", options));
                 }
             } else if (
                 isInstantiableClass(subtype) &&
@@ -892,9 +940,9 @@ function printUnionType(
                 !isSentinelLiteral(subtype)
             ) {
                 if (isLiteralValueTruncated(subtype) && (printTypeFlags & PrintTypeFlags.PythonSyntax) !== 0) {
-                    subtypeStrings.add(`type[${printLiteralValueTruncated(subtype, importTracker)}]`);
+                    subtypeStrings.add(`type[${printLiteralValueTruncated(subtype, options)}]`);
                 } else {
-                    literalClassStrings.add(printLiteralValue(subtype, "'", importTracker));
+                    literalClassStrings.add(printLiteralValue(subtype, "'", options));
                 }
             } else {
                 subtypeStrings.add(
@@ -905,7 +953,8 @@ function printUnionType(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        importTracker
+
+                        options
                     )
                 );
             }
@@ -951,8 +1000,9 @@ function printFunctionType(
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
     recursionCount: number,
-    importTracker: ImportTracker | undefined
+    options: TypePrintOptions
 ) {
+    const importTracker = options.importTracker;
     if (printTypeFlags & PrintTypeFlags.PythonSyntax) {
         const paramSpec = FunctionType.getParamSpecFromArgsKwargs(type);
         const typeWithoutParamSpec = paramSpec ? FunctionType.cloneRemoveParamSpecArgsKwargs(type) : type;
@@ -981,7 +1031,8 @@ function printFunctionType(
                 uniqueNameMap,
                 recursionTypes,
                 recursionCount,
-                importTracker
+
+                options
             );
         } else {
             importTracker?.addTypingImport('Any');
@@ -1003,7 +1054,8 @@ function printFunctionType(
                                 uniqueNameMap,
                                 recursionTypes,
                                 recursionCount,
-                                importTracker
+
+                                options
                             )
                         );
                     } else {
@@ -1037,7 +1089,9 @@ function printFunctionType(
             returnTypeCallback,
             uniqueNameMap,
             recursionTypes,
-            recursionCount
+            recursionCount,
+
+            options
         );
         const paramSignature = `(${parts[0].join(', ')})`;
 
@@ -1066,8 +1120,9 @@ function printObjectTypeForClassInternal(
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
     recursionCount: number,
-    importTracker: ImportTracker | undefined
+    options: TypePrintOptions
 ): string {
+    const importTracker = options.importTracker;
     let objName = type.priv.aliasName;
     if (!objName) {
         objName =
@@ -1137,7 +1192,8 @@ function printObjectTypeForClassInternal(
                                         uniqueNameMap,
                                         recursionTypes,
                                         recursionCount,
-                                        importTracker
+
+                                        options
                                     );
 
                                     if (typeArg.isUnbounded) {
@@ -1160,7 +1216,8 @@ function printObjectTypeForClassInternal(
                             uniqueNameMap,
                             recursionTypes,
                             recursionCount,
-                            importTracker
+
+                            options
                         );
 
                         if (typeArg.isUnbounded) {
@@ -1212,7 +1269,8 @@ function printObjectTypeForClassInternal(
                                     uniqueNameMap,
                                     recursionTypes,
                                     recursionCount,
-                                    importTracker
+
+                                    options
                                 );
                             })
                             .join(', ') +
@@ -1238,7 +1296,8 @@ function printFunctionPartsInternal(
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    options: TypePrintOptions
 ): [string[], string] {
     const paramTypeStrings: string[] = [];
     let sawDefinedName = false;
@@ -1273,7 +1332,8 @@ function printFunctionPartsInternal(
                         uniqueNameMap,
                         recursionTypes,
                         recursionCount,
-                        undefined
+
+                        options
                     );
                     paramTypeStrings.push(paramString);
                 });
@@ -1295,7 +1355,8 @@ function printFunctionPartsInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    undefined
+
+                    options
                 );
                 paramTypeStrings.push(`${k}: ${valueTypeString}`);
             });
@@ -1309,7 +1370,8 @@ function printFunctionPartsInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    undefined
+
+                    options
                 );
                 paramTypeStrings.push(`**kwargs: ${valueTypeString}`);
             }
@@ -1353,7 +1415,8 @@ function printFunctionPartsInternal(
                               uniqueNameMap,
                               recursionTypes,
                               recursionCount,
-                              undefined
+
+                              options
                           )
                         : '';
 
@@ -1439,7 +1502,8 @@ function printFunctionPartsInternal(
                     uniqueNameMap,
                     recursionTypes,
                     recursionCount,
-                    undefined
+
+                    options
                 )}`
             );
         }
@@ -1455,7 +1519,8 @@ function printFunctionPartsInternal(
                   uniqueNameMap,
                   recursionTypes,
                   recursionCount,
-                  undefined
+
+                  options
               )
             : '';
 

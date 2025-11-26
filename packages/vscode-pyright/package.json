@@ -1827,6 +1827,12 @@
                     "description": "Timeout (in seconds) for file enumeration operations. Default is 10 seconds.",
                     "scope": "resource"
                 },
+                "basedpyright.analysis.maxLiteralStringLength": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Maximum number of characters to show for string literals in hovers, completions, etc.",
+                    "scope": "resource"
+                },
                 "basedpyright.analysis.logLevel": {
                     "type": "string",
                     "default": "Information",

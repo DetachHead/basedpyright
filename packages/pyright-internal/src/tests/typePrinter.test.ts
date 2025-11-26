@@ -187,6 +187,33 @@ test('FunctionTypes', () => {
     assert.strictEqual(printType(funcTypeD, PrintTypeFlags.PythonSyntax, returnTypeCallback), 'Callable[P, Any]');
 });
 
+test('LiteralStringTruncation', () => {
+    const strClass = ClassType.createInstantiable(
+        'str',
+        'builtins',
+        '',
+        Uri.empty(),
+        ClassTypeFlags.BuiltIn,
+        0,
+        /* declaredMetaclass */ undefined,
+        /* effectiveMetaclass */ undefined
+    );
+    const literalStringType = ClassType.cloneWithLiteral(
+        ClassType.cloneAsInstance(strClass),
+        '123456789012345678901234567890123456789012345678901234567890'
+    );
+
+    const truncated = printType(literalStringType, PrintTypeFlags.PythonSyntax, returnTypeCallback, {
+        maxLiteralStringLength: 10,
+    });
+    assert.strictEqual(truncated, 'LiteralString');
+
+    const full = printType(literalStringType, PrintTypeFlags.PythonSyntax, returnTypeCallback, {
+        maxLiteralStringLength: 100,
+    });
+    assert.strictEqual(full, "Literal['123456789012345678901234567890123456789012345678901234567890']");
+});
+
 describe('ParamSpec', () => {
     test('positional only', () => {
         const paramSpec = FunctionType.createSynthesizedInstance('', FunctionTypeFlags.ParamSpecValue);

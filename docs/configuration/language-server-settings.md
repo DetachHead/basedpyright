@@ -61,6 +61,8 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.fileEnumerationTimeout** [integer]: Timeout (in seconds) for file enumeration operations. When basedpyright scans your workspace files, it can take a long time in some workspaces. This setting controls when to show a "slow enumeration" warning. Default is 10 seconds.
 
+**basedpyright.analysis.maxLiteralStringLength** [integer]: Maximum number of characters to show for string literals in hovers, completions, etc. Defaults to `50`.
+
 **basedpyright.analysis.autoFormatStrings** [boolean]: Whether to automatically insert an `f` in front of a string when typing a `{` inside it. Defaults to `true`. [more info](../benefits-over-pyright/pylance-features.md#automatic-conversion-to-f-string-when-typing-inside-a-string)
 
 **basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.

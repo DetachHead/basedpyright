@@ -626,11 +626,13 @@
     "defineConstant": {
       "type": "object",
       "title": "Identifiers that should be treated as constants",
-      "properties": {
-      },
+      "properties": {},
       "additionalProperties": {
-          "type": ["string", "boolean"],
-          "title": "Value of constant (boolean or string)"
+        "type": [
+          "string",
+          "boolean"
+        ],
+        "title": "Value of constant (boolean or string)"
       }
     },
     "typeCheckingMode": {
@@ -1014,6 +1016,11 @@
       "type": "string",
       "title": "Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`",
       "default": ""
+    },
+    "maxLiteralStringLength": {
+      "type": "integer",
+      "description": "Maximum length of string literals when displayed in hovers, completions, etc.",
+      "minimum": 1
     },
     "executionEnvironments": {
       "type": "array",

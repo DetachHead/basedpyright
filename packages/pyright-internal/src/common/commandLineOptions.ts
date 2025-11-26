@@ -144,6 +144,9 @@ export class CommandLineLanguageServerOptions {
     // Override default timeout (in seconds) for file enumeration operations.
     fileEnumerationTimeoutInSec?: number;
 
+    // Maximum length of string literals when displayed.
+    maxLiteralStringLength?: number;
+
     // Run ambient analysis.
     enableAmbientAnalysis = true;
 
