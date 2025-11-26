@@ -1017,6 +1017,11 @@
       "title": "Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`",
       "default": ""
     },
+    "maxLiteralStringLength": {
+      "type": "integer",
+      "description": "Maximum length of string literals when displayed in hovers, completions, etc.",
+      "minimum": 1
+    },
     "executionEnvironments": {
       "type": "array",
       "title": "Analysis settings to use for specified subdirectories of code",
@@ -1356,11 +1361,6 @@
           },
           "pythonPlatform": {
             "$ref": "#/definitions/pythonPlatform"
-          },
-          "maxLiteralStringLength": {
-            "type": "integer",
-            "description": "Maximum length of string literals when displayed in hovers, completions, etc.",
-            "minimum": 1
           }
         }
       }
