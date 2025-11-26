@@ -626,11 +626,13 @@
     "defineConstant": {
       "type": "object",
       "title": "Identifiers that should be treated as constants",
-      "properties": {
-      },
+      "properties": {},
       "additionalProperties": {
-          "type": ["string", "boolean"],
-          "title": "Value of constant (boolean or string)"
+        "type": [
+          "string",
+          "boolean"
+        ],
+        "title": "Value of constant (boolean or string)"
       }
     },
     "typeCheckingMode": {

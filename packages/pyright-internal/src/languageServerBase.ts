@@ -441,10 +441,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.disableTaggedHints = !!serverSettings.disableTaggedHints;
             workspace.disableOrganizeImports = !!serverSettings.disableOrganizeImports;
             workspace.inlayHints = serverSettings.inlayHints;
-            workspace.maxLiteralStringLength = serverSettings.maxLiteralStringLength;
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
             workspace.autoFormatStrings = serverSettings.autoFormatStrings ?? true;
+            workspace.maxLiteralStringLength =
+                workspace.service.getConfigOptions().maxLiteralStringLength ?? serverSettings.maxLiteralStringLength;
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.

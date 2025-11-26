@@ -1407,7 +1407,7 @@ export class ConfigOptions {
     typeEvaluationTimeThreshold = 50;
 
     // Maximum number of characters to show for string literals in hovers/completions.
-    maxLiteralStringLength = 50;
+    maxLiteralStringLength: number | undefined = undefined;
 
     // Was this config initialized from JSON (pyrightconfig/pyproject)?
     initializedFromJson = false;

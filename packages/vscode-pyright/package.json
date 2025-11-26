@@ -1829,7 +1829,6 @@
                 },
                 "basedpyright.analysis.maxLiteralStringLength": {
                     "type": "integer",
-                    "default": 50,
                     "minimum": 1,
                     "description": "Maximum number of characters to show for string literals in hovers, completions, etc.",
                     "scope": "resource"

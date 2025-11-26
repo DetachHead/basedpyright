@@ -602,7 +602,7 @@ export interface EvaluatorOptions {
     minimumLoggingThreshold: number;
     evaluateUnknownImportsAsAny: boolean;
     verifyTypeCacheEvaluatorFlags: boolean;
-    maxLiteralStringLength: number;
+    maxLiteralStringLength: number | undefined;
 }
 
 // Describes a "deferred class completion" that is run when a class type is
@@ -28862,12 +28862,9 @@ export function createTypeEvaluator(
     }
 
     function printObjectTypeForClass(type: ClassType): string {
-        return TypePrinter.printObjectTypeForClass(
-            type,
-            evaluatorOptions.printTypeFlags,
-            getEffectiveReturnType,
-            { maxLiteralStringLength: evaluatorOptions.maxLiteralStringLength }
-        );
+        return TypePrinter.printObjectTypeForClass(type, evaluatorOptions.printTypeFlags, getEffectiveReturnType, {
+            maxLiteralStringLength: evaluatorOptions.maxLiteralStringLength,
+        });
     }
 
     function printFunctionParts(type: FunctionType, extraFlags?: TypePrinter.PrintTypeFlags): [string[], string] {
