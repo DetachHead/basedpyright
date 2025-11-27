@@ -44,6 +44,7 @@ import { getLastTypedDeclarationForSymbol, isVisibleExternally } from '../analyz
 import { getTypedDictMembersForClass } from '../analyzer/typedDicts';
 import { getModuleDocStringFromUris, isBuiltInModule } from '../analyzer/typeDocStringUtils';
 import { CallSignatureInfo, TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
+import { getLocalTypeNames, getNestedClassNameParts } from '../analyzer/typeNameUtils';
 import { printLiteralValue } from '../analyzer/typePrinter';
 import {
     ClassType,
@@ -72,6 +73,7 @@ import {
     isNoneInstance,
     lookUpClassMember,
     MemberAccessFlags,
+    someSubtypes,
 } from '../analyzer/typeUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
@@ -134,7 +136,6 @@ import { getAutoImportText, getDocumentationPartsForTypeAndDecl } from './toolti
 import { ImportGroup } from '../analyzer/importStatementUtils';
 import { TextEditAction } from '../common/editAction';
 import { isMethodExemptFromLsp } from '../analyzer/constructors';
-import { getLocalTypeNames, getNestedClassNameParts } from '../analyzer/typeNameUtils';
 
 namespace Keywords {
     const base: string[] = [
@@ -2574,16 +2575,12 @@ export class CompletionProvider {
      * Currently, this applies to `Literal[…]`, `Enum`, and `bool`.
      */
     private _containsCategoricalType(type: Type): boolean {
-        let found: boolean = false;
-        doForEachSubtype(type, (type) => {
-            if (
-                isClassInstance(type) &&
-                (isLiteralLikeType(type) || ClassType.isEnumClass(type) || ClassType.isBuiltIn(type, 'bool'))
-            ) {
-                found = true;
-            }
-        });
-        return found;
+        return someSubtypes(
+            type,
+            (subType) =>
+                isClassInstance(subType) &&
+                (isLiteralLikeType(subType) || ClassType.isEnumClass(subType) || ClassType.isBuiltIn(subType, 'bool'))
+        );
     }
 
     private _getValueCompletions(
