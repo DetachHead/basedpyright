@@ -623,6 +623,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="autocomplete improvements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatically-inserting-the-override-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      automatically inserting the @override decorator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved-completions-for-literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved completions for Literals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved-completions-for-enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved completions for enums
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1593,6 +1626,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="autocomplete improvements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatically-inserting-the-override-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      automatically inserting the @override decorator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved-completions-for-literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved completions for Literals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#improved-completions-for-enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      improved completions for enums
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1635,6 +1701,7 @@
 <h1 id="language-server-improvements">language server improvements</h1>
 <p>in addition to the <a href="../pylance-features/">pylance exclusive features</a>, basedpyright also contains some additional improvements to the language server that aren't available in pyright or pylance.</p>
 <h2 id="autocomplete-improvements">autocomplete improvements</h2>
+<h3 id="automatically-inserting-the-override-decorator">automatically inserting the <code>@override</code> decorator</h3>
 <p>autocomplete suggestions for method overrides will automatically add the <code>@override</code> decorator:</p>
 <p><img alt="" src="../override-decorator-completions.gif" /></p>
 <div class="admonition info">
@@ -1650,6 +1717,15 @@
 <p>using <code>typing_extensions</code> creates a runtime dependency on the <a href="https://pypi.org/project/typing-extensions/"><code>typing_extensions</code></a> pypi package, so you must declare it as a project dependency. this is why <code>basedpyright.analysis.useTypingExtensions</code> is disabled by default to prevent users from unknowingly adding a new dependency to their project.</p>
 <p>such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using <a href="https://detachhead.github.io/dtach/usage/commands/#tach-check-external">DTach</a> to detect issues like these)</p>
 </div>
+<h3 id="improved-completions-for-literals">improved completions for <code>Literal</code>s</h3>
+<p>in pyright/pylance, you get completions for <code>Literal</code>s that contain strings:</p>
+<p><img alt="" src="../literal_str_completions.png" /></p>
+<p>but in basedpyright, this also works with <code>Literal</code>s that contain other types, such as <code>int</code>, <code>bool</code> and <code>Enum</code> values:</p>
+<p><img alt="" src="../other_literal_completions.png" /></p>
+<h3 id="improved-completions-for-enums">improved completions for enums</h3>
+<p>unlike pyright/pylance, basedpyright also supports completions for enum values:</p>
+<p><img alt="" src="../enum_completions.png" /></p>
+<p>this also works for other types of enums such as <code>IntEnum</code> and <code>StrEnum</code></p>
 <h2 id="improved-diagnostic-severity-system">improved diagnostic severity system</h2>
 <p>in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, <a href="../fixes-for-rules/#reportunreachable">the diagnostic is not reported in most cases where the hint is reported</a>).</p>
 <p>basedpyright introduces a new <a href="../../configuration/config-files/#diagnostic-categories"><code>"hint"</code></a> diagnostic category which can be applied to any diagnostic rule, and can be disabled just like all other diagnostic rules. some diagnostics use a diagnostic tag (unused or deprecated) if your IDE supports them:</p>
