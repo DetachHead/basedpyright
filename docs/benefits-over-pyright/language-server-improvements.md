@@ -4,6 +4,8 @@ in addition to the [pylance exclusive features](./pylance-features.md), basedpyr
 
 ## autocomplete improvements
 
+### automatically inserting the `@override` decorator
+
 autocomplete suggestions for method overrides will automatically add the `@override` decorator:
 
 ![](./override-decorator-completions.gif)
@@ -20,6 +22,24 @@ autocomplete suggestions for method overrides will automatically add the `@overr
     using `typing_extensions` creates a runtime dependency on the [`typing_extensions`](https://pypi.org/project/typing-extensions/) pypi package, so you must declare it as a project dependency. this is why `basedpyright.analysis.useTypingExtensions` is disabled by default to prevent users from unknowingly adding a new dependency to their project.
 
     such mistakes often go undetected until your package is released and causes a runtime error for your users because the module may be available in dev dependencies but not production dependencies. (we recommend using [DTach](https://detachhead.github.io/dtach/usage/commands/#tach-check-external) to detect issues like these)
+
+### improved completions for `Literal`s
+
+in pyright/pylance, you get completions for `Literal`s that contain strings:
+
+![](literal_str_completions.png)
+
+but in basedpyright, this also works with `Literal`s that contain other types, such as `int`, `bool` and `Enum` values:
+
+![](other_literal_completions.png)
+
+### improved completions for enums
+
+unlike pyright/pylance, basedpyright also supports completions for enum values:
+
+![](enum_completions.png)
+
+this also works for other types of enums such as `IntEnum` and `StrEnum`
 
 ## improved diagnostic severity system
 
