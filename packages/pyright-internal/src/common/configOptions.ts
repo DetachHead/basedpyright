@@ -1997,8 +1997,8 @@ export class ConfigOptions {
             return undefined;
         }
 
+        const prefix = errorContext ? `${errorContext}: ` : '';
         if (typeof typeCheckingMode !== 'string') {
-            const prefix = errorContext ? `${errorContext}: ` : '';
             console_.error(`${prefix}typeCheckingMode must be a string.`);
             return undefined;
         }
@@ -2006,8 +2006,6 @@ export class ConfigOptions {
         if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
             return typeCheckingMode as TypeCheckingMode;
         }
-
-        const prefix = errorContext ? `${errorContext}: ` : '';
         console_.error(
             `${prefix}invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(allTypeCheckingModes)}`
         );
