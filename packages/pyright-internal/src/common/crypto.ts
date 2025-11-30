@@ -11,7 +11,7 @@ import { fail } from './debug';
 let nodeCrypto: typeof import('crypto') | undefined;
 
 try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     nodeCrypto = require('crypto');
     if (!nodeCrypto?.randomBytes) {
         nodeCrypto = undefined;

@@ -1,0 +1,187 @@
+{
+  "packages/browser-pyright/src/browser-server.ts": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/analyzer/checker.ts": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/analyzer/program.ts": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/analyzer/service.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "packages/pyright-internal/src/analyzer/sourceFile.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "packages/pyright-internal/src/analyzer/typeEvaluator.ts": {
+    "@typescript-eslint/no-wrapper-object-types": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/analyzer/types.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/backgroundThreadBase.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/baseline.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/common/cancellationUtils.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/common/configOptions.ts": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/common/memUtils.ts": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/common/realFileSystem.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "packages/pyright-internal/src/common/uri/uriUtils.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 4
+    }
+  },
+  "packages/pyright-internal/src/languageServerBase.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/localization/localize.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    },
+    "@typescript-eslint/no-require-imports": {
+      "count": 15
+    }
+  },
+  "packages/pyright-internal/src/parser/parseNodes.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 4
+    }
+  },
+  "packages/pyright-internal/src/parser/parser.ts": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/parser/tokenizerTypes.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/pyright.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/pyrightFileSystem.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/realLanguageServer.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 3
+    }
+  },
+  "packages/pyright-internal/src/tests/docStringConversion.test.ts": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/harness/fourslash/fourSlashTypes.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/harness/fourslash/testState.ts": {
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/harness/testHost.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/harness/utils.ts": {
+    "@typescript-eslint/no-unsafe-function-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/harness/vfs/filesystem.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/lsp/languageServer.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "packages/pyright-internal/src/tests/lsp/languageServerTestUtils.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 2
+    },
+    "@typescript-eslint/no-empty-object-type": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/semanticTokensProvider.test.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    }
+  },
+  "packages/pyright-internal/src/tests/typeInlayHintsWalker.test.ts": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    }
+  },
+  "packages/vscode-pyright/src/cancellationUtils.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "packages/vscode-pyright/src/extension.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  }
+}
