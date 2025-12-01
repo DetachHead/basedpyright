@@ -126,6 +126,7 @@ Thumbs.db
 # python stuff
 .pyprojectx
 **/__pycache__
+# while this isn't usually needed in venvs created by uv (which we use in this project) because they contain their own `.gitignore` file, some contributors may want to create venvs with other tools and with different names (eg. `.venv3.14`)
 /.venv*/
 
 # files from the npm package copied into the basedpyright pypi package
