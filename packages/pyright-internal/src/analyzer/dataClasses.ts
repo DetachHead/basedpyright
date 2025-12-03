@@ -169,12 +169,60 @@ export function synthesizeDataClassMethods(
     // based on whether this is a NamedTuple or a dataclass.
     const constructorType = isNamedTuple ? newType : initType;
 
+    // Detect if this class is a Pydantic BaseModel (by MRO full name heuristic).
+    const isPydanticModel = classType.shared.mro.some(
+        (m) =>
+            isClass(m) && (m.shared.fullName === 'pydantic.main.BaseModel' || m.shared.fullName.endsWith('.BaseModel'))
+    );
+
     // Maintain a list of "type evaluators".
     type EntryTypeEvaluator = () => Type;
     const localEntryTypeEvaluator: { entry: DataClassEntry; evaluator: EntryTypeEvaluator }[] = [];
     let sawKeywordOnlySeparator = false;
+    // Indicates that at least one field uses a dynamic alias (e.g., validation_alias=AliasChoices or alias_generator)
+    // In this case, we will relax constructor parameter checking by adding **kwargs and excluding those fields from __init__.
+    let sawDynamicAlias = false;
 
     ClassType.getSymbolTable(classType).forEach((symbol, name) => {
+        // Early handling for Pydantic model_config regardless of typing/annotation on the symbol
+        if (name === 'model_config') {
+            const decls = symbol.getDeclarations();
+            for (const decl of decls) {
+                // We care only about variable assignments
+                if (decl.type !== DeclarationType.Variable) {
+                    continue;
+                }
+                // Find the assignment statement for this declaration
+                let stmt: ParseNode | undefined = decl.node;
+                while (stmt && stmt.nodeType !== ParseNodeType.Assignment) {
+                    stmt = stmt.parent;
+                }
+                if (stmt && stmt.nodeType === ParseNodeType.Assignment) {
+                    const right = stmt.d.rightExpr;
+                    if (right.nodeType === ParseNodeType.Call) {
+                        // alias_generator implies dynamic aliases
+                        const hasAliasGen = !!right.d.args.find((arg) => arg.d.name?.d.value === 'alias_generator');
+                        if (hasAliasGen) {
+                            sawDynamicAlias = true;
+                        }
+                        const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                        const behaviors = (classType.shared.dataClassBehaviors ||= { fieldDescriptorNames: [] });
+                        const popArg = right.d.args.find((arg) => arg.d.name?.d.value === 'populate_by_name');
+                        if (popArg?.d.valueExpr) {
+                            const val = evaluateStaticBoolExpression(
+                                popArg.d.valueExpr,
+                                fileInfo.executionEnvironment,
+                                fileInfo.definedConstants
+                            );
+                            if (val !== undefined) {
+                                behaviors.populateByName = val;
+                            }
+                        }
+                        // ignore frozen for now in tests
+                    }
+                }
+            }
+        }
         if (symbol.isIgnoredForProtocolMatch()) {
             return;
         }
@@ -331,6 +379,14 @@ export function synthesizeDataClassMethods(
                         if (defaultValueArg?.d.valueExpr) {
                             defaultExpr = defaultValueArg.d.valueExpr;
                         }
+                        // Support positional default as the first argument to Field(...)
+                        if (!hasDefault) {
+                            const firstPositional = statement.d.rightExpr.d.args.find((arg) => !arg.d.name);
+                            if (firstPositional?.d.valueExpr) {
+                                hasDefault = true;
+                                defaultExpr = firstPositional.d.valueExpr;
+                            }
+                        }
 
                         const defaultFactoryArg = statement.d.rightExpr.d.args.find(
                             (arg) => arg.d.name?.d.value === 'default_factory' || arg.d.name?.d.value === 'factory'
@@ -343,16 +399,60 @@ export function synthesizeDataClassMethods(
                             defaultExpr = defaultFactoryArg.d.valueExpr;
                         }
 
-                        const aliasArg = statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
-                        if (aliasArg) {
+                        // Prefer `validation_alias` over `alias` if both are provided. for pydantic
+                        const validationAliasArg = statement.d.rightExpr.d.args.find(
+                            (arg) => arg.d.name?.d.value === 'validation_alias'
+                        );
+                        const aliasArg =
+                            validationAliasArg ??
+                            statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
+                        if (aliasArg && aliasArg.d.valueExpr) {
                             const valueType = evaluator.getTypeOfExpression(aliasArg.d.valueExpr).type;
                             if (
                                 isClassInstance(valueType) &&
                                 ClassType.isBuiltIn(valueType, 'str') &&
                                 isLiteralType(valueType)
                             ) {
+                                // Static, literal alias: use it as the constructor parameter name.
                                 aliasName = valueType.priv.literalValue as string;
+                            } else {
+                                // Dynamic alias (e.g., AliasChoices or computed). We can't know the name statically,
+                                // so exclude this field from the generated __init__ signature and allow **kwargs.
+                                includeInInit = false;
+                                sawDynamicAlias = true;
                             }
+                        }
+
+                        // Detect pydantic model_config settings on this class.
+                        if (
+                            variableNameNode?.d.value === 'model_config' &&
+                            statement.d.rightExpr.nodeType === ParseNodeType.Call
+                        ) {
+                            // alias_generator implies dynamic aliases
+                            const hasAliasGen = !!statement.d.rightExpr.d.args.find(
+                                (arg) => arg.d.name?.d.value === 'alias_generator'
+                            );
+                            if (hasAliasGen) {
+                                sawDynamicAlias = true;
+                            }
+
+                            // Extract populate_by_name and frozen flags from ConfigDict
+                            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                            const behaviors = (classType.shared.dataClassBehaviors ||= { fieldDescriptorNames: [] });
+                            const popArg = statement.d.rightExpr.d.args.find(
+                                (arg) => arg.d.name?.d.value === 'populate_by_name'
+                            );
+                            if (popArg?.d.valueExpr) {
+                                const val = evaluateStaticBoolExpression(
+                                    popArg.d.valueExpr,
+                                    fileInfo.executionEnvironment,
+                                    fileInfo.definedConstants
+                                );
+                                if (val !== undefined) {
+                                    behaviors.populateByName = val;
+                                }
+                            }
+                            // ignore frozen for now in tests
                         }
 
                         const converterArg = statement.d.rightExpr.d.args.find(
@@ -362,6 +462,36 @@ export function synthesizeDataClassMethods(
                             converter = converterArg;
                         }
                     }
+                }
+
+                // Detect pydantic model_config on this class assignment
+                if (
+                    name === 'model_config' &&
+                    statement.nodeType === ParseNodeType.Assignment &&
+                    statement.d.rightExpr.nodeType === ParseNodeType.Call
+                ) {
+                    const hasAliasGen = !!statement.d.rightExpr.d.args.find(
+                        (arg) => arg.d.name?.d.value === 'alias_generator'
+                    );
+                    if (hasAliasGen) {
+                        sawDynamicAlias = true;
+                    }
+                    const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                    const behaviors = (classType.shared.dataClassBehaviors ||= { fieldDescriptorNames: [] });
+                    const popArg = statement.d.rightExpr.d.args.find(
+                        (arg) => arg.d.name?.d.value === 'populate_by_name'
+                    );
+                    if (popArg?.d.valueExpr) {
+                        const val = evaluateStaticBoolExpression(
+                            popArg.d.valueExpr,
+                            fileInfo.executionEnvironment,
+                            fileInfo.definedConstants
+                        );
+                        if (val !== undefined) {
+                            behaviors.populateByName = val;
+                        }
+                    }
+                    // ignore frozen for now in tests
                 }
             } else if (statement.nodeType === ParseNodeType.TypeAnnotation) {
                 if (statement.d.valueExpr.nodeType === ParseNodeType.Name) {
@@ -391,6 +521,12 @@ export function synthesizeDataClassMethods(
 
             if (variableNameNode && variableTypeEvaluator) {
                 const variableName = variableNameNode.d.value;
+
+                // In Pydantic BaseModel, attributes starting with an underscore are not fields
+                // and should not be accepted by the constructor.
+                if (isPydanticModel && variableName.startsWith('_')) {
+                    includeInInit = false;
+                }
 
                 // Named tuples don't allow attributes that begin with an underscore.
                 if (isNamedTuple && variableName.startsWith('_')) {
@@ -565,7 +701,7 @@ export function synthesizeDataClassMethods(
     if (!skipSynthesizeInit && !hasExistingInitMethod) {
         if (allAncestorsKnown) {
             fullDataClassEntries.forEach((entry) => {
-                if (entry.includeInInit) {
+                if (entry.includeInInit && !sawDynamicAlias) {
                     let defaultType: Type | undefined;
 
                     // If the type refers to Self of the parent class, we need to
@@ -643,12 +779,18 @@ export function synthesizeDataClassMethods(
                         );
                     }
 
+                    const isPopulateDual = !!(
+                        classType.shared.dataClassBehaviors?.populateByName &&
+                        entry.alias &&
+                        entry.name !== entry.alias
+                    );
+                    const optionalDefault = isPopulateDual ? AnyType.create(/* isEllipsis */ true) : defaultType;
                     const param = FunctionParam.create(
                         ParamCategory.Simple,
                         effectiveType,
                         FunctionParamFlags.TypeDeclared,
                         effectiveName,
-                        defaultType,
+                        optionalDefault,
                         entry.defaultExpr
                     );
 
@@ -656,6 +798,37 @@ export function synthesizeDataClassMethods(
                         keywordOnlyParams.push(param);
                     } else {
                         FunctionType.addParam(constructorType, param);
+                    }
+
+                    // If configured to populate by name, accept both the alias and the original field name.
+                    if (
+                        classType.shared.dataClassBehaviors?.populateByName &&
+                        entry.alias &&
+                        entry.name !== entry.alias
+                    ) {
+                        const paramByName = FunctionParam.create(
+                            ParamCategory.Simple,
+                            effectiveType,
+                            FunctionParamFlags.TypeDeclared,
+                            entry.name,
+                            AnyType.create(/* isEllipsis */ true),
+                            entry.defaultExpr
+                        );
+                        if (entry.isKeywordOnly) {
+                            keywordOnlyParams.push(paramByName);
+                        } else {
+                            FunctionType.addParam(constructorType, paramByName);
+                        }
+                        if (replaceType) {
+                            const paramByNameWithDefault = FunctionParam.create(
+                                paramByName.category,
+                                paramByName._type,
+                                paramByName.flags,
+                                paramByName.name,
+                                AnyType.create(/* isEllipsis */ true)
+                            );
+                            FunctionType.addParam(replaceType, paramByNameWithDefault);
+                        }
                     }
 
                     if (replaceType) {
@@ -671,6 +844,20 @@ export function synthesizeDataClassMethods(
                     }
                 }
             });
+
+            // If we saw any dynamic aliases, add a **kwargs parameter to relax parameter checking
+            if (sawDynamicAlias) {
+                const kwargsParam = FunctionParam.create(
+                    ParamCategory.KwargsDict,
+                    UnknownType.create(),
+                    FunctionParamFlags.TypeDeclared,
+                    'kwargs'
+                );
+                FunctionType.addParam(constructorType, kwargsParam);
+                if (replaceType) {
+                    FunctionType.addParam(replaceType, kwargsParam);
+                }
+            }
 
             if (keywordOnlyParams.length > 0) {
                 FunctionType.addKeywordOnlyParamSeparator(constructorType);
