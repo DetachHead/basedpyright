@@ -21,3 +21,6 @@ foo(
     height,  # okay, matches
     width=length,  # okay, using keyword
 )
+
+iterable = []
+len(iterable)  # okay, built-in function

@@ -12303,7 +12303,9 @@ export function createTypeEvaluator(
                 const paramName = argParam.paramName;
                 if (passedName !== paramName) {
                     addDiagnostic(
-                        DiagnosticRule.reportPositionalArgumentNameMismatch,
+                        FunctionType.isBuiltIn(type)
+                            ? DiagnosticRule.reportPositionalArgumentNameMismatchForBuiltIns
+                            : DiagnosticRule.reportPositionalArgumentNameMismatch,
                         `Positional argument "${passedName}" does not match parameter name "${paramName}"; pass as a keyword argument to avoid confusion`,
                         a.valueExpression
                     );
