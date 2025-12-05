@@ -1066,7 +1066,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
     reportPositionalArgumentNameMismatch: 'warning',
-    reportPositionalArgumentNameMismatchForBuiltIns: 'warning',
+    reportPositionalArgumentNameMismatchForBuiltIns: 'none',
     allowedUntypedLibraries: [],
 });
 
@@ -1183,7 +1183,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
     reportPositionalArgumentNameMismatch: 'error',
-    reportPositionalArgumentNameMismatchForBuiltIns: 'error',
+    reportPositionalArgumentNameMismatchForBuiltIns: 'none',
     allowedUntypedLibraries: [],
 });
 
@@ -1225,7 +1225,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
         reportPositionalArgumentNameMismatch: 'warning',
-        reportPositionalArgumentNameMismatchForBuiltIns: 'warning',
+        reportPositionalArgumentNameMismatchForBuiltIns: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
