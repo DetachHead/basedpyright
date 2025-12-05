@@ -12287,24 +12287,39 @@ export function createTypeEvaluator(
             skipUnknownArgCheck = true;
         }
 
+        const paramDetails = getParamListDetails(type);
         matchResults.argParams.forEach((argParam) => {
             const a = argParam.argument;
             if (
                 a.argCategory === ArgCategory.Simple &&
                 !a.name &&
                 a.valueExpression &&
-                a.valueExpression.nodeType === ParseNodeType.Name &&
                 argParam.paramCategory === ParamCategory.Simple &&
                 !argParam.mapsToVarArgList &&
                 argParam.paramName &&
                 !argParam.isParamNameSynthesized
             ) {
-                const passedName = (a.valueExpression as NameNode).d.value;
+                // Skip positional-only parameters
+                const paramIndex = paramDetails.params.findIndex((p) => p.param.name === argParam.paramName);
+                if (paramIndex >= 0 && paramIndex < paramDetails.positionOnlyParamCount) {
+                    return;
+                }
+
                 const paramName = argParam.paramName;
-                if (passedName !== paramName) {
+                if (a.valueExpression.nodeType === ParseNodeType.Name) {
+                    const passedName = (a.valueExpression as NameNode).d.value;
+                    if (passedName !== paramName) {
+                        addDiagnostic(
+                            DiagnosticRule.reportPositionalArgumentNameMismatch,
+                            `Argument "${passedName}" does not match parameter name "${paramName}" for function "${type.shared.name}"; pass as a keyword argument to avoid confusion`,
+                            a.valueExpression
+                        );
+                    }
+                } else {
+                    // Non-name expression passed positionally
                     addDiagnostic(
                         DiagnosticRule.reportPositionalArgumentNameMismatch,
-                        `Positional argument "${passedName}" does not match parameter name "${paramName}"; pass as a keyword argument to avoid confusion`,
+                        `Positional argument for parameter "${paramName}" in function "${type.shared.name}"; pass as a keyword argument to avoid confusion`,
                         a.valueExpression
                     );
                 }
