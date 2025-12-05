@@ -16,6 +16,18 @@ test('it reports an error', () => {
                 line: 11,
                 code: DiagnosticRule.reportPositionalArgumentNameMismatch,
             },
+            {
+                line: 25,
+                code: DiagnosticRule.reportPositionalArgumentNameMismatch,
+            },
+            {
+                line: 32,
+                code: DiagnosticRule.reportPositionalArgumentNameMismatch,
+            },
+            {
+                line: 33,
+                code: DiagnosticRule.reportPositionalArgumentNameMismatch,
+            },
         ],
     });
 });

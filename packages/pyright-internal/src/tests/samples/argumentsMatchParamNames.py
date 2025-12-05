@@ -21,3 +21,15 @@ foo(
     height,  # okay, matches
     width=length,  # okay, using keyword
 )
+
+foo(
+    1, # should display a warning, positional argument used
+    width=2, # okay, using keyword
+)
+
+len([]) # okay, built-in function with no keyword arguments
+
+pow(
+    2, # should display a warning, positional argument used, built-in function
+    3, # should display a warning, positional argument used, built-in function
+)
