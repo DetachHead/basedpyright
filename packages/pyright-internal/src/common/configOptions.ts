@@ -207,9 +207,6 @@ export interface DiagnosticRuleSet {
     // Report mismatch between positional argument names and parameter names when requested by decorator?
     reportPositionalArgumentNameMismatch: DiagnosticLevel;
 
-    // Report mismatch between positional argument names and parameter names for built-in functions?
-    reportPositionalArgumentNameMismatchForBuiltIns: DiagnosticLevel;
-
     // Report inconsistencies with function overload signatures?
     reportInconsistentOverload: DiagnosticLevel;
 
@@ -628,7 +625,6 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAttributeAccessIssue: 'none',
         reportCallIssue: 'none',
         reportPositionalArgumentNameMismatch: 'none',
-        reportPositionalArgumentNameMismatchForBuiltIns: 'none',
         reportInconsistentOverload: 'none',
         reportIndexIssue: 'none',
         reportInvalidTypeArguments: 'none',
@@ -749,7 +745,6 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
         reportPositionalArgumentNameMismatch: 'none',
-        reportPositionalArgumentNameMismatchForBuiltIns: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
@@ -870,7 +865,6 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
         reportPositionalArgumentNameMismatch: 'none',
-        reportPositionalArgumentNameMismatchForBuiltIns: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',
@@ -1066,7 +1060,6 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
     reportPositionalArgumentNameMismatch: 'warning',
-    reportPositionalArgumentNameMismatchForBuiltIns: 'none',
     allowedUntypedLibraries: [],
 });
 
@@ -1183,7 +1176,6 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
     reportPositionalArgumentNameMismatch: 'error',
-    reportPositionalArgumentNameMismatchForBuiltIns: 'none',
     allowedUntypedLibraries: [],
 });
 
@@ -1225,7 +1217,6 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportAttributeAccessIssue: 'error',
         reportCallIssue: 'error',
         reportPositionalArgumentNameMismatch: 'warning',
-        reportPositionalArgumentNameMismatchForBuiltIns: 'none',
         reportInconsistentOverload: 'error',
         reportIndexIssue: 'error',
         reportInvalidTypeArguments: 'error',

@@ -105,7 +105,6 @@ export enum DiagnosticRule {
     reportShadowedImports = 'reportShadowedImports',
     reportImplicitOverride = 'reportImplicitOverride',
     reportPositionalArgumentNameMismatch = 'reportPositionalArgumentNameMismatch',
-    reportPositionalArgumentNameMismatchForBuiltIns = 'reportPositionalArgumentNameMismatchForBuiltIns',
 
     // basedpyright options:
     failOnWarnings = 'failOnWarnings',
