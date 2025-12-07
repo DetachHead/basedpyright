@@ -45,7 +45,7 @@ export class WriteBaselineCommand implements ServerCommand {
                             matchFileSpecs(configOptions, Uri.file(filePath, this._ls.serviceProvider))
                     )
                     .map(([_, diagnostics]) => diagnostics);
-                const newBaselineSummaryMessage = workspace.service.writeBaseline(true, true, filteredFiles);
+                const newBaselineSummaryMessage = workspace.service.writeBaseline('force', true, filteredFiles);
                 if (newBaselineSummaryMessage) {
                     this._ls.window.showInformationMessage(newBaselineSummaryMessage);
                 }

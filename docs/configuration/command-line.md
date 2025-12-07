@@ -4,32 +4,33 @@ Usage: basedpyright [options] [files...] [^1]
 
 basedpyright can be run as either a language server or as a command-line tool. The command-line version allows for the following options:
 
-| Flag                                    | Description                                          |
-| :-------------------------------------- | :--------------------------------------------------- |
-| --createstub `<IMPORT>`                 | Create type stub file(s) for import                  |
-| --dependencies                          | Emit import dependency information                   |
-| -h, --help                              | Show help message                                    |
-| --ignoreexternal                        | Ignore external imports for --verifytypes            |
-| --level <LEVEL>                         | Minimum diagnostic level (error or warning)          |
-| --outputjson                            | Output results in JSON format                        |
-| --gitlabcodequality                     | Output results to a gitlab code quality report       |
-| --writebaseline                         | Write new errors to the baseline file                |
-| --baselinefile `<FILE>`                 | Path to the baseline file to be used [^2]            |
-| -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location          |
-| --pythonpath `<FILE>`                   | Path to the Python interpreter [^3]                  |
-| --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)        |
-| --pythonversion `<VERSION>`             | Analyze for version (3.3, 3.4, etc.)                 |
-| --skipunannotated                       | Skip type analysis of unannotated functions          |
-| --stats                                 | Print detailed performance stats                     |
-| -t, --typeshedpath `<DIRECTORY>`        | Use typeshed type stubs at this location [^4]        |
-| --threads <optional N>                  | Use up to N threads to parallelize type checking [^5]|
-| -v, --venvpath `<DIRECTORY>`            | Directory that contains virtual environments [^6]    |
-| --verbose                               | Emit verbose diagnostics                             |
-| --verifytypes `<IMPORT>`                | Verify completeness of types in py.typed package     |
-| --version                               | Print pyright version and exit                       |
-| --warnings                              | Use exit code of 1 if warnings are reported [^7]     |
-| -w, --watch                             | Continue to run and watch for changes [^8]           |
-| -                                       | Read file or directory list from stdin               |
+| Flag                                    | Description                                                     |
+| :-------------------------------------- | :---------------------------------------------------            |
+| --createstub `<IMPORT>`                 | Create type stub file(s) for import                             |
+| --dependencies                          | Emit import dependency information                              |
+| -h, --help                              | Show help message                                               |
+| --ignoreexternal                        | Ignore external imports for --verifytypes                       |
+| --level <LEVEL>                         | Minimum diagnostic level (error or warning)                     |
+| --outputjson                            | Output results in JSON format                                   |
+| --gitlabcodequality                     | Output results to a gitlab code quality report                  |
+| --writebaseline                         | Write new errors to the baseline file                           |
+| --baselinefile `<FILE>`                 | Path to the baseline file to be used [^2]                       |
+| --baselinemode `<MODE>`                 | Specify the [baseline mode](#option-2-baselinemode-experimental)|
+| -p, --project `<FILE OR DIRECTORY>`     | Use the configuration file at this location                     |
+| --pythonpath `<FILE>`                   | Path to the Python interpreter [^3]                             |
+| --pythonplatform `<PLATFORM>`           | Analyze for platform (Darwin, Linux, Windows)                   |
+| --pythonversion `<VERSION>`             | Analyze for version (3.3, 3.4, etc.)                            |
+| --skipunannotated                       | Skip type analysis of unannotated functions                     |
+| --stats                                 | Print detailed performance stats                                |
+| -t, --typeshedpath `<DIRECTORY>`        | Use typeshed type stubs at this location [^4]                   |
+| --threads <optional N>                  | Use up to N threads to parallelize type checking [^5]           |
+| -v, --venvpath `<DIRECTORY>`            | Directory that contains virtual environments [^6]               |
+| --verbose                               | Emit verbose diagnostics                                        |
+| --verifytypes `<IMPORT>`                | Verify completeness of types in py.typed package                |
+| --version                               | Print pyright version and exit                                  |
+| --warnings                              | Use exit code of 1 if warnings are reported [^7]                |
+| -w, --watch                             | Continue to run and watch for changes [^8]                      |
+| -                                       | Read file or directory list from stdin                          |
 
 [^1]: If specific files are specified on the command line, it overrides the files or directories specified in the pyrightconfig.json or pyproject.toml file.
 
@@ -130,3 +131,51 @@ updated ./.basedpyright/baseline.json with 200 errors (went down by 5)
 ```
 
 the `--writebaseline` argument is only required if you are intentionally writing new errors to the baseline file. for more information about when to use this argument, [see here](../benefits-over-pyright/baseline.md#how-often-do-i-need-to-update-the-baseline-file).
+
+the CLI provides two options for managing the baseline file:
+
+### Option 1: `--writebaseline` (recommended)
+
+#### when not specified
+
+- if running locally, behaves the same as [`--baselinemode=auto`](#-baselinemodeauto)
+- if [running in CI](https://www.npmjs.com/package/is-ci), behaves the same as [`--baselinemode=lock`](#-baselinemodelock)
+
+#### when specified
+
+always updates the baseline file, even if new errors are added.
+
+### Option 2: `--baselinemode` (experimental)
+
+!!! warning
+
+    `--baselinemode` is an experimental feature and is subject to breaking changes in the future. if you have feedback for this feature, please [open an issue](https://github.com/DetachHead/basedpyright/issues/new/choose)
+
+!!! tip
+
+    for most users, we don't recommend `--baselinemode` as the [`--writebaseline` flag](#option-1-writebaseline-recommended) is sufficient for most use cases. `--baselinemode` exists for users who want more control over how and when the baseline file is used.
+
+#### `--baselinemode=auto`
+
+only updates the baseline file if diagnostics have been removed and no new diagnostics have been added.
+
+!!! note
+
+    this is the same as not specifying `--baselinemode` or `--writebaseline` when running locally. you only need to specify `--baselinemode=auto` explicitly if you want to [disable the default `--baselinemode=never` behavior in CI environments](#option-1-writebaseline-recommended)
+
+#### `--baselinemode=lock`
+
+never writes to the baseline file, even if no new diagnostics have surfaced, and instead exits with a non-zero exit code if the baseline file needs to be updated. useful in CI environments when you want to ensure that the baseline file is up-to-date.
+
+!!! note
+
+    basedpyright [already defaults to this mode if running in CI](#option-1-writebaseline-recommended). you only need to specify this explicitly if your CI environment is not detected for some reason, or if you want this behavior locally (such as a [prek](https://github.com/j178/prek) hook). 
+
+you can think of it like a [lockfile](https://docs.astral.sh/uv/concepts/projects/sync/#checking-the-lockfile). you don't want the baseline file to contain errors that don't exist anymore because:
+
+- when other contributors run basedpyright, it could update the baseline file to remove errors in code they have not changed, which is unexpected and leads to confusion
+- it would make it possible to unintentionally re-introduce the error in the future without it being flagged by basedpyright
+
+#### `--baselinemode=discard`
+
+reads the baseline file but never updates it, even if it needs to be updated. exits with code 0 unless new diagnostics have surfaced.

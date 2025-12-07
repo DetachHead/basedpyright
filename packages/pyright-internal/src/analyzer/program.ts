@@ -52,7 +52,7 @@ import { createTypeEvaluatorWithTracker } from './typeEvaluatorWithTracker';
 import { getPrintTypeFlags } from './typePrinter';
 import { TypeStubWriter } from './typeStubWriter';
 import { Type } from './types';
-import { BaselineHandler } from '../baseline';
+import { BaselineHandler, BaselineMode } from '../baseline';
 
 const _maxImportDepth = 256;
 
@@ -550,11 +550,11 @@ export class Program {
         }
     }
 
-    writeBaseline = <T extends boolean>(
-        force: T,
+    writeBaseline = (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
-    ) => this._baselineHandler.write(force, removeDeletedFiles, filesWithDiagnostics);
+    ) => this._baselineHandler.write(baselineMode, removeDeletedFiles, filesWithDiagnostics);
 
     getFileCount(userFileOnly = true) {
         if (userFileOnly) {

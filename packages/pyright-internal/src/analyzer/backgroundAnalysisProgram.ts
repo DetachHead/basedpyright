@@ -20,6 +20,7 @@ import { Uri } from '../common/uri/uri';
 import { AnalysisCompleteCallback, analyzeProgram } from './analysis';
 import { ImportResolver } from './importResolver';
 import { MaxAnalysisTime, OpenFileOptions, Program } from './program';
+import { BaselineMode } from '../baseline';
 
 export enum InvalidatedReason {
     Reanalyzed,
@@ -155,13 +156,13 @@ export class BackgroundAnalysisProgram {
         this._program.markFilesDirty(fileUris, evenIfContentsAreSame);
     }
 
-    writeBaseline = <T extends boolean>(
-        force: T,
+    writeBaseline = (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
     ) => {
-        this._backgroundAnalysis?.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
-        return this._program.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+        this._backgroundAnalysis?.writeBaseline(baselineMode, removeDeletedFiles, filesWithDiagnostics);
+        return this._program.writeBaseline(baselineMode, removeDeletedFiles, filesWithDiagnostics);
     };
 
     setCompletionCallback(callback?: AnalysisCompleteCallback) {
