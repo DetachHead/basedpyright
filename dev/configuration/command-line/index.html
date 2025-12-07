@@ -924,6 +924,87 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Regenerating the baseline file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-writebaseline-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: --writebaseline (recommended)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option 1: --writebaseline (recommended)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-not-specified" class="md-nav__link">
+    <span class="md-ellipsis">
+      when not specified
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-specified" class="md-nav__link">
+    <span class="md-ellipsis">
+      when specified
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-baselinemode-experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: --baselinemode (experimental)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option 2: --baselinemode (experimental)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodeauto" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=auto
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodelock" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=lock
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodediscard" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=discard
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1641,6 +1722,87 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Regenerating the baseline file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-writebaseline-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: --writebaseline (recommended)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option 1: --writebaseline (recommended)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-not-specified" class="md-nav__link">
+    <span class="md-ellipsis">
+      when not specified
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-specified" class="md-nav__link">
+    <span class="md-ellipsis">
+      when specified
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-baselinemode-experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: --baselinemode (experimental)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option 2: --baselinemode (experimental)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodeauto" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=auto
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodelock" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=lock
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-baselinemodediscard" class="md-nav__link">
+    <span class="md-ellipsis">
+      --baselinemode=discard
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1710,6 +1872,10 @@
 <tr>
 <td style="text-align: left;">--baselinefile <code>&lt;FILE&gt;</code></td>
 <td style="text-align: left;">Path to the baseline file to be used <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></td>
+</tr>
+<tr>
+<td style="text-align: left;">--baselinemode <code>&lt;MODE&gt;</code></td>
+<td style="text-align: left;">Specify the <a href="#option-2-baselinemode-experimental">baseline mode</a></td>
 </tr>
 <tr>
 <td style="text-align: left;">-p, --project <code>&lt;FILE OR DIRECTORY&gt;</code></td>
@@ -1856,6 +2022,43 @@ updated ./.basedpyright/baseline.json with 200 errors (went down by 5)
 0 errors, 0 warnings, 0 notes
 </code></pre></div>
 <p>the <code>--writebaseline</code> argument is only required if you are intentionally writing new errors to the baseline file. for more information about when to use this argument, <a href="../../benefits-over-pyright/baseline/#how-often-do-i-need-to-update-the-baseline-file">see here</a>.</p>
+<p>the CLI provides two options for managing the baseline file:</p>
+<h3 id="option-1-writebaseline-recommended">Option 1: <code>--writebaseline</code> (recommended)</h3>
+<h4 id="when-not-specified">when not specified</h4>
+<ul>
+<li>if running locally, behaves the same as <a href="#-baselinemodeauto"><code>--baselinemode=auto</code></a></li>
+<li>if <a href="https://www.npmjs.com/package/is-ci">running in CI</a>, behaves the same as <a href="#-baselinemodelock"><code>--baselinemode=lock</code></a></li>
+</ul>
+<h4 id="when-specified">when specified</h4>
+<p>always updates the baseline file, even if new errors are added.</p>
+<h3 id="option-2-baselinemode-experimental">Option 2: <code>--baselinemode</code> (experimental)</h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>--baselinemode</code> is an experimental feature and is subject to breaking changes in the future. if you have feedback for this feature, please <a href="https://github.com/DetachHead/basedpyright/issues/new/choose">open an issue</a></p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>for most users, we don't recommend <code>--baselinemode</code> as the <a href="#option-1-writebaseline-recommended"><code>--writebaseline</code> flag</a> is sufficient for most use cases. <code>--baselinemode</code> exists for users who want more control over how and when the baseline file is used.</p>
+</div>
+<h4 id="-baselinemodeauto"><code>--baselinemode=auto</code></h4>
+<p>only updates the baseline file if diagnostics have been removed and no new diagnostics have been added.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this is the same as not specifying <code>--baselinemode</code> or <code>--writebaseline</code> when running locally. you only need to specify <code>--baselinemode=auto</code> explicitly if you want to <a href="#option-1-writebaseline-recommended">disable the default <code>--baselinemode=never</code> behavior in CI environments</a></p>
+</div>
+<h4 id="-baselinemodelock"><code>--baselinemode=lock</code></h4>
+<p>never writes to the baseline file, even if no new diagnostics have surfaced, and instead exits with a non-zero exit code if the baseline file needs to be updated. useful in CI environments when you want to ensure that the baseline file is up-to-date.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>basedpyright <a href="#option-1-writebaseline-recommended">already defaults to this mode if running in CI</a>. you only need to specify this explicitly if your CI environment is not detected for some reason, or if you want this behavior locally (such as a <a href="https://github.com/j178/prek">prek</a> hook). </p>
+</div>
+<p>you can think of it like a <a href="https://docs.astral.sh/uv/concepts/projects/sync/#checking-the-lockfile">lockfile</a>. you don't want the baseline file to contain errors that don't exist anymore because:</p>
+<ul>
+<li>when other contributors run basedpyright, it could update the baseline file to remove errors in code they have not changed, which is unexpected and leads to confusion</li>
+<li>it would make it possible to unintentionally re-introduce the error in the future without it being flagged by basedpyright</li>
+</ul>
+<h4 id="-baselinemodediscard"><code>--baselinemode=discard</code></h4>
+<p>reads the baseline file but never updates it, even if it needs to be updated. exits with code 0 unless new diagnostics have surfaced.</p>
 <div class="footnote">
 <hr />
 <ol>
