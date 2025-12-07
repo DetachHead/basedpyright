@@ -1599,20 +1599,20 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         ? undefined
                         : diagnosticsVersionAfter.toString();
                 result.items = lspDiagnostics;
+                if (sourceFile) {
+                    this.documentsWithDiagnostics[uri.toString()] = {
+                        reason: 'analysis',
+                        fileUri: uri,
+                        cell: sourceFile.getCellIndex(),
+                        diagnostics: serverDiagnostics,
+                        version: diagnosticsVersion,
+                    };
+                }
             } else {
                 (result as any).kind = 'unchanged';
                 result.resultId =
                     diagnosticsVersion === UncomputedDiagnosticsVersion ? undefined : diagnosticsVersion.toString();
                 delete (result as any).items;
-            }
-            if (sourceFile) {
-                this.documentsWithDiagnostics[uri.toString()] = {
-                    reason: 'analysis',
-                    fileUri: uri,
-                    cell: sourceFile.getCellIndex(),
-                    diagnostics: serverDiagnostics,
-                    version: diagnosticsVersion,
-                };
             }
         } finally {
             this.decrementAnalysisProgress();
