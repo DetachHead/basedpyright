@@ -25,6 +25,7 @@
         "fsevents": "~2.3.3"
     },
     "devDependencies": {
+        "@types/is-ci": "^3.0.4",
         "@types/node": "^22.16.0",
         "copy-webpack-plugin": "^11.0.0",
         "esbuild-loader": "^3.2.0",
