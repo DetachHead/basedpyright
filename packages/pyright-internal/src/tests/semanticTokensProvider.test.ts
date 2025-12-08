@@ -789,6 +789,64 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('Unknown, Any, and Union', () => {
+        const result = semanticTokenizeSampleFile('unknown_any_union.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 24, length: 8 }, // Callable
+            { type: 'class', modifiers: ['declaration'], start: 41, length: 1 }, // A
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 52, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 61, length: 4 }, // self
+            { type: 'selfParameter', modifiers: ['parameter'], start: 76, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 81, length: 5 }, // _prop
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 118, length: 4 }, // prop
+            { type: 'decorator', modifiers: [], start: 100, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 101, length: 8 }, // property
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 123, length: 4 }, // self
+            { type: 'selfParameter', modifiers: ['parameter'], start: 145, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 150, length: 5 }, // _prop
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 182, length: 4 }, // prop
+            { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
+            { type: 'property', modifiers: ['classMember'], start: 162, length: 4 }, // prop
+            { type: 'method', modifiers: ['classMember'], start: 167, length: 6 }, // setter
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 187, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 193, length: 5 }, // value
+            { type: 'selfParameter', modifiers: ['parameter'], start: 209, length: 4 }, // self
+            { type: 'variable', modifiers: [], start: 214, length: 5 }, // _prop
+            { type: 'parameter', modifiers: ['parameter'], start: 222, length: 5 }, // value
+            { type: 'variable', modifiers: [], start: 230, length: 1 }, // a
+            { type: 'class', modifiers: [], start: 234, length: 1 }, // A
+            { type: 'variable', modifiers: [], start: 238, length: 2 }, // ap
+            { type: 'variable', modifiers: [], start: 243, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember'], start: 245, length: 4 }, // prop
+            { type: 'variable', modifiers: [], start: 250, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember'], start: 252, length: 4 }, // prop
+            { type: 'type', modifiers: [], start: 265, length: 8 }, // test_any
+            { type: 'type', modifiers: [], start: 276, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 280, length: 4 }, // test
+            { type: 'type', modifiers: [], start: 286, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 294, length: 10 }, // not_a_type
+            { type: 'variable', modifiers: [], start: 307, length: 4 }, // test
+            { type: 'variable', modifiers: [], start: 313, length: 1 }, // b
+            { type: 'class', modifiers: [], start: 316, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 337, length: 3 }, // int
+            { type: 'function', modifiers: [], start: 345, length: 1 }, // c
+            { type: 'class', modifiers: [], start: 348, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 369, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 379, length: 3 }, // int
+            { type: 'variable', modifiers: [], start: 391, length: 1 }, // d
+            { type: 'class', modifiers: [], start: 394, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 415, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 420, length: 3 }, // int
+            { type: 'type', modifiers: [], start: 425, length: 1 }, // e
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 428, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 433, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 440, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 445, length: 5 }, // float
+        ]);
+    });
+
     describe('builtins', () => {
         test('real builtins', () => {
             const result = semanticTokenizeSampleFile('builtin_identifiers.py');
