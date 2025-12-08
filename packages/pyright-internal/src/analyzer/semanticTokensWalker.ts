@@ -5,14 +5,15 @@ import {
     FunctionType,
     getTypeAliasInfo,
     isAny,
+    isAnyOrUnknown,
     isClass,
     isFunction,
     isInstantiableClass,
+    isMethodType,
     isModule,
     isNever,
     isOverloaded,
     isTypeVar,
-    isUnknown,
     NeverType,
     OverloadedType,
     PropertyMethodInfo,
@@ -40,7 +41,7 @@ import { assertNever } from '../common/debug';
 import { getDeclaration } from './analyzerNodeInfo';
 import { isDeclInEnumClass } from './enums';
 import { getEnclosingClass, isWriteAccess } from './parseTreeUtils';
-import { ClassMember, MemberAccessFlags, isProperty, lookUpClassMember } from './typeUtils';
+import { ClassMember, MemberAccessFlags, allSubtypes, isProperty, lookUpClassMember } from './typeUtils';
 
 type TokenTypes = SemanticTokenTypes | CustomSemanticTokenTypes;
 type TokenModifiers = SemanticTokenModifiers | CustomSemanticTokenModifiers;
@@ -155,11 +156,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (primaryDecl?.type) {
             case DeclarationType.Variable: {
                 const type = this._getType(node);
-                // If there is no type information, use “variable” by default
-                let tokenType: TokenTypes | undefined = SemanticTokenTypes.variable;
+                let tokenType: TokenTypes | undefined = undefined;
                 const modifiers: TokenModifiers[] = [];
                 if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
-                if (tokenType) this._addItemForNameNode(node, tokenType, modifiers);
+                // If there is no type information, use “variable” by default
+                this._addItemForNameNode(node, tokenType ?? SemanticTokenTypes.variable, modifiers);
                 return;
             }
             case DeclarationType.Param: {
@@ -390,10 +391,10 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // `node` is always defined for variables
         if (!node) return SemanticTokenTypes.parameter;
 
-        // Do not highlight variables whose type is unknown or Any and which have no declarations
-        // The check for unknown/Any is required for situations such as attribute access using “__getattr__”,
-        // which has no declarations (because there are no variable declarations) but whose type is (hopefully) not unknown/Any
-        if (declarations.length === 0 && (isUnknown(type) || isAny(type))) return;
+        // Do not highlight variables whose type is unknown or Any and not a “special form”
+        // This prevents variables storing the type `Any`, which is a “special form”, from being
+        // covered by this condition (these are handled later).
+        if (!type.props?.specialForm && isAnyOrUnknown(type)) return;
 
         if (!isParam) {
             if (
@@ -453,7 +454,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             return SemanticTokenTypes.type;
         }
 
-        // handle Any, since instances of Any are considered instantiable we need to prevent them from being highlighted as a type
+        // Handle variables storing the type `Any`
         if (isAny(type) && type.props?.specialForm) {
             return SemanticTokenTypes.type;
         }
@@ -466,6 +467,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (isOverloaded(type)) {
             const functionType = OverloadedType.getOverloads(type)[0];
             return this._getFunctionTokenType(node, primaryDecl, declarations, functionType, modifiers);
+        }
+
+        // If all member types of a union are function/overloaded types, highlight as a function
+        if (allSubtypes(type, (t) => isFunction(t) || isOverloaded(t))) {
+            return SemanticTokenTypes.function;
         }
 
         // Detect module variables
@@ -617,19 +623,32 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                         effectiveType = FunctionType.getEffectiveReturnType(methodType);
                 }
 
-                if (effectiveType && isFunction(effectiveType)) {
-                    const isMethod = effectiveType.shared.declaration?.isMethod;
+                // If there is no type information, use `property`
+                if (!effectiveType) {
+                    return SemanticTokenTypes.property;
+                }
+
+                if (isFunction(effectiveType) || isOverloaded(effectiveType)) {
+                    const isMethod = isMethodType(effectiveType);
                     return isMethod ? SemanticTokenTypes.method : SemanticTokenTypes.function;
                 }
-                if (effectiveType && isOverloaded(effectiveType)) {
-                    // check whether any overload has a method declaration
-                    const isMethod = OverloadedType.getOverloads(effectiveType).some(
-                        (fType) => fType.shared.declaration?.isMethod
+                // If `effectiveType` is a function/overloaded type or a union thereof,
+                // highlight as a function/method
+                if (allSubtypes(effectiveType, (t) => isFunction(t) || isOverloaded(t))) {
+                    const isMethod = allSubtypes(effectiveType, (t) =>
+                        isMethodType(t as FunctionType | OverloadedType)
                     );
                     return isMethod ? SemanticTokenTypes.method : SemanticTokenTypes.function;
                 }
-                if (effectiveType && TypeBase.isInstantiable(effectiveType)) {
-                    // resolve type variables to their bound types
+
+                // If `effectiveType` is `Any` or unknown and the type is not a “special form”,
+                // which applies to `Any` itself, use `property`
+                if (isAnyOrUnknown(effectiveType) && !effectiveType.props?.specialForm) {
+                    return SemanticTokenTypes.property;
+                }
+
+                if (TypeBase.isInstantiable(effectiveType)) {
+                    // Resolve type variables to their bound types
                     if (isTypeVar(effectiveType)) effectiveType = effectiveType.shared.boundType ?? effectiveType;
                     return isClass(effectiveType) ? SemanticTokenTypes.class : SemanticTokenTypes.type;
                 }
