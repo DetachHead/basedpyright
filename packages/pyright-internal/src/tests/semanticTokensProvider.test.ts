@@ -824,26 +824,28 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'property', modifiers: ['classMember'], start: 252, length: 4 }, // prop
             { type: 'type', modifiers: [], start: 265, length: 8 }, // test_any
             { type: 'type', modifiers: [], start: 276, length: 3 }, // Any
-            { type: 'variable', modifiers: [], start: 280, length: 4 }, // test
-            { type: 'type', modifiers: [], start: 286, length: 3 }, // Any
-            { type: 'variable', modifiers: [], start: 294, length: 10 }, // not_a_type
-            { type: 'variable', modifiers: [], start: 307, length: 4 }, // test
-            { type: 'variable', modifiers: [], start: 313, length: 1 }, // b
-            { type: 'class', modifiers: [], start: 316, length: 8 }, // Callable
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 337, length: 3 }, // int
-            { type: 'function', modifiers: [], start: 345, length: 1 }, // c
-            { type: 'class', modifiers: [], start: 348, length: 8 }, // Callable
-            { type: 'class', modifiers: [], start: 369, length: 8 }, // Callable
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 379, length: 3 }, // int
-            { type: 'variable', modifiers: [], start: 391, length: 1 }, // d
-            { type: 'class', modifiers: [], start: 394, length: 8 }, // Callable
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 415, length: 4 }, // type
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 420, length: 3 }, // int
-            { type: 'type', modifiers: [], start: 425, length: 1 }, // e
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 428, length: 4 }, // type
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 433, length: 3 }, // int
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 440, length: 4 }, // type
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 445, length: 5 }, // float
+            { type: 'variable', modifiers: [], start: 280, length: 3 }, // foo
+            { type: 'type', modifiers: [], start: 285, length: 8 }, // test_any
+            { type: 'variable', modifiers: [], start: 298, length: 4 }, // test
+            { type: 'type', modifiers: [], start: 304, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 312, length: 10 }, // not_a_type
+            { type: 'variable', modifiers: [], start: 325, length: 4 }, // test
+            { type: 'variable', modifiers: [], start: 331, length: 1 }, // b
+            { type: 'class', modifiers: [], start: 334, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 355, length: 3 }, // int
+            { type: 'function', modifiers: [], start: 363, length: 1 }, // c
+            { type: 'class', modifiers: [], start: 366, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 387, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 397, length: 3 }, // int
+            { type: 'variable', modifiers: [], start: 409, length: 1 }, // d
+            { type: 'class', modifiers: [], start: 412, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 433, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 438, length: 3 }, // int
+            { type: 'type', modifiers: [], start: 443, length: 1 }, // e
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 446, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 451, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 458, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 463, length: 5 }, // float
         ]);
     });
 

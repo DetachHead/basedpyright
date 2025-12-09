@@ -8,6 +8,7 @@ import {
     isAnyOrUnknown,
     isClass,
     isFunction,
+    isFunctionOrOverloaded,
     isInstantiableClass,
     isMethodType,
     isModule,
@@ -156,9 +157,8 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         switch (primaryDecl?.type) {
             case DeclarationType.Variable: {
                 const type = this._getType(node);
-                let tokenType: TokenTypes | undefined = undefined;
                 const modifiers: TokenModifiers[] = [];
-                if (type) tokenType = this._getVariableTokenType(node, type, declarations, modifiers);
+                const tokenType = type ? this._getVariableTokenType(node, type, declarations, modifiers) : undefined;
                 // If there is no type information, use “variable” by default
                 this._addItemForNameNode(node, tokenType ?? SemanticTokenTypes.variable, modifiers);
                 return;
@@ -392,8 +392,9 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (!node) return SemanticTokenTypes.parameter;
 
         // Do not highlight variables whose type is unknown or Any and not a “special form”
-        // This prevents variables storing the type `Any`, which is a “special form”, from being
-        // covered by this condition (these are handled later).
+        // `specialForm` is `undefined` for instances of `Any` but not for the `Any` type itself,
+        // preventing variables storing the type `Any` from being covered by this condition
+        // (these are handled later).
         if (!type.props?.specialForm && isAnyOrUnknown(type)) return;
 
         if (!isParam) {
@@ -470,7 +471,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         }
 
         // If all member types of a union are function/overloaded types, highlight as a function
-        if (allSubtypes(type, (t) => isFunction(t) || isOverloaded(t))) {
+        if (allSubtypes(type, isFunctionOrOverloaded)) {
             return SemanticTokenTypes.function;
         }
 
@@ -628,13 +629,13 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                     return SemanticTokenTypes.property;
                 }
 
-                if (isFunction(effectiveType) || isOverloaded(effectiveType)) {
+                if (isFunctionOrOverloaded(effectiveType)) {
                     const isMethod = isMethodType(effectiveType);
                     return isMethod ? SemanticTokenTypes.method : SemanticTokenTypes.function;
                 }
                 // If `effectiveType` is a function/overloaded type or a union thereof,
                 // highlight as a function/method
-                if (allSubtypes(effectiveType, (t) => isFunction(t) || isOverloaded(t))) {
+                if (allSubtypes(effectiveType, isFunctionOrOverloaded)) {
                     const isMethod = allSubtypes(effectiveType, (t) =>
                         isMethodType(t as FunctionType | OverloadedType)
                     );

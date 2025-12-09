@@ -19,6 +19,7 @@ ap = a.prop
 a.prop = "hi"
 
 test_any = Any
+foo: test_any = 1
 test: Any = s
 not_a_type = test
 
