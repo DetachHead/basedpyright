@@ -42,7 +42,7 @@ class Child1_3(Parent1[str]):
     @overload
     def m1(self, x: str) -> str: ...
 
-    def m1(self, x: bool | str) -> int | float | str:
+    def m1(self, x: bool | str) -> int | str:
         return x
 
 
@@ -55,7 +55,7 @@ class Child1_4(Parent1[str]):
 
     # This should generate an error because the overloads are
     # in the wrong order.
-    def m1(self, x: bool | str) -> int | float | str:
+    def m1(self, x: bool | str) -> int | str:
         return x
 
 
