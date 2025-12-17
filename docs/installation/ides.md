@@ -158,7 +158,7 @@ PyCharm users can enable native basedpyright support in the settings:
 
 4. Select which options should be enabled.
 
-For more information, refer to [PyCharm documentation](https://www.jetbrains.com/help/pycharm/2025.3/lsp-tools.html#pyright).
+For more information, refer to [PyCharm documentation](https://www.jetbrains.com/help/pycharm/lsp-tools.html#pyright).
 
 !!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
