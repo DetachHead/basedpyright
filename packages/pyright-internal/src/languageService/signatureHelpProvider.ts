@@ -198,7 +198,7 @@ export class SignatureHelpProvider {
             }
         }
 
-        if (this._hasActiveParameterCapability || activeSignature === undefined) {
+        if (this._hasActiveParameterCapability && activeSignature === undefined) {
             // If there is no active parameter, then we want the client to not highlight anything.
             // Unfortunately, the LSP spec says that "undefined" or "out of bounds" values should be
             // treated as 0, which is the first parameter. That's not what we want, but thankfully
