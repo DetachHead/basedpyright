@@ -1705,6 +1705,7 @@ export namespace Localizer {
         export const findingReferences = () => getRawString('CodeAction.findingReferences');
         export const findingImplementations = () => getRawString('CodeAction.findingImplementations');
         export const organizeImports = () => getRawString('CodeAction.organizeImports');
+        export const addExplicitOverride = () => getRawString('CodeAction.addExplicitOverride');
     }
 
     export namespace Completion {

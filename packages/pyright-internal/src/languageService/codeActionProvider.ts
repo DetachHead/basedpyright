@@ -28,6 +28,7 @@ import { findNodeByOffset } from '../analyzer/parseTreeUtils';
 import { ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
+import { DiagnosticRule } from '../common/diagnosticRules';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -213,6 +214,51 @@ export class CodeActionProvider {
                     CodeActionKind.QuickFix
                 )
             );
+
+            if (rule === DiagnosticRule.reportImplicitOverride) {
+                const methodLine = line;
+                const lineText = lines.getItemAt(methodLine);
+                const methodLineContent = parseResults.text.substring(lineText.start, lineText.start + lineText.length);
+
+                const indentMatch = methodLineContent.match(/^(\s*)(async\s+)?def\s/);
+                if (!indentMatch) {
+                    continue;
+                }
+
+                const indent = indentMatch[1];
+                const decoratorLine = { line: line - 1, character: 0 };
+                const offset = convertPositionToOffset(decoratorLine, lines);
+                if (offset === undefined) {
+                    return [];
+                }
+
+                const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
+                if (node === undefined) {
+                    return [];
+                }
+
+                const decoratorTextEdit: TextEdit = {
+                    range: {
+                        start: { line: decoratorLine.line, character: indent.length },
+                        end: { line: decoratorLine.line, character: indent.length },
+                    },
+                    newText: `\n${indent}@override`,
+                };
+
+                const textEdits: TextEdit[] = [decoratorTextEdit];
+
+                codeActions.push(
+                    CodeAction.create(
+                        Localizer.CodeAction.addExplicitOverride(),
+                        convertToWorkspaceEdit(
+                            ls.convertUriToLspUriString,
+                            fs,
+                            convertToFileTextEdits(fileUri, convertToTextEditActions(textEdits))
+                        ),
+                        CodeActionKind.QuickFix
+                    )
+                );
+            }
         }
 
         return codeActions;
