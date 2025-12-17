@@ -52,6 +52,7 @@ import {
     ExecuteCommandParams,
     HandlerResult,
     HoverParams,
+    ImplementationParams,
     InitializeParams,
     InitializeResult,
     LSPObject,
@@ -132,7 +133,7 @@ import { fromLSPAny, isNullProgressReporter } from './common/lspUtils';
 import { ProgressReportTracker, ProgressReporter } from './common/progressReporter';
 import { ServiceKeys } from './common/serviceKeys';
 import { ServiceProvider } from './common/serviceProvider';
-import { Position, Range } from './common/textRange';
+import { Position, Range, TextRange } from './common/textRange';
 import { Uri } from './common/uri/uri';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';
@@ -147,6 +148,7 @@ import { FileWatcherDynamicFeature } from './languageService/fileWatcherDynamicF
 import { HoverProvider } from './languageService/hoverProvider';
 import { canNavigateToFile } from './languageService/navigationUtils';
 import { ReferencesProvider } from './languageService/referencesProvider';
+import { ImplementationProvider } from './languageService/implementationProvider';
 import { RenameProvider } from './languageService/renameProvider';
 import { SignatureHelpProvider } from './languageService/signatureHelpProvider';
 import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvider';
@@ -200,6 +202,9 @@ export function wrapProgressReporter(reporter: WorkDoneProgressReporter): Progre
 export abstract class LanguageServerBase implements LanguageServerInterface, Disposable {
     // We support running only one "find all reference" at a time.
     private _pendingFindAllRefsCancellationSource: AbstractCancellationTokenSource | undefined;
+
+    // We support running only one "find all implementations" at a time.
+    private _pendingFindAllImpsCancellationSource: AbstractCancellationTokenSource | undefined;
 
     // We support running only one command at a time.
     private _pendingCommandCancellationSource: AbstractCancellationTokenSource | undefined;
@@ -591,6 +596,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             this.onReferences(params, token, workDoneReporter, resultReporter)
         );
 
+        this.connection.onImplementation(async (params, token, workDoneReporter, resultReporter) =>
+            this.onImplementation(params, token, workDoneReporter, resultReporter)
+        );
+
         this.connection.onDocumentSymbol(async (params, token) => this.onDocumentSymbol(params, token));
         this.connection.onWorkspaceSymbol(async (params, token, _, resultReporter) =>
             this.onWorkspaceSymbol(params, token, resultReporter)
@@ -730,6 +739,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 declarationProvider: { workDoneProgress: true },
                 typeDefinitionProvider: { workDoneProgress: true },
                 referencesProvider: { workDoneProgress: true },
+                implementationProvider: { workDoneProgress: true },
                 documentSymbolProvider: { workDoneProgress: true },
                 workspaceSymbolProvider: { workDoneProgress: true },
                 hoverProvider: { workDoneProgress: true },
@@ -933,6 +943,61 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     createDocumentRange,
                     convertToLocation
                 ).reportReferences(uri, params.position, params.context.includeDeclaration, resultReporter);
+            }, token);
+        } finally {
+            progress.reporter.done();
+            source.dispose();
+        }
+    }
+
+    protected async onImplementation(
+        params: ImplementationParams,
+        token: CancellationToken,
+        workDoneReporter: WorkDoneProgressReporter,
+        resultReporter: ResultProgressReporter<Location[]> | undefined,
+        createDocumentRange?: (uri: Uri, range: TextRange, parseResults: ParseFileResults) => DocumentRange,
+        convertToLocation?: (
+            ls: LanguageServerInterface,
+            fs: ReadOnlyFileSystem,
+            ranges: DocumentRange
+        ) => Location | undefined
+    ): Promise<Location[] | null | undefined> {
+        if (this._pendingFindAllImpsCancellationSource) {
+            this._pendingFindAllImpsCancellationSource.cancel();
+            this._pendingFindAllImpsCancellationSource = undefined;
+        }
+
+        // // VS Code doesn't support cancellation of "find all references".
+        // ^ this comment copied from onReferences
+        // I don't know whether VS Code supports cancellation of "find all implementations".
+
+        // We provide a progress bar a cancellation button so the user can cancel
+        // any long-running actions.
+        const progress = await this.getProgressReporter(
+            workDoneReporter,
+            Localizer.CodeAction.findingImplementations(),
+            token
+        );
+
+        const source = progress.source;
+        this._pendingFindAllImpsCancellationSource = source;
+
+        try {
+            const uri = this.convertLspUriStringToUri(params.textDocument.uri);
+
+            const workspace = await this.getWorkspaceForFile(uri);
+            if (workspace.disableLanguageServices) {
+                return;
+            }
+
+            return workspace.service.run((program) => {
+                return new ImplementationProvider(
+                    this,
+                    program,
+                    source.token,
+                    createDocumentRange,
+                    convertToLocation
+                ).reportImplementations(uri, params.position, resultReporter);
             }, token);
         } finally {
             progress.reporter.done();
@@ -1534,20 +1599,20 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                         ? undefined
                         : diagnosticsVersionAfter.toString();
                 result.items = lspDiagnostics;
+                if (sourceFile) {
+                    this.documentsWithDiagnostics[uri.toString()] = {
+                        reason: 'analysis',
+                        fileUri: uri,
+                        cell: sourceFile.getCellIndex(),
+                        diagnostics: serverDiagnostics,
+                        version: diagnosticsVersion,
+                    };
+                }
             } else {
                 (result as any).kind = 'unchanged';
                 result.resultId =
                     diagnosticsVersion === UncomputedDiagnosticsVersion ? undefined : diagnosticsVersion.toString();
                 delete (result as any).items;
-            }
-            if (sourceFile) {
-                this.documentsWithDiagnostics[uri.toString()] = {
-                    reason: 'analysis',
-                    fileUri: uri,
-                    cell: sourceFile.getCellIndex(),
-                    diagnostics: serverDiagnostics,
-                    version: diagnosticsVersion,
-                };
             }
         } finally {
             this.decrementAnalysisProgress();
@@ -1802,7 +1867,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (!workspace.rootUri) {
                 continue;
             }
-            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline(false, false, files);
+            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline('auto', false, files);
             if (baselineDiffSummary) {
                 this.console.info(
                     `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`

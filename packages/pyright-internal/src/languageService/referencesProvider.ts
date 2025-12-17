@@ -32,7 +32,7 @@ import { Uri } from '../common/uri/uri';
 import { NameNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { CollectionResult, DocumentSymbolCollector } from './documentSymbolCollector';
-import { convertDocumentRangesToLocation } from './navigationUtils';
+import { createDocRangeDefault, deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { isConstructor } from '../analyzer/constructors';
 
@@ -198,13 +198,7 @@ export class FindReferencesTreeWalker {
     }
 
     static createDocumentRange(fileUri: Uri, result: CollectionResult, parseResults: ParseFileResults): DocumentRange {
-        return {
-            uri: fileUri,
-            range: {
-                start: convertOffsetToPosition(result.range.start, parseResults.tokenizerOutput.lines),
-                end: convertOffsetToPosition(TextRange.getEnd(result.range), parseResults.tokenizerOutput.lines),
-            },
-        };
+        return createDocRangeDefault(fileUri, result.range, parseResults);
     }
 }
 
@@ -233,50 +227,20 @@ export class ReferencesProvider {
         includeDeclaration: boolean,
         resultReporter?: ResultProgressReporter<Location[]>
     ) {
-        const sourceFileInfo = this._program.getSourceFileInfo(fileUri);
-        if (!sourceFileInfo) {
-            return;
-        }
-
-        const parseResults = this._program.getParseResults(fileUri);
-        if (!parseResults) {
-            return;
-        }
-
-        const locations: Location[] = [];
-        const reporter: ReferenceCallback = resultReporter
-            ? (range) =>
-                  resultReporter.report(
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  )
-            : (range) =>
-                  appendArray(
-                      locations,
-                      convertDocumentRangesToLocation(
-                          this._ls,
-                          this._program.fileSystem,
-                          range,
-                          this._convertToLocation
-                      )
-                  );
-
-        const invokedFromUserFile = isUserCode(sourceFileInfo);
-        const referencesResult = ReferencesProvider.getDeclarationForPosition(
+        const finder = prepareFinder(
             this._program,
             fileUri,
             position,
-            reporter,
-            ReferenceUseCase.References,
-            this._token
+            this._ls,
+            true,
+            this._token,
+            resultReporter,
+            this._convertToLocation
         );
-        if (!referencesResult) {
+        if (!finder) {
             return;
         }
+        const [sourceFileInfo, locations, , invokedFromUserFile, referencesResult] = finder;
 
         const node = referencesResult.nodeAtOffset;
         let checkConstructorUsagesForClass: ClassDeclaration | undefined;
@@ -365,18 +329,7 @@ export class ReferencesProvider {
             }
         }
 
-        // Deduplicate locations before returning them.
-        const locationsSet = new Set<string>();
-        const dedupedLocations: Location[] = [];
-        for (const loc of locations) {
-            const key = `${loc.uri.toString()}:${loc.range.start.line}:${loc.range.start.character}`;
-            if (!locationsSet.has(key)) {
-                locationsSet.add(key);
-                dedupedLocations.push(loc);
-            }
-        }
-
-        return dedupedLocations;
+        return deduplicateLocations(locations);
     }
 
     addReferencesToResult(

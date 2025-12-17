@@ -11,6 +11,7 @@ import { Range } from './common/textRange';
 import { add } from 'lodash';
 import { ConsoleInterface, StandardConsole } from './common/console';
 import { ConfigOptions } from './common/configOptions';
+import isCI from 'is-ci';
 
 export interface BaselinedDiagnostic {
     code: DiagnosticRule | undefined;
@@ -26,6 +27,12 @@ export interface BaselinedDiagnostic {
     };
 }
 
+// TODO: add 'ignore' mode https://github.com/DetachHead/basedpyright/issues/1524
+export const baselineModes = ['discard', 'auto', 'lock'] as const;
+
+// 'force' is not a real value for `--baselinemode`. we just use it to represent `--writebaseline`
+export type BaselineMode = (typeof baselineModes)[number] | 'force';
+
 /**
  * the JSON structure of the baseline file
  */
@@ -35,38 +42,16 @@ interface BaselineData {
     };
 }
 
-type OptionalIfFalse<Bool extends boolean, T> = T | (Bool extends true ? never : undefined);
+const getErrorCount = (baselineData: BaselineData) => Object.values(baselineData.files).flatMap((file) => file).length;
 
-/**
- * details about the difference between the previous version and the current version of the baseline file
- */
-const baselineSummaryMessage = <T extends boolean>(
-    configOptions: ConfigOptions,
-    previousBaseline: BaselineData,
-    newBaseline: BaselineData,
-    forced: T
-): OptionalIfFalse<T, string> => {
-    const baselinedErrorCount = Object.values(previousBaseline.files).flatMap((file) => file).length;
-    const newErrorCount = Object.values(newBaseline.files).flatMap((file) => file).length;
-    const diff = newErrorCount - baselinedErrorCount;
-    let message = '';
+const getBaselineDiffSummary = (diff: number) => {
     if (diff === 0) {
-        if (!forced) {
-            // if the error count didn't change and the baseline update was not explicitly requested by the user,
-            // that means nothing changed so don't show any message
-            return undefined as OptionalIfFalse<T, string>;
-        }
-        message += "error count didn't change";
+        return "error count didn't change";
     } else if (diff > 0) {
-        message += `went up by ${diff}`;
+        return `went up by ${diff}`;
     } else {
-        message += `went down by ${diff * -1}`;
+        return `went down by ${diff * -1}`;
     }
-
-    return `updated ${configOptions.projectRoot.getRelativePath(baselineFilePath(configOptions))} with ${pluralize(
-        newErrorCount,
-        'error'
-    )} (${message})`;
 };
 
 export class BaselineHandler {
@@ -108,13 +93,13 @@ export class BaselineHandler {
      * i haven't actually checked whether it has a noticable impact)
      * @param filesWithDiagnostics the new diagnostics to write to the baseline file
      */
-    write = <T extends boolean>(
-        force: T,
+    write = (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
     ): string | undefined => {
         const baselineData = this.getContents();
-        if (!force) {
+        if (baselineMode !== 'force') {
             if (!baselineData) {
                 // there currently is no baseline file and the user did not explicitly ask for one, so we do nothing
                 return undefined;
@@ -156,15 +141,49 @@ export class BaselineHandler {
                 result.files[file] = newBaselineFiles[file];
             }
         }
-        this._fs.mkdirSync(this.fileUri.getDirectory(), { recursive: true });
-        try {
-            this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
-        } catch (e) {
-            this._console.error(`failed to write baseline file - ${e}`);
-            return undefined;
+        const previousBaselineData: BaselineData = { files: previousBaselineFiles };
+        const previousErrorCount = getErrorCount(previousBaselineData);
+        const newErrorCount = getErrorCount(result);
+        const diff = newErrorCount - previousErrorCount;
+        const summary = getBaselineDiffSummary(diff);
+        if (diff) {
+            if (baselineMode === 'auto' || baselineMode === 'force') {
+                this._fs.mkdirSync(this.fileUri.getDirectory(), { recursive: true });
+                try {
+                    this._fs.writeFileSync(this.fileUri, JSON.stringify(result, undefined, 4), null);
+                    this.invalidateCache();
+                } catch (e) {
+                    this._console.error(`failed to write baseline file - ${e}`);
+                    return undefined;
+                }
+            } else {
+                const repr = `\`--baselinemode=${baselineMode}\``;
+                if (baselineMode === 'lock') {
+                    this._console.error(
+                        `baselined errors changed but the baseline file cannot be updated when ${repr} (${summary})`
+                    );
+                    if (isCI) {
+                        this._console.error(
+                            `hint: ${repr} is the default behavior in CI. to change this, run basedpyright with \`--baselinemode=auto\``
+                        );
+                    }
+                } else {
+                    // discard any updates to the baseline file
+                    baselineMode satisfies 'discard';
+                    return `baseline file is outdated, run without ${repr} to update it. (${summary})`;
+                }
+                return undefined;
+            }
+        } else {
+            // if the error count didn't change and the baseline update was not explicitly requested by the user,
+            // that means nothing changed so don't show any message
+            if (baselineMode !== 'force') {
+                return undefined;
+            }
         }
-        this._setCache(result);
-        return baselineSummaryMessage(this.configOptions, { files: previousBaselineFiles }, result, force);
+        return `updated ${this.configOptions.projectRoot.getRelativePath(
+            baselineFilePath(this.configOptions)
+        )} with ${pluralize(newErrorCount, 'error')} (${summary})`;
     };
 
     sortDiagnosticsAndMatchBaseline = (

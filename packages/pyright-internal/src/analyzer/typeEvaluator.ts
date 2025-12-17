@@ -24381,7 +24381,8 @@ export function createTypeEvaluator(
         // Is it a structural type (i.e. a protocol)? If so, we need to
         // perform a member-by-member check.
         const inheritanceChain: InheritanceChain = [];
-        const isDerivedFrom = ClassType.isDerivedFrom(srcType, destType, inheritanceChain);
+        const allowAnyBase = !(flags & AssignTypeFlags.DisallowSrcDerivedFromAny);
+        const isDerivedFrom = ClassType.isDerivedFrom(srcType, destType, inheritanceChain, allowAnyBase);
 
         // Use the slow path for protocols if the dest doesn't explicitly
         // derive from the source. We also need to use this path if we're

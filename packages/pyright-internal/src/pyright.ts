@@ -16,6 +16,7 @@ import { timingStats } from './common/timing';
 import chalk from 'chalk';
 import commandLineArgs, { CommandLineOptions, OptionDefinition } from 'command-line-args';
 import * as os from 'os';
+import isCI from 'is-ci';
 
 import { ChildProcess, fork } from 'child_process';
 import { AnalysisResults } from './analyzer/analysis';
@@ -50,7 +51,7 @@ import * as core from '@actions/core';
 import * as command from '@actions/core/lib/command';
 import { convertDiagnostics } from 'pyright-to-gitlab-ci/src/converter';
 import path from 'path';
-import { pluralize } from './common/stringUtils';
+import { pluralize, userFacingOptionsList } from './common/stringUtils';
 import {
     allTypeCheckingModes,
     ConfigOptions,
@@ -58,6 +59,7 @@ import {
     getDiagLevelDiagnosticRules,
 } from './common/configOptions';
 import { writeFileSync } from 'fs';
+import { BaselineMode, baselineModes } from './baseline';
 
 type SeverityLevel = 'error' | 'warning' | 'information';
 
@@ -171,6 +173,7 @@ async function processArgs(): Promise<ExitStatus> {
         { name: 'outputjson', type: Boolean },
         { name: 'gitlabcodequality', type: String },
         { name: 'writebaseline', type: Boolean },
+        { name: 'baselinemode', type: String },
         { name: 'project', alias: 'p', type: String },
         { name: 'pythonpath', type: String },
         { name: 'pythonplatform', type: String },
@@ -276,6 +279,24 @@ async function processArgs(): Promise<ExitStatus> {
                 console.error(`'threads' option cannot be used with '${arg}' option`);
                 return ExitStatus.ParameterError;
             }
+        }
+    }
+
+    if (args.baselinemode) {
+        const incompatibleArgs = ['writebaseline'];
+        for (const arg of incompatibleArgs) {
+            if (args[arg] !== undefined) {
+                console.error(`'baselinemode' option cannot be used with '${arg}' option`);
+                return ExitStatus.ParameterError;
+            }
+        }
+        if (!baselineModes.includes(args.baselinemode)) {
+            console.error(
+                `'baselinemode' option must be one of ${userFacingOptionsList(baselineModes)} (found: ${
+                    args.baselinemode
+                })`
+            );
+            return ExitStatus.ParameterError;
         }
     }
 
@@ -495,8 +516,16 @@ const outputResults = (
     minSeverityLevel: SeverityLevel,
     output: ConsoleInterface
 ) => {
+    let baselineMode: BaselineMode;
+    if (args.writebaseline) {
+        baselineMode = 'force';
+    } else if (args.baselinemode) {
+        baselineMode = args.baselinemode;
+    } else {
+        baselineMode = isCI ? 'lock' : 'auto';
+    }
     const baselineDiffMessage = service.backgroundAnalysisProgram.writeBaseline(
-        args.writebaseline,
+        baselineMode,
         true,
         results.diagnostics
     );

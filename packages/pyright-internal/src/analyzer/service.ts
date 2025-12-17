@@ -64,6 +64,7 @@ import {
 import { SourceEnumerator } from './sourceEnumerator';
 import { IPythonMode } from './sourceFile';
 import { FileDiagnostics } from '../common/diagnosticSink';
+import { BaselineMode } from '../baseline';
 
 // How long since the last user activity should we wait until running
 // the analyzer on any files that have not yet been analyzed?
@@ -575,12 +576,16 @@ export class AnalyzerService {
         return true;
     }
 
-    writeBaseline = <T extends boolean>(
-        force: T,
+    writeBaseline = (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
     ) => {
-        const result = this.backgroundAnalysisProgram.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+        const result = this.backgroundAnalysisProgram.writeBaseline(
+            baselineMode,
+            removeDeletedFiles,
+            filesWithDiagnostics
+        );
         this.invalidateAndForceReanalysis(InvalidatedReason.BaselineFileUpdated);
         this.scheduleReanalysis(false);
         return result;

@@ -305,6 +305,119 @@ if (process.platform !== 'win32' || !process.env['CI']) {
         ]);
     });
 
+    test('descriptors_extended', () => {
+        const result = semanticTokenizeSampleFile('descriptors_extended.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'class', modifiers: [], start: 19, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 29, length: 11 }, // Concatenate
+            { type: 'class', modifiers: ['declaration'], start: 49, length: 1 }, // A
+            { type: 'typeParameter', modifiers: [], start: 51, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 54, length: 1 }, // U
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 66, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 75, length: 4 }, // self
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 81, length: 4 }, // func
+            { type: 'class', modifiers: [], start: 87, length: 8 }, // Callable
+            { type: 'typeParameter', modifiers: [], start: 97, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 101, length: 1 }, // U
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 126, length: 7 }, // __get__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 134, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 140, length: 8 }, // instance
+            { type: 'typeParameter', modifiers: [], start: 150, length: 1 }, // T
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 153, length: 5 }, // owner
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 160, length: 4 }, // type
+            { type: 'typeParameter', modifiers: [], start: 165, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 186, length: 1 }, // U
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 201, length: 7 }, // __set__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 209, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 215, length: 8 }, // instance
+            { type: 'typeParameter', modifiers: [], start: 225, length: 1 }, // T
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 228, length: 5 }, // value
+            { type: 'typeParameter', modifiers: [], start: 235, length: 1 }, // U
+            { type: 'class', modifiers: ['declaration'], start: 259, length: 1 }, // B
+            { type: 'typeParameter', modifiers: [], start: 261, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 264, length: 1 }, // U
+            { type: 'class', modifiers: [], start: 267, length: 1 }, // A
+            { type: 'typeParameter', modifiers: [], start: 269, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 272, length: 1 }, // U
+            { type: 'function', modifiers: ['declaration'], start: 287, length: 4 }, // deco
+            { type: 'typeParameter', modifiers: [], start: 292, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 297, length: 1 }, // P
+            { type: 'typeParameter', modifiers: [], start: 300, length: 1 }, // R
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 308, length: 2 }, // fn
+            { type: 'class', modifiers: [], start: 312, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 321, length: 11 }, // Concatenate
+            { type: 'typeParameter', modifiers: [], start: 333, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 336, length: 1 }, // P
+            { type: 'typeParameter', modifiers: [], start: 340, length: 1 }, // R
+            { type: 'class', modifiers: [], start: 349, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 358, length: 11 }, // Concatenate
+            { type: 'typeParameter', modifiers: [], start: 370, length: 1 }, // T
+            { type: 'typeParameter', modifiers: [], start: 373, length: 1 }, // P
+            { type: 'typeParameter', modifiers: [], start: 377, length: 1 }, // R
+            { type: 'class', modifiers: ['declaration'], start: 393, length: 3 }, // Foo
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 413, length: 3 }, // foo
+            { type: 'decorator', modifiers: [], start: 402, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 403, length: 1 }, // A
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 417, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 426, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 451, length: 3 }, // bar
+            { type: 'decorator', modifiers: [], start: 440, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 441, length: 1 }, // B
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 455, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 464, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 496, length: 3 }, // bat
+            { type: 'decorator', modifiers: [], start: 478, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 479, length: 8 }, // property
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 500, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 509, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 542, length: 3 }, // bat
+            { type: 'decorator', modifiers: [], start: 522, length: 1 }, // @
+            { type: 'property', modifiers: ['classMember'], start: 523, length: 3 }, // bat
+            { type: 'method', modifiers: ['classMember'], start: 527, length: 6 }, // setter
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 546, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 552, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 559, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember', 'readonly'], start: 600, length: 3 }, // baz
+            { type: 'decorator', modifiers: [], start: 582, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 583, length: 8 }, // property
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 604, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 613, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 655, length: 3 }, // cat
+            { type: 'decorator', modifiers: [], start: 627, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 628, length: 8 }, // property
+            { type: 'decorator', modifiers: [], start: 641, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 642, length: 4 }, // deco
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 659, length: 4 }, // self
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 668, length: 3 }, // int
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 711, length: 3 }, // cat
+            { type: 'decorator', modifiers: [], start: 681, length: 1 }, // @
+            { type: 'property', modifiers: ['classMember'], start: 682, length: 3 }, // cat
+            { type: 'method', modifiers: ['classMember'], start: 686, length: 6 }, // setter
+            { type: 'decorator', modifiers: [], start: 697, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 698, length: 4 }, // deco
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 715, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 721, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 728, length: 3 }, // int
+            { type: 'variable', modifiers: [], start: 740, length: 3 }, // foo
+            { type: 'class', modifiers: [], start: 746, length: 3 }, // Foo
+            { type: 'variable', modifiers: [], start: 753, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 757, length: 3 }, // foo
+            { type: 'variable', modifiers: [], start: 761, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 765, length: 3 }, // bar
+            { type: 'variable', modifiers: [], start: 769, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 773, length: 3 }, // bat
+            { type: 'variable', modifiers: [], start: 777, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 781, length: 3 }, // bat
+            { type: 'variable', modifiers: [], start: 789, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember', 'readonly'], start: 793, length: 3 }, // baz
+            { type: 'variable', modifiers: [], start: 797, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 801, length: 3 }, // cat
+            { type: 'variable', modifiers: [], start: 805, length: 3 }, // foo
+            { type: 'property', modifiers: ['classMember'], start: 809, length: 3 }, // cat
+        ]);
+    });
+
     test('enum', () => {
         const result = semanticTokenizeSampleFile('enum.py');
         expect(result).toStrictEqual([
@@ -673,6 +786,66 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'keyword', modifiers: [], start: 281, length: 4 }, // type
             { type: 'type', modifiers: [], start: 286, length: 3 }, // Baz
             { type: 'type', modifiers: [], start: 292, length: 3 }, // Any
+        ]);
+    });
+
+    test('Unknown, Any, and Union', () => {
+        const result = semanticTokenizeSampleFile('unknown_any_union.py');
+        expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 6 }, // typing
+            { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
+            { type: 'class', modifiers: [], start: 24, length: 8 }, // Callable
+            { type: 'class', modifiers: ['declaration'], start: 41, length: 1 }, // A
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 52, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 61, length: 4 }, // self
+            { type: 'selfParameter', modifiers: ['parameter'], start: 76, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 81, length: 5 }, // _prop
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 118, length: 4 }, // prop
+            { type: 'decorator', modifiers: [], start: 100, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 101, length: 8 }, // property
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 123, length: 4 }, // self
+            { type: 'selfParameter', modifiers: ['parameter'], start: 145, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 150, length: 5 }, // _prop
+            { type: 'property', modifiers: ['declaration', 'classMember'], start: 182, length: 4 }, // prop
+            { type: 'decorator', modifiers: [], start: 161, length: 1 }, // @
+            { type: 'property', modifiers: ['classMember'], start: 162, length: 4 }, // prop
+            { type: 'method', modifiers: ['classMember'], start: 167, length: 6 }, // setter
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 187, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 193, length: 5 }, // value
+            { type: 'selfParameter', modifiers: ['parameter'], start: 209, length: 4 }, // self
+            { type: 'variable', modifiers: [], start: 214, length: 5 }, // _prop
+            { type: 'parameter', modifiers: ['parameter'], start: 222, length: 5 }, // value
+            { type: 'variable', modifiers: [], start: 230, length: 1 }, // a
+            { type: 'class', modifiers: [], start: 234, length: 1 }, // A
+            { type: 'variable', modifiers: [], start: 238, length: 2 }, // ap
+            { type: 'variable', modifiers: [], start: 243, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember'], start: 245, length: 4 }, // prop
+            { type: 'variable', modifiers: [], start: 250, length: 1 }, // a
+            { type: 'property', modifiers: ['classMember'], start: 252, length: 4 }, // prop
+            { type: 'type', modifiers: [], start: 265, length: 8 }, // test_any
+            { type: 'type', modifiers: [], start: 276, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 280, length: 3 }, // foo
+            { type: 'type', modifiers: [], start: 285, length: 8 }, // test_any
+            { type: 'variable', modifiers: [], start: 298, length: 4 }, // test
+            { type: 'type', modifiers: [], start: 304, length: 3 }, // Any
+            { type: 'variable', modifiers: [], start: 312, length: 10 }, // not_a_type
+            { type: 'variable', modifiers: [], start: 325, length: 4 }, // test
+            { type: 'variable', modifiers: [], start: 331, length: 1 }, // b
+            { type: 'class', modifiers: [], start: 334, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 355, length: 3 }, // int
+            { type: 'function', modifiers: [], start: 363, length: 1 }, // c
+            { type: 'class', modifiers: [], start: 366, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 387, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 397, length: 3 }, // int
+            { type: 'variable', modifiers: [], start: 409, length: 1 }, // d
+            { type: 'class', modifiers: [], start: 412, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 433, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 438, length: 3 }, // int
+            { type: 'type', modifiers: [], start: 443, length: 1 }, // e
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 446, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 451, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 458, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 463, length: 5 }, // float
         ]);
     });
 

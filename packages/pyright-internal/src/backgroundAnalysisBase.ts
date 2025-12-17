@@ -46,6 +46,7 @@ import { createMessageChannel, MessagePort, threadId, MessageChannel, Worker } f
 import { Uri } from './common/uri/uri';
 import { ProgramView } from './common/extensibility';
 import { TestFileSystem } from './tests/harness/vfs/filesystem';
+import { BaselineMode } from './baseline';
 
 export interface IBackgroundAnalysis extends Disposable {
     setProgramView(program: Program): void;
@@ -61,8 +62,8 @@ export interface IBackgroundAnalysis extends Disposable {
     addInterimFile(fileUri: Uri): void;
     markAllFilesDirty(evenIfContentsAreSame: boolean): void;
     markFilesDirty(fileUris: Uri[], evenIfContentsAreSame: boolean): void;
-    writeBaseline: <T extends boolean>(
-        force: T,
+    writeBaseline: (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
     ) => Promise<string | undefined>;
@@ -194,8 +195,8 @@ export class BackgroundAnalysisBase implements IBackgroundAnalysis {
         });
     }
 
-    writeBaseline = async <T extends boolean>(
-        force: T,
+    writeBaseline = async (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
     ) => {
@@ -204,7 +205,7 @@ export class BackgroundAnalysisBase implements IBackgroundAnalysis {
 
         this.enqueueRequest({
             requestType: 'writeBaseline',
-            data: serialize({ force, removeDeletedFiles, filesWithDiagnostics }),
+            data: serialize({ baselineMode, removeDeletedFiles, filesWithDiagnostics }),
             port: port2,
         });
 
@@ -631,9 +632,9 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
 
             case 'writeBaseline': {
                 run(() => {
-                    const { force, removeDeletedFiles, filesWithDiagnostics } = deserialize(msg.data);
+                    const { baselineMode, removeDeletedFiles, filesWithDiagnostics } = deserialize(msg.data);
                     return this.handleWriteBaseline(
-                        force,
+                        baselineMode,
                         removeDeletedFiles,
                         convertFileDiagnostics(filesWithDiagnostics)
                     );
@@ -819,11 +820,11 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.program.markFilesDirty(fileUris, evenIfContentsAreSame);
     }
 
-    protected handleWriteBaseline = <T extends boolean>(
-        force: T,
+    protected handleWriteBaseline = (
+        baselineMode: BaselineMode,
         removeDeletedFiles: boolean,
         filesWithDiagnostics: readonly FileDiagnostics[]
-    ) => this.program.writeBaseline(force, removeDeletedFiles, filesWithDiagnostics);
+    ) => this.program.writeBaseline(baselineMode, removeDeletedFiles, filesWithDiagnostics);
 
     protected handleMarkAllFilesDirty(evenIfContentsAreSame: boolean) {
         this.program.markAllFilesDirty(evenIfContentsAreSame);

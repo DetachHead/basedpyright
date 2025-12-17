@@ -76,7 +76,8 @@ module.exports = async (_, { mode }) => {
         plugins: [
             new DefinePlugin({
                 // Just enough to avoid the memory check that pyright performs in pyright-internal/src/analyzer/program.ts
-                process: "{ env: {}, execArgv: [], cwd: () => '/', memoryUsage: () => ({heapUsed: 0, rss: 1}) }",
+                // also used by the the is-ci package
+                process: { env: {}, execArgv: [], cwd: () => '/', memoryUsage: () => ({ heapUsed: 0, rss: 1 }) },
             }),
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
