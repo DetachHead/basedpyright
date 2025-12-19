@@ -279,7 +279,11 @@ function _parseDiagLevel(value: string): DiagnosticLevel | undefined {
         case 'information':
             return 'information';
         case 'hint':
-            return 'hint';
+case 'error':
+case 'warning':
+case 'information':
+case 'hint':
+    return value;
 
         default:
             return undefined;
