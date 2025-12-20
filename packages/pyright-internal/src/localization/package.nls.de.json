@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "Die Typvariable \"{variable}\", die im generischen Protocol \"{class}\" verwendet wird, muss \"covariant\" sein.",
         "protocolVarianceInvariant": "Die Typvariable \"{variable}\", die im generischen Protocol \"{class}\" verwendet wird, muss \"invariant\" sein.",
         "pyrightCommentInvalidDiagnosticBoolValue": "Auf die Pyright-Kommentardirektive muss \"=\" und der Wert \"true\" oder \"false\" folgen.",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Auf die Pyright-Kommentardirektive muss \"=\" und der Wert \"true\", \"false\", \"error\", \"warning\", \"information\" oder \"none\" folgen.",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Auf die Pyright-Kommentardirektive muss \"=\" und der Wert \"true\", \"false\", \"error\", \"warning\", \"information\", \"hint\" oder \"none\" folgen.",
         "pyrightCommentMissingDirective": "Auf einen Pyright-Kommentar muss eine Direktive (basic oder strict) oder eine Diagnoseregel folgen.",
         "pyrightCommentNotOnOwnLine": "Pyright-Kommentare, die zum Steuern von Einstellungen auf Dateiebene verwendet werden, müssen in ihrer eigenen Zeile angezeigt werden.",
         "pyrightCommentUnknownDiagnosticRule": "\"{rule}\" ist eine unbekannte Diagnoseregel für pyright-Kommentar.",

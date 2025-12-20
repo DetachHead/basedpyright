@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "La variable de type \"{variable}\" utilisée dans le Protocol générique \"{class}\" doit être covariante",
         "protocolVarianceInvariant": "La variable de type \"{variable}\" utilisée dans le Protocol générique \"{class}\" doit être invariante",
         "pyrightCommentInvalidDiagnosticBoolValue": "La directive de commentaire Pyright doit être suivie de « = » et d’une valeur true ou false",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "La directive de commentaire Pyright doit être suivie de « = » et avoir la valeur true, false, error, warning, information ou none",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "La directive de commentaire Pyright doit être suivie de « = » et avoir la valeur true, false, error, warning, information, hint ou none",
         "pyrightCommentMissingDirective": "Le commentaire Pyright doit être suivi d’une directive (basic ou strict) ou d’une règle de diagnostic",
         "pyrightCommentNotOnOwnLine": "Les commentaires Pyright utilisés pour contrôler les paramètres au niveau du fichier doivent apparaître sur leur propre ligne",
         "pyrightCommentUnknownDiagnosticRule": "« {rule} » est une règle de diagnostic inconnue pour le commentaire pyright",

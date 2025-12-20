@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "Genel Protocol \"{class}\" için kullanılan \"{variable}\" tür değişkeni, birlikte değişen olmalıdır",
         "protocolVarianceInvariant": "Genel Protocol \"{class}\" için kullanılan \"{variable}\" tür değişkeni sabit olmalıdır",
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright açıklama yönergesinden sonra \"=\" ve true veya false değeri olmalıdır",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright açıklama yönergesinden sonra \"=\" ve true, false, error, warning, information veya none değeri girilmelidir",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright açıklama yönergesinden sonra \"=\" ve true, false, error, warning, information, hint veya none değeri girilmelidir",
         "pyrightCommentMissingDirective": "Pyright comment must be followed by a directive (basic or strict) or a diagnostic rule",
         "pyrightCommentNotOnOwnLine": "Pyright comments used to control file-level settings must appear on their own line",
         "pyrightCommentUnknownDiagnosticRule": "\"{rule}\", pyright açıklaması için bilinmeyen bir tanılama kuralı",

@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "제네릭 Protocol \"{class}\"에 사용되는 형식 변수 \"{variable}\"은(는) 공변(covariant)이어야 합니다.",
         "protocolVarianceInvariant": "제네릭 Protocol \"{class}\"에 사용되는 형식 변수 \"{variable}\"은(는) 고정되어야 합니다.",
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright 주석 지시문 뒤에는 \"=\"와 true 또는 false 값이 와야 합니다.",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 주석 지시문 뒤에는 \"=\"와 true, false, error, warning, information 또는 none 값이 와야 합니다.",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 주석 지시문 뒤에는 \"=\"와 true, false, error, warning, information, hint 또는 none 값이 와야 합니다.",
         "pyrightCommentMissingDirective": "Pyright 메모 뒤에는 지시문(basic 또는 strict) 또는 진단 규칙이 있어야 합니다.",
         "pyrightCommentNotOnOwnLine": "파일 수준 설정을 제어하는 데 사용되는Pyright 주석은 고유의 줄에 표시되어야 합니다.",
         "pyrightCommentUnknownDiagnosticRule": "\"{rule}\"은(는) pyright 주석에 대한 알 수 없는 진단 규칙입니다.",

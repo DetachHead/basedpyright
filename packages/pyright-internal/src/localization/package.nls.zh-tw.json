@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "一般 Protocol \"{class}\" 中使用的類型變數 \"{variable}\" 必須為共變數",
         "protocolVarianceInvariant": "一般 Protocol \"{class}\" 中使用的類別變數 \"{variable}\" 必須為不變數",
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright 註解指示詞後面必須接著 \"=\"，且值為 true 或 false",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 註解指示詞後面必須接著 \"=\"，且值為 true、false、error、warning、information 或 none",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 註解指示詞後面必須接著 \"=\"，且值為 true、false、error、warning、information、hint 或 none",
         "pyrightCommentMissingDirective": "Pyright 註解後面必須接著指示詞 (basic 或 strict) 或診斷規則",
         "pyrightCommentNotOnOwnLine": "用來控制檔案層級設定的 Pyright 註解必須出現在自己的行上",
         "pyrightCommentUnknownDiagnosticRule": "\"{rule}\" 是 pyright 註解未知的診斷規則",
