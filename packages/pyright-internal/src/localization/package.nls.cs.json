@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "Proměnná typu {variable} použitá v obecné třídě Protocol {class} by měla být kovariantní.",
         "protocolVarianceInvariant": "Proměnná typu {variable} použitá v obecné třídě Protocol {class} by měla být invariantní.",
         "pyrightCommentInvalidDiagnosticBoolValue": "Za direktivou komentářů Pyright musí následovat znak =a hodnota true nebo false",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Za direktivou komentářů Pyright musí následovat = a hodnota true, false, error, warning, information nebo none",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Za direktivou komentářů Pyright musí následovat = a hodnota true, false, error, warning, information, hint nebo none",
         "pyrightCommentMissingDirective": "Za komentářem Pyright musí následovat direktiva (basic nebo strict) nebo diagnostické pravidlo.",
         "pyrightCommentNotOnOwnLine": "Komentáře Pyright používané k řízení nastavení na úrovni souborů se musí zobrazovat na vlastním řádku",
         "pyrightCommentUnknownDiagnosticRule": "{rule} je neznámé diagnostické pravidlo pro komentář pyright",

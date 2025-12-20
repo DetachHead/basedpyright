@@ -429,7 +429,7 @@
         "protocolVarianceCovariant": "ジェネリック Protocol \"{class}\" で使用される型変数 \"{variable}\" は共変である必要があります",
         "protocolVarianceInvariant": "ジェネリック Protocol \"{class}\" で使用される型変数 \"{variable}\" は不変である必要があります",
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright コメント ディレクティブの後には \"=\" と値 true または false を指定する必要があります",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright コメント ディレクティブの後に \"=\" と true、false、error、warning、information または none の値を指定する必要があります",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright コメント ディレクティブの後に \"=\" と true、false、error、warning、information、hint または none の値を指定する必要があります",
         "pyrightCommentMissingDirective": "Pyright コメントの後にディレクティブ (basic または strict) または診断規則を指定する必要があります",
         "pyrightCommentNotOnOwnLine": "ファイル レベルの設定を制御するために使用する Pyright コメントは、独自の行に表示する必要があります",
         "pyrightCommentUnknownDiagnosticRule": "\"{rule}\" は pyright コメントの不明な診断規則です",

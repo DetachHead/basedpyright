@@ -430,7 +430,7 @@
         "protocolVarianceCovariant": "Переменная типа \"{variable}\", используемая в обобщенном протоколе \"{class}\", должна быть ковариантной",
         "protocolVarianceInvariant": "Переменная типа \"{variable}\", используемая в обобщенном протоколе \"{class}\", должна быть инвариантной",
         "pyrightCommentInvalidDiagnosticBoolValue": "За директивой комментария Pyright должно следовать \"=\" и значение true или false",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "За директивой комментария Pyright должно следовать \"=\" и одно из следующих значений: true, false, error, warning, information или none",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "За директивой комментария Pyright должно следовать \"=\" и одно из следующих значений: true, false, error, warning, information, hint или none",
         "pyrightCommentMissingDirective": "После комментария Pyright должна следовать директива (basic или strict) или правило диагностики",
         "pyrightCommentNotOnOwnLine": "Комментарии Pyright, используемые для управления параметрами на уровне файлов, должны располагаться в отдельной строке",
         "pyrightCommentUnknownDiagnosticRule": "Правило диагностики \"{rule}\" для комментария pyright неизвестно",

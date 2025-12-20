@@ -1106,7 +1106,7 @@
             "comment": "{Locked='Pyright','true','false'}"
         },
         "pyrightCommentInvalidDiagnosticSeverityValue": {
-            "message": "Pyright comment directive must be followed by \"=\" and a value of true, false, error, warning, information, or none",
+            "message": "Pyright comment directive must be followed by \"=\" and a value of true, false, error, warning, information, hint or none",
             "comment": "{Locked='Pyright','true','false','error','warning','information','none'}"
         },
         "pyrightCommentMissingDirective": {

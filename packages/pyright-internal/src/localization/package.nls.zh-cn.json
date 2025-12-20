@@ -438,7 +438,7 @@
         "protocolVarianceCovariant": "`Protocol` 类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为协变（Covariant）形式",
         "protocolVarianceInvariant": "`Protocol` 类 \"{class}\" 中使用的类型变量 \"{variable}\" 应为不变（Invariant）形式",
         "pyrightCommentInvalidDiagnosticBoolValue": "Pyright 注释指令后面必须跟有 `=` 和一个设作 `true` 或 `false` 的值",
-        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 注释指令后面必须跟有 `=` 和一个设作 `true`、`false`、`error`、`warning`、`information` 或 `none` 的值",
+        "pyrightCommentInvalidDiagnosticSeverityValue": "Pyright 注释指令后面必须跟有 `=` 和一个设作 `true`、`false`、`error`、`warning`、`information`、`hint` 或 `none` 的值",
         "pyrightCommentMissingDirective": "Pyright 注释内容必须含有诊断级别（`basic`、`standard` 或 `strict`）或诊断规则",
         "pyrightCommentNotOnOwnLine": "Pyright 的文件级注释应独立成行",
         "pyrightCommentUnknownDiagnosticRule": "Pyright 注释中的诊断规则 \"{rule}\" 未知",
