@@ -18,9 +18,9 @@ to allow type checkers to add their own little hacks on top of the standard ones
     Pyright (and basedpyright) assumes that classes produced by a dataclass transform
     define a `__replace__` method, as long as the class is not marked with `init=False` and does
     not define a custom `__init__` method.
-    However, `typing.dataclass_transform` doesn't require that the `__replace__` method is defined.
+    You may want a `dataclass`-like decorator or metaclass that does not support `__replace__` at all.
 
-    In addition, `__replace__` messes with the variance inference of frozen dataclasses (see
+    In particular, `__replace__` messes with the variance inference of frozen dataclasses (see
     [this discourse thread](https://discuss.python.org/t/make-replace-stop-interfering-with-variance-inference/96092)
     for details). Here's a recipe you can use to work around this:
 
