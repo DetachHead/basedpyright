@@ -922,7 +922,7 @@ export class CompletionProvider {
         return completionMap;
     }
 
-    protected createAutoImporter(completionMap: CompletionMap, lazyEdit: boolean) {
+    createAutoImporter(completionMap: CompletionMap, lazyEdit: boolean) {
         const currentFile = this.program.getSourceFileInfo(this.fileUri);
         const moduleSymbolMap = buildModuleSymbolsMap(
             this.program,

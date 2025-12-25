@@ -14,10 +14,15 @@ import { createCommand } from '../common/commandUtils';
 import { CreateTypeStubFileAction } from '../common/diagnostic';
 import { Range } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { convertToFileTextEdits, convertToTextEditActions, convertToWorkspaceEdit } from '../common/workspaceEditUtils';
+import {
+    convertToFileTextEdits,
+    convertToTextEditActions,
+    convertToTextEdits,
+    convertToWorkspaceEdit,
+} from '../common/workspaceEditUtils';
 import { Localizer } from '../localization/localize';
 import { Workspace } from '../workspaceFactory';
-import { CompletionProvider } from './completionProvider';
+import { CompletionMap, CompletionProvider } from './completionProvider';
 import {
     convertOffsetToPosition,
     convertPositionToOffset,
@@ -29,6 +34,8 @@ import { ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { TypeCategory } from '../analyzer/types';
+import { ImportGroup } from '../analyzer/importStatementUtils';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -246,6 +253,44 @@ export class CodeActionProvider {
                 };
 
                 const textEdits: TextEdit[] = [decoratorTextEdit];
+
+                const completer = new CompletionProvider(
+                    workspace.service.backgroundAnalysisProgram.program,
+                    fileUri,
+                    convertOffsetToPosition(node.start + node.length, lines),
+                    {
+                        format: 'plaintext',
+                        lazyEdit: false,
+                        snippet: false,
+                        // we don't care about deprecations here so make sure they don't get evaluated unnecessarily
+                        // (we don't call resolveCompletionItem)
+                        checkDeprecatedWhenResolving: true,
+                        useTypingExtensions: workspace.useTypingExtensions,
+                    },
+                    token,
+                    true
+                );
+                const completionMap = new CompletionMap();
+
+                const overrideDecorator = workspace.service.backgroundAnalysisProgram.program.evaluator!.getTypingType(
+                    node,
+                    'override'
+                );
+                if (overrideDecorator?.category === TypeCategory.Function) {
+                    const importTextEditInfo = completer
+                        .createAutoImporter(completionMap, false)
+                        .getTextEditsForAutoImportByFilePath(
+                            { name: 'override' },
+                            { name: overrideDecorator.shared.moduleName },
+                            'override',
+                            ImportGroup.BuiltIn,
+                            overrideDecorator.shared.declaration!.uri
+                        );
+
+                    if (importTextEditInfo.edits) {
+                        textEdits.push(...convertToTextEdits(importTextEditInfo.edits));
+                    }
+                }
 
                 codeActions.push(
                     CodeAction.create(
