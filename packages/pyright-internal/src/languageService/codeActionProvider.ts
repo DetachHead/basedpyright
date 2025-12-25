@@ -250,12 +250,15 @@ export class CodeActionProvider {
                 }
                 positionCharacter = convertTextRangeToRange(lastRuleTextRange, lines).end.character;
                 insertText = `, ${rule}`;
-                title = `Add \`${rule}\` to existing \`${ignoreCommentPrefix}\` comment`;
+                title = Localizer.CodeAction.addIgnoreCommentToExisting().format({
+                    rule: rule,
+                    ignoreCommentPrefix: ignoreCommentPrefix,
+                });
             } else {
                 positionCharacter = getLineEndPosition(parseResults.tokenizerOutput, parseResults.text, line).character;
                 const ignoreComment = `${ignoreCommentPrefix}[${rule}]`;
                 insertText = `  ${ignoreComment}`;
-                title = `Add \`${ignoreComment}\``;
+                title = Localizer.CodeAction.addIgnoreComment().format({ ignoreComment: ignoreComment });
             }
             const position = { line, character: positionCharacter };
             codeActions.push(

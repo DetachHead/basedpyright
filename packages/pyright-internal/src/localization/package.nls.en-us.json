@@ -14,7 +14,9 @@
         "findingReferences": "Finding references",
         "findingImplementations": "Finding implementations",
         "organizeImports": "Organize Imports",
-        "addExplicitOverride": "Add `@override`"
+        "addExplicitOverride": "Add `@override`",
+        "addIgnoreComment": "Add `{ignoreComment}`",
+        "addIgnoreCommentToExisting": "Add `${rule}` to existing `${ignoreCommentPrefix}` comment"
     },
     "Completion": {
         "autoImportDetail": "Auto-import",
