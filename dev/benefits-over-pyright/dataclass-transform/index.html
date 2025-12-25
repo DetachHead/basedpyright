@@ -1801,8 +1801,8 @@ to allow type checkers to add their own little hacks on top of the standard ones
 <p>Pyright (and basedpyright) assumes that classes produced by a dataclass transform
 define a <code>__replace__</code> method, as long as the class is not marked with <code>init=False</code> and does
 not define a custom <code>__init__</code> method.
-However, <code>typing.dataclass_transform</code> doesn't require that the <code>__replace__</code> method is defined.</p>
-<p>In addition, <code>__replace__</code> messes with the variance inference of frozen dataclasses (see
+You may want a <code>dataclass</code>-like decorator or metaclass that does not support <code>__replace__</code> at all.</p>
+<p>In particular, <code>__replace__</code> messes with the variance inference of frozen dataclasses (see
 <a href="https://discuss.python.org/t/make-replace-stop-interfering-with-variance-inference/96092">this discourse thread</a>
 for details). Here's a recipe you can use to work around this:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass_transform</span>
