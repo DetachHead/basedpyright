@@ -412,6 +412,26 @@ export class CompletionProvider {
         }
     }
 
+    createAutoImporter(completionMap: CompletionMap, lazyEdit: boolean) {
+        const currentFile = this.program.getSourceFileInfo(this.fileUri);
+        const moduleSymbolMap = buildModuleSymbolsMap(
+            this.program,
+            this.program.getSourceFileInfoList().filter((s) => s !== currentFile)
+        );
+
+        return new AutoImporter(
+            this.program,
+            this.execEnv,
+            this.parseResults,
+            this.position,
+            completionMap,
+            moduleSymbolMap,
+            {
+                lazyEdit,
+            }
+        );
+    }
+
     protected get evaluator() {
         return this.program.evaluator!;
     }
@@ -920,26 +940,6 @@ export class CompletionProvider {
         });
 
         return completionMap;
-    }
-
-    createAutoImporter(completionMap: CompletionMap, lazyEdit: boolean) {
-        const currentFile = this.program.getSourceFileInfo(this.fileUri);
-        const moduleSymbolMap = buildModuleSymbolsMap(
-            this.program,
-            this.program.getSourceFileInfoList().filter((s) => s !== currentFile)
-        );
-
-        return new AutoImporter(
-            this.program,
-            this.execEnv,
-            this.parseResults,
-            this.position,
-            completionMap,
-            moduleSymbolMap,
-            {
-                lazyEdit,
-            }
-        );
     }
 
     protected addAutoImportCompletions(
