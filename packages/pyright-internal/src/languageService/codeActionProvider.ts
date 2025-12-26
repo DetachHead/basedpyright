@@ -14,12 +14,7 @@ import { createCommand } from '../common/commandUtils';
 import { CreateTypeStubFileAction } from '../common/diagnostic';
 import { Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import {
-    convertToFileTextEdits,
-    convertToTextEditActions,
-    convertToTextEdits,
-    convertToWorkspaceEdit,
-} from '../common/workspaceEditUtils';
+import { convertToFileTextEdits, convertToTextEditActions, convertToWorkspaceEdit } from '../common/workspaceEditUtils';
 import { Localizer } from '../localization/localize';
 import { Workspace } from '../workspaceFactory';
 import { CompletionMap, CompletionProvider } from './completionProvider';
@@ -30,12 +25,10 @@ import {
     getLineEndPosition,
 } from '../common/positionUtils';
 import { findNodeByOffset } from '../analyzer/parseTreeUtils';
-import { ParseNode, ParseNodeType } from '../parser/parseNodes';
+import { FunctionNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
 import { sorter } from '../common/collectionUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { TypeCategory } from '../analyzer/types';
-import { ImportGroup } from '../analyzer/importStatementUtils';
 import { TextRangeCollection } from '../common/textRangeCollection';
 
 export class CodeActionProvider {
@@ -72,10 +65,6 @@ export class CodeActionProvider {
 
         const parseResults = workspace.service.backgroundAnalysisProgram.program.getParseResults(fileUri)!;
         const lines = parseResults.tokenizerOutput.lines;
-
-        if (!workspace.rootUri) {
-            return codeActions;
-        }
 
         const fs = ls.serviceProvider.fs();
         for (const diagnostic of diags) {
@@ -145,8 +134,52 @@ export class CodeActionProvider {
                 }
             }
 
+            // ==== CA for adding @override decorators ====
+            if (rule === DiagnosticRule.reportImplicitOverride) {
+                const lineText = lines.getItemAt(line);
+                const methodLineContent = parseResults.text.substring(lineText.start, lineText.start + lineText.length);
+
+                const functionLine = { line: line, character: 0 };
+                const offset = convertPositionToOffset(functionLine, lines);
+                if (offset === undefined) {
+                    return [];
+                }
+
+                const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
+                if (node === undefined) {
+                    return [];
+                }
+
+                const completer = this._createCompleter(workspace, fileUri, token, node, lines);
+                const completionMap = new CompletionMap();
+
+                const overrideEdits = completer.createOverrideEdits(
+                    node as FunctionNode,
+                    offset,
+                    undefined,
+                    methodLineContent,
+                    completionMap
+                );
+
+                if (overrideEdits.length === 0) {
+                    continue;
+                }
+
+                codeActions.push(
+                    CodeAction.create(
+                        Localizer.CodeAction.addExplicitOverride(),
+                        convertToWorkspaceEdit(
+                            ls.convertUriToLspUriString,
+                            fs,
+                            convertToFileTextEdits(fileUri, overrideEdits)
+                        ),
+                        CodeActionKind.QuickFix
+                    )
+                );
+            }
+
             // ==== CA for creating type stubs ====
-            if (diagnostic.getActions()?.some((a) => a.action === Commands.createTypeStub)) {
+            if (workspace.rootUri && diagnostic.getActions()?.some((a) => a.action === Commands.createTypeStub)) {
                 const action = diagnostic
                     .getActions()!
                     .find((a) => a.action === Commands.createTypeStub) as CreateTypeStubFileAction;
@@ -164,74 +197,6 @@ export class CodeActionProvider {
                     );
                     codeActions.push(createTypeStubAction);
                 }
-            }
-
-            // ==== CA for adding @override decorators ====
-            if (rule === DiagnosticRule.reportImplicitOverride) {
-                const lineText = lines.getItemAt(line);
-                const methodLineContent = parseResults.text.substring(lineText.start, lineText.start + lineText.length);
-
-                const indentMatch = methodLineContent.match(/^(\s*)(async\s+)?def\s/);
-                if (!indentMatch) {
-                    continue;
-                }
-
-                const indent = indentMatch[1];
-                const decoratorLine = { line: line - 1, character: 0 };
-                const offset = convertPositionToOffset(decoratorLine, lines);
-                if (offset === undefined) {
-                    return [];
-                }
-
-                const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
-                if (node === undefined) {
-                    return [];
-                }
-
-                const decoratorTextEdit: TextEdit = {
-                    range: {
-                        start: { line: decoratorLine.line, character: indent.length },
-                        end: { line: decoratorLine.line, character: indent.length },
-                    },
-                    newText: `\n${indent}@override`,
-                };
-
-                const textEdits: TextEdit[] = [decoratorTextEdit];
-
-                const completer = this._createCompleter(workspace, fileUri, token, node, lines);
-                const completionMap = new CompletionMap();
-
-                const overrideDecorator = workspace.service.backgroundAnalysisProgram.program.evaluator!.getTypingType(
-                    node,
-                    'override'
-                );
-                if (overrideDecorator?.category === TypeCategory.Function) {
-                    const importTextEditInfo = completer
-                        .createAutoImporter(completionMap, false)
-                        .getTextEditsForAutoImportByFilePath(
-                            { name: 'override' },
-                            { name: overrideDecorator.shared.moduleName },
-                            'override',
-                            ImportGroup.BuiltIn,
-                            overrideDecorator.shared.declaration!.uri
-                        );
-
-                    if (importTextEditInfo.edits) {
-                        textEdits.push(...convertToTextEdits(importTextEditInfo.edits));
-                    }
-                }
-
-                codeActions.push(
-                    CodeAction.create(
-                        Localizer.CodeAction.addExplicitOverride(),
-                        convertToWorkspaceEdit(
-                            ls.convertUriToLspUriString,
-                            fs,
-                            convertToFileTextEdits(fileUri, convertToTextEditActions(textEdits))
-                        ),
-                        CodeActionKind.QuickFix
-                    )
-                );
             }
 
             // ==== CA for adding ignore comments ====

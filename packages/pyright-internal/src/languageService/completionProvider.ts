@@ -100,6 +100,7 @@ import {
     ErrorNode,
     ExpressionNode,
     FormatStringNode,
+    FunctionNode,
     ImportFromNode,
     IndexNode,
     isExpressionNode,
@@ -432,6 +433,61 @@ export class CompletionProvider {
         );
     }
 
+    createOverrideEdits(
+        node: FunctionNode,
+        startNode: number,
+        decorators: DecoratorNode[] | undefined,
+        priorText: string,
+        completionMap: CompletionMap
+    ) {
+        const additionalTextEdits: TextEditAction[] = [];
+        const overrideDecorator = this.evaluator.getTypingType(node, 'override');
+        if (
+            // this should always be true, but just in case
+            overrideDecorator?.category === TypeCategory.Function &&
+            // if targeting a python version that doesn't have typing.override, we don't want to insert the decorator unless
+            // the user has explicitly enabled `basedpyright.analysis.useTypingExtensions`
+            (overrideDecorator.shared.moduleName !== 'typing_extensions' || this.options.useTypingExtensions) &&
+            // check if the override decorator is already here
+            !decorators?.some((decorator) => {
+                const type = this.evaluator.getTypeOfExpression(decorator.d.expr).type;
+                return isFunction(type) && FunctionType.isBuiltIn(type, 'override');
+            })
+        ) {
+            const indent = priorText.match(/(^\s*)(async|def)\s/)?.[1];
+            // this should always match, but it looks gross and hacky so just in case,
+            // we just skip adding the override decorator if it can't figure out where to put it
+            if (indent !== undefined) {
+                const position: Position = {
+                    line:
+                        // if there are any other decorators, make this the last one because some decorators can change the type
+                        // such that the override decorator won't can't be placed above them
+                        convertOffsetToPosition(startNode, this.parseResults.tokenizerOutput.lines).line +
+                        (decorators?.length ?? 0),
+                    character: indent.length,
+                };
+                const importTextEditInfo = this.createAutoImporter(
+                    completionMap,
+                    this.options.lazyEdit
+                ).getTextEditsForAutoImportByFilePath(
+                    { name: 'override' },
+                    { name: overrideDecorator.shared.moduleName },
+                    'override',
+                    ImportGroup.BuiltIn,
+                    overrideDecorator.shared.declaration!.uri
+                );
+                if (importTextEditInfo.edits) {
+                    additionalTextEdits.push(...importTextEditInfo.edits);
+                }
+                additionalTextEdits.push({
+                    range: { start: position, end: position },
+                    replacementText: `@${importTextEditInfo.insertionText}\n${indent}`,
+                });
+            }
+        }
+        return additionalTextEdits;
+    }
+
     protected get evaluator() {
         return this.program.evaluator!;
     }
@@ -549,52 +605,15 @@ export class CompletionProvider {
                         // If reportImplicitOverride is disabled, never add @override
                         this.configOptions.diagnosticRuleSet.reportImplicitOverride !== 'none'
                     ) {
-                        const overrideDecorator = this.evaluator.getTypingType(decl.node, 'override');
-                        if (
-                            // this should always be true, but just in case
-                            overrideDecorator?.category === TypeCategory.Function &&
-                            // if targeting a python version that doesn't have typing.override, we don't want to insert the decorator unless
-                            // the user has explicitly enabled `basedpyright.analysis.useTypingExtensions`
-                            (overrideDecorator.shared.moduleName !== 'typing_extensions' ||
-                                this.options.useTypingExtensions) &&
-                            // check if the override decorator is already here
-                            !decorators?.some((decorator) => {
-                                const type = this.evaluator.getTypeOfExpression(decorator.d.expr).type;
-                                return isFunction(type) && FunctionType.isBuiltIn(type, 'override');
-                            })
-                        ) {
-                            const indent = priorText.match(/(^\s*)(async|def)\s/)?.[1];
-                            // this should always match, but it looks gross and hacky so just in case,
-                            // we just skip adding the override decorator if it can't figure out where to put it
-                            if (indent !== undefined) {
-                                const startNode = partialName.parent!.start;
-                                const position: Position = {
-                                    line:
-                                        // if there are any other decorators, make this the last one because some decorators can change the type
-                                        // such that the override decorator won't can't be placed above them
-                                        convertOffsetToPosition(startNode, this.parseResults.tokenizerOutput.lines)
-                                            .line + (decorators?.length ?? 0),
-                                    character: indent.length,
-                                };
-                                const importTextEditInfo = this.createAutoImporter(
-                                    completionMap,
-                                    this.options.lazyEdit
-                                ).getTextEditsForAutoImportByFilePath(
-                                    { name: 'override' },
-                                    { name: overrideDecorator.shared.moduleName },
-                                    'override',
-                                    ImportGroup.BuiltIn,
-                                    overrideDecorator.shared.declaration!.uri
-                                );
-                                if (importTextEditInfo.edits) {
-                                    additionalTextEdits.push(...importTextEditInfo.edits);
-                                }
-                                additionalTextEdits.push({
-                                    range: { start: position, end: position },
-                                    replacementText: `@${importTextEditInfo.insertionText}\n${indent}`,
-                                });
-                            }
-                        }
+                        additionalTextEdits.push(
+                            ...this.createOverrideEdits(
+                                decl.node,
+                                partialName.parent!.start,
+                                decorators,
+                                priorText,
+                                completionMap
+                            )
+                        );
                     }
 
                     this.addSymbol(name, symbol, partialName.d.value, completionMap, {
