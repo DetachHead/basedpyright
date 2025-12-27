@@ -13,7 +13,10 @@
         "filesToAnalyzeOne": "1 file to analyze",
         "findingReferences": "Finding references",
         "findingImplementations": "Finding implementations",
-        "organizeImports": "Organize Imports"
+        "organizeImports": "Organize Imports",
+        "addExplicitOverride": "Add `@override`",
+        "addIgnoreComment": "Add `{ignoreComment}`",
+        "addIgnoreCommentToExisting": "Add `{rule}` to existing `{ignoreCommentPrefix}` comment"
     },
     "Completion": {
         "autoImportDetail": "Auto-import",

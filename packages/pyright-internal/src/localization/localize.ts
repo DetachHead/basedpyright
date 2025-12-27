@@ -1705,6 +1705,13 @@ export namespace Localizer {
         export const findingReferences = () => getRawString('CodeAction.findingReferences');
         export const findingImplementations = () => getRawString('CodeAction.findingImplementations');
         export const organizeImports = () => getRawString('CodeAction.organizeImports');
+        export const addExplicitOverride = () => getRawString('CodeAction.addExplicitOverride');
+        export const addIgnoreComment = () =>
+            new ParameterizedString<{ ignoreComment: string }>(getRawString('CodeAction.addIgnoreComment'));
+        export const addIgnoreCommentToExisting = () =>
+            new ParameterizedString<{ rule: string; ignoreCommentPrefix: string }>(
+                getRawString('CodeAction.addIgnoreCommentToExisting')
+            );
     }
 
     export namespace Completion {
