@@ -161,21 +161,19 @@ export class CodeActionProvider {
                     completionMap
                 );
 
-                if (overrideEdits.length === 0) {
-                    continue;
+                if (overrideEdits.length > 0) {
+                    codeActions.push(
+                        CodeAction.create(
+                            Localizer.CodeAction.addExplicitOverride(),
+                            convertToWorkspaceEdit(
+                                ls.convertUriToLspUriString,
+                                fs,
+                                convertToFileTextEdits(fileUri, overrideEdits)
+                            ),
+                            CodeActionKind.QuickFix
+                        )
+                    );
                 }
-
-                codeActions.push(
-                    CodeAction.create(
-                        Localizer.CodeAction.addExplicitOverride(),
-                        convertToWorkspaceEdit(
-                            ls.convertUriToLspUriString,
-                            fs,
-                            convertToFileTextEdits(fileUri, overrideEdits)
-                        ),
-                        CodeActionKind.QuickFix
-                    )
-                );
             }
 
             // ==== CA for creating type stubs ====
