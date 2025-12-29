@@ -51,7 +51,8 @@ requires = [
     "pdm-backend>=2.3.0",
     # required for building the pyright npm package to be bundled in the pypi package.
     # cli is required due to dependencies with install scripts that assume node/npm is in the path
-    "nodejs-wheel>=20.13.1",
+    # node 24 causes conda-forge builds to fail for some reason. see https://github.com/conda-forge/basedpyright-feedstock/pull/44#issuecomment-3694865733
+    "nodejs-wheel>=20.13.1,<24",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
     "docify>=1.0.0",
