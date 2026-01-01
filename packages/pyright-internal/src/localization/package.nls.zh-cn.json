@@ -6,7 +6,11 @@
         "filesToAnalyzeCount": "正在分析 {count} 个文件",
         "filesToAnalyzeOne": "正在分析 1 个文件",
         "findingReferences": "正在查找引用",
-        "organizeImports": "整理导入项"
+        "findingImplementations": "正在查找实现",
+        "organizeImports": "整理导入项",
+        "addExplicitOverride": "添加 `@override`",
+        "addIgnoreComment": "添加 `{ignoreComment}`",
+        "addIgnoreCommentToExisting": "向现有 `{ignoreCommentPrefix}` 注释添加 `{rule}` 规则"
     },
     "Completion": {
         "autoImportDetail": "自动导入",
