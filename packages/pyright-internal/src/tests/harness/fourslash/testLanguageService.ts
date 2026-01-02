@@ -129,6 +129,7 @@ export class TestLanguageService implements LanguageServerInterface {
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
             autoFormatStrings: true,
+            baselineMode: 'auto',
         };
     }
     /** unlike the real one, this test implementation doesn't support notebook cells. TODO: language server tests for notebook cells */

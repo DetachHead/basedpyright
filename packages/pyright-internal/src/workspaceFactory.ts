@@ -103,6 +103,7 @@ export interface Workspace extends WorkspaceFolder {
     useTypingExtensions: boolean;
     fileEnumerationTimeoutInSec: number;
     autoFormatStrings: boolean;
+    baselineMode: 'auto' | 'discard';
 }
 
 export interface NormalWorkspace extends Workspace {
@@ -305,6 +306,7 @@ export class WorkspaceFactory implements IWorkspaceFactory {
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
             autoFormatStrings: true,
+            baselineMode: 'auto',
         };
 
         // Stick in our map

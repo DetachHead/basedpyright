@@ -217,6 +217,7 @@ export class TestState {
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
             autoFormatStrings: true,
+            baselineMode: 'auto',
         };
 
         if (!delayFileInitialization) {

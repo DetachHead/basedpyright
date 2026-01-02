@@ -173,6 +173,11 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                     serverSettings.baselineFile = resolvePathWithEnvVariables(workspace, baselineFile, workspaces);
                 }
 
+                const baselineMode = pythonAnalysisSection.baselineMode;
+                if (baselineMode === 'auto' || baselineMode === 'discard') {
+                    serverSettings.baselineMode = baselineMode;
+                }
+
                 const configFilePath = pythonAnalysisSection.configFilePath;
                 if (configFilePath && isString(configFilePath)) {
                     serverSettings.configFilePath = resolvePathWithEnvVariables(workspace, configFilePath, workspaces);

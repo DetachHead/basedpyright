@@ -444,6 +444,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             workspace.useTypingExtensions = serverSettings.useTypingExtensions ?? false;
             workspace.fileEnumerationTimeoutInSec = serverSettings.fileEnumerationTimeoutInSec ?? 10;
             workspace.autoFormatStrings = serverSettings.autoFormatStrings ?? true;
+            workspace.baselineMode = serverSettings.baselineMode ?? 'auto';
         } finally {
             // Don't use workspace.isInitialized directly since it might have been
             // reset due to pending config change event.
@@ -1864,10 +1865,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             filesRequiringBaselineUpdate.get(workspace)!.push(fileDiagnostics);
         }
         for (const [workspace, files] of filesRequiringBaselineUpdate.entries()) {
-            if (!workspace.rootUri) {
+            if (!workspace.rootUri || workspace.baselineMode === 'discard') {
                 continue;
             }
-            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline('auto', false, files);
+            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline(workspace.baselineMode, false, files);
             if (baselineDiffSummary) {
                 this.console.info(
                     `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`

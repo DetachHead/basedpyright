@@ -15,6 +15,10 @@ this file gets automatically updated as errors are removed over time in both the
 
 if you need to suppress a diagnostic for another reason, consider using [a `# pyright: ignore` comment](../configuration/comments.md#prefer-pyrightignore-comments) instead.
 
+## disabling automatic updates
+
+if you prefer to manually control when the baseline file is updated, you can set `baselineMode` to `"discard"` in your [language server settings](../configuration/language-server-settings.md). this will prevent the baseline file from being automatically updated when you save files, and you'll need to use the _"basedpyright: Write new errors to baseline"_ command to update it manually.
+
 ## how does it work?
 
 each baselined error is stored and matched by the following details:
