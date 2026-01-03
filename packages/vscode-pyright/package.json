@@ -181,7 +181,7 @@
                         "Automatically update the baseline file when baselined errors are fixed.",
                         "Never update the baseline file automatically."
                     ],
-                    "markdownDescription": "Controls how the baseline file is updated when files are saved. Use `auto` to automatically remove fixed errors from the baseline, or `discard` to prevent automatic updates.",
+                    "markdownDescription": "Controls how the baseline file is updated when files are saved.",
                     "scope": "resource"
                 },
                 "basedpyright.analysis.configFilePath": {
