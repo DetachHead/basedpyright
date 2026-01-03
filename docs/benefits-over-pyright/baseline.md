@@ -8,16 +8,16 @@ you can customize the baseline file path [using the `baselineFile` setting](../c
 
 ## how often do i need to update the baseline file?
 
-this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:
+by default, this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:
 
 -   a baselined error incorrectly resurfaces when updating unrelated code
 -   you're enabling a new diagnostic rule and want to baseline all the new errors it reported
 
 if you need to suppress a diagnostic for another reason, consider using [a `# pyright: ignore` comment](../configuration/comments.md#prefer-pyrightignore-comments) instead.
 
-## disabling automatic updates
+## disabling automatic updates for error removals
 
-if you prefer to manually control when the baseline file is updated, you can set `baselineMode` to `"discard"` in your [language server settings](../configuration/language-server-settings.md). this will prevent the baseline file from being automatically updated when you save files, and you'll need to use the _"basedpyright: Write new errors to baseline"_ command to update it manually.
+if you prefer to manually control when the baseline file is updated, you can set `baselineMode` to `"discard"` in your [language server settings](../configuration/language-server-settings.md). this will prevent the baseline file from being automatically updated with error removals when you save files. you can still remove fixed errors from the baseline file by running basedpyright in the CLI.
 
 ## how does it work?
 

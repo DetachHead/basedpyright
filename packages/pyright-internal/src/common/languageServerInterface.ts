@@ -8,6 +8,7 @@
 
 import { MaxAnalysisTime } from '../analyzer/program';
 import { IBackgroundAnalysis } from '../backgroundAnalysisBase';
+import { ServerBaselineMode } from '../baseline';
 import { InlayHintSettings, Workspace } from '../workspaceFactory';
 import { DiagnosticBooleanOverridesMap, DiagnosticSeverityOverridesMap } from './commandLineOptions';
 import { SignatureDisplayType } from './configOptions';
@@ -28,7 +29,7 @@ export interface ServerSettings {
     typeCheckingMode?: string | undefined;
     useLibraryCodeForTypes?: boolean | undefined;
     baselineFile?: Uri | undefined;
-    baselineMode?: 'auto' | 'discard' | undefined;
+    baselineMode?: ServerBaselineMode | undefined;
     configFilePath?: Uri | undefined;
     disableLanguageServices?: boolean | undefined;
     disableTaggedHints?: boolean | undefined;
