@@ -447,6 +447,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disabling-automatic-updates-for-baselined-error-removals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        disabling automatic updates for baselined error removals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-does-it-work" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1866,6 +1877,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disabling-automatic-updates-for-baselined-error-removals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        disabling automatic updates for baselined error removals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-does-it-work" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1920,15 +1942,21 @@
 
 <h1 id="baseline">baseline</h1>
 <p>have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly written or modified code get reported.</p>
-<p>to enable baseline, run <code>basedpyright --writebaseline</code> in your terminal or run the <em>"basedpyright: Write new errors to baseline"</em> task in your editor. this will generate a baseline file at <code>./.basedpyright/baseline.json</code> your project. you should commit this file so others working on your project can benefit from it too.</p>
+<p>to enable baseline, run <code>basedpyright --writebaseline</code> in your terminal or run the <em>"basedpyright: Write new errors to baseline"</em> task in your editor. this will generate a baseline file at <code>./.basedpyright/baseline.json</code> in your project. you should commit this file so others working on your project can benefit from it too.</p>
 <p>you can customize the baseline file path <a href="../../configuration/config-files/#baselineFile">using the <code>baselineFile</code> setting</a> or <a href="../../configuration/command-line/#command-line">using the <code>--baselinefile</code> CLI argument</a>.</p>
 <h2 id="how-often-do-i-need-to-update-the-baseline-file">how often do i need to update the baseline file?</h2>
-<p>this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:</p>
+<p>by default, this file gets automatically updated as errors are removed over time in both the CLI and the language server. you should only manually run the write baseline command in the following scenarios:</p>
 <ul>
 <li>a baselined error incorrectly resurfaces when updating unrelated code</li>
 <li>you're enabling a new diagnostic rule and want to baseline all the new errors it reported</li>
 </ul>
 <p>if you need to suppress a diagnostic for another reason, consider using <a href="../../configuration/comments/#prefer-pyrightignore-comments">a <code># pyright: ignore</code> comment</a> instead.</p>
+<h2 id="disabling-automatic-updates-for-baselined-error-removals">disabling automatic updates for baselined error removals</h2>
+<p>if you want more control over when the baseline file is updated, use the <code>baselineMode</code> setting in either the <a href="../../configuration/language-server-settings/">language server</a> or <a href="../../configuration/command-line/#option-2-baselinemode-experimental">the CLI</a>. for example, using the <code>discard</code> mode will prevent the baseline file from being automatically updated when baselined errors are removed.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>if you disable automatic baseline updates in the language server, a potential alternative workflow for still having the baseline file updated with removed errors is to set up a <a href="../../installation/prek-hook/">prek hook</a> in your project to run the basedpyright CLI. this would take care of error removals at commit time instead of during editor saves.</p>
+</div>
 <h2 id="how-does-it-work">how does it work?</h2>
 <p>each baselined error is stored and matched by the following details:</p>
 <ul>
