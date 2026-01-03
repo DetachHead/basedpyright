@@ -1868,7 +1868,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (!workspace.rootUri || workspace.baselineMode === 'discard') {
                 continue;
             }
-            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline(workspace.baselineMode, false, files);
+            const baselineDiffSummary = workspace.service.backgroundAnalysisProgram.writeBaseline(
+                workspace.baselineMode,
+                false,
+                files
+            );
             if (baselineDiffSummary) {
                 this.console.info(
                     `${baselineDiffSummary}. files: ${files.map((file) => file.fileUri.toString()).join(', ')}`

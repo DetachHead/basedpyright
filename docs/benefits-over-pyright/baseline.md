@@ -2,7 +2,7 @@
 
 have you ever wanted to adopt a new tool or enable new checks in an existing project, only to be immediately bombarded with thousands of errors you'd have to fix? baseline solves this problem by allowing you to only report errors on new or modified code. it works by generating a baseline file keeping track of the existing errors in your project so that only errors in newly written or modified code get reported.
 
-to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in your editor. this will generate a baseline file at `./.basedpyright/baseline.json` your project. you should commit this file so others working on your project can benefit from it too.
+to enable baseline, run `basedpyright --writebaseline` in your terminal or run the _"basedpyright: Write new errors to baseline"_ task in your editor. this will generate a baseline file at `./.basedpyright/baseline.json` in your project. you should commit this file so others working on your project can benefit from it too.
 
 you can customize the baseline file path [using the `baselineFile` setting](../configuration/config-files.md#baselineFile) or [using the `--baselinefile` CLI argument](../configuration/command-line.md#command-line).
 
@@ -15,9 +15,11 @@ by default, this file gets automatically updated as errors are removed over time
 
 if you need to suppress a diagnostic for another reason, consider using [a `# pyright: ignore` comment](../configuration/comments.md#prefer-pyrightignore-comments) instead.
 
-## disabling automatic updates for error removals
+## disabling automatic updates for baselined error removals
 
-if you prefer to manually control when the baseline file is updated, you can set `baselineMode` to `"discard"` in your [language server settings](../configuration/language-server-settings.md). this will prevent the baseline file from being automatically updated with error removals when you save files. you can still remove fixed errors from the baseline file by running basedpyright in the CLI.
+if you want more control over when the baseline file is updated, use the `baselineMode` setting in either the [language server](../configuration/language-server-settings.md) or [the CLI](../configuration/command-line.md#option-2-baselinemode-experimental). for example, using the `discard` mode will prevent the baseline file from being automatically updated when baselined errors are removed.
+
+if you stop automatic updates from the LSP, a potential alternative workflow for still having the baseline file updated with removed errors is to set up a pre-commit hook in your project to run the basedpyright CLI. this would take care of error removals at commit time instead of during editor saves.
 
 ## how does it work?
 
