@@ -19,7 +19,9 @@ if you need to suppress a diagnostic for another reason, consider using [a `# py
 
 if you want more control over when the baseline file is updated, use the `baselineMode` setting in either the [language server](../configuration/language-server-settings.md) or [the CLI](../configuration/command-line.md#option-2-baselinemode-experimental). for example, using the `discard` mode will prevent the baseline file from being automatically updated when baselined errors are removed.
 
-if you stop automatic updates from the LSP, a potential alternative workflow for still having the baseline file updated with removed errors is to set up a pre-commit hook in your project to run the basedpyright CLI. this would take care of error removals at commit time instead of during editor saves.
+!!! tip
+
+    if you disable automatic baseline updates in the language server, a potential alternative workflow for still having the baseline file updated with removed errors is to set up a [prek hook](../installation/prek-hook.md) in your project to run the basedpyright CLI. this would take care of error removals at commit time instead of during editor saves.
 
 ## how does it work?
 
