@@ -21,6 +21,7 @@ import { AnalysisResults } from './analyzer/analysis';
 import { CacheManager } from './analyzer/cacheManager';
 import { ImportResolver } from './analyzer/importResolver';
 import { isPythonBinary } from './analyzer/pythonPathUtils';
+import { serverBaselineModes, ServerBaselineMode } from './baseline';
 import { CommandController } from './commands/commandController';
 import { ConfigOptions, SignatureDisplayType } from './common/configOptions';
 import { ConsoleWithLogLevel, LogLevel, convertLogLevel } from './common/console';
@@ -171,6 +172,11 @@ export abstract class RealLanguageServer extends LanguageServerBase {
                 const baselineFile = pythonAnalysisSection.baselineFile;
                 if (baselineFile && isString(baselineFile)) {
                     serverSettings.baselineFile = resolvePathWithEnvVariables(workspace, baselineFile, workspaces);
+                }
+
+                const baselineMode = pythonAnalysisSection.baselineMode;
+                if (serverBaselineModes.includes(baselineMode)) {
+                    serverSettings.baselineMode = baselineMode as ServerBaselineMode;
                 }
 
                 const configFilePath = pythonAnalysisSection.configFilePath;

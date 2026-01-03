@@ -227,5 +227,6 @@ function createWorkspace(rootUri: Uri | undefined): Workspace {
         useTypingExtensions: false,
         fileEnumerationTimeoutInSec: 10,
         autoFormatStrings: true,
+        baselineMode: 'auto',
     };
 }

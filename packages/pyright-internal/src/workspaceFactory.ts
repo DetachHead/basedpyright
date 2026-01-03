@@ -11,6 +11,7 @@ import {
 } from 'vscode-languageserver';
 
 import { AnalyzerService } from './analyzer/service';
+import { ServerBaselineMode } from './baseline';
 import { ConsoleInterface } from './common/console';
 import { createDeferred } from './common/deferred';
 import { ServiceProvider } from './common/serviceProvider';
@@ -103,6 +104,7 @@ export interface Workspace extends WorkspaceFolder {
     useTypingExtensions: boolean;
     fileEnumerationTimeoutInSec: number;
     autoFormatStrings: boolean;
+    baselineMode: ServerBaselineMode;
 }
 
 export interface NormalWorkspace extends Workspace {
@@ -305,6 +307,7 @@ export class WorkspaceFactory implements IWorkspaceFactory {
             useTypingExtensions: false,
             fileEnumerationTimeoutInSec: 10,
             autoFormatStrings: true,
+            baselineMode: 'auto',
         };
 
         // Stick in our map

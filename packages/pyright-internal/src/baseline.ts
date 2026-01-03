@@ -27,8 +27,12 @@ export interface BaselinedDiagnostic {
     };
 }
 
+// baseline modes allowed in LSP server settings
 // TODO: add 'ignore' mode https://github.com/DetachHead/basedpyright/issues/1524
-export const baselineModes = ['discard', 'auto', 'lock'] as const;
+export const serverBaselineModes = ['discard', 'auto'] as const;
+export type ServerBaselineMode = (typeof serverBaselineModes)[number];
+
+export const baselineModes = [...serverBaselineModes, 'lock'] as const;
 
 // 'force' is not a real value for `--baselinemode`. we just use it to represent `--writebaseline`
 export type BaselineMode = (typeof baselineModes)[number] | 'force';

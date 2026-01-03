@@ -65,6 +65,8 @@ the following settings are exclusive to basedpyright
 
 **basedpyright.analysis.configFilePath** [path]: Path to the directory or file containing the Pyright configuration (`pyrightconfig.json` or `pyproject.toml`). If a directory is specified, basedpyright will search for the config file in that directory. This is useful for monorepo structures where the config file is in a subdirectory rather than the workspace root. For example, if your Python code is in a `backend/` subdirectory with its own `pyproject.toml`, you can set this to `${workspaceFolder}/backend` to make basedpyright use that configuration file instead of searching from the workspace root.
 
+**basedpyright.analysis.baselineMode** ["auto", "discard"]: Controls how the baseline file is updated when files are saved. Use `auto` to automatically remove fixed errors from the baseline (default), or `discard` to prevent automatic updates. [more info](../benefits-over-pyright/baseline.md)
+
 
 ### discouraged settings
 
