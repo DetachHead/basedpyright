@@ -26,7 +26,7 @@
     },
     "devDependencies": {
         "@types/copy-webpack-plugin": "^8.0.1",
-        "@types/node": "^22.16.0",
+        "@types/node": "^22.18.12",
         "copy-webpack-plugin": "^11.0.0",
         "shx": "^0.3.4",
         "ts-loader": "^9.5.1",
@@ -48,6 +48,6 @@
         "stream-browserify": "^3.0.0",
         "util": "^0.12.5",
         "vm-browserify": "^1.1.2",
-        "vscode-languageserver": "^10.0.0-next.10"
+        "vscode-languageserver": "^10.0.0-next.13"
     }
 }

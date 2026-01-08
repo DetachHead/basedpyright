@@ -283,7 +283,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : error;
             this.connection.sendNotification(ShowMessageNotification.type, {
-                message: errorMessage,
+                message: String(errorMessage),
                 type: MessageType.Error,
             });
         }

@@ -461,9 +461,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         AnalyzerServiceExecutor.runWithOptions(workspace, serverSettings, { typeStubTargetImportName });
         workspace.searchPathsToWatch = workspace.service.librarySearchUrisToWatch ?? [];
     }
-    protected get workspaceDiagnosticsReporter() {
-        return this._workspaceDiagnosticsReporter;
-    }
 
     convertUriToLspUriString = (fs: ReadOnlyFileSystem, uri: Uri): string => {
         // Convert to a URI string that the LSP client understands (mapped files are only local to the server).
@@ -480,6 +477,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
         return fs.getOriginalUri(uri).toString();
     };
+
+    protected get workspaceDiagnosticsReporter() {
+        return this._workspaceDiagnosticsReporter;
+    }
 
     protected abstract executeCommand(params: ExecuteCommandParams, token: CancellationToken): Promise<any>;
 
