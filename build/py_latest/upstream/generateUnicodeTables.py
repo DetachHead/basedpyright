@@ -5,9 +5,6 @@
 # Generates the content of unicode.ts based on the official Unicode
 # character database.
 
-# this file comes from upstream and we don't use it so we disable the linters & baseline its basedpyright errors
-# pylint: skip-file
-
 import sys
 import urllib.request
 from io import TextIOWrapper
