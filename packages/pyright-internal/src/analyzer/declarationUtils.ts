@@ -150,6 +150,10 @@ export function getNameFromDeclaration(declaration: Declaration) {
 }
 
 export function getNameNodeForDeclaration(declaration: Declaration): NameNode | undefined {
+    if (declaration.node === undefined) {
+        return undefined;
+    }
+
     switch (declaration.type) {
         case DeclarationType.Alias:
             if (declaration.node.nodeType === ParseNodeType.ImportAs) {

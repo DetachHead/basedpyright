@@ -1460,7 +1460,7 @@ function getSequencePatternInfo(
                         { type: UnknownType.create(), isUnbounded: true },
                     ];
 
-                    const tupleIndeterminateIndex = typeArgs.findIndex(
+                    let tupleIndeterminateIndex = typeArgs.findIndex(
                         (t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type) || isUnpackedTypeVar(t.type)
                     );
 
@@ -1468,15 +1468,20 @@ function getSequencePatternInfo(
 
                     // If the tuple contains an indeterminate entry, expand or remove that
                     // entry to match the length of the pattern if possible.
+                    let expandedIndeterminate = false;
                     if (tupleIndeterminateIndex >= 0) {
                         tupleDeterminateEntryCount--;
 
                         while (typeArgs.length < patternEntryCount) {
                             typeArgs.splice(tupleIndeterminateIndex, 0, typeArgs[tupleIndeterminateIndex]);
+                            tupleDeterminateEntryCount++;
+                            tupleIndeterminateIndex++;
+                            expandedIndeterminate = true;
                         }
 
                         if (typeArgs.length > patternEntryCount && patternStarEntryIndex === undefined) {
                             typeArgs.splice(tupleIndeterminateIndex, 1);
+                            tupleIndeterminateIndex = -1;
                         }
                     }
 
@@ -1495,6 +1500,20 @@ function getSequencePatternInfo(
                                 (t) => t.isUnbounded || isUnpackedTypeVarTuple(t.type) || isUnpackedTypeVar(t.type)
                             ),
                         });
+
+                        tupleDeterminateEntryCount -= entriesToCombine;
+                        if (!typeArgs[patternStarEntryIndex].isUnbounded) {
+                            tupleDeterminateEntryCount++;
+                        }
+
+                        // If the collapsed range included the tupleIndeterminateIndex, adjust
+                        // it to reflect the new collapsed entry.
+                        if (
+                            tupleIndeterminateIndex >= patternStarEntryIndex &&
+                            tupleIndeterminateIndex < patternStarEntryIndex + entriesToCombine
+                        ) {
+                            tupleIndeterminateIndex = patternStarEntryIndex;
+                        }
                     }
 
                     if (typeArgs.length === patternEntryCount) {
@@ -1505,6 +1524,7 @@ function getSequencePatternInfo(
                         // indeterminate-length entry that aligns to the star entry, we can
                         // assume it will always match.
                         if (
+                            !expandedIndeterminate &&
                             patternStarEntryIndex !== undefined &&
                             tupleIndeterminateIndex >= 0 &&
                             pattern.d.entries.length - 1 === tupleDeterminateEntryCount &&

@@ -417,7 +417,7 @@ interface ScopedTypeVarResult {
 
 interface AliasMapEntry {
     alias: string;
-    module: 'builtins' | 'collections' | 'contextlib' | 'self';
+    module: 'builtins' | 'collections' | 'contextlib' | 'internals';
     implicitBaseClass?: string;
     isSpecialForm?: boolean;
     isIllegalInIsinstance?: boolean;
@@ -1041,9 +1041,9 @@ export function createTypeEvaluator(
             prefetched.strClass = getBuiltInType(node, 'str');
             prefetched.dictClass = getBuiltInType(node, 'dict');
             prefetched.moduleTypeClass = getTypingType(node, 'ModuleType');
-            prefetched.typedDictClass = getTypingType(node, 'TypedDict');
             prefetched.typedDictPrivateClass =
                 getTypeCheckerInternalsType(node, 'TypedDictFallback') ?? getTypingType(node, '_TypedDict');
+            prefetched.typedDictClass = getTypingType(node, 'TypedDict');
             prefetched.awaitableClass = getTypingType(node, 'Awaitable');
             prefetched.mappingClass = getTypingType(node, 'Mapping');
 
@@ -12727,13 +12727,28 @@ export function createTypeEvaluator(
 
         if (matchResults.argumentErrors) {
             // Evaluate types of all args. This will ensure that referenced symbols are
-            // not reported as unaccessed.
-            argList.forEach((arg) => {
-                if (arg.valueExpression && !isSpeculativeModeInUse(arg.valueExpression)) {
-                    getTypeOfExpression(arg.valueExpression);
+            // not reported as unaccessed. Also pass the expected parameter type as
+            // inference context to enable proper completions even when there are errors.
+            matchResults.argParams.forEach((argParam) => {
+                if (argParam.argument.valueExpression && !isSpeculativeModeInUse(argParam.argument.valueExpression)) {
+                    getTypeOfExpression(
+                        argParam.argument.valueExpression,
+                        /* flags */ undefined,
+                        makeInferenceContext(argParam.paramType)
+                    );
                 }
             });
 
+            // Also evaluate any arguments that weren't matched to parameters
+            argList.forEach((arg) => {
+                if (arg.valueExpression && !isSpeculativeModeInUse(arg.valueExpression)) {
+                    // Check if this argument was already evaluated above
+                    const wasEvaluated = matchResults.argParams.some((argParam) => argParam.argument === arg);
+                    if (!wasEvaluated) {
+                        getTypeOfExpression(arg.valueExpression);
+                    }
+                }
+            });
             // Use a return type of Unknown but attach a "possible type" to it
             // so the completion provider can suggest better completions.
             const possibleType = FunctionType.getEffectiveReturnType(typeResult.type);
@@ -13010,7 +13025,10 @@ export function createTypeEvaluator(
             if (argParam.argType) {
                 argType = argParam.argType;
             } else {
-                const argTypeResult = getTypeOfArg(argParam.argument, /* inferenceContext */ undefined);
+                const argTypeResult = getTypeOfArg(
+                    argParam.argument,
+                    makeInferenceContext(argParam.paramType, isTypeIncomplete)
+                );
                 argType = argTypeResult.type;
                 if (argTypeResult.isIncomplete) {
                     isTypeIncomplete = true;
@@ -17094,11 +17112,12 @@ export function createTypeEvaluator(
         } else if (aliasMapEntry.module === 'collections' || aliasMapEntry.module === 'contextlib') {
             // The typing.pyi file imports collections.
             baseClass = getTypeOfModule(node, baseClassName, [aliasMapEntry.module]);
-        } else if (aliasMapEntry.module === 'self') {
-            const symbolWithScope = lookUpSymbolRecursive(node, baseClassName, /* honorCodeFlow */ false);
-            if (symbolWithScope) {
-                baseClass = getEffectiveTypeOfSymbol(symbolWithScope.symbol);
-                // The _TypedDict class is marked as abstract, but the
+        } else if (aliasMapEntry.module === 'internals') {
+            // Handle TypedDict specially.
+            assert(baseClassName === 'TypedDictFallback');
+            baseClass = prefetched?.typedDictPrivateClass;
+            if (baseClass) {
+                // The TypedDictFallback class is marked as abstract, but the
                 // methods that are abstract are overridden and shouldn't
                 // cause the TypedDict to be marked as abstract.
                 if (
@@ -17156,7 +17175,7 @@ export function createTypeEvaluator(
             ['ClassVar', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['Final', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['Literal', { alias: '', module: 'builtins', isSpecialForm: true }],
-            ['TypedDict', { alias: '_TypedDict', module: 'self' }],
+            ['TypedDict', { alias: 'TypedDictFallback', module: 'internals' }],
             ['Union', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['Optional', { alias: '', module: 'builtins', isSpecialForm: true }],
             ['Annotated', { alias: '', module: 'builtins', isSpecialForm: true, isIllegalInIsinstance: true }],

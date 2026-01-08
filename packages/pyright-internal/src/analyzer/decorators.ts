@@ -346,6 +346,7 @@ export function applyClassDecorator(
             applyDataClassDecorator(evaluator, decoratorNode, originalClassType, dataclassBehaviors, callNode);
             return true;
         }
+
         return false;
     };
 
