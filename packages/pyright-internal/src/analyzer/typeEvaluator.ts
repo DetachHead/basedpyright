@@ -19311,6 +19311,91 @@ export function createTypeEvaluator(
                     FunctionType.isConstructorMethod(functionType));
             const firstNonClsSelfParamIndex = isFirstParamClsOrSelf ? 1 : 0;
 
+            // Infer implementation signature from prior overloads if present.
+            // Collect prior @overload function types for this symbol.
+            let overloadParamTypeUnions: (Type | undefined)[] | undefined;
+            let overloadReturnTypeUnion: Type | undefined;
+            do {
+                const scope = ScopeUtils.getScopeForNode(node);
+                const functionSymbol = scope?.lookUpSymbolRecursive(node.d.name.d.value);
+                if (!functionSymbol || !functionDecl) break;
+                const decls = functionSymbol.symbol.getDeclarations();
+                const declIndex = decls.findIndex((d) => d === functionDecl);
+                if (declIndex <= 0) break;
+
+                const priorOverloadFuncTypes: FunctionType[] = [];
+                for (let i = 0; i < declIndex; i++) {
+                    const d = decls[i];
+                    if (d.type !== DeclarationType.Function) continue;
+                    const prevInfo = getTypeOfFunction(d.node);
+                    if (!prevInfo) continue;
+                    const prevFunc = prevInfo.functionType;
+                    if (isFunction(prevFunc) && FunctionType.isOverloaded(prevFunc)) {
+                        priorOverloadFuncTypes.push(prevFunc);
+                    }
+                }
+
+                if (priorOverloadFuncTypes.length === 0) break;
+
+                // Prepare unions per parameter and for return type.
+                overloadParamTypeUnions = new Array(node.d.params.length).fill(undefined);
+                const implTypeParams = functionType.shared.typeParams;
+
+                const mapOverloadTypeToImpl = (srcType: Type, prevFunc: FunctionType): Type => {
+                    const prevParams = prevFunc.shared.typeParams;
+                    if (prevParams.length === 0 || implTypeParams.length === 0) {
+                        return srcType;
+                    }
+                    // If counts differ, don't attempt mapping.
+                    if (prevParams.length !== implTypeParams.length) {
+                        return srcType;
+                    }
+                    return mapSubtypes(srcType, (subtype) => {
+                        if (isTypeVar(subtype)) {
+                            const idx = prevParams.findIndex((tv) => tv === subtype);
+                            if (idx >= 0 && idx < implTypeParams.length) {
+                                return implTypeParams[idx];
+                            }
+                        }
+                        return undefined;
+                    });
+                };
+
+                for (const prevFunc of priorOverloadFuncTypes) {
+                    // Allow prior overloads that have the same or fewer params than the implementation.
+                    // We will combine only up to the smaller parameter count.
+                    if (prevFunc.shared.parameters.length > node.d.params.length) {
+                        continue;
+                    }
+                    // Build unions for each param index that exists in the prior overload.
+                    let categoriesMismatch = false;
+                    const count = Math.min(prevFunc.shared.parameters.length, node.d.params.length);
+                    for (let pi = 0; pi < count; pi++) {
+                        // Only combine if param categories align with the implementation's parse tree.
+                        if (prevFunc.shared.parameters[pi].category !== node.d.params[pi].d.category) {
+                            categoriesMismatch = true;
+                            break;
+                        }
+                        const prevParamType = FunctionType.getParamType(prevFunc, pi);
+                        const mapped = mapOverloadTypeToImpl(prevParamType, prevFunc);
+                        overloadParamTypeUnions![pi] = overloadParamTypeUnions![pi]
+                            ? combineTypes([overloadParamTypeUnions![pi]!, mapped])
+                            : mapped;
+                    }
+                    if (categoriesMismatch) {
+                        continue;
+                    }
+
+                    // Combine return types.
+                    if (prevFunc.shared.declaredReturnType) {
+                        const mappedRet = mapOverloadTypeToImpl(prevFunc.shared.declaredReturnType, prevFunc);
+                        overloadReturnTypeUnion = overloadReturnTypeUnion
+                            ? combineTypes([overloadReturnTypeUnion, mappedRet])
+                            : mappedRet;
+                    }
+                }
+            } while (false);
+
             node.d.params.forEach((param, index) => {
                 let paramType: Type | undefined;
                 let annotatedType: Type | undefined;
@@ -19475,11 +19560,22 @@ export function createTypeEvaluator(
 
                 // If there was no annotation for the parameter, infer its type if possible.
                 let isTypeInferred = false;
+                let usedOverloadInference = false;
                 if (!paramTypeNode) {
                     isTypeInferred = true;
                     const inferredType = inferParamType(node, functionType.shared.flags, index, containingClassType);
-                    if (inferredType) {
+                    const overloadInferred = overloadParamTypeUnions ? overloadParamTypeUnions[index] : undefined;
+                    if (overloadInferred) {
+                        paramType = overloadInferred;
+                        usedOverloadInference = true;
+                    } else if (inferredType) {
                         paramType = inferredType;
+                    }
+
+                    // After inferring from defaults and/or overloads, if there is a default of None
+                    // and no explicit annotation, include None in the inferred implementation type.
+                    if (param.d.defaultValue?.nodeType === ParseNodeType.Constant && param.d.defaultValue.d.constType === KeywordType.None) {
+                        paramType = paramType ? combineTypes([paramType, getNoneType()]) : getNoneType();
                     }
                 }
 
@@ -19586,6 +19682,12 @@ export function createTypeEvaluator(
                         functionType.shared.declaredReturnType = UnknownType.create();
                     }
                 }
+            }
+
+            // If there was no explicit return annotation and this is a source file,
+            // try to infer from prior overloads' return types.
+            if (!returnTypeAnnotationNode && !fileInfo.isStubFile && overloadReturnTypeUnion) {
+                functionType.shared.declaredReturnType = overloadReturnTypeUnion;
             }
 
             // Accumulate any type parameters used in the return type.
@@ -19812,6 +19914,16 @@ export function createTypeEvaluator(
 
                 if (isUnpackedClass(type)) {
                     return ClassType.cloneForPacked(type);
+                }
+
+                // For unions, distribute over the tuple constructor so that
+                // we produce a union of homogeneous tuple types rather than
+                // a single tuple of a union element type.
+                if (isUnion(type)) {
+                    const tupleVariants = type.priv.subtypes.map((sub: Type) =>
+                        makeTupleObject(evaluatorInterface, [{ type: sub, isUnbounded: !isTypeVarTuple(sub) }])
+                    );
+                    return combineTypes(tupleVariants);
                 }
 
                 return makeTupleObject(evaluatorInterface, [{ type, isUnbounded: !isTypeVarTuple(type) }]);
