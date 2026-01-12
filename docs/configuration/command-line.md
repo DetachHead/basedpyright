@@ -161,7 +161,7 @@ only updates the baseline file if diagnostics have been removed and no new diagn
 
 !!! note
 
-    this is the same as not specifying `--baselinemode` or `--writebaseline` when running locally. you only need to specify `--baselinemode=auto` explicitly if you want to [disable the default `--baselinemode=never` behavior in CI environments](#option-1-writebaseline-recommended)
+    this is the same as not specifying `--baselinemode` or `--writebaseline` when running locally. you only need to specify `--baselinemode=auto` explicitly if you want to [disable the default `--baselinemode=lock` behavior in CI environments](#option-1-writebaseline-recommended)
 
 #### `--baselinemode=lock`
 
