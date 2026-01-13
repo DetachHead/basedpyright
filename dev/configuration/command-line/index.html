@@ -2344,7 +2344,7 @@ updated ./.basedpyright/baseline.json with 200 errors (went down by 5)
 <p>only updates the baseline file if diagnostics have been removed and no new diagnostics have been added.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>this is the same as not specifying <code>--baselinemode</code> or <code>--writebaseline</code> when running locally. you only need to specify <code>--baselinemode=auto</code> explicitly if you want to <a href="#option-1-writebaseline-recommended">disable the default <code>--baselinemode=never</code> behavior in CI environments</a></p>
+<p>this is the same as not specifying <code>--baselinemode</code> or <code>--writebaseline</code> when running locally. you only need to specify <code>--baselinemode=auto</code> explicitly if you want to <a href="#option-1-writebaseline-recommended">disable the default <code>--baselinemode=lock</code> behavior in CI environments</a></p>
 </div>
 <h4 id="-baselinemodelock"><code>--baselinemode=lock</code></h4>
 <p>never writes to the baseline file, even if no new diagnostics have surfaced, and instead exits with a non-zero exit code if the baseline file needs to be updated. useful in CI environments when you want to ensure that the baseline file is up-to-date.</p>
