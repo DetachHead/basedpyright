@@ -453,10 +453,10 @@ test('hover on operators', async () => {
 //// b = ([|/*marker4a*/~|]a [|/*marker4b*/&|] 255,)
 //// c = 4 [|/*marker5*/*|] b
 //// d = 5 not [|/*marker6*/in|] c
-//// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
+//// e = a <[/*marker7a*/] b[0][/*marker7b*/]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[[|/*marker9a*/0|]] [|/*marker9b*/=|] h [|/*marker9c*/=|] g[[|/*marker9d*/2|]] [|/*marker9e*/=|] h [|/*marker9f*/=|] g[[|/*marker9g*/1|]]
+//// g[0][/*marker9a*/] =[/*marker9b*/] h =[/*marker9c*/] g[2][/*marker9d*/] =[/*marker9e*/] h =[/*marker9f*/] g[1][/*marker9g*/1]
 //// from typing import NotRequired, TypedDict
 //// class C(TypedDict): a: int; b: NotRequired[float]
 //// i: C = {"a": 2, "b": 1.2}
@@ -468,11 +468,11 @@ test('hover on operators', async () => {
 ////     b: NotRequired[float]
 //// j: D | C = {[|/*marker12*/"a"|]: 2}
 //// k = j[[|/*marker13a*/"a"|]][|/*marker13b*/|]
-//// l = c[[|/*marker14*/1:2|]]
+//// l = c[1:2][/*marker14*/]
 //// from enum import Enum
 //// class E(Enum): A = 1; B = 2
-//// m = E[[|/*marker15*/"A"|]]
-//// n = "abc"[[|/*marker16*/1|]]
+//// m = E["A"][/*marker15*/]
+//// n = "abc"[1][/*marker16*/]
 //// o = 1 [|/*marker17*/**|] 2
     `;
 

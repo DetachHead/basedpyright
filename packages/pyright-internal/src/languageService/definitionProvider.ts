@@ -31,7 +31,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, rangesAreEqual } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNode, ParseNodeType } from '../parser/parseNodes';
-import { getArgumentNode, getInfoNode, improveNodeByOffset } from '../parser/parseNodeUtils';
+import { getArgumentNode, getInfoNode, improveNodeByOffset, isLiteralNode } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 import { forEachDeclaration, getTypeOfOperatorNode } from '../analyzer/typeResultUtils';
 
@@ -147,6 +147,7 @@ class DefinitionProviderBase {
         // There should be only one 'definition', so only if extensions failed should we try again.
         // Go up the parse tree until we find a node that we can determine a definition for.
         const isArgumentNode = getArgumentNode(node) !== undefined;
+        const isBaseLiteral = isLiteralNode(node);
         let currentNode: ParseNode | undefined = improveNodeByOffset(node, offset);
         while (definitions.length === 0 && currentNode) {
             const infoNode: ParseNode | undefined = getInfoNode(currentNode);
@@ -173,7 +174,11 @@ class DefinitionProviderBase {
                 case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
                     const result = getTypeOfOperatorNode(this.evaluator, infoNode);
-                    this.resolveTypeResult(result, definitions, isArgumentNode);
+                    const { isTypedDictItem } = this.resolveTypeResult(result, definitions, isArgumentNode);
+                    if (isBaseLiteral && !isTypedDictItem) {
+                        // no definitions for literals unless they reference TypedDict keys
+                        return undefined;
+                    }
                     break;
                 }
             }
@@ -198,7 +203,7 @@ class DefinitionProviderBase {
         addDeclarationsToDefinitions(this.evaluator, this.sourceMapper, declarations, definitions);
     }
     protected resolveTypeResult(typeResult: TypeResult, definitions: DocumentRange[], isArgumentNode: boolean) {
-        forEachDeclaration(typeResult, (decl) => this.resolveDeclarations([decl], definitions), isArgumentNode);
+        return forEachDeclaration(typeResult, (decl) => this.resolveDeclarations([decl], definitions), isArgumentNode);
     }
 
     protected addSynthesizedTypes(synthTypes: SynthesizedTypeInfo[], definitions: DocumentRange[]) {

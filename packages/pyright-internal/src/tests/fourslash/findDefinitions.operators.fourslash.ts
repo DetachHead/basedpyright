@@ -88,19 +88,19 @@
 //// b = ([|/*marker4a*/~|]a [|/*marker4b*/&|] 255,)
 //// c = 4 [|/*marker5*/*|] b
 //// d = 5 not [|/*marker6*/in|] c
-//// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
+//// e = a <[|/*marker7a*/|] b[0][|/*marker7b*/|]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[[|/*marker9a*/0|]] [|/*marker9b*/=|] h [|/*marker9c*/=|] g[[|/*marker9d*/2|]] [|/*marker9e*/=|] h [|/*marker9f*/=|] g[[|/*marker9g*/1|]]
+//// g[0][|/*marker9a*/|] =[|/*marker9b*/|] h =[|/*marker9c*/|] g[2][|/*marker9d*/|] =[|/*marker9e*/|] h =[|/*marker9f*/|] g[1][|/*marker9g*/|]
 //// i: C = {"a": 2, "b": 1.2}
 //// i[[|/*marker10a*/"b"|]] [|/*marker10b*/=|] i[[|/*marker10c*/"a"|]][|/*marker10d*/|]
 //// [|/*marker11a*/del|] i[[|/*marker11b*/"b"|]]
 //// j: D | C = {[|/*marker12*/"a"|]: 2}
 //// k = j[[|/*marker13a*/"a"|]][|/*marker13b*/|]
-//// l = c[[|/*marker14*/1:2|]]
-//// m = E[[|/*marker15*/"A"|]]
-//// n = "abc"[[|/*marker16*/1|]]
-//// o = S0()[[|/*marker17*/0:2|]]
+//// l = c[1:2][|/*marker14*/|]
+//// m = E["A"][|/*marker15*/|]
+//// n = "abc"[1][|/*marker16*/|]
+//// o = S0()[0:2][|/*marker17*/|]
 
 {
     const rangeMap = helper.getRangesByText();

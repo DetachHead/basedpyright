@@ -221,6 +221,19 @@ export function improveNodeByOffset(node: ParseNode, offset: number): ParseNode 
     return node;
 }
 
+/** Whether `node` is a literal node. */
+export function isLiteralNode(node: ParseNode): boolean {
+    switch (node.nodeType) {
+        case ParseNodeType.Number:
+        case ParseNodeType.String:
+        case ParseNodeType.StringList:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
 /**
  * If `node` is an `ArgumentNode` node or a literal node with an `ArgumentNode` parent, return that
  * `ArgumentNode`.
