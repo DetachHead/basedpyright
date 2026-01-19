@@ -775,7 +775,7 @@ export function openFile(info: PyrightServerInfo, markerName: string, text?: str
 }
 
 export async function hover(info: PyrightServerInfo, markerName: string) {
-    const marker = info.testData.markerPositions.get('marker')!;
+    const marker = info.testData.markerPositions.get(markerName)!;
     const fileUri = marker.fileUri;
     const text = info.testData.files.find((d) => d.fileName === marker.fileName)!.content;
     const parseResult = getParseResults(text);
