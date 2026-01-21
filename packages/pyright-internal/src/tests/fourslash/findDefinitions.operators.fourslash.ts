@@ -88,19 +88,19 @@
 //// b = ([|/*marker4a*/~|]a [|/*marker4b*/&|] 255,)
 //// c = 4 [|/*marker5*/*|] b
 //// d = 5 not [|/*marker6*/in|] c
-//// e = a <[|/*marker7a*/|] b[0][|/*marker7b*/|]
+//// e = a <[|/*marker7a*/|] b[0[|/*marker7b*/|]][|/*marker7c*/|]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[0][|/*marker9a*/|] =[|/*marker9b*/|] h =[|/*marker9c*/|] g[2][|/*marker9d*/|] =[|/*marker9e*/|] h =[|/*marker9f*/|] g[1][|/*marker9g*/|]
+//// g[0[|/*marker9a*/|]][|/*marker9b*/|] =[|/*marker9c*/|] h =[|/*marker9d*/|] g[2[|/*marker9e*/|]][|/*marker9f*/|] =[|/*marker9g*/|] h =[|/*marker9h*/|] g[1[|/*marker9i*/|]][|/*marker9j*/|]
 //// i: C = {"a": 2, "b": 1.2}
 //// i[[|/*marker10a*/"b"|]] [|/*marker10b*/=|] i[[|/*marker10c*/"a"|]][|/*marker10d*/|]
 //// [|/*marker11a*/del|] i[[|/*marker11b*/"b"|]]
 //// j: D | C = {[|/*marker12*/"a"|]: 2}
 //// k = j[[|/*marker13a*/"a"|]][|/*marker13b*/|]
-//// l = c[1:2][|/*marker14*/|]
-//// m = E["A"][|/*marker15*/|]
-//// n = "abc"[1][|/*marker16*/|]
-//// o = S0()[0:2][|/*marker17*/|]
+//// l = c[1:2[|/*marker14a*/|]][|/*marker14b*/|]
+//// m = E["A"[|/*marker15a*/|]][|/*marker15b*/|]
+//// n = "abc"[1[|/*marker16a*/|]][|/*marker16b*/|]
+//// o = S0()[0:2[|/*marker17a*/|]][|/*marker17b*/|]
 
 {
     const rangeMap = helper.getRangesByText();
@@ -133,16 +133,20 @@
             marker5: { definitions: [nameToDoc('tupleRmul')] },
             marker6: { definitions: [nameToDoc('tupleIn')] },
             marker7a: { definitions: [nameToDoc('intLt')] },
-            marker7b: { definitions: [nameToDoc('tupleGetItem')] },
+            marker7b: { definitions: [] },
+            marker7c: { definitions: [nameToDoc('tupleGetItem')] },
             marker8a: { definitions: [] },
             marker8b: { definitions: [nameToDoc('intBool')] },
-            marker9a: { definitions: [nameToDoc('listSetItem')] },
+            marker9a: { definitions: [] },
             marker9b: { definitions: [nameToDoc('listSetItem')] },
-            marker9c: { definitions: [] },
-            marker9d: { definitions: [nameToDoc('listSetItem')] },
-            marker9e: { definitions: [nameToDoc('listSetItem')] },
-            marker9f: { definitions: [] },
-            marker9g: { definitions: [nameToDoc('listGetItem')] },
+            marker9c: { definitions: [nameToDoc('listSetItem')] },
+            marker9d: { definitions: [] },
+            marker9e: { definitions: [] },
+            marker9f: { definitions: [nameToDoc('listSetItem')] },
+            marker9g: { definitions: [nameToDoc('listSetItem')] },
+            marker9h: { definitions: [] },
+            marker9i: { definitions: [] },
+            marker9j: { definitions: [nameToDoc('listGetItem')] },
             marker10a: { definitions: [nameToDoc('Cb')] },
             marker10b: { definitions: [nameToDoc('DictSetItem')] },
             marker10c: { definitions: [nameToDoc('Ca')] },
@@ -152,10 +156,14 @@
             marker12: { definitions: [nameToDoc('Da'), nameToDoc('Ca')] },
             marker13a: { definitions: [nameToDoc('Da'), nameToDoc('Ca')] },
             marker13b: { definitions: [nameToDoc('DictGetItem')] },
-            marker14: { definitions: [nameToDoc('tupleGetItem')] },
-            marker15: { definitions: [nameToDoc('EnumGetItem')] },
-            marker16: { definitions: [nameToDoc('LitStrGetItem')] },
-            marker17: { definitions: [nameToDoc('S0GetItemSlice')] },
+            marker14a: { definitions: [] },
+            marker14b: { definitions: [nameToDoc('tupleGetItem')] },
+            marker15a: { definitions: [] },
+            marker15b: { definitions: [nameToDoc('EnumGetItem')] },
+            marker16a: { definitions: [] },
+            marker16b: { definitions: [nameToDoc('LitStrGetItem')] },
+            marker17a: { definitions: [] },
+            marker17b: { definitions: [nameToDoc('S0GetItemSlice')] },
         },
         'preferSource'
     );

@@ -221,7 +221,7 @@ export function improveNodeByOffset(node: ParseNode, offset: number): ParseNode 
     return node;
 }
 
-/** Whether `node` is a literal node. */
+/** Whether `node` is a number, string, or string list literal node. */
 export function isLiteralNode(node: ParseNode): boolean {
     switch (node.nodeType) {
         case ParseNodeType.Number:
