@@ -453,10 +453,10 @@ test('hover on operators', async () => {
 //// b = ([|/*marker4a*/~|]a [|/*marker4b*/&|] 255,)
 //// c = 4 [|/*marker5*/*|] b
 //// d = 5 not [|/*marker6*/in|] c
-//// e = a [|/*marker7a*/<|] b[[|/*marker7b*/0|]]
+//// e = a <[/*marker7a*/] b[0[/*marker7b*/]][/*marker7c*/]
 //// f = e [|/*marker8a*/or|] [|/*marker8b*/not|] a
 //// g = [1, 2, 3]
-//// g[[|/*marker9a*/0|]] [|/*marker9b*/=|] h [|/*marker9c*/=|] g[[|/*marker9d*/2|]] [|/*marker9e*/=|] h [|/*marker9f*/=|] g[[|/*marker9g*/1|]]
+//// g[0[/*marker9a*/]][/*marker9b*/] =[/*marker9c*/] h =[/*marker9d*/] g[2[/*marker9e*/]][/*marker9f*/] =[/*marker9g*/] h =[/*marker9h*/] g[1[/*marker9i*/]][/*marker9j*/1]
 //// from typing import NotRequired, TypedDict
 //// class C(TypedDict): a: int; b: NotRequired[float]
 //// i: C = {"a": 2, "b": 1.2}
@@ -468,11 +468,11 @@ test('hover on operators', async () => {
 ////     b: NotRequired[float]
 //// j: D | C = {[|/*marker12*/"a"|]: 2}
 //// k = j[[|/*marker13a*/"a"|]][|/*marker13b*/|]
-//// l = c[[|/*marker14*/1:2|]]
+//// l = c[1:2[/*marker14a*/]][/*marker14b*/]
 //// from enum import Enum
 //// class E(Enum): A = 1; B = 2
-//// m = E[[|/*marker15*/"A"|]]
-//// n = "abc"[[|/*marker16*/1|]]
+//// m = E["A"[/*marker15a*/]][/*marker15b*/]
+//// n = "abc"[1[/*marker16a*/]][/*marker16b*/]
 //// o = 1 [|/*marker17*/**|] 2
     `;
 
@@ -514,7 +514,8 @@ test('hover on operators', async () => {
             '```python\n(method) def __lt__(self: Self@int, value: int, /) -> bool\n```',
             { start: { line: 11, character: 4 }, end: { line: 11, character: 12 } },
         ],
-        marker7b: [
+        marker7b: null,
+        marker7c: [
             '```python\n(method) def __getitem__(self: Self@tuple[_T_co@tuple], key: SupportsIndex, /) -> _T_co@tuple\n```',
             { start: { line: 11, character: 8 }, end: { line: 11, character: 12 } },
         ],
@@ -523,25 +524,28 @@ test('hover on operators', async () => {
             '```python\n(method) def __bool__(self: Self@int) -> bool\n```',
             { start: { line: 12, character: 9 }, end: { line: 12, character: 14 } },
         ],
-        marker9a: [
-            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
-            { start: { line: 14, character: 0 }, end: { line: 14, character: 26 } },
-        ],
+        marker9a: null,
         marker9b: [
             '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
             { start: { line: 14, character: 0 }, end: { line: 14, character: 26 } },
         ],
-        marker9c: null,
-        marker9d: [
+        marker9c: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 0 }, end: { line: 14, character: 26 } },
+        ],
+        marker9d: null,
+        marker9e: null,
+        marker9f: [
             '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
             { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
         ],
-        marker9e: [
-            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
-            { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
-        ],
-        marker9f: null,
         marker9g: [
+            '```python\n(method) def __setitem__(self: Self@list[_T@list], key: SupportsIndex, value: _T@list, /) -> None\n```',
+            { start: { line: 14, character: 11 }, end: { line: 14, character: 26 } },
+        ],
+        marker9h: null,
+        marker9i: null,
+        marker9j: [
             '```python\n(method) def __getitem__(self: Self@list[_T@list], i: SupportsIndex, /) -> _T@list\n```',
             { start: { line: 14, character: 22 }, end: { line: 14, character: 26 } },
         ],
@@ -581,15 +585,18 @@ test('hover on operators', async () => {
             '```python\n(method) def __getitem__(self: Self@dict[_KT@dict, _VT@dict], key: _KT@dict, /) -> _VT@dict\n```',
             { start: { line: 25, character: 4 }, end: { line: 25, character: 10 } },
         ],
-        marker14: [
+        marker14a: null,
+        marker14b: [
             '```python\n(method) def __getitem__(self: Self@tuple[_T_co@tuple], key: slice[Any, Any, Any], /) -> tuple[_T_co@tuple, ...]\n```',
             { start: { line: 26, character: 4 }, end: { line: 26, character: 10 } },
         ],
-        marker15: [
+        marker15a: null,
+        marker15b: [
             '```python\n(method) def __getitem__(self: type[_EnumMemberT@__getitem__], name: str) -> _EnumMemberT@__getitem__\n```',
             { start: { line: 29, character: 4 }, end: { line: 29, character: 10 } },
         ],
-        marker16: [
+        marker16a: null,
+        marker16b: [
             '```python\n(method) def __getitem__(self: LiteralString, key: SupportsIndex | slice[Any, Any, Any], /) -> LiteralString\n```',
             { start: { line: 30, character: 4 }, end: { line: 30, character: 12 } },
         ],

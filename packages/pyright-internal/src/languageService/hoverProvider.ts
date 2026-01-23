@@ -46,7 +46,7 @@ import { ServiceProvider } from '../common/serviceProvider';
 import { Position, Range, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ExpressionNode, NameNode, ParseNode, ParseNodeType, StringNode } from '../parser/parseNodes';
-import { getArgumentNode, getInfoNode, improveNodeByOffset, nodeRange } from '../parser/parseNodeUtils';
+import { getArgumentNode, getInfoNode, improveNodeByOffset, isLiteralNode, nodeRange } from '../parser/parseNodeUtils';
 import { ParseFileResults } from '../parser/parser';
 import {
     getClassAndConstructorTypes,
@@ -278,6 +278,7 @@ export class HoverProvider {
         if (baseNode === undefined) {
             return null;
         }
+        const isBaseLiteral = isLiteralNode(baseNode);
         const argumentNode = getArgumentNode(baseNode);
 
         // Go up the parse tree until we find a node that we can determine a hover message for.
@@ -352,12 +353,16 @@ export class HoverProvider {
                 case ParseNodeType.BinaryOperation:
                 case ParseNodeType.AugmentedAssignment:
                 case ParseNodeType.Index: {
-                    const result = this._addResultsForTypeResult(
+                    const { isTypedDictItem } = this._addResultsForTypeResult(
                         parts,
                         getTypeOfOperatorNode(this._evaluator, infoNode),
                         argumentNode !== undefined
                     );
-                    if (result.isTypedDictItem) {
+                    if (isBaseLiteral && !isTypedDictItem) {
+                        // no hover message for literals unless they reference TypedDict keys
+                        return null;
+                    }
+                    if (isTypedDictItem) {
                         rangeOverride = argumentNode;
                     }
                     break;
