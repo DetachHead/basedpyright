@@ -24,3 +24,7 @@ def _(something_else: Never, subject: int | str):
             ...
         case _: # error, not an assert_never
             print(subject)
+
+    match something_else:
+        case _: # error. checking whether this is an assert_never call would cause an infinite recursion when evaluating the type of something_else
+            something_else.assert_never(something_else)

@@ -12,7 +12,11 @@ test('assert_never', () => {
         errors: [
             { code: DiagnosticRule.reportUnnecessaryComparison, line: 16 },
             { code: DiagnosticRule.reportUnnecessaryComparison, line: 24 },
+            { code: DiagnosticRule.reportUnnecessaryComparison, line: 28 },
         ],
-        hints: [{ code: DiagnosticRule.reportUnreachable, line: 25 }],
+        hints: [
+            { code: DiagnosticRule.reportUnreachable, line: 25 },
+            { code: DiagnosticRule.reportUnreachable, line: 29 },
+        ],
     });
 });
