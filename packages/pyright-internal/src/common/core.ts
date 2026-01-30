@@ -198,3 +198,22 @@ export namespace Disposable {
         return value && typeof value.dispose === 'function';
     }
 }
+
+/**
+ * protects against infinite recursions by only running the callback if the specified item has not yet been visited
+ * (ie. not present in the stack)
+ */
+export class InfiniteRecursionGuard<T> {
+    private _stack: T[] = [];
+    run = (item: T, callback: () => void) => {
+        if (this._stack.includes(item)) {
+            return;
+        }
+        this._stack.push(item);
+        try {
+            callback();
+        } finally {
+            this._stack.pop();
+        }
+    };
+}

@@ -10,6 +10,7 @@
  */
 
 import { appendArray } from '../common/collectionUtils';
+import { InfiniteRecursionGuard } from '../common/core';
 import { assert } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -180,7 +181,7 @@ export function narrowTypeBasedOnPattern(
     }
 }
 
-const unusedPatternSubjectNodeStack: ParseNode[] = [];
+const unusedPatternCheck = new InfiniteRecursionGuard<ParseNode>();
 
 // Determines whether this pattern (or part of the pattern) in
 // this case statement will never be matched.
@@ -193,9 +194,8 @@ export function checkForUnusedPattern(
     if (isNever(subjectType)) {
         // don't report unnecessary pattern if the suite contains an assert_never, because that means it's intentional
         const parentNode = pattern.parent;
-        if (parentNode && !unusedPatternSubjectNodeStack.includes(parentNode)) {
-            unusedPatternSubjectNodeStack.push(parentNode);
-            try {
+        if (parentNode) {
+            unusedPatternCheck.run(parentNode, () => {
                 if (
                     parentNode.nodeType !== ParseNodeType.Case ||
                     !parentNode.d.suite.d.statements.some(
@@ -223,9 +223,7 @@ export function checkForUnusedPattern(
                 ) {
                     reportUnnecessaryPattern(evaluator, pattern, subjectType);
                 }
-            } finally {
-                unusedPatternSubjectNodeStack.pop();
-            }
+            });
         }
     } else if (pattern.nodeType === ParseNodeType.PatternAs && pattern.d.orPatterns.length > 1) {
         // Check each of the or patterns separately.
