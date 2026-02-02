@@ -1577,11 +1577,13 @@ export class ConfigOptions {
         this.initializedFromJson = true;
         const console = serviceProvider.tryGet(ServiceKeys.console) ?? new NullConsole();
 
-        // we initialize it with `extends` because this option gets read before this function gets called
-        // 'executionEnvironments' also gets read elsewhere
         const unusedConfigDetector = new UnusedConfigDetector<Record<string, object>>(configObj, [
+            // We ignore these because they get read elsewhere:
             'extends',
             'executionEnvironments',
+            // VS Code supports setting "$schema" in a JSON file to pick a validation schema.
+            // See https://code.visualstudio.com/docs/languages/json#_mapping-in-the-json
+            '$schema',
         ]);
         configObj = unusedConfigDetector.proxy;
 
