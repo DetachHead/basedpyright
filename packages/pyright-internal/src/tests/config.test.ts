@@ -218,6 +218,26 @@ describe(`config test'}`, () => {
         assert.equal(configOptions.executionEnvironments[0].pythonPlatform, 'Linux');
     });
 
+    test('$schema is recognized', () => {
+        const cwd = UriEx.file(normalizePath(process.cwd()));
+
+        const configOptions = new ConfigOptions(cwd);
+
+        const json = {
+            $schema:
+                'https://raw.githubusercontent.com/microsoft/pyright/main/packages/vscode-pyright/schemas/pyrightconfig.schema.json',
+            typeCheckingMode: 'basic',
+        };
+
+        const fs = new TestFileSystem(/* ignoreCase */ false);
+        const console = new ErrorTrackingNullConsole();
+
+        const sp = createServiceProvider(fs, console);
+        configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+
+        assert.deepStrictEqual(console.errors, []);
+    });
+
     describe('invalid config', () => {
         test('unknown top-level option', () => {
             const cwd = UriEx.file(normalizePath(process.cwd()));
