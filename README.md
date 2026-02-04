@@ -8,7 +8,7 @@
 [![sublime text](https://img.shields.io/packagecontrol/dt/LSP-basedpyright?logo=sublimetext&color=FF9800)](https://packagecontrol.io/packages/LSP-basedpyright)
 [![homebrew](https://img.shields.io/homebrew/installs/dm/basedpyright?logo=homebrew&color=fbb040)](https://formulae.brew.sh/formula/basedpyright)
 [![Discord](https://img.shields.io/discord/948915247073349673?logo=discord&color=5865F2)](https://discord.gg/7y9upqPrk2)
-[![basedpyright - checked](https://img.shields.io/badge/basedpyright-checked-ffc000)](https://docs.basedpyright.com)
+[![basedpyright - checked](https://img.shields.io/endpoint?url=https://docs.basedpyright.com/latest/badge.json)](https://docs.basedpyright.com)
 
 Basedpyright is a fork of [pyright](https://github.com/microsoft/pyright) with various type checking improvements, pylance features and more.
 
