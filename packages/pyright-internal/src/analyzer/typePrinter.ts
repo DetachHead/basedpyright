@@ -11,7 +11,7 @@ import { appendArray, getOrAdd } from '../common/collectionUtils';
 import { ConfigOptions } from '../common/configOptions';
 import { assert } from '../common/debug';
 import { Uri } from '../common/uri/uri';
-import { ParamCategory } from '../parser/parseNodes';
+import { ExpressionNode, ParamCategory, ParseNodeType } from '../parser/parseNodes';
 import { isTypedKwargs } from './parameterUtils';
 import * as ParseTreeUtils from './parseTreeUtils';
 import { printBytesLiteral, printStringLiteral } from './typePrinterUtils';
@@ -23,6 +23,7 @@ import {
     isAnyOrUnknown,
     isClass,
     isClassInstance,
+    isFunction,
     isInstantiableClass,
     isNever,
     isParamSpec,
@@ -1405,7 +1406,20 @@ function printFunctionPartsInternal(
 
         if (defaultType) {
             if (param.defaultExpr) {
-                paramString += defaultValueAssignment + ParseTreeUtils.printExpression(param.defaultExpr);
+                let defaultExpr: ExpressionNode | undefined;
+                // if this is an overload signature and the default value is an ellipsis we need to get the default value from the implementation signature instead
+                if (type.priv.overloaded && param.defaultExpr.nodeType === ParseNodeType.Ellipsis) {
+                    const implementation = OverloadedType.getImplementation(type.priv.overloaded);
+                    if (implementation && isFunction(implementation)) {
+                        defaultExpr = implementation.shared.parameters.find(
+                            (parameter) => parameter.name === param.name
+                        )?.defaultExpr;
+                    }
+                }
+                if (!defaultExpr) {
+                    defaultExpr = param.defaultExpr;
+                }
+                paramString += defaultValueAssignment + ParseTreeUtils.printExpression(defaultExpr);
             } else {
                 // If the function doesn't originate from a function declaration (e.g. it is
                 // synthesized), we can't get to the default declaration, but we can still indicate
