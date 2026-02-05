@@ -200,6 +200,56 @@ export class CodeActionProvider {
                 );
             }
 
+            // ==== CA for reportSelfClsDefault ====
+            if (rule === DiagnosticRule.reportSelfClsDefault) {
+                // remove the default value from 'self' or 'cls' parameter
+                const lineText = lines.getItemAt(diagnostic.range.start.line);
+                let paramNode = findNodeByOffset(
+                    parseResults.parserOutput.parseTree,
+                    diagnostic.range.start.character + lineText.start
+                );
+                let editStartOffset: number | undefined;
+                let editEndOffset: number | undefined;
+                if (paramNode) {
+                    while (paramNode?.nodeType !== ParseNodeType.Parameter) {
+                        paramNode = paramNode?.parent;
+                    }
+                    const paramName = paramNode.d.name?.d.value;
+                    if (paramNode.d.defaultValue) {
+                        if (paramNode.d.annotation) {
+                            editStartOffset = paramNode.d.annotation.start + paramNode.d.annotation.length;
+                        } else if (paramNode.d.name) {
+                            editStartOffset = paramNode.d.name.start + paramNode.d.name.length;
+                        } else {
+                            editStartOffset = undefined;
+                        }
+                        editEndOffset = paramNode.d.defaultValue.start + paramNode.d.defaultValue.length;
+                    }
+                    if (paramName && editStartOffset !== undefined && editEndOffset !== undefined) {
+                        const startPos = convertOffsetToPosition(editStartOffset, lines);
+                        const endPos = convertOffsetToPosition(editEndOffset, lines);
+                        if (startPos && endPos) {
+                            codeActions.push(
+                                CodeAction.create(
+                                    Localizer.CodeAction.removeParamDefault().format({ paramName }),
+                                    convertToWorkspaceEdit(
+                                        ls.convertUriToLspUriString,
+                                        fs,
+                                        convertToFileTextEdits(
+                                            fileUri,
+                                            convertToTextEditActions([
+                                                { newText: '', range: { start: startPos, end: endPos } },
+                                            ])
+                                        )
+                                    ),
+                                    CodeActionKind.QuickFix
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+
             // ==== CA for creating type stubs ====
             if (workspace.rootUri && diagnostic.getActions()?.some((a) => a.action === Commands.createTypeStub)) {
                 const action = diagnostic

@@ -1713,6 +1713,8 @@ export namespace Localizer {
                 getRawString('CodeAction.addIgnoreCommentToExisting')
             );
         export const assignToUnderscore = () => getRawString('CodeAction.assignToUnderscore');
+        export const removeParamDefault = () =>
+            new ParameterizedString<{ paramName: string }>(getRawString('CodeAction.removeParamDefault'));
     }
 
     export namespace Completion {
