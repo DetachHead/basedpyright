@@ -176,6 +176,71 @@ export class CodeActionProvider {
                 }
             }
 
+            // ==== CA for reportUnnecessaryCast ====
+            if (rule === DiagnosticRule.reportUnnecessaryCast) {
+                // Suggestion to remove the cast call
+                const lineText = lines.getItemAt(diagnostic.range.start.line);
+                let node = findNodeByOffset(
+                    parseResults.parserOutput.parseTree,
+                    diagnostic.range.start.character + lineText.start
+                );
+                let castCallNode: ParseNode | undefined;
+                if (node) {
+                    while (node) {
+                        if (node.nodeType === ParseNodeType.Call) {
+                            const callNode = node;
+                            if (
+                                (callNode.d.leftExpr.nodeType === ParseNodeType.Name &&
+                                    callNode.d.leftExpr.d.value === 'cast') ||
+                                (callNode.d.leftExpr.nodeType === ParseNodeType.MemberAccess &&
+                                    callNode.d.leftExpr.d.leftExpr.nodeType === ParseNodeType.Name &&
+                                    callNode.d.leftExpr.d.leftExpr.d.value === 'typing' &&
+                                    callNode.d.leftExpr.d.member.d.value === 'cast')
+                            ) {
+                                castCallNode = callNode;
+                                break;
+                            }
+                        }
+                        node = node.parent;
+                    }
+                }
+                if (castCallNode && castCallNode.nodeType === ParseNodeType.Call) {
+                    const valueArg = castCallNode.d.args[1];
+                    const startPos = convertOffsetToPosition(valueArg.start, lines);
+                    const endPos = convertOffsetToPosition(valueArg.start + valueArg.length, lines);
+                    const leftRange = { start: convertOffsetToPosition(castCallNode.start, lines)!, end: startPos };
+                    const rightRange = {
+                        start: endPos,
+                        end: convertOffsetToPosition(castCallNode.start + castCallNode.length, lines)!,
+                    };
+                    if (startPos && endPos) {
+                        codeActions.push(
+                            CodeAction.create(
+                                Localizer.CodeAction.removeUnnecessaryCast(),
+                                convertToWorkspaceEdit(
+                                    ls.convertUriToLspUriString,
+                                    fs,
+                                    convertToFileTextEdits(
+                                        fileUri,
+                                        convertToTextEditActions([
+                                            {
+                                                newText: '',
+                                                range: leftRange,
+                                            },
+                                            {
+                                                newText: '',
+                                                range: rightRange,
+                                            },
+                                        ])
+                                    )
+                                ),
+                                CodeActionKind.QuickFix
+                            )
+                        );
+                    }
+                }
+            }
+
             // ==== CA for reportUnusedCallResult ====
             if (rule === DiagnosticRule.reportUnusedCallResult) {
                 // Suggestion to assign the result to `_`

@@ -1715,6 +1715,7 @@ export namespace Localizer {
         export const assignToUnderscore = () => getRawString('CodeAction.assignToUnderscore');
         export const removeParamDefault = () =>
             new ParameterizedString<{ paramName: string }>(getRawString('CodeAction.removeParamDefault'));
+        export const removeUnnecessaryCast = () => getRawString('CodeAction.removeUnnecessaryCast');
     }
 
     export namespace Completion {
