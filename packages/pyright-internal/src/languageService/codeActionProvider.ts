@@ -176,6 +176,30 @@ export class CodeActionProvider {
                 }
             }
 
+            // ==== CA for reportUnusedCallResult ====
+            if (rule === DiagnosticRule.reportUnusedCallResult) {
+                // Suggestion to assign the result to `_`
+                // Insert an edit at the start of the diagnostic range
+                const position = diagnostic.range.start;
+                const insertText = `_ = `;
+                codeActions.push(
+                    CodeAction.create(
+                        Localizer.CodeAction.assignToUnderscore(),
+                        convertToWorkspaceEdit(
+                            ls.convertUriToLspUriString,
+                            fs,
+                            convertToFileTextEdits(
+                                fileUri,
+                                convertToTextEditActions([
+                                    { newText: insertText, range: { start: position, end: position } },
+                                ])
+                            )
+                        ),
+                        CodeActionKind.QuickFix
+                    )
+                );
+            }
+
             // ==== CA for creating type stubs ====
             if (workspace.rootUri && diagnostic.getActions()?.some((a) => a.action === Commands.createTypeStub)) {
                 const action = diagnostic
