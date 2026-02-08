@@ -101,7 +101,7 @@ diagnostics can be configured to be reported as any of the following categories:
 - `"warning"` - only causes the CLI to fail if [`failOnWarnings`](#failOnWarnings) is enabled or the [`--warnings`](./command-line.md#command-line) argument is used
 - `"information"` - never causes the CLI to fail
 - `"hint"` - only appears as a hint in the language server, not reported in the CLI at all. [baselined diagnostics](../benefits-over-pyright/baseline.md) are reported as hints
-- `"none"` - disables the diagnostic entirely
+- `"none"` - completely disables the diagnostic. When a diagnostic rule is set to `"none"`, the rule is turned off entirely and no diagnostics will be reported for that rule
 
 !!! info "deprecated diagnostic categories"
     as of basedpyright 1.21.0, the `"unreachable"`, `"unused"` and `"deprecated"` diagnostic categories are deprecated in favor of `"hint"`. rules where it makes sense
