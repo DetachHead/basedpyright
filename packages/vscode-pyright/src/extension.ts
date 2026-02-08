@@ -144,7 +144,8 @@ export async function activate(context: ExtensionContext) {
                     : [copiedExecutablePath, cliArgs];
             serverOptions = { command, transport: TransportKind.stdio, args };
         } else {
-            console.warn('failed to find pyright executable, falling back to bundled:', executablePath);
+            const bundledPath = context.asAbsolutePath(path.join('dist', 'server.js'));
+            console.warn(`failed to find pyright executable at ${executablePath}, falling back to bundled at ${bundledPath}`);
         }
     }
     if (!serverOptions) {
