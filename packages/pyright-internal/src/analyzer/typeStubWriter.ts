@@ -284,6 +284,19 @@ export class TypeStubWriter extends ParseTreeWalker {
                 }
             }
 
+            // If there was no return type annotation, see if we can infer
+            // a type that is not unknown and add it as the return type.
+            if (!returnAnnotation) {
+                const functionType = this._evaluator.getTypeOfFunction(node);
+                if (functionType && isFunction(functionType.functionType)) {
+                    let returnType = this._evaluator.getInferredReturnType(functionType.functionType);
+                    returnType = removeUnknownFromUnion(returnType);
+                    if (!isNever(returnType) && !isUnknown(returnType)) {
+                        returnAnnotation = this._evaluator.printType(returnType, { enforcePythonSyntax: true });
+                    }
+                }
+            }
+
             if (returnAnnotation) {
                 line += ' -> ' + returnAnnotation;
             }
