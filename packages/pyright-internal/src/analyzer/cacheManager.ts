@@ -14,6 +14,13 @@ import { fail } from '../common/debug';
 import { getHeapStatistics, getSystemMemoryInfo } from '../common/memUtils';
 import { MessageSourceSink } from '../common/workersHost';
 
+// Detect runtime for performance optimizations
+const isBun = typeof (globalThis as any).Bun !== 'undefined';
+
+// Runtime-specific throttle settings for getHeapStatistics()
+// Bun's implementation is significantly slower than V8's and triggers excessive GC
+const HEAP_CHECK_THROTTLE_MS = isBun ? 100 : 5;
+
 export interface CacheOwner {
     // Returns a number between 0 and 1 that indicates how full
     // the cache is.
@@ -29,6 +36,8 @@ export class CacheManager {
     private _sharedUsageBuffer: SharedArrayBuffer | undefined;
     private _sharedUsagePosition = 0;
     private _lastHeapStats = Date.now();
+    private _lastHeapCheck = 0;           // NEW: Track last heap check for throttling
+    private _cachedHeapRatio = 0;         // NEW: Cached heap ratio value
 
     constructor(private readonly _maxWorkers: number = 0) {
         // Empty
@@ -125,6 +134,17 @@ export class CacheManager {
             return -1;
         }
 
+        const now = Date.now();
+        const timeSinceLastCheck = now - this._lastHeapCheck;
+
+        // THROTTLE: Return cached value if checked recently
+        // This is especially important on Bun where getHeapStatistics() is expensive
+        if (timeSinceLastCheck < HEAP_CHECK_THROTTLE_MS) {
+            return this._cachedHeapRatio;
+        }
+
+        // Perform actual heap check
+        this._lastHeapCheck = now;
         const heapStats = getHeapStatistics();
         let usage = this._getTotalHeapUsage(heapStats);
 
@@ -150,7 +170,8 @@ export class CacheManager {
         // to make the ratio more accurate. (200MB at 4GB)
         usage += usage * 0.05;
 
-        return usage / heapStats.heap_size_limit;
+        this._cachedHeapRatio = usage / heapStats.heap_size_limit;
+        return this._cachedHeapRatio;
     }
 
     private _convertToMB(bytes: number) {
