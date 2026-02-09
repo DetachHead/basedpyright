@@ -208,10 +208,10 @@ export class CodeActionProvider {
                     const valueArg = castCallNode.d.args[1];
                     const startPos = convertOffsetToPosition(valueArg.start, lines);
                     const endPos = convertOffsetToPosition(valueArg.start + valueArg.length, lines);
-                    const leftRange = { start: convertOffsetToPosition(castCallNode.start, lines)!, end: startPos };
+                    const leftRange = { start: convertOffsetToPosition(castCallNode.start, lines), end: startPos };
                     const rightRange = {
                         start: endPos,
-                        end: convertOffsetToPosition(castCallNode.start + castCallNode.length, lines)!,
+                        end: convertOffsetToPosition(castCallNode.start + castCallNode.length, lines),
                     };
                     if (startPos && endPos) {
                         codeActions.push(
@@ -246,7 +246,7 @@ export class CodeActionProvider {
                 // Suggestion to assign the result to `_`
                 // Insert an edit at the start of the diagnostic range
                 const position = diagnostic.range.start;
-                const insertText = `_ = `;
+                const insertText = '_ = ';
                 codeActions.push(
                     CodeAction.create(
                         Localizer.CodeAction.assignToUnderscore(),
