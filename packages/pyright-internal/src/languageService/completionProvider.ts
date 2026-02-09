@@ -311,6 +311,10 @@ export class CompletionProvider {
         this.sourceMapper = this.program.getSourceMapper(this.fileUri, this.cancellationToken, /* mapCompiled */ true);
     }
 
+    get evaluator() {
+        return this.program.evaluator!;
+    }
+
     get importResolver() {
         return this.program.importResolver;
     }
@@ -486,10 +490,6 @@ export class CompletionProvider {
             }
         }
         return additionalTextEdits;
-    }
-
-    protected get evaluator() {
-        return this.program.evaluator!;
     }
 
     protected get configOptions() {

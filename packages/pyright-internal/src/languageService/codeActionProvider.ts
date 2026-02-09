@@ -30,6 +30,7 @@ import { sorter } from '../common/collectionUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { TextRangeCollection } from '../common/textRangeCollection';
+import { FunctionType, isOverloaded, OverloadedType } from '../analyzer/types';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -184,36 +185,39 @@ export class CodeActionProvider {
                     parseResults.parserOutput.parseTree,
                     diagnostic.range.start.character + lineText.start
                 );
-                let castCallNode: ParseNode | undefined;
                 if (node) {
                     while (node) {
                         if (node.nodeType === ParseNodeType.Call) {
-                            const callNode = node;
-                            if (
-                                (callNode.d.leftExpr.nodeType === ParseNodeType.Name &&
-                                    callNode.d.leftExpr.d.value === 'cast') ||
-                                (callNode.d.leftExpr.nodeType === ParseNodeType.MemberAccess &&
-                                    callNode.d.leftExpr.d.leftExpr.nodeType === ParseNodeType.Name &&
-                                    callNode.d.leftExpr.d.leftExpr.d.value === 'typing' &&
-                                    callNode.d.leftExpr.d.member.d.value === 'cast')
-                            ) {
-                                castCallNode = callNode;
-                                break;
+                            const completer = this._createCompleter(workspace, fileUri, token, node, lines);
+                            const type = completer.evaluator.getTypeOfExpression(node.d.leftExpr).type;
+                            if (isOverloaded(type)) {
+                                // typing.cast / typing_extensions.cast is an overloaded function in stubs
+                                const overloads = OverloadedType.getOverloads(type);
+                                if (
+                                    overloads.some((overload) =>
+                                        FunctionType.isBuiltIn(overload, ['typing.cast', 'typing_extensions.cast'])
+                                    )
+                                ) {
+                                    break;
+                                }
                             }
                         }
                         node = node.parent;
                     }
                 }
-                if (castCallNode && castCallNode.nodeType === ParseNodeType.Call) {
-                    const valueArg = castCallNode.d.args[1];
-                    const startPos = convertOffsetToPosition(valueArg.start, lines);
-                    const endPos = convertOffsetToPosition(valueArg.start + valueArg.length, lines);
-                    const leftRange = { start: convertOffsetToPosition(castCallNode.start, lines), end: startPos };
-                    const rightRange = {
-                        start: endPos,
-                        end: convertOffsetToPosition(castCallNode.start + castCallNode.length, lines),
+                if (node && node.nodeType === ParseNodeType.Call) {
+                    const valueArg = node.d.args[1];
+                    const valueStartPosition = convertOffsetToPosition(valueArg.start, lines);
+                    const valueEndPosition = convertOffsetToPosition(valueArg.start + valueArg.length, lines);
+                    const castCallOpeningRange = {
+                        start: convertOffsetToPosition(node.start, lines),
+                        end: valueStartPosition,
                     };
-                    if (startPos && endPos) {
+                    const castCallClosingRange = {
+                        start: valueEndPosition,
+                        end: convertOffsetToPosition(node.start + node.length, lines),
+                    };
+                    if (valueStartPosition && valueEndPosition) {
                         codeActions.push(
                             CodeAction.create(
                                 Localizer.CodeAction.removeUnnecessaryCast(),
@@ -225,11 +229,11 @@ export class CodeActionProvider {
                                         convertToTextEditActions([
                                             {
                                                 newText: '',
-                                                range: leftRange,
+                                                range: castCallOpeningRange,
                                             },
                                             {
                                                 newText: '',
-                                                range: rightRange,
+                                                range: castCallClosingRange,
                                             },
                                         ])
                                     )
