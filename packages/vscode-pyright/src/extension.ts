@@ -115,6 +115,7 @@ export async function activate(context: ExtensionContext) {
 
     cancellationStrategy = new FileBasedCancellationStrategy();
     let serverOptions: ServerOptions | undefined = undefined;
+    const bundlePath = context.asAbsolutePath(path.join('dist', 'server.js'));
     if (workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
         const pythonApi = await PythonExtension.api();
         const isWindows = os.platform() === 'win32';
@@ -144,15 +145,13 @@ export async function activate(context: ExtensionContext) {
                     : [copiedExecutablePath, cliArgs];
             serverOptions = { command, transport: TransportKind.stdio, args };
         } else {
-            const bundledPath = context.asAbsolutePath(path.join('dist', 'server.js'));
             console.warn(
-                `failed to find pyright executable at ${executablePath}, falling back to bundled at ${bundledPath}`
+                `failed to find pyright executable at ${executablePath}, falling back to bundled at ${bundlePath}`
             );
         }
     }
     if (!serverOptions) {
         console.log('using bundled pyright');
-        const bundlePath = context.asAbsolutePath(path.join('dist', 'server.js'));
 
         const runOptions = { execArgv: [`--max-old-space-size=${defaultHeapSize}`] };
         const debugOptions = { execArgv: ['--nolazy', '--inspect=6600', `--max-old-space-size=${defaultHeapSize}`] };
