@@ -2389,6 +2389,31 @@ export class Binder extends ParseTreeWalker {
 
             this._currentFlowNode = this._finishFlowLabel(preSuiteLabel);
 
+            // If the guard is `not TYPE_CHECKING`, mark the case body
+            // to suppress unreachable diagnostics.
+            if (caseStatement.d.guardExpr) {
+                const guardExpr = caseStatement.d.guardExpr;
+                const constExprValue = StaticExpressions.evaluateStaticBoolLikeExpression(
+                    guardExpr,
+                    this._fileInfo.executionEnvironment,
+                    this._fileInfo.definedConstants,
+                    this._typingImportAliases,
+                    this._sysImportAliases
+                );
+                if (
+                    constExprValue === false &&
+                    guardExpr.nodeType === ParseNodeType.UnaryOperation &&
+                    guardExpr.d.operator === OperatorType.Not &&
+                    guardExpr.d.expr.nodeType === ParseNodeType.Name &&
+                    guardExpr.d.expr.d.value === 'TYPE_CHECKING'
+                ) {
+                    this._currentFlowNode = {
+                        flags: FlowFlags.NotTypeChecking | FlowFlags.Unreachable,
+                        id: this._getUniqueFlowNodeId(),
+                    };
+                }
+            }
+
             // Bind the body of the case statement.
             this.walk(caseStatement.d.suite);
             this._addAntecedent(postMatchLabel, this._currentFlowNode);
