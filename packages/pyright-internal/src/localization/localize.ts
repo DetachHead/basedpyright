@@ -1712,6 +1712,10 @@ export namespace Localizer {
             new ParameterizedString<{ rule: string; ignoreCommentPrefix: string }>(
                 getRawString('CodeAction.addIgnoreCommentToExisting')
             );
+        export const assignToUnderscore = () => getRawString('CodeAction.assignToUnderscore');
+        export const removeParamDefault = () =>
+            new ParameterizedString<{ paramName: string }>(getRawString('CodeAction.removeParamDefault'));
+        export const removeUnnecessaryCast = () => getRawString('CodeAction.removeUnnecessaryCast');
     }
 
     export namespace Completion {

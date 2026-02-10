@@ -16,7 +16,10 @@
         "organizeImports": "Organize Imports",
         "addExplicitOverride": "Add `@override`",
         "addIgnoreComment": "Add `{ignoreComment}`",
-        "addIgnoreCommentToExisting": "Add `{rule}` to existing `{ignoreCommentPrefix}` comment"
+        "addIgnoreCommentToExisting": "Add `{rule}` to existing `{ignoreCommentPrefix}` comment",
+        "assignToUnderscore": "Assign unused result to `_`",
+        "removeParamDefault": "Remove default value from parameter `{paramName}`",
+        "removeUnnecessaryCast": "Remove unnecessary `cast`"
     },
     "Completion": {
         "autoImportDetail": "Auto-import",

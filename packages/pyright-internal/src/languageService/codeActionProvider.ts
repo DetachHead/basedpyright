@@ -30,6 +30,7 @@ import { sorter } from '../common/collectionUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { DiagnosticRule } from '../common/diagnosticRules';
 import { TextRangeCollection } from '../common/textRangeCollection';
+import { FunctionType, isOverloaded, OverloadedType } from '../analyzer/types';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -173,6 +174,148 @@ export class CodeActionProvider {
                             CodeActionKind.QuickFix
                         )
                     );
+                }
+            }
+
+            // ==== CA for reportUnnecessaryCast ====
+            if (rule === DiagnosticRule.reportUnnecessaryCast) {
+                // Suggestion to remove the cast call
+                const lineText = lines.getItemAt(diagnostic.range.start.line);
+                let node = findNodeByOffset(
+                    parseResults.parserOutput.parseTree,
+                    diagnostic.range.start.character + lineText.start
+                );
+                if (node) {
+                    while (node) {
+                        if (node.nodeType === ParseNodeType.Call) {
+                            const evaluator = workspace.service.backgroundAnalysisProgram.program.evaluator!;
+                            const type = evaluator.getTypeOfExpression(node.d.leftExpr).type;
+                            if (isOverloaded(type)) {
+                                // typing.cast / typing_extensions.cast is an overloaded function in stubs
+                                const overloads = OverloadedType.getOverloads(type);
+                                if (
+                                    overloads.some((overload) =>
+                                        FunctionType.isBuiltIn(overload, ['typing.cast', 'typing_extensions.cast'])
+                                    )
+                                ) {
+                                    break;
+                                }
+                            }
+                        }
+                        node = node.parent;
+                    }
+                }
+                if (node && node.nodeType === ParseNodeType.Call) {
+                    const valueArg = node.d.args[1];
+                    const valueStartPosition = convertOffsetToPosition(valueArg.start, lines);
+                    const valueEndPosition = convertOffsetToPosition(valueArg.start + valueArg.length, lines);
+                    const castCallOpeningRange = {
+                        start: convertOffsetToPosition(node.start, lines),
+                        end: valueStartPosition,
+                    };
+                    const castCallClosingRange = {
+                        start: valueEndPosition,
+                        end: convertOffsetToPosition(node.start + node.length, lines),
+                    };
+                    if (valueStartPosition && valueEndPosition) {
+                        codeActions.push(
+                            CodeAction.create(
+                                Localizer.CodeAction.removeUnnecessaryCast(),
+                                convertToWorkspaceEdit(
+                                    ls.convertUriToLspUriString,
+                                    fs,
+                                    convertToFileTextEdits(
+                                        fileUri,
+                                        convertToTextEditActions([
+                                            {
+                                                newText: '',
+                                                range: castCallOpeningRange,
+                                            },
+                                            {
+                                                newText: '',
+                                                range: castCallClosingRange,
+                                            },
+                                        ])
+                                    )
+                                ),
+                                CodeActionKind.QuickFix
+                            )
+                        );
+                    }
+                }
+            }
+
+            // ==== CA for reportUnusedCallResult ====
+            if (rule === DiagnosticRule.reportUnusedCallResult) {
+                // Suggestion to assign the result to `_`
+                // Insert an edit at the start of the diagnostic range
+                const position = diagnostic.range.start;
+                const insertText = '_ = ';
+                codeActions.push(
+                    CodeAction.create(
+                        Localizer.CodeAction.assignToUnderscore(),
+                        convertToWorkspaceEdit(
+                            ls.convertUriToLspUriString,
+                            fs,
+                            convertToFileTextEdits(
+                                fileUri,
+                                convertToTextEditActions([
+                                    { newText: insertText, range: { start: position, end: position } },
+                                ])
+                            )
+                        ),
+                        CodeActionKind.QuickFix
+                    )
+                );
+            }
+
+            // ==== CA for reportSelfClsDefault ====
+            if (rule === DiagnosticRule.reportSelfClsDefault) {
+                // remove the default value from 'self' or 'cls' parameter
+                const lineText = lines.getItemAt(diagnostic.range.start.line);
+                let paramNode = findNodeByOffset(
+                    parseResults.parserOutput.parseTree,
+                    diagnostic.range.start.character + lineText.start
+                );
+                let editStartOffset: number | undefined;
+                let editEndOffset: number | undefined;
+                if (paramNode) {
+                    while (paramNode?.nodeType !== ParseNodeType.Parameter) {
+                        paramNode = paramNode?.parent;
+                    }
+                    const paramName = paramNode.d.name?.d.value;
+                    if (paramNode.d.defaultValue) {
+                        if (paramNode.d.annotation) {
+                            editStartOffset = paramNode.d.annotation.start + paramNode.d.annotation.length;
+                        } else if (paramNode.d.name) {
+                            editStartOffset = paramNode.d.name.start + paramNode.d.name.length;
+                        } else {
+                            editStartOffset = undefined;
+                        }
+                        editEndOffset = paramNode.d.defaultValue.start + paramNode.d.defaultValue.length;
+                    }
+                    if (paramName && editStartOffset !== undefined && editEndOffset !== undefined) {
+                        const startPos = convertOffsetToPosition(editStartOffset, lines);
+                        const endPos = convertOffsetToPosition(editEndOffset, lines);
+                        if (startPos && endPos) {
+                            codeActions.push(
+                                CodeAction.create(
+                                    Localizer.CodeAction.removeParamDefault().format({ paramName }),
+                                    convertToWorkspaceEdit(
+                                        ls.convertUriToLspUriString,
+                                        fs,
+                                        convertToFileTextEdits(
+                                            fileUri,
+                                            convertToTextEditActions([
+                                                { newText: '', range: { start: startPos, end: endPos } },
+                                            ])
+                                        )
+                                    ),
+                                    CodeActionKind.QuickFix
+                                )
+                            );
+                        }
+                    }
                 }
             }
 
