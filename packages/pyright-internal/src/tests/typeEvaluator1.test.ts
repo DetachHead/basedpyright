@@ -27,7 +27,7 @@ import * as TestUtils from './testUtils';
 test('Unreachable1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['unreachable1.py']);
 
-    TestUtils.validateResults(analysisResults, 0, 0, 2, 7);
+    TestUtils.validateResults(analysisResults, 0, 0, 2, 8);
 });
 
 test('Builtins1', () => {
