@@ -188,8 +188,8 @@ export class CodeActionProvider {
                 if (node) {
                     while (node) {
                         if (node.nodeType === ParseNodeType.Call) {
-                            const completer = this._createCompleter(workspace, fileUri, token, node, lines);
-                            const type = completer.evaluator.getTypeOfExpression(node.d.leftExpr).type;
+                            const evaluator = workspace.service.backgroundAnalysisProgram.program.evaluator!;
+                            const type = evaluator.getTypeOfExpression(node.d.leftExpr).type;
                             if (isOverloaded(type)) {
                                 // typing.cast / typing_extensions.cast is an overloaded function in stubs
                                 const overloads = OverloadedType.getOverloads(type);
