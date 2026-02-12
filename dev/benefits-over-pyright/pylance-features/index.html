@@ -2302,7 +2302,7 @@ c:\project\asdf.ipynb - cell 2
 <li>the check to determine whether a builtin object is compiled is done at the module level, meaning modules like <code>re</code> and <code>os</code> which have python source files but contain re-exports of compiled functions, are treated as if they are entirely written in python. this means many of their docstrings are still missing in pylance.</li>
 <li>it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)</li>
 </ul>
-<p>basedpyright solves all of these problems by using <a href="https://github.com/AThePeanut4/docify">docify</a> to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.</p>
+<p>basedpyright solves all of these problems by using <a href="https://github.com/atoerien/docify">docify</a> to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.</p>
 <h3 id="examples">examples</h3>
 <p>here's a demo of basedpyright's builtin docstrings when running on windows, compared to pylance:</p>
 <h4 id="basedpyright">basedpyright</h4>
@@ -2310,7 +2310,7 @@ c:\project\asdf.ipynb - cell 2
 <h4 id="pylance">pylance</h4>
 <p><img alt="" src="https://github.com/DetachHead/basedpyright/assets/57028336/15a38478-8405-419c-a6e1-3c0801808896" /></p>
 <h3 id="generating-your-own-stubs-with-docstrings">generating your own stubs with docstrings</h3>
-<p>basedpyright uses <a href="https://github.com/AThePeanut4/docify">docify</a> to add docstrings to its stubs. if you have third party compiled modules and you want basedpyright to see its docstrings, you can do the same:</p>
+<p>basedpyright uses <a href="https://github.com/atoerien/docify">docify</a> to add docstrings to its stubs. if you have third party compiled modules and you want basedpyright to see its docstrings, you can do the same:</p>
 <div class="highlight"><pre><span></span><code>python -m docify path/to/stubs/for/package --in-place
 </code></pre></div>
 <p>or if you're using a different version of typeshed, you can use the <code>--if-needed</code> argument to replicate how basedpyright's version of typeshed is generated for your current platform and python version:</p>
