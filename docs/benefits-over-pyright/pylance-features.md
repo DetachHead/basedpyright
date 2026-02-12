@@ -76,7 +76,7 @@ pylance works around this problem by running a "docstring scraper" script on the
 -   the check to determine whether a builtin object is compiled is done at the module level, meaning modules like `re` and `os` which have python source files but contain re-exports of compiled functions, are treated as if they are entirely written in python. this means many of their docstrings are still missing in pylance.
 -   it's (probably) slower because these docstrings need to be scraped either when the user launches vscode, or when the user hovers over a builtin class/function (disclaimer: i don't actually know when it runs, because pylance is closed source)
 
-basedpyright solves all of these problems by using [docify](https://github.com/AThePeanut4/docify) to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.
+basedpyright solves all of these problems by using [docify](https://github.com/atoerien/docify) to scrape the docstrings from all compiled builtin functions/classes for all currently supported python versions and all platforms (macos, windows and linux), and including them in the default typeshed stubs that come with the basedpyright package.
 
 ### examples
 
@@ -92,7 +92,7 @@ here's a demo of basedpyright's builtin docstrings when running on windows, comp
 
 ### generating your own stubs with docstrings
 
-basedpyright uses [docify](https://github.com/AThePeanut4/docify) to add docstrings to its stubs. if you have third party compiled modules and you want basedpyright to see its docstrings, you can do the same:
+basedpyright uses [docify](https://github.com/atoerien/docify) to add docstrings to its stubs. if you have third party compiled modules and you want basedpyright to see its docstrings, you can do the same:
 
 ```
 python -m docify path/to/stubs/for/package --in-place
