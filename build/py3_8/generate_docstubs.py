@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from shutil import copytree, rmtree
 
-from docify import main as docify  # pyright:ignore[reportMissingTypeStubs]
+from docify import run as docify  # pyright:ignore[reportMissingTypeStubs]
 
 
 def main(*, overwrite: bool):
@@ -29,7 +29,12 @@ def main(*, overwrite: bool):
         copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=False)
     elif not stubs_with_docs_path.exists():
         copytree(stubs_path, stubs_with_docs_path, dirs_exist_ok=True)
-    docify([str(stubs_with_docs_path / "stdlib"), "--if-needed", "--in-place"])
+    docify(
+        input_dir=str(stubs_with_docs_path / "stdlib"),
+        if_needed=True,
+        in_place=True,
+        workers=0,  # 0 means automatically determine the number of workers based on the cpu
+    )
 
 
 if __name__ == "__main__":
