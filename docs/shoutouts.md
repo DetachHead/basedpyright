@@ -16,7 +16,7 @@ basedmypy heavily inspired me to create basedpyright. while the two projects hav
 
 one of the first pylance features we added was inlay hints and semantic highlighting. i had no clue where to begin until i found this project which had already done the bulk of the work which i was able to expand upon
 
-## [docify](https://github.com/AThePeanut4/docify)
+## [docify](https://github.com/atoerien/docify)
 
 used for [our builtin docstrings support](./benefits-over-pyright/pylance-features.md#docstrings-for-compiled-builtin-modules)
 
