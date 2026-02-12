@@ -127,7 +127,10 @@ export function clonePropertyWithSetter(
     // if it's an abstract property, mark the parameter as accessed
     if (prop.priv?.fgetInfo?.methodType && FunctionType.isAbstractMethod(prop.priv.fgetInfo.methodType)) {
         // first parameter is self, there should only ever be one other parameter.
-        evaluator.markParamAccessed(errorNode.d.params[1]);
+        const setterParam = errorNode.d.params[1];
+        if (setterParam) {
+            evaluator.markParamAccessed(setterParam);
+        }
     }
 
     const classType = prop as ClassType;
