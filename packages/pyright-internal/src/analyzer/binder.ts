@@ -1376,8 +1376,6 @@ export class Binder extends ParseTreeWalker {
         const postIfLabel = this._createBranchLabel(preIfFlowNode);
 
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
-            // Determine if the test condition is always true or always false. If so,
-            // we can treat either the then or the else clause as unconditional.
             const constExprValue = this._evaluateStaticBoolExpr(node.d.testExpr);
 
             this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
@@ -1420,8 +1418,6 @@ export class Binder extends ParseTreeWalker {
         const elseLabel = this._createBranchLabel();
         const postWhileLabel = this._createBranchLabel();
 
-        // Determine if the test condition is always true or always false. If so,
-        // we can treat either the while or the else clause as unconditional.
         const constExprValue = this._evaluateStaticBoolExpr(node.d.testExpr);
 
         const preLoopLabel = this._createLoopLabel();
@@ -4327,6 +4323,9 @@ export class Binder extends ParseTreeWalker {
         return getUniqueFlowNodeId();
     }
 
+    /**
+     * Determine if the test condition is always true or always false. If so,
+     *  we can treat either the then or the else clause as unconditional. */
     private _evaluateStaticBoolExpr(expr: ExpressionNode): boolean | undefined {
         return StaticExpressions.evaluateStaticBoolLikeExpression(
             expr,

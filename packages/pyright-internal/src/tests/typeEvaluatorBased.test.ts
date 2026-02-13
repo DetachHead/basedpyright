@@ -19,6 +19,7 @@ test('reportUnreachable', () => {
 test('reportUnreachable TYPE_CHECKING', () => {
     const configOptions = new ConfigOptions(Uri.empty());
     configOptions.diagnosticRuleSet.reportUnreachable = 'error';
+    configOptions.diagnosticRuleSet.reportUnnecessaryComparison = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['unreachable2.py'], configOptions);
 
     //TODO: should type checking unreachable blocks still always be reported with the unreachable hint?????
