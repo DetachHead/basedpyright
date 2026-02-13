@@ -10,7 +10,7 @@ test('reportUnreachable', () => {
     configOptions.diagnosticRuleSet.reportUnreachable = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
-        errors: [78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
+        errors: [78, 89, 106, 110, 118, 126, 135].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
         infos: [{ line: 95 }, { line: 98 }],
         hints: [{ line: 102 }],
     });
@@ -19,6 +19,7 @@ test('reportUnreachable', () => {
 test('reportUnreachable TYPE_CHECKING', () => {
     const configOptions = new ConfigOptions(Uri.empty());
     configOptions.diagnosticRuleSet.reportUnreachable = 'error';
+    configOptions.diagnosticRuleSet.reportUnnecessaryComparison = 'error';
     const analysisResults = typeAnalyzeSampleFiles(['unreachable2.py'], configOptions);
 
     //TODO: should type checking unreachable blocks still always be reported with the unreachable hint?????
@@ -50,7 +51,7 @@ test('default typeCheckingMode=recommended', () => {
     const analysisResults = typeAnalyzeSampleFiles(['unreachable1.py'], configOptions);
     validateResultsButBased(analysisResults, {
         warnings: [
-            ...[78, 89, 106, 110, 118, 126].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
+            ...[78, 89, 106, 110, 118, 126, 135].map((line) => ({ code: DiagnosticRule.reportUnreachable, line })),
             { line: 19, code: DiagnosticRule.reportUnknownParameterType },
             { line: 33, code: DiagnosticRule.reportUnknownParameterType },
             { line: 33, code: DiagnosticRule.reportInvalidAbstractMethod },
@@ -61,6 +62,7 @@ test('default typeCheckingMode=recommended', () => {
             { line: 121, code: DiagnosticRule.reportUnknownParameterType },
             { line: 122, code: DiagnosticRule.reportUnnecessaryIsInstance },
             { line: 123, code: DiagnosticRule.reportUnknownVariableType },
+            { line: 133, code: DiagnosticRule.reportUnnecessaryComparison },
         ],
         errors: [
             { line: 16, code: DiagnosticRule.reportUninitializedInstanceVariable },
