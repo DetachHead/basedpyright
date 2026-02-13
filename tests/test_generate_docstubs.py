@@ -74,3 +74,49 @@ def test_linux_or_mac_only_docstring():
         should not be relied on.
         """
 ''' in read_module_text("time.pyi")
+
+
+@needs_all_docstubs(sys.version_info >= (3, 13))
+def test_newer_python_version_docstring():
+    assert '''
+    def exec(
+        source: str | ReadableBuffer | CodeType,
+        /,
+        globals: dict[str, Any] | None = None,
+        locals: Mapping[str, object] | None = None,
+        *,
+        closure: tuple[CellType, ...] | None = None,
+    ) -> None:
+        """
+        Execute the given source in the context of globals and locals.
+
+        The source may be a string representing one or more Python statements
+        or a code object as returned by compile().
+        The globals must be a dictionary and locals can be any mapping,
+        defaulting to the current globals and locals.
+        If only globals is given, locals defaults to it.
+        The closure must be a tuple of cellvars, and can only be used
+        when source is a code object requiring exactly that many cellvars.
+        """
+    ''' in read_module_text("builtins.pyi")
+
+
+@needs_all_docstubs(sys.version_info <= (3, 10))
+def test_older_python_version_docstring():
+    assert '''
+    def exec(
+        source: str | ReadableBuffer | CodeType,
+        globals: dict[str, Any] | None = None,
+        locals: Mapping[str, object] | None = None,
+        /,
+    ) -> None:
+        """
+        Execute the given source in the context of globals and locals.
+
+        The source may be a string representing one or more Python statements
+        or a code object as returned by compile().
+        The globals must be a dictionary and locals can be any mapping,
+        defaulting to the current globals and locals.
+        If only globals is given, locals defaults to it.
+        """
+    ''' in read_module_text("builtins.pyi")
