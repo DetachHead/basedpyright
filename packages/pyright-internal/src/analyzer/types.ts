@@ -1815,7 +1815,7 @@ export namespace FunctionType {
         newFunction.priv.boundToType = boundToType;
 
         if (boundToType) {
-            if (type.shared.name === '__new__' || type.shared.name === '__init__') {
+            if (type.shared.name === '__new__' || type.shared.name === '__init__' || FunctionType.isClassMethod(type)) {
                 newFunction.priv.constructorTypeVarScopeId = boundToType.shared.typeVarScopeId;
             }
         }
