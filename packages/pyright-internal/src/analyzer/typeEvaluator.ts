@@ -2337,13 +2337,14 @@ export function createTypeEvaluator(
         }
 
         // If this is an unspecialized generic class, specialize it using the default
-        // values for its type parameters. Skip this if we're suppressing the use
-        // of attribute access override, such as with dundered methods (like __call__).
+        // values for its type parameters.
         if (
             isInstantiableClass(objectType) &&
             !objectType.priv.includeSubclasses &&
             objectType.shared.typeParams.length > 0
         ) {
+            // Skip this if we're suppressing the use of attribute access override,
+            // such as with dundered methods (like __call__).
             if ((flags & MemberAccessFlags.SkipAttributeAccessOverride) === 0) {
                 let skipDefaultSpecialization = false;
 
