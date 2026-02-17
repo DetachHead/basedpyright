@@ -4325,7 +4325,8 @@ export class Binder extends ParseTreeWalker {
 
     /**
      * Determine if the test condition is always true or always false. If so,
-     *  we can treat either the then or the else clause as unconditional. */
+     *  we can treat either the then or the else clause as unconditional.
+     */
     private _evaluateStaticBoolExpr(expr: ExpressionNode): boolean | undefined {
         return StaticExpressions.evaluateStaticBoolLikeExpression(
             expr,

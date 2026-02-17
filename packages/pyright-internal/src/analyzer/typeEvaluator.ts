@@ -20602,8 +20602,9 @@ export function createTypeEvaluator(
                 if (fileInfo.diagnosticRuleSet.reportUnnecessaryComparison !== 'none') {
                     const suiteInNotTypeChecking =
                         node.d.suite.d.statements.length > 0 && isNotTypeCheckingBlock(node.d.suite.d.statements[0]);
-                    if (subjectTypeResult.isIncomplete || suiteInNotTypeChecking) continue;
-                    checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType, node.parent.d.expr);
+                    if (!subjectTypeResult.isIncomplete && !suiteInNotTypeChecking) {
+                        checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType, node.parent.d.expr);
+                    }
                 }
                 break;
             }
