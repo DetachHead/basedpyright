@@ -125,3 +125,12 @@ def func12(obj: str) -> list:
 
     # This should be marked as unreachable.
     return obj
+
+
+def func13(value: int | str) -> None:
+    match value:
+        case int(): ...
+        case str(): ...
+        case _:
+            # This should be marked as unreachable.
+            ...

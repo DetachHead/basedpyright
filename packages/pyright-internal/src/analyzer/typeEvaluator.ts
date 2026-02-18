@@ -20600,7 +20600,9 @@ export function createTypeEvaluator(
         for (const caseStatement of node.parent.d.cases) {
             if (caseStatement === node) {
                 if (fileInfo.diagnosticRuleSet.reportUnnecessaryComparison !== 'none') {
-                    if (!subjectTypeResult.isIncomplete) {
+                    const suiteInNotTypeChecking =
+                        node.d.suite.d.statements.length > 0 && isNotTypeCheckingBlock(node.d.suite.d.statements[0]);
+                    if (!subjectTypeResult.isIncomplete && !suiteInNotTypeChecking) {
                         checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType, node.parent.d.expr);
                     }
                 }

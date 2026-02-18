@@ -1375,36 +1375,16 @@ export class Binder extends ParseTreeWalker {
         const elseLabel = this._createBranchLabel();
         const postIfLabel = this._createBranchLabel(preIfFlowNode);
 
-        const notTypeCheckingNode: FlowNode = {
-            flags: FlowFlags.NotTypeChecking | FlowFlags.Unreachable,
-            id: getUniqueFlowNodeId(),
-        };
-
-        const isTypeCheckingNode = (node: ExpressionNode): node is NameNode =>
-            node.nodeType === ParseNodeType.Name && node.d.value === 'TYPE_CHECKING';
-
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
-            // Determine if the test condition is always true or always false. If so,
-            // we can treat either the then or the else clause as unconditional.
-            const constExprValue = StaticExpressions.evaluateStaticBoolLikeExpression(
-                node.d.testExpr,
-                this._fileInfo.executionEnvironment,
-                this._fileInfo.definedConstants,
-                this._typingImportAliases,
-                this._sysImportAliases
-            );
+            const constExprValue = this._evaluateStaticBoolExpr(node.d.testExpr);
 
             this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
 
             // Handle the if clause.
             if (constExprValue === false) {
-                this._currentFlowNode =
-                    node.d.testExpr.nodeType === ParseNodeType.UnaryOperation &&
-                    node.d.testExpr.d.operator === OperatorType.Not &&
-                    isTypeCheckingNode(node.d.testExpr.d.expr) &&
-                    constExprValue === false
-                        ? notTypeCheckingNode
-                        : Binder._unreachableFlowNode;
+                this._currentFlowNode = this._isNotTypeCheckingExpr(node.d.testExpr)
+                    ? this._createNotTypeCheckingFlowNode()
+                    : Binder._unreachableFlowNode;
             } else {
                 this._currentFlowNode = this._finishFlowLabel(thenLabel);
             }
@@ -1415,8 +1395,8 @@ export class Binder extends ParseTreeWalker {
             // are chained "else if" statements, they'll be handled
             // recursively here.
             if (constExprValue === true) {
-                this._currentFlowNode = isTypeCheckingNode(node.d.testExpr)
-                    ? notTypeCheckingNode
+                this._currentFlowNode = this._isTypeCheckingExpr(node.d.testExpr)
+                    ? this._createNotTypeCheckingFlowNode()
                     : Binder._unreachableFlowNode;
             } else {
                 this._currentFlowNode = this._finishFlowLabel(elseLabel);
@@ -1438,15 +1418,7 @@ export class Binder extends ParseTreeWalker {
         const elseLabel = this._createBranchLabel();
         const postWhileLabel = this._createBranchLabel();
 
-        // Determine if the test condition is always true or always false. If so,
-        // we can treat either the while or the else clause as unconditional.
-        const constExprValue = StaticExpressions.evaluateStaticBoolLikeExpression(
-            node.d.testExpr,
-            this._fileInfo.executionEnvironment,
-            this._fileInfo.definedConstants,
-            this._typingImportAliases,
-            this._sysImportAliases
-        );
+        const constExprValue = this._evaluateStaticBoolExpr(node.d.testExpr);
 
         const preLoopLabel = this._createLoopLabel();
         this._addAntecedent(preLoopLabel, this._currentFlowNode!);
@@ -2389,6 +2361,17 @@ export class Binder extends ParseTreeWalker {
 
             this._currentFlowNode = this._finishFlowLabel(preSuiteLabel);
 
+            // If the guard is always false, mark the case body as unreachable.
+            // If the guard is `not TYPE_CHECKING`, suppress unreachable diagnostics.
+            if (caseStatement.d.guardExpr) {
+                const constExprValue = this._evaluateStaticBoolExpr(caseStatement.d.guardExpr);
+                if (constExprValue === false) {
+                    this._currentFlowNode = this._isNotTypeCheckingExpr(caseStatement.d.guardExpr)
+                        ? this._createNotTypeCheckingFlowNode()
+                        : Binder._unreachableFlowNode;
+                }
+            }
+
             // Bind the body of the case statement.
             this.walk(caseStatement.d.suite);
             this._addAntecedent(postMatchLabel, this._currentFlowNode);
@@ -3034,13 +3017,7 @@ export class Binder extends ParseTreeWalker {
         if (antecedent.flags & FlowFlags.Unreachable) {
             return antecedent;
         }
-        const staticValue = StaticExpressions.evaluateStaticBoolLikeExpression(
-            expression,
-            this._fileInfo.executionEnvironment,
-            this._fileInfo.definedConstants,
-            this._typingImportAliases,
-            this._sysImportAliases
-        );
+        const staticValue = this._evaluateStaticBoolExpr(expression);
         if (
             (staticValue === true && flags & FlowFlags.FalseCondition) ||
             (staticValue === false && flags & FlowFlags.TrueCondition)
@@ -4344,6 +4321,39 @@ export class Binder extends ParseTreeWalker {
     private _getUniqueFlowNodeId() {
         this._codeFlowComplexity += flowNodeComplexityContribution;
         return getUniqueFlowNodeId();
+    }
+
+    /**
+     * Determine if the test condition is always true or always false. If so,
+     *  we can treat either the then or the else clause as unconditional.
+     */
+    private _evaluateStaticBoolExpr(expr: ExpressionNode): boolean | undefined {
+        return StaticExpressions.evaluateStaticBoolLikeExpression(
+            expr,
+            this._fileInfo.executionEnvironment,
+            this._fileInfo.definedConstants,
+            this._typingImportAliases,
+            this._sysImportAliases
+        );
+    }
+
+    private _isTypeCheckingExpr(expr: ExpressionNode): boolean {
+        return expr.nodeType === ParseNodeType.Name && expr.d.value === 'TYPE_CHECKING';
+    }
+
+    private _isNotTypeCheckingExpr(expr: ExpressionNode): boolean {
+        return (
+            expr.nodeType === ParseNodeType.UnaryOperation &&
+            expr.d.operator === OperatorType.Not &&
+            this._isTypeCheckingExpr(expr.d.expr)
+        );
+    }
+
+    private _createNotTypeCheckingFlowNode(): FlowNode {
+        return {
+            flags: FlowFlags.NotTypeChecking | FlowFlags.Unreachable,
+            id: this._getUniqueFlowNodeId(),
+        };
     }
 
     private _addDiagnostic(rule: DiagnosticRule, message: string, textRange: TextRange) {
