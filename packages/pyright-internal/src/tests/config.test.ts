@@ -12,7 +12,12 @@ import assert from 'assert';
 import { AnalyzerService } from '../analyzer/service';
 import { deserialize, serialize } from '../backgroundThreadBase';
 import { CommandLineOptions, DiagnosticSeverityOverrides } from '../common/commandLineOptions';
-import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
+import {
+    ConfigOptions,
+    ExecutionEnvironment,
+    allTypeCheckingModes,
+    getStandardDiagnosticRuleSet,
+} from '../common/configOptions';
 import { ConsoleInterface, NullConsole } from '../common/console';
 import { TaskListPriority } from '../common/diagnostic';
 import { combinePaths, normalizePath, normalizeSlashes } from '../common/pathUtils';
@@ -726,6 +731,134 @@ describe(`config test'}`, () => {
         // that are typically disabled by default unless typeCheckingMode is set to `"recommended"`
         assert(configOptions.diagnosticRuleSet.deprecateTypingAliases);
         assert.equal(configOptions.diagnosticRuleSet.reportAny, 'warning');
+    });
+
+    describe('executionEnvironments typeCheckingMode', () => {
+        test('typeCheckingMode in executionEnvironment sets diagnostic rules correctly', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
+            const configOptions = new ConfigOptions(cwd);
+
+            const json = {
+                typeCheckingMode: 'standard',
+                executionEnvironments: [
+                    {
+                        root: 'src/strict_folder',
+                        typeCheckingMode: 'strict',
+                    },
+                    {
+                        root: 'src/basic_folder',
+                        typeCheckingMode: 'basic',
+                    },
+                ],
+            };
+
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new NullConsole();
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+            configOptions.setupExecutionEnvironments(json, cwd, console);
+
+            assert.strictEqual(configOptions.executionEnvironments.length, 2);
+
+            const [strictEnv, basicEnv] = configOptions.executionEnvironments;
+
+            // Verify strict environment has strict settings
+            assert.strictEqual(strictEnv.diagnosticRuleSet.strictListInference, true);
+            assert.strictEqual(strictEnv.diagnosticRuleSet.reportMissingTypeStubs, 'error');
+            assert.strictEqual(strictEnv.diagnosticRuleSet.reportUnusedVariable, 'error');
+
+            // Verify basic environment has basic settings
+            assert.strictEqual(basicEnv.diagnosticRuleSet.strictListInference, false);
+            assert.strictEqual(basicEnv.diagnosticRuleSet.reportMissingTypeStubs, 'none');
+            assert.strictEqual(basicEnv.diagnosticRuleSet.reportUnusedVariable, 'hint');
+        });
+
+        test('typeCheckingMode in executionEnvironment with individual rule overrides', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
+            const configOptions = new ConfigOptions(cwd);
+
+            const json = {
+                typeCheckingMode: 'standard',
+                executionEnvironments: [
+                    {
+                        root: 'src/custom',
+                        typeCheckingMode: 'strict',
+                        reportUnusedVariable: 'warning',
+                    },
+                ],
+            };
+
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new NullConsole();
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+            configOptions.setupExecutionEnvironments(json, cwd, console);
+
+            const customEnv = configOptions.executionEnvironments[0];
+
+            // Verify strict mode is applied as base
+            assert.strictEqual(customEnv.diagnosticRuleSet.strictListInference, true);
+
+            // Verify individual override takes precedence over typeCheckingMode
+            assert.strictEqual(customEnv.diagnosticRuleSet.reportUnusedVariable, 'warning');
+        });
+
+        test('invalid typeCheckingMode in executionEnvironment logs error', () => {
+            const cwd = UriEx.file(normalizePath(process.cwd()));
+            const configOptions = new ConfigOptions(cwd);
+
+            const json = {
+                executionEnvironments: [
+                    {
+                        root: 'src/invalid',
+                        typeCheckingMode: 'invalid_mode',
+                    },
+                ],
+            };
+
+            const fs = new TestFileSystem(/* ignoreCase */ false);
+            const console = new ErrorTrackingNullConsole();
+            const sp = createServiceProvider(fs, console);
+            configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+            configOptions.setupExecutionEnvironments(json, cwd, console);
+
+            assert.strictEqual(console.errors.length, 1);
+            assert(
+                console.errors[0].includes('invalid "typeCheckingMode"') &&
+                    console.errors[0].includes('invalid_mode')
+            );
+        });
+
+        test('all typeCheckingMode values work in executionEnvironment', () => {
+            for (const mode of allTypeCheckingModes) {
+                const cwd = UriEx.file(normalizePath(process.cwd()));
+                const configOptions = new ConfigOptions(cwd);
+
+                const json = {
+                    executionEnvironments: [
+                        {
+                            root: `src/${mode}`,
+                            typeCheckingMode: mode,
+                        },
+                    ],
+                };
+
+                const fs = new TestFileSystem(/* ignoreCase */ false);
+                const console = new ErrorTrackingNullConsole();
+                const sp = createServiceProvider(fs, console);
+                configOptions.initializeFromJson(json, cwd, sp, new NoAccessHost());
+                configOptions.setupExecutionEnvironments(json, cwd, console);
+
+                // Should not log any errors for valid modes
+                assert.strictEqual(
+                    console.errors.length,
+                    0,
+                    `typeCheckingMode "${mode}" should be valid but got errors: ${console.errors.join(', ')}`
+                );
+                assert.strictEqual(configOptions.executionEnvironments.length, 1);
+            }
+        });
+
     });
 
     function createAnalyzer(console?: ConsoleInterface) {
