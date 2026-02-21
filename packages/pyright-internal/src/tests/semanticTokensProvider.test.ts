@@ -710,37 +710,92 @@ if (process.platform !== 'win32' || !process.env['CI']) {
     test('parameters', () => {
         const result = semanticTokenizeSampleFile('parameters.py');
         expect(result).toStrictEqual([
+            { type: 'namespace', modifiers: [], start: 5, length: 11 }, // dataclasses
+            { type: 'function', modifiers: [], start: 24, length: 9 }, // dataclass
+            { type: 'function', modifiers: [], start: 35, length: 5 }, // field
+            { type: 'function', modifiers: [], start: 42, length: 7 }, // replace
+            { type: 'namespace', modifiers: [], start: 55, length: 6 }, // typing
+            { type: 'class', modifiers: [], start: 69, length: 8 }, // Callable
+            { type: 'class', modifiers: [], start: 79, length: 8 }, // Protocol
             // method
-            { type: 'class', modifiers: ['declaration'], start: 6, length: 1 }, // C
-            { type: 'method', modifiers: ['declaration', 'classMember'], start: 17, length: 8 }, // __init__
-            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 26, length: 4 }, // self
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 32, length: 1 }, // x
-            { type: 'selfParameter', modifiers: ['parameter'], start: 44, length: 4 }, // self
-            { type: 'property', modifiers: ['classMember'], start: 49, length: 1 }, // x
-            { type: 'parameter', modifiers: ['parameter'], start: 53, length: 1 }, // x
-            { type: 'method', modifiers: ['declaration', 'classMember'], start: 81, length: 1 }, // m
-            { type: 'decorator', modifiers: [], start: 60, length: 1 }, // @
-            { type: 'decorator', modifiers: [], start: 61, length: 11 }, // classmethod
-            { type: 'clsParameter', modifiers: ['declaration', 'parameter'], start: 83, length: 3 }, // cls
-            { type: 'clsParameter', modifiers: ['parameter'], start: 104, length: 3 }, // cls
+            { type: 'class', modifiers: ['declaration'], start: 96, length: 1 }, // C
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 107, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 116, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 122, length: 1 }, // x
+            { type: 'selfParameter', modifiers: ['parameter'], start: 134, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 139, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 143, length: 1 }, // x
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 171, length: 1 }, // m
+            { type: 'decorator', modifiers: [], start: 150, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 151, length: 11 }, // classmethod
+            { type: 'clsParameter', modifiers: ['declaration', 'parameter'], start: 173, length: 3 }, // cls
+            { type: 'clsParameter', modifiers: ['parameter'], start: 194, length: 3 }, // cls
             // function
-            { type: 'function', modifiers: ['declaration'], start: 116, length: 1 }, // f
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 118, length: 1 }, // x
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 121, length: 1 }, // y
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 124, length: 3 }, // int
-            { type: 'function', modifiers: ['declaration'], start: 138, length: 1 }, // g
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 140, length: 1 }, // x
-            { type: 'parameter', modifiers: ['parameter'], start: 159, length: 1 }, // x
-            { type: 'parameter', modifiers: ['parameter'], start: 163, length: 1 }, // y
-            { type: 'variable', modifiers: [], start: 169, length: 1 }, // z
-            { type: 'parameter', modifiers: ['parameter'], start: 177, length: 1 }, // x
-            { type: 'function', modifiers: [], start: 190, length: 1 }, // g
-            { type: 'variable', modifiers: [], start: 192, length: 1 }, // z
+            { type: 'function', modifiers: ['declaration'], start: 206, length: 1 }, // f
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 208, length: 1 }, // x
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 211, length: 1 }, // y
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 214, length: 3 }, // int
+            { type: 'function', modifiers: ['declaration'], start: 228, length: 1 }, // g
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 230, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 249, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 253, length: 1 }, // y
+            { type: 'variable', modifiers: [], start: 259, length: 1 }, // z
+            { type: 'parameter', modifiers: ['parameter'], start: 267, length: 1 }, // x
+            { type: 'function', modifiers: [], start: 280, length: 1 }, // g
+            { type: 'variable', modifiers: [], start: 282, length: 1 }, // z
             // lambda
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 203, length: 1 }, // a
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 206, length: 1 }, // b
-            { type: 'parameter', modifiers: ['parameter'], start: 209, length: 1 }, // a
-            { type: 'parameter', modifiers: ['parameter'], start: 213, length: 1 }, // b
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 293, length: 1 }, // a
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 296, length: 1 }, // b
+            { type: 'parameter', modifiers: ['parameter'], start: 299, length: 1 }, // a
+            { type: 'parameter', modifiers: ['parameter'], start: 303, length: 1 }, // b
+            // Conf
+            { type: 'class', modifiers: ['declaration'], start: 338, length: 4 }, // Conf
+            { type: 'decorator', modifiers: [], start: 307, length: 1 }, // @
+            { type: 'function', modifiers: [], start: 308, length: 9 }, // dataclass
+            { type: 'parameter', modifiers: ['parameter'], start: 318, length: 7 }, // kwonly
+            { type: 'property', modifiers: ['classMember', 'static'], start: 348, length: 4 }, // size
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 354, length: 3 }, // int
+            { type: 'property', modifiers: ['classMember', 'static'], start: 366, length: 4 }, // dims
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 372, length: 4 }, // list
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 377, length: 3 }, // int
+            { type: 'function', modifiers: [], start: 384, length: 5 }, // field
+            { type: 'function', modifiers: ['parameter'], start: 390, length: 15 }, // default_factory
+            // Run
+            { type: 'class', modifiers: ['declaration'], start: 433, length: 3 }, // Run
+            { type: 'class', modifiers: [], start: 437, length: 8 }, // Protocol
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 456, length: 8 }, // __call__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 465, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 474, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 481, length: 3 }, // str
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 486, length: 2 }, // cb
+            { type: 'class', modifiers: [], start: 490, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 500, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 506, length: 3 }, // int
+            { type: 'class', modifiers: ['declaration', 'parameter'], start: 512, length: 2 }, // ty
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 516, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 521, length: 3 }, // int
+            // g
+            { type: 'function', modifiers: ['declaration'], start: 546, length: 1 }, // g
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 548, length: 3 }, // run
+            { type: 'class', modifiers: [], start: 553, length: 3 }, // Run
+            { type: 'parameter', modifiers: ['parameter'], start: 571, length: 3 }, // run
+            { type: 'parameter', modifiers: ['parameter'], start: 575, length: 5 }, // value
+            { type: 'function', modifiers: ['parameter'], start: 586, length: 2 }, // cb
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 596, length: 1 }, // i
+            { type: 'parameter', modifiers: ['parameter'], start: 599, length: 1 }, // i
+            { type: 'class', modifiers: ['parameter'], start: 606, length: 2 }, // ty
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 609, length: 3 }, // int
+            // h
+            { type: 'function', modifiers: ['declaration'], start: 620, length: 1 }, // h
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 622, length: 4 }, // conf
+            { type: 'class', modifiers: [], start: 628, length: 4 }, // Conf
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 634, length: 4 }, // size
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 640, length: 3 }, // int
+            { type: 'class', modifiers: [], start: 648, length: 4 }, // Conf
+            { type: 'function', modifiers: [], start: 665, length: 7 }, // replace
+            { type: 'parameter', modifiers: ['parameter'], start: 673, length: 4 }, // conf
+            { type: 'parameter', modifiers: ['parameter'], start: 679, length: 4 }, // size
+            { type: 'parameter', modifiers: ['parameter'], start: 684, length: 4 }, // size
         ]);
     });
 
