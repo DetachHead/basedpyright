@@ -181,6 +181,11 @@ class DefinitionProviderBase {
                     }
                     break;
                 }
+                case ParseNodeType.Call: {
+                    const result = this.evaluator.getTypeResult(infoNode);
+                    if (result) this.resolveTypeResult(result, definitions, isArgumentNode);
+                    break;
+                }
             }
 
             // In an assignment, the parents represent sub-assignments, i.e. for an assignment `a = b = 2`,
