@@ -424,8 +424,8 @@ test('hover on __call__ method', async () => {
 ////     def __call__(self, a: int) -> int:
 ////         return a   
 ////
-//// [|/*marker1*/foo|] = Foo()
-//// [|/*marker2*/foo|](1)
+//// [|/*marker1*/foo|] = Foo([|/*marker1b*/|])
+//// [|/*marker2*/foo|](1[|/*marker2b*/|])
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -433,9 +433,23 @@ test('hover on __call__ method', async () => {
 
     state.openFile(marker1.fileName);
 
-    state.verifyHover('markdown', {
-        marker1: '```python\n(variable) foo: Foo\n```',
-        marker2: '```python\n(variable) def foo(a: int) -> int\n```',
+    state.verifyHoverRanges('markdown', {
+        marker1: [
+            '```python\n(variable) foo: Foo\n```',
+            { start: { line: 7, character: 0 }, end: { line: 7, character: 3 } },
+        ],
+        marker1b: [
+            '```python\n(method) def __init__(self: Self@Foo) -> None\n```',
+            { start: { line: 7, character: 6 }, end: { line: 7, character: 11 } },
+        ],
+        marker2: [
+            '```python\n(variable) def foo(a: int) -> int\n```',
+            { start: { line: 8, character: 0 }, end: { line: 8, character: 3 } },
+        ],
+        marker2b: [
+            '```python\n(method) def __call__(self: Self@Foo, a: int) -> int\n```',
+            { start: { line: 8, character: 0 }, end: { line: 8, character: 6 } },
+        ],
     });
 });
 
