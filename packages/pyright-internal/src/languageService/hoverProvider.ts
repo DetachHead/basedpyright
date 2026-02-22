@@ -368,6 +368,10 @@ export class HoverProvider {
                     break;
                 }
                 case ParseNodeType.Call: {
+                    if (isBaseLiteral) {
+                        // no hover message for literals
+                        return null;
+                    }
                     const result = this._evaluator.getTypeResult(infoNode);
                     if (result) this._addResultsForTypeResult(parts, result, argumentNode !== undefined);
                     break;

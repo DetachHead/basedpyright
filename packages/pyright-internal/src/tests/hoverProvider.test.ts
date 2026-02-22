@@ -425,7 +425,7 @@ test('hover on __call__ method', async () => {
 ////         return a   
 ////
 //// [|/*marker1*/foo|] = Foo([|/*marker1b*/|])
-//// [|/*marker2*/foo|](1[|/*marker2b*/|])
+//// [|/*marker2*/foo|](1)[|/*marker2b*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
