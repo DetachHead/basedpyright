@@ -182,6 +182,10 @@ class DefinitionProviderBase {
                     break;
                 }
                 case ParseNodeType.Call: {
+                    if (isBaseLiteral) {
+                        // no definitions for literals
+                        return undefined;
+                    }
                     const result = this.evaluator.getTypeResult(infoNode);
                     if (result) this.resolveTypeResult(result, definitions, isArgumentNode);
                     break;
