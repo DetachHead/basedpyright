@@ -226,6 +226,12 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 if (type.props?.specialForm) {
                     this._addItemForNameNode(node, SemanticTokenTypes.class, []);
                 }
+                // Highlight the left-hand side of keyword arguments as `parameter`
+                if (node.parent?.nodeType === ParseNodeType.Argument && node === node.parent.d.name) {
+                    this._addItemForNameNode(node, SemanticTokenTypes.parameter, [
+                        CustomSemanticTokenModifiers.parameter,
+                    ]);
+                }
                 return;
             // these are handled below
             case TypeCategory.Unknown:
@@ -376,6 +382,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (checkBuiltIn && declarations.some((decl) => this.builtinModules.has(decl.moduleName)))
             modifiers.push(SemanticTokenModifiers.defaultLibrary, CustomSemanticTokenModifiers.builtin);
 
+        // Add the `parameter` modifier to keyword arguments
+        if (node.parent?.nodeType === ParseNodeType.Argument && node === node.parent.d.name) {
+            modifiers.push(CustomSemanticTokenModifiers.parameter);
+        }
+
         if (applyClassMemberAccess) this._applyClassMemberAccessModifiers(node, declarations, modifiers);
         return ClassType.isEnumClass(classType) ? SemanticTokenTypes.enum : SemanticTokenTypes.class;
     }
@@ -397,7 +408,16 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // (these are handled later).
         if (!type.props?.specialForm && isAnyOrUnknown(type)) return;
 
+        // Add the `parameter` modifier to the left-hand side of a keyword argument
+        // This is separate from isParam because that only applies to parameters in the function signature
+        let isKwargLhs = false;
+
         if (!isParam) {
+            if (node.parent?.nodeType === ParseNodeType.Argument && node === node.parent.d.name) {
+                isKwargLhs = true;
+                modifiers.push(CustomSemanticTokenModifiers.parameter);
+            }
+
             if (
                 node.nodeType === ParseNodeType.Name &&
                 declarations.some((declaration) => declaration.moduleName.split('.').pop() === '__builtins__')
@@ -486,11 +506,15 @@ export class SemanticTokensWalker extends ParseTreeWalker {
             if (tokenType) return tokenType;
         }
 
-        // If a variable is a class member and not handled by any other case, use “property”
-        if (isParam) {
+        // If a variable is a class member and not handled by any other case, use `property`
+        if (isClassMember) {
+            return SemanticTokenTypes.property;
+        }
+        // If a variable is a parameter or the left-hand side of a keyword argument, and not handled by any other case, use `parameter`
+        if (isParam || isKwargLhs) {
             return SemanticTokenTypes.parameter;
         }
-        return isClassMember ? SemanticTokenTypes.property : SemanticTokenTypes.variable;
+        return SemanticTokenTypes.variable;
     }
 
     /**
@@ -550,6 +574,11 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         // type alias to Callable
         if (functionType && !TypeBase.isInstance(functionType)) {
             return SemanticTokenTypes.class;
+        }
+
+        // Add the `parameter` modifier to keyword arguments
+        if (node.parent?.nodeType === ParseNodeType.Argument && node === node.parent.d.name) {
+            modifiers.push(CustomSemanticTokenModifiers.parameter);
         }
 
         if (functionType && this.builtinModules.has(functionType.shared.moduleName))
