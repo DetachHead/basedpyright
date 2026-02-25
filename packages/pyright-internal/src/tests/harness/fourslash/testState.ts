@@ -355,6 +355,18 @@ export class TestState {
         return this.convertOffsetsToRange(range.fileName, range.pos, range.end);
     }
 
+    convertDocumentRange(range: Range) {
+        return { path: range.fileName, range: this.convertPositionRange(range) };
+    }
+
+    markerDocumentRanges() {
+        return new Map(
+            this.getRanges()
+                .filter((range) => range.marker)
+                .map((range) => [this.getMarkerName(range.marker!), this.convertDocumentRange(range)])
+        );
+    }
+
     getPathSep() {
         return path.sep;
     }

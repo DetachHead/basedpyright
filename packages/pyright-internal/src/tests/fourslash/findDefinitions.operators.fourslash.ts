@@ -104,19 +104,7 @@
 
 {
     const rangeMap = helper.getRangesByText();
-    const namedRanges = new Map(
-        helper
-            .getRanges()
-            .filter((range) => range.marker)
-            .map((range) => [helper.getMarkerName(range.marker!), range])
-    );
-
-    const rangeToDoc = (r: _.Range): _.DocumentRange => {
-        return { path: r.fileName, range: helper.convertPositionRange(r) };
-    };
-    const nameToDoc = (name: string): _.DocumentRange => {
-        return rangeToDoc(namedRanges.get(name)!);
-    };
+    const docs = helper.markerDocumentRanges();
 
     helper.verifyFindDefinitions(
         {
@@ -124,46 +112,46 @@
                 definitions: rangeMap
                     .get('__radd__')!
                     .filter((r) => !r.marker)
-                    .map(rangeToDoc),
+                    .map((r) => helper.convertDocumentRange(r)),
             },
-            marker2: { definitions: [nameToDoc('intAdd')] },
-            marker3: { definitions: [nameToDoc('intAdd')] },
-            marker4a: { definitions: [nameToDoc('intInvert')] },
-            marker4b: { definitions: [nameToDoc('intAnd')] },
-            marker5: { definitions: [nameToDoc('tupleRmul')] },
-            marker6: { definitions: [nameToDoc('tupleIn')] },
-            marker7a: { definitions: [nameToDoc('intLt')] },
+            marker2: { definitions: [docs.get('intAdd')!] },
+            marker3: { definitions: [docs.get('intAdd')!] },
+            marker4a: { definitions: [docs.get('intInvert')!] },
+            marker4b: { definitions: [docs.get('intAnd')!] },
+            marker5: { definitions: [docs.get('tupleRmul')!] },
+            marker6: { definitions: [docs.get('tupleIn')!] },
+            marker7a: { definitions: [docs.get('intLt')!] },
             marker7b: { definitions: [] },
-            marker7c: { definitions: [nameToDoc('tupleGetItem')] },
+            marker7c: { definitions: [docs.get('tupleGetItem')!] },
             marker8a: { definitions: [] },
-            marker8b: { definitions: [nameToDoc('intBool')] },
+            marker8b: { definitions: [docs.get('intBool')!] },
             marker9a: { definitions: [] },
-            marker9b: { definitions: [nameToDoc('listSetItem')] },
-            marker9c: { definitions: [nameToDoc('listSetItem')] },
+            marker9b: { definitions: [docs.get('listSetItem')!] },
+            marker9c: { definitions: [docs.get('listSetItem')!] },
             marker9d: { definitions: [] },
             marker9e: { definitions: [] },
-            marker9f: { definitions: [nameToDoc('listSetItem')] },
-            marker9g: { definitions: [nameToDoc('listSetItem')] },
+            marker9f: { definitions: [docs.get('listSetItem')!] },
+            marker9g: { definitions: [docs.get('listSetItem')!] },
             marker9h: { definitions: [] },
             marker9i: { definitions: [] },
-            marker9j: { definitions: [nameToDoc('listGetItem')] },
-            marker10a: { definitions: [nameToDoc('Cb')] },
-            marker10b: { definitions: [nameToDoc('DictSetItem')] },
-            marker10c: { definitions: [nameToDoc('Ca')] },
-            marker10d: { definitions: [nameToDoc('DictGetItem')] },
-            marker11a: { definitions: [nameToDoc('DictDelItem')] },
-            marker11b: { definitions: [nameToDoc('Cb')] },
-            marker12: { definitions: [nameToDoc('Da'), nameToDoc('Ca')] },
-            marker13a: { definitions: [nameToDoc('Da'), nameToDoc('Ca')] },
-            marker13b: { definitions: [nameToDoc('DictGetItem')] },
+            marker9j: { definitions: [docs.get('listGetItem')!] },
+            marker10a: { definitions: [docs.get('Cb')!] },
+            marker10b: { definitions: [docs.get('DictSetItem')!] },
+            marker10c: { definitions: [docs.get('Ca')!] },
+            marker10d: { definitions: [docs.get('DictGetItem')!] },
+            marker11a: { definitions: [docs.get('DictDelItem')!] },
+            marker11b: { definitions: [docs.get('Cb')!] },
+            marker12: { definitions: [docs.get('Da')!, docs.get('Ca')!] },
+            marker13a: { definitions: [docs.get('Da')!, docs.get('Ca')!] },
+            marker13b: { definitions: [docs.get('DictGetItem')!] },
             marker14a: { definitions: [] },
-            marker14b: { definitions: [nameToDoc('tupleGetItem')] },
+            marker14b: { definitions: [docs.get('tupleGetItem')!] },
             marker15a: { definitions: [] },
-            marker15b: { definitions: [nameToDoc('EnumGetItem')] },
+            marker15b: { definitions: [docs.get('EnumGetItem')!] },
             marker16a: { definitions: [] },
-            marker16b: { definitions: [nameToDoc('LitStrGetItem')] },
+            marker16b: { definitions: [docs.get('LitStrGetItem')!] },
             marker17a: { definitions: [] },
-            marker17b: { definitions: [nameToDoc('S0GetItemSlice')] },
+            marker17b: { definitions: [docs.get('S0GetItemSlice')!] },
         },
         'preferSource'
     );

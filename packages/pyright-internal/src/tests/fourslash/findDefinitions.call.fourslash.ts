@@ -7,26 +7,15 @@
 ////     def [|/*fooCall*/__call__|](self, a: int) -> int:
 ////         return a
 //// [|/*fooVar*/foo|] = Foo([|/*marker1a*/|])
-//// [|/*marker2a*/foo|](1)[|/*marker2b*/|]
+//// [|/*marker2a*/foo|]([|/*marker2b*/1|])[|/*marker2c*/|]
 
 {
-    const namedRanges = new Map(
-        helper
-            .getRanges()
-            .filter((range) => range.marker)
-            .map((range) => [helper.getMarkerName(range.marker!), range])
-    );
-
-    const rangeToDoc = (r: _.Range): _.DocumentRange => {
-        return { path: r.fileName, range: helper.convertPositionRange(r) };
-    };
-    const nameToDoc = (name: string): _.DocumentRange => {
-        return rangeToDoc(namedRanges.get(name)!);
-    };
+    const docs = helper.markerDocumentRanges();
 
     helper.verifyFindDefinitions({
-        marker1a: { definitions: [nameToDoc('fooInit')] },
-        marker2a: { definitions: [nameToDoc('fooVar')] },
-        marker2b: { definitions: [nameToDoc('fooCall')] },
+        marker1a: { definitions: [docs.get('fooInit')!] },
+        marker2a: { definitions: [docs.get('fooVar')!] },
+        marker2b: { definitions: [] },
+        marker2c: { definitions: [docs.get('fooCall')!] },
     });
 }

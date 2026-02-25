@@ -245,6 +245,8 @@ declare namespace _ {
         get EOF(): number;
         expandPositionRange(range: PositionRange, start: number, end: number): PositionRange;
         convertPositionRange(range: Range): PositionRange;
+        convertDocumentRange(range: Range): _.DocumentRange;
+        markerDocumentRanges(): Map<string, _.DocumentRange>;
         convertPathToUri(path: string): string;
         getDirectoryPath(path: string): string;
         getPathSep(): string;

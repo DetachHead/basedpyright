@@ -275,11 +275,11 @@ test('import tooltip - check duplicate property', async () => {
 //// class Test:
 ////     def __init__(self) -> None:
 ////         self.__test = False
-//// 
+////
 ////     @property
 ////     def [|/*marker*/test|](self):
 ////         """Test DocString.
-//// 
+////
 ////         Returns
 ////         -------
 ////         bool
@@ -393,7 +393,7 @@ test('hover on class Foo and its __call__ method with overloads', async () => {
 ////     @overload
 ////     def __call__(self, a: str) -> str: pass
 ////     def __call__(self, a: int | str) ->  int | str:
-////         return a   
+////         return a
 ////
 //// [|/*marker1*/foo|] = Foo()
 //// [|/*marker2*/foo|](1)
@@ -422,10 +422,10 @@ test('hover on __call__ method', async () => {
 ////         pass
 ////
 ////     def __call__(self, a: int) -> int:
-////         return a   
+////         return a
 ////
 //// [|/*marker1*/foo|] = Foo([|/*marker1b*/|])
-//// [|/*marker2*/foo|](1)[|/*marker2b*/|]
+//// [|/*marker2*/foo|]([|/*marker2b*/1|])[|/*marker2c*/|]
     `;
 
     const state = parseAndGetTestState(code).state;
@@ -446,7 +446,8 @@ test('hover on __call__ method', async () => {
             '```python\n(variable) def foo(a: int) -> int\n```',
             { start: { line: 8, character: 0 }, end: { line: 8, character: 3 } },
         ],
-        marker2b: [
+        marker2b: null,
+        marker2c: [
             '```python\n(method) def __call__(self: Self@Foo, a: int) -> int\n```',
             { start: { line: 8, character: 0 }, end: { line: 8, character: 6 } },
         ],
