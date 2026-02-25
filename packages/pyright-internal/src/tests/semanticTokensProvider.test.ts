@@ -714,34 +714,64 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { type: 'type', modifiers: [], start: 19, length: 3 }, // Any
             { type: 'class', modifiers: [], start: 24, length: 8 }, // Callable
             { type: 'class', modifiers: [], start: 34, length: 8 }, // Protocol
+            // C
+            { type: 'class', modifiers: ['declaration'], start: 50, length: 1 }, // C
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 61, length: 8 }, // __init__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 70, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 76, length: 1 }, // x
+            { type: 'selfParameter', modifiers: ['parameter'], start: 88, length: 4 }, // self
+            { type: 'property', modifiers: ['classMember'], start: 93, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 97, length: 1 }, // x
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 125, length: 1 }, // m
+            { type: 'decorator', modifiers: [], start: 104, length: 1 }, // @
+            { type: 'decorator', modifiers: [], start: 105, length: 11 }, // classmethod
+            { type: 'clsParameter', modifiers: ['declaration', 'parameter'], start: 127, length: 3 }, // cls
+            { type: 'clsParameter', modifiers: ['parameter'], start: 148, length: 3 }, // cls
+            { type: 'function', modifiers: ['declaration'], start: 160, length: 1 }, // f
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 162, length: 1 }, // x
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 165, length: 1 }, // y
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 168, length: 3 }, // int
+            { type: 'function', modifiers: ['declaration'], start: 182, length: 1 }, // g
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 184, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 203, length: 1 }, // x
+            { type: 'parameter', modifiers: ['parameter'], start: 207, length: 1 }, // y
+            { type: 'variable', modifiers: [], start: 213, length: 1 }, // z
+            { type: 'parameter', modifiers: ['parameter'], start: 221, length: 1 }, // x
+            { type: 'function', modifiers: [], start: 234, length: 1 }, // g
+            { type: 'variable', modifiers: [], start: 236, length: 1 }, // z
+            // lambda
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 247, length: 1 }, // a
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 250, length: 1 }, // b
+            { type: 'parameter', modifiers: ['parameter'], start: 253, length: 1 }, // a
+            { type: 'parameter', modifiers: ['parameter'], start: 257, length: 1 }, // b
             // Run
-            { type: 'class', modifiers: ['declaration'], start: 152, length: 3 }, // Run
-            { type: 'class', modifiers: [], start: 156, length: 8 }, // Protocol
-            { type: 'method', modifiers: ['declaration', 'classMember'], start: 175, length: 8 }, // __call__
-            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 184, length: 4 }, // self
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 193, length: 5 }, // value
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 200, length: 3 }, // str
-            { type: 'function', modifiers: ['declaration', 'parameter'], start: 205, length: 2 }, // cb
-            { type: 'class', modifiers: [], start: 209, length: 8 }, // Callable
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 219, length: 3 }, // int
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 225, length: 3 }, // int
-            { type: 'class', modifiers: ['declaration', 'parameter'], start: 231, length: 2 }, // ty
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 235, length: 4 }, // type
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 240, length: 3 }, // int
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 248, length: 6 }, // kwargs
-            { type: 'type', modifiers: [], start: 256, length: 3 }, // Any
+            { type: 'class', modifiers: ['declaration'], start: 368, length: 3 }, // Run
+            { type: 'class', modifiers: [], start: 372, length: 8 }, // Protocol
+            { type: 'method', modifiers: ['declaration', 'classMember'], start: 391, length: 8 }, // __call__
+            { type: 'selfParameter', modifiers: ['declaration', 'parameter'], start: 400, length: 4 }, // self
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 409, length: 5 }, // value
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 416, length: 3 }, // str
+            { type: 'function', modifiers: ['declaration', 'parameter'], start: 421, length: 2 }, // cb
+            { type: 'class', modifiers: [], start: 425, length: 8 }, // Callable
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 435, length: 3 }, // int
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 441, length: 3 }, // int
+            { type: 'class', modifiers: ['declaration', 'parameter'], start: 447, length: 2 }, // ty
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 451, length: 4 }, // type
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 456, length: 3 }, // int
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 464, length: 6 }, // kwargs
+            { type: 'type', modifiers: [], start: 472, length: 3 }, // Any
             // g
-            { type: 'function', modifiers: ['declaration'], start: 279, length: 1 }, // g
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 281, length: 3 }, // run
-            { type: 'class', modifiers: [], start: 286, length: 3 }, // Run
-            { type: 'parameter', modifiers: ['parameter'], start: 304, length: 3 }, // run
-            { type: 'parameter', modifiers: ['parameter'], start: 308, length: 5 }, // value
-            { type: 'function', modifiers: ['parameter'], start: 319, length: 2 }, // cb
-            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 329, length: 1 }, // i
-            { type: 'parameter', modifiers: ['parameter'], start: 332, length: 1 }, // i
-            { type: 'class', modifiers: ['parameter'], start: 339, length: 2 }, // ty
-            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 342, length: 3 }, // int
-            { type: 'parameter', modifiers: ['parameter'], start: 347, length: 3 }, // any
+            { type: 'function', modifiers: ['declaration'], start: 495, length: 1 }, // g
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 497, length: 3 }, // run
+            { type: 'class', modifiers: [], start: 502, length: 3 }, // Run
+            { type: 'parameter', modifiers: ['parameter'], start: 520, length: 3 }, // run
+            { type: 'parameter', modifiers: ['parameter'], start: 524, length: 5 }, // value
+            { type: 'function', modifiers: ['parameter'], start: 535, length: 2 }, // cb
+            { type: 'parameter', modifiers: ['declaration', 'parameter'], start: 545, length: 1 }, // i
+            { type: 'parameter', modifiers: ['parameter'], start: 548, length: 1 }, // i
+            { type: 'class', modifiers: ['parameter'], start: 555, length: 2 }, // ty
+            { type: 'class', modifiers: ['defaultLibrary', 'builtin'], start: 558, length: 3 }, // int
+            { type: 'parameter', modifiers: ['parameter'], start: 563, length: 3 }, // any
         ]);
     });
 
