@@ -146,37 +146,27 @@ Emacs users have 3 options:
 
 ## PyCharm
 
-=== "PyCharm Community"
+PyCharm users can enable native basedpyright support in the settings:
 
-    1. install the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin
-    2. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
-    3. configure it to use basedpyright by specifying `basedpyright-langserver` as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:\
-        ![](./pycharm-lsp-exe.png)
-    4. set "Running mode" to "LSP4IJ":\
-        ![](./lsp4ij.png)
+1. Go to **Python > Tools > Pyright** in the Settings dialog.
+2. Select the **Enable** checkbox.
+3. In the Execution mode setting, select how PyCharm should search for the executable:
 
-=== "PyCharm Professional / IntelliJ IDEA Ultimate"
+    **Interpreter** mode (recommended): PyCharm searches for an executable installed in your interpreter. To install the basedpyright package for the selected interpreter, click _Install basedpyright_.
 
-    1. install the [Pyright](https://plugins.jetbrains.com/plugin/24145) plugin
-    3. configure it to use basedpyright by specifying `basedpyright-langserver` as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:\
-        ![](./pycharm-lsp-exe.png)
-    3. set "Running mode" to "Native LSP client":\
-        ![](./native-lsp.png)
+    **Path** mode: PyCharm searches for an executable in `$PATH`. If the executable is not found, you can specify the path by clicking the Browse... icon.
+
+4. Select which options should be enabled.
+
+For more information, refer to [PyCharm documentation](https://www.jetbrains.com/help/pycharm/lsp-tools.html#pyright).
 
 !!! tip "pinning basedpyright as a development dependency to your project (recommended)"
 
-    we recommend configuring these settings as overrides in the "Appearance & Behavior > Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:
+    you should commit the following generated config file, so that others working on your repo don't have to manually configure it themselves:
 
-    ![](pycharm-recommended-dependency.png)
+    - `.idea/misc.xml`
 
-
-    you should then commit the following generated config files, so that others working on your repo are prompted to install the plugin and don't have to manually configure it themselves:
-
-    - `.idea/pyright-overrides.xml`
-    - `.idea/pyright.xml`
-    - `.idea/externalDependencies.xml`
-
-    (note that pycharm hides the `.idea` directory by default, so you will need to `git add` the files via the CLI instead.)
+    (note that pycharm hides the `.idea` directory by default, so you will need to `git add` the file via the CLI instead.)
 
 ## Helix
 
