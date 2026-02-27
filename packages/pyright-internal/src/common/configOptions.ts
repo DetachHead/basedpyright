@@ -61,6 +61,9 @@ export class ExecutionEnvironment {
     // Diagnostic rules with overrides.
     diagnosticRuleSet: DiagnosticRuleSet;
 
+    // The type checking mode specified for this execution environment, if any.
+    typeCheckingMode?: TypeCheckingMode;
+
     // Skip import resolution attempts for native libraries. These can
     // be expensive and are not needed for some use cases (e.g. web-based
     // tools or playgrounds).
@@ -1559,16 +1562,9 @@ export class ConfigOptions {
      * @returns any errors that occurred
      */
     initializeTypeCheckingModeFromString(typeCheckingMode: string | undefined, console_: ConsoleInterface) {
-        if (typeCheckingMode !== undefined) {
-            if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
-                this.initializeTypeCheckingMode(typeCheckingMode as TypeCheckingMode);
-            } else {
-                console_.error(
-                    `invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(
-                        allTypeCheckingModes
-                    )}`
-                );
-            }
+        const validatedMode = ConfigOptions._validateTypeCheckingMode(typeCheckingMode, console_, '');
+        if (validatedMode !== undefined) {
+            this.initializeTypeCheckingMode(validatedMode);
         }
     }
 
@@ -1985,6 +1981,57 @@ export class ConfigOptions {
         }
     }
 
+    /**
+     * Validates a typeCheckingMode value and returns the corresponding TypeCheckingMode enum.
+     * Logs an error to the console if the value is invalid.
+     *
+     * @param typeCheckingMode - The typeCheckingMode value to validate (can be undefined)
+     * @param console_ - Console interface for logging errors
+     * @param errorContext - Context string for error messages (e.g., "Config executionEnvironments index 0"). Pass empty string for global config.
+     * @returns TypeCheckingMode if valid, undefined if not specified or invalid
+     */
+    private static _validateTypeCheckingMode(
+        typeCheckingMode: unknown,
+        console_: ConsoleInterface,
+        errorContext: string
+    ): TypeCheckingMode | undefined {
+        if (typeCheckingMode === undefined) {
+            return undefined;
+        }
+
+        const prefix = errorContext ? `${errorContext}: ` : '';
+        if (typeof typeCheckingMode !== 'string') {
+            console_.error(`${prefix}typeCheckingMode must be a string.`);
+            return undefined;
+        }
+
+        if ((allTypeCheckingModes as readonly string[]).includes(typeCheckingMode)) {
+            return typeCheckingMode as TypeCheckingMode;
+        }
+        console_.error(
+            `${prefix}invalid "typeCheckingMode" value: "${typeCheckingMode}". expected: ${userFacingOptionsList(allTypeCheckingModes)}`
+        );
+        return undefined;
+    }
+
+    /**
+     * Validates a typeCheckingMode string and returns the corresponding DiagnosticRuleSet.
+     * Logs an error to the console if the value is invalid.
+     *
+     * @param typeCheckingMode - The typeCheckingMode value to validate (can be undefined)
+     * @param console_ - Console interface for logging errors
+     * @param errorContext - Context string for error messages (e.g., "Config executionEnvironments index 0")
+     * @returns DiagnosticRuleSet if valid, undefined if not specified or invalid
+     */
+    private static _getDiagnosticRuleSetFromString(
+        typeCheckingMode: unknown,
+        console_: ConsoleInterface,
+        errorContext: string
+    ): DiagnosticRuleSet | undefined {
+        const validatedMode = ConfigOptions._validateTypeCheckingMode(typeCheckingMode, console_, errorContext);
+        return validatedMode !== undefined ? ConfigOptions.getDiagnosticRuleSet(validatedMode) : undefined;
+    }
+
     private _getEnvironmentName(): string {
         return this.pythonEnvironmentName || this.pythonPath?.toString() || 'python';
     }
@@ -2032,14 +2079,31 @@ export class ConfigOptions {
         configExtraPaths: Uri[]
     ): ExecutionEnvironment | undefined {
         try {
+            // If typeCheckingMode is specified for this execution environment,
+            // validate it once and use it to generate the base diagnostic rule set.
+            // Otherwise, use the config-level diagnostic rule set.
+            const validatedMode = ConfigOptions._validateTypeCheckingMode(
+                envObj.typeCheckingMode,
+                console,
+                `Config executionEnvironments index ${index}`
+            );
+            const baseDiagnosticRuleSet = validatedMode !== undefined
+                ? ConfigOptions.getDiagnosticRuleSet(validatedMode)
+                : configDiagnosticRuleSet;
+
             const newExecEnv = new ExecutionEnvironment(
                 this._getEnvironmentName(),
                 configDirUri,
-                configDiagnosticRuleSet,
+                baseDiagnosticRuleSet,
                 configPythonVersion,
                 configPythonPlatform,
                 configExtraPaths
             );
+
+            // Store the validated typeCheckingMode if it was specified and valid.
+            if (validatedMode !== undefined) {
+                newExecEnv.typeCheckingMode = validatedMode;
+            }
 
             // Validate the root.
             if (envObj.root && typeof envObj.root === 'string') {
