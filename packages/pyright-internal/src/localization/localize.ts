@@ -779,6 +779,7 @@ export namespace Localizer {
             new ParameterizedString<{ name: string; index: number }>(
                 getRawString('Diagnostic.overloadImplementationMismatch')
             );
+        export const overloadImplementationTooWide = () => getRawString('Diagnostic.overloadImplementationTooWide');
         export const overloadOverrideImpl = () => getRawString('Diagnostic.overloadOverrideImpl');
         export const overloadOverrideNoImpl = () => getRawString('Diagnostic.overloadOverrideNoImpl');
         export const overloadReturnTypeMismatch = () =>
