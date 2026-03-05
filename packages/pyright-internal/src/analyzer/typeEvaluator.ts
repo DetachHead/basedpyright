@@ -10786,43 +10786,54 @@ export function createTypeEvaluator(
 
         if (ClassType.supportsAbstractMethods(expandedCallType)) {
             const abstractSymbols = getAbstractSymbols(expandedCallType);
+            const derivesFromExplicitAbstract = ClassType.derivesFromExplicitAbstract(expandedCallType);
 
-            if (
-                abstractSymbols.length > 0 &&
-                !expandedCallType.priv.includeSubclasses &&
-                !isTypeVar(unexpandedCallType)
-            ) {
-                // If the class is abstract, it can't be instantiated.
-                const diagAddendum = new DiagnosticAddendum();
-                const errorsToDisplay = 2;
+            // check for abstract usages.
+            // only report an error if it's an exact type (ie. we know it's definitely not a subclass/impl)
+            if (!expandedCallType.priv.includeSubclasses && !isTypeVar(unexpandedCallType)) {
+                // Handle abstract classes with abstract methods (reportAbstractUsage)
+                if (abstractSymbols.length > 0) {
+                    // If the class is abstract, it can't be instantiated.
+                    const diagAddendum = new DiagnosticAddendum();
+                    const errorsToDisplay = 2;
 
-                abstractSymbols.forEach((abstractMethod, index) => {
-                    if (index === errorsToDisplay) {
-                        diagAddendum.addMessage(
-                            LocAddendum.memberIsAbstractMore().format({
-                                count: abstractSymbols.length - errorsToDisplay,
-                            })
-                        );
-                    } else if (index < errorsToDisplay) {
-                        if (isInstantiableClass(abstractMethod.classType)) {
-                            const className = abstractMethod.classType.shared.name;
+                    abstractSymbols.forEach((abstractMethod, index) => {
+                        if (index === errorsToDisplay) {
                             diagAddendum.addMessage(
-                                LocAddendum.memberIsAbstract().format({
-                                    type: className,
-                                    name: abstractMethod.symbolName,
+                                LocAddendum.memberIsAbstractMore().format({
+                                    count: abstractSymbols.length - errorsToDisplay,
                                 })
                             );
+                        } else if (index < errorsToDisplay) {
+                            if (isInstantiableClass(abstractMethod.classType)) {
+                                const className = abstractMethod.classType.shared.name;
+                                diagAddendum.addMessage(
+                                    LocAddendum.memberIsAbstract().format({
+                                        type: className,
+                                        name: abstractMethod.symbolName,
+                                    })
+                                );
+                            }
                         }
-                    }
-                });
+                    });
 
-                addDiagnostic(
-                    DiagnosticRule.reportAbstractUsage,
-                    LocMessage.instantiateAbstract().format({
-                        type: expandedCallType.shared.name,
-                    }) + diagAddendum.getString(),
-                    errorNode
-                );
+                    addDiagnostic(
+                        DiagnosticRule.reportAbstractUsage,
+                        LocMessage.instantiateAbstract().format({
+                            type: expandedCallType.shared.name,
+                        }) + diagAddendum.getString(),
+                        errorNode
+                    );
+                } else if (derivesFromExplicitAbstract) {
+                    // Handle abstract classes with no abstract methods (reportEmptyAbstractClass)
+                    addDiagnostic(
+                        DiagnosticRule.reportExplicitAbstractUsage,
+                        LocMessage.instantiateAbstract().format({
+                            type: expandedCallType.shared.name,
+                        }) + LocAddendum.classIsExplicitlyAbstract().getFormatString(),
+                        errorNode
+                    );
+                }
             }
         }
 
