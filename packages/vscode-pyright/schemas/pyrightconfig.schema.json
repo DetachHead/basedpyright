@@ -170,6 +170,11 @@
       "title": "Controls reporting of local variables that are not accessed",
       "default": "hint"
     },
+    "reportUnsolvedTypeVar": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of function calls with unresolved type variables",
+      "default": "none"
+    },
     "reportDuplicateImport": {
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of symbols or modules that are imported more than once",
@@ -740,6 +745,9 @@
     "reportUnusedVariable": {
       "$ref": "#/definitions/reportUnusedVariable"
     },
+    "reportUnsolvedTypeVar": {
+      "$ref": "#/definitions/reportUnsolvedTypeVar"
+    },
     "reportDuplicateImport": {
       "$ref": "#/definitions/reportDuplicateImport"
     },
@@ -1107,6 +1115,9 @@
           },
           "reportUnusedVariable": {
             "$ref": "#/definitions/reportUnusedVariable"
+          },
+          "reportUnsolvedTypeVar": {
+            "$ref": "#/definitions/reportUnsolvedTypeVar"
           },
           "reportDuplicateImport": {
             "$ref": "#/definitions/reportDuplicateImport"

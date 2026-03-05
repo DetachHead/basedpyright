@@ -298,11 +298,27 @@
                 }
             },
             {
+                "code": "reportUnsolvedTypeVar",
+                "range": {
+                    "startColumn": 4,
+                    "endColumn": 5,
+                    "lineCount": 7
+                }
+            },
+            {
                 "code": "reportUnusedCallResult",
                 "range": {
                     "startColumn": 4,
                     "endColumn": 5,
                     "lineCount": 7
+                }
+            },
+            {
+                "code": "reportUnsolvedTypeVar",
+                "range": {
+                    "startColumn": 4,
+                    "endColumn": 5,
+                    "lineCount": 6
                 }
             },
             {

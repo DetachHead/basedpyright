@@ -12617,6 +12617,50 @@ export function createTypeEvaluator(
             specializedInitSelfType = solveAndApplyConstraints(specializedInitSelfType, constraints);
         }
 
+        // check for unsolved type variables and report errors
+        if (!argumentErrors && !isTypeIncomplete && type.shared.typeParams.length > 0) {
+            const solution = solveConstraints(evaluatorInterface, constraints);
+
+            const solutionSet = solution.getMainSolutionSet();
+            const scopeIds = getTypeVarScopeIds(type);
+            const unsolvedExemptTypeVars = getUnknownExemptTypeVarsForReturnType(type, returnType);
+
+            for (const typeParam of type.shared.typeParams) {
+                // skip type parameters that have explicit default values
+                if (typeParam.shared.isDefaultExplicit) {
+                    continue;
+                }
+
+                // skip ParamSpecs and TypeVarTuples for now - they have different semantics
+                if (isParamSpec(typeParam) || isTypeVarTuple(typeParam)) {
+                    continue;
+                }
+
+                // only check type parameters that are in scope for this function
+                if (typeParam.priv.scopeId && scopeIds && !scopeIds.includes(typeParam.priv.scopeId)) {
+                    continue;
+                }
+
+                // skip type parameters that are exempt from being solved (e.g., they appear
+                // only in the return type as part of a returned callable)
+                if (unsolvedExemptTypeVars.some((exemptVar) => isTypeSame(exemptVar, typeParam))) {
+                    continue;
+                }
+
+                const solvedType = solutionSet.getType(typeParam);
+
+                if (!solvedType) {
+                    addDiagnostic(
+                        DiagnosticRule.reportUnsolvedTypeVar,
+                        LocMessage.typeVarUnsolved().format({
+                            name: typeParam.shared.name,
+                        }),
+                        errorNode
+                    );
+                }
+            }
+        }
+
         matchResults.argumentMatchScore = argumentMatchScore;
 
         return {
@@ -15077,6 +15121,17 @@ export function createTypeEvaluator(
             }
         } else {
             isEmptyContainer = true;
+
+            // Report unsolved type variable for empty containers without expected type
+            if (!hasExpectedType) {
+                const diag = new DiagnosticAddendum();
+                diag.addMessage(LocAddendum.typeVarUnsolvedCollectionHint().format({ className: builtInClassName }));
+                addDiagnostic(
+                    DiagnosticRule.reportUnsolvedTypeVar,
+                    LocMessage.typeVarUnsolved().format({ name: 'T' }) + diag.getString(),
+                    node
+                );
+            }
         }
 
         const listOrSetClass = getBuiltInType(node, builtInClassName);
