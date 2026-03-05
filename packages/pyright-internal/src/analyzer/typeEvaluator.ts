@@ -10786,7 +10786,17 @@ export function createTypeEvaluator(
 
         if (ClassType.supportsAbstractMethods(expandedCallType)) {
             const abstractSymbols = getAbstractSymbols(expandedCallType);
+            // Check if ABC is in the direct base classes (not just anywhere in MRO)
+            const derivesDirectlyFromABC = expandedCallType.shared.baseClasses.some(
+                (baseClass) => isInstantiableClass(baseClass) && baseClass.shared.fullName === 'abc.ABC'
+            );
+            // Check if the class uses ABCMeta as its metaclass
+            const hasABCMetaMetaclass =
+                expandedCallType.shared.declaredMetaclass &&
+                isInstantiableClass(expandedCallType.shared.declaredMetaclass) &&
+                expandedCallType.shared.declaredMetaclass.shared.fullName === 'abc.ABCMeta';
 
+            // Handle abstract classes with abstract methods (reportAbstractUsage)
             if (
                 abstractSymbols.length > 0 &&
                 !expandedCallType.priv.includeSubclasses &&
@@ -10821,6 +10831,20 @@ export function createTypeEvaluator(
                     LocMessage.instantiateAbstract().format({
                         type: expandedCallType.shared.name,
                     }) + diagAddendum.getString(),
+                    errorNode
+                );
+            }
+            // Handle abstract classes with no abstract methods (reportEmptyAbstractClass)
+            else if (
+                (derivesDirectlyFromABC || hasABCMetaMetaclass) &&
+                !expandedCallType.priv.includeSubclasses &&
+                !isTypeVar(unexpandedCallType)
+            ) {
+                addDiagnostic(
+                    DiagnosticRule.reportEmptyAbstractClass,
+                    LocMessage.instantiateAbstract().format({
+                        type: expandedCallType.shared.name,
+                    }),
                     errorNode
                 );
             }
