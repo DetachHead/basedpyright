@@ -5281,11 +5281,8 @@ export class Checker extends ParseTreeWalker {
         } else {
             const baseClasses = classType.shared.baseClasses.filter(isClass);
             if (
-                (classType.shared.declaredMetaclass?.category !== TypeCategory.Class ||
-                    !ClassType.isBuiltIn(classType.shared.declaredMetaclass, 'ABCMeta')) &&
-                !baseClasses.some(
-                    (baseClass) => baseClass.shared.fullName === 'abc.ABC' || ClassType.isBuiltIn(baseClass, 'Protocol')
-                )
+                !ClassType.isDirectSubtypeOfAbstractClass(classType) &&
+                !baseClasses.some((baseClass) => ClassType.isBuiltIn(baseClass, 'Protocol'))
             ) {
                 const errorMessage = classType.shared.mro.some(
                     (baseClass) => isClass(baseClass) && ClassType.isBuiltIn(baseClass, 'Protocol')

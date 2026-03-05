@@ -21,7 +21,7 @@ class Foo(abc.ABC):
         raise NotImplementedError
 
 
-a = Foo()
+a = Foo()  # pyright: ignore[reportEmptyAbstractUsage]
 requires_int(a.x)
 
 a.x = 3

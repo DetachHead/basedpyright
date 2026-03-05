@@ -304,6 +304,8 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportImplicitAbstractClass"></a> **reportImplicitAbstractClass** [boolean or string, optional]: Diagnostics for classes that extend abstract classes without also explicitly declaring themselves as abstract or implementing all of the required abstract methods. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportimplicitabstractclass)
 
+- <a name="reportEmptyAbstractUsage"></a> **reportEmptyAbstractUsage** [boolean or string, optional]: Diagnostics for classes that have no abstract methods, but explicitly extend `ABC` or `ABCMeta`. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportemptyabstractusage)
+
 - <a name="reportIncompatibleUnannotatedOverride"></a> **reportIncompatibleUnannotatedOverride** [boolean or string, optional]: Generate or suppress diagnostics for class variable declarations that override a symbol of the same name in a base class with a type that is incompatible with the base class symbol type, when the base class' symbol does not have a type annotation. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportincompatibleunannotatedoverride)
 
 - <a name="reportUnannotatedClassAttribute"></a> **reportUnannotatedClassAttribute** [boolean or string, optional]: Generate or suppress diagnostics for class attribute declarations that do not have a type annotation. These are unsafe unless `reportIncompatibleUnannotatedOverride` is enabled. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportunannotatedclassattribute)
@@ -311,7 +313,6 @@ The following settings allow more fine grained control over the **typeCheckingMo
 - <a name="reportInvalidAbstractMethod"></a> **reportInvalidAbstractMethod** [boolean or string, optional]: Generate or suppress diagnostics for usages of `@abstractmethod` on a non-abstract class. [more info](../benefits-over-pyright/new-diagnostic-rules.md#reportinvalidabstractmethod)
 
 - <a name="reportSelfClsDefault"></a> **reportSelfClsDefault** [boolean or string, optional]: Generate or suppress diagnostics for a class or instance method having a default value for the first parameter.
-
 
 ## Execution Environment Options
 Pyright allows multiple “execution environments” to be defined for different portions of your source tree. For example, a subtree may be designed to run with different import search paths or a different version of the python interpreter than the rest of the source base.
