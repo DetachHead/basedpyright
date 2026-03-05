@@ -131,7 +131,16 @@ test('AbstractClass11', () => {
 test('AbstractClass12', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['abstractClass12.py']);
 
-    TestUtils.validateResultsButBased(analysisResults, {});
+    TestUtils.validateResultsButBased(analysisResults, {
+        // one error to validate code and message, the rest use `pyright: ignore`
+        errors: [
+            {
+                line: 14,
+                message: 'Cannot instantiate abstract class "AbstractFoo"',
+                code: DiagnosticRule.reportEmptyAbstractClass,
+            },
+        ],
+    });
 });
 
 test('Constants1', () => {

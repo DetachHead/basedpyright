@@ -189,6 +189,9 @@ export interface DiagnosticRuleSet {
     // Report use of abstract method or variable?
     reportAbstractUsage: DiagnosticLevel;
 
+    // Report instantiation of abstract class with no abstract methods?
+    reportEmptyAbstractClass: DiagnosticLevel;
+
     // Report argument type incompatibilities?
     reportArgumentType: DiagnosticLevel;
 
@@ -481,6 +484,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportDuplicateImport,
         DiagnosticRule.reportWildcardImportFromLibrary,
         DiagnosticRule.reportAbstractUsage,
+        DiagnosticRule.reportEmptyAbstractClass,
         DiagnosticRule.reportArgumentType,
         DiagnosticRule.reportAssertTypeFailure,
         DiagnosticRule.reportAssignmentType,
@@ -617,6 +621,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'none',
         reportAbstractUsage: 'none',
+        reportEmptyAbstractClass: 'none',
         reportArgumentType: 'none',
         reportAssertTypeFailure: 'none',
         reportAssignmentType: 'none',
@@ -737,6 +742,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
+        reportEmptyAbstractClass: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',
@@ -857,6 +863,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
+        reportEmptyAbstractClass: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',
@@ -976,6 +983,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportDuplicateImport: 'warning',
     reportWildcardImportFromLibrary: 'warning',
     reportAbstractUsage: 'error',
+    reportEmptyAbstractClass: 'error',
     reportArgumentType: 'error',
     reportAssertTypeFailure: 'error',
     reportAssignmentType: 'error',
@@ -1092,6 +1100,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportDuplicateImport: 'error',
     reportWildcardImportFromLibrary: 'error',
     reportAbstractUsage: 'error',
+    reportEmptyAbstractClass: 'error',
     reportArgumentType: 'error',
     reportAssertTypeFailure: 'error',
     reportAssignmentType: 'error',
@@ -1209,6 +1218,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'error',
         reportWildcardImportFromLibrary: 'error',
         reportAbstractUsage: 'error',
+        reportEmptyAbstractClass: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',

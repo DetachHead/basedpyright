@@ -10796,8 +10796,9 @@ export function createTypeEvaluator(
                 isInstantiableClass(expandedCallType.shared.declaredMetaclass) &&
                 expandedCallType.shared.declaredMetaclass.shared.fullName === 'abc.ABCMeta';
 
+            // Handle abstract classes with abstract methods (reportAbstractUsage)
             if (
-                (abstractSymbols.length > 0 || derivesDirectlyFromABC || hasABCMetaMetaclass) &&
+                abstractSymbols.length > 0 &&
                 !expandedCallType.priv.includeSubclasses &&
                 !isTypeVar(unexpandedCallType)
             ) {
@@ -10830,6 +10831,20 @@ export function createTypeEvaluator(
                     LocMessage.instantiateAbstract().format({
                         type: expandedCallType.shared.name,
                     }) + diagAddendum.getString(),
+                    errorNode
+                );
+            }
+            // Handle abstract classes with no abstract methods (reportEmptyAbstractClass)
+            else if (
+                (derivesDirectlyFromABC || hasABCMetaMetaclass) &&
+                !expandedCallType.priv.includeSubclasses &&
+                !isTypeVar(unexpandedCallType)
+            ) {
+                addDiagnostic(
+                    DiagnosticRule.reportEmptyAbstractClass,
+                    LocMessage.instantiateAbstract().format({
+                        type: expandedCallType.shared.name,
+                    }),
                     errorNode
                 );
             }

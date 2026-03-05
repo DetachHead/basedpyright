@@ -38,6 +38,7 @@ export enum DiagnosticRule {
     reportDuplicateImport = 'reportDuplicateImport',
     reportWildcardImportFromLibrary = 'reportWildcardImportFromLibrary',
     reportAbstractUsage = 'reportAbstractUsage',
+    reportEmptyAbstractClass = 'reportEmptyAbstractClass',
     reportArgumentType = 'reportArgumentType',
     reportAssertTypeFailure = 'reportAssertTypeFailure',
     reportAssignmentType = 'reportAssignmentType',

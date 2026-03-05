@@ -12,7 +12,7 @@ class Foo(AbstractFoo):
 
 # this should generate an error because `AbstractFoo`
 # is an abstract class even though it has no abstract methods
-a = AbstractFoo()  # pyright: ignore[reportAbstractUsage]
+a = AbstractFoo()
 
 # this should not generate an error because Foo is concrete
 b = Foo()
@@ -58,7 +58,7 @@ class AbstractWithMethods(ABC):
 
 
 # This should generate an error even though all methods are concrete
-h = AbstractWithMethods()  # pyright: ignore[reportAbstractUsage]
+h = AbstractWithMethods()  # pyright: ignore[reportEmptyAbstractClass]
 
 
 class AbstractWithMetaclass(metaclass=ABCMeta):
@@ -69,7 +69,7 @@ class ConcreteWithMetaclass(AbstractWithMetaclass):
 
 
 # this should generate an error because AbstractWithMetaclass uses ABCMeta
-i = AbstractWithMetaclass()  # pyright: ignore[reportAbstractUsage]
+i = AbstractWithMetaclass()  # pyright: ignore[reportEmptyAbstractClass]
 
 # this should not generate an error
 j = ConcreteWithMetaclass()
