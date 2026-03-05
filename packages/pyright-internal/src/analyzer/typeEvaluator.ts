@@ -10786,9 +10786,18 @@ export function createTypeEvaluator(
 
         if (ClassType.supportsAbstractMethods(expandedCallType)) {
             const abstractSymbols = getAbstractSymbols(expandedCallType);
+            // Check if ABC is in the direct base classes (not just anywhere in MRO)
+            const derivesDirectlyFromABC = expandedCallType.shared.baseClasses.some(
+                (baseClass) => isInstantiableClass(baseClass) && baseClass.shared.fullName === 'abc.ABC'
+            );
+            // Check if the class uses ABCMeta as its metaclass
+            const hasABCMetaMetaclass =
+                expandedCallType.shared.declaredMetaclass &&
+                isInstantiableClass(expandedCallType.shared.declaredMetaclass) &&
+                expandedCallType.shared.declaredMetaclass.shared.fullName === 'abc.ABCMeta';
 
             if (
-                abstractSymbols.length > 0 &&
+                (abstractSymbols.length > 0 || derivesDirectlyFromABC || hasABCMetaMetaclass) &&
                 !expandedCallType.priv.includeSubclasses &&
                 !isTypeVar(unexpandedCallType)
             ) {
