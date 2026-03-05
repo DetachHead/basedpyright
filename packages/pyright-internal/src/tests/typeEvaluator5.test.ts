@@ -12,6 +12,7 @@ import { ConfigOptions } from '../common/configOptions';
 import { pythonVersion3_11, pythonVersion3_12, pythonVersion3_13 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
 import * as TestUtils from './testUtils';
+import { DiagnosticRule } from '../common/diagnosticRules';
 
 test('TypeParams1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
@@ -196,6 +197,29 @@ test('Override2', () => {
 test('TypeVarDefault1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVarDefault1.py']);
     TestUtils.validateResults(analysisResults, 14);
+});
+
+test('TypeVarUnsolved1', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportInvalidTypeVarUse = 'none';
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+    configOptions.diagnosticRuleSet.reportUnsolvedTypeVar = 'error';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVarUnsolved1.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {
+        errors: [
+            {
+                line: 21,
+                code: DiagnosticRule.reportUnsolvedTypeVar,
+                message: 'Type variable "T" has no solution; consider providing it explicitly',
+            },
+            {
+                line: 27,
+                code: DiagnosticRule.reportUnsolvedTypeVar,
+                message: 'Type variable "U" has no solution; consider providing it explicitly',
+            },
+        ],
+    });
 });
 
 test('TypeVarDefault2', () => {

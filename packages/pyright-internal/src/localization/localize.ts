@@ -1113,6 +1113,8 @@ export namespace Localizer {
             new ParameterizedString<{ type: string; name: string }>(
                 getRawString('Diagnostic.typeVarAssignmentMismatch')
             );
+        export const typeVarUnsolved = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.typeVarUnsolved'));
         export const typeVarBoundAndConstrained = () => getRawString('Diagnostic.typeVarBoundAndConstrained');
         export const typeVarBoundGeneric = () => getRawString('Diagnostic.typeVarBoundGeneric');
         export const typeVarConstraintGeneric = () => getRawString('Diagnostic.typeVarConstraintGeneric');
