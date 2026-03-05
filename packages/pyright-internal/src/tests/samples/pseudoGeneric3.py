@@ -25,6 +25,6 @@ class ClassB(metaclass=abc.ABCMeta):
             return self.__getattribute__(attr)
 
 
-b1 = ClassB("test")
+b1 = ClassB("test")  # pyright: ignore[reportEmptyAbstractUsage]
 reveal_type(b1.value, expected_text="Unknown | Any | None")
 del b1.cache

@@ -185,6 +185,11 @@
       "title": "Controls reporting of attempted instantiation of abstract class",
       "default": "error"
     },
+    "reportEmptyAbstractUsage": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of attempted instantiation of empty abstract class",
+      "default": "error"
+    },
     "reportArgumentType": {
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of incompatible argument type",
@@ -743,6 +748,9 @@
     },
     "reportAbstractUsage": {
       "$ref": "#/definitions/reportAbstractUsage"
+    },
+    "reportEmptyAbstractUsage": {
+      "$ref": "#/definitions/reportEmptyAbstractUsage"
     },
     "reportArgumentType": {
       "$ref": "#/definitions/reportArgumentType"

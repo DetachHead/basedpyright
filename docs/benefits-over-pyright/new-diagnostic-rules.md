@@ -195,6 +195,40 @@ class FooImpl(AbstractFoo, ABC):
         print("hi")
 ```
 
+## `reportEmptyAbstractUsage`
+
+pyright only reports an error when you instantiate an abstract class that has unimplemented abstract methods. but a class that explicitly extends `ABC` (or uses `ABCMeta`) with no abstract methods can also be instantiated, and pyright has no issue with that:
+
+```py
+from abc import ABC
+
+
+class Foo(ABC):
+    """abstract class with no abstract methods"""
+
+
+foo = Foo()  # no error
+```
+
+but the author of the class likely intended this class not to be used directly, and instead subtyped. so if a class extends `ABC` but defines no abstract methods, instantiating it is likely unintentional.
+
+the `reportEmptyAbstractUsage` rule flags such instantiations. note that it only applies to classes that _directly_ extend `ABC` (or use `ABCMeta`), not to their subclasses, since subclasses may be intentionally concrete:
+
+```py
+from abc import ABC
+
+
+class AbstractFoo(ABC):
+    """abstract class with no abstract methods"""
+
+
+class ConcreteFoo(AbstractFoo): ...
+
+
+foo = AbstractFoo()  # error: reportEmptyAbstractUsage
+bar = ConcreteFoo()  # no error
+```
+
 ## `reportIncompatibleUnannotatedOverride`
 
 pyright's `reportIncompatibleVariableOverride` rule checks for class attribute overrides with an incompatible type:

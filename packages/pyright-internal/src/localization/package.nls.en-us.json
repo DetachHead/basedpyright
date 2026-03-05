@@ -1934,6 +1934,9 @@
             "message": "and {count} more...",
             "comment": "{StrEnds='...'}"
         },
+        "classIsExplicitlyAbstract": {
+            "message": "class has no abstract members, but is explicitly denoted with \"ABC\" or \"ABCMeta\""
+        },
         "memberIsClassVarInProtocol": {
             "message": "\"{name}\" is defined as a ClassVar in protocol",
             "comment": "{Locked='ClassVar'}"

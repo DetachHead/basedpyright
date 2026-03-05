@@ -10787,42 +10787,52 @@ export function createTypeEvaluator(
         if (ClassType.supportsAbstractMethods(expandedCallType)) {
             const abstractSymbols = getAbstractSymbols(expandedCallType);
 
-            if (
-                abstractSymbols.length > 0 &&
-                !expandedCallType.priv.includeSubclasses &&
-                !isTypeVar(unexpandedCallType)
-            ) {
-                // If the class is abstract, it can't be instantiated.
-                const diagAddendum = new DiagnosticAddendum();
-                const errorsToDisplay = 2;
+            if (!expandedCallType.priv.includeSubclasses && !isTypeVar(unexpandedCallType)) {
+                // Handle abstract classes with abstract methods
+                if (abstractSymbols.length > 0) {
+                    // If the class is abstract, it can't be instantiated.
+                    const diagAddendum = new DiagnosticAddendum();
+                    const errorsToDisplay = 2;
 
-                abstractSymbols.forEach((abstractMethod, index) => {
-                    if (index === errorsToDisplay) {
-                        diagAddendum.addMessage(
-                            LocAddendum.memberIsAbstractMore().format({
-                                count: abstractSymbols.length - errorsToDisplay,
-                            })
-                        );
-                    } else if (index < errorsToDisplay) {
-                        if (isInstantiableClass(abstractMethod.classType)) {
-                            const className = abstractMethod.classType.shared.name;
+                    abstractSymbols.forEach((abstractMethod, index) => {
+                        if (index === errorsToDisplay) {
                             diagAddendum.addMessage(
-                                LocAddendum.memberIsAbstract().format({
-                                    type: className,
-                                    name: abstractMethod.symbolName,
+                                LocAddendum.memberIsAbstractMore().format({
+                                    count: abstractSymbols.length - errorsToDisplay,
                                 })
                             );
+                        } else if (index < errorsToDisplay) {
+                            if (isInstantiableClass(abstractMethod.classType)) {
+                                const className = abstractMethod.classType.shared.name;
+                                diagAddendum.addMessage(
+                                    LocAddendum.memberIsAbstract().format({
+                                        type: className,
+                                        name: abstractMethod.symbolName,
+                                    })
+                                );
+                            }
                         }
-                    }
-                });
+                    });
 
-                addDiagnostic(
-                    DiagnosticRule.reportAbstractUsage,
-                    LocMessage.instantiateAbstract().format({
-                        type: expandedCallType.shared.name,
-                    }) + diagAddendum.getString(),
-                    errorNode
-                );
+                    addDiagnostic(
+                        DiagnosticRule.reportAbstractUsage,
+                        LocMessage.instantiateAbstract().format({
+                            type: expandedCallType.shared.name,
+                        }) + diagAddendum.getString(),
+                        errorNode
+                    );
+                } else if (ClassType.isDirectSubtypeOfAbstractClass(expandedCallType)) {
+                    // Handle abstract classes with no abstract methods
+                    const diag = new DiagnosticAddendum();
+                    diag.addMessage(LocAddendum.classIsExplicitlyAbstract());
+                    addDiagnostic(
+                        DiagnosticRule.reportEmptyAbstractUsage,
+                        LocMessage.instantiateAbstract().format({
+                            type: expandedCallType.shared.name,
+                        }) + diag.getString(),
+                        errorNode
+                    );
+                }
             }
         }
 

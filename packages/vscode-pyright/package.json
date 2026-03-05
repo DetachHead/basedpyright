@@ -490,6 +490,23 @@
                                 false
                             ]
                         },
+                        "reportEmptyAbstractUsage": {
+                            "type": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Diagnostics for an attempt to instantiate an abstract class that has no abstract members.",
+                            "default": "error",
+                            "enum": [
+                                "none",
+                                "hint",
+                                "information",
+                                "warning",
+                                "error",
+                                true,
+                                false
+                            ]
+                        },
                         "reportArgumentType": {
                             "type": [
                                 "string",

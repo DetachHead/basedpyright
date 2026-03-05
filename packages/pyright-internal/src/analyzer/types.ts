@@ -1175,6 +1175,18 @@ export namespace ClassType {
         return !!(classType.shared.flags & ClassTypeFlags.SupportsAbstractMethods);
     }
 
+    export function isDirectSubtypeOfAbstractClass(classType: ClassType): boolean {
+        const derivesDirectlyFromABC = classType.shared.baseClasses.some(
+            (baseClass) => isClass(baseClass) && baseClass.shared.fullName === 'abc.ABC'
+        );
+        const hasABCMetaMetaclass =
+            classType.shared.declaredMetaclass !== undefined &&
+            isClass(classType.shared.declaredMetaclass) &&
+            classType.shared.declaredMetaclass.shared.fullName === 'abc.ABCMeta';
+
+        return derivesDirectlyFromABC || hasABCMetaMetaclass;
+    }
+
     export function isDataClass(classType: ClassType) {
         return !!classType.shared.dataClassBehaviors;
     }
