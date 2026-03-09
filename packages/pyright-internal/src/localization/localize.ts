@@ -1393,6 +1393,8 @@ export namespace Localizer {
             );
         export const memberIsAbstractMore = () =>
             new ParameterizedString<{ count: number }>(getRawString('DiagnosticAddendum.memberIsAbstractMore'));
+        export const classIsExplicitlyAbstract = () =>
+            new ParameterizedString<{ count: number }>(getRawString('DiagnosticAddendum.classIsExplicitlyAbstract'));
         export const memberIsClassVarInProtocol = () =>
             new ParameterizedString<{ name: string }>(getRawString('DiagnosticAddendum.memberIsClassVarInProtocol'));
         export const memberIsInitVar = () =>

@@ -128,6 +128,22 @@ test('AbstractClass11', () => {
     TestUtils.validateResults(analysisResults, 2);
 });
 
+test('AbstractClass12', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['abstractClass12.py']);
+
+    TestUtils.validateResultsButBased(analysisResults, {
+        // one error to validate the message, the rest use `pyright: ignore`
+        errors: [
+            {
+                line: 11,
+                message:
+                    'Cannot instantiate abstract class "ExplicitlyAbstract"class has no abstract members, but is explicitly denoted with "ABC" or "ABCMeta"',
+                code: DiagnosticRule.reportExplicitAbstractUsage,
+            },
+        ],
+    });
+});
+
 test('Constants1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['constants1.py']);
 

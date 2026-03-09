@@ -9,7 +9,7 @@ async def b():
         yield i
 
 
-cm = AsyncExitStack()
+cm = AsyncExitStack()  # pyright: ignore[reportExplicitAbstractUsage]  # typeshed moment
 
 
 def func1():
