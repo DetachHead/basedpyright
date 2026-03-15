@@ -74,31 +74,7 @@ export class CodeActionProvider {
 
         codeActions.push(...this._addImportAction(workspace, fileUri, range, token, ls, lines, diags, parseTree));
 
-        // ==== Code action for creating type stubs ====
-        const typeStubDiag = diags.find((d) => {
-            const actions = d.getActions();
-            return actions && actions.find((a) => a.action === Commands.createTypeStub);
-        });
-
-        if (workspace.rootUri && typeStubDiag) {
-            const action = typeStubDiag
-                .getActions()!
-                .find((a) => a.action === Commands.createTypeStub) as CreateTypeStubFileAction;
-            if (action) {
-                const createTypeStubAction = CodeAction.create(
-                    Localizer.CodeAction.createTypeStubFor().format({ moduleName: action.moduleName }),
-                    createCommand(
-                        Localizer.CodeAction.createTypeStub(),
-                        Commands.createTypeStub,
-                        workspace.rootUri.toString(),
-                        action.moduleName,
-                        fileUri.toString()
-                    ),
-                    CodeActionKind.QuickFix
-                );
-                codeActions.push(createTypeStubAction);
-            }
-        }
+        codeActions.push(...this._createTypeStubAction(workspace, fileUri, diags));
 
         for (const diagnostic of diags) {
             const rule = diagnostic.getRule();
@@ -107,45 +83,22 @@ export class CodeActionProvider {
             }
             const line = diagnostic.range.start.line;
 
-            // ==== Code action for adding @override decorators ====
             if (rule === DiagnosticRule.reportImplicitOverride) {
                 codeActions.push(
                     ...this._addOverrideAction(workspace, fileUri, line, token, ls, fs, lines, parseResults)
                 );
             }
 
-            // ==== Code action for reportUnnecessaryCast ====
             if (rule === DiagnosticRule.reportUnnecessaryCast) {
                 codeActions.push(
                     ...this._removeUnnecessaryCastAction(workspace, fileUri, ls, fs, lines, parseTree, diagnostic.range)
                 );
             }
 
-            // ==== Code action for reportUnusedCallResult ====
             if (rule === DiagnosticRule.reportUnusedCallResult) {
-                // Suggestion to assign the result to `_`
-                // Insert an edit at the start of the diagnostic range
-                const position = diagnostic.range.start;
-                const insertText = '_ = ';
-                codeActions.push(
-                    CodeAction.create(
-                        Localizer.CodeAction.assignToUnderscore(),
-                        convertToWorkspaceEdit(
-                            ls.convertUriToLspUriString,
-                            fs,
-                            convertToFileTextEdits(
-                                fileUri,
-                                convertToTextEditActions([
-                                    { newText: insertText, range: { start: position, end: position } },
-                                ])
-                            )
-                        ),
-                        CodeActionKind.QuickFix
-                    )
-                );
+                codeActions.push(...this._addAssignToUnderscoreAction(fileUri, ls, fs, diagnostic.range));
             }
 
-            // ==== Code action for reportSelfClsDefault ====
             if (rule === DiagnosticRule.reportSelfClsDefault) {
                 codeActions.push(
                     ...this._removeSelfClsDefaultAction(fileUri, ls, fs, lines, parseTree, diagnostic.range)
@@ -153,13 +106,38 @@ export class CodeActionProvider {
             }
         }
 
-        // ==== Code action for adding ignore comments ====
-        codeActions.push(...this._addIgnoreComment(fileUri, ls, fs, lines, diags, parseResults));
+        codeActions.push(...this._addIgnoreCommentAction(fileUri, ls, fs, lines, diags, parseResults));
 
         return codeActions;
     }
 
-    private static _addIgnoreComment(
+    private static _addAssignToUnderscoreAction(
+        fileUri: Uri,
+        ls: LanguageServerInterface,
+        fs: FileSystem,
+        range: Range
+    ) {
+        // Suggestion to assign the result to `_`
+        // Insert an edit at the start of the diagnostic range
+        const position = range.start;
+        const insertText = '_ = ';
+        return [
+            CodeAction.create(
+                Localizer.CodeAction.assignToUnderscore(),
+                convertToWorkspaceEdit(
+                    ls.convertUriToLspUriString,
+                    fs,
+                    convertToFileTextEdits(
+                        fileUri,
+                        convertToTextEditActions([{ newText: insertText, range: { start: position, end: position } }])
+                    )
+                ),
+                CodeActionKind.QuickFix
+            ),
+        ];
+    }
+
+    private static _addIgnoreCommentAction(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -168,24 +146,15 @@ export class CodeActionProvider {
         parseResults: ParseFileResults
     ) {
         const codeActions: CodeAction[] = [];
-        const lineDiagnostics: Map<number, Set<string>> = new Map();
-        // remember rules that was previously added to code actions
-        // so that we can avoid duplicate ignore comment code actions
         for (const diagnostic of diags) {
             const rule = diagnostic.getRule();
-            if (!rule) {
+            if (!rule || rule === DiagnosticRule.reportImportCycles) {
+                // this action should not work on reportImportCycles since strange behaviors on it.
+                // see https://github.com/DetachHead/basedpyright/issues/1312
                 continue;
             }
-            const line = diagnostic.range.start.line;
-            if (!lineDiagnostics.has(line)) {
-                lineDiagnostics.set(line, new Set());
-            }
-            const histDiagnostics = lineDiagnostics.get(line)!;
-            if (histDiagnostics.has(rule)) {
-                continue;
-            }
-            histDiagnostics.add(rule);
 
+            const line = diagnostic.range.start.line;
             const ignoreCommentPrefix = `# pyright: ignore`;
             // we deliberately only check for pyright:ignore comments here but not type:ignore for 2 reasons:
             // - type:ignore comments are discouraged in favor of pyright:ignore comments
@@ -250,7 +219,6 @@ export class CodeActionProvider {
                 continue;
             }
 
-            // ==== Code action for auto imports ====
             if (diagnostic.getActions()?.some((action) => action.action === Commands.import)) {
                 const node = findNodeByPosition(parseTree, range.start, lines);
                 if (node === undefined) {
@@ -319,7 +287,6 @@ export class CodeActionProvider {
         lines: TextRangeCollection<TextRange>,
         parseResults: ParseFileResults
     ) {
-        // ==== Code action for adding @override decorators ====
         const codeActions: CodeAction[] = [];
 
         const lineText = lines.getItemAt(line);
@@ -387,6 +354,35 @@ export class CodeActionProvider {
             token,
             true
         );
+    }
+
+    private static _createTypeStubAction(workspace: Workspace, fileUri: Uri, diags: Diagnostic[]) {
+        const codeActions: CodeAction[] = [];
+        const typeStubDiag = diags.find((d) => {
+            const actions = d.getActions();
+            return actions && actions.find((a) => a.action === Commands.createTypeStub);
+        });
+
+        if (workspace.rootUri && typeStubDiag) {
+            const action = typeStubDiag
+                .getActions()!
+                .find((a) => a.action === Commands.createTypeStub) as CreateTypeStubFileAction;
+            if (action) {
+                const createTypeStubAction = CodeAction.create(
+                    Localizer.CodeAction.createTypeStubFor().format({ moduleName: action.moduleName }),
+                    createCommand(
+                        Localizer.CodeAction.createTypeStub(),
+                        Commands.createTypeStub,
+                        workspace.rootUri.toString(),
+                        action.moduleName,
+                        fileUri.toString()
+                    ),
+                    CodeActionKind.QuickFix
+                );
+                codeActions.push(createTypeStubAction);
+            }
+        }
+        return codeActions;
     }
 
     private static _removeSelfClsDefaultAction(
