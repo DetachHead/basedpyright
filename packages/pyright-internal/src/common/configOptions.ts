@@ -427,6 +427,7 @@ export interface DiagnosticRuleSet {
     reportIncompatibleUnannotatedOverride: DiagnosticLevel;
     reportInvalidAbstractMethod: DiagnosticLevel;
     reportSelfClsDefault: DiagnosticLevel;
+    reportUnsolvedTypeVar: DiagnosticLevel;
     allowedUntypedLibraries: string[];
 }
 
@@ -560,6 +561,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportIncompatibleUnannotatedOverride,
         DiagnosticRule.reportInvalidAbstractMethod,
         DiagnosticRule.reportSelfClsDefault,
+        DiagnosticRule.reportUnsolvedTypeVar,
     ];
 }
 
@@ -698,6 +700,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportUnsolvedTypeVar: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -818,6 +821,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportUnsolvedTypeVar: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -938,6 +942,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportUnsolvedTypeVar: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -1057,6 +1062,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
     reportSelfClsDefault: 'warning',
+    reportUnsolvedTypeVar: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1173,6 +1179,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
     reportSelfClsDefault: 'error',
+    reportUnsolvedTypeVar: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1290,6 +1297,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportUnsolvedTypeVar: 'none',
         allowedUntypedLibraries: [],
     };
 

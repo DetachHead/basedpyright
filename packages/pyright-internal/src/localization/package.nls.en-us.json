@@ -1436,6 +1436,9 @@
             "comment": "{Locked='TypeVar'}"
         },
         "typeVarAssignmentMismatch": "Type \"{type}\" cannot be assigned to type variable \"{name}\"",
+        "typeVarUnsolved": {
+            "message": "Type variable \"{name}\" has no solution; consider providing it explicitly"
+        },
         "typeVarBoundAndConstrained": {
             "message": "TypeVar cannot be both bound and constrained",
             "comment": "{Locked='TypeVar'}"
