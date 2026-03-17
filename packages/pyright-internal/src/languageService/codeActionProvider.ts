@@ -85,31 +85,23 @@ export class CodeActionProvider {
 
             if (rule === DiagnosticRule.reportImplicitOverride) {
                 codeActions.push(
-                    ...this._addOverrideActions(workspace, fileUri, line, token, ls, fs, lines, parseResults)
+                    ...this._addOverrideAction(workspace, fileUri, line, token, ls, fs, lines, parseResults)
                 );
             }
 
             if (rule === DiagnosticRule.reportUnnecessaryCast) {
                 codeActions.push(
-                    ...this._removeUnnecessaryCastActions(
-                        workspace,
-                        fileUri,
-                        ls,
-                        fs,
-                        lines,
-                        parseTree,
-                        diagnostic.range
-                    )
+                    ...this._removeUnnecessaryCastAction(workspace, fileUri, ls, fs, lines, parseTree, diagnostic.range)
                 );
             }
 
             if (rule === DiagnosticRule.reportUnusedCallResult) {
-                codeActions.push(...this._addAssignToUnderscoreActions(fileUri, ls, fs, diagnostic.range));
+                codeActions.push(...this._addAssignToUnderscoreAction(fileUri, ls, fs, diagnostic.range));
             }
 
             if (rule === DiagnosticRule.reportSelfClsDefault) {
                 codeActions.push(
-                    ...this._removeSelfClsDefaultActions(fileUri, ls, fs, lines, parseTree, diagnostic.range)
+                    ...this._removeSelfClsDefaultAction(fileUri, ls, fs, lines, parseTree, diagnostic.range)
                 );
             }
         }
@@ -119,7 +111,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _addAssignToUnderscoreActions(
+    private static _addAssignToUnderscoreAction(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -285,7 +277,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _addOverrideActions(
+    private static _addOverrideAction(
         workspace: Workspace,
         fileUri: Uri,
         line: number,
@@ -393,7 +385,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _removeSelfClsDefaultActions(
+    private static _removeSelfClsDefaultAction(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -450,7 +442,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _removeUnnecessaryCastActions(
+    private static _removeUnnecessaryCastAction(
         workspace: Workspace,
         fileUri: Uri,
         ls: LanguageServerInterface,
