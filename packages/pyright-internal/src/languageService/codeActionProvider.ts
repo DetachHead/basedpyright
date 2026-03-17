@@ -74,7 +74,10 @@ export class CodeActionProvider {
 
         codeActions.push(...this._addImportActions(workspace, fileUri, range, token, ls, lines, diags, parseTree));
 
-        codeActions.push(...this._createTypeStubActions(workspace, fileUri, diags));
+        const createTypeStubAction = this._createTypeStubAction(workspace, fileUri, diags);
+        if (createTypeStubAction) {
+            codeActions.push(createTypeStubAction);
+        }
 
         for (const diagnostic of diags) {
             const rule = diagnostic.getRule();
@@ -357,8 +360,7 @@ export class CodeActionProvider {
         );
     }
 
-    private static _createTypeStubActions(workspace: Workspace, fileUri: Uri, diags: Diagnostic[]) {
-        const codeActions: CodeAction[] = [];
+    private static _createTypeStubAction(workspace: Workspace, fileUri: Uri, diags: Diagnostic[]) {
         const typeStubDiag = diags.find((d) => {
             const actions = d.getActions();
             return actions && actions.find((a) => a.action === Commands.createTypeStub);
@@ -380,10 +382,10 @@ export class CodeActionProvider {
                     ),
                     CodeActionKind.QuickFix
                 );
-                codeActions.push(createTypeStubAction);
+                return createTypeStubAction;
             }
         }
-        return codeActions;
+        return;
     }
 
     private static _removeSelfClsDefaultAction(
