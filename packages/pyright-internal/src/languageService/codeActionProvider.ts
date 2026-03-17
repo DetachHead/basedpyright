@@ -72,9 +72,9 @@ export class CodeActionProvider {
 
         const fs = ls.serviceProvider.fs();
 
-        codeActions.push(...this._addImportAction(workspace, fileUri, range, token, ls, lines, diags, parseTree));
+        codeActions.push(...this._addImportActions(workspace, fileUri, range, token, ls, lines, diags, parseTree));
 
-        codeActions.push(...this._createTypeStubAction(workspace, fileUri, diags));
+        codeActions.push(...this._createTypeStubActions(workspace, fileUri, diags));
 
         for (const diagnostic of diags) {
             const rule = diagnostic.getRule();
@@ -85,33 +85,41 @@ export class CodeActionProvider {
 
             if (rule === DiagnosticRule.reportImplicitOverride) {
                 codeActions.push(
-                    ...this._addOverrideAction(workspace, fileUri, line, token, ls, fs, lines, parseResults)
+                    ...this._addOverrideActions(workspace, fileUri, line, token, ls, fs, lines, parseResults)
                 );
             }
 
             if (rule === DiagnosticRule.reportUnnecessaryCast) {
                 codeActions.push(
-                    ...this._removeUnnecessaryCastAction(workspace, fileUri, ls, fs, lines, parseTree, diagnostic.range)
+                    ...this._removeUnnecessaryCastActions(
+                        workspace,
+                        fileUri,
+                        ls,
+                        fs,
+                        lines,
+                        parseTree,
+                        diagnostic.range
+                    )
                 );
             }
 
             if (rule === DiagnosticRule.reportUnusedCallResult) {
-                codeActions.push(...this._addAssignToUnderscoreAction(fileUri, ls, fs, diagnostic.range));
+                codeActions.push(...this._addAssignToUnderscoreActions(fileUri, ls, fs, diagnostic.range));
             }
 
             if (rule === DiagnosticRule.reportSelfClsDefault) {
                 codeActions.push(
-                    ...this._removeSelfClsDefaultAction(fileUri, ls, fs, lines, parseTree, diagnostic.range)
+                    ...this._removeSelfClsDefaultActions(fileUri, ls, fs, lines, parseTree, diagnostic.range)
                 );
             }
         }
 
-        codeActions.push(...this._addIgnoreCommentAction(fileUri, ls, fs, lines, diags, parseResults));
+        codeActions.push(...this._addIgnoreCommentActions(fileUri, ls, fs, lines, diags, parseResults));
 
         return codeActions;
     }
 
-    private static _addAssignToUnderscoreAction(
+    private static _addAssignToUnderscoreActions(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -137,7 +145,7 @@ export class CodeActionProvider {
         ];
     }
 
-    private static _addIgnoreCommentAction(
+    private static _addIgnoreCommentActions(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -201,7 +209,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _addImportAction(
+    private static _addImportActions(
         workspace: Workspace,
         fileUri: Uri,
         range: Range,
@@ -277,7 +285,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _addOverrideAction(
+    private static _addOverrideActions(
         workspace: Workspace,
         fileUri: Uri,
         line: number,
@@ -356,7 +364,7 @@ export class CodeActionProvider {
         );
     }
 
-    private static _createTypeStubAction(workspace: Workspace, fileUri: Uri, diags: Diagnostic[]) {
+    private static _createTypeStubActions(workspace: Workspace, fileUri: Uri, diags: Diagnostic[]) {
         const codeActions: CodeAction[] = [];
         const typeStubDiag = diags.find((d) => {
             const actions = d.getActions();
@@ -385,7 +393,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _removeSelfClsDefaultAction(
+    private static _removeSelfClsDefaultActions(
         fileUri: Uri,
         ls: LanguageServerInterface,
         fs: FileSystem,
@@ -442,7 +450,7 @@ export class CodeActionProvider {
         return codeActions;
     }
 
-    private static _removeUnnecessaryCastAction(
+    private static _removeUnnecessaryCastActions(
         workspace: Workspace,
         fileUri: Uri,
         ls: LanguageServerInterface,
