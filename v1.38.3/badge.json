@@ -1,0 +1,6 @@
+{
+  "label": "",
+  "message": "basedpyright",
+  "logoSvg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" width=\"85\" height=\"85\"><path d=\"M0 0 C8.25 0 16.5 0 25 0 C25 8.25 25 16.5 25 25 C16.75 25 8.5 25 0 25 C0 16.75 0 8.5 0 0 Z \" fill=\"#FFC105\" transform=\"translate(60,30)\"/><path d=\"M0 0 C8.25 0 16.5 0 25 0 C25 8.25 25 16.5 25 25 C16.75 25 8.5 25 0 25 C0 16.75 0 8.5 0 0 Z \" fill=\"#FFC105\" transform=\"translate(30,30)\"/><path d=\"M0 0 C8.25 0 16.5 0 25 0 C25 8.25 25 16.5 25 25 C16.75 25 8.5 25 0 25 C0 16.75 0 8.5 0 0 Z \" fill=\"#FFC105\" transform=\"translate(0,30)\"/></svg>",
+  "color": "#000111"
+}
