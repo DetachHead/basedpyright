@@ -84,25 +84,36 @@ export class CodeActionProvider {
             const line = diagnostic.range.start.line;
 
             if (rule === DiagnosticRule.reportImplicitOverride) {
-                codeActions.push(
-                    ...this._addOverrideAction(workspace, fileUri, line, token, ls, fs, lines, parseResults)
-                );
+                const action = this._addOverrideAction(workspace, fileUri, line, token, ls, fs, lines, parseResults);
+                if (action) {
+                    codeActions.push(action);
+                }
             }
 
             if (rule === DiagnosticRule.reportUnnecessaryCast) {
-                codeActions.push(
-                    ...this._removeUnnecessaryCastAction(workspace, fileUri, ls, fs, lines, parseTree, diagnostic.range)
+                const action = this._removeUnnecessaryCastAction(
+                    workspace,
+                    fileUri,
+                    ls,
+                    fs,
+                    lines,
+                    parseTree,
+                    diagnostic.range
                 );
+                if (action) {
+                    codeActions.push(action);
+                }
             }
 
             if (rule === DiagnosticRule.reportUnusedCallResult) {
-                codeActions.push(...this._addAssignToUnderscoreAction(fileUri, ls, fs, diagnostic.range));
+                codeActions.push(this._addAssignToUnderscoreAction(fileUri, ls, fs, diagnostic.range));
             }
 
             if (rule === DiagnosticRule.reportSelfClsDefault) {
-                codeActions.push(
-                    ...this._removeSelfClsDefaultAction(fileUri, ls, fs, lines, parseTree, diagnostic.range)
-                );
+                const action = this._removeSelfClsDefaultAction(fileUri, ls, fs, lines, parseTree, diagnostic.range);
+                if (action) {
+                    codeActions.push(action);
+                }
             }
         }
 
@@ -121,20 +132,18 @@ export class CodeActionProvider {
         // Insert an edit at the start of the diagnostic range
         const position = range.start;
         const insertText = '_ = ';
-        return [
-            CodeAction.create(
-                Localizer.CodeAction.assignToUnderscore(),
-                convertToWorkspaceEdit(
-                    ls.convertUriToLspUriString,
-                    fs,
-                    convertToFileTextEdits(
-                        fileUri,
-                        convertToTextEditActions([{ newText: insertText, range: { start: position, end: position } }])
-                    )
-                ),
-                CodeActionKind.QuickFix
+        return CodeAction.create(
+            Localizer.CodeAction.assignToUnderscore(),
+            convertToWorkspaceEdit(
+                ls.convertUriToLspUriString,
+                fs,
+                convertToFileTextEdits(
+                    fileUri,
+                    convertToTextEditActions([{ newText: insertText, range: { start: position, end: position } }])
+                )
             ),
-        ];
+            CodeActionKind.QuickFix
+        );
     }
 
     private static _addIgnoreCommentActions(
@@ -287,20 +296,18 @@ export class CodeActionProvider {
         lines: TextRangeCollection<TextRange>,
         parseResults: ParseFileResults
     ) {
-        const codeActions: CodeAction[] = [];
-
         const lineText = lines.getItemAt(line);
         const methodLineContent = parseResults.text.substring(lineText.start, lineText.start + lineText.length);
 
         const functionLine = { line: line, character: 0 };
         const offset = convertPositionToOffset(functionLine, lines);
         if (offset === undefined) {
-            return [];
+            return;
         }
 
         const node = findNodeByOffset(parseResults.parserOutput.parseTree, offset);
         if (node === undefined) {
-            return [];
+            return;
         }
 
         const completer = this._createCompleter(workspace, fileUri, token, node, lines);
@@ -315,20 +322,14 @@ export class CodeActionProvider {
         );
 
         if (overrideEdits.length > 0) {
-            codeActions.push(
-                CodeAction.create(
-                    Localizer.CodeAction.addExplicitOverride(),
-                    convertToWorkspaceEdit(
-                        ls.convertUriToLspUriString,
-                        fs,
-                        convertToFileTextEdits(fileUri, overrideEdits)
-                    ),
-                    CodeActionKind.QuickFix
-                )
+            return CodeAction.create(
+                Localizer.CodeAction.addExplicitOverride(),
+                convertToWorkspaceEdit(ls.convertUriToLspUriString, fs, convertToFileTextEdits(fileUri, overrideEdits)),
+                CodeActionKind.QuickFix
             );
         }
 
-        return codeActions;
+        return;
     }
 
     private static _createCompleter(
@@ -394,13 +395,12 @@ export class CodeActionProvider {
         range: Range
     ) {
         // remove the default value from 'self' or 'cls' parameter
-        const codeActions: CodeAction[] = [];
         const lineText = lines.getItemAt(range.start.line);
         let paramNode = findNodeByOffset(parseTree, range.start.character + lineText.start);
         let editStartOffset: number | undefined;
         let editEndOffset: number | undefined;
         if (!paramNode) {
-            return [];
+            return;
         }
         while (paramNode?.nodeType !== ParseNodeType.Parameter) {
             paramNode = paramNode?.parent;
@@ -419,27 +419,23 @@ export class CodeActionProvider {
         }
 
         if (!paramName || editStartOffset === undefined || editEndOffset === undefined) {
-            return [];
+            return;
         }
 
         const startPos = convertOffsetToPosition(editStartOffset, lines);
         const endPos = convertOffsetToPosition(editEndOffset, lines);
-        codeActions.push(
-            CodeAction.create(
-                Localizer.CodeAction.removeParamDefault().format({ paramName }),
-                convertToWorkspaceEdit(
-                    ls.convertUriToLspUriString,
-                    fs,
-                    convertToFileTextEdits(
-                        fileUri,
-                        convertToTextEditActions([{ newText: '', range: { start: startPos, end: endPos } }])
-                    )
-                ),
-                CodeActionKind.QuickFix
-            )
+        return CodeAction.create(
+            Localizer.CodeAction.removeParamDefault().format({ paramName }),
+            convertToWorkspaceEdit(
+                ls.convertUriToLspUriString,
+                fs,
+                convertToFileTextEdits(
+                    fileUri,
+                    convertToTextEditActions([{ newText: '', range: { start: startPos, end: endPos } }])
+                )
+            ),
+            CodeActionKind.QuickFix
         );
-
-        return codeActions;
     }
 
     private static _removeUnnecessaryCastAction(
@@ -452,12 +448,11 @@ export class CodeActionProvider {
         range: Range
     ) {
         // Suggestion to remove the cast call
-        const codeActions: CodeAction[] = [];
         const lineText = lines.getItemAt(range.start.line);
 
         let node = findNodeByOffset(parseTree, range.start.character + lineText.start);
         if (!node) {
-            return [];
+            return;
         }
         while (node) {
             if (node.nodeType === ParseNodeType.Call) {
@@ -478,7 +473,7 @@ export class CodeActionProvider {
             node = node.parent;
         }
         if (!node || node.nodeType !== ParseNodeType.Call) {
-            return [];
+            return;
         }
 
         const valueArg = node.d.args[1];
@@ -493,31 +488,29 @@ export class CodeActionProvider {
             end: convertOffsetToPosition(node.start + node.length, lines),
         };
         if (valueStartPosition && valueEndPosition) {
-            codeActions.push(
-                CodeAction.create(
-                    Localizer.CodeAction.removeUnnecessaryCast(),
-                    convertToWorkspaceEdit(
-                        ls.convertUriToLspUriString,
-                        fs,
-                        convertToFileTextEdits(
-                            fileUri,
-                            convertToTextEditActions([
-                                {
-                                    newText: '',
-                                    range: castCallOpeningRange,
-                                },
-                                {
-                                    newText: '',
-                                    range: castCallClosingRange,
-                                },
-                            ])
-                        )
-                    ),
-                    CodeActionKind.QuickFix
-                )
+            return CodeAction.create(
+                Localizer.CodeAction.removeUnnecessaryCast(),
+                convertToWorkspaceEdit(
+                    ls.convertUriToLspUriString,
+                    fs,
+                    convertToFileTextEdits(
+                        fileUri,
+                        convertToTextEditActions([
+                            {
+                                newText: '',
+                                range: castCallOpeningRange,
+                            },
+                            {
+                                newText: '',
+                                range: castCallClosingRange,
+                            },
+                        ])
+                    )
+                ),
+                CodeActionKind.QuickFix
             );
         }
 
-        return codeActions;
+        return;
     }
 }
