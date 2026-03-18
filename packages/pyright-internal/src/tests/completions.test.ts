@@ -2343,6 +2343,50 @@ describe('useTypingExtensions', () => {
     });
 });
 
+test('typing_extensions auto-import should be placed in third-party section', async () => {
+    const code = `
+// @filename: pyrightconfig.json
+//// { "pythonVersion": "3.10" }
+
+// @filename: test.py
+//// from unittest import TestCase[|/*importMarker*/|]
+////
+//// [|override/*marker*/|]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    // If it's stdlib, it will be placed alphabetically before unittest (old bugged behavior)
+    await state.verifyCompletion(
+        'included',
+        'markdown',
+        {
+            ['marker']: {
+                completions: [
+                    {
+                        label: 'override',
+                        kind: CompletionItemKind.Function,
+                        detail: 'Auto-import',
+                        textEdit: {
+                            range: state.getPositionRange('marker'),
+                            newText: 'override',
+                        },
+                        additionalTextEdits: [
+                            {
+                                range: state.getPositionRange('importMarker'),
+                                newText: '\n\nfrom typing_extensions import override',
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        undefined,
+        undefined,
+        false
+    );
+});
+
 test('import from stdlib package', async () => {
     const code = `
 // @filename: test.py
