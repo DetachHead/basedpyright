@@ -1209,6 +1209,11 @@ export class ImportResolver {
                         execEnv.pythonPlatform
                     )
                 ) {
+                    // typeshed says that 'typing_extensions' is stdlib
+                    // so we fix that with this special case
+                    if (moduleName === 'typing_extensions') {
+                        importType = ImportType.ThirdParty;
+                    }
                     return {
                         moduleName,
                         importType,
