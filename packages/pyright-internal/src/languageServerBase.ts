@@ -171,6 +171,7 @@ import { convertOffsetToPosition, convertPositionToOffset } from './common/posit
 import { findNodeByOffset } from './analyzer/parseTreeUtils';
 import { ParseNodeType } from './parser/parseNodes';
 import { StringTokenFlags } from './parser/tokenizerTypes';
+import toSpliced from '@core-js/pure/es/array/to-spliced';
 
 const UncomputedDiagnosticsVersion = -1;
 
@@ -1405,7 +1406,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         const changeStructure = params.change.cells?.structure;
         if (changeStructure) {
             const previousCells = [...openCells];
-            const newCells = openCells.toSpliced(
+
+            const newCells = toSpliced(
+                // @ts-expect-error https://github.com/zloirock/core-js/issues/1532
+                openCells,
                 changeStructure.array.start,
                 changeStructure.array.deleteCount,
                 ...(changeStructure.array.cells?.map((changedTextDocumentItem) => {

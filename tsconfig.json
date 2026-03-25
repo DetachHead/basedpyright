@@ -3,8 +3,10 @@
         "target": "es2021",
         "module": "node16",
         "lib": [
-            // TODO: change this back to match upstream (es2020) or figure out a good way to polyfill https://github.com/DetachHead/basedpyright/issues/1106
-            "es2023"
+            "es2020"
+        ],
+        "types": [
+            "@core-js/types/pure"
         ],
         "skipLibCheck": true,
         "esModuleInterop": true,
