@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1934,7 +1934,7 @@
 <li><code># type:ignore</code> comments will always suppress all errors on the line, regardless of what diagnostic rules are specified in brackets.</li>
 <li><code># type:ignore</code> comments are not checked to ensure that the specified rule is valid:
   <div class="highlight"><pre><span></span><code><span class="c1"># No error here, even though you are suppressing an invalid diagnostic code.</span>
-<span class="mi">1</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span> <span class="c1"># type:ignore[asdf]</span>
+<span class="mi">1</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># type:ignore[asdf]</span>
 </code></pre></div>
   This decision was probably made to support other type checkers like mypy which use different codes to Pyright, but in that case, you should just disable <code>enableTypeIgnoreComments</code> to prevent Pyright from looking at them.</li>
 </ul>

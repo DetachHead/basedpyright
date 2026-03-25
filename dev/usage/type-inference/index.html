@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2361,11 +2361,11 @@
 <p>When a parameter or variable is annotated with a type, the type checker verifies that all values assigned to that parameter or variable conform to that type.</p>
 <p>Consider the following example:
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p3</span><span class="p">,</span> <span class="o">**</span><span class="n">p4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">var1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">p1</span>    <span class="c1"># This is a type violation</span>
-    <span class="n">var2</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">p2</span>    <span class="c1"># This is allowed because the types match</span>
-    <span class="n">var2</span><span class="p">:</span> <span class="nb">int</span>         <span class="c1"># This is an error because it redeclares var2</span>
-    <span class="n">var3</span> <span class="o">=</span> <span class="n">p1</span>         <span class="c1"># var3 does not have a declared type</span>
-    <span class="k">return</span> <span class="n">var1</span>       <span class="c1"># This is a type violation</span>
+    <span class="n">var1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">p1</span>  <span class="c1"># This is a type violation</span>
+    <span class="n">var2</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">p2</span>  <span class="c1"># This is allowed because the types match</span>
+    <span class="n">var2</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># This is an error because it redeclares var2</span>
+    <span class="n">var3</span> <span class="o">=</span> <span class="n">p1</span>  <span class="c1"># var3 does not have a declared type</span>
+    <span class="k">return</span> <span class="n">var1</span>  <span class="c1"># This is a type violation</span>
 </code></pre></div></p>
 <table>
 <thead>
@@ -2435,12 +2435,13 @@
 <p>If a symbol’s type cannot be inferred, Pyright sets its type to “Unknown”, which is a special form of “Any”. The “Unknown” type allows Pyright to optionally warn when types are not declared and cannot be inferred, thus leaving potential “blind spots” in type checking. </p>
 <h4 id="single-assignment-type-inference">Single-Assignment Type Inference</h4>
 <p>The simplest form of type inference is one that involves a single assignment to a symbol. The inferred type comes from the type of the source expression. Examples include:</p>
-<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="mi">3</span>                        <span class="c1"># Inferred type is int</span>
-<span class="n">var2</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span>                     <span class="c1"># Inferred type is str</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>                   <span class="c1"># Inferred type is list[Unknown]</span>
-<span class="n">var4</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>                   <span class="c1"># Inferred type is list[int]</span>
-<span class="k">for</span> <span class="n">var5</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span> <span class="o">...</span>         <span class="c1"># Inferred type is int</span>
-<span class="n">var6</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>   <span class="c1"># Inferred type is list[int]</span>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Inferred type is int</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span>  <span class="c1"># Inferred type is str</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>  <span class="c1"># Inferred type is list[Unknown]</span>
+<span class="n">var4</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>  <span class="c1"># Inferred type is list[int]</span>
+<span class="k">for</span> <span class="n">var5</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span>
+    <span class="o">...</span>  <span class="c1"># Inferred type is int</span>
+<span class="n">var6</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>  <span class="c1"># Inferred type is list[int]</span>
 </code></pre></div>
 <h4 id="multi-assignment-type-inference">Multi-Assignment Type Inference</h4>
 <p>When a symbol is assigned values in multiple places within the code, those values may have different types. The inferred type of the variable is the union of all such types.</p>
@@ -2451,6 +2452,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">do_something</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">var1</span> <span class="o">=</span> <span class="n">val</span>
+
 
 <span class="c1"># In this example, symbol var2 has an inferred type of `Foo | None`.</span>
 <span class="k">if</span> <span class="n">__debug__</span><span class="p">:</span>
@@ -2465,11 +2467,11 @@
 <p>As we saw above, the type of the expression <code>[]</code> is ambiguous, but if this expression is passed as an argument to a function, and the corresponding parameter is annotated with the type <code>list[int]</code>, Pyright can now assume that the type of <code>[]</code> in this context must be <code>list[int]</code>. Ambiguity eliminated!</p>
 <p>This technique is called “bidirectional inference” because type inference for an assignment normally proceeds by first determining the type of the right-hand side (RHS) of the assignment, which then informs the type of the left-hand side (LHS) of the assignment. With bidirectional inference, if the LHS of an assignment has a declared type, it can influence the inferred type of the RHS.</p>
 <p>Let’s look at a few examples:</p>
-<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>                       <span class="c1"># Type of RHS is ambiguous</span>
-<span class="n">var2</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>            <span class="c1"># Type of LHS now makes type of RHS unambiguous</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>                      <span class="c1"># Type is assumed to be list[int] </span>
-<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>         <span class="c1"># Type of RHS is now list[float]</span>
-<span class="n">var5</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)</span>                     <span class="c1"># Type is assumed to be tuple[Literal[3]]</span>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Type of RHS is ambiguous</span>
+<span class="n">var2</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Type of LHS now makes type of RHS unambiguous</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>  <span class="c1"># Type is assumed to be list[int]</span>
+<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>  <span class="c1"># Type of RHS is now list[float]</span>
+<span class="n">var5</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)</span>  <span class="c1"># Type is assumed to be tuple[Literal[3]]</span>
 <span class="n">var6</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)</span>  <span class="c1"># Type of RHS is now tuple[float, ...]</span>
 </code></pre></div>
 <h4 id="empty-list-and-dictionary-type-inference">Empty List and Dictionary Type Inference</h4>
@@ -2479,7 +2481,7 @@
 <span class="k">else</span><span class="p">:</span>
     <span class="n">my_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]</span>
 
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">my_list</span><span class="p">)</span> <span class="c1"># list[str]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">my_list</span><span class="p">)</span>  <span class="c1"># list[str]</span>
 </code></pre></div>
 <h4 id="return-type-inference">Return Type Inference</h4>
 <p>As with variable assignments, function return types can be inferred from the <code>return</code> statements found within that function. The returned type is assumed to be the union of all types returned from all <code>return</code> statements. If a <code>return</code> statement is not followed by an expression, it is assumed to return <code>None</code>. Likewise, if the function does not end in a <code>return</code> statement, and the end of the function is reachable, an implicit <code>return None</code> is assumed.</p>
@@ -2487,6 +2489,7 @@
 <span class="c1"># return (at the end). It does not have a declared return type,</span>
 <span class="c1"># so Pyright infers its return type based on the return expressions.</span>
 <span class="c1"># In this case, the inferred return type is `str | bool | None`.</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
@@ -2510,13 +2513,14 @@
 <p>both <code>Never</code> and <code>NoReturn</code> mean the exact same thing. <code>Never</code> was added in python 3.11 when they realized that it doesn't just mean "a function that doesn't return a value", because it can be used in any situation to refer to narrowest possible type, eg. to validate that all possible types have been narrowed out of a union:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_never</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="o">...</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="o">...</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">assert_never</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># will report a type error if any type is unaccounted for</span>
+        <span class="n">assert_never</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># will report a type error if any type is unaccounted for</span>
 </code></pre></div>
 <p>this is because <code>assert_never</code> takes <code>Never</code> as a parameter:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assert_never</span><span class="p">(</span><span class="n">arg</span><span class="p">:</span> <span class="n">Never</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Never</span><span class="p">:</span> <span class="o">...</span>
@@ -2530,6 +2534,7 @@
 <span class="c1"># on the information provided because the types of parameters</span>
 <span class="c1"># a and b are unknown. In this case, the inferred return</span>
 <span class="c1"># type is `Unknown | None`.</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">c</span><span class="p">:</span>
@@ -2554,13 +2559,13 @@
 <p>For class methods, the first parameter (named <code>cls</code> by convention) is inferred to be type <code>type[Self]</code>.</p>
 <p>For other unannotated parameters within a method, Pyright looks for a method of the same name implemented in a base class. If the corresponding method in the base class has the same signature (the same number of parameters with the same names), no overloads, and annotated parameter types, the type annotation from this method is “inherited” for the corresponding parameter in the child class method.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">method1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">a</span>
+
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">method1</span><span class="p">)</span>  <span class="c1"># (self: Child, a: int, b: str) -&gt; int</span>
 </code></pre></div>
@@ -2569,21 +2574,21 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="k">pass</span>
 
+
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>  <span class="c1"># (a: Unknown, b: int, c: Unknown | None) -&gt; None</span>
 </code></pre></div>
 <p>This inference technique also applies to lambdas whose input parameters include default arguments.</p>
-<div class="highlight"><pre><span></span><code><span class="n">cb</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="n">x</span>
+<div class="highlight"><pre><span></span><code><span class="n">cb</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="n">x</span>
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>  <span class="c1"># (x: str = &quot;&quot; -&gt; str)</span>
 </code></pre></div>
 <h4 id="literals">Literals</h4>
 <p>Python 3.8 introduced support for <em>literal types</em>. This allows a type checker like Pyright to track specific literal values of str, bytes, int, bool, and enum values. As with other types, literal types can be declared.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># This function is allowed to return only values 1, 2 or 3.</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-    <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span> <span class="o">...</span>
+
 
 <span class="c1"># This function must be passed one of three specific string values.</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;rw&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;rw&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p>When Pyright is performing type inference, it generally does not infer literal types. Consider the following example:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># If Pyright inferred the type of var1 to be list[Literal[4]],</span>
@@ -2596,6 +2601,7 @@
 <p>When inferring the type of a tuple expression (in the absence of bidirectional inference hints), Pyright assumes that the tuple has a fixed length, and each tuple element is typed as specifically as possible.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># The inferred type is tuple[Literal[1], Literal[&quot;a&quot;], Literal[True]].</span>
 <span class="n">var1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="c1"># The inferred type is tuple[int, int].</span>
@@ -2624,15 +2630,15 @@
 </li>
 </ol>
 <p>These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).</p>
-<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>                       <span class="c1"># Infer list[Unknown]</span>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Infer list[Unknown]</span>
 
-<span class="n">var2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>                   <span class="c1"># Infer list[int]</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>  <span class="c1"># Infer list[int]</span>
 
 <span class="c1"># Type depends on strictListInference config setting</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>                 <span class="c1"># Infer list[Unknown] (off)</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>                 <span class="c1"># Infer list[int | float] (on)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>  <span class="c1"># Infer list[Unknown] (off)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>  <span class="c1"># Infer list[int | float] (on)</span>
 
-<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>    <span class="c1"># Infer list[float]</span>
+<span class="n">var4</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">]</span>  <span class="c1"># Infer list[float]</span>
 </code></pre></div>
 <h4 id="set-expressions">Set Expressions</h4>
 <p>When inferring the type of a set expression (in the absence of bidirectional inference hints), Pyright uses the following heuristics:</p>
@@ -2647,13 +2653,13 @@
 </li>
 </ol>
 <p>These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).</p>
-<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}</span>                   <span class="c1"># Infer set[int]</span>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}</span>  <span class="c1"># Infer set[int]</span>
 
 <span class="c1"># Type depends on strictSetInference config setting</span>
-<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>                 <span class="c1"># Infer set[Unknown] (off)</span>
-<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>                 <span class="c1"># Infer set[int | float] (on)</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>  <span class="c1"># Infer set[Unknown] (off)</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>  <span class="c1"># Infer set[int | float] (on)</span>
 
-<span class="n">var3</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>    <span class="c1"># Infer set[float]</span>
+<span class="n">var3</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">}</span>  <span class="c1"># Infer set[float]</span>
 </code></pre></div>
 <h4 id="dictionary-expressions">Dictionary Expressions</h4>
 <p>When inferring the type of a dictionary expression (in the absence of bidirectional inference hints), Pyright uses the following heuristics:</p>
@@ -2668,13 +2674,13 @@
 </ul>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{}</span>                       <span class="c1"># Infer dict[Unknown, Unknown]</span>
+<div class="highlight"><pre><span></span><code><span class="n">var1</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Infer dict[Unknown, Unknown]</span>
 
-<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>                  <span class="c1"># Infer dict[int, str]</span>
+<span class="n">var2</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>  <span class="c1"># Infer dict[int, str]</span>
 
 <span class="c1"># Type depends on strictDictionaryInference config setting</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>       <span class="c1"># Infer dict[str, Unknown] (off)</span>
-<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>       <span class="c1"># Infer dict[str, int | float] (on)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>  <span class="c1"># Infer dict[str, Unknown] (off)</span>
+<span class="n">var3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>  <span class="c1"># Infer dict[str, int | float] (on)</span>
 
 <span class="n">var4</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">3.4</span><span class="p">}</span>
 </code></pre></div>
@@ -2683,8 +2689,10 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># The type of var1 is (a: Unknown, b: Unknown) -&gt; Unknown.</span>
 <span class="n">var1</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
 
+
 <span class="c1"># This function takes a comparison function callback.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">float_sort</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">comp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]):</span> <span class="o">...</span>
+
 
 <span class="c1"># In this example, the types of the lambda’s input parameters</span>
 <span class="c1"># a and b can be inferred to be float because the float_sort</span>

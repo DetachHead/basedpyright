@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2318,23 +2318,24 @@
 <div class="highlight"><pre><span></span><code><span class="n">val_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span>
 <span class="n">val_int</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">complex</span><span class="p">,</span> <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># int | str | complex</span>
 
-    <span class="n">val</span> <span class="o">=</span> <span class="n">val_int</span> <span class="c1"># Type is narrowed to int</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># int</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">complex</span><span class="p">,</span> <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># int | str | complex</span>
+
+    <span class="n">val</span> <span class="o">=</span> <span class="n">val_int</span>  <span class="c1"># Type is narrowed to int</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># int</span>
 
     <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">val_str</span> <span class="c1"># Type is narrowed to str</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># str</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">val_str</span>  <span class="c1"># Type is narrowed to str</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># str</span>
 
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># int | str</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># int | str</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># int</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># int</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># str</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># str</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 </code></pre></div>
 <p>At the start of this function, the type checker knows nothing about <code>val</code> other than that its declared type is <code>float | str | complex</code>. Then it is assigned a value that has a known type of <code>int</code>. This is a legal assignment because <code>int</code> is considered a subclass of <code>float</code>. At the point in the code immediately after the assignment, the type checker knows that the type of <code>val</code> is an <code>int</code>. This is a “narrower” (more specific) type than <code>float | str | complex</code>. Type narrowing is applied whenever a symbol is assigned a new value.</p>
@@ -2388,20 +2389,26 @@
 </ul>
 <p>Expressions supported for type guards include simple names, member access chains (e.g. <code>a.b.c.d</code>), the unary <code>not</code> operator, the binary <code>and</code> and <code>or</code> operators, subscripts that are integer literals (e.g. <code>a[2]</code> or <code>a[-1]</code>), and call expressions. Other operators (such as arithmetic operators or other subscripts) are not supported.</p>
 <p>Some type guards are able to narrow in both the positive and negative cases. Positive cases are used in <code>if</code> statements, and negative cases are used in <code>else</code> statements. (Positive and negative cases are flipped if the type guard expression is preceded by a <code>not</code> operator.) In some cases, the type can be narrowed only in the positive or negative case but not both. Consider the following examples:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span> <span class="k">pass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Bar</span><span class="p">:</span> <span class="k">pass</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Bar</span><span class="p">:</span>
+    <span class="k">pass</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="n">Foo</span> <span class="o">|</span> <span class="n">Bar</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Bar</span><span class="p">):</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># Bar</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># Bar</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># Foo</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># Foo</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># float</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># float</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># float | None</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># float | None</span>
 </code></pre></div>
 <p>In the example of <code>func1</code>, the type was narrowed in both the positive and negative cases. In the example of <code>func2</code>, the type was narrowed only the positive case because the type of <code>val</code> might be either <code>float</code> (specifically, a value of 0.0) or <code>None</code> in the negative case.</p>
 <h3 id="aliased-conditional-expression">Aliased Conditional Expression</h3>
@@ -2411,17 +2418,17 @@
     <span class="n">is_str</span> <span class="o">=</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="k">if</span> <span class="n">is_str</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># str</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># str</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># None</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># None</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">):</span>
     <span class="n">is_str</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">is_str</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># bytes</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># bytes</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># str</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># str</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="n">is_str</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -2429,7 +2436,7 @@
     <span class="k">if</span> <span class="n">is_str</span><span class="p">:</span>
         <span class="c1"># This technique doesn&#39;t work for subscript expressions,</span>
         <span class="c1"># so x[0] is not narrowed in this case.</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># str | None</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># str | None</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func4</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
     <span class="n">is_str</span> <span class="o">=</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -2439,7 +2446,7 @@
         <span class="c1"># expression is assigned elsewhere. Here `x` is assigned</span>
         <span class="c1"># elsewhere in the function, so its type is not narrowed</span>
         <span class="c1"># in this case.</span>
-        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># str | None</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># str | None</span>
 
     <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </code></pre></div>
@@ -2449,27 +2456,31 @@
     <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">y</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="c1"># Error: &quot;y&quot; is possibly unbound</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c1"># Error: &quot;y&quot; is possibly unbound</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]):</span>
     <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">y</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="c1"># No error</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c1"># No error</span>
 </code></pre></div>
 <p>This can be especially useful when exhausting all members in an enum or types in a union.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Color</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">RED</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">BLUE</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">GREEN</span> <span class="o">=</span> <span class="mi">3</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">(</span><span class="n">color</span><span class="p">:</span> <span class="n">Color</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">color</span> <span class="o">==</span> <span class="n">Color</span><span class="o">.</span><span class="n">RED</span> <span class="ow">or</span> <span class="n">color</span> <span class="o">==</span> <span class="n">Color</span><span class="o">.</span><span class="n">BLUE</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;yes&quot;</span>
     <span class="k">elif</span> <span class="n">color</span> <span class="o">==</span> <span class="n">Color</span><span class="o">.</span><span class="n">GREEN</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;no&quot;</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func4</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -2482,18 +2493,18 @@
 <h3 id="narrowing-any">Narrowing Any</h3>
 <p>In general, the type <code>Any</code> is not narrowed. The only exceptions to this rule are the built-in <code>isinstance</code> and <code>issubclass</code> type guards, class pattern matching in “match” statements, and user-defined type guards. In all other cases, <code>Any</code> is left as is, even for assignments.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="mi">3</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="c1"># Any</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># Any</span>
 
 <span class="n">a</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="c1"># Any</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># Any</span>
 </code></pre></div>
 <p>The same applies to <code>Any</code> when it is used as a type argument.</p>
 <div class="highlight"><pre><span></span><code><span class="n">b</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="c1"># list[Any]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c1"># list[Any]</span>
 
 <span class="n">c</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
 <span class="n">b</span> <span class="o">=</span> <span class="n">c</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="c1"># list[Any]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c1"># list[Any]</span>
 </code></pre></div>
 <h3 id="narrowing-for-captured-variables">Narrowing for Captured Variables</h3>
 <p>If a variable’s type is narrowed in an outer scope and the variable is subsequently captured by an inner-scoped function or lambda, Pyright retains the narrowed type if it can determine that the value of the captured variable is not modified on any code path after the inner-scope function or lambda is defined and is not modified in another scope via a <code>nonlocal</code> or <code>global</code> binding.</p>
@@ -2521,16 +2532,17 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">_StrOrFloat</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">_StrOrFloat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_StrOrFloat</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
 
+
 <span class="c1"># The arguments for `a` and `b` are both `str`</span>
 <span class="n">v1</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="s2">&quot;hi&quot;</span><span class="p">,</span> <span class="s2">&quot;there&quot;</span><span class="p">)</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span> <span class="c1"># str</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span>  <span class="c1"># str</span>
 
 <span class="c1"># The arguments for `a` and `b` are both `float`</span>
 <span class="n">v2</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mf">1.3</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">)</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span> <span class="c1"># float</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>  <span class="c1"># float</span>
 
 <span class="c1"># The arguments for `a` and `b` are inconsistent types</span>
-<span class="n">v3</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mf">1.3</span><span class="p">,</span> <span class="s2">&quot;hi&quot;</span><span class="p">)</span> <span class="c1"># Error</span>
+<span class="n">v3</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mf">1.3</span><span class="p">,</span> <span class="s2">&quot;hi&quot;</span><span class="p">)</span>  <span class="c1"># Error</span>
 </code></pre></div>
 <h3 id="conditional-types-and-type-variables">Conditional Types and Type Variables</h3>
 <p>When checking the implementation of a function that uses type variables in its signature, the type checker must verify that type consistency is guaranteed. Consider the following example, where the input parameter and return type are both annotated with a type variable. The type checker must verify that if a caller passes an argument of type <code>str</code>, then all code paths must return a <code>str</code>. Likewise, if a caller passes an argument of type <code>float</code>, all code paths must return a <code>float</code>.</p>
@@ -2557,8 +2569,9 @@
         <span class="n">reveal_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>  <span class="c1"># Type[Self@Parent]</span>
         <span class="k">return</span> <span class="bp">cls</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
-     <span class="o">...</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span> <span class="o">...</span>
+
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="p">()</span><span class="o">.</span><span class="n">method1</span><span class="p">())</span>  <span class="c1"># Child</span>
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">method2</span><span class="p">())</span>  <span class="c1"># Type[Child]</span>
@@ -2596,26 +2609,28 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">my_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">my_var</span> <span class="o">=</span> <span class="s2">&quot;hi!&quot;</span>
 
+
 <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Class variable value of 0</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Class variable value of 0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Class variable value of 0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Class variable value of 0</span>
 
 <span class="n">A</span><span class="o">.</span><span class="n">my_var</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Updated class variable value of 1</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Updated class variable value of 1</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Updated class variable value of 1</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Updated class variable value of 1</span>
 
-<span class="n">a</span><span class="o">.</span><span class="n">my_method</span><span class="p">()</span> <span class="c1"># Writes to the instance variable my_var</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Class variable value of 1</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Instance variable value of &quot;hi!&quot;</span>
+<span class="n">a</span><span class="o">.</span><span class="n">my_method</span><span class="p">()</span>  <span class="c1"># Writes to the instance variable my_var</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Class variable value of 1</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Instance variable value of &quot;hi!&quot;</span>
 
 <span class="n">A</span><span class="o">.</span><span class="n">my_var</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Updated class variable value of 2</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span> <span class="c1"># Instance variable value of &quot;hi!&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Updated class variable value of 2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">my_var</span><span class="p">)</span>  <span class="c1"># Instance variable value of &quot;hi!&quot;</span>
 </code></pre></div>
 <p>Pyright differentiates between three types of variables: pure class variables, regular class variables, and pure instance variables.</p>
 <h4 id="pure-class-variables">Pure Class Variables</h4>
 <p>If a class variable is declared with a <code>ClassVar</code> annotation as described in <a href="https://peps.python.org/pep-0526/#class-and-instance-variable-annotations">PEP 526</a>, it is considered a “pure class variable” and cannot be overwritten by an instance variable of the same name.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span>
     <span class="n">x</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
@@ -2626,6 +2641,7 @@
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">class_method</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+
 
 <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
@@ -2649,6 +2665,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">class_method</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">z</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
 
+
 <span class="n">A</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">A</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">A</span><span class="o">.</span><span class="n">x</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">A</span><span class="o">.</span><span class="n">y</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">A</span><span class="o">.</span><span class="n">z</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># 0, 0, 0</span>
@@ -2670,6 +2687,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
 
+
 <span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># Error: &#39;x&#39; is not a class variable</span>
 
 <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">()</span>
@@ -2687,6 +2705,7 @@
     <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
 
+
 <span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;hi!&quot;</span>
     <span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Error: Incompatible type</span>
@@ -2696,6 +2715,7 @@
     <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
 
+
 <span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
     <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Type error: &#39;x&#39; cannot be redeclared with subtype because variable is mutable and therefore invariant</span>
     <span class="n">y</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Type error: &#39;y&#39; cannot be redeclared with an incompatible type</span>
@@ -2704,8 +2724,10 @@
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">:</span>
     <span class="n">x</span><span class="p">:</span> <span class="nb">object</span>
 
+
 <span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Parent</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># object</span>
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># object</span>
@@ -2714,8 +2736,10 @@
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">:</span>
     <span class="n">x</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
 
+
 <span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+
 
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Parent</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># object</span>
 <span class="n">reveal_type</span><span class="p">(</span><span class="n">Child</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># int</span>
@@ -2726,64 +2750,68 @@
 <div class="highlight"><pre><span></span><code><span class="n">S</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;S&quot;</span><span class="p">)</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">a</span> <span class="c1"># T refers to T@func</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="c1"># T@func</span>
 
-    <span class="n">c</span><span class="p">:</span> <span class="n">S</span> <span class="c1"># Error: S has no bound scope in this context</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">a</span>  <span class="c1"># T refers to T@func</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c1"># T@func</span>
+
+    <span class="n">c</span><span class="p">:</span> <span class="n">S</span>  <span class="c1"># Error: S has no bound scope in this context</span>
     <span class="k">return</span> <span class="n">b</span>
 </code></pre></div>
 <p>When a TypeVar or ParamSpec appears within parameter or return type annotations for a function and it is not already bound to an outer scope, it is normally bound to the function. As an exception to this rule, if the TypeVar or ParamSpec appears only within the return type annotation of the function and only within a single Callable in the return type, it is bound to that Callable rather than the function. This allows a function to return a generic Callable.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># T is bound to func1 because it appears in a parameter type annotation.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]:</span>
-    <span class="n">a</span><span class="p">:</span> <span class="n">T</span> <span class="c1"># OK because T is bound to func1</span>
+    <span class="n">a</span><span class="p">:</span> <span class="n">T</span>  <span class="c1"># OK because T is bound to func1</span>
+
 
 <span class="c1"># T is bound to the return callable rather than func2 because it appears</span>
 <span class="c1"># only within a return Callable.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]:</span>
-    <span class="n">a</span><span class="p">:</span> <span class="n">T</span> <span class="c1"># Error because T has no bound scope in this context</span>
+    <span class="n">a</span><span class="p">:</span> <span class="n">T</span>  <span class="c1"># Error because T has no bound scope in this context</span>
+
 
 <span class="c1"># T is bound to func3 because it appears outside of a Callable.</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="n">T</span><span class="p">:</span>
-    <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
+
 
 <span class="c1"># This scoping logic applies also to type aliases used within a return</span>
 <span class="c1"># type annotation. T is bound to the return Callable rather than func4.</span>
 <span class="n">Transform</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">S</span><span class="p">],</span> <span class="n">S</span><span class="p">]</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">func4</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Transform</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-    <span class="o">...</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">func4</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Transform</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span> <span class="o">...</span>
 </code></pre></div>
 <h3 id="type-annotation-comments">Type Annotation Comments</h3>
 <p>Versions of Python prior to 3.6 did not support type annotations for variables. Pyright honors type annotations found within a comment at the end of the same line where a variable is assigned.</p>
-<div class="highlight"><pre><span></span><code><span class="n">offsets</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># type: list[int]</span>
+<div class="highlight"><pre><span></span><code><span class="n">offsets</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># type: list[int]</span>
 
-<span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1"># type: int | str</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># type: int | str</span>
 </code></pre></div>
 <p>Future versions of Python will likely deprecate support for type annotation comments. The “reportTypeCommentUsage” diagnostic will report usage of such comments so they can be replaced with inline type annotations.</p>
 <h3 id="literal-math-inference">Literal Math Inference</h3>
 <p>When inferring the type of some unary and binary operations that involve operands with literal types, pyright computes the result of operations on the literal values, producing a new literal type in the process. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">y</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">]):</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># Literal[5, 8, 7, 10]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Literal[5, 8, 7, 10]</span>
 
     <span class="n">z</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># Literal[4, 7, 12, 21]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Literal[4, 7, 12, 21]</span>
 
     <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">|</span> <span class="n">y</span><span class="p">)</span> <span class="o">^</span> <span class="mi">1</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># Literal[4, 6]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Literal[4, 6]</span>
 
-    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span> <span class="o">**</span> <span class="n">y</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># Literal[1, 81, 2187]</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="n">y</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># Literal[1, 81, 2187]</span>
 </code></pre></div>
 <p>Literal math also works on <code>str</code> literals.</p>
-<div class="highlight"><pre><span></span><code><span class="n">reveal_type</span><span class="p">(</span><span class="s2">&quot;a&quot;</span> <span class="o">+</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span> <span class="c1"># Literal[&quot;ab&quot;]</span>
+<div class="highlight"><pre><span></span><code><span class="n">reveal_type</span><span class="p">(</span><span class="s2">&quot;a&quot;</span> <span class="o">+</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>  <span class="c1"># Literal[&quot;ab&quot;]</span>
 </code></pre></div>
 <p>The result of a literal math operation can result in large unions. Pyright limits the number of subtypes in the resulting union to 64. If the union grows beyond that, the corresponding non-literal type is inferred.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]):</span>
     <span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="c1"># Literal[1, 2, 3, 4, 5, 6, 8, 10, 9, 12, 15, 16, 20, 25]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c1"># Literal[1, 2, 3, 4, 5, 6, 8, 10, 9, 12, 15, 16, 20, 25]</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">x</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># int</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># int</span>
 </code></pre></div>
 <p>Literal math inference is disabled within loops and lambda expressions.</p>
 <h3 id="static-conditional-evaluation">Static Conditional Evaluation</h3>
@@ -2808,39 +2836,45 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="k">if</span> <span class="kc">False</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="ow">not</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s1">&#39;ENIAC&#39;</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;ENIAC&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">():</span>
     <span class="k">return</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">():</span>
     <span class="k">raise</span> <span class="bp">NotImplemented</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>Pyright can also detect code that is unreachable based on static type analysis. This analysis is based on the assumption that any provided type annotations are accurate.</p>
 <p>Here are some examples of code determined to be unreachable using type analysis.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">NoReturn</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">always_raise</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ValueError</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">():</span>
     <span class="n">always_raise</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unreachable&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;unreachable&quot;</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]):</span>
     <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>

@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2625,28 +2625,30 @@
         <span class="k">pass</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="c1"># mypy: object, pyright: str | int</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>  <span class="c1"># mypy: object, pyright: str | int</span>
 </code></pre></div>
 <h3 id="variable-type-declarations">Variable Type Declarations</h3>
 <p>Pyright treats variable type annotations as type declarations. If a variable is not annotated, pyright allows any value to be assigned to that variable, and its type is inferred to be the union of all assigned types.</p>
 <p>Mypy’s behavior for variables depends on whether <a href="https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-allow-redefinition"><code>--allow-redefinition</code></a> is specified. If redefinitions are not allowed, then mypy typically treats the first assignment (the one with the smallest line number) as though it is an implicit type declaration.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">condition</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1"># Mypy treats this as an implicit type declaration</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Mypy treats this as an implicit type declaration</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="c1"># Mypy treats this as an error because `x` is implicitly declared as `int`</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Mypy treats this as an error because `x` is implicitly declared as `int`</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Mypy provides some exceptions; this is not considered an implicit type declaration</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Mypy provides some exceptions; this is not considered an implicit type declaration</span>
 
     <span class="k">if</span> <span class="n">condition</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="c1"># This is not considered an error</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># This is not considered an error</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func3</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Mypy doesn&#39;t treat this as a declaration</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Mypy doesn&#39;t treat this as a declaration</span>
 
     <span class="k">if</span> <span class="n">condition</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="c1"># The type of `x` is declared as `list[int]`</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># The type of `x` is declared as `list[int]`</span>
 </code></pre></div>
 <p>Pyright’s behavior is more consistent, is conceptually simpler and more natural for Python developers, leads to fewer false positives, and eliminates the need for many otherwise-necessary variable type annotations.</p>
 <h3 id="class-and-instance-variable-inference">Class and Instance Variable Inference</h3>
@@ -2656,36 +2658,38 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">method2</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="c1"># Mypy treats this as an error because `x` is implicitly declared as `int`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Mypy treats this as an error because `x` is implicitly declared as `int`</span>
+
 
 <span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">()</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="c1"># pyright: int | str</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># pyright: int | str</span>
 
-<span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="c1"># Pyright allows this because the type of `x` is `int | str`</span>
-<span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mf">3.0</span> <span class="c1"># Pyright treats this as an error because the type of `x` is `int | str`</span>
+<span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Pyright allows this because the type of `x` is `int | str`</span>
+<span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mf">3.0</span>  <span class="c1"># Pyright treats this as an error because the type of `x` is `int | str`</span>
 </code></pre></div>
 <h3 id="class-and-instance-variable-enforcement">Class and Instance Variable Enforcement</h3>
 <p>Pyright distinguishes between “pure class variables”, “regular class variables”, and “pure instance variable”. For a detailed explanation, refer to <a href="../type-concepts-advanced/#class-and-instance-variables">this documentation</a>.</p>
 <p>Mypy does not distinguish between class variables and instance variables in all cases. This is a <a href="https://github.com/python/mypy/issues/240">known issue</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span>
-    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Regular class variable</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Pure class variable</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Regular class variable</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Pure class variable</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Pure instance variable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Pure instance variable</span>
+
 
 <span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">z</span><span class="p">)</span> <span class="c1"># pyright: error, mypy: no error</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># pyright: error, mypy: no error</span>
 </code></pre></div>
 <h3 id="assignment-based-type-narrowing">Assignment-based Type Narrowing</h3>
 <p>Pyright applies type narrowing for variable assignments. This is done regardless of whether the assignment statement includes a variable type annotation. Mypy skips assignment-based type narrowing when the target variable includes a type annotation. The consensus of the typing community is that mypy’s behavior here is inconsistent, and there are <a href="https://github.com/python/mypy/issues/2008">plans to eliminate this inconsistency</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="n">v1</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
 <span class="n">v1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span> <span class="c1"># mypy and pyright both reveal `list[int]`</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span>  <span class="c1"># mypy and pyright both reveal `list[int]`</span>
 
 <span class="n">v2</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span> <span class="c1"># mypy reveals `Sequence[int]` rather than `list[int]`</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>  <span class="c1"># mypy reveals `Sequence[int]` rather than `list[int]`</span>
 </code></pre></div>
 <h3 id="type-guards">Type Guards</h3>
 <p>Pyright supports several built-in type guards that mypy does not currently support. For a full list of type guard expression forms supported by pyright, refer to <a href="../type-concepts-advanced/#type-guards">this documentation</a>.</p>
@@ -2700,46 +2704,47 @@
 <div class="highlight"><pre><span></span><code><span class="n">b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
 
 <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="c1"># pyright: list[Any], mypy: list[Any]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c1"># pyright: list[Any], mypy: list[Any]</span>
 
 <span class="n">c</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
 <span class="n">b</span> <span class="o">=</span> <span class="n">c</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="c1"># pyright: list[Any], mypy: list[int]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>  <span class="c1"># pyright: list[Any], mypy: list[int]</span>
 </code></pre></div>
 <h3 id="inference-of-list-set-and-dict-expressions">Inference of List, Set, and Dict Expressions</h3>
 <p>Pyright’s inference rules for <a href="../type-inference/#list-expressions">list, set and dict expressions</a> differ from mypy’s when values with heterogeneous types are used. Mypy uses a join operator to combine the types. Pyright uses either an <code>Unknown</code> or a union depending on configuration settings. A join operator often produces a type that is not what was intended, and this leads to false positive errors.</p>
 <div class="highlight"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># mypy: list[object], pyright: list[Unknown] or list[int | float | str]</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># mypy: list[object], pyright: list[Unknown] or list[int | float | str]</span>
 </code></pre></div>
 <p>For these mutable container types, pyright does not retain literal types when inferring the container type. Mypy is inconsistent, sometimes retaining literal types and sometimes not.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">one</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">one</span><span class="p">)</span> <span class="c1"># Literal[1]</span>
-    <span class="n">reveal_type</span><span class="p">([</span><span class="n">one</span><span class="p">])</span> <span class="c1"># pyright: list[int], mypy: list[Literal[1]]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">one</span><span class="p">)</span>  <span class="c1"># Literal[1]</span>
+    <span class="n">reveal_type</span><span class="p">([</span><span class="n">one</span><span class="p">])</span>  <span class="c1"># pyright: list[int], mypy: list[Literal[1]]</span>
 
-    <span class="n">reveal_type</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Literal[1]</span>
-    <span class="n">reveal_type</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># pyright: list[int], mypy: list[int]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Literal[1]</span>
+    <span class="n">reveal_type</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># pyright: list[int], mypy: list[int]</span>
 </code></pre></div>
 <h3 id="inference-of-tuple-expressions">Inference of Tuple Expressions</h3>
 <p>Pyright’s inference rules for <a href="../type-inference/#tuple-expressions">tuple expressions</a> differ from mypy’s when tuple entries contain literals. Pyright retains these literal types, but mypy widens the types to their non-literal type. Pyright retains the literal types in this case because tuples are immutable, and more precise (narrower) types are almost always beneficial in this situation.</p>
 <div class="highlight"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">)</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># pyright: Literal[&quot;stop&quot;], mypy: str</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># pyright: Literal[&quot;stop&quot;], mypy: str</span>
 
-<span class="n">y</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="s2">&quot;go&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># mypy: type error</span>
+<span class="n">y</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="s2">&quot;go&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># mypy: type error</span>
 </code></pre></div>
 <h3 id="assignment-based-narrowing-for-literals">Assignment-Based Narrowing for Literals</h3>
 <p>When assigning a literal value to a variable, pyright narrows the type to reflect the literal. Mypy does not. Pyright retains the literal types in this case because more precise (narrower) types are typically beneficial and have little or no downside.</p>
 <div class="highlight"><pre><span></span><code><span class="n">x</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-<span class="n">x</span> <span class="o">=</span> <span class="s1">&#39;a&#39;</span>
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># pyright: Literal[&#39;a&#39;], mypy: str</span>
+<span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># pyright: Literal[&#39;a&#39;], mypy: str</span>
 </code></pre></div>
 <p>Pyright also supports “literal math” for simple operations involving literals.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">b</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]):</span>
     <span class="n">c</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="c1"># Literal[3, 4, 5]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>  <span class="c1"># Literal[3, 4, 5]</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">():</span>
     <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;hi&quot;</span> <span class="o">+</span> <span class="s2">&quot; there&quot;</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="c1"># Literal[&#39;hi there&#39;]</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>  <span class="c1"># Literal[&#39;hi there&#39;]</span>
 </code></pre></div>
 <h3 id="type-narrowing-for-asymmetric-descriptors">Type Narrowing for Asymmetric Descriptors</h3>
 <p>When pyright evaluates a write to a class variable that contains a descriptor object (including properties), it normally applies assignment-based type narrowing. However, when the descriptor is asymmetric — that is, its “getter” type is different from its “setter” type, pyright refrains from applying assignment-based type narrowing. For a full discussion of this, refer to <a href="https://github.com/python/mypy/issues/3004">this issue</a>. Mypy has not yet implemented the agreed-upon behavior, so its type narrowing behavior may differ from pyright’s in this case.</p>
@@ -2758,25 +2763,30 @@
 <h4 id="constraint-solver-literals">Constraint Solver: Literals</h4>
 <p>Pyright’s constraint solver retains literal types only when they are required to satisfy constraints. In other cases, it widens the type to a non-literal type. Mypy is inconsistent in its handling of literal types.</p>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">identity</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">x</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">one</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">one</span><span class="p">)</span> <span class="c1"># Literal[1]</span>
-    <span class="n">v1</span> <span class="o">=</span> <span class="n">identity</span><span class="p">(</span><span class="n">one</span><span class="p">)</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span> <span class="c1"># pyright: int, mypy: Literal[1]</span>
 
-    <span class="n">reveal_type</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># Literal[1]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">one</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">one</span><span class="p">)</span>  <span class="c1"># Literal[1]</span>
+    <span class="n">v1</span> <span class="o">=</span> <span class="n">identity</span><span class="p">(</span><span class="n">one</span><span class="p">)</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span>  <span class="c1"># pyright: int, mypy: Literal[1]</span>
+
+    <span class="n">reveal_type</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Literal[1]</span>
     <span class="n">v2</span> <span class="o">=</span> <span class="n">identity</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span> <span class="c1"># pyright: int, mypy: int</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>  <span class="c1"># pyright: int, mypy: int</span>
 </code></pre></div>
 <h4 id="constraint-solver-type-widening">Constraint Solver: Type Widening</h4>
 <p>As mentioned previously, pyright always uses unions rather than joins. Mypy typically uses joins. This applies to type widening during the constraint solving process.</p>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">val1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">val2</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="o">...</span>
 
-<span class="n">reveal_type</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="c1"># mypy: object, pyright: str | int</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">val1</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">val2</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
+
+
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># mypy: object, pyright: str | int</span>
 </code></pre></div>
 <h4 id="constraint-solver-ambiguous-solution-scoring">Constraint Solver: Ambiguous Solution Scoring</h4>
 <p>In cases where more than one solution is possible for a type variable, both pyright and mypy employ various heuristics to pick the “best” solution. These heuristics are complex and difficult to document in their fullness. Pyright’s general strategy is to return the “simplest” type that meets the constraints.</p>
@@ -2784,23 +2794,26 @@
 <p>Mypy produces errors with this sample.</p>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">make_list</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">T</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">y</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span><span class="p">):</span>
     <span class="n">v1</span> <span class="o">=</span> <span class="n">make_list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span> <span class="c1"># pyright: &quot;list[int]&quot; (&quot;list[list[T]]&quot; is also a valid answer)</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span>  <span class="c1"># pyright: &quot;list[int]&quot; (&quot;list[list[T]]&quot; is also a valid answer)</span>
 
     <span class="n">v2</span> <span class="o">=</span> <span class="n">make_list</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span> <span class="c1"># pyright: &quot;list[int | str]&quot; (&quot;list[list[str] | int]&quot; is also a valid answer)</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>  <span class="c1"># pyright: &quot;list[int | str]&quot; (&quot;list[list[str] | int]&quot; is also a valid answer)</span>
 </code></pre></div>
 <h3 id="value-constrained-type-variables">Value-Constrained Type Variables</h3>
 <p>When mypy analyzes a class or function that has in-scope value-constrained TypeVars, it analyzes the class or function multiple times, once for each constraint. This can produce multiple errors.</p>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">set</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">AnyStr</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="c1"># Mypy reveals 2 different types (&quot;str&quot; and &quot;bytes&quot;), pyright reveals &quot;AnyStr&quot;</span>
-    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="c1"># Mypy reports 4 errors</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># Mypy reveals 2 different types (&quot;str&quot; and &quot;bytes&quot;), pyright reveals &quot;AnyStr&quot;</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>  <span class="c1"># Mypy reports 4 errors</span>
 </code></pre></div>
 <p>Pyright cannot use the same multi-pass technique as mypy in this case. It needs to produce a single type for any given identifier to support language server features. Pyright instead uses a mechanism called <a href="../type-concepts-advanced/#conditional-types-and-type-variables">conditional types</a>. This approach allows pyright to handle some value-constrained TypeVar use cases that mypy cannot, but there are conversely other use cases that mypy can handle and pyright cannot.</p>
 <h3 id="unknown-type-and-strict-mode">“Unknown” Type and Strict Mode</h3>
@@ -2813,19 +2826,23 @@
 <div class="highlight"><pre><span></span><code><span class="nd">@overload</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
 
+
 <span class="nd">@overload</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">func1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func2</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-    <span class="n">reveal_type</span><span class="p">(</span><span class="n">func1</span><span class="p">(</span><span class="n">val</span><span class="p">))</span> <span class="c1"># mypy: Any, pyright: float</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">func1</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>  <span class="c1"># mypy: Any, pyright: float</span>
 </code></pre></div>
 <h3 id="import-statements">Import Statements</h3>
 <p>Pyright intentionally does not model implicit side effects of the Python import loading mechanism. In general, such side effects cannot be modeled statically because they depend on execution order. Dependency on such side effects leads to fragile code, so pyright treats these as errors. For more details, refer to <a href="../import-statements/">this documentation</a>.</p>
 <p>Mypy models side effects of the import loader that are potentially unsafe.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">http</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">():</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">http.cookies</span>
+
 
 <span class="c1"># The next line raises an exception at runtime</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">cookies</span>  <span class="c1"># mypy allows, pyright flags as error</span>
@@ -2839,13 +2856,19 @@
 <li>A class declaration that references a metaclass whose declaration depends on the class.</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">MetaA</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span> <span class="o">...</span>
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">MetaA</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">]):</span> <span class="o">...</span>
 </code></pre></div>
 <ol>
 <li>A class declaration that uses a TypeVar whose bound or constraint depends on the class.</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span> <span class="o">...</span>
 </code></pre></div>
 <ol>
@@ -2853,6 +2876,7 @@
 </ol>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">]:</span>
     <span class="k">return</span> <span class="n">x</span>
+
 
 <span class="nd">@my_decorator</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="p">:</span> <span class="o">...</span>
@@ -2864,7 +2888,7 @@
 <p>Mypy has full support for type comments. Pyright supports type comments only in locations where there is a way to provide an annotation using modern syntax. Pyright was written to assume Python 3.5 and newer, so support for older versions was not a priority.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># The following type comment is supported by</span>
 <span class="c1"># mypy but is rejected by pyright.</span>
-<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="c1"># type: (float, float)</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>  <span class="c1"># type: (float, float)</span>
 
 <span class="c1"># Using Python syntax from Python 3.6, this</span>
 <span class="c1"># would be annotated as follows:</span>
