@@ -32,8 +32,8 @@
         "source.organizeImports": "never"
     },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "typescript.enablePromptUseWorkspaceTsdk": true,
-    "typescript.tsdk": "node_modules/typescript/lib",
+    "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
     "editor.formatOnSave": true,
     "git.allowForcePush": true,
     "git.autofetch": "all",
@@ -88,8 +88,8 @@
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
     "ruff.nativeServer": true,
-    "typescript.inlayHints.parameterNames.enabled": "literals",
-    "typescript.inlayHints.enumMemberValues.enabled": true,
+    "js/ts.inlayHints.parameterNames.enabled": "literals",
+    "js/ts.inlayHints.enumMemberValues.enabled": true,
     // this is a hack to make the jest vscode extension use the venv's version of node (from nodejs-wheel),
     // since it ignores the PATH from terminal.integrated.env. this is not used when debugging tests.
     // the run config for that is in launch.json (vscode-jest-tests.v2)
