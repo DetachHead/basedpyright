@@ -137,6 +137,7 @@ import { getAutoImportText, getDocumentationPartsForTypeAndDecl } from './toolti
 import { ImportGroup } from '../analyzer/importStatementUtils';
 import { TextEditAction } from '../common/editAction';
 import { isMethodExemptFromLsp } from '../analyzer/constructors';
+import Set from '@core-js/pure/full/set';
 
 namespace Keywords {
     const base: string[] = [
@@ -517,13 +518,12 @@ export class CompletionProvider {
         }
 
         const symbolTable = new Map<string, Symbol>();
-        const metaclassMemberNames = new Set<string>();
+        let metaclassMemberNames = new Set<string>();
         for (let i = 1; i < classResults.classType.shared.mro.length; i++) {
             const mroClass = classResults.classType.shared.mro[i];
             if (isInstantiableClass(mroClass)) {
-                // would ideally use Set.union here https://github.com/DetachHead/basedpyright/issues/1106
-                getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false).forEach((member) =>
-                    metaclassMemberNames.add(member)
+                metaclassMemberNames = metaclassMemberNames.union(
+                    getMembersForClass(mroClass, symbolTable, /* includeInstanceVars */ false)
                 );
             }
         }

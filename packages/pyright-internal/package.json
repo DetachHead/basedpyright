@@ -20,6 +20,7 @@
     },
     "dependencies": {
         "@actions/core": "^1.10.1",
+        "@core-js/pure": "^4.0.0-alpha.1",
         "@jupyterlab/nbformat": "^4.3.5",
         "@yarnpkg/fslib": "2.10.4",
         "@yarnpkg/libzip": "2.3.0",
@@ -40,6 +41,7 @@
         "vscode-uri": "^3.1.0"
     },
     "devDependencies": {
+        "@core-js/types": "^4.0.0-alpha.1",
         "@types/command-line-args": "^5.2.3",
         "@types/diff": "^5.2.2",
         "@types/fs-extra": "^11.0.4",
