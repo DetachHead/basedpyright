@@ -9,8 +9,6 @@
  * from the same core functionality.
  */
 
-import './common/extensions';
-
 import {
     AbstractCancellationTokenSource,
     CallHierarchyIncomingCallsParams,

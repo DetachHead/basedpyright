@@ -10,8 +10,7 @@
         "typeRoots": ["./node_modules/@types", "../pyright-internal/typings"]
     },
     "include": [
-        "src/**/*",
-        "../pyright-internal/typings/*.d.ts"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules",
