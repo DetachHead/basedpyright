@@ -46,7 +46,7 @@ If the `reportUnnecessaryTypeIgnoreComment` configuration option is enabled, any
 - `# type:ignore` comments are not checked to ensure that the specified rule is valid:
   ```py
   # No error here, even though you are suppressing an invalid diagnostic code.
-  1 + "" # type:ignore[asdf]
+  1 + ""  # type:ignore[asdf]
   ```
   This decision was probably made to support other type checkers like mypy which use different codes to Pyright, but in that case, you should just disable `enableTypeIgnoreComments` to prevent Pyright from looking at them.
 

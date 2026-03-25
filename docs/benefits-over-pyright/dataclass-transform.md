@@ -27,14 +27,17 @@ to allow type checkers to add their own little hacks on top of the standard ones
     ```py
     from typing import dataclass_transform
 
+
     @dataclass_transform(skip_replace=True, frozen_default=True)
     def frozen[T: type](t: T) -> T:
         return dataclass(frozen=True, slots=True)(t)
+
 
     # check that this enables covariance:
     @frozen
     class Box[T]:
         value: T
+
 
     box1: Box[str] = Box("test")
     box2: Box[str | int] = box1

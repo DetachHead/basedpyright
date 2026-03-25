@@ -8,23 +8,24 @@ Pyright uses a technique called “type narrowing” to track the type of an exp
 val_str: str = "hi"
 val_int: int = 3
 
-def func(val: float | str | complex, test: bool):
-    reveal_type(val) # int | str | complex
 
-    val = val_int # Type is narrowed to int
-    reveal_type(val) # int
+def func(val: float | str | complex, test: bool):
+    reveal_type(val)  # int | str | complex
+
+    val = val_int  # Type is narrowed to int
+    reveal_type(val)  # int
 
     if test:
-        val = val_str # Type is narrowed to str
-        reveal_type(val) # str
-    
-    reveal_type(val) # int | str
+        val = val_str  # Type is narrowed to str
+        reveal_type(val)  # str
+
+    reveal_type(val)  # int | str
 
     if isinstance(val, int):
-        reveal_type(val) # int
+        reveal_type(val)  # int
         print(val)
     else:
-        reveal_type(val) # str
+        reveal_type(val)  # str
         print(val)
 ```
 
@@ -87,20 +88,26 @@ Expressions supported for type guards include simple names, member access chains
 Some type guards are able to narrow in both the positive and negative cases. Positive cases are used in `if` statements, and negative cases are used in `else` statements. (Positive and negative cases are flipped if the type guard expression is preceded by a `not` operator.) In some cases, the type can be narrowed only in the positive or negative case but not both. Consider the following examples:
 
 ```python
-class Foo: pass
-class Bar: pass
+class Foo:
+    pass
+
+
+class Bar:
+    pass
+
 
 def func1(val: Foo | Bar):
     if isinstance(val, Bar):
-        reveal_type(val) # Bar
+        reveal_type(val)  # Bar
     else:
-        reveal_type(val) # Foo
+        reveal_type(val)  # Foo
+
 
 def func2(val: float | None):
     if val:
-        reveal_type(val) # float
+        reveal_type(val)  # float
     else:
-        reveal_type(val) # float | None
+        reveal_type(val)  # float | None
 ```
 
 In the example of `func1`, the type was narrowed in both the positive and negative cases. In the example of `func2`, the type was narrowed only the positive case because the type of `val` might be either `float` (specifically, a value of 0.0) or `None` in the negative case.
@@ -116,9 +123,9 @@ def func1(x: str | None):
     is_str = x is not None
 
     if is_str:
-        reveal_type(x) # str
+        reveal_type(x)  # str
     else:
-        reveal_type(x) # None
+        reveal_type(x)  # None
 ```
 
 ```python
@@ -126,9 +133,9 @@ def func2(val: str | bytes):
     is_str = not isinstance(val, bytes)
 
     if not is_str:
-        reveal_type(val) # bytes
+        reveal_type(val)  # bytes
     else:
-        reveal_type(val) # str
+        reveal_type(val)  # str
 ```
 
 ```python
@@ -138,7 +145,7 @@ def func3(x: list[str | None]) -> str:
     if is_str:
         # This technique doesn't work for subscript expressions,
         # so x[0] is not narrowed in this case.
-        reveal_type(x[0]) # str | None
+        reveal_type(x[0])  # str | None
 ```
 
 ```python
@@ -150,8 +157,8 @@ def func4(x: str | None):
         # expression is assigned elsewhere. Here `x` is assigned
         # elsewhere in the function, so its type is not narrowed
         # in this case.
-        reveal_type(x) # str | None
-    
+        reveal_type(x)  # str | None
+
     x = ""
 ```
 
@@ -163,14 +170,15 @@ When an “if” or “elif” clause is used without a corresponding “else”
 def func1(x: int):
     if x == 1 or x == 2:
         y = True
-    
-    print(y) # Error: "y" is possibly unbound
+
+    print(y)  # Error: "y" is possibly unbound
+
 
 def func2(x: Literal[1, 2]):
     if x == 1 or x == 2:
         y = True
-    
-    print(y) # No error
+
+    print(y)  # No error
 ```
 
 This can be especially useful when exhausting all members in an enum or types in a union.
@@ -178,16 +186,19 @@ This can be especially useful when exhausting all members in an enum or types in
 ```python
 from enum import Enum
 
+
 class Color(Enum):
     RED = 1
     BLUE = 2
     GREEN = 3
+
 
 def func3(color: Color) -> str:
     if color == Color.RED or color == Color.BLUE:
         return "yes"
     elif color == Color.GREEN:
         return "no"
+
 
 def func4(value: str | int) -> str:
     if isinstance(value, str):
@@ -207,21 +218,21 @@ In general, the type `Any` is not narrowed. The only exceptions to this rule are
 
 ```python
 a: Any = 3
-reveal_type(a) # Any
+reveal_type(a)  # Any
 
 a = "hi"
-reveal_type(a) # Any
+reveal_type(a)  # Any
 ```
 
 The same applies to `Any` when it is used as a type argument.
 
 ```python
 b: Iterable[Any] = [1, 2, 3]
-reveal_type(b) # list[Any]
+reveal_type(b)  # list[Any]
 
 c: Iterable[str] = [""]
 b = c
-reveal_type(b) # list[Any]
+reveal_type(b)  # list[Any]
 ```
 
 ### Narrowing for Captured Variables
@@ -260,16 +271,17 @@ When a value-constrained TypeVar appears more than once within a function signat
 def add(a: _StrOrFloat, b: _StrOrFloat) -> _StrOrFloat:
     return a + b
 
+
 # The arguments for `a` and `b` are both `str`
 v1 = add("hi", "there")
-reveal_type(v1) # str
+reveal_type(v1)  # str
 
 # The arguments for `a` and `b` are both `float`
 v2 = add(1.3, 2.4)
-reveal_type(v2) # float
+reveal_type(v2)  # float
 
 # The arguments for `a` and `b` are inconsistent types
-v3 = add(1.3, "hi") # Error
+v3 = add(1.3, "hi")  # Error
 ```
 
 ### Conditional Types and Type Variables
@@ -301,15 +313,16 @@ class Parent:
     def method1(self):
         reveal_type(self)  # Self@Parent
         return self
-    
+
     @classmethod
     def method2(cls):
         reveal_type(cls)  # Type[Self@Parent]
         return cls
 
-class Child(Parent):
-     ...
-    
+
+class Child(Parent): ...
+
+
 reveal_type(Child().method1())  # Child
 reveal_type(Child.method2())  # Type[Child]
 ```
@@ -346,21 +359,22 @@ class A:
     def my_method(self):
         self.my_var = "hi!"
 
+
 a = A()
-print(A.my_var) # Class variable value of 0
-print(a.my_var) # Class variable value of 0
+print(A.my_var)  # Class variable value of 0
+print(a.my_var)  # Class variable value of 0
 
 A.my_var = 1
-print(A.my_var) # Updated class variable value of 1
-print(a.my_var) # Updated class variable value of 1
+print(A.my_var)  # Updated class variable value of 1
+print(a.my_var)  # Updated class variable value of 1
 
-a.my_method() # Writes to the instance variable my_var
-print(A.my_var) # Class variable value of 1
-print(a.my_var) # Instance variable value of "hi!"
+a.my_method()  # Writes to the instance variable my_var
+print(A.my_var)  # Class variable value of 1
+print(a.my_var)  # Instance variable value of "hi!"
 
 A.my_var = 2
-print(A.my_var) # Updated class variable value of 2
-print(a.my_var) # Instance variable value of "hi!"
+print(A.my_var)  # Updated class variable value of 2
+print(a.my_var)  # Instance variable value of "hi!"
 ```
 
 Pyright differentiates between three types of variables: pure class variables, regular class variables, and pure instance variables.
@@ -371,15 +385,17 @@ If a class variable is declared with a `ClassVar` annotation as described in [PE
 ```python
 from typing import ClassVar
 
+
 class A:
     x: ClassVar[int] = 0
 
     def instance_method(self):
         self.x = 1  # Type error: Cannot overwrite class variable
-    
+
     @classmethod
     def class_method(cls):
         cls.x = 1
+
 
 a = A()
 print(A.x)
@@ -402,10 +418,11 @@ class A:
     def instance_method(self):
         self.x = 1
         self.y = 2
-    
+
     @classmethod
     def class_method(cls):
         cls.z: int = 3
+
 
 A.y = 0
 A.z = 0
@@ -431,6 +448,7 @@ class A:
         self.x: int = 0
         self.y: int
 
+
 print(A.x)  # Error: 'x' is not a class variable
 
 a = A()
@@ -451,6 +469,7 @@ class Parent:
     x: int | str | None
     y: int
 
+
 class Child(Parent):
     x = "hi!"
     y = None  # Error: Incompatible type
@@ -463,6 +482,7 @@ class Parent:
     x: int | str | None
     y: int
 
+
 class Child(Parent):
     x: int  # Type error: 'x' cannot be redeclared with subtype because variable is mutable and therefore invariant
     y: str  # Type error: 'y' cannot be redeclared with an incompatible type
@@ -474,8 +494,10 @@ If a parent class declares the type of a class or instance variable and a derive
 class Parent:
     x: object
 
+
 class Child(Parent):
     x = 3
+
 
 reveal_type(Parent.x)  # object
 reveal_type(Child.x)  # object
@@ -487,8 +509,10 @@ If neither the parent nor the derived class declare the type of a class or insta
 class Parent:
     x = object()
 
+
 class Child(Parent):
     x = 3
+
 
 reveal_type(Parent.x)  # object
 reveal_type(Child.x)  # int
@@ -504,11 +528,12 @@ Pyright displays the bound scope for a type variable using an `@` symbol. For ex
 S = TypeVar("S")
 T = TypeVar("T")
 
-def func(a: T) -> T:
-    b: T = a # T refers to T@func
-    reveal_type(b) # T@func
 
-    c: S # Error: S has no bound scope in this context
+def func(a: T) -> T:
+    b: T = a  # T refers to T@func
+    reveal_type(b)  # T@func
+
+    c: S  # Error: S has no bound scope in this context
     return b
 ```
 
@@ -517,31 +542,34 @@ When a TypeVar or ParamSpec appears within parameter or return type annotations 
 ```python
 # T is bound to func1 because it appears in a parameter type annotation.
 def func1(a: T) -> Callable[[T], T]:
-    a: T # OK because T is bound to func1
+    a: T  # OK because T is bound to func1
+
 
 # T is bound to the return callable rather than func2 because it appears
 # only within a return Callable.
 def func2() -> Callable[[T], T]:
-    a: T # Error because T has no bound scope in this context
+    a: T  # Error because T has no bound scope in this context
+
 
 # T is bound to func3 because it appears outside of a Callable.
-def func3() -> Callable[[T], T] | T:
-    ...
+def func3() -> Callable[[T], T] | T: ...
+
 
 # This scoping logic applies also to type aliases used within a return
 # type annotation. T is bound to the return Callable rather than func4.
 Transform = Callable[[S], S]
-def func4() -> Transform[T]:
-    ...
+
+
+def func4() -> Transform[T]: ...
 ```
 
 ### Type Annotation Comments
 Versions of Python prior to 3.6 did not support type annotations for variables. Pyright honors type annotations found within a comment at the end of the same line where a variable is assigned.
 
 ```python
-offsets = [] # type: list[int]
+offsets = []  # type: list[int]
 
-self._target = 3 # type: int | str
+self._target = 3  # type: int | str
 ```
 
 Future versions of Python will likely deprecate support for type annotation comments. The “reportTypeCommentUsage” diagnostic will report usage of such comments so they can be replaced with inline type annotations.
@@ -553,22 +581,22 @@ When inferring the type of some unary and binary operations that involve operand
 ```python
 def func(x: Literal[1, 3], y: Literal[4, 7]):
     z = x + y
-    reveal_type(z) # Literal[5, 8, 7, 10]
+    reveal_type(z)  # Literal[5, 8, 7, 10]
 
     z = x * y
-    reveal_type(z) # Literal[4, 7, 12, 21]
+    reveal_type(z)  # Literal[4, 7, 12, 21]
 
     z = (x | y) ^ 1
-    reveal_type(z) # Literal[4, 6]
+    reveal_type(z)  # Literal[4, 6]
 
-    z = x ** y
-    reveal_type(z) # Literal[1, 81, 2187]
+    z = x**y
+    reveal_type(z)  # Literal[1, 81, 2187]
 ```
 
 Literal math also works on `str` literals.
 
 ```python
-reveal_type("a" + "b") # Literal["ab"]
+reveal_type("a" + "b")  # Literal["ab"]
 ```
 
 The result of a literal math operation can result in large unions. Pyright limits the number of subtypes in the resulting union to 64. If the union grows beyond that, the corresponding non-literal type is inferred.
@@ -576,9 +604,9 @@ The result of a literal math operation can result in large unions. Pyright limit
 ```python
 def func(x: Literal[1, 2, 3, 4, 5]):
     y = x * x
-    reveal_type(y) # Literal[1, 2, 3, 4, 5, 6, 8, 10, 9, 12, 15, 16, 20, 25]
+    reveal_type(y)  # Literal[1, 2, 3, 4, 5, 6, 8, 10, 9, 12, 15, 16, 20, 25]
     z = y * x
-    reveal_type(z) # int
+    reveal_type(z)  # int
 ```
 
 Literal math inference is disabled within loops and lambda expressions.
@@ -612,24 +640,26 @@ from typing import TYPE_CHECKING
 import sys
 
 if False:
-    print('unreachable')
+    print("unreachable")
 
 if not TYPE_CHECKING:
-    print('unreachable')
+    print("unreachable")
 
 if sys.version_info < (3, 0):
-    print('unreachable')
+    print("unreachable")
 
-if sys.platform == 'ENIAC':
-    print('unreachable')
+if sys.platform == "ENIAC":
+    print("unreachable")
+
 
 def func1():
     return
-    print('unreachable')
+    print("unreachable")
+
 
 def func2():
     raise NotImplemented
-    print('unreachable')
+    print("unreachable")
 ```
 
 Pyright can also detect code that is unreachable based on static type analysis. This analysis is based on the assumption that any provided type annotations are accurate.
@@ -639,16 +669,20 @@ Here are some examples of code determined to be unreachable using type analysis.
 ```python
 from typing import Literal, NoReturn
 
+
 def always_raise() -> NoReturn:
     raise ValueError
 
+
 def func1():
     always_raise()
-    print('unreachable')
+    print("unreachable")
+
 
 def func2(x: str):
     if not isinstance(x, str):
-        print('unreachable')
+        print("unreachable")
+
 
 def func3(x: Literal[1, 2]):
     if x == 1 or x == 2:

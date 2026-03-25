@@ -51,7 +51,7 @@ def func1(val: object):
         pass
     else:
         return
-    reveal_type(val) # mypy: object, pyright: str | int
+    reveal_type(val)  # mypy: object, pyright: str | int
 ```
 
 
@@ -64,21 +64,23 @@ Mypy’s behavior for variables depends on whether [`--allow-redefinition`](http
 ```python
 def func1(condition: bool):
     if condition:
-        x = 3 # Mypy treats this as an implicit type declaration
+        x = 3  # Mypy treats this as an implicit type declaration
     else:
-        x = "" # Mypy treats this as an error because `x` is implicitly declared as `int`
+        x = ""  # Mypy treats this as an error because `x` is implicitly declared as `int`
+
 
 def func2(condition: bool):
-    x = None # Mypy provides some exceptions; this is not considered an implicit type declaration
+    x = None  # Mypy provides some exceptions; this is not considered an implicit type declaration
 
     if condition:
-        x = "" # This is not considered an error
+        x = ""  # This is not considered an error
+
 
 def func3(condition: bool):
-    x = [] # Mypy doesn't treat this as a declaration
+    x = []  # Mypy doesn't treat this as a declaration
 
     if condition:
-        x = [1, 2, 3] # The type of `x` is declared as `list[int]`
+        x = [1, 2, 3]  # The type of `x` is declared as `list[int]`
 ```
 
 Pyright’s behavior is more consistent, is conceptually simpler and more natural for Python developers, leads to fewer false positives, and eliminates the need for many otherwise-necessary variable type annotations.
@@ -92,15 +94,16 @@ Pyright handles instance and class variables consistently with local variables. 
 class A:
     def method1(self) -> None:
         self.x = 1
-    
+
     def method2(self) -> None:
-        self.x = "" # Mypy treats this as an error because `x` is implicitly declared as `int`
+        self.x = ""  # Mypy treats this as an error because `x` is implicitly declared as `int`
+
 
 a = A()
-reveal_type(a.x) # pyright: int | str
+reveal_type(a.x)  # pyright: int | str
 
-a.x = "" # Pyright allows this because the type of `x` is `int | str`
-a.x = 3.0 # Pyright treats this as an error because the type of `x` is `int | str`
+a.x = ""  # Pyright allows this because the type of `x` is `int | str`
+a.x = 3.0  # Pyright treats this as an error because the type of `x` is `int | str`
 ```
 
 
@@ -112,15 +115,16 @@ Mypy does not distinguish between class variables and instance variables in all 
 
 ```python
 class A:
-    x: int = 0 # Regular class variable
-    y: ClassVar[int] = 0 # Pure class variable
+    x: int = 0  # Regular class variable
+    y: ClassVar[int] = 0  # Pure class variable
 
     def __init__(self):
-        self.z = 0 # Pure instance variable
+        self.z = 0  # Pure instance variable
+
 
 print(A.x)
 print(A.y)
-print(A.z) # pyright: error, mypy: no error
+print(A.z)  # pyright: error, mypy: no error
 ```
 
 
@@ -131,10 +135,10 @@ Pyright applies type narrowing for variable assignments. This is done regardless
 ```python
 v1: Sequence[int]
 v1 = [1, 2, 3]
-reveal_type(v1) # mypy and pyright both reveal `list[int]`
+reveal_type(v1)  # mypy and pyright both reveal `list[int]`
 
 v2: Sequence[int] = [1, 2, 3]
-reveal_type(v2) # mypy reveals `Sequence[int]` rather than `list[int]`
+reveal_type(v2)  # mypy reveals `Sequence[int]` rather than `list[int]`
 ```
 
 
@@ -161,11 +165,11 @@ Pyright never narrows `Any` when performing type narrowing for assignments. Mypy
 b: list[Any]
 
 b = [1, 2, 3]
-reveal_type(b) # pyright: list[Any], mypy: list[Any]
+reveal_type(b)  # pyright: list[Any], mypy: list[Any]
 
 c = [1, 2, 3]
 b = c
-reveal_type(b) # pyright: list[Any], mypy: list[int]
+reveal_type(b)  # pyright: list[Any], mypy: list[int]
 ```
 
 
@@ -175,18 +179,18 @@ Pyright’s inference rules for [list, set and dict expressions](type-inference.
 
 ```python
 x = [1, 3.4, ""]
-reveal_type(x) # mypy: list[object], pyright: list[Unknown] or list[int | float | str]
+reveal_type(x)  # mypy: list[object], pyright: list[Unknown] or list[int | float | str]
 ```
 
 For these mutable container types, pyright does not retain literal types when inferring the container type. Mypy is inconsistent, sometimes retaining literal types and sometimes not.
 
 ```python
 def func(one: Literal[1]):
-    reveal_type(one) # Literal[1]
-    reveal_type([one]) # pyright: list[int], mypy: list[Literal[1]]
+    reveal_type(one)  # Literal[1]
+    reveal_type([one])  # pyright: list[int], mypy: list[Literal[1]]
 
-    reveal_type(1) # Literal[1]
-    reveal_type([1]) # pyright: list[int], mypy: list[int]
+    reveal_type(1)  # Literal[1]
+    reveal_type([1])  # pyright: list[int], mypy: list[int]
 ```
 
 
@@ -196,9 +200,9 @@ Pyright’s inference rules for [tuple expressions](type-inference.md#tuple-expr
 
 ```python
 x = (1, "stop")
-reveal_type(x[1]) # pyright: Literal["stop"], mypy: str
+reveal_type(x[1])  # pyright: Literal["stop"], mypy: str
 
-y: Literal["stop", "go"] = x[1] # mypy: type error
+y: Literal["stop", "go"] = x[1]  # mypy: type error
 ```
 
 
@@ -208,8 +212,8 @@ When assigning a literal value to a variable, pyright narrows the type to reflec
 
 ```python
 x: str | None
-x = 'a'
-reveal_type(x) # pyright: Literal['a'], mypy: str
+x = "a"
+reveal_type(x)  # pyright: Literal['a'], mypy: str
 ```
 
 Pyright also supports “literal math” for simple operations involving literals.
@@ -217,11 +221,12 @@ Pyright also supports “literal math” for simple operations involving literal
 ```python
 def func1(a: Literal[1, 2], b: Literal[2, 3]):
     c = a + b
-    reveal_type(c) # Literal[3, 4, 5]
+    reveal_type(c)  # Literal[3, 4, 5]
+
 
 def func2():
     c = "hi" + " there"
-    reveal_type(c) # Literal['hi there']
+    reveal_type(c)  # Literal['hi there']
 ```
 
 
@@ -263,17 +268,20 @@ Pyright’s constraint solver retains literal types only when they are required 
 
 ```python
 T = TypeVar("T")
+
+
 def identity(x: T) -> T:
     return x
 
-def func(one: Literal[1]):
-    reveal_type(one) # Literal[1]
-    v1 = identity(one)
-    reveal_type(v1) # pyright: int, mypy: Literal[1]
 
-    reveal_type(1) # Literal[1]
+def func(one: Literal[1]):
+    reveal_type(one)  # Literal[1]
+    v1 = identity(one)
+    reveal_type(v1)  # pyright: int, mypy: Literal[1]
+
+    reveal_type(1)  # Literal[1]
     v2 = identity(1)
-    reveal_type(v2) # pyright: int, mypy: int
+    reveal_type(v2)  # pyright: int, mypy: int
 ```
 
 #### Constraint Solver: Type Widening
@@ -282,10 +290,12 @@ As mentioned previously, pyright always uses unions rather than joins. Mypy typi
 
 ```python
 T = TypeVar("T")
-def func(val1: T, val2: T) -> T:
-    ...
 
-reveal_type(func("", 1)) # mypy: object, pyright: str | int
+
+def func(val1: T, val2: T) -> T: ...
+
+
+reveal_type(func("", 1))  # mypy: object, pyright: str | int
 ```
 
 #### Constraint Solver: Ambiguous Solution Scoring
@@ -299,15 +309,17 @@ Mypy produces errors with this sample.
 ```python
 T = TypeVar("T")
 
+
 def make_list(x: T | Iterable[T]) -> list[T]:
     return list(x) if isinstance(x, Iterable) else [x]
 
+
 def func2(x: list[int], y: list[str] | int):
     v1 = make_list(x)
-    reveal_type(v1) # pyright: "list[int]" ("list[list[T]]" is also a valid answer)
+    reveal_type(v1)  # pyright: "list[int]" ("list[list[T]]" is also a valid answer)
 
     v2 = make_list(y)
-    reveal_type(v2) # pyright: "list[int | str]" ("list[list[str] | int]" is also a valid answer)
+    reveal_type(v2)  # pyright: "list[int | str]" ("list[list[str] | int]" is also a valid answer)
 ```
 
 ### Value-Constrained Type Variables
@@ -317,9 +329,10 @@ When mypy analyzes a class or function that has in-scope value-constrained TypeV
 ```python
 T = TypeVar("T", list[Any], set[Any])
 
+
 def func(a: AnyStr, b: T):
-    reveal_type(a) # Mypy reveals 2 different types ("str" and "bytes"), pyright reveals "AnyStr"
-    return a + b # Mypy reports 4 errors
+    reveal_type(a)  # Mypy reveals 2 different types ("str" and "bytes"), pyright reveals "AnyStr"
+    return a + b  # Mypy reports 4 errors
 ```
 
 Pyright cannot use the same multi-pass technique as mypy in this case. It needs to produce a single type for any given identifier to support language server features. Pyright instead uses a mechanism called [conditional types](type-concepts-advanced.md#conditional-types-and-type-variables). This approach allows pyright to handle some value-constrained TypeVar use cases that mypy cannot, but there are conversely other use cases that mypy can handle and pyright cannot.
@@ -344,11 +357,13 @@ One known difference is in the handling of ambiguous overloads due to `Any` argu
 @overload
 def func1(x: int) -> int: ...
 
+
 @overload
 def func1(x: str) -> float: ...
 
+
 def func2(val: Any):
-    reveal_type(func1(val)) # mypy: Any, pyright: float
+    reveal_type(func1(val))  # mypy: Any, pyright: float
 ```
 
 
@@ -361,8 +376,10 @@ Mypy models side effects of the import loader that are potentially unsafe.
 ```python
 import http
 
+
 def func():
     import http.cookies
+
 
 # The next line raises an exception at runtime
 x = http.cookies  # mypy allows, pyright flags as error
@@ -383,7 +400,11 @@ Because mypy is a multi-pass analyzer, it is able to deal with certain forms of 
 
 ```python
 T = TypeVar("T")
+
+
 class MetaA(type, Generic[T]): ...
+
+
 class A(metaclass=MetaA["A"]): ...
 ```
 
@@ -391,6 +412,8 @@ class A(metaclass=MetaA["A"]): ...
 
 ```python
 T = TypeVar("T", bound="A")
+
+
 class A(Generic[T]): ...
 ```
 
@@ -399,6 +422,7 @@ class A(Generic[T]): ...
 ```python
 def my_decorator(x: Callable[..., "A"]) -> Callable[..., "A"]:
     return x
+
 
 @my_decorator
 class A: ...
@@ -418,7 +442,7 @@ Mypy has full support for type comments. Pyright supports type comments only in 
 ```python
 # The following type comment is supported by
 # mypy but is rejected by pyright.
-x, y = (3, 4) # type: (float, float)
+x, y = (3, 4)  # type: (float, float)
 
 # Using Python syntax from Python 3.6, this
 # would be annotated as follows:

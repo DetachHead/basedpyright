@@ -55,7 +55,8 @@ A few common situations that need to be cleaned up:
 ```python
 from typing import Any, Callable, TypeVar
 
-_FuncT = TypeVar('_FuncT', bound=Callable[..., Any])
+_FuncT = TypeVar("_FuncT", bound=Callable[..., Any])
+
 
 def my_decorator(*args, **kw) -> Callable[[_FuncT], _FuncT]: ...
 ```
