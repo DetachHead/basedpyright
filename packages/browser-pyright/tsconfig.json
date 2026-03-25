@@ -7,6 +7,11 @@
             "WebWorker",
             "ScriptHost"
         ],
+        "types": [
+            // not atually targeting node but pyright was written for node so we polyfill what we need in the webpack config
+            "@types/node",
+            "@core-js/types/pure"
+        ],
         "paths": {
             "pyright-internal/*": [
                 "../pyright-internal/src/*"
@@ -14,8 +19,7 @@
         }
     },
     "include": [
-        "src/**/*",
-        "**/*.js"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules",
