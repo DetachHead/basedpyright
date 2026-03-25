@@ -2094,9 +2094,13 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             if (cellIndex === undefined) {
                 const notebookUri = Uri.file(parsedUri.getPath(), this.serviceProvider);
                 cellIndex = this._openCells.get(notebookUri.key)?.findIndex((cell) => cell.uri === uri);
-                if (cellIndex === undefined) {
+                if (
                     // can happen if it's a newly created notebook that hasn't been saved to disk yet or if it's an
                     // interactive cell
+                    cellIndex === undefined ||
+                    // can happen when viewing previous versions of the notebook in the timeline view
+                    cellIndex === -1
+                ) {
                     return parsedUri;
                 }
             }
