@@ -30,7 +30,7 @@ the reason we added `reportUnreachable` to basedpyright was not just to identify
     assuming that you're running python 3.13 or above during development:
     ```py
     if sys.version_info < (3, 13):
-        1 + "" # no error
+        1 + ""  # no error
     ```
 
     normally `1 + ""` would be reported as a type error but pyright doesn't complain here, because unreachable code doesn't get type checked at all! this is bad of course, because chances are if your code contains an `if` statement like this, you're expecting it to be run on multiple different python versions.
@@ -47,6 +47,7 @@ pyright incorrectly reports an error when a function contains a type var only in
     def empty_list[T]() -> list[T]:
         return []
 
+
     # using `object` as suggested will cause an error here:
     foo: list[int] = empty_list()
     ```
@@ -60,8 +61,8 @@ however the error will still be reported if the function's return type is just t
     ```py
     # error: TypeVar "T" appears only once in generic function signature
     #   Use "Never" instead
-    def fn[T]() -> T:
-        ...
+    def fn[T]() -> T: ...
+
 
     foo: int = fn()
     ```

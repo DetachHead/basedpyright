@@ -248,19 +248,17 @@ If a function or method can return multiple different types and those types can 
 If a function or method is intended to take parameters that are specified only by name, use the keyword-only separator ("*").
 
 ```python
-def create_user(age: int, *, dob: date | None = None):
-    ...
+def create_user(age: int, *, dob: date | None = None): ...
 ```
 
 #### Positional-only Parameters
 If a function or method is intended to take parameters that are specified only by position, use the positional-only separator ("/") as documented in [PEP 570](https://peps.python.org/pep-0570/). If your library needs to run on versions of Python prior to 3.8, you can alternatively name the positional-only parameters with an identifier that begins with a double underscore.
 
 ```python
-def compare_values(value1: T, value2: T, /) -> bool:
-    ...
+def compare_values(value1: T, value2: T, /) -> bool: ...
 
-def compare_values(__value1: T, __value2: T) -> bool:
-    ...
+
+def compare_values(__value1: T, __value2: T) -> bool: ...
 ```
 
 ### Annotating Decorators
@@ -316,17 +314,18 @@ Classes that must be subclassed should derive from `ABC`, and methods or propert
 ```python
 from abc import ABC, abstractmethod
 
-class Hashable(ABC):
-   @property
-   @abstractmethod
-   def hash_value(self) -> int:
-      """Subclasses must override"""
-      raise NotImplementedError()
 
-   @abstractmethod
-   def print(self) -> str:
-      """Subclasses must override"""
-      raise NotImplementedError()
+class Hashable(ABC):
+    @property
+    @abstractmethod
+    def hash_value(self) -> int:
+        """Subclasses must override"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def print(self) -> str:
+        """Subclasses must override"""
+        raise NotImplementedError()
 ```
 
 #### Final Classes and Methods
@@ -379,7 +378,7 @@ Type annotations for variables, parameters, and return types can be placed in qu
 # for the OrderedDict type, so the annotation must be
 # enclosed in quotes.
 def get_config(self) -> "OrderedDict[str, str]":
-   return self._config
+    return self._config
 ```
 
 ### Type Comment Annotations
@@ -389,25 +388,25 @@ If you need to support older versions of Python, type annotations can still be p
 
 ```python
 class Foo:
-   # Variable type comments go at the end of the line
-   # where the variable is assigned.
-   timeout = None # type: int | None
-   
-   # Function type comments can be specified on the
-   # line after the function signature.
-   def send_message(self, name, length):
-      # type: (str, int) -> None
-      ...
+    # Variable type comments go at the end of the line
+    # where the variable is assigned.
+    timeout = None  # type: int | None
 
-   # Function type comments can also specify the type
-   # of each parameter on its own line.
-   def receive_message(
-      self,
-      name, # type: str
-      length # type: int
-   ):
-      # type: () -> Message
-      ...
+    # Function type comments can be specified on the
+    # line after the function signature.
+    def send_message(self, name, length):
+        # type: (str, int) -> None
+        ...
+
+    # Function type comments can also specify the type
+    # of each parameter on its own line.
+    def receive_message(
+        self,
+        name,  # type: str
+        length,  # type: int
+    ):
+        # type: () -> Message
+        ...
 ```
 
 #### typing_extensions

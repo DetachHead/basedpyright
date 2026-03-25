@@ -22,11 +22,11 @@ When a parameter or variable is annotated with a type, the type checker verifies
 Consider the following example:
 ```python
 def func1(p1: float, p2: str, p3, **p4) -> None:
-    var1: int = p1    # This is a type violation
-    var2: str = p2    # This is allowed because the types match
-    var2: int         # This is an error because it redeclares var2
-    var3 = p1         # var3 does not have a declared type
-    return var1       # This is a type violation
+    var1: int = p1  # This is a type violation
+    var2: str = p2  # This is allowed because the types match
+    var2: int  # This is an error because it redeclares var2
+    var3 = p1  # var3 does not have a declared type
+    return var1  # This is a type violation
 ```
 
 Symbol    | Symbol Category | Scope     | Declared Type
@@ -58,12 +58,13 @@ If a symbol’s type cannot be inferred, Pyright sets its type to “Unknown”,
 The simplest form of type inference is one that involves a single assignment to a symbol. The inferred type comes from the type of the source expression. Examples include:
 
 ```python
-var1 = 3                        # Inferred type is int
-var2 = "hi"                     # Inferred type is str
-var3 = list()                   # Inferred type is list[Unknown]
-var4 = [3, 4]                   # Inferred type is list[int]
-for var5 in [3, 4]: ...         # Inferred type is int
-var6 = [p for p in [1, 2, 3]]   # Inferred type is list[int]
+var1 = 3  # Inferred type is int
+var2 = "hi"  # Inferred type is str
+var3 = list()  # Inferred type is list[Unknown]
+var4 = [3, 4]  # Inferred type is list[int]
+for var5 in [3, 4]:
+    ...  # Inferred type is int
+var6 = [p for p in [1, 2, 3]]  # Inferred type is list[int]
 ```
 
 #### Multi-Assignment Type Inference
@@ -75,9 +76,10 @@ When a symbol is assigned values in multiple places within the code, those value
 class Foo:
     def __init__(self):
         self.var1 = ""
-    
+
     def do_something(self, val: int):
         self.var1 = val
+
 
 # In this example, symbol var2 has an inferred type of `Foo | None`.
 if __debug__:
@@ -101,11 +103,11 @@ This technique is called “bidirectional inference” because type inference fo
 Let’s look at a few examples:
 
 ```python
-var1 = []                       # Type of RHS is ambiguous
-var2: list[int] = []            # Type of LHS now makes type of RHS unambiguous
-var3 = [4]                      # Type is assumed to be list[int] 
-var4: list[float] = [4]         # Type of RHS is now list[float]
-var5 = (3,)                     # Type is assumed to be tuple[Literal[3]]
+var1 = []  # Type of RHS is ambiguous
+var2: list[int] = []  # Type of LHS now makes type of RHS unambiguous
+var3 = [4]  # Type is assumed to be list[int]
+var4: list[float] = [4]  # Type of RHS is now list[float]
+var5 = (3,)  # Type is assumed to be tuple[Literal[3]]
 var6: tuple[float, ...] = (3,)  # Type of RHS is now tuple[float, ...]
 ```
 
@@ -119,7 +121,7 @@ if some_condition:
 else:
     my_list = ["a", "b"]
 
-reveal_type(my_list) # list[str]
+reveal_type(my_list)  # list[str]
 ```
 
 
@@ -132,6 +134,7 @@ As with variable assignments, function return types can be inferred from the `re
 # return (at the end). It does not have a declared return type,
 # so Pyright infers its return type based on the return expressions.
 # In this case, the inferred return type is `str | bool | None`.
+
 
 def func1(val: int):
     if val > 3:
@@ -163,13 +166,14 @@ both `Never` and `NoReturn` mean the exact same thing. `Never` was added in pyth
 ```py
 from typing import assert_never
 
+
 def foo(value: int | str):
     if isinstance(value, int):
         ...
     elif isinstance(value, str):
         ...
     else:
-        assert_never(value) # will report a type error if any type is unaccounted for
+        assert_never(value)  # will report a type error if any type is unaccounted for
 ```
 
 this is because `assert_never` takes `Never` as a parameter:
@@ -193,6 +197,7 @@ It is common for input parameters to be unannotated. This can make it difficult 
 # on the information provided because the types of parameters
 # a and b are unknown. In this case, the inferred return
 # type is `Unknown | None`.
+
 
 def func1(a, b, c):
     if c:
@@ -227,13 +232,13 @@ For other unannotated parameters within a method, Pyright looks for a method of 
 
 ```python
 class Parent:
-    def method1(self, a: int, b: str) -> float:
-        ...
+    def method1(self, a: int, b: str) -> float: ...
 
 
 class Child(Parent):
     def method1(self, a, b):
         return a
+
 
 reveal_type(Child.method1)  # (self: Child, a: int, b: str) -> int
 ```
@@ -246,13 +251,14 @@ If the type of an unannotated parameter cannot be inferred using any of the abov
 def func(a, b=0, c=None):
     pass
 
+
 reveal_type(func)  # (a: Unknown, b: int, c: Unknown | None) -> None
 ```
 
 This inference technique also applies to lambdas whose input parameters include default arguments.
 
 ```python
-cb = lambda x = "": x
+cb = lambda x="": x
 reveal_type(cb)  # (x: str = "" -> str)
 ```
 
@@ -262,12 +268,11 @@ Python 3.8 introduced support for _literal types_. This allows a type checker li
 
 ```python
 # This function is allowed to return only values 1, 2 or 3.
-def func1() -> Literal[1, 2, 3]:
-    ...
+def func1() -> Literal[1, 2, 3]: ...
+
 
 # This function must be passed one of three specific string values.
-def func2(mode: Literal["r", "w", "rw"]) -> None:
-    ...
+def func2(mode: Literal["r", "w", "rw"]) -> None: ...
 ```
 
 When Pyright is performing type inference, it generally does not infer literal types. Consider the following example:
@@ -287,6 +292,7 @@ When inferring the type of a tuple expression (in the absence of bidirectional i
 ```python
 # The inferred type is tuple[Literal[1], Literal["a"], Literal[True]].
 var1 = (1, "a", True)
+
 
 def func1(a: int):
     # The inferred type is tuple[int, int].
@@ -319,15 +325,15 @@ When inferring the type of a list expression (in the absence of bidirectional in
 These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).
 
 ```python
-var1 = []                       # Infer list[Unknown]
+var1 = []  # Infer list[Unknown]
 
-var2 = [1, 2]                   # Infer list[int]
+var2 = [1, 2]  # Infer list[int]
 
 # Type depends on strictListInference config setting
-var3 = [1, 3.4]                 # Infer list[Unknown] (off)
-var3 = [1, 3.4]                 # Infer list[int | float] (on)
+var3 = [1, 3.4]  # Infer list[Unknown] (off)
+var3 = [1, 3.4]  # Infer list[int | float] (on)
 
-var4: list[float] = [1, 3.4]    # Infer list[float]
+var4: list[float] = [1, 3.4]  # Infer list[float]
 ```
 
 
@@ -344,13 +350,13 @@ When inferring the type of a set expression (in the absence of bidirectional inf
 These heuristics can be overridden through the use of bidirectional inference hints (e.g. by providing a declared type for the target of the assignment expression).
 
 ```python
-var1 = {1, 2}                   # Infer set[int]
+var1 = {1, 2}  # Infer set[int]
 
 # Type depends on strictSetInference config setting
-var2 = {1, 3.4}                 # Infer set[Unknown] (off)
-var2 = {1, 3.4}                 # Infer set[int | float] (on)
+var2 = {1, 3.4}  # Infer set[Unknown] (off)
+var2 = {1, 3.4}  # Infer set[int | float] (on)
 
-var3: set[float] = {1, 3.4}    # Infer set[float]
+var3: set[float] = {1, 3.4}  # Infer set[float]
 ```
 
 
@@ -367,13 +373,13 @@ When inferring the type of a dictionary expression (in the absence of bidirectio
 
 
 ```python
-var1 = {}                       # Infer dict[Unknown, Unknown]
+var1 = {}  # Infer dict[Unknown, Unknown]
 
-var2 = {1: ""}                  # Infer dict[int, str]
+var2 = {1: ""}  # Infer dict[int, str]
 
 # Type depends on strictDictionaryInference config setting
-var3 = {"a": 3, "b": 3.4}       # Infer dict[str, Unknown] (off)
-var3 = {"a": 3, "b": 3.4}       # Infer dict[str, int | float] (on)
+var3 = {"a": 3, "b": 3.4}  # Infer dict[str, Unknown] (off)
+var3 = {"a": 3, "b": 3.4}  # Infer dict[str, int | float] (on)
 
 var4: dict[str, float] = {"a": 3, "b": 3.4}
 ```
@@ -386,8 +392,10 @@ Lambdas present a particular challenge for a Python type checker because there i
 # The type of var1 is (a: Unknown, b: Unknown) -> Unknown.
 var1 = lambda a, b: a + b
 
+
 # This function takes a comparison function callback.
 def float_sort(list: list[float], comp: Callable[[float, float], bool]): ...
+
 
 # In this example, the types of the lambda’s input parameters
 # a and b can be inferred to be float because the float_sort

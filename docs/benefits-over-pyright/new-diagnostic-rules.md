@@ -8,15 +8,15 @@ pyright has a few options to ban "Unknown" types such as `reportUnknownVariableT
 
 ```py
 def foo(bar, baz: Any) -> Any:
-    print(bar) # error: unknown type
-    print(baz) # no error
+    print(bar)  # error: unknown type
+    print(baz)  # no error
 ```
 
 basedpyright introduces the `reportAny` option, which will report an error on usages of anything typed as `Any`:
 
 ```py
 def foo(baz: Any) -> Any:
-    print(baz) # error: reportAny
+    print(baz)  # error: reportAny
 ```
 
 ## `reportExplicitAny`
@@ -24,8 +24,8 @@ def foo(baz: Any) -> Any:
 similar to [`reportAny`](#reportany), however this rule bans usages of the `Any` type itself rather than expressions that are typed as `Any`:
 
 ```py
-def foo(baz: Any) -> Any: # error: reportExplicitAny
-    print(baz) # error: reportAny
+def foo(baz: Any) -> Any:  # error: reportExplicitAny
+    print(baz)  # error: reportAny
 ```
 
 ## `reportIgnoreCommentWithoutRule`
@@ -73,7 +73,7 @@ pyright allows invalid imports such as this:
 
 ```py
 # ./module_name/bar.py:
-import foo # wrong! should be `import module_name.foo` or `from module_name import foo`
+import foo  # wrong! should be `import module_name.foo` or `from module_name import foo`
 ```
 
 this may look correct at first glance, and will work when running `bar.py` directly as a script, but when it's imported as a module, it will crash:
@@ -96,8 +96,8 @@ most of the time when casting, you want to either cast to a narrower or wider ty
 
 ```py
 foo: int | None
-cast(int, foo) #  narrower type
-cast(object, foo) #  wider type
+cast(int, foo)  #  narrower type
+cast(object, foo)  #  wider type
 ```
 
 but pyright doesn't prevent casts to a type that doesn't overlap with the original:
@@ -130,12 +130,14 @@ multiple inheritance in python is awful:
 class Foo:
     def __init__(self):
         super().__init__()
-class Bar:
-    def __init__(self):
-        ...
 
-class Baz(Foo, Bar):
-    ...
+
+class Bar:
+    def __init__(self): ...
+
+
+class Baz(Foo, Bar): ...
+
 
 Baz()
 ```
@@ -153,8 +155,8 @@ pyright has the `reportMissingSuperCall` rule which, for this reason, complains 
 pyright will report an unused diagnostic on unused function parameters:
 
 ```py
-def print_value(value: str): # "value" is not accessed
-  print("something else")
+def print_value(value: str):  # "value" is not accessed
+    print("something else")
 ```
 
 but this just greys out the parameter instead of actually reporting it as an error. basedpyright introduces a new `reportUnusedParameter` diagnostic rule which supports all the severity options (`"error"`, `"warning"` and `"none"`) as well as `"hint"`, which is the default behavior in pyright.
@@ -166,17 +168,19 @@ abstract classes in python are declared using a base class called `ABC`, and wer
 ```py
 from abc import ABC, abstractmethod
 
+
 class AbstractFoo(ABC):
     @abstractmethod
-    def foo(self):
-        ...
+    def foo(self): ...
+
 
 # no error here even though you haven't implemented `foo` because pyright assumes you want this class to also be abstract
 class FooImpl(AbstractFoo):
     def bar(self):
         print("hi")
 
-foo = FooImpl() # error
+
+foo = FooImpl()  # error
 ```
 
 this isn't ideal, because you may not necessarily be instantiating the class (eg. if you're developing a library and expect the user to import and instantiate it), meaning this error will go undetected.
@@ -247,6 +251,7 @@ class Foo:
     @abstractmethod
     def foo(): ...
 
+
 _ = Foo()  # no error
 ```
 
@@ -260,8 +265,7 @@ Pyright allows specifying a default value for `self` in instance methods and `cl
 
 ```py
 class Foo:
-    def foo(self=1):
-        ...
+    def foo(self=1): ...
 ```
 
 This is almost certainly a mistake, so `reportSelfClsDefault` warns about it.

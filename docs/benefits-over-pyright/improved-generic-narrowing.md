@@ -5,7 +5,7 @@ when narrowing a type using an `isinstance` check, there's no way for the type c
 ```py
 def foo(value: object):
     if isinstance(value, list):
-        reveal_type(value) # list[Unknown]
+        reveal_type(value)  # list[Unknown]
 ```
 
 this makes sense in cases where the generic is invariant and there's no other way to represent any of its possibilities. for example if it were to be narrowed to `list[object]`, you wouldn't be able to assign `list[int]` to it. however in cases where the generic is covariant, contravariant, or uses constraints, it can be narrowed more accurately.
@@ -21,8 +21,9 @@ when `strictGenericNarrowing` is enabled, if a generic is covariant and does not
 ```py
 T_co = TypeVar("T_co", covariant=True)
 
-class Foo(Generic[T_co]):
-    ...
+
+class Foo(Generic[T_co]): ...
+
 
 def foo(value: object):
     if isinstance(value, Foo):
@@ -34,8 +35,9 @@ if the generic does have a bound, it gets narrowed to that bound instead:
 ```py
 T_co = TypeVar("T_co", bound=int | str, covariant=True)
 
-class Foo(Generic[T_co]):
-    ...
+
+class Foo(Generic[T_co]): ...
+
 
 def foo(value: object):
     if isinstance(value, Foo):
@@ -50,8 +52,8 @@ when a type variable is contravariant its widest possible type is `Never`, so wh
 T_contra = TypeVar("T_contra", contravariant=True)
 
 
-class Foo(Generic[T_contra]):
-    ...
+class Foo(Generic[T_contra]): ...
+
 
 def foo(value: object):
     if isinstance(value, Foo):
@@ -65,8 +67,8 @@ when a type variable uses constraints, the rules of variance do not apply - see 
 when `strictGenericNarrowing` is enabled, constrained generics are narrowed to a union of all possibilities:
 
 ```py
-class Foo[T: (int, str)]:
-    ...
+class Foo[T: (int, str)]: ...
+
 
 def foo(value: object):
     if isinstance(value, Foo):
@@ -76,9 +78,8 @@ def foo(value: object):
 this also works when there's more than one constrained type variable - it creates a union of all possible combinations:
 
 ```py
+class Foo[T: (int, str), U: (float, bytes)]: ...
 
-class Foo[T: (int, str), U: (float, bytes)]:
-    ...
 
 def foo(value: object):
     if isinstance(value, Foo):
