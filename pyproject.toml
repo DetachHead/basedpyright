@@ -71,6 +71,7 @@ lock-python-version = "3.8"
 default-groups = ["dev", "docstubs", "lochelper"]
 # transient dependency of docify. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
 no-build-package = ["libcst"]
+exclude-newer = "1 week"
 
 [tool.pdm.version]
 source = "call"
