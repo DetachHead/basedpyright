@@ -112,7 +112,7 @@ About the interface:
 | True                         | true/True             | True                | 语义错误/Wrong meaning                     |
 | assign                       | 分配                  | 赋值                | 词义错误/Wrong meaning                     |
 | follow                       | 遵循                  | 在 ... 之后         | 词义错误/Wrong meaning                     |
-| variance                     | 差异                  | 变异性              | 词义错误/Wrong meaning                     |
+| variance                     | 差异                  | 型变                | 词义错误/Wrong meaning                     |
 | key                          | 密钥                  | 键                  | 词义错误/Wrong meaning                     |
 | argument                     | 参数                  | 参数/实参/传入值    | 词义不准确/Inaccurate meaning              |
 | parameter                    | 参数                  | 参数/形参           | 词义不准确/Inaccurate meaning              |
