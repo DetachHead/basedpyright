@@ -742,7 +742,6 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
-        reportEmptyAbstractUsage: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',
@@ -824,6 +823,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportEmptyAbstractUsage: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -863,7 +863,6 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'none',
         reportWildcardImportFromLibrary: 'warning',
         reportAbstractUsage: 'error',
-        reportEmptyAbstractUsage: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',
@@ -945,6 +944,7 @@ export function getStandardDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportEmptyAbstractUsage: 'none',
         allowedUntypedLibraries: [],
     };
 
@@ -983,7 +983,6 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportDuplicateImport: 'warning',
     reportWildcardImportFromLibrary: 'warning',
     reportAbstractUsage: 'error',
-    reportEmptyAbstractUsage: 'error',
     reportArgumentType: 'error',
     reportAssertTypeFailure: 'error',
     reportAssignmentType: 'error',
@@ -1065,6 +1064,7 @@ export const getRecommendedDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'none', // TODO: change to error when we're confident there's no performance issues with this rule
     reportInvalidAbstractMethod: 'warning',
     reportSelfClsDefault: 'warning',
+    reportEmptyAbstractUsage: 'warning',
     allowedUntypedLibraries: [],
 });
 
@@ -1100,7 +1100,6 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportDuplicateImport: 'error',
     reportWildcardImportFromLibrary: 'error',
     reportAbstractUsage: 'error',
-    reportEmptyAbstractUsage: 'error',
     reportArgumentType: 'error',
     reportAssertTypeFailure: 'error',
     reportAssignmentType: 'error',
@@ -1182,6 +1181,7 @@ export const getAllDiagnosticRuleSet = (): DiagnosticRuleSet => ({
     reportIncompatibleUnannotatedOverride: 'error',
     reportInvalidAbstractMethod: 'error',
     reportSelfClsDefault: 'error',
+    reportEmptyAbstractUsage: 'error',
     allowedUntypedLibraries: [],
 });
 
@@ -1218,7 +1218,6 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportDuplicateImport: 'error',
         reportWildcardImportFromLibrary: 'error',
         reportAbstractUsage: 'error',
-        reportEmptyAbstractUsage: 'error',
         reportArgumentType: 'error',
         reportAssertTypeFailure: 'error',
         reportAssignmentType: 'error',
@@ -1300,6 +1299,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportIncompatibleUnannotatedOverride: 'none',
         reportInvalidAbstractMethod: 'none',
         reportSelfClsDefault: 'none',
+        reportEmptyAbstractUsage: 'none',
         allowedUntypedLibraries: [],
     };
 

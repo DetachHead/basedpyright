@@ -185,11 +185,6 @@
       "title": "Controls reporting of attempted instantiation of abstract class",
       "default": "error"
     },
-    "reportEmptyAbstractUsage": {
-      "$ref": "#/definitions/diagnostic",
-      "title": "Controls reporting of attempted instantiation of empty abstract class",
-      "default": "error"
-    },
     "reportArgumentType": {
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting of incompatible argument type",
@@ -584,6 +579,11 @@
       "$ref": "#/definitions/diagnostic",
       "title": "Controls reporting diagnostics for providing a default value for a `self` or `cls` parameter",
       "default": "none"
+    },
+    "reportEmptyAbstractUsage": {
+      "$ref": "#/definitions/diagnostic",
+      "title": "Controls reporting of attempted instantiation of an empty abstract class",
+      "default": "none"
     }
   },
   "properties": {
@@ -748,9 +748,6 @@
     },
     "reportAbstractUsage": {
       "$ref": "#/definitions/reportAbstractUsage"
-    },
-    "reportEmptyAbstractUsage": {
-      "$ref": "#/definitions/reportEmptyAbstractUsage"
     },
     "reportArgumentType": {
       "$ref": "#/definitions/reportArgumentType"
@@ -988,6 +985,9 @@
     },
     "reportSelfClsDefault": {
       "$ref": "#/definitions/reportSelfClsDefault"
+    },
+    "reportEmptyAbstractUsage": {
+      "$ref": "#/definitions/reportEmptyAbstractUsage"
     },
     "extraPaths": {
       "$ref": "#/definitions/extraPaths"
