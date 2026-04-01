@@ -129,7 +129,9 @@ test('AbstractClass11', () => {
 });
 
 test('AbstractClass12', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['abstractClass12.py']);
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportEmptyAbstractUsage = 'error';
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['abstractClass12.py'], configOptions);
 
     TestUtils.validateResultsButBased(analysisResults, {
         // one error to validate the message, the rest use `pyright: ignore`
