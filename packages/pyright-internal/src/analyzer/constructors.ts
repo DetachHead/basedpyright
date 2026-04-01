@@ -15,6 +15,7 @@
 import { appendArray } from '../common/collectionUtils';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { LocMessage } from '../localization/localize';
 import { ExpressionNode, ParamCategory } from '../parser/parseNodes';
 import { ConstraintSolution } from './constraintSolution';
 import { addConstraintsForExpectedType } from './constraintSolver';
@@ -40,7 +41,9 @@ import {
     isInstantiableClass,
     isNever,
     isOverloaded,
+    isParamSpec,
     isTypeVar,
+    isTypeVarTuple,
     isUnknown,
 } from './types';
 import {
@@ -478,6 +481,10 @@ function validateNewMethod(
         newReturnType = applyExpectedTypeForConstructor(evaluator, type, inferenceContext, constraints);
     }
 
+    if (!argumentErrors && !isTypeIncomplete && !useSpeculativeModeForArgs) {
+        reportUnsolvedClassTypeParams(evaluator, type, constraints, errorNode);
+    }
+
     return { argumentErrors, returnType: newReturnType, isTypeIncomplete, overloadsUsedForCall };
 }
 
@@ -531,8 +538,11 @@ function validateInitMethod(
 
     if (callResult.argumentErrors) {
         argumentErrors = true;
-    } else if (callResult.overloadsUsedForCall) {
-        overloadsUsedForCall.push(...callResult.overloadsUsedForCall);
+    } else {
+        if (callResult.overloadsUsedForCall) {
+            overloadsUsedForCall.push(...callResult.overloadsUsedForCall);
+        }
+        reportUnsolvedClassTypeParams(evaluator, adjustedClassType, constraints, errorNode);
     }
 
     return { argumentErrors, returnType, isTypeIncomplete, overloadsUsedForCall };
@@ -638,6 +648,34 @@ function applyExpectedSubtypeForConstructor(
     }
 
     return specializedType;
+}
+
+// Reports errors for class-level type parameters that have no solution in the constraints.
+function reportUnsolvedClassTypeParams(
+    evaluator: TypeEvaluator,
+    classType: ClassType,
+    constraints: ConstraintTracker,
+    errorNode: ExpressionNode
+): void {
+    if (classType.shared.typeParams.length === 0 || classType.priv.typeArgs) {
+        return;
+    }
+    const constraintSet = constraints.getMainConstraintSet();
+    for (const typeParam of classType.shared.typeParams) {
+        if (typeParam.shared.isDefaultExplicit) {
+            continue;
+        }
+        if (isParamSpec(typeParam) || isTypeVarTuple(typeParam)) {
+            continue;
+        }
+        if (!constraintSet.getTypeVar(typeParam)?.lowerBound) {
+            evaluator.addDiagnostic(
+                DiagnosticRule.reportUnsolvedTypeVar,
+                LocMessage.typeVarUnsolved().format({ name: typeParam.shared.name }),
+                errorNode
+            );
+        }
+    }
 }
 
 // Handles the case where a constructor is a generic type and the type

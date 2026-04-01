@@ -1436,6 +1436,9 @@
             "comment": "{Locked='TypeVar'}"
         },
         "typeVarAssignmentMismatch": "Type \"{type}\" cannot be assigned to type variable \"{name}\"",
+        "typeVarUnsolved": {
+            "message": "Type variable \"{name}\" has no solution; consider providing it explicitly"
+        },
         "typeVarBoundAndConstrained": {
             "message": "TypeVar cannot be both bound and constrained",
             "comment": "{Locked='TypeVar'}"
@@ -2184,6 +2187,10 @@
         "useTupleInstead": {
             "message": "Use tuple[T1, ..., Tn] to indicate a tuple type or T1 | T2 to indicate a union type",
             "comment": "{Locked='tuple[T1, ..., Tn]','tuple','T1 | T2','union'}"
+        },
+        "typeVarUnsolvedCollectionHint": {
+            "message": "e.g. \"{className}[<type>]()\"",
+            "comment": "{Locked='{className}[<type>]()'}"
         },
         "useTypeInstead": {
             "message": "Use type[T] instead",
