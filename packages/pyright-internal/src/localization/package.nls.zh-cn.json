@@ -10,7 +10,10 @@
         "organizeImports": "整理导入项",
         "addExplicitOverride": "添加 `@override`",
         "addIgnoreComment": "添加 `{ignoreComment}`",
-        "addIgnoreCommentToExisting": "向现有 `{ignoreCommentPrefix}` 注释添加 `{rule}` 规则"
+        "addIgnoreCommentToExisting": "向现有 `{ignoreCommentPrefix}` 注释添加 `{rule}` 规则",
+        "assignToUnderscore": "将未使用的返回值赋给 `_`",
+        "removeParamDefault": "移除 `{paramName}` 参数的默认值",
+        "removeUnnecessaryCast": "移除不必要的 `cast`"
     },
     "Completion": {
         "autoImportDetail": "自动导入",
@@ -748,7 +751,7 @@
         "memberIsAbstractMore": "还有 {count} 个...",
         "memberIsClassVarInProtocol": "\"{name}\" 在 Protocol 中定义为 `ClassVar`",
         "memberIsInitVar": "\"{name}\" 被标记为 `InitVar`，仅能用于 `__init__` 和 `__post_init__`",
-        "memberIsInvariant": "可变成员 \"{name}\" 的变异性（variance）应为不变（Invariant）",
+        "memberIsInvariant": "可变成员 \"{name}\" 的型变（variance）应为不变（Invariant）",
         "memberIsNotClassVarInClass": "\"{name}\" 必须定义为 `ClassVar` 才能与 Protocol 类兼容",
         "memberIsNotClassVarInProtocol": "\"{name}\" 未在 Protocol 类中定义为 `ClassVar`",
         "memberIsNotReadOnlyInProtocol": "\"{name}\" 在 Protocol 类中并非只读",
@@ -777,7 +780,7 @@
         "overriddenMethod": "被覆写的方法",
         "overriddenSymbol": "被覆写的符号",
         "overrideInvariantMismatch": "覆写的 \"{overrideType}\" 类型与基类型 \"{baseType}\" 不同",
-        "overrideIsInvariant": "可变量的变异性（variance）应为不变（Invariant）",
+        "overrideIsInvariant": "可变量的型变（variance）应为不变（Invariant）",
         "overrideNoOverloadMatches": "没有与基类方法兼容的重载签名覆写",
         "overrideNotClassMethod": "覆写的方法没有一致与基类方法声明为类方法",
         "overrideNotInstanceMethod": "覆写的方法没有一致与基类方法声明为实例方法",
@@ -866,12 +869,13 @@
         "useListInstead": "使用 `list[T]` 表示列表类型或 `T1 | T2` 表示联合类型",
         "useTupleInstead": "使用 `tuple[T1, ..., Tn]` 表示元组类型或使用 `T1 | T2` 表示联合类型",
         "useTypeInstead": "改用 `type[T]`",
-        "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的变异性（variance）与基类 \"{className}\" 不兼容",
-        "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的变异性（variance）与 \"{typeAliasParam}\" 不兼容",
+        "varianceMismatchForClass": "类型参数 \"{typeVarName}\" 的型变（variance）与基类 \"{className}\" 不兼容",
+        "varianceMismatchForTypeAlias": "类型参数 \"{typeVarName}\" 的型变（variance）与 \"{typeAliasParam}\" 不兼容",
         "explicitRelativeImportSuggestion": "请改用 \".{importName}\" 作为相对导入",
         "fullPathImportSuggestion": "或指定完整模块路径：\"{importName}\"",
         "installStubs": "从 PyPI 安装 `{packageName}-stubs` 以修复此问题",
-        "enableBasedFeatures": "将 `enableBasedFeatures` 配置项设为 `true` 以启用此功能"
+        "enableBasedFeatures": "将 `enableBasedFeatures` 配置项设为 `true` 以启用此功能",
+        "classIsExplicitlyAbstract": "这个类没有抽象成员，但显式标为了 `ABC` 或 `ABCMeta`"
     },
     "Service": {
         "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
