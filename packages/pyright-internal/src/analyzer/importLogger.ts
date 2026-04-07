@@ -15,6 +15,6 @@ export class ImportLogger {
     }
 
     getLogs() {
-        return this._logs;
+        return [...this._logs];
     }
 }
