@@ -3212,7 +3212,7 @@ export function isVarianceOfTypeArgCompatible(type: Type, typeParamVariance: Var
         return true;
     }
 
-    if (isTypeVar(type) && !isParamSpec(type) && !isTypeVarTuple(type)) {
+    if (isTypeVar(type)) {
         const typeArgVariance = type.shared.declaredVariance;
 
         if (typeArgVariance === Variance.Contravariant || typeArgVariance === Variance.Covariant) {
@@ -3222,10 +3222,6 @@ export function isVarianceOfTypeArgCompatible(type: Type, typeParamVariance: Var
         if (type.shared.typeParams && type.shared.typeParams.length > 0) {
             return type.shared.typeParams.every((typeParam, index) => {
                 let typeArgType: Type | undefined;
-
-                if (isParamSpec(typeParam) || isTypeVarTuple(typeParam)) {
-                    return true;
-                }
 
                 if (type.priv.typeArgs && index < type.priv.typeArgs.length) {
                     typeArgType = type.priv.typeArgs[index];

@@ -13503,7 +13503,52 @@ export function createTypeEvaluator(
             const paramName = paramNameNode ? paramNameNode.d.value : undefined;
 
             if (paramName) {
-                if (paramName === 'default') {
+                if (paramName === 'covariant') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            typeVar.shared.declaredVariance === Variance.Contravariant ||
+                            typeVar.shared.declaredVariance === Variance.Auto
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            typeVar.shared.declaredVariance = Variance.Covariant;
+                        }
+                    }
+                } else if (paramName === 'contravariant') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            typeVar.shared.declaredVariance === Variance.Covariant ||
+                            typeVar.shared.declaredVariance === Variance.Auto
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            typeVar.shared.declaredVariance = Variance.Contravariant;
+                        }
+                    }
+                } else if (paramName === 'infer_variance') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            typeVar.shared.declaredVariance === Variance.Covariant ||
+                            typeVar.shared.declaredVariance === Variance.Contravariant
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            typeVar.shared.declaredVariance = Variance.Auto;
+                        }
+                    }
+                } else if (paramName === 'default') {
                     const expr = argList[i].valueExpression;
                     if (expr) {
                         const defaultType = getTypeVarTupleDefaultType(expr, /* isPep695Syntax */ false);
@@ -13593,7 +13638,52 @@ export function createTypeEvaluator(
             const paramName = paramNameNode ? paramNameNode.d.value : undefined;
 
             if (paramName) {
-                if (paramName === 'default') {
+                if (paramName === 'covariant') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            paramSpec.shared.declaredVariance === Variance.Contravariant ||
+                            paramSpec.shared.declaredVariance === Variance.Auto
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            paramSpec.shared.declaredVariance = Variance.Covariant;
+                        }
+                    }
+                } else if (paramName === 'contravariant') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            paramSpec.shared.declaredVariance === Variance.Covariant ||
+                            paramSpec.shared.declaredVariance === Variance.Auto
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            paramSpec.shared.declaredVariance = Variance.Contravariant;
+                        }
+                    }
+                } else if (paramName === 'infer_variance') {
+                    if (argList[i].valueExpression && getBooleanValue(argList[i].valueExpression!)) {
+                        if (
+                            paramSpec.shared.declaredVariance === Variance.Covariant ||
+                            paramSpec.shared.declaredVariance === Variance.Contravariant
+                        ) {
+                            addDiagnostic(
+                                DiagnosticRule.reportGeneralTypeIssues,
+                                LocMessage.typeVarVariance(),
+                                argList[i].valueExpression!
+                            );
+                        } else {
+                            paramSpec.shared.declaredVariance = Variance.Auto;
+                        }
+                    }
+                } else if (paramName === 'default') {
                     const expr = argList[i].valueExpression;
                     if (expr) {
                         const defaultType = getParamSpecDefaultType(expr, /* isPep695Syntax */ false);
@@ -18690,24 +18780,33 @@ export function createTypeEvaluator(
             undefined
         );
 
-        classType.shared.typeParams.forEach((param, paramIndex) => {
-            // Skip TypeVarTuples and ParamSpecs.
-            if (isTypeVarTuple(param) || isParamSpec(param)) {
-                return;
-            }
+        // A scopeless ParamSpec used as the "top type" substitute for ParamSpec parameters
+        // during variance inference. It has no scope ID so makeTypeVarsBound leaves it free,
+        // giving us the needed asymmetry:
+        //   - as src in assignBoundTypeVar: fails (not the gradual `...` form) → covariant check fails
+        //   - as dest in assignTypeVar: returns true immediately (no scopeId) → contravariant check passes
+        const dummyParamSpec = TypeVarType.createInstantiable('__varianceDummyP', TypeVarKind.ParamSpec);
+        const dummyTypeVarTuple = TypeVarType.createInstantiable('__varianceDummyTs', TypeVarKind.TypeVarTuple);
 
+        classType.shared.typeParams.forEach((param, paramIndex) => {
             // Skip type variables without auto-variance.
             if (param.shared.declaredVariance !== Variance.Auto) {
                 return;
             }
 
             // Replace all type arguments with a dummy type except for the
-            // TypeVar of interest, which is replaced with an object instance.
+            // TypeVar of interest. For regular TypeVars use an object instance;
+            // for ParamSpec/TypeVarTuple use a scopeless dummy (object would become
+            // the gradual `...` form, making both checks pass; TypeVarTuple at paramIndex
+            // was previously returned as itself, making srcTypeArgs === destTypeArgs).
             const srcTypeArgs = classType.shared.typeParams.map((p, i) => {
-                if (isTypeVarTuple(p)) {
-                    return p;
+                if (i === paramIndex) {
+                    if (isParamSpec(p)) return dummyParamSpec;
+                    if (isTypeVarTuple(p)) return dummyTypeVarTuple;
+                    return getObjectType();
                 }
-                return i === paramIndex ? getObjectType() : dummyTypeObject;
+                if (isTypeVarTuple(p)) return p;
+                return dummyTypeObject;
             });
 
             // Replace all type arguments with a dummy type except for the
@@ -23062,16 +23161,14 @@ export function createTypeEvaluator(
             if (scopeNode.nodeType === ParseNodeType.Class) {
                 scopeType = TypeVarScopeType.Class;
 
-                // Set the variance to "auto" for class-scoped TypeVars.
-                typeVar.shared.declaredVariance =
-                    isParamSpec(typeVar) || isTypeVarTuple(typeVar) ? Variance.Invariant : Variance.Auto;
+                // Set the variance to "auto" for class-scoped type variables
+                typeVar.shared.declaredVariance = Variance.Auto;
             } else if (scopeNode.nodeType === ParseNodeType.Function) {
                 scopeType = TypeVarScopeType.Function;
             } else {
                 assert(scopeNode.nodeType === ParseNodeType.TypeAlias);
                 scopeType = TypeVarScopeType.TypeAlias;
-                typeVar.shared.declaredVariance =
-                    isParamSpec(typeVar) || isTypeVarTuple(typeVar) ? Variance.Invariant : Variance.Auto;
+                typeVar.shared.declaredVariance = Variance.Auto;
             }
 
             typeVar = TypeVarType.cloneForScopeId(
