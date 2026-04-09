@@ -964,6 +964,7 @@
             "comment": "{Locked='@final'}"
         },
         "overloadImplementationMismatch": "Overloaded implementation is not consistent with signature of overload {index}",
+        "overloadImplementationTooWide": "Implementation return type is too wide",
         "overloadOverrideImpl": {
             "message": "@override decorator should be applied only to the implementation",
             "comment": "{Locked='@override'}"
