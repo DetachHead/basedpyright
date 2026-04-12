@@ -44,6 +44,9 @@ jobs:
       - name: pylint
         run: uv run npm run pylint
 
+      - name: validate docs
+        run: uv run mkdocs build --strict
+
   tests:
     strategy:
       fail-fast: false

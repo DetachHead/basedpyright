@@ -9,8 +9,6 @@ on:
     branches: ['main']
     tags:
       - '*'
-  pull_request:
-    branches: ['main']
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -46,8 +44,6 @@ jobs:
           git config --local user.name "github-actions[bot]"
       - name: install dependencies
         run: ./pw uv sync
-      - name: validate docs
-        run: ./pw uv run mkdocs build --strict
       - name: deploy dev docs
         if: github.ref == 'refs/heads/main'
         run: ./pw uv run mike deploy --push --update-aliases dev
