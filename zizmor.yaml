@@ -1,0 +1,17 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # uses immutable releases
+        JS-DevTools/npm-publish: ref-pin
+  template-injection:
+    ignore:
+      # these jobs never run on forks
+      - build_and_release.yml
+      - validation.yml
+
+      # https://github.com/zizmorcore/zizmor/issues/1885
+      - mypy_primer_pr.yaml
+  anonymous-definition:
+    # the docs say actions without a name render anonymously in github but that's not the case, it uses the yaml key
+    disable: true

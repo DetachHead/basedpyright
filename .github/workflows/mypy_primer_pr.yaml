@@ -31,6 +31,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions: {}
+
 env:
   PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT: true
 
@@ -45,11 +47,12 @@ jobs:
         shard-index: [0, 1, 2, 3, 4, 5, 6, 7]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           path: pyright_to_test
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -82,7 +85,7 @@ jobs:
             | tee diff_${{ matrix.shard-index }}.txt
           ) || [ $? -eq 1 ]
       - name: Upload mypy_primer diff
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: mypy_primer_diffs_${{ matrix.shard-index }}
           path: diff_${{ matrix.shard-index }}.txt
@@ -92,7 +95,7 @@ jobs:
           echo ${{ github.event.pull_request.number }} | tee pr_number.txt
       - if: ${{ matrix.shard-index == 0 }}
         name: Upload PR number
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: mypy_primer_diffs_pr_number
           path: pr_number.txt

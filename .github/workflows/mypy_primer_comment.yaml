@@ -3,26 +3,33 @@
 # a summary comment in the PR.
 name: Comment with mypy_primer diff
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
+  # zizmor: ignore[dangerous-triggers] low risk, this job only posts PR comments and doesn't read any user input
   workflow_run:
     workflows:
       - Run mypy_primer on PR
     types:
       - completed
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   comment:
     name: Comment PR from mypy_primer
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # to post comments
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Download diffs
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
+          # zizmor: ignore[template-injection] workflow id isn't user input
           script: |
             const fs = require('fs');
             const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
@@ -50,7 +57,7 @@ jobs:
 
       - name: Post comment
         id: post-comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
