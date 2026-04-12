@@ -133,5 +133,6 @@
     "telemetry.feedback.enabled": false,
     "workbench.editor.revealIfOpen": true,
     // https://github.com/microsoft/vscode-python/issues/25467
-    "python.terminal.shellIntegration.enabled": false
+    "python.terminal.shellIntegration.enabled": false,
+    "zizmor.executablePath": ".vscode/zizmor"
 }

@@ -19,6 +19,9 @@ jobs:
       - name: typescript typecheck
         run: uv run npm run typecheck
 
+      - name: zizmor
+        run: uv run zizmor . --persona=auditor
+
       - run: uv run npm run check
 
       - name: python typecheck

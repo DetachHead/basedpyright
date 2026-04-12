@@ -38,6 +38,7 @@ dev = [
     "mkdocs-macros-plugin>=1.2.0",
     "lsp-devtools>=0.2.3",
     "pygls<2",                                        # transitive dependency of lsp-devtools. see https://github.com/microsoft/vscode-pylint/issues/626
+    "zizmor>=1.2.0",
 ]
 docstubs = [
     # these deps are also needed in build-system.requires. see https://github.com/pdm-project/pdm/issues/2947

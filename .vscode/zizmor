@@ -1,0 +1,4 @@
+#!/bin/bash
+# see zizmor.executablePath in settings.json
+projectRoot=$(dirname "$(realpath $0)")
+$projectRoot/../.venv/bin/zizmor "$@"
