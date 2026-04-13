@@ -61,6 +61,8 @@ jobs:
           pip install git+https://github.com/detachhead/mypy_primer.git
       - name: Run mypy_primer
         shell: bash
+        env:
+          shard_index: ${{ matrix.shard-index }}
         run: |
           cd pyright_to_test
           echo "new commit"
@@ -79,10 +81,10 @@ jobs:
             --repo pyright_to_test \
             --type-checker pyright \
             --new $GITHUB_SHA --old base_commit \
-            --num-shards 8 --shard-index ${{ matrix.shard-index }} \
+            --num-shards 8 --shard-index $shard_index \
             --debug \
             --output concise \
-            | tee diff_${{ matrix.shard-index }}.txt
+            | tee diff_$shard_index.txt
           ) || [ $? -eq 1 ]
       - name: Upload mypy_primer diff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -91,8 +93,10 @@ jobs:
           path: diff_${{ matrix.shard-index }}.txt
       - if: ${{ matrix.shard-index == 0 }}
         name: Save PR number
+        env:
+          pr_number: ${{ github.event.pull_request.number }}
         run: |
-          echo ${{ github.event.pull_request.number }} | tee pr_number.txt
+          echo $pr_number | tee pr_number.txt
       - if: ${{ matrix.shard-index == 0 }}
         name: Upload PR number
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
