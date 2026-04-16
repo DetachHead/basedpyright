@@ -139,46 +139,37 @@ jobs:
           name: ${{ env.ARTIFACT_NAME_VSIX }}
           path: ${{ env.VSIX_DIR }}/${{ env.VSIX_NAME }}
 
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       # publish npm canary version on every push to every branch except main
       - name: set version for npm canary
         if: github.ref != 'refs/heads/main'
         run: uv run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary
         if: github.ref != 'refs/heads/main'
-        uses: JS-DevTools/npm-publish@v4.1.5
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          tag: canary
-          package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+        run: uv run npm publish --tag canary
+        working-directory: ${{ env.NPM_PACKAGE_DIR }}
       - name: set version for npm canary (browser)
         if: github.ref != 'refs/heads/main'
         run: uv run npm version ${{ steps.current-version.outputs.CURRENT_VERSION }}-$GITHUB_SHA --workspace ${{ env.BROWSER_NPM_PACKAGE_DIR }} --no-git-tag-version
       - name: publish package - npm canary (browser)
         if: github.ref != 'refs/heads/main'
-        uses: JS-DevTools/npm-publish@v4.1.5
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          tag: canary
-          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
+        run: uv run npm publish --tag canary
+        working-directory: ${{ env.BROWSER_NPM_PACKAGE_DIR }}
 
       - name: publish package - npm
         # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        uses: JS-DevTools/npm-publish@v4.1.5
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: ${{ env.NPM_PACKAGE_DIR }}/package.json
+        run: uv run npm publish
+        working-directory: ${{ env.NPM_PACKAGE_DIR }}
       - name: publish package - npm (browser)
         # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
         if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
-        uses: JS-DevTools/npm-publish@v4.1.5
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: ${{ env.BROWSER_NPM_PACKAGE_DIR }}/package.json
+        run: uv run npm publish
+        working-directory: ${{ env.BROWSER_NPM_PACKAGE_DIR }}
 
       # this isn't ideal, but it's required becayse uv publish re-builds the npm packages even tho they were already built earlier.
       # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
