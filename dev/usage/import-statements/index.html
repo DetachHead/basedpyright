@@ -1934,7 +1934,7 @@
 3. Store a reference to submodule <code>b</code> to the variable <code>b</code> within module <code>a</code>’s namespace.
 4. Look up attribute <code>Foo</code> within module <code>b</code>.
 5. Assign the value of attribute <code>Foo</code> to a local variable called <code>Bar</code>.</p>
-<p>If another source file were to subsequently execute the statement <code>import a</code>, it would observe <code>b</code> in the namespace of <code>a</code> as a side effect of step 3 in the the earlier import operation. Relying on such side effects leads to fragile code because a change in execution ordering or a modification to one module can break code in another module. Reliance on such side effects is therefore considered a bug by Pyright, which intentionally does not attempt to model such side effects.</p>
+<p>If another source file were to subsequently execute the statement <code>import a</code>, it would observe <code>b</code> in the namespace of <code>a</code> as a side effect of step 3 in the earlier import operation. Relying on such side effects leads to fragile code because a change in execution ordering or a modification to one module can break code in another module. Reliance on such side effects is therefore considered a bug by Pyright, which intentionally does not attempt to model such side effects.</p>
 <h3 id="implicit-module-loads">Implicit Module Loads</h3>
 <p>Pyright models two loader side effects that are considered safe and are commonly used in Python code.</p>
 <ol>
