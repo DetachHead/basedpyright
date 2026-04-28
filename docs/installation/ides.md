@@ -164,7 +164,7 @@ For more information, refer to [PyCharm documentation](https://www.jetbrains.com
 
     you should commit the following generated config file, so that others working on your repo don't have to manually configure it themselves:
 
-    - `.idea/misc.xml`
+    - `.idea/pyLspTools.xml`
 
     (note that pycharm hides the `.idea` directory by default, so you will need to `git add` the file via the CLI instead.)
 
