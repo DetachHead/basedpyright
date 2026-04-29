@@ -2154,40 +2154,27 @@ their docs, linked above.</p>
 </div>
 </div>
 <h2 id="pycharm">PyCharm</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">PyCharm Community</label><label for="__tabbed_3_2">PyCharm Professional / IntelliJ IDEA Ultimate</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
+<p>PyCharm users can enable native basedpyright support in the settings:</p>
 <ol>
-<li>install the <a href="https://plugins.jetbrains.com/plugin/23257-lsp4ij">LSP4IJ</a> plugin</li>
-<li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
-<li>configure it to use basedpyright by specifying <code>basedpyright-langserver</code> as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:<br />
-<img alt="" src="../pycharm-lsp-exe.png" /></li>
-<li>set "Running mode" to "LSP4IJ":<br />
-<img alt="" src="../lsp4ij.png" /></li>
+<li>Go to <strong>Python &gt; Tools &gt; Pyright</strong> in the Settings dialog.</li>
+<li>Select the <strong>Enable</strong> checkbox.</li>
+<li>
+<p>In the Execution mode setting, select how PyCharm should search for the executable:</p>
+<p><strong>Interpreter</strong> mode (recommended): PyCharm searches for an executable installed in your interpreter. To install the basedpyright package for the selected interpreter, click <em>Install basedpyright</em>.</p>
+<p><strong>Path</strong> mode: PyCharm searches for an executable in <code>$PATH</code>. If the executable is not found, you can specify the path by clicking the Browse... icon.</p>
+</li>
+<li>
+<p>Select which options should be enabled.</p>
+</li>
 </ol>
-</div>
-<div class="tabbed-block">
-<ol>
-<li>install the <a href="https://plugins.jetbrains.com/plugin/24145">Pyright</a> plugin</li>
-<li>configure it to use basedpyright by specifying <code>basedpyright-langserver</code> as the executable and check the "Resolve against interpreter directory, ignoring extension" checkbox:<br />
-<img alt="" src="../pycharm-lsp-exe.png" /></li>
-<li>set "Running mode" to "Native LSP client":<br />
-<img alt="" src="../native-lsp.png" /></li>
-</ol>
-</div>
-</div>
-</div>
+<p>For more information, refer to <a href="https://www.jetbrains.com/help/pycharm/lsp-tools.html#pyright">PyCharm documentation</a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">pinning basedpyright as a development dependency to your project (recommended)</p>
-<p>we recommend configuring these settings as overrides in the "Appearance &amp; Behavior &gt; Required Plugins" menu, and configuring the pyright plugin (and LSP4IJ if using pycharm community) as a recommended dependency:</p>
-<p><img alt="" src="../pycharm-recommended-dependency.png" /></p>
-<p>you should then commit the following generated config files, so that others working on your repo are prompted to install the plugin and don't have to manually configure it themselves:</p>
+<p>you should commit the following generated config file, so that others working on your repo don't have to manually configure it themselves:</p>
 <ul>
-<li><code>.idea/pyright-overrides.xml</code></li>
-<li><code>.idea/pyright.xml</code></li>
-<li><code>.idea/externalDependencies.xml</code></li>
+<li><code>.idea/pyLspTools.xml</code></li>
 </ul>
-<p>(note that pycharm hides the <code>.idea</code> directory by default, so you will need to <code>git add</code> the files via the CLI instead.)</p>
+<p>(note that pycharm hides the <code>.idea</code> directory by default, so you will need to <code>git add</code> the file via the CLI instead.)</p>
 </div>
 <h2 id="helix">Helix</h2>
 <p>Install the LSP server itself, using the <a href="../command-line-and-language-server/">pypi package installation method</a> (as mentioned previously in this section).
