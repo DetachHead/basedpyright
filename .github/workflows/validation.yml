@@ -45,7 +45,7 @@ jobs:
         run: uv run npm run pylint
 
       - name: validate docs
-        run: uv run mkdocs build --strict
+        run: uv run zensical build --strict
 
   tests:
     strategy:
