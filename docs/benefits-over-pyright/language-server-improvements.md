@@ -14,7 +14,7 @@ autocomplete suggestions for method overrides will automatically add the `@overr
 
     since the `@typing.override` decorator was introduced in python 3.12, this functionality is only enabled if either:
 
-    -   you are targeting python 3.12 or above (see [`pythonVersion`](../configuration/config-files.md/#environment-options))
+    -   you are targeting python 3.12 or above (see [`pythonVersion`](../configuration/config-files.md#environment-options))
     -   you have enabled [`basedpyright.analysis.useTypingExtensions`](../configuration/language-server-settings.md#based-settings)
 
 !!! warning "important information for library developers"

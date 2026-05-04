@@ -49,7 +49,7 @@ jobs:
         run: pnpm run pylint
 
       - name: validate docs
-        run: uv run mkdocs build --strict
+        run: uv run zensical build --strict
 
   tests:
     strategy:
