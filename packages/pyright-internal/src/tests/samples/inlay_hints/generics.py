@@ -39,3 +39,7 @@ class Quxx:
 
 
 _ = Quxx(value=1)
+
+nums = ["1", "2", "3"]
+_ = map(int, nums)
+_ = filter(int, nums)
