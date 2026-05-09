@@ -213,6 +213,12 @@ if (process.platform !== 'win32' || !process.env['CI']) {
                 value: '[tuple[int, str]]',
                 imports: noImports,
             },
+            {
+                inlayHintType: 'variable',
+                position: 665,
+                value: ': list[str]',
+                imports: noImports,
+            },
         ]);
     });
     test('conflicting names', () => {
