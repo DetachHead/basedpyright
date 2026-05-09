@@ -78,6 +78,10 @@ const ignoredBuiltinFunctions = new Set([
     'builtins.iter',
 ]);
 
+// Some builtins are modeled as generic in typeshed but don't support runtime
+// subscripting (e.g. map[int](...)). Don't show generic inlay hints for them.
+const nonRuntimeSubscriptableBuiltins = new Set(['builtins.map', 'builtins.filter']);
+
 function isIgnoredBuiltin(type: FunctionType): boolean {
     if (type.shared.moduleName !== 'builtins') {
         return false;
@@ -87,6 +91,10 @@ function isIgnoredBuiltin(type: FunctionType): boolean {
         return ignoredBuiltinTypes.has(type.shared.fullName);
     }
     return ignoredBuiltinFunctions.has(type.shared.fullName);
+}
+
+function supportsRuntimeGenericSubscript(type: ClassType): boolean {
+    return !nonRuntimeSubscriptableBuiltins.has(type.shared.fullName);
 }
 
 export class TypeInlayHintsWalker extends ParseTreeWalker {
@@ -270,6 +278,8 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             node.d.leftExpr.d.value !== 'super' &&
             // only show them on classes, because the index syntax to specify generics isn't valid on functions
             isClass(callableType) &&
+            // hide generic hints for types that don't support runtime subscripting
+            supportsRuntimeGenericSubscript(callableType) &&
             // pseudo-generic classes aren't actually generic, so it's invalid to explicitly specify them
             !ClassType.isPseudoGenericClass(callableType)
         ) {
