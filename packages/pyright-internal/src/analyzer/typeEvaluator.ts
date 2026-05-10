@@ -456,8 +456,9 @@ interface SignatureTrackerStackEntry {
 // This table contains the names of several types that
 // are not subscriptable at runtime on older versions of Python.
 // It lists the first version of Python where subscripting is
-// allowed.
-const nonSubscriptableTypes: Map<string, PythonVersion> = new Map([
+// allowed. An undefined value indicates there is currently no
+// Python version where runtime subscripting is supported.
+const nonSubscriptableTypes: Map<string, PythonVersion | undefined> = new Map([
     ['asyncio.futures.Future', pythonVersion3_9],
     ['asyncio.tasks.Task', pythonVersion3_9],
     ['builtins.dict', pythonVersion3_9],
@@ -476,6 +477,8 @@ const nonSubscriptableTypes: Map<string, PythonVersion> = new Map([
     ['contextlib.AbstractAsyncContextManager', pythonVersion3_9],
     ['queue.Queue', pythonVersion3_9],
     ['array.array', pythonVersion3_12],
+    ['builtins.map', undefined],
+    ['builtins.filter', undefined],
 ]);
 
 // Some types that do not inherit from others are still considered
@@ -7215,11 +7218,9 @@ export function createTypeEvaluator(
             if (!skipSubscriptCheck) {
                 const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
                 if (isInstantiableClass(baseTypeResult.type) && !baseTypeResult.type.priv.aliasName) {
-                    const minPythonVersion = nonSubscriptableTypes.get(baseTypeResult.type.shared.fullName);
                     if (
-                        minPythonVersion !== undefined &&
-                        PythonVersion.isLessThan(fileInfo.executionEnvironment.pythonVersion, minPythonVersion) &&
-                        !fileInfo.isStubFile
+                        !fileInfo.isStubFile &&
+                        !isRuntimeSubscriptableClass(baseTypeResult.type, fileInfo.executionEnvironment.pythonVersion)
                     ) {
                         addDiagnostic(
                             DiagnosticRule.reportIndexIssue,
@@ -7280,6 +7281,20 @@ export function createTypeEvaluator(
         }
 
         return indexTypeResult;
+    }
+
+    function isRuntimeSubscriptableClass(classType: ClassType, pythonVersion: PythonVersion): boolean {
+        const fullName = classType.shared.fullName;
+        if (!nonSubscriptableTypes.has(fullName)) {
+            return true;
+        }
+
+        const minPythonVersion = nonSubscriptableTypes.get(fullName);
+        if (minPythonVersion === undefined) {
+            return false;
+        }
+
+        return PythonVersion.isGreaterOrEqualTo(pythonVersion, minPythonVersion);
     }
 
     // If the list of type parameters includes a TypeVarTuple, we may need to adjust
@@ -29193,6 +29208,7 @@ export function createTypeEvaluator(
         getInferredReturnType,
         getBestOverloadForArgs,
         getBuiltInType,
+        isRuntimeSubscriptableClass,
         getIndexAccessMagicMethodName,
         getTypeOfIndex,
         getTypeOfMember,

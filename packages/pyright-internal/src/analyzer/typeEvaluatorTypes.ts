@@ -12,6 +12,7 @@ import { CancellationToken } from 'vscode-languageserver-protocol';
 import { ConsoleInterface } from '../common/console';
 import { Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { PythonVersion } from '../common/pythonVersion';
 import { TextRange } from '../common/textRange';
 import {
     ArgCategory,
@@ -801,6 +802,7 @@ export interface TypeEvaluator {
         argList: Arg[]
     ) => FunctionType | undefined;
     getBuiltInType: (node: ParseNode, name: string) => Type;
+    isRuntimeSubscriptableClass: (classType: ClassType, pythonVersion: PythonVersion) => boolean;
     getIndexAccessMagicMethodName: (usage: EvaluatorUsage) => string;
     getTypeOfIndex: (node: IndexNode, usage?: EvaluatorUsage, flags?: EvalFlags) => TypeResult;
     getTypeOfMember: (member: ClassMember) => Type;
