@@ -36,11 +36,15 @@
         {
             "name": "Pyright current file",
             "type": "node",
+            "runtimeExecutable": "${workspaceFolder}/.venv/bin/node",
             "request": "launch",
             "preLaunchTask": "npm: build:cli:dev",
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/packages/pyright/index.js",
-            "args": ["${file}"]
+            "args": ["${file}"],
+            "windows": {
+                "runtimeExecutable": "${workspaceFolder}/.venv/Scripts/node.exe"
+            }
         },
         {
             "name": "Pyright CLI (pyright-internal)",
