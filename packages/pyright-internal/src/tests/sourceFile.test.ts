@@ -18,6 +18,7 @@ import { createServiceProvider } from '../common/serviceProviderExtensions';
 import { Uri } from '../common/uri/uri';
 import { parseAndGetTestState } from './harness/fourslash/testState';
 import { BaselineHandler } from '../baseline';
+import { tExpect } from 'typed-jest-expect';
 
 test('Empty', () => {
     const filePath = combinePaths(process.cwd(), 'tests/samples/test_file1.py');
@@ -96,7 +97,7 @@ test('Empty Open file', () => {
     assert.strictEqual(state.workspace.service.test_program.getSourceFile(marker.fileUri)?.getFileContent(), '');
 });
 
-test('No unexpected user files', () => {
+describe('no builtin libraries should be treated as user code', () => {
     const code = `
 // @filename: pyrightconfig.json
 //// {
@@ -111,7 +112,19 @@ test('No unexpected user files', () => {
     const marker = state.getMarkerByName('marker');
     while (state.workspace.service.test_program.analyze());
 
-    const userFiles = state.workspace.service.test_program.getUserFiles();
-    assert.strictEqual(userFiles.length, 1);
-    assert.strictEqual(userFiles[0].uri.toString(), marker.fileUri.toString());
+    test('No unexpected user files', () => {
+        const userFiles = state.workspace.service.test_program.getUserFiles();
+        assert.strictEqual(userFiles.length, 1);
+        assert.strictEqual(userFiles[0].uri.toString(), marker.fileUri.toString());
+    });
+
+    test('No unexpected files with diagnostics', () => {
+        const tempFile = new RealTempFile();
+        const fs = createFromRealFileSystem(tempFile);
+        const serviceProvider = createServiceProvider(tempFile, fs);
+        const configOptions = new ConfigOptions(Uri.file(process.cwd(), serviceProvider));
+        const fileDiagnostics = state.workspace.service.test_program.getDiagnostics(configOptions);
+        tExpect(fileDiagnostics.length).toBe(1);
+        tExpect(fileDiagnostics[0].fileUri.toString()).toBe(marker.fileUri.toString());
+    });
 });

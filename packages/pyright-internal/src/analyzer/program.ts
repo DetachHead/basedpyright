@@ -1015,7 +1015,13 @@ export class Program {
         const fileDiagnostics: FileDiagnostics[] = this._removeUnneededFiles();
 
         this._sourceFileList.forEach((sourceFileInfo) => {
-            if (this._shouldCheckFile(sourceFileInfo)) {
+            if (
+                this._shouldCheckFile(sourceFileInfo) &&
+                // we never want to show diagnostics in non-user files. ideally we would check this as part of
+                // `_shouldCheckFile` but there are other places where that function is used that seem to require
+                // non-user files to be checked otherwise they won't show up in completions
+                isUserCode(sourceFileInfo)
+            ) {
                 let diagnostics = sourceFileInfo.sourceFile.getDiagnostics(
                     options,
                     reportDeltasOnly ? sourceFileInfo.diagnosticsVersion : undefined
