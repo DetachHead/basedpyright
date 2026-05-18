@@ -143,11 +143,16 @@ function getModuleSymbolTableForAutoImport(
 export function buildModuleSymbolsMap(
     program: ProgramView,
     files: readonly SourceFileInfo[],
+    token: CancellationToken,
     options: ModuleSymbolMapOptions = {}
 ): ModuleSymbolMap {
     const moduleSymbolMap = new Map<string, ModuleSymbolTable>();
 
     files.forEach((file) => {
+        // Binding unbound files (see getModuleSymbolTableForAutoImport) can be expensive
+        // on large workspaces, so honor cancellation between files.
+        throwIfCancellationRequested(token);
+
         if (file.shadows.length > 0) {
             // There is corresponding stub file. Don't add
             // duplicated files in the map.

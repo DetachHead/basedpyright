@@ -419,6 +419,7 @@ export class CompletionProvider {
         const moduleSymbolMap = buildModuleSymbolsMap(
             this.program,
             this.program.getSourceFileInfoList().filter((s) => s !== currentFile),
+            this.cancellationToken,
             { bindUnboundUserCode: true }
         );
 

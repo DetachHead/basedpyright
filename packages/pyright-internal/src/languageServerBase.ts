@@ -1231,7 +1231,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
             const currentFile = program.getSourceFileInfo(uri);
             const moduleSymbolMap = buildModuleSymbolsMap(
                 program,
-                program.getSourceFileInfoList().filter((s) => s !== currentFile)
+                program.getSourceFileInfoList().filter((s) => s !== currentFile),
+                token
             );
 
             const parseFileResults = program.getParseResults(uri);

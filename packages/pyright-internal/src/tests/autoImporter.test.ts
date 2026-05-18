@@ -4,16 +4,20 @@
  */
 
 import * as assert from 'assert';
+import { CancellationToken } from 'vscode-languageserver';
 
 import { ImportResolver } from '../analyzer/importResolver';
 import { Program } from '../analyzer/program';
 import { IPythonMode } from '../analyzer/sourceFile';
 import { ConfigOptions } from '../common/configOptions';
 import { normalizeSlashes } from '../common/pathUtils';
+import { convertOffsetToPosition } from '../common/positionUtils';
 import { createServiceProvider } from '../common/serviceProviderExtensions';
 import { UriEx } from '../common/uri/uriUtils';
 import { buildModuleSymbolsMap } from '../languageService/autoImporter';
+import { CompletionOptions, CompletionProvider } from '../languageService/completionProvider';
 import { PyrightFileSystem } from '../pyrightFileSystem';
+import { parseAndGetTestState } from './harness/fourslash/testState';
 import { TestAccessHost } from './harness/testAccessHost';
 import { TestFileSystem } from './harness/vfs/filesystem';
 
@@ -78,11 +82,13 @@ test('buildModuleSymbolsMap includes symbols from unbound tracked workspace file
     assert.strictEqual(program.getModuleSymbolTable(mod1Uri), undefined);
 
     const mod1Info = program.getSourceFileInfo(mod1Uri)!;
-    const defaultModuleSymbolMap = buildModuleSymbolsMap(program, [mod1Info]);
+    const defaultModuleSymbolMap = buildModuleSymbolsMap(program, [mod1Info], CancellationToken.None);
     assert.strictEqual(defaultModuleSymbolMap.size, 0);
     assert.strictEqual(program.getModuleSymbolTable(mod1Uri), undefined);
 
-    const moduleSymbolMap = buildModuleSymbolsMap(program, [mod1Info], { bindUnboundUserCode: true });
+    const moduleSymbolMap = buildModuleSymbolsMap(program, [mod1Info], CancellationToken.None, {
+        bindUnboundUserCode: true,
+    });
 
     let foundSomeFunction = false;
     moduleSymbolMap.forEach((table) => {
@@ -100,4 +106,56 @@ test('buildModuleSymbolsMap includes symbols from unbound tracked workspace file
     );
 
     program.dispose();
+});
+
+test('CompletionProvider surfaces auto-imports from unopened tracked workspace files', () => {
+    // End-to-end coverage for the call site in completionProvider.ts that opts into
+    // bindUnboundUserCode. Removing that opt-in would silently regress this scenario
+    // even though the lower-level buildModuleSymbolsMap test would still pass.
+    const code = `
+// @filename: test.py
+//// some_func/*marker*/
+
+// @filename: mod_unopened.py
+//// def some_function(arg: str):
+////     ...
+    `;
+
+    const state = parseAndGetTestState(code).state;
+    const marker = state.getMarkerByName('marker');
+    const markerFile = state.testData.files.find((f) => f.fileName === marker.fileName)!;
+    const unopenedFile = state.testData.files.find((f) => f.fileName !== marker.fileName)!;
+
+    // Sanity check: only the marker file has been opened, so the tracked-but-unopened
+    // file has no module symbol table yet. This is the scenario that previously hid
+    // workspace symbols from auto-import completions (issue #545).
+    assert.strictEqual(state.program.getModuleSymbolTable(unopenedFile.fileUri), undefined);
+
+    const parseResult = state.program.getParseResults(markerFile.fileUri)!;
+    const position = convertOffsetToPosition(marker.position, parseResult.tokenizerOutput.lines);
+
+    const options: CompletionOptions = {
+        format: 'markdown',
+        snippet: false,
+        lazyEdit: false,
+        checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
+    };
+
+    const result = new CompletionProvider(
+        state.program,
+        markerFile.fileUri,
+        position,
+        options,
+        CancellationToken.None,
+        /* codeActions */ false
+    ).getCompletions();
+
+    assert.ok(result);
+    const item = result.items.find((i) => i.label === 'some_function' && i.detail === 'Auto-import');
+    assert.ok(item, 'expected auto-import completion for some_function from an unopened tracked file');
+    assert.ok(
+        item.additionalTextEdits?.some((e) => e.newText.includes('from mod_unopened import some_function')),
+        'expected auto-import edit "from mod_unopened import some_function"'
+    );
 });
