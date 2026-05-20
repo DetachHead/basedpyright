@@ -41,6 +41,12 @@ unlike pyright/pylance, basedpyright also supports completions for enum values:
 
 this also works for other types of enums such as `IntEnum` and `StrEnum`
 
+## go to definition on overridden methods
+
+when you run "go to definition" on the name of a method in its `def` signature, basedpyright also includes the location of the method of the same name defined in the **direct** base class(es) (one level of the class hierarchy — it does not walk the full MRO, mirroring the behavior of `super()`). this makes it easy to jump from a method you're overriding to the method it overrides. if multiple results are returned, your editor will show a picker to choose between them.
+
+see [#355](https://github.com/DetachHead/basedpyright/issues/355).
+
 ## improved diagnostic severity system
 
 in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, [the diagnostic is not reported in most cases where the hint is reported](./fixes-for-rules.md#reportunreachable)).
