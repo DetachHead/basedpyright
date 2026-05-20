@@ -130,8 +130,8 @@ function getModuleSymbolTableForAutoImport(
 
     // Tracked workspace files might not be bound yet if they haven't been opened or
     // analyzed. Bind them so auto-import completions can find their symbols.
-    if (options.bindUnboundUserCode && isUserCode(file) && file.isTracked) {
-        program.getParseResults(file.uri);
+    if (options.bindUnboundUserCode && isUserCode(file)) {
+        program.getBoundSourceFileInfo(file.uri);
         symbolTable = program.getModuleSymbolTable(file.uri);
     }
 

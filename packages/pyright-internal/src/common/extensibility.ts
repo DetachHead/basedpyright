@@ -89,6 +89,7 @@ export interface ProgramView {
     getParserOutput(fileUri: Uri): ParserOutput | undefined;
     getParseResults(fileUri: Uri): ParseFileResults | undefined;
     getSourceFileInfo(fileUri: Uri): SourceFileInfo | undefined;
+    getBoundSourceFileInfo(uri: Uri, content?: string, force?: boolean): SourceFileInfo | undefined;
     getModuleSymbolTable(fileUri: Uri): SymbolTable | undefined;
     getChainedUri(fileUri: Uri): Uri | undefined;
     getSourceMapper(fileUri: Uri, token: CancellationToken, mapCompiled?: boolean, preferStubs?: boolean): SourceMapper;
