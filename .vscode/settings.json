@@ -134,5 +134,6 @@
     "workbench.editor.revealIfOpen": true,
     // https://github.com/microsoft/vscode-python/issues/25467
     "python.terminal.shellIntegration.enabled": false,
-    "zizmor.executablePath": ".vscode/zizmor"
+    "zizmor.executablePath": ".vscode/zizmor",
+    "eslint.useFlatConfig": false
 }
