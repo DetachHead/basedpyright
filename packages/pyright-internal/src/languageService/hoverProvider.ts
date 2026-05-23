@@ -14,6 +14,7 @@ import { CancellationToken, Hover, MarkupKind } from 'vscode-languageserver';
 import {
     Declaration,
     DeclarationType,
+    FunctionDeclaration,
     VariableDeclaration,
     isUnresolvedAliasDeclaration,
 } from '../analyzer/declaration';
@@ -32,6 +33,7 @@ import {
     getTypeAliasInfo,
     isAnyOrUnknown,
     isClassInstance,
+    isFunction,
     isFunctionOrOverloaded,
     isModule,
     isParamSpec,
@@ -54,6 +56,7 @@ import {
     getDocumentationPartsForTypeAndDecl,
     getToolTipForType,
     getTypeForToolTip,
+    getWrappedFunctionType,
 } from './tooltipUtils';
 
 export interface HoverTextPart {
@@ -164,6 +167,7 @@ export function getVariableTypeText(
     type: Type,
     typeNode: ExpressionNode,
     functionSignatureDisplay: SignatureDisplayType,
+    sourceMapper?: SourceMapper
     isTypedDictKey: boolean = false
 ) {
     let label = isTypedDictKey ? 'key' : 'variable';
@@ -202,7 +206,8 @@ export function getVariableTypeText(
             evaluator,
             /* isProperty */ false,
             functionSignatureDisplay,
-            typeNode
+            typeNode,
+            sourceMapper
         );
     }
 
@@ -473,6 +478,7 @@ export class HoverProvider {
                     type,
                     typeNode,
                     this._functionSignatureDisplay,
+                    this._sourceMapper
                     isTypedDictKey
                 );
 
@@ -528,13 +534,23 @@ export class HoverProvider {
                 let type = this._getType(node);
                 const resolvedType = this._getType(resolvedDecl.node.d.name);
                 type = isAnyOrUnknown(type) ? resolvedType : type;
+
+                // If this function is decorated with @functools.wraps, show the wrapped function's signature.
+                if (isFunction(type)) {
+                    const wrappedType = getWrappedFunctionType(resolvedDecl as FunctionDeclaration, this._evaluator);
+                    if (wrappedType) {
+                        type = wrappedType;
+                    }
+                }
                 const signatureString = getToolTipForType(
                     type,
                     label,
                     node.d.value,
                     this._evaluator,
                     isProperty,
-                    this._functionSignatureDisplay
+                    this._functionSignatureDisplay,
+                    /* typeNode */ undefined,
+                    this._sourceMapper
                 );
 
                 this._addResultsPart(parts, signatureString, /* python */ true);
@@ -593,7 +609,8 @@ export class HoverProvider {
                 node.d.value,
                 type,
                 node,
-                this._functionSignatureDisplay
+                this._functionSignatureDisplay,
+                this._sourceMapper
             );
         }
 

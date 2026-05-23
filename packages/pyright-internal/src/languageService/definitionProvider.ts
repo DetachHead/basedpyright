@@ -228,7 +228,7 @@ class DefinitionProviderBase {
                 fileInfo.lines
             );
 
-            definitions.push({ uri: fileInfo.fileUri, range });
+            _addIfUnique(definitions, { uri: fileInfo.fileUri, range });
         }
     }
 }

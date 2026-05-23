@@ -15,7 +15,6 @@ BAD_CALL2 = Sentinel("BAD_CALL2", 1)
 # This should generate an error because the arg type is wrong.
 BAD_CALL3 = Sentinel(1)
 
-
 MISSING = Sentinel("MISSING")
 
 type TA1 = int | MISSING

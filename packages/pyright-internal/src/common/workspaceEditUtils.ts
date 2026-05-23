@@ -165,7 +165,6 @@ export function applyDocumentChanges(program: EditableProgram, fileInfo: SourceF
     if (!fileInfo.isOpenByClient) {
         const fileContent = fileInfo.contents;
         program.setFileOpened(fileInfo.uri, 0, fileContent ?? '', {
-            isTracked: fileInfo.isTracked,
             ipythonMode: fileInfo.ipythonMode,
             chainedFileUri: fileInfo.chainedSourceFile?.uri,
         });
@@ -177,7 +176,6 @@ export function applyDocumentChanges(program: EditableProgram, fileInfo: SourceF
     const sourceDoc = TextDocument.create(filePath, 'python', version, fileInfo.contents ?? '');
 
     program.setFileOpened(fileUri, version + 1, TextDocument.applyEdits(sourceDoc, edits), {
-        isTracked: fileInfo.isTracked,
         ipythonMode: fileInfo.ipythonMode,
         chainedFileUri: fileInfo.chainedSourceFile?.uri,
     });

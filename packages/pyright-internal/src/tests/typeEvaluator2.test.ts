@@ -10,7 +10,7 @@
 
 import { ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
-import { pythonVersion3_10, pythonVersion3_13, pythonVersion3_9 } from '../common/pythonVersion';
+import { pythonVersion3_10, pythonVersion3_13, pythonVersion3_15, pythonVersion3_9 } from '../common/pythonVersion';
 import { Uri } from '../common/uri/uri';
 import * as TestUtils from './testUtils';
 
@@ -1033,9 +1033,13 @@ test('SolverUnknown1', () => {
 });
 
 test('Sentinel1', () => {
-    const configOptions = new ConfigOptions(Uri.empty());
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['sentinel1.py']);
+    TestUtils.validateResults(analysisResults, 5);
+});
 
-    configOptions.diagnosticRuleSet.enableExperimentalFeatures = true;
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['sentinel1.py'], configOptions);
+test('Sentinel2', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.defaultPythonVersion = pythonVersion3_15;
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['sentinel2.py'], configOptions);
     TestUtils.validateResults(analysisResults, 5);
 });

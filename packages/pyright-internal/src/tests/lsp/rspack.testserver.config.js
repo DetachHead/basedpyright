@@ -1,17 +1,15 @@
-/**
- * webpack.config-cli.js
- * Copyright: Microsoft 2018
- */
-
 const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
 const { tsconfigResolveAliases } = require('../../../../../build/lib/webpack');
 
 const outPath = path.resolve(__dirname, '..', '..', '..', 'out');
 const typeshedFallback = path.resolve(__dirname, '..', '..', '..', '..', '..', 'docstubs');
 
-/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => import('webpack').Configuration}*/
-module.exports = (_, { mode }) => {
+/** @typedef {{ mode: 'production' | 'development' | 'none' }} RspackArgv */
+
+/** @param {unknown} _ @param {RspackArgv} param1 */
+module.exports = async (_, { mode }) => {
+    const { CopyRspackPlugin } = await import('@rspack/core');
+
     return {
         context: __dirname,
         entry: {
@@ -21,7 +19,9 @@ module.exports = (_, { mode }) => {
         output: {
             filename: '[name].bundle.js',
             path: outPath,
-            libraryTarget: 'commonjs2',
+            library: {
+                type: 'commonjs2',
+            },
             devtoolModuleFilenameTemplate: '[absolute-resource-path]',
         },
         devtool: 'source-map',
@@ -49,9 +49,6 @@ module.exports = (_, { mode }) => {
                     },
                 },
                 {
-                    // Transform pre-compiled JS files to use syntax available in Node 12+.
-                    // esbuild is fast, so let it run on all JS files rather than matching
-                    // only known-bad libs.
                     test: /\.js$/,
                     loader: 'esbuild-loader',
                     options: {
@@ -60,6 +57,6 @@ module.exports = (_, { mode }) => {
                 },
             ],
         },
-        plugins: [new CopyPlugin({ patterns: [{ from: typeshedFallback, to: 'typeshed-fallback' }] })],
+        plugins: [new CopyRspackPlugin({ patterns: [{ from: typeshedFallback, to: 'typeshed-fallback' }] })],
     };
 };

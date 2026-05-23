@@ -431,6 +431,11 @@ export interface ExpectedTypeOptions {
 export interface ExpectedTypeResult {
     type: Type;
     node: ParseNode;
+    candidates: Type[];
+}
+
+export function ensureExpectedTypeCandidates<T>(type: T, candidates: readonly T[]): T[] {
+    return candidates.length > 0 ? [...candidates] : [type];
 }
 
 export interface FunctionResult {

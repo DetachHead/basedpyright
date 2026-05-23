@@ -18,6 +18,7 @@ import {
 import { InvalidatedReason } from './analyzer/backgroundAnalysisProgram';
 import { ImportResolver } from './analyzer/importResolver';
 import { OpenFileOptions, Program } from './analyzer/program';
+import { TypeStubWriter } from './analyzer/typeStubWriter';
 import {
     BackgroundThreadBase,
     InitializationData,
@@ -59,7 +60,7 @@ export interface IBackgroundAnalysis extends Disposable {
     ensurePartialStubPackages(executionRoot: string | undefined): void;
     setFileOpened(fileUri: Uri, version: number | null, contents: string, options: OpenFileOptions): void;
     updateChainedUri(fileUri: Uri, chainedUri: Uri | undefined): void;
-    setFileClosed(fileUri: Uri, isTracked?: boolean): void;
+    setFileClosed(fileUri: Uri): void;
     addInterimFile(fileUri: Uri): void;
     markAllFilesDirty(evenIfContentsAreSame: boolean): void;
     markFilesDirty(fileUris: Uri[], evenIfContentsAreSame: boolean): void;
@@ -177,8 +178,8 @@ export class BackgroundAnalysisBase implements IBackgroundAnalysis {
         });
     }
 
-    setFileClosed(fileUri: Uri, isTracked?: boolean) {
-        this.enqueueRequest({ requestType: 'setFileClosed', data: serialize({ fileUri, isTracked }) });
+    setFileClosed(fileUri: Uri) {
+        this.enqueueRequest({ requestType: 'setFileClosed', data: serialize({ fileUri }) });
     }
 
     addInterimFile(fileUri: Uri) {
@@ -608,8 +609,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             }
 
             case 'setFileClosed': {
-                const { fileUri, isTracked } = deserialize(msg.data);
-                this.handleSetFileClosed(fileUri, isTracked);
+                const { fileUri } = deserialize(msg.data);
+                this.handleSetFileClosed(fileUri);
                 break;
             }
 
@@ -734,16 +735,14 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         stubPath: Uri,
         token: CancellationToken
     ) {
-        analyzeProgram(
-            this.program,
-            /* maxTime */ undefined,
-            this._configOptions,
-            nullCallback,
-            this.getConsole(),
+        new TypeStubWriter(this.program).writeTypeStub(
+            {
+                targetImportPath,
+                targetIsSingleFile,
+                outputPath: stubPath,
+            },
             token
         );
-
-        this.program.writeTypeStub(targetImportPath, targetIsSingleFile, stubPath, token);
     }
 
     protected handleSetImportResolver(hostKind: HostKind) {
@@ -808,8 +807,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
         this.program.updateChainedUri(fileUri, chainedFileUri);
     }
 
-    protected handleSetFileClosed(fileUri: Uri, isTracked: boolean | undefined) {
-        const diagnostics = this.program.setFileClosed(fileUri, isTracked);
+    protected handleSetFileClosed(fileUri: Uri) {
+        const diagnostics = this.program.setFileClosed(fileUri);
         this._reportDiagnostics(diagnostics, this.program.getFilesToAnalyzeCount(), 0);
     }
 
