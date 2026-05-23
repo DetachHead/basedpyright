@@ -167,7 +167,7 @@ export function getVariableTypeText(
     type: Type,
     typeNode: ExpressionNode,
     functionSignatureDisplay: SignatureDisplayType,
-    sourceMapper?: SourceMapper
+    sourceMapper?: SourceMapper,
     isTypedDictKey: boolean = false
 ) {
     let label = isTypedDictKey ? 'key' : 'variable';
@@ -478,7 +478,7 @@ export class HoverProvider {
                     type,
                     typeNode,
                     this._functionSignatureDisplay,
-                    this._sourceMapper
+                    this._sourceMapper,
                     isTypedDictKey
                 );
 

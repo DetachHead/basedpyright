@@ -54,7 +54,8 @@ test('source enumeration reports symlinked include roots', () => {
         [],
         /* autoExcludeVenv */ false,
         fs,
-        new NullConsole()
+        new NullConsole(),
+        10
     );
 
     const result = enumerator.enumerate(/* timeLimitInMs */ 1000);

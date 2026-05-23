@@ -14,7 +14,7 @@
         "fix:eslint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint --fix .",
         "check:prettier": "prettier -c .",
         "fix:prettier": "prettier --write .",
-        "typecheck": "npm exec --workspaces -- \"tsc --noEmit\"",
+        "typecheck": "npm exec --workspaces -- tsc --noEmit",
         "run:cli": "npm run build:cli:dev && node packages/pyright/index.js",
         "run:langserver": "npm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
         "jest": "cd packages/pyright-internal && jest",

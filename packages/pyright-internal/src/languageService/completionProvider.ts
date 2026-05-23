@@ -2990,7 +2990,8 @@ export class CompletionProvider {
 
         const type = this._getFilteredMatchSubjectTypeForCaseCompletions(matchNode, caseNode);
         if (type && this._containsCategoricalType(type)) {
-            this._addValuesForTargetType(type, priorWord, priorText, postText, completionMap);
+            // TODO: is child correct here?
+            this._addValuesForTargetType(parentAndChild.child, type, priorWord, priorText, postText, completionMap);
             return true;
         }
 
@@ -3016,7 +3017,7 @@ export class CompletionProvider {
                 continue;
             }
 
-            this._addValuesForTargetType(candidateType, priorWord, priorText, postText, completionMap);
+            this._addValuesForTargetType(expressionNode, candidateType, priorWord, priorText, postText, completionMap);
             addedLiteralValues = true;
         }
 
@@ -3081,7 +3082,7 @@ export class CompletionProvider {
         };
 
         const type = this.evaluator.getType(matchNode.d.expr);
-        if (!type || !containsLiteralType(type)) {
+        if (!type || !this._containsCategoricalType(type)) {
             return type;
         }
 
