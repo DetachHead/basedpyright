@@ -143,5 +143,5 @@ basedpyright/package.json
 # typeshed stubs with docstrings
 docstubs
 
-# mkdocs output
+# zensical output
 site/
