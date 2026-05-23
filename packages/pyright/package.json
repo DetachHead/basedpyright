@@ -27,9 +27,9 @@
     "devDependencies": {
         "@rspack/cli": "^2.0.4",
         "@rspack/core": "^2.0.4",
-        "@types/is-ci": "^3.0.4",
         "@types/node": "^22.19.6",
         "esbuild-loader": "^4.4.2",
+        "is-ci": "^4.1.0",
         "shx": "^0.4.0",
         "ts-loader": "^9.5.4",
         "typescript": "~5.5.4",
