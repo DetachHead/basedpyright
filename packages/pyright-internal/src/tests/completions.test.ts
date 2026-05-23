@@ -1245,7 +1245,7 @@ ${configEnableExplicitOverride}
                     additionalTextEdits: [
                         {
                             range: state.getPositionRange('importMarker'),
-                            newText: 'from typing import override\n',
+                            newText: 'from typing import override\n\n',
                         },
                         {
                             range: state.getPositionRange('overrideMarker'),

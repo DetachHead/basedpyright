@@ -28,7 +28,7 @@
 const additionalTextEdits = [
     {
         range: helper.getPositionRange('importMarker'),
-        newText: 'from typing import override\n',
+        newText: 'from typing import override\n\n',
     },
     {
         range: helper.getPositionRange('overrideMarker'),

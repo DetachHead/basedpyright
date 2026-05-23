@@ -2847,11 +2847,13 @@ export class CompletionProvider {
         ) {
             const type = this.evaluator.getType(comparison.d.leftExpr);
             if (type) {
-                if (this._containsCategoricalType(type)) {
+                // for literal values and enum keys
+                const containsCategoricalType = this._containsCategoricalType(type);
+                if (containsCategoricalType) {
                     this._addValuesForTargetType(parseNode, type, priorWord, priorText, postText, completionMap);
-                    return true;
                 }
-                // TODO: is this needed? came from upstream but i think it's redundant because we have our own handling for enums
+
+                // for StrEnum values
                 const enumValueLiteralType = getStringLiteralValueTypeFromEnumType(this.evaluator, type);
                 if (enumValueLiteralType) {
                     this._addValuesForTargetType(
@@ -2862,6 +2864,9 @@ export class CompletionProvider {
                         postText,
                         completionMap
                     );
+                    return true;
+                }
+                if (containsCategoricalType) {
                     return true;
                 }
             }
