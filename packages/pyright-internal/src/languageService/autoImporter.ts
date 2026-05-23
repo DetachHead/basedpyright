@@ -23,7 +23,7 @@ import {
     getTopLevelImports,
 } from '../analyzer/importStatementUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
-import { Symbol } from '../analyzer/symbol';
+import { Symbol, SymbolTable } from '../analyzer/symbol';
 import * as SymbolNameUtils from '../analyzer/symbolNameUtils';
 import { isVisibleExternally } from '../analyzer/symbolUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -114,12 +114,45 @@ export interface ImportAliasData {
 
 export type AutoImportResultMap = Map<string, AutoImportResult[]>;
 
+export interface ModuleSymbolMapOptions {
+    readonly bindUnboundUserCode?: boolean;
+}
+
+function getModuleSymbolTableForAutoImport(
+    program: ProgramView,
+    file: SourceFileInfo,
+    options: ModuleSymbolMapOptions
+): SymbolTable | undefined {
+    let symbolTable = program.getModuleSymbolTable(file.uri);
+    if (symbolTable) {
+        return symbolTable;
+    }
+
+    // Tracked workspace files might not be bound yet if they haven't been opened or
+    // analyzed. Bind them so auto-import completions can find their symbols.
+    if (options.bindUnboundUserCode && isUserCode(file)) {
+        program.getBoundSourceFileInfo(file.uri);
+        symbolTable = program.getModuleSymbolTable(file.uri);
+    }
+
+    return symbolTable;
+}
+
 // Build a map of all modules within this program and the module-
 // level scope that contains the symbol table for the module.
-export function buildModuleSymbolsMap(program: ProgramView, files: readonly SourceFileInfo[]): ModuleSymbolMap {
+export function buildModuleSymbolsMap(
+    program: ProgramView,
+    files: readonly SourceFileInfo[],
+    token: CancellationToken,
+    options: ModuleSymbolMapOptions = {}
+): ModuleSymbolMap {
     const moduleSymbolMap = new Map<string, ModuleSymbolTable>();
 
     files.forEach((file) => {
+        // Binding unbound files (see getModuleSymbolTableForAutoImport) can be expensive
+        // on large workspaces, so honor cancellation between files.
+        throwIfCancellationRequested(token);
+
         if (file.shadows.length > 0) {
             // There is corresponding stub file. Don't add
             // duplicated files in the map.
@@ -127,7 +160,7 @@ export function buildModuleSymbolsMap(program: ProgramView, files: readonly Sour
         }
 
         const uri = file.uri;
-        const symbolTable = program.getModuleSymbolTable(uri);
+        const symbolTable = getModuleSymbolTableForAutoImport(program, file, options);
         if (!symbolTable) {
             return;
         }

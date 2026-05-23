@@ -418,7 +418,9 @@ export class CompletionProvider {
         const currentFile = this.program.getSourceFileInfo(this.fileUri);
         const moduleSymbolMap = buildModuleSymbolsMap(
             this.program,
-            this.program.getSourceFileInfoList().filter((s) => s !== currentFile)
+            this.program.getSourceFileInfoList().filter((s) => s !== currentFile),
+            this.cancellationToken,
+            { bindUnboundUserCode: true }
         );
 
         return new AutoImporter(
