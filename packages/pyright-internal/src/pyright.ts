@@ -350,6 +350,8 @@ async function processArgs(): Promise<ExitStatus> {
         options.configFilePath = combinePaths(process.cwd(), normalizePath(args.project));
     }
 
+    // TODO: this code is duplicated from configOptions.ts
+
     if (args.pythonplatform) {
         if (['All', 'Darwin', 'Linux', 'Windows', 'iOS', 'Android'].includes(args.pythonplatform)) {
             options.configSettings.pythonPlatform = args.pythonplatform;

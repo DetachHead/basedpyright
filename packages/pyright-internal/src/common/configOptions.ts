@@ -1726,10 +1726,13 @@ export class ConfigOptions {
 
         // Read the default "pythonPlatform".
         if (configObj.pythonPlatform !== undefined) {
+            const validValues = ['All', 'Darwin', 'Linux', 'Windows', 'iOS', 'Android'];
             if (typeof configObj.pythonPlatform !== 'string') {
                 console.error(`Config "pythonPlatform" field must contain a string.`);
-            } else if (!['Linux', 'Windows', 'Darwin', 'All'].includes(configObj.pythonPlatform)) {
-                `'${configObj.pythonPlatform}' is not a supported Python platform; specify All, Darwin, Linux, or Windows.`;
+            } else if (!validValues.includes(configObj.pythonPlatform)) {
+                console.error(
+                    `'${configObj.pythonPlatform}' is not a supported Python platform; specify ${validValues}.`
+                );
             } else {
                 this.defaultPythonPlatform = configObj.pythonPlatform;
             }
