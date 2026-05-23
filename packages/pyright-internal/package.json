@@ -61,7 +61,6 @@
         "ts-loader": "^9.5.4",
         "typed-jest-expect": "^1.0.1",
         "typescript": "~5.5.4",
-        "webpack": "^5.104.1",
         "word-wrap": "1.2.5"
     }
 }

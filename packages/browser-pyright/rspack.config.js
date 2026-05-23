@@ -1,20 +1,14 @@
-/**
- * webpack.config-cli.js
- * Copyright: Microsoft 2018
- */
-
 const path = require('path');
-const { DefinePlugin, ProvidePlugin } = require('webpack');
-const VirtualModulesPlugin = require('webpack-virtual-modules');
+const { DefinePlugin, ProvidePlugin, experiments } = require('@rspack/core');
 const fs = require('fs/promises');
 const { readFileSync } = require('fs');
-const { cacheConfig, monorepoResourceNameMapper, tsconfigResolveAliases } = require('../../build/lib/webpack');
+const { monorepoResourceNameMapper, tsconfigResolveAliases } = require('../../build/lib/webpack');
 
 const outPath = path.resolve(__dirname, 'dist');
 
 const typeshedFallback = path.resolve(__dirname, '..', '..', 'docstubs');
 
-/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => Promise<import('webpack').Configuration>}*/
+/**@type {(env: any, argv: { mode: 'production' | 'development' | 'none' }) => Promise<import('@rspack/core').Configuration>}*/
 module.exports = async (_, { mode }) => {
     return {
         context: __dirname,
@@ -32,7 +26,7 @@ module.exports = async (_, { mode }) => {
             clean: true,
         },
         devtool: mode === 'development' ? 'source-map' : 'nosources-source-map',
-        cache: mode === 'development' ? cacheConfig(__dirname, __filename) : false,
+        cache: mode === 'development',
         stats: {
             all: false,
             errors: true,
@@ -82,7 +76,7 @@ module.exports = async (_, { mode }) => {
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
             }),
-            new VirtualModulesPlugin({
+            new experiments.VirtualModulesPlugin({
                 'node_modules/typeshed-json': `module.exports = ${JSON.stringify(
                     (await fs.readdir(typeshedFallback, { recursive: true, withFileTypes: true }))
                         .filter((entry) => entry.isFile())

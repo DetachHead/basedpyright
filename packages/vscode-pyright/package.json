@@ -2034,7 +2034,6 @@
         "ovsx": "^0.8.3",
         "shx": "^0.4.0",
         "ts-loader": "^9.5.4",
-        "typescript": "~5.5.4",
-        "webpack": "^5.104.1"
+        "typescript": "~5.5.4"
     }
 }
