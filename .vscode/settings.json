@@ -9,7 +9,7 @@
         "editor.codeActionsOnSave": {
             "source.fixAll.eslint": "always",
             "source.organizeImports": "always"
-        },
+        }
     },
     "[yaml]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -19,11 +19,17 @@
         "editor.defaultFormatter": "tamasfe.even-better-toml",
         "editor.formatOnSave": true
     },
-    "[python][markdown]": {
+    "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.codeActionsOnSave": {
             "source.organizeImports": "always"
         }
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "Jota0222.multi-formatter",
+        // need prettier to format markdown and ruff to format python codeblocks inside the markdown files
+        "multiFormatter.formatterList": ["esbenp.prettier-vscode", "charliermarsh.ruff"],
+        "editor.formatOnSave": true
     },
     "editor.codeActionsOnSave": {
         // this is the default, but we disable it explicitly to prevent any user settings from causing imports to get
@@ -72,7 +78,7 @@
         "**/pyright-internal/src/tests/samples/*",
         "**/pyright-internal/typeshed-fallback/*",
         "**/docstubs/*",
-        "**/build/py_latest/upstream/*",
+        "**/build/py_latest/upstream/*"
     ],
     // even though python.terminal.activateEnvInCurrentTerminal is enabled, we still need to add the venv's script folder to the PATH
     // because vscode's npm tasks do not run with the activated venv
