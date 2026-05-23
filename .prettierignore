@@ -7,8 +7,8 @@ docstubs
 *.json
 
 # ignore markdown files that we haven't really touched to avoid unnecessary upstream conflicts
-docs/configuration.md
 docs/configuration/*.md
+!docs/configuration/environment-variables.md
 docs/development/internals.md
 docs/getting_started/**/*.md
 docs/usage/**/*.md
