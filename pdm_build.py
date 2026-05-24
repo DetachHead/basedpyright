@@ -3,6 +3,7 @@ from __future__ import annotations
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
+from subprocess import CompletedProcess  # noqa: S404 no user input
 from typing import TYPE_CHECKING, TypedDict, cast
 
 from nodejs_wheel.executable import npm
@@ -20,9 +21,17 @@ class PackageJson(TypedDict):
 
 
 def run_npm(*args: str):
-    exit_code = npm(args)
-    if exit_code != 0:
-        raise Exception(f"the following npm command exited with {exit_code=}: {args}")
+    # cast needed because the npm function doesn't have all the overloads from subprocess.run even
+    # though the args are forwarded to it
+    result = cast(
+        CompletedProcess[str],
+        npm(args, return_completed_process=True, capture_output=True, text=True),
+    )
+    if result.returncode != 0:
+        raise Exception(
+            f"the following npm command exited with exit code {result.returncode}: {args}"
+            f"\n\nstderr:\n{result.stderr}"
+        )
 
 
 # https://github.com/pdm-project/pdm-backend/issues/247
