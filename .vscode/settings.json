@@ -78,7 +78,8 @@
         "**/pyright-internal/src/tests/samples/*",
         "**/pyright-internal/typeshed-fallback/*",
         "**/docstubs/*",
-        "**/build/py_latest/upstream/*"
+        "**/build/py_latest/upstream/*",
+        "**/mypy_primer/*" //TODO: why is the ** needed? this is a top level directory
     ],
     // even though python.terminal.activateEnvInCurrentTerminal is enabled, we still need to add the venv's script folder to the PATH
     // because vscode's npm tasks do not run with the activated venv
