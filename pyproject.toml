@@ -45,6 +45,13 @@ docstubs = [
 ]
 lochelper = ["rich>=13.0", "textual>=0.70.0"]
 
+# this is the only dependency group not installed by default, to avoid errors when attempting to install dependencies
+# if you cloned the repo without submodules
+submodules = [
+    # mypy primer doesn't support <=3.10, but we don't need that anyway
+    "mypy-primer ; python_full_version >= '3.11'",
+]
+
 [build-system]
 build-backend = "pdm.backend"
 requires = [
@@ -72,6 +79,10 @@ default-groups = ["dev", "docstubs", "lochelper"]
 # transient dependency of docify. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
 no-build-package = ["libcst"]
 exclude-newer = "1 week"
+
+[tool.uv.sources]
+mypy-primer = { path = "mypy_primer", editable = true }
+
 
 [tool.pdm.version]
 source = "call"
