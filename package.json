@@ -21,6 +21,7 @@
         "update-python-deps": "uv sync --upgrade",
         "update-pyprojectx-lockfile": "python pw --lock",
         "typecheck-python": "uv run --no-sync basedpyright",
+        "typecheck-python:writebaseline": "npm run typecheck-python -- --writebaseline",
         "ruff-check": "uv run --no-sync ruff check --no-cache && uv run --no-sync ruff format --check --diff",
         "ruff-fix": "uv run --no-sync ruff check --no-cache --fix && uv run --no-sync ruff format",
         "pylint": "uv run --no-sync pylint basedpyright build pdm_build.py --ignore-paths build/py_latest/upstream",
