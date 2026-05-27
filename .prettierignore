@@ -17,3 +17,4 @@ docs/usage/**/*.md
 
 **/.venv/**
 .pyprojectx
+mypy_primer

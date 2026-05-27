@@ -1,0 +1,3 @@
+[submodule "mypy_primer"]
+	path = mypy_primer
+	url = https://github.com/detachHead/mypy_primer

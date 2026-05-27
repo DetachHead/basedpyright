@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+          submodules: true # needed for mypy_primer even tho it's not used. see https://github.com/astral-sh/uv/issues/13670
 
       # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
       - run: ./pw uv sync --locked
@@ -28,7 +29,8 @@ jobs:
         run: uv run npm run typecheck
 
       - name: zizmor
-        run: uv run zizmor . --persona=auditor
+        # intentionally exclude workflows from the mypy_primer submodule. https://github.com/zizmorcore/zizmor/issues/784
+        run: uv run zizmor .github --persona=auditor
 
       - run: uv run npm run check
 
@@ -59,6 +61,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
+          submodules: true # see comment on the first usage of actions/checkout
 
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         id: install_python
