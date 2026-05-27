@@ -121,19 +121,25 @@ export async function activate(context: ExtensionContext) {
         const isWindows = os.platform() === 'win32';
         const executableName = `basedpyright-langserver${isWindows ? '.exe' : ''}`;
         const executableDir = path.join(pythonApi.environments.getActiveEnvironmentPath().path, '..');
-        const executablePath = path.join(executableDir, executableName);
-        if (existsSync(executablePath)) {
-            console.log('using pyright executable:', executablePath);
+        const originalExecutablePath = path.join(executableDir, executableName);
+        if (existsSync(originalExecutablePath)) {
+            console.log('using pyright executable:', originalExecutablePath);
+            let executablePath = originalExecutablePath;
 
-            // make a copy of the exe to avoid locking it, which would otherwise cause crashes when you try to
-            // update/uninstall basedpyright while vscode is open
-            let copiedExecutablePath = path.join(executableDir, `_vscode_copy_${executableName}`);
-            try {
-                await cp(executablePath, copiedExecutablePath, { force: true });
-            } catch (e) {
-                console.warn(`failed to create copy at ${copiedExecutablePath}, falling back to using the real one`);
-                copiedExecutablePath = executablePath;
+            // on windows we make a copy of the exe to avoid locking it, which would otherwise cause crashes when you try to
+            // update/uninstall basedpyright while vscode is open. this only seems to be an issue on windows
+            if (isWindows) {
+                const copiedExecutablePath = path.join(executableDir, `_vscode_copy_${executableName}`);
+                try {
+                    await cp(originalExecutablePath, copiedExecutablePath, { force: true });
+                    executablePath = copiedExecutablePath;
+                } catch (e) {
+                    console.warn(
+                        `failed to create copy at ${copiedExecutablePath}, falling back to using the real one`
+                    );
+                }
             }
+
             const transport = TransportKind.stdio;
             const originalCliArgs = cancellationStrategy.getCommandLineArguments();
             if (context.extensionMode === ExtensionMode.Development) {
@@ -141,15 +147,15 @@ export async function activate(context: ExtensionContext) {
                     command: context.asAbsolutePath(
                         `../../.venv/${isWindows ? 'Scripts/lsp-devtools.exe' : 'bin/lsp-devtools'}`
                     ),
-                    args: ['agent', '--', copiedExecutablePath, ...originalCliArgs],
+                    args: ['agent', '--', executablePath, ...originalCliArgs],
                     transport,
                 };
             } else {
-                serverOptions = { command: copiedExecutablePath, args: originalCliArgs, transport };
+                serverOptions = { command: executablePath, args: originalCliArgs, transport };
             }
         } else {
             console.warn(
-                `failed to find pyright executable at ${executablePath}, falling back to bundled at ${bundlePath}`
+                `failed to find pyright executable at ${originalExecutablePath}, falling back to bundled at ${bundlePath}`
             );
         }
     }
