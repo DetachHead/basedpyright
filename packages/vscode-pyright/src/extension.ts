@@ -134,16 +134,19 @@ export async function activate(context: ExtensionContext) {
                 console.warn(`failed to create copy at ${copiedExecutablePath}, falling back to using the real one`);
                 copiedExecutablePath = executablePath;
             }
-            const cliArgs = cancellationStrategy.getCommandLineArguments();
-            const [command, args] =
-                // don't do this if windows due to https://github.com/swyddfa/lsp-devtools/issues/125
-                context.extensionMode === ExtensionMode.Development && !isWindows
-                    ? [
-                          context.asAbsolutePath('../../.venv/bin/lsp-devtools'),
-                          ['agent', '--', copiedExecutablePath, ...cliArgs],
-                      ]
-                    : [copiedExecutablePath, cliArgs];
-            serverOptions = { command, transport: TransportKind.stdio, args };
+            const transport = TransportKind.stdio;
+            const originalCliArgs = cancellationStrategy.getCommandLineArguments();
+            if (context.extensionMode === ExtensionMode.Development) {
+                serverOptions = {
+                    command: context.asAbsolutePath(
+                        `../../.venv/${isWindows ? 'Scripts/lsp-devtools.exe' : 'bin/lsp-devtools'}`
+                    ),
+                    args: ['agent', '--', copiedExecutablePath, ...originalCliArgs],
+                    transport,
+                };
+            } else {
+                serverOptions = { command: copiedExecutablePath, args: originalCliArgs, transport };
+            }
         } else {
             console.warn(
                 `failed to find pyright executable at ${executablePath}, falling back to bundled at ${bundlePath}`
