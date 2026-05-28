@@ -17,8 +17,10 @@ export abstract class DynamicFeature {
 
     register() {
         this.registerFeature().then((d) => {
-            this.dispose();
-            this._lastRegistration = d;
+            if (d) {
+                this.dispose();
+                this._lastRegistration = d;
+            }
         });
     }
 
@@ -37,7 +39,7 @@ export abstract class DynamicFeature {
         this.dispose();
     }
 
-    protected abstract registerFeature(): Promise<Disposable>;
+    protected abstract registerFeature(): Promise<Disposable | null>;
 }
 
 export class DynamicFeatures {
