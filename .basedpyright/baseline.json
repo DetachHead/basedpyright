@@ -407,7 +407,7 @@
                 "code": "reportUnusedCallResult",
                 "range": {
                     "startColumn": 4,
-                    "endColumn": 94,
+                    "endColumn": 100,
                     "lineCount": 1
                 }
             },
@@ -415,7 +415,7 @@
                 "code": "reportUnusedCallResult",
                 "range": {
                     "startColumn": 4,
-                    "endColumn": 93,
+                    "endColumn": 99,
                     "lineCount": 1
                 }
             },
@@ -1576,8 +1576,8 @@
             {
                 "code": "reportUnusedImport",
                 "range": {
-                    "startColumn": 36,
-                    "endColumn": 43,
+                    "startColumn": 50,
+                    "endColumn": 57,
                     "lineCount": 1
                 }
             },
@@ -1746,38 +1746,6 @@
                 "range": {
                     "startColumn": 54,
                     "endColumn": 61,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 14,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportAny",
-                "range": {
-                    "startColumn": 14,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportOptionalMemberAccess",
-                "range": {
-                    "startColumn": 20,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportGeneralTypeIssues",
-                "range": {
-                    "startColumn": 14,
-                    "endColumn": 19,
                     "lineCount": 1
                 }
             },
