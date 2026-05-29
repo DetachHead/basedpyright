@@ -58,10 +58,13 @@ jobs:
           submodules: true
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       - name: Install dependencies
+        # i have no clue how this clusterfuck probably ai generated bash script works and i dont have the patience to find out.
+        # for some reason no matter how i try to install mypy primer with uv it doesnt fucking work so we have to keep the pip install
+        # here unfortunately
         run: |
           cd pyright_to_test
-          ./pw uv sync --only-group submodules
-          realpath ./.pyprojectx/main >> $GITHUB_PATH
+          ./pw --install-context mypy_primer
+          realpath ./.pyprojectx/mypy_primer >> $GITHUB_PATH
       - name: Run mypy_primer
         shell: bash
         env:
@@ -101,7 +104,7 @@ jobs:
           npm config get legacy-peer-deps
           # fail action if exit code isn't zero or one
           (
-            uv run --no-sync mypy_primer \
+            mypy_primer \
             --repo pyright_to_test \
             --type-checker pyright \
             --new new_commit --old base_commit \
