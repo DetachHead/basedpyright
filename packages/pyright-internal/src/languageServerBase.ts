@@ -822,7 +822,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 this.connection.workspace.onDidChangeWorkspaceFolders(changeWorkspaceFolderHandler);
         }
 
-        this.dynamicFeatures.register();
         this.updateSettingsForAllWorkspaces();
     }
 
