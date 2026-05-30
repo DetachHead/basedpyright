@@ -2033,14 +2033,9 @@
 <p class="admonition-title">inspecting LSP messages</p>
 <p>while the VSCode extension is running in this mode, you can run the <code>npm: lsp-inspect</code> task to launch the <a href="https://lsp-devtools.readthedocs.io/en/latest/lsp-devtools/guide/inspect-command.html">LSP inspector</a>, which allows you to browse all messages sent between the client and server:</p>
 <p><img alt="" src="../lspinspector.svg" /></p>
-<p>note that this does not work on windows, see <a href="https://github.com/swyddfa/lsp-devtools/issues/125">this issue</a>. as a workaround you can use <a href="#language-server">the client</a> instead.</p>
 </div>
 <h3 id="language-server">Language server</h3>
 <p>you may want to debug the language server without the VSCode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using <a href="https://github.com/swyddfa/lsp-devtools">LSP-inspector</a>'s client by running the <code>npm: lsp-client</code> task or the "LSP client" launch config</p>
-<div class="admonition note">
-<p class="admonition-title">for windows users</p>
-<p>the npm script will not work if run from VSCode's task runner. use the launch config instead.</p>
-</div>
 
 
 
