@@ -20,7 +20,7 @@ import { isDefined } from '../common/core';
 import { configFileName } from '../common/pathConsts';
 
 export class FileWatcherDynamicFeature extends DynamicFeature {
-    private _lastRegistrationHash: string[] = [];
+    private _lastRegistrationHash: string | undefined;
 
     constructor(
         private readonly _connection: Connection,
@@ -33,7 +33,7 @@ export class FileWatcherDynamicFeature extends DynamicFeature {
 
     override disable() {
         super.disable();
-        this._lastRegistrationHash = [];
+        this._lastRegistrationHash = undefined;
     }
 
     protected override registerFeature(): Promise<Disposable | null> {
@@ -77,8 +77,7 @@ export class FileWatcherDynamicFeature extends DynamicFeature {
         }
 
         const registrationHash = this._createRegistrationHash(watchers);
-        if (registrationHash.length === this._lastRegistrationHash.length
-            && registrationHash.every((item, index) => item === this._lastRegistrationHash[index])) {
+        if (registrationHash !== this._lastRegistrationHash) {
             return Promise.resolve(null);
         }
 
@@ -86,8 +85,8 @@ export class FileWatcherDynamicFeature extends DynamicFeature {
         return this._connection.client.register(DidChangeWatchedFilesNotification.type, { watchers });
     }
 
-    private _createRegistrationHash(watchers: FileSystemWatcher[]): string[] {
-        return watchers.map(watcher => `${JSON.stringify(watcher.globPattern)}:${watcher.kind}`);
+    private _createRegistrationHash(watchers: FileSystemWatcher[]): string {
+        return JSON.stringify(watchers.map(watcher => `${JSON.stringify(watcher.globPattern)}:${watcher.kind}`));
     }
 }
 
