@@ -16,7 +16,7 @@ import { ServerSettings } from '../common/languageServerInterface';
 export class PullDiagnosticsDynamicFeature extends DynamicFeature {
     private _workspaceSupport = false;
     private _registered = false;
-    private _lastRegistrationHash: string = '';
+    private _lastRegistrationHash: string | undefined;
 
     constructor(private readonly _connection: Connection, private readonly _id: string = 'pyright') {
         super('pull diagnostics');
@@ -25,7 +25,7 @@ export class PullDiagnosticsDynamicFeature extends DynamicFeature {
     override disable() {
         super.disable();
         this._registered = false;
-        this._lastRegistrationHash = '';
+        this._lastRegistrationHash = undefined;
     }
 
     override update(settings: ServerSettings): void {
@@ -49,12 +49,12 @@ export class PullDiagnosticsDynamicFeature extends DynamicFeature {
             identifier: this._id,
         };
 
-        const registration_fingerprint = JSON.stringify(options);
-        if (registration_fingerprint === this._lastRegistrationHash) {
+        const registrationHash = JSON.stringify(options);
+        if (registrationHash === this._lastRegistrationHash) {
             return Promise.resolve(null);
         }
 
-        this._lastRegistrationHash = registration_fingerprint;
+        this._lastRegistrationHash = registrationHash;
         return this._connection.client.register(DocumentDiagnosticRequest.type, options);
     }
 }
