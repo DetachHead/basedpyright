@@ -86,7 +86,6 @@ import {
     DocumentOnTypeFormattingParams,
     InlayHint,
     InlayHintParams,
-    SemanticTokens,
     SemanticTokensParams,
     TextEdit,
     WillSaveTextDocumentParams,
@@ -636,7 +635,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         inlayHints.on(async (params, token) => this.onInlayHints(params, token));
 
         const semanticTokens = this.connection.languages.semanticTokens;
-        semanticTokens.on(async (params, token) => this.onSemanticTokens(params, token));
+        semanticTokens.on(async (params, token) =>
+            // @ts-expect-error https://github.com/microsoft/vscode-languageserver-node/issues/1784
+            this.onSemanticTokens(params, token)
+        );
 
         this.connection.onDidOpenTextDocument(async (params) => this.onDidOpenTextDocument(params));
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
@@ -1263,14 +1265,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }, token);
     }
 
-    protected async onSemanticTokens(params: SemanticTokensParams, token: CancellationToken): Promise<SemanticTokens> {
+    protected async onSemanticTokens(params: SemanticTokensParams, token: CancellationToken) {
         const uri = this.convertLspUriStringToUri(params.textDocument.uri);
         const workspace = await this.getWorkspaceForFile(uri);
         if (workspace.disableLanguageServices) {
-            return {
-                resultId: undefined,
-                data: [],
-            };
+            return null;
         }
         return workspace.service.run((program) => {
             return new SemanticTokensProvider(program, uri, token).onSemanticTokens();
