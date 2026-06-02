@@ -8,7 +8,7 @@
 import {
     Connection,
     DidChangeWatchedFilesNotification,
-    Disposable,
+    DidChangeWatchedFilesRegistrationOptions,
     FileSystemWatcher,
     WatchKind,
 } from 'vscode-languageserver';
@@ -19,17 +19,19 @@ import { Workspace } from '../workspaceFactory';
 import { isDefined } from '../common/core';
 import { configFileName } from '../common/pathConsts';
 
-export class FileWatcherDynamicFeature extends DynamicFeature {
+export class FileWatcherDynamicFeature extends DynamicFeature<DidChangeWatchedFilesRegistrationOptions> {
+    protected override type = DidChangeWatchedFilesNotification.type;
+
     constructor(
-        private readonly _connection: Connection,
+        connection: Connection,
         private readonly _hasWatchFileRelativePathCapability: boolean,
         private readonly _fs: FileSystem,
         private readonly _workspaceFactory: IWorkspaceFactory
     ) {
-        super('file watcher');
+        super('file watcher', connection);
     }
 
-    protected override registerFeature(): Promise<Disposable> {
+    protected override featureOptions() {
         const watchKind = WatchKind.Create | WatchKind.Change | WatchKind.Delete;
 
         // Set default (config files and all workspace files) first.
@@ -69,7 +71,7 @@ export class FileWatcherDynamicFeature extends DynamicFeature {
             });
         }
 
-        return this._connection.client.register(DidChangeWatchedFilesNotification.type, { watchers });
+        return { options: { watchers }, key: JSON.stringify(watchers) };
     }
 }
 
