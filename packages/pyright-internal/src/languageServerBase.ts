@@ -824,7 +824,6 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 this.connection.workspace.onDidChangeWorkspaceFolders(changeWorkspaceFolderHandler);
         }
 
-        this.dynamicFeatures.register();
         this.updateSettingsForAllWorkspaces();
     }
 
@@ -2087,7 +2086,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         }
     }
 
-    protected addDynamicFeature(feature: DynamicFeature) {
+    protected addDynamicFeature(feature: DynamicFeature<unknown>) {
         this.dynamicFeatures.add(feature);
     }
 

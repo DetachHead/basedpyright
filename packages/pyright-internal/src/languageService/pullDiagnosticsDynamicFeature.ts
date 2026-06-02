@@ -4,21 +4,18 @@
  *
  * implementation of pull mode diagnostics feature registration
  */
-import {
-    Connection,
-    DiagnosticRegistrationOptions,
-    Disposable,
-    DocumentDiagnosticRequest,
-} from 'vscode-languageserver';
+import { Connection, DiagnosticOptions, DocumentDiagnosticRequest } from 'vscode-languageserver';
 import { DynamicFeature } from './dynamicFeature';
 import { ServerSettings } from '../common/languageServerInterface';
 
-export class PullDiagnosticsDynamicFeature extends DynamicFeature {
+export class PullDiagnosticsDynamicFeature extends DynamicFeature<DiagnosticOptions> {
     private _workspaceSupport = false;
     private _registered = false;
 
-    constructor(private readonly _connection: Connection, private readonly _id: string = 'pyright') {
-        super('pull diagnostics');
+    protected override type = DocumentDiagnosticRequest.type;
+
+    constructor(connection: Connection, private readonly _id: string = 'pyright') {
+        super('pull diagnostics', connection);
     }
 
     override disable() {
@@ -38,14 +35,16 @@ export class PullDiagnosticsDynamicFeature extends DynamicFeature {
         }
     }
 
-    protected override registerFeature(): Promise<Disposable> {
+    protected override featureOptions() {
         this._registered = true;
-        const options: DiagnosticRegistrationOptions = {
-            interFileDependencies: true,
-            workspaceDiagnostics: this._workspaceSupport,
-            documentSelector: null,
-            identifier: this._id,
+        return {
+            options: {
+                interFileDependencies: true,
+                workspaceDiagnostics: this._workspaceSupport,
+                documentSelector: null,
+                identifier: this._id,
+            },
+            key: JSON.stringify([this._workspaceSupport, this._id]),
         };
-        return this._connection.client.register(DocumentDiagnosticRequest.type, options);
     }
 }
