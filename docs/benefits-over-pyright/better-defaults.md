@@ -9,6 +9,7 @@ used to be `"basic"`, but now defaults to `"recommended"`, which enables all dia
 -   less severe diagnostic rules are reported as warnings instead of errors. this reduces [alarm fatigue](https://en.wikipedia.org/wiki/Alarm_fatigue) while still ensuring that you're aware of all potential issues that basedpyright can detect. [`failOnWarnings`](../configuration/config-files.md#failOnWarnings) is also enabled by default in this mode, which causes the CLI to exit with a non-zero exit code if any warnings are detected. you disable this behavior by setting `failOnWarnings` to `false`.
 -   we support [baselining](./baseline.md) to allow for easy adoption of more strict rules in existing codebases.
 -   we've added a new setting, [`allowedUntypedLibraries`](../configuration/config-files.md#allowedUntypedLibraries) which allows you to turn off rules about unknown types on a per-module basis, which can be useful when working with third party packages that aren't properly typed.
+-   unlike pyright, basedpyright treats `typeCheckingMode = "off"` as literally off for diagnostic rules. pyright still reports some rules as warnings in this mode, but basedpyright disables them so projects can opt out without overriding each rule individually. python syntax and semantic errors are still reported.
 
 ## `pythonPlatform`
 
