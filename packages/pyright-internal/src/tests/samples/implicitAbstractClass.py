@@ -28,3 +28,9 @@ class G(F): # error
 
 class H(F, Protocol):
     pass
+
+class I(ABC): ...
+
+class J(I): # error
+    @abstractmethod
+    def asdf(self) -> int: ...

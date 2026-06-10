@@ -813,8 +813,19 @@ test('reportImplicitAbstractClass', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['implicitAbstractClass.py'], configOptions);
     TestUtils.validateResultsButBased(analysisResults, {
         errors: [
-            { code: DiagnosticRule.reportImplicitAbstractClass, line: 7 },
+            {
+                code: DiagnosticRule.reportImplicitAbstractClass,
+                line: 7,
+                message:
+                    'Class "B" is implicitly abstract because it extends an abstract class but still contains abstract symbols. If this is intentional, add `ABC` to its base classes or use `metaclass=ABCMeta`.\n  "A.asdf" is not implemented',
+            },
             { code: DiagnosticRule.reportImplicitAbstractClass, line: 25 },
+            {
+                code: DiagnosticRule.reportImplicitAbstractClass,
+                line: 33,
+                message:
+                    'Class "J" is implicitly abstract because it extends an abstract class but still contains abstract symbols. If this is intentional, add `ABC` to its base classes or use `metaclass=ABCMeta`.\n  "J.asdf" is not implemented',
+            },
         ],
     });
 });
