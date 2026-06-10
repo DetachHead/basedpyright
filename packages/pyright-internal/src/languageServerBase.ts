@@ -1748,7 +1748,10 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         if (
             node?.nodeType === ParseNodeType.String &&
             // other string types that can't be used with f-strings
-            !(node.d.token.flags & (StringTokenFlags.Bytes | StringTokenFlags.Unicode | StringTokenFlags.Template))
+            !(
+                node.d.token.flags &
+                (StringTokenFlags.Bytes | StringTokenFlags.Unicode | StringTokenFlags.Raw | StringTokenFlags.Template)
+            )
         ) {
             // don't do it if the previous characters are "\N{" because the user is likely trying to use a named unicode character, not an f-string
             const dontConvertToFstringIfPrefix = '\\N{';
