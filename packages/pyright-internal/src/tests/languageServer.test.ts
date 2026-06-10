@@ -246,7 +246,8 @@ describe(`Basic language server tests`, () => {
         test('normal string', () => checkOnTypeFormatting({ quoteCount: 1, shouldConvertString: true }));
         test('already f-string', () =>
             checkOnTypeFormatting({ stringPrefix: 'f', quoteCount: 1, shouldConvertString: false }));
-        test('r-string', () => checkOnTypeFormatting({ stringPrefix: 'r', quoteCount: 1, shouldConvertString: true }));
+        test('r-string', () => checkOnTypeFormatting({ stringPrefix: 'r', quoteCount: 1, shouldConvertString: false }));
+        test('R-string', () => checkOnTypeFormatting({ stringPrefix: 'R', quoteCount: 1, shouldConvertString: false }));
         test('bytes', () => checkOnTypeFormatting({ stringPrefix: 'b', quoteCount: 1, shouldConvertString: false }));
         test('t-string', () => checkOnTypeFormatting({ stringPrefix: 't', quoteCount: 1, shouldConvertString: false }));
         test('u-string', () => checkOnTypeFormatting({ stringPrefix: 'u', quoteCount: 1, shouldConvertString: false }));
