@@ -1,5 +1,7 @@
 import { tExpect } from 'typed-jest-expect';
+import { ConfigOptions } from '../common/configOptions';
 import { DiagnosticRule } from '../common/diagnosticRules';
+import { Uri } from '../common/uri/uri';
 import { ErrorTrackingNullConsole, typeAnalyzeSampleFiles, validateResultsButBased } from './testUtils';
 
 test('symbol from previous cell', () => {
@@ -39,5 +41,22 @@ test('IPython.display.display automatically imported', () => {
     const analysisResults = typeAnalyzeSampleFiles(['ipython_display_import/notebook.ipynb']);
     validateResultsButBased(analysisResults, {
         errors: [{ code: DiagnosticRule.reportUndefinedVariable, line: 4 }],
+    });
+});
+
+test('unused call result at end of notebook cell', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedCallResult = 'error';
+
+    const analysisResults = typeAnalyzeSampleFiles(['notebookUnusedCallResult.ipynb'], configOptions);
+    tExpect(analysisResults.length).toStrictEqual(3);
+    validateResultsButBased(analysisResults[0], {
+        errors: [],
+    });
+    validateResultsButBased(analysisResults[1], {
+        errors: [{ code: DiagnosticRule.reportUnusedCallResult, line: 0 }],
+    });
+    validateResultsButBased(analysisResults[2], {
+        errors: [{ code: DiagnosticRule.reportUnusedCoroutine, line: 3 }],
     });
 });

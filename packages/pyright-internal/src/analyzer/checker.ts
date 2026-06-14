@@ -833,13 +833,15 @@ export class Checker extends ParseTreeWalker {
                 const returnType = this._evaluator.getType(node);
 
                 if (!isRevealTypeCall && returnType && this._isTypeValidForUnusedValueTest(returnType)) {
-                    this._evaluator.addDiagnostic(
-                        DiagnosticRule.reportUnusedCallResult,
-                        LocMessage.unusedCallResult().format({
-                            type: this._evaluator.printType(returnType),
-                        }),
-                        node
-                    );
+                    if (!this._isLastStatementInNotebookCell(node)) {
+                        this._evaluator.addDiagnostic(
+                            DiagnosticRule.reportUnusedCallResult,
+                            LocMessage.unusedCallResult().format({
+                                type: this._evaluator.printType(returnType),
+                            }),
+                            node
+                        );
+                    }
 
                     if (
                         isClassInstance(returnType) &&
@@ -860,7 +862,11 @@ export class Checker extends ParseTreeWalker {
 
     override visitAwait(node: AwaitNode) {
         if (this._fileInfo.diagnosticRuleSet.reportUnusedCallResult !== 'none') {
-            if (node.parent?.nodeType === ParseNodeType.StatementList && node.d.expr.nodeType === ParseNodeType.Call) {
+            if (
+                node.parent?.nodeType === ParseNodeType.StatementList &&
+                node.d.expr.nodeType === ParseNodeType.Call &&
+                !this._isLastStatementInNotebookCell(node)
+            ) {
                 const returnType = this._evaluator.getType(node);
 
                 if (returnType && this._isTypeValidForUnusedValueTest(returnType)) {
@@ -1996,14 +2002,7 @@ export class Checker extends ParseTreeWalker {
             }
         }
 
-        if (
-            reportAsUnused &&
-            this._fileInfo.ipythonMode === IPythonMode.CellDocs &&
-            node.parent?.nodeType === ParseNodeType.StatementList &&
-            node.parent.d.statements[node.parent.d.statements.length - 1] === node &&
-            node.parent.parent?.nodeType === ParseNodeType.Module &&
-            node.parent.parent.d.statements[node.parent.parent.d.statements.length - 1] === node.parent
-        ) {
+        if (reportAsUnused && this._isLastStatementInNotebookCell(node)) {
             // Exclude an expression at the end of a notebook cell, as that is treated as
             // the cell's value.
             reportAsUnused = false;
@@ -2012,6 +2011,16 @@ export class Checker extends ParseTreeWalker {
         if (reportAsUnused) {
             this._evaluator.addDiagnostic(DiagnosticRule.reportUnusedExpression, LocMessage.unusedExpression(), node);
         }
+    }
+
+    private _isLastStatementInNotebookCell(node: ParseNode) {
+        return (
+            this._fileInfo.ipythonMode === IPythonMode.CellDocs &&
+            node.parent?.nodeType === ParseNodeType.StatementList &&
+            node.parent.d.statements[node.parent.d.statements.length - 1] === node &&
+            node.parent.parent?.nodeType === ParseNodeType.Module &&
+            node.parent.parent.d.statements[node.parent.parent.d.statements.length - 1] === node.parent
+        );
     }
 
     // Verifies that the target of a nonlocal statement is not a PEP 695-style
