@@ -30,6 +30,9 @@ import {
     workspace,
     WorkspaceConfiguration,
     env,
+    ProgressLocation,
+    InputBoxValidationMessage,
+    InputBoxValidationSeverity,
 } from 'vscode';
 import {
     CancellationToken,
@@ -308,6 +311,18 @@ export async function activate(context: ExtensionContext) {
         );
     });
 
+    // Register commands for creating modules or packages
+    const explorerMenuCreateCommands = [Commands.createNewModule, Commands.createNewPackage];
+    explorerMenuCreateCommands.forEach((commandName) => {
+        context.subscriptions.push(registerRefactorCommand(client, commandName, true));
+    });
+
+    // Register commands for refactoring
+    const explorerMenuRefactorCommands = [Commands.convertToPackage, Commands.extractInitFromPackage];
+    explorerMenuRefactorCommands.forEach((commandName) => {
+        context.subscriptions.push(registerRefactorCommand(client, commandName));
+    });
+
     // Register the debug only commands when running under the debugger.
     if (context.extensionMode === ExtensionMode.Development) {
         // Create a 'when' context for development.
@@ -484,4 +499,148 @@ function isConfigSettingSetByUser(configuration: WorkspaceConfiguration, setting
         inspect.workspaceLanguageValue !== undefined ||
         inspect.workspaceFolderLanguageValue !== undefined
     );
+}
+
+function validatePythonModuleName(value: string): InputBoxValidationMessage | null {
+    const name = value.trim();
+
+    if (!name) {
+        return null;
+    }
+
+    // Check for NTFS/Windows forbidden filename characters
+    for (const ch of name) {
+        const code = ch.charCodeAt(0);
+        if (code < 0x20 || code === 0x7f) {
+            return {
+                message: `Character U+${code.toString(16).toUpperCase().padStart(4, '0')} is not allowed in file names`,
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+        if (ch === '<' || ch === '>' || ch === ':' || ch === '"' ||
+            ch === '/' || ch === '\\' || ch === '|' || ch === '?' || ch === '*') {
+            return {
+                message: `'${ch}' is not allowed in file names`,
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+    }
+
+    // Leading digit: valid as a filename, importable via importlib but not via `import`
+    if (/^\d/.test(name)) {
+        return {
+            message: 'Module names starting with a digit can only be imported via importlib, not with an import statement',
+            severity: InputBoxValidationSeverity.Warning,
+        };
+    }
+
+    // Pure-ASCII valid Python identifier
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+        return null;
+    }
+
+    // Non-ASCII: may be a valid PEP 3131 identifier, but warn
+    let hasNonAscii = false;
+    for (const ch of name) {
+        if (ch.charCodeAt(0) > 127) {
+            hasNonAscii = true;
+            break;
+        }
+    }
+    if (hasNonAscii) {
+        return {
+            message: 'Unicode module names may cause cross-platform portability issues',
+            severity: InputBoxValidationSeverity.Warning,
+        };
+    }
+
+    // ASCII but contains invalid identifier characters
+    return {
+        message: 'This is not a valid Python identifier',
+        severity: InputBoxValidationSeverity.Error,
+    };
+}
+
+function resolveResultUri(
+    commandName: Commands,
+    targetUriString: string,
+    createName?: string
+): Uri | undefined {
+    const target = Uri.parse(targetUriString);
+
+    switch (commandName) {
+        case Commands.createNewModule:
+            if (!createName) {
+                return undefined;
+            }
+            return Uri.joinPath(target, createName + '.py');
+
+        case Commands.createNewPackage:
+            if (!createName) {
+                return undefined;
+            }
+            return Uri.joinPath(target, createName, '__init__.py');
+
+        case Commands.convertToPackage: {
+            const parentDir = path.dirname(target.fsPath);
+            const moduleName = path.basename(target.fsPath, '.py');
+            return Uri.joinPath(Uri.file(parentDir), moduleName, '__init__.py');
+        }
+
+        case Commands.extractInitFromPackage: {
+            const pkgDir = path.dirname(target.fsPath);
+            const parentDir = path.dirname(pkgDir);
+            const pkgName = path.basename(pkgDir);
+            return Uri.joinPath(Uri.file(parentDir), pkgName + '.py');
+        }
+
+        default:
+            return undefined;
+    }
+}
+
+function registerRefactorCommand(client: LanguageClient, commandName: Commands, requireNewName?: boolean) {
+    return commands.registerCommand(commandName, async (uri?: string | Uri[]) => {
+        // Use the explorer-clicked URI as fallback when no active text editor
+        const explorerUri = uri && !Array.isArray(uri) ? uri.toString() : undefined;
+        const workspaceUri = window.activeTextEditor?.document.uri.toString() ?? explorerUri;
+        const uris = Array.isArray(uri) ? uri : uri ? [uri] : workspaceUri ? [workspaceUri] : [];
+
+        if (uris.length !== 1) {
+            return;
+        }
+
+        const uriString = uris[0].toString();
+        const createName = requireNewName
+            ? await window.showInputBox({
+                  prompt: 'Enter a name for the new Python module or package',
+                  validateInput: validatePythonModuleName,
+              })
+            : undefined;
+
+        if (requireNewName && !createName) {
+            return;
+        }
+
+        window.withProgress({ location: ProgressLocation.Notification, cancellable: false }, async (progress) => {
+            try {
+                await client.sendRequest('workspace/executeCommand', {
+                    command: commandName,
+                    arguments: requireNewName
+                        ? [workspaceUri, uriString, createName as string]
+                        : [workspaceUri, uriString],
+                });
+                progress.report({ message: 'Done', increment: 100 });
+
+                // Open the resulting file in the editor
+                const resultUri = resolveResultUri(commandName, uriString, createName);
+                if (resultUri) {
+                    const doc = await workspace.openTextDocument(resultUri);
+                    await window.showTextDocument(doc);
+                }
+            } catch (error: any) {
+                window.showErrorMessage(`Command failed: ${error.message}`);
+            }
+        });
+    });
 }

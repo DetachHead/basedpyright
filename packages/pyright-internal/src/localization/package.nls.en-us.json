@@ -2197,6 +2197,31 @@
         "enableBasedFeatures": "set the `enableBasedFeatures` configuration option to `true` to enable this feature"
     },
     "Service": {
-        "longOperation": "Enumeration of workspace source files is taking a long time. Consider opening a sub-folder instead. [Learn more](https://aka.ms/workspace-too-many-files)"
+        "longOperation": "Enumeration of workspace source files is taking a long time. Consider opening a sub-folder instead. [Learn more](https://aka.ms/workspace-too-many-files)",
+        "invalidArgsCreateModule": "Invalid arguments for creating a module",
+        "invalidArgsCreatePackage": "Invalid arguments for creating a package",
+        "invalidArgsConvertToPackage": "Invalid arguments for converting to package",
+        "invalidArgsExtractFromPackage": "Invalid arguments for extracting from package",
+        "invalidTargetDirectory": "Invalid target directory",
+        "invalidModuleUri": "Invalid module URI",
+        "invalidInitPyUri": "Invalid __init__.py URI",
+        "invalidPythonName": "'{name}' is not a valid Python module name",
+        "dirNotExist": "Directory '{path}' does not exist",
+        "notADirectory": "'{path}' is not a directory",
+        "noWorkspaceFound": "No workspace found",
+        "moduleAlreadyExists": "Module '{name}' already exists",
+        "packageAlreadyExists": "Package '{name}' already exists",
+        "moduleCreated": "Created module '{name}'",
+        "packageCreated": "Created package '{name}'",
+        "cannotConvertStub": "Cannot convert stub file '{name}' to a package",
+        "notPythonModule": "'{name}' is not a Python module file",
+        "cannotConvertSpecial": "Cannot convert '{name}' to a package",
+        "moduleNotFound": "Module '{name}' not found",
+        "cannotConvertPackageExists": "Cannot convert to package: '{name}/' already exists",
+        "moduleConverted": "Converted module '{name}.py' to package '{name}/'",
+        "notInitPy": "Expected '__init__.py', got '{name}'",
+        "initPyNotFound": "'{path}' not found",
+        "cannotDeterminePackageName": "Cannot determine package name from '{path}'",
+        "initExtracted": "Extracted '__init__.py' content to '{name}' module"
     }
 }

@@ -20,4 +20,8 @@ export const enum Commands {
     dumpCodeFlowGraph = 'basedpyright.dumpCodeFlowGraph',
     import = 'basedpyright.import',
     writeBaseline = 'basedpyright.writeBaseline',
+    createNewModule = 'basedpyright.explorer.createNewModule',
+    createNewPackage = 'basedpyright.explorer.createNewPackage',
+    convertToPackage = 'basedpyright.refactoring.convertToPackage',
+    extractInitFromPackage = 'basedpyright.refactoring.extractInitFromPackage',
 }

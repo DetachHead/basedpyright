@@ -15,6 +15,8 @@ import { DumpFileDebugInfoCommand } from './dumpFileDebugInfoCommand';
 import { QuickActionCommand } from './quickActionCommand';
 import { RestartServerCommand } from './restartServer';
 import { WriteBaselineCommand } from './writeBaseline';
+import { CreateModuleCommand, CreatePackageCommand } from './createModuleOrPackage';
+import { ConvertToPackageCommand, ExtractInitFromPackageCommand } from './convertAndExtract';
 
 export interface ServerCommand {
     execute(cmdParams: ExecuteCommandParams, token: CancellationToken): Promise<any>;
@@ -26,6 +28,10 @@ export class CommandController implements ServerCommand {
     private _quickAction: QuickActionCommand;
     private _dumpFileDebugInfo: DumpFileDebugInfoCommand;
     private _writeBaseline: WriteBaselineCommand;
+    private _createModule: CreateModuleCommand;
+    private _createPackage: CreatePackageCommand;
+    private _convertToPackage: ConvertToPackageCommand;
+    private _extractInitFromPackage: ExtractInitFromPackageCommand;
 
     constructor(ls: LanguageServerInterface) {
         this._createStub = new CreateTypeStubCommand(ls);
@@ -33,6 +39,10 @@ export class CommandController implements ServerCommand {
         this._quickAction = new QuickActionCommand(ls);
         this._dumpFileDebugInfo = new DumpFileDebugInfoCommand(ls);
         this._writeBaseline = new WriteBaselineCommand(ls);
+        this._createModule = new CreateModuleCommand(ls);
+        this._createPackage = new CreatePackageCommand(ls);
+        this._convertToPackage = new ConvertToPackageCommand(ls);
+        this._extractInitFromPackage = new ExtractInitFromPackageCommand(ls);
     }
 
     async execute(cmdParams: ExecuteCommandParams, token: CancellationToken): Promise<any> {
@@ -56,6 +66,22 @@ export class CommandController implements ServerCommand {
             case Commands.writeBaseline: {
                 return this._writeBaseline.execute();
             }
+
+            case Commands.createNewModule: {
+                return this._createModule.execute(cmdParams, token);
+            }
+
+            case Commands.createNewPackage: {
+                return this._createPackage.execute(cmdParams, token);
+            }
+
+            case Commands.convertToPackage: {
+                return this._convertToPackage.execute(cmdParams, token);
+            }
+
+            case Commands.extractInitFromPackage: {
+                return this._extractInitFromPackage.execute(cmdParams, token);
+            }
             default: {
                 return new ResponseError<string>(1, 'Unsupported command');
             }
@@ -74,6 +100,13 @@ export class CommandController implements ServerCommand {
     }
 
     isRefactoringCommand(command: string): boolean {
-        return false;
+        switch (command) {
+            case Commands.convertToPackage:
+            case Commands.extractInitFromPackage:
+                return true;
+
+            default:
+                return false;
+        }
     }
 }

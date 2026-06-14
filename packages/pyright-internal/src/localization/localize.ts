@@ -1726,6 +1726,53 @@ export namespace Localizer {
 
     export namespace Service {
         export const longOperation = () => getRawString('Service.longOperation');
+        export const invalidArgsCreateModule = () => getRawString('Service.invalidArgsCreateModule');
+        export const invalidArgsCreatePackage = () => getRawString('Service.invalidArgsCreatePackage');
+        export const invalidArgsConvertToPackage = () => getRawString('Service.invalidArgsConvertToPackage');
+        export const invalidArgsExtractFromPackage = () =>
+            getRawString('Service.invalidArgsExtractFromPackage');
+        export const invalidTargetDirectory = () => getRawString('Service.invalidTargetDirectory');
+        export const invalidModuleUri = () => getRawString('Service.invalidModuleUri');
+        export const invalidInitPyUri = () => getRawString('Service.invalidInitPyUri');
+        export const invalidPythonName = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonName'));
+        export const dirNotExist = () =>
+            new ParameterizedString<{ path: string }>(getRawString('Service.dirNotExist'));
+        export const notADirectory = () =>
+            new ParameterizedString<{ path: string }>(getRawString('Service.notADirectory'));
+        export const noWorkspaceFound = () => getRawString('Service.noWorkspaceFound');
+        export const moduleAlreadyExists = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleAlreadyExists'));
+        export const packageAlreadyExists = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.packageAlreadyExists'));
+        export const moduleCreated = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleCreated'));
+        export const packageCreated = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.packageCreated'));
+        export const cannotConvertStub = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.cannotConvertStub'));
+        export const notPythonModule = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.notPythonModule'));
+        export const cannotConvertSpecial = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.cannotConvertSpecial'));
+        export const moduleNotFound = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleNotFound'));
+        export const cannotConvertPackageExists = () =>
+            new ParameterizedString<{ name: string }>(
+                getRawString('Service.cannotConvertPackageExists')
+            );
+        export const moduleConverted = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleConverted'));
+        export const notInitPy = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.notInitPy'));
+        export const initPyNotFound = () =>
+            new ParameterizedString<{ path: string }>(getRawString('Service.initPyNotFound'));
+        export const cannotDeterminePackageName = () =>
+            new ParameterizedString<{ path: string }>(
+                getRawString('Service.cannotDeterminePackageName')
+            );
+        export const initExtracted = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.initExtracted'));
     }
 }
 
