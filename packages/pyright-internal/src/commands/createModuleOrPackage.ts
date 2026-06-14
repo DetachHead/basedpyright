@@ -55,24 +55,23 @@ async function resolveWorkspace(
     return undefined;
 }
 
+type NameValidation = 'ok' | 'forbidden' | 'invalid' | 'leadingDigit' | 'unicode';
+
 /**
- * Validate a Python module/package name.
- * Returns 'error' for names that would produce invalid filenames or are
- * definitely not valid Python identifiers.  Returns 'warning' for Unicode
- * names that may be valid Python identifiers (PEP 3131) but may cause
- * cross-platform portability issues.
+ * Validate a Python module/package name and return a discriminant that
+ * callers can use to produce a specific diagnostic message.
  */
-function validatePythonName(name: string): 'error' | 'warning' | 'ok' {
+function validatePythonName(name: string): NameValidation {
     if (!name) {
-        return 'error';
+        return 'invalid';
     }
     if (hasForbiddenFileNameChars(name)) {
-        return 'error';
+        return 'forbidden';
     }
     // Leading digit: valid as a filename but not importable via `import` statement.
     // Can still be loaded via importlib.import_module(), so warn rather than error.
     if (/^\d/.test(name)) {
-        return 'warning';
+        return 'leadingDigit';
     }
     // Pure-ASCII Python identifier
     if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
@@ -80,10 +79,10 @@ function validatePythonName(name: string): 'error' | 'warning' | 'ok' {
     }
     // Non-ASCII: could be valid PEP 3131 identifier, but warn about portability
     if (hasNonAsciiChars(name)) {
-        return 'warning';
+        return 'unicode';
     }
     // ASCII but contains invalid identifier characters (dots, punctuation etc.)
-    return 'error';
+    return 'invalid';
 }
 
 export class CreateModuleCommand implements ServerCommand {
@@ -96,7 +95,7 @@ export class CreateModuleCommand implements ServerCommand {
             return;
         }
 
-        const targetDir = tryParseUri(args[1] as string, this._ls);
+        let targetDir = tryParseUri(args[1] as string, this._ls);
         let moduleName = (args[2] as string).trim();
 
         if (!targetDir) {
@@ -114,15 +113,26 @@ export class CreateModuleCommand implements ServerCommand {
         }
 
         const nameCheck = validatePythonName(moduleName);
-        if (nameCheck === 'error') {
+        if (nameCheck === 'forbidden') {
+            this._ls.window.showErrorMessage(
+                Service.invalidPythonNameForbidden().format({ name: moduleName })
+            );
+            return;
+        }
+        if (nameCheck === 'invalid') {
             this._ls.window.showErrorMessage(
                 Service.invalidPythonName().format({ name: moduleName })
             );
             return;
         }
-        if (nameCheck === 'warning') {
+        if (nameCheck === 'leadingDigit') {
             this._ls.window.showWarningMessage(
-                Service.invalidPythonName().format({ name: moduleName })
+                Service.invalidPythonNameLeadingDigit().format({ name: moduleName })
+            );
+        }
+        if (nameCheck === 'unicode') {
+            this._ls.window.showWarningMessage(
+                Service.invalidPythonNameUnicode().format({ name: moduleName })
             );
         }
 
@@ -135,18 +145,15 @@ export class CreateModuleCommand implements ServerCommand {
 
         const fs = workspace.service.fs;
 
+        // If the target is a file (e.g. from command palette), use its parent directory
         if (!fs.existsSync(targetDir)) {
             this._ls.window.showErrorMessage(
                 Service.dirNotExist().format({ path: targetDir.toUserVisibleString() })
             );
             return;
         }
-
         if (!fs.statSync(targetDir).isDirectory()) {
-            this._ls.window.showErrorMessage(
-                Service.notADirectory().format({ path: targetDir.toUserVisibleString() })
-            );
-            return;
+            targetDir = targetDir.getDirectory();
         }
 
         const moduleUri = targetDir.combinePaths(moduleName + '.py');
@@ -175,7 +182,7 @@ export class CreatePackageCommand implements ServerCommand {
             return;
         }
 
-        const targetDir = tryParseUri(args[1] as string, this._ls);
+        let targetDir = tryParseUri(args[1] as string, this._ls);
         const packageName = (args[2] as string).trim();
 
         if (!targetDir) {
@@ -188,15 +195,26 @@ export class CreatePackageCommand implements ServerCommand {
         }
 
         const nameCheck = validatePythonName(packageName);
-        if (nameCheck === 'error') {
+        if (nameCheck === 'forbidden') {
+            this._ls.window.showErrorMessage(
+                Service.invalidPythonNameForbidden().format({ name: packageName })
+            );
+            return;
+        }
+        if (nameCheck === 'invalid') {
             this._ls.window.showErrorMessage(
                 Service.invalidPythonName().format({ name: packageName })
             );
             return;
         }
-        if (nameCheck === 'warning') {
+        if (nameCheck === 'leadingDigit') {
             this._ls.window.showWarningMessage(
-                Service.invalidPythonName().format({ name: packageName })
+                Service.invalidPythonNameLeadingDigit().format({ name: packageName })
+            );
+        }
+        if (nameCheck === 'unicode') {
+            this._ls.window.showWarningMessage(
+                Service.invalidPythonNameUnicode().format({ name: packageName })
             );
         }
 
@@ -209,18 +227,15 @@ export class CreatePackageCommand implements ServerCommand {
 
         const fs = workspace.service.fs;
 
+        // If the target is a file (e.g. from command palette), use its parent directory
         if (!fs.existsSync(targetDir)) {
             this._ls.window.showErrorMessage(
                 Service.dirNotExist().format({ path: targetDir.toUserVisibleString() })
             );
             return;
         }
-
         if (!fs.statSync(targetDir).isDirectory()) {
-            this._ls.window.showErrorMessage(
-                Service.notADirectory().format({ path: targetDir.toUserVisibleString() })
-            );
-            return;
+            targetDir = targetDir.getDirectory();
         }
 
         const packageDir = targetDir.combinePaths(packageName);

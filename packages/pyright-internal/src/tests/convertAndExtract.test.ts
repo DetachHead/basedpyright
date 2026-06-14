@@ -177,7 +177,7 @@ describe('ConvertToPackageCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining("'mymodule/' already exists"),
+            text: expect.stringContaining('"mymodule/" already exists'),
         });
         // Original file untouched
         expect(testFS.existsSync(moduleUri)).toBe(true);
@@ -278,7 +278,7 @@ describe('ExtractInitFromPackageCommand', () => {
         expect(testFS.existsSync(packageDir)).toBe(false);
         expect(window.messages[0]).toEqual({
             type: 'info',
-            text: expect.stringContaining("Extracted '__init__.py' content to 'mypkg' module"),
+            text: expect.stringContaining('Extracted "__init__.py" content to "mypkg" module'),
         });
     });
 
@@ -323,7 +323,7 @@ describe('ExtractInitFromPackageCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining("Module 'mypkg' already exists"),
+            text: expect.stringContaining('Module "mypkg" already exists'),
         });
     });
 
@@ -337,7 +337,7 @@ describe('ExtractInitFromPackageCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining("Expected '__init__.py'"),
+            text: expect.stringContaining('Expected "__init__.py"'),
         });
     });
 });

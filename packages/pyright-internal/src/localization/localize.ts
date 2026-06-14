@@ -1736,10 +1736,20 @@ export namespace Localizer {
         export const invalidInitPyUri = () => getRawString('Service.invalidInitPyUri');
         export const invalidPythonName = () =>
             new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonName'));
+        export const invalidPythonNameForbidden = () =>
+            new ParameterizedString<{ name: string }>(
+                getRawString('Service.invalidPythonNameForbidden')
+            );
+        export const invalidPythonNameLeadingDigit = () =>
+            new ParameterizedString<{ name: string }>(
+                getRawString('Service.invalidPythonNameLeadingDigit')
+            );
+        export const invalidPythonNameUnicode = () =>
+            new ParameterizedString<{ name: string }>(
+                getRawString('Service.invalidPythonNameUnicode')
+            );
         export const dirNotExist = () =>
             new ParameterizedString<{ path: string }>(getRawString('Service.dirNotExist'));
-        export const notADirectory = () =>
-            new ParameterizedString<{ path: string }>(getRawString('Service.notADirectory'));
         export const noWorkspaceFound = () => getRawString('Service.noWorkspaceFound');
         export const moduleAlreadyExists = () =>
             new ParameterizedString<{ name: string }>(getRawString('Service.moduleAlreadyExists'));

@@ -146,7 +146,7 @@ describe('CreateModuleCommand', () => {
         expect(testFS.existsSync(moduleUri)).toBe(true);
         expect(testFS.readFileSync(moduleUri, 'utf-8')).toBe('');
         expect(window.messages).toEqual([
-            { type: 'info', text: expect.stringContaining("Created module 'my_module.py'") },
+            { type: 'info', text: expect.stringContaining('Created module "my_module.py"') },
         ]);
     });
 
@@ -181,7 +181,7 @@ describe('CreateModuleCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining("Module 'existing' already exists"),
+            text: expect.stringContaining('Module "existing" already exists'),
         });
     });
 
@@ -192,7 +192,7 @@ describe('CreateModuleCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining('not a valid Python module name'),
+            text: expect.stringContaining('contains characters that are not allowed in file names'),
         });
     });
 
@@ -204,7 +204,7 @@ describe('CreateModuleCommand', () => {
         // Warning rather than error: valid as a file and importable via importlib
         expect(window.messages[0]).toEqual({
             type: 'warning',
-            text: expect.stringContaining('not a valid Python module name'),
+            text: expect.stringContaining('starts with a digit'),
         });
         // Module is still created
         expect(window.messages[1]).toEqual({
@@ -221,7 +221,7 @@ describe('CreateModuleCommand', () => {
         // Warning is shown, but module is still created
         expect(window.messages[0]).toEqual({
             type: 'warning',
-            text: expect.stringContaining('not a valid Python module name'),
+            text: expect.stringContaining('non-ASCII'),
         });
         expect(window.messages[1]).toEqual({
             type: 'info',
@@ -241,7 +241,7 @@ describe('CreateModuleCommand', () => {
         expect(window.messages[0].type).toBe('error');
     });
 
-    it('shows error if target is a file not a directory', async () => {
+    it('falls back to parent directory when target is a file', async () => {
         const filePath = projectDir.combinePaths('somefile.py');
         testFS.writeFileSync(filePath, '# content', 'utf-8');
 
@@ -249,9 +249,12 @@ describe('CreateModuleCommand', () => {
 
         await cmd.execute(args, _mockCancellationToken);
 
+        // Uses parent directory of the file as target
+        const moduleUri = projectDir.combinePaths('new_module.py');
+        expect(testFS.existsSync(moduleUri)).toBe(true);
         expect(window.messages[0]).toEqual({
-            type: 'error',
-            text: expect.stringContaining('is not a directory'),
+            type: 'info',
+            text: expect.stringContaining('Created'),
         });
     });
 });
@@ -284,7 +287,7 @@ describe('CreatePackageCommand', () => {
         expect(testFS.existsSync(initPy)).toBe(true);
         expect(testFS.readFileSync(initPy, 'utf-8')).toBe('');
         expect(window.messages).toEqual([
-            { type: 'info', text: expect.stringContaining("Created package 'my_package'") },
+            { type: 'info', text: expect.stringContaining('Created package "my_package"') },
         ]);
     });
 
@@ -298,7 +301,7 @@ describe('CreatePackageCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'error',
-            text: expect.stringContaining("Package 'existing_pkg' already exists"),
+            text: expect.stringContaining('Package "existing_pkg" already exists'),
         });
     });
 
