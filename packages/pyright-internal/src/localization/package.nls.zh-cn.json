@@ -878,6 +878,33 @@
         "classIsExplicitlyAbstract": "这个类没有抽象成员，但显式标为了 `ABC` 或 `ABCMeta`"
     },
     "Service": {
-        "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)"
+        "longOperation": "枚举工作区源文件需要很长时间。请考虑打开子文件夹。[了解详细信息](https://aka.ms/workspace-too-many-files)",
+        "invalidArgsCreateModule": "创建模块的参数无效",
+        "invalidArgsCreatePackage": "创建包时使用的参数无效",
+        "invalidArgsConvertToPackage": "转换为包时使用的参数无效",
+        "invalidArgsExtractFromPackage": "从包中提取时使用的参数无效",
+        "invalidTargetDirectory": "无效的目标目录",
+        "invalidModuleUri": "无效的模块 URI",
+        "invalidInitPyUri": "无效的 __init__.py URI",
+        "invalidPythonName": "\"{name}\" 不是有效的 Python 模块名称",
+        "invalidPythonNameForbidden": "\"{name}\" 包含文件名中不允许的字符",
+        "invalidPythonNameLeadingDigit": "\"{name}\" 以数字开头；此模块只能通过 `importlib` 导入，无法使用 `import` 语句",
+        "invalidPythonNameUnicode": "\"{name}\" 使用了非 ASCII 字符；这可能导致跨平台移植问题",
+        "dirNotExist": "目录 \"{path}\" 不存在",
+        "noWorkspaceFound": "找不到工作区",
+        "moduleAlreadyExists": "模块 \"{name}\" 已存在",
+        "packageAlreadyExists": "包 \"{name}\" 已存在",
+        "moduleCreated": "已创建模块 \"{name}\"",
+        "packageCreated": "已创建包 \"{name}\"",
+        "cannotConvertStub": "无法将存根文件 \"{name}\" 转换为包",
+        "notPythonModule": "\"{name}\" 不是 Python 模块文件",
+        "cannotConvertSpecial": "无法转换 \"{name}\" 为包",
+        "moduleNotFound": "找不到模块 \"{name}\"",
+        "cannotConvertPackageExists": "无法转换为包：\"{name}/\" 已存在",
+        "moduleConverted": "已将模块 \"{name}.py\" 转换为包 \"{name}/\"",
+        "notInitPy": "应为 \"__init__.py\"，但得到的是 \"{name}\"",
+        "initPyNotFound": "找不到 \"{path}\"",
+        "cannotDeterminePackageName": "无法从 \"{path}\" 确定包名",
+        "initExtracted": "已将 \"__init__.py\" 的内容提取到 \"{name}\" 模块"
     }
 }
