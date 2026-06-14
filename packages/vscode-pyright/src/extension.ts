@@ -622,6 +622,18 @@ function registerRefactorCommand(client: LanguageClient, commandName: Commands, 
             return;
         }
 
+        // For refactoring commands, save the target document so unsaved
+        // changes are carried over to the new file
+        if (!requireNewName) {
+            const targetUri = Uri.parse(uriString);
+            const doc = workspace.textDocuments.find(
+                (d) => d.uri.toString() === targetUri.toString()
+            );
+            if (doc?.isDirty) {
+                await doc.save();
+            }
+        }
+
         window.withProgress({ location: ProgressLocation.Notification, cancellable: false }, async (progress) => {
             try {
                 await client.sendRequest('workspace/executeCommand', {
