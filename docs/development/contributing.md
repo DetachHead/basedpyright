@@ -46,3 +46,9 @@ To debug the VS Code extension in watch mode, you can do the above, but select â
 ### Language server
 
 you may want to debug the language server without the VSCode extension, which can be useful when investigating issues that only seem to occur in other editors. you can do this using [LSP-inspector](https://github.com/swyddfa/lsp-devtools)'s client by running the `npm: lsp-client` task or the "LSP client" launch config
+
+## AI Policy
+
+Basedpyright is primarily maintained by one person. I don't mind if AI is used for small changes that are quick to review (provided you actually look at the code you're submitting), but I don't have time to review large AI generated PRs.
+
+AI allows code to be generated at a much faster rate than it can be reviewed, which is a recipe for disaster (and no, using AI to review it is not a solution).
