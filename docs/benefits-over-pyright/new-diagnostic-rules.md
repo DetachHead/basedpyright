@@ -273,6 +273,30 @@ since pyright does not warn when a class attribute without a type annotation is 
 
 `reportUnannotatedClassAttribute` will report an error on all unannotated class attributes that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.
 
+this also includes instance attributes assigned through `self`, because they can be overridden by subclasses with an incompatible type:
+
+```py
+from typing import reveal_type
+
+
+class Foo:
+    def __init__(self, bar: str) -> None:
+        self.bar = bar  # error: `bar` needs a type annotation
+
+
+class FooChild(Foo):
+    def __init__(self) -> None:
+        super().__init__("")
+        self.bar = 1  # no error unless `reportIncompatibleUnannotatedOverride` is enabled
+
+
+def fn(foo: Foo) -> None:
+    reveal_type(foo.bar)  # basedpyright: str, runtime: int
+
+
+fn(FooChild())
+```
+
 ## `reportInvalidAbstractMethod`
 
 pyright ignores methods decorated with `@abstractmethod` if the class is not abstract:
