@@ -134,7 +134,7 @@ The following settings allow more fine grained control over the **typeCheckingMo
 
 - <a name="reportInvalidTypeForm"></a> **reportInvalidTypeForm** [boolean or string, optional]: Generate or suppress diagnostics for type annotations that use invalid type expression forms or are semantically invalid.
 
-- <a name="reportMissingTypeStubs"></a> **reportMissingTypeStubs** [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding type stub file (either a typeshed file or a custom type stub). The type checker requires type stubs to do its best job at analysis.
+- <a name="reportMissingTypeStubs"></a> **reportMissingTypeStubs** [boolean or string, optional]: Generate or suppress diagnostics for imports that have no corresponding type stub file (either a typeshed file or a custom type stub). For inline-typed third-party packages, this can also indicate that the package is missing a `py.typed` marker file. The type checker requires stubs or [PEP 561](https://typing.python.org/en/latest/spec/distributing.html#packaging-type-information) package metadata to do its best job at analysis.
 
 - <a name="reportImportCycles"></a> **reportImportCycles** [boolean or string, optional]: Generate or suppress diagnostics for cyclical import chains. These are not errors in Python, but they do slow down type analysis and often hint at architectural layering issues. Generally, they should be avoided.
 
