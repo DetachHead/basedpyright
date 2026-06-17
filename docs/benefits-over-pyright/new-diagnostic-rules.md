@@ -271,7 +271,39 @@ since pyright does not warn when a class attribute without a type annotation is 
 -   you encountered performance issues with `reportIncompatibleUnannotatedOverride`
 -   you prefer explicit type annotations to reduce the risk of introducing unexpected breaking changes to your API
 
-`reportUnannotatedClassAttribute` will report an error on all unannotated class attributes that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.
+`reportUnannotatedClassAttribute` will report an error on all unannotated attributes declared on a class that can potentially be overridden (ie. not final or private), even if they don't override an attribute on a base class with an incompatible type.
+
+this includes instance attributes assigned through `self`:
+
+```py
+class Foo:
+    def __init__(self, bar: str) -> None:
+        self.bar = bar  # error: reportUnannotatedClassAttribute
+```
+
+the explicit annotation prevents a subclass from changing the runtime type without a diagnostic from type checkers that don't support `reportIncompatibleUnannotatedOverride`:
+
+```py
+from typing import reveal_type
+
+
+class Foo:
+    def __init__(self, bar: str) -> None:
+        self.bar: str = bar
+
+
+class FooChild(Foo):
+    def __init__(self) -> None:
+        super().__init__("")
+        self.bar = 1  # error: reportIncompatibleUnannotatedOverride
+
+
+def fn(foo: Foo) -> None:
+    reveal_type(foo.bar)  # basedpyright: str, runtime: int
+
+
+fn(FooChild())
+```
 
 ## `reportInvalidAbstractMethod`
 
