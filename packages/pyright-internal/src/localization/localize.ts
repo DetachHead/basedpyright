@@ -1735,10 +1735,6 @@ export namespace Localizer {
             new ParameterizedString<{ name: string }>(
                 getRawString('Service.invalidPythonNameForbidden')
             );
-        export const invalidPythonNameLeadingDigit = () =>
-            new ParameterizedString<{ name: string }>(
-                getRawString('Service.invalidPythonNameLeadingDigit')
-            );
         export const invalidPythonNameUnicode = () =>
             new ParameterizedString<{ name: string }>(
                 getRawString('Service.invalidPythonNameUnicode')

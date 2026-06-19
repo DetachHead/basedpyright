@@ -6,7 +6,7 @@ import { Localizer } from '../localization/localize';
 
 const Service = Localizer.Service;
 
-export type NameValidation = 'ok' | 'forbidden' | 'nonIdentifier' | 'dot' | 'leadingDigit' | 'unicode';
+export type NameValidation = 'ok' | 'forbidden' | 'nonIdentifier' | 'dot' | 'unicode';
 
 export function hasForbiddenFileNameChars(name: string): boolean {
     for (const ch of name) {
@@ -41,16 +41,8 @@ function hasNonAsciiChars(name: string): boolean {
 }
 
 export function validatePythonName(name: string): NameValidation {
-    if (!name) {
-        return 'nonIdentifier';
-    }
-    if (hasForbiddenFileNameChars(name)) {
+    if (!name || hasForbiddenFileNameChars(name)) {
         return 'forbidden';
-    }
-    // Leading digit: valid as a filename but not importable via `import` statement.
-    // Can still be loaded via importlib.import_module(), so warn rather than error.
-    if (/^\d/.test(name)) {
-        return 'leadingDigit';
     }
     // Pure-ASCII Python identifier
     if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
@@ -122,24 +114,15 @@ export class CreateModuleCommand implements ServerCommand {
 
         const nameCheck = validatePythonName(moduleName);
         if (nameCheck === 'forbidden') {
-            this._ls.window.showErrorMessage(
-                Service.invalidPythonNameForbidden().format({ name: moduleName })
-            );
+            this._ls.window.showErrorMessage(Service.invalidPythonNameForbidden().format({ name: moduleName }));
             return;
         }
         if (nameCheck === 'dot') {
-            this._ls.window.showErrorMessage(
-                Service.invalidPythonNameDot().format({ name: moduleName })
-            );
+            this._ls.window.showErrorMessage(Service.invalidPythonNameDot().format({ name: moduleName }));
             return;
         }
         if (nameCheck === 'nonIdentifier') {
-            this._ls.window.showWarningMessage(
-                Service.invalidPythonNameNonIdentifier().format({ name: moduleName })
-            );
-        }
-        if (nameCheck === 'leadingDigit') {
-            this._ls.window.showWarningMessage(Service.invalidPythonNameLeadingDigit().format({ name: moduleName }));
+            this._ls.window.showWarningMessage(Service.invalidPythonNameNonIdentifier().format({ name: moduleName }));
         }
         if (nameCheck === 'unicode') {
             this._ls.window.showWarningMessage(Service.invalidPythonNameUnicode().format({ name: moduleName }));
@@ -199,24 +182,15 @@ export class CreatePackageCommand implements ServerCommand {
 
         const nameCheck = validatePythonName(packageName);
         if (nameCheck === 'forbidden') {
-            this._ls.window.showErrorMessage(
-                Service.invalidPythonNameForbidden().format({ name: packageName })
-            );
+            this._ls.window.showErrorMessage(Service.invalidPythonNameForbidden().format({ name: packageName }));
             return;
         }
         if (nameCheck === 'dot') {
-            this._ls.window.showErrorMessage(
-                Service.invalidPythonNameDot().format({ name: packageName })
-            );
+            this._ls.window.showErrorMessage(Service.invalidPythonNameDot().format({ name: packageName }));
             return;
         }
         if (nameCheck === 'nonIdentifier') {
-            this._ls.window.showWarningMessage(
-                Service.invalidPythonNameNonIdentifier().format({ name: packageName })
-            );
-        }
-        if (nameCheck === 'leadingDigit') {
-            this._ls.window.showWarningMessage(Service.invalidPythonNameLeadingDigit().format({ name: packageName }));
+            this._ls.window.showWarningMessage(Service.invalidPythonNameNonIdentifier().format({ name: packageName }));
         }
         if (nameCheck === 'unicode') {
             this._ls.window.showWarningMessage(Service.invalidPythonNameUnicode().format({ name: packageName }));

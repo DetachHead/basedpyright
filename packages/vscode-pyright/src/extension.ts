@@ -518,11 +518,6 @@ function validatePythonModuleName(value: string): InputBoxValidationMessage | nu
                 'This name is not a valid Python identifier; the module can only be imported via importlib, not with an import statement',
             severity: InputBoxValidationSeverity.Warning,
         },
-        leadingDigit: {
-            message:
-                'Module names starting with a digit can only be imported via importlib, not with an import statement',
-            severity: InputBoxValidationSeverity.Warning,
-        },
         unicode: {
             message: 'Unicode module names may cause cross-platform portability issues',
             severity: InputBoxValidationSeverity.Warning,

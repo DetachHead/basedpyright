@@ -230,7 +230,7 @@ describe('CreateModuleCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'warning',
-            text: expect.stringContaining('starts with a digit'),
+            text: expect.stringContaining('not a valid Python identifier'),
         });
         expect(window.messages[1]).toEqual({
             type: 'info',
@@ -406,7 +406,7 @@ describe('CreatePackageCommand', () => {
 
         expect(window.messages[0]).toEqual({
             type: 'warning',
-            text: expect.stringContaining('starts with a digit'),
+            text: expect.stringContaining('not a valid Python identifier'),
         });
         expect(window.messages[1]).toEqual({
             type: 'info',
