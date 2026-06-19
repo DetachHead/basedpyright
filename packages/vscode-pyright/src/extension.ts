@@ -14,6 +14,7 @@ import { existsSync } from 'fs';
 import os from 'os';
 import * as path from 'path';
 import { Commands } from 'pyright-internal/commands/commands';
+import { NameValidation, validatePythonName } from 'pyright-internal/commands/createModuleOrPackage';
 import { isThenable } from 'pyright-internal/common/core';
 import {
     commands,
@@ -30,6 +31,9 @@ import {
     workspace,
     WorkspaceConfiguration,
     env,
+    ProgressLocation,
+    InputBoxValidationMessage,
+    InputBoxValidationSeverity,
 } from 'vscode';
 import {
     CancellationToken,
@@ -308,6 +312,12 @@ export async function activate(context: ExtensionContext) {
         );
     });
 
+    // Register commands for creating modules or packages
+    const explorerMenuCreateCommands = [Commands.createNewModule, Commands.createNewPackage];
+    explorerMenuCreateCommands.forEach((commandName) => {
+        context.subscriptions.push(registerRefactorCommand(client, commandName, true));
+    });
+
     // Register the debug only commands when running under the debugger.
     if (context.extensionMode === ExtensionMode.Development) {
         // Create a 'when' context for development.
@@ -484,4 +494,113 @@ function isConfigSettingSetByUser(configuration: WorkspaceConfiguration, setting
         inspect.workspaceLanguageValue !== undefined ||
         inspect.workspaceFolderLanguageValue !== undefined
     );
+}
+
+function validatePythonModuleName(value: string): InputBoxValidationMessage | null {
+    const name = value.trim();
+    if (!name) {
+        return null;
+    }
+
+    const result = validatePythonName(name);
+
+    const messages: Record<Exclude<NameValidation, 'ok'>, { message: string; severity: InputBoxValidationSeverity }> = {
+        forbidden: {
+            message: 'This name contains characters that are not allowed in file names',
+            severity: InputBoxValidationSeverity.Error,
+        },
+        dot: {
+            message: 'Dots in module names conflict with Python package-path resolution',
+            severity: InputBoxValidationSeverity.Error,
+        },
+        nonIdentifier: {
+            message:
+                'This name is not a valid Python identifier; the module can only be imported via importlib, not with an import statement',
+            severity: InputBoxValidationSeverity.Warning,
+        },
+        leadingDigit: {
+            message:
+                'Module names starting with a digit can only be imported via importlib, not with an import statement',
+            severity: InputBoxValidationSeverity.Warning,
+        },
+        unicode: {
+            message: 'Unicode module names may cause cross-platform portability issues',
+            severity: InputBoxValidationSeverity.Warning,
+        },
+    };
+
+    return result === 'ok' ? null : messages[result];
+}
+
+function resolveResultUri(commandName: Commands, targetUriString: string, createName?: string): Uri | undefined {
+    let target = Uri.parse(targetUriString);
+
+    // If the target is a file (e.g. __init__.py when right-clicking a package
+    // directory), use its parent directory to match the server-side fallback
+    if (path.extname(target.fsPath)) {
+        target = Uri.file(path.dirname(target.fsPath));
+    }
+
+    switch (commandName) {
+        case Commands.createNewModule:
+            if (!createName) {
+                return undefined;
+            }
+            return Uri.joinPath(target, createName + '.py');
+
+        case Commands.createNewPackage:
+            if (!createName) {
+                return undefined;
+            }
+            return Uri.joinPath(target, createName, '__init__.py');
+
+        default:
+            return undefined;
+    }
+}
+
+function registerRefactorCommand(client: LanguageClient, commandName: Commands, requireNewName?: boolean) {
+    return commands.registerCommand(commandName, async (uri?: Uri) => {
+        // Use the explorer-clicked URI as fallback when no active text editor
+        const explorerUri = uri ? uri.toString() : undefined;
+        const workspaceUri = window.activeTextEditor?.document.uri.toString();
+        const availableUri = explorerUri ?? workspaceUri;
+
+        if (!availableUri) {
+            return;
+        }
+
+        const rawName = requireNewName
+            ? await window.showInputBox({
+                  prompt: 'Enter a name for the new Python module or package',
+                  validateInput: validatePythonModuleName,
+              })
+            : undefined;
+        const createName = rawName?.trim();
+
+        if (requireNewName && !createName) {
+            return;
+        }
+
+        window.withProgress({ location: ProgressLocation.Notification, cancellable: false }, async (progress) => {
+            try {
+                await client.sendRequest('workspace/executeCommand', {
+                    command: commandName,
+                    arguments: requireNewName
+                        ? [workspaceUri, availableUri, createName as string]
+                        : [workspaceUri, availableUri],
+                });
+                progress.report({ message: 'Done', increment: 100 });
+
+                // Open the resulting file in the editor
+                const resultUri = resolveResultUri(commandName, availableUri, createName);
+                if (resultUri) {
+                    const doc = await workspace.openTextDocument(resultUri);
+                    await window.showTextDocument(doc);
+                }
+            } catch (error: any) {
+                window.showErrorMessage(`Command failed: ${error.message}`);
+            }
+        });
+    });
 }

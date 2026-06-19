@@ -2197,6 +2197,21 @@
         "enableBasedFeatures": "set the `enableBasedFeatures` configuration option to `true` to enable this feature"
     },
     "Service": {
-        "longOperation": "Enumeration of workspace source files is taking a long time. Consider opening a sub-folder instead. [Learn more](https://aka.ms/workspace-too-many-files)"
+        "longOperation": "Enumeration of workspace source files is taking a long time. Consider opening a sub-folder instead. [Learn more](https://aka.ms/workspace-too-many-files)",
+        "invalidArgsCreateModule": "Invalid arguments for creating a module",
+        "invalidArgsCreatePackage": "Invalid arguments for creating a package",
+        "invalidTargetDirectory": "Invalid target directory",
+        "invalidPythonName": "\"{name}\" is not a valid Python module name",
+        "invalidPythonNameNonIdentifier": "\"{name}\" is not a valid Python identifier; this module can only be imported via importlib, not with an import statement",
+        "invalidPythonNameDot": "\"{name}\" contains a dot, which conflicts with Python's package-path resolution",
+        "invalidPythonNameForbidden": "\"{name}\" contains characters that are not allowed in file names",
+        "invalidPythonNameLeadingDigit": "\"{name}\" starts with a digit; this module can only be imported via importlib, not with an import statement",
+        "invalidPythonNameUnicode": "\"{name}\" uses non-ASCII characters; this may cause cross-platform portability issues",
+        "dirNotExist": "Directory \"{path}\" does not exist",
+        "noWorkspaceFound": "No workspace found",
+        "moduleAlreadyExists": "Module \"{name}\" already exists",
+        "packageAlreadyExists": "Package \"{name}\" already exists",
+        "moduleCreated": "Created module \"{name}\"",
+        "packageCreated": "Created package \"{name}\""
     }
 }
