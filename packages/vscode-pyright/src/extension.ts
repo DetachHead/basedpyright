@@ -14,7 +14,7 @@ import { existsSync } from 'fs';
 import os from 'os';
 import * as path from 'path';
 import { Commands } from 'pyright-internal/commands/commands';
-import { NameValidation, validatePythonName } from 'pyright-internal/commands/createModuleOrPackage';
+import { NameValidation, validateArbitaryModuleNamePart } from 'pyright-internal/analyzer/symbolNameUtils';
 import { isThenable } from 'pyright-internal/common/core';
 import {
     commands,
@@ -502,7 +502,7 @@ function validatePythonModuleName(value: string): InputBoxValidationMessage | nu
         return null;
     }
 
-    const result = validatePythonName(name);
+    const result = validateArbitaryModuleNamePart(name);
 
     const messages: Record<Exclude<NameValidation, 'ok'>, { message: string; severity: InputBoxValidationSeverity }> = {
         forbidden: {

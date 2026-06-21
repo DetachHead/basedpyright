@@ -64,11 +64,11 @@ export class CommandController implements ServerCommand {
             }
 
             case Commands.createNewModule: {
-                return this._createModule.execute(cmdParams);
+                return this._createModule.execute(cmdParams, token);
             }
 
             case Commands.createNewPackage: {
-                return this._createPackage.execute(cmdParams);
+                return this._createPackage.execute(cmdParams, token);
             }
 
             default: {
