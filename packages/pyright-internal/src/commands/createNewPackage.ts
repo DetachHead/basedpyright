@@ -1,4 +1,4 @@
-import { CancellationToken, ExecuteCommandParams } from 'vscode-languageserver';
+import { ExecuteCommandParams } from 'vscode-languageserver';
 import { ServerCommand } from './commandController';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { Uri } from '../common/uri/uri';
@@ -10,7 +10,7 @@ const Service = Localizer.Service;
 export class CreatePackageCommand implements ServerCommand {
     constructor(private _ls: LanguageServerInterface) {}
 
-    async execute(params: ExecuteCommandParams, token: CancellationToken): Promise<void> {
+    async execute(params: ExecuteCommandParams): Promise<void> {
         if (params.arguments && params.arguments.length >= 1) {
             const docUri = Uri.parse(params.arguments[0] as string, this._ls.serviceProvider);
             const otherArgs = params.arguments.slice(1);

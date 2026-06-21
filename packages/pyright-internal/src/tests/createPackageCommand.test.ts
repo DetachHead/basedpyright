@@ -1,4 +1,4 @@
-import { CancellationToken, ExecuteCommandParams } from 'vscode-languageserver';
+import { ExecuteCommandParams } from 'vscode-languageserver';
 import { CreatePackageCommand } from '../commands/createNewPackage';
 import { setLocaleOverride } from '../localization/localize';
 import { TestLanguageService } from './harness/fourslash/testLanguageService';
@@ -31,7 +31,7 @@ describe('CreatePackageCommand', () => {
     }
 
     it('creates a package with __init__.py', async () => {
-        await cmd.execute(makeArgs([root().toString(), root().toString(), 'my_package']), CancellationToken.None);
+        await cmd.execute(makeArgs([root().toString(), root().toString(), 'my_package']));
 
         const pkgDir = root().combinePaths('my_package');
         expect(fs().existsSync(pkgDir)).toBe(true);
@@ -42,7 +42,7 @@ describe('CreatePackageCommand', () => {
     it('falls back to parent directory when target is a file', async () => {
         const fp = root().combinePaths('somefile.py');
         fs().writeFileSync(fp, '# content', 'utf-8');
-        await cmd.execute(makeArgs([root().toString(), fp.toString(), 'new_pkg']), CancellationToken.None);
+        await cmd.execute(makeArgs([root().toString(), fp.toString(), 'new_pkg']));
 
         const pkgDir = root().combinePaths('new_pkg');
         expect(fs().existsSync(pkgDir)).toBe(true);
@@ -51,34 +51,25 @@ describe('CreatePackageCommand', () => {
 
     it('fails if target directory does not exist', async () => {
         await expect(
-            cmd.execute(
-                makeArgs([root().toString(), root().combinePaths('nope').toString(), 'p']),
-                CancellationToken.None
-            )
+            cmd.execute(makeArgs([root().toString(), root().combinePaths('nope').toString(), 'p']))
         ).rejects.toThrow();
     });
 
     it('fails if package already exists', async () => {
         fs().mkdirSync(root().combinePaths('dup'), { recursive: true });
-        await expect(
-            cmd.execute(makeArgs([root().toString(), root().toString(), 'dup']), CancellationToken.None)
-        ).rejects.toThrow();
+        await expect(cmd.execute(makeArgs([root().toString(), root().toString(), 'dup']))).rejects.toThrow();
     });
 
     it('fails for name with NTFS forbidden characters', async () => {
-        await expect(
-            cmd.execute(makeArgs([root().toString(), root().toString(), 'bad:name']), CancellationToken.None)
-        ).rejects.toThrow();
+        await expect(cmd.execute(makeArgs([root().toString(), root().toString(), 'bad:name']))).rejects.toThrow();
     });
 
     it('fails for name containing a dot', async () => {
-        await expect(
-            cmd.execute(makeArgs([root().toString(), root().toString(), 'my.pkg']), CancellationToken.None)
-        ).rejects.toThrow();
+        await expect(cmd.execute(makeArgs([root().toString(), root().toString(), 'my.pkg']))).rejects.toThrow();
     });
 
     it('returns early for empty name', async () => {
-        await cmd.execute(makeArgs([root().toString(), root().toString(), '']), CancellationToken.None);
+        await cmd.execute(makeArgs([root().toString(), root().toString(), '']));
         // TestWindow only fails on error/warning; empty name returns early without either
     });
 });
