@@ -15,7 +15,8 @@ import { DumpFileDebugInfoCommand } from './dumpFileDebugInfoCommand';
 import { QuickActionCommand } from './quickActionCommand';
 import { RestartServerCommand } from './restartServer';
 import { WriteBaselineCommand } from './writeBaseline';
-import { CreateModuleCommand, CreatePackageCommand } from './createModuleOrPackage';
+import { CreateModuleCommand } from './createNewModule';
+import { CreatePackageCommand } from './createNewPackage';
 
 export interface ServerCommand {
     execute(cmdParams: ExecuteCommandParams, token: CancellationToken): Promise<any>;
@@ -63,12 +64,13 @@ export class CommandController implements ServerCommand {
             }
 
             case Commands.createNewModule: {
-                return this._createModule.execute(cmdParams, token);
+                return this._createModule.execute(cmdParams);
             }
 
             case Commands.createNewPackage: {
-                return this._createPackage.execute(cmdParams, token);
+                return this._createPackage.execute(cmdParams);
             }
+
             default: {
                 return new ResponseError<string>(1, 'Unsupported command');
             }
