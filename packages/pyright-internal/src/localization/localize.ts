@@ -1729,25 +1729,15 @@ export namespace Localizer {
         export const invalidArgsCreateModule = () => getRawString('Service.invalidArgsCreateModule');
         export const invalidArgsCreatePackage = () => getRawString('Service.invalidArgsCreatePackage');
         export const invalidTargetDirectory = () => getRawString('Service.invalidTargetDirectory');
-        export const invalidPythonName = () =>
-            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonName'));
         export const invalidPythonNameForbidden = () =>
-            new ParameterizedString<{ name: string }>(
-                getRawString('Service.invalidPythonNameForbidden')
-            );
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameForbidden'));
         export const invalidPythonNameUnicode = () =>
-            new ParameterizedString<{ name: string }>(
-                getRawString('Service.invalidPythonNameUnicode')
-            );
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameUnicode'));
         export const invalidPythonNameNonIdentifier = () =>
-            new ParameterizedString<{ name: string }>(
-                getRawString('Service.invalidPythonNameNonIdentifier')
-            );
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameNonIdentifier'));
         export const invalidPythonNameDot = () =>
             new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameDot'));
-        export const dirNotExist = () =>
-            new ParameterizedString<{ path: string }>(getRawString('Service.dirNotExist'));
-        export const noWorkspaceFound = () => getRawString('Service.noWorkspaceFound');
+        export const dirNotExist = () => new ParameterizedString<{ path: string }>(getRawString('Service.dirNotExist'));
         export const moduleAlreadyExists = () =>
             new ParameterizedString<{ name: string }>(getRawString('Service.moduleAlreadyExists'));
         export const packageAlreadyExists = () =>
