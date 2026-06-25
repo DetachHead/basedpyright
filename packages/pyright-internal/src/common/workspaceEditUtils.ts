@@ -97,6 +97,18 @@ export function appendToWorkspaceEdit(
     });
 }
 
+export function hasWorkspaceEditChanges(edits: WorkspaceEdit): boolean {
+    if (edits.changes && Object.values(edits.changes).some((changes) => changes.length > 0)) {
+        return true;
+    }
+
+    if (edits.documentChanges?.some((change) => !TextDocumentEdit.is(change) || change.edits.length > 0)) {
+        return true;
+    }
+
+    return false;
+}
+
 export function applyTextEditsToString(
     edits: TextEditAction[],
     lines: TextRangeCollection<TextRange>,

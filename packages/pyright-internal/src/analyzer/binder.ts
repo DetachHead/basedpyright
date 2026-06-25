@@ -49,6 +49,7 @@ import {
     IfNode,
     ImportAsNode,
     ImportFromNode,
+    ImportNode,
     IndexNode,
     LambdaNode,
     MatchNode,
@@ -2115,6 +2116,7 @@ export class Binder extends ParseTreeWalker {
                             usesLocalName: false,
                             moduleName: this._formatModuleName(node.d.module),
                             isInExceptSuite: this._isInExceptSuite,
+                            isLazy: node.d.isLazy || undefined,
                         };
 
                         // Handle the case where this is an __init__.py file and the imported
@@ -2143,6 +2145,7 @@ export class Binder extends ParseTreeWalker {
                         moduleName: this._formatModuleName(node.d.module),
                         isInExceptSuite: this._isInExceptSuite,
                         isNativeLib: importInfo?.isNativeLib,
+                        isLazy: node.d.isLazy || undefined,
                     };
 
                     symbol.addDeclaration(aliasDecl);
@@ -2809,8 +2812,20 @@ export class Binder extends ParseTreeWalker {
         const isResolved =
             importInfo && importInfo.isImportFound && !importInfo.isNativeLib && importInfo.resolvedUris.length > 0;
 
+        // Determine whether this import was declared with the "lazy" keyword (PEP 810).
+        const isLazy =
+            node.nodeType === ParseNodeType.ImportAs
+                ? (node.parent as ImportNode | undefined)?.d?.isLazy === true
+                : node.d.isLazy === true;
+
         if (existingDecl) {
             newDecl = existingDecl as AliasDeclaration;
+
+            // Reconcile laziness: if any eager import path exists for this symbol,
+            // the declaration is not lazy (PEP 810).
+            if (!isLazy) {
+                newDecl.isLazy = undefined;
+            }
         } else if (isResolved) {
             newDecl = {
                 type: DeclarationType.Alias,
@@ -2824,6 +2839,7 @@ export class Binder extends ParseTreeWalker {
                     : '.'.repeat(node.d.module.d.leadingDots) + firstNamePartValue,
                 firstNamePart: firstNamePartValue,
                 isInExceptSuite: this._isInExceptSuite,
+                isLazy: isLazy || undefined,
             };
         } else {
             // If we couldn't resolve the import, create a dummy declaration with a
@@ -2842,6 +2858,7 @@ export class Binder extends ParseTreeWalker {
                     : '.'.repeat(node.d.module.d.leadingDots) + firstNamePartValue,
                 isUnresolved: true,
                 isInExceptSuite: this._isInExceptSuite,
+                isLazy: isLazy || undefined,
             };
         }
 

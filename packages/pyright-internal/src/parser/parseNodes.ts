@@ -2048,6 +2048,8 @@ export namespace PassNode {
 export interface ImportNode extends ParseNodeBase<ParseNodeType.Import> {
     d: {
         list: ImportAsNode[];
+        isLazy?: boolean;
+        lazyToken?: KeywordToken;
     };
 }
 
@@ -2129,6 +2131,8 @@ export interface ImportFromNode extends ParseNodeBase<ParseNodeType.ImportFrom> 
         usesParens: boolean;
         wildcardToken?: Token;
         missingImport?: boolean;
+        isLazy?: boolean;
+        lazyToken?: KeywordToken;
     };
 }
 

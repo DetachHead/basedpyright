@@ -232,6 +232,12 @@ test('With6', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('With7', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with7.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
 test('`AbstractContextManager` with exit type specified with a generic', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['withGenericExitType.py']);
 

@@ -538,6 +538,7 @@ export interface PrintTypeOptions {
     printUnknownWithAny?: boolean;
     printTypeVarVariance?: boolean;
     omitTypeArgsIfUnknown?: boolean;
+    disablePep604?: boolean;
     importTracker?: ImportTracker;
 }
 
