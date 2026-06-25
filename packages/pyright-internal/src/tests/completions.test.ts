@@ -959,9 +959,11 @@ test('completion MRU affects sort order', async () => {
         format: 'markdown',
         snippet: false,
         lazyEdit: false,
+        checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
-    const provider1 = new CompletionProvider(state.program, uri, position, options, CancellationToken.None);
+    const provider1 = new CompletionProvider(state.program, uri, position, options, CancellationToken.None, false);
     const result1 = provider1.getCompletions();
     assert(result1);
 
@@ -976,7 +978,7 @@ test('completion MRU affects sort order', async () => {
     // Accepting 'truly' records it in the MRU. (MRU is updated on accept, not on passive resolve.)
     CompletionProvider.recordCompletionAccepted('truly', '');
 
-    const provider2 = new CompletionProvider(state.program, uri, position, options, CancellationToken.None);
+    const provider2 = new CompletionProvider(state.program, uri, position, options, CancellationToken.None, false);
     const result2 = provider2.getCompletions();
     assert(result2);
 
@@ -2506,6 +2508,8 @@ test('completion itemDefaults.data hoist when capability enabled', async () => {
         snippet: false,
         lazyEdit: false,
         completionItemDataDefault: true,
+        checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
     const result = new CompletionProvider(
@@ -2513,7 +2517,8 @@ test('completion itemDefaults.data hoist when capability enabled', async () => {
         uri,
         position,
         options,
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert(result);
@@ -2551,6 +2556,8 @@ test('completion itemDefaults.data not hoisted when capability disabled', async 
         format: 'markdown',
         snippet: false,
         lazyEdit: false,
+        checkDeprecatedWhenResolving: false,
+        useTypingExtensions: false,
     };
 
     const result = new CompletionProvider(
@@ -2558,7 +2565,8 @@ test('completion itemDefaults.data not hoisted when capability disabled', async 
         uri,
         position,
         options,
-        CancellationToken.None
+        CancellationToken.None,
+        false
     ).getCompletions();
 
     assert(result);

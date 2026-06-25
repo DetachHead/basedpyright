@@ -1555,7 +1555,7 @@ export class CompletionProvider {
             throwIfCancellationRequested(this.cancellationToken);
 
             if (curNode.nodeType === ParseNodeType.String) {
-                return this._getValueCompletions(curNode, offset, priorWord, priorText, postText);
+                return this._getLiteralCompletions(curNode, offset, priorWord, priorText, postText);
             }
 
             if (curNode.nodeType === ParseNodeType.StringList || curNode.nodeType === ParseNodeType.FormatString) {
@@ -1978,7 +1978,7 @@ export class CompletionProvider {
 
             case ErrorExpressionCategory.MissingPattern:
             case ErrorExpressionCategory.MissingIndexOrSlice: {
-                let completionResults = this._getValueCompletions(node, offset, priorWord, priorText, postText);
+                let completionResults = this._getLiteralCompletions(node, offset, priorWord, priorText, postText);
 
                 if (!completionResults) {
                     if (
@@ -3864,7 +3864,7 @@ export class CompletionProvider {
                         completionMap,
                         {
                             boundObjectOrClass,
-                        declaredOnBoundObjectOrClass,
+                            declaredOnBoundObjectOrClass,
                             funcParensDisabled: isInImport || insideTypeAnnotation || skipForClass || skipForDecorator,
                             extraCommitChars: !isInImport && !!priorWord,
                         },

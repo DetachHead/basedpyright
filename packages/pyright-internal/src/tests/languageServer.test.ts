@@ -586,6 +586,7 @@ describe(`Basic language server tests`, () => {
                 });
             }
         });
+    });
     describe('module/package renaming', () => {
         describe('import statement', () => {
             test('rename module', async () => {

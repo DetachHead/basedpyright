@@ -963,7 +963,8 @@ function printFunctionType(
                   returnTypeCallback,
                   uniqueNameMap,
                   recursionTypes,
-                  recursionCount
+                  recursionCount,
+                  importTracker
               )
             : undefined;
         if (paramSpecValueString !== undefined) {
@@ -1081,7 +1082,8 @@ function printParamSpecValueForPythonSyntax(
     returnTypeCallback: FunctionReturnTypeCallback,
     uniqueNameMap: UniqueNameMap,
     recursionTypes: Type[],
-    recursionCount: number
+    recursionCount: number,
+    importTracker: ImportTracker | undefined
 ): string | undefined {
     if (FunctionType.getParamSpecFromArgsKwargs(type)) {
         return undefined;
@@ -1105,7 +1107,8 @@ function printParamSpecValueForPythonSyntax(
                     returnTypeCallback,
                     uniqueNameMap,
                     recursionTypes,
-                    recursionCount
+                    recursionCount,
+                    importTracker
                 ),
             ];
         }

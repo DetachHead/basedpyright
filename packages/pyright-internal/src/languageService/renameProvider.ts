@@ -155,8 +155,11 @@ export class RenameProvider {
                 // only becomes known once their usages in other files are examined. Collecting the
                 // whole workspace in one walk pulls in those related declarations so the rename
                 // covers the entire group.
-                referenceProvider.collectWorkspaceReferences(referencesResult, /* includeDeclaration */ true, (info) =>
-                    isUserCode(info)
+                referenceProvider.collectWorkspaceReferences(
+                    referencesResult,
+                    /* includeDeclaration */ true,
+                    (info) => isUserCode(info),
+                    undefined
                 );
 
                 // The group may have grown (during the walk) to include a declaration that lives in

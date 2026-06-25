@@ -33,6 +33,7 @@ import { TextRangeCollection } from '../common/textRangeCollection';
 import { FunctionType, isOverloaded, OverloadedType } from '../analyzer/types';
 import { ParseFileResults } from '../parser/parser';
 import { FileSystem } from '../common/fileSystem';
+import at from '@core-js/pure/es/array/at';
 
 export class CodeActionProvider {
     static mightSupport(kinds: CodeActionKind[] | undefined): boolean {
@@ -176,7 +177,7 @@ export class CodeActionProvider {
             let positionCharacter: number;
             let insertText: string;
             if (existingIgnoreComment) {
-                const lastRuleTextRange = existingIgnoreComment.rulesList.at(-1)?.range;
+                const lastRuleTextRange = at(existingIgnoreComment.rulesList, -1)?.range;
                 if (!lastRuleTextRange) {
                     continue;
                 }

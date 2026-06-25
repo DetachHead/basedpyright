@@ -423,11 +423,12 @@ export class HoverProvider {
                     if (result) this._addResultsForTypeResult(parts, result, argumentNode !== undefined);
                     break;
                 }
-            } else if (node.nodeType === ParseNodeType.Function) {
-                // Hovering over the `->` return-type arrow shows the function's return documentation.
-                const token = ParseTreeUtils.getTokenOverlapping(this._parseResults.tokenizerOutput.tokens, offset);
-                if (token?.type === TokenType.Arrow) {
-                    addReturnResultsPart(this._program.serviceProvider, node, this._format, results.parts);
+                case ParseNodeType.Function: {
+                    // Hovering over the `->` return-type arrow shows the function's return documentation.
+                    const token = ParseTreeUtils.getTokenOverlapping(this._parseResults.tokenizerOutput.tokens, offset);
+                    if (token?.type === TokenType.Arrow) {
+                        addReturnResultsPart(this._program.serviceProvider, infoNode, this._format, parts);
+                    }
                 }
             }
 

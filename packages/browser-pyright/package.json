@@ -25,10 +25,10 @@
         "webpack": "webpack --mode development --progress"
     },
     "devDependencies": {
-        "@types/node": "^22.19.6",
+        "@types/node": "^25.9.2",
         "shx": "^0.4.0",
         "ts-loader": "^9.5.4",
-        "typescript": "~5.5.4",
+        "typescript": "~6.0.3",
         "webpack-cli": "^5.1.4"
     },
     "files": [

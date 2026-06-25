@@ -25,7 +25,7 @@ import { assertNever } from '../common/debug';
 import { DocumentRange } from '../common/docRange';
 import { ProgramView, ReferenceUseCase, SourceFileInfo, SymbolUsageProvider } from '../common/extensibility';
 import { ReadOnlyFileSystem } from '../common/fileSystem';
-import { convertOffsetToPosition, convertPositionToOffset } from '../common/positionUtils';
+import { convertPositionToOffset } from '../common/positionUtils';
 import { ServiceKeys } from '../common/serviceKeys';
 import { isRangeInRange, Position, TextRange } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
@@ -148,8 +148,8 @@ export class FindReferencesTreeWalker {
             result: CollectionResult,
             parseResults: ParseFileResults
         ) => DocumentRange = FindReferencesTreeWalker.createDocumentRange,
+        private readonly _checkConstructorUsagesForClass: ClassDeclaration | undefined,
         private readonly _previousResultRanges?: ReadonlySet<string>
-        private readonly _checkConstructorUsagesForClass: ClassDeclaration | undefined
     ) {
         this._parseResults = this._program.getParseResults(this._fileUri);
     }
@@ -286,7 +286,12 @@ export class ReferencesProvider {
         // members and TypedDict keys that share a name), and the rest of the group only becomes
         // known once their usages in other files are examined. A single workspace walk pulls in
         // those related declarations so the result covers the entire group.
-        this.collectWorkspaceReferences(referencesResult, includeDeclaration, isReferenceCandidateFile);
+        this.collectWorkspaceReferences(
+            referencesResult,
+            includeDeclaration,
+            isReferenceCandidateFile,
+            checkConstructorUsagesForClass
+        );
 
         // Make sure to include declarations regardless where they are defined
         // if includeDeclaration is set.
@@ -314,7 +319,12 @@ export class ReferencesProvider {
                     referencesResult.providers
                 );
 
-                this.addReferencesToResult(declFileInfo.uri, includeDeclaration, tempResult, undefined, checkConstructorUsagesForClass);
+                this.addReferencesToResult(
+                    declFileInfo.uri,
+                    includeDeclaration,
+                    tempResult,
+                    checkConstructorUsagesForClass
+                );
                 for (const result of tempResult.results) {
                     // Include declarations only. And throw away any references
                     if (result.location.uri.equals(decl.uri) && isRangeInRange(decl.range, result.location.range)) {
@@ -327,17 +337,14 @@ export class ReferencesProvider {
         return deduplicateLocations(locations);
     }
 
-        return dedupedLocations;
-    }
-
     // Collects references in a single file without committing them to `referencesResult`, returning
     // the per-file results plus any seed declarations the usage providers discovered while walking.
     collectFileReferences(
         fileUri: Uri,
         includeDeclaration: boolean,
         referencesResult: ReferencesResult,
-        previousResultRanges?: Set<string>,
-        checkConstructorUsagesForClass: ClassDeclaration | undefined
+        checkConstructorUsagesForClass: ClassDeclaration | undefined,
+        previousResultRanges?: Set<string>
     ): FileReferenceCollection {
         const parseResults = this._program.getParseResults(fileUri);
         if (!parseResults) {
@@ -351,15 +358,25 @@ export class ReferencesProvider {
             includeDeclaration,
             this._token,
             this._createDocumentRange,
-            previousResultRanges,
-            checkConstructorUsagesForClass
+            checkConstructorUsagesForClass,
+            previousResultRanges
         );
 
         return refTreeWalker.findReferences();
     }
 
-    addReferencesToResult(fileUri: Uri, includeDeclaration: boolean, referencesResult: ReferencesResult): void {
-        const collected = this.collectFileReferences(fileUri, includeDeclaration, referencesResult);
+    addReferencesToResult(
+        fileUri: Uri,
+        includeDeclaration: boolean,
+        referencesResult: ReferencesResult,
+        checkConstructorUsagesForClass: ClassDeclaration | undefined
+    ): void {
+        const collected = this.collectFileReferences(
+            fileUri,
+            includeDeclaration,
+            referencesResult,
+            checkConstructorUsagesForClass
+        );
         referencesResult.addResults(...collected.results);
     }
 
@@ -397,7 +414,8 @@ export class ReferencesProvider {
     collectWorkspaceReferences(
         referencesResult: ReferencesResult,
         includeDeclaration: boolean,
-        isCandidateFile: (sourceFileInfo: SourceFileInfo) => boolean
+        isCandidateFile: (sourceFileInfo: SourceFileInfo) => boolean,
+        checkConstructorUsagesForClass: ClassDeclaration | undefined
     ): void {
         // Whether the seed can grow is the usage providers' policy, not this engine's. A provider that
         // exposes `appendSeedDeclarationsAt` may contribute sibling declarations during the walk, so the
@@ -476,7 +494,11 @@ export class ReferencesProvider {
                 // See if the reference symbol's string is located somewhere within the file.
                 // If not, we can skip additional processing for the file.
                 const fileContents = curSourceFileInfo.contents;
-                if (!checkConstructorUsagesForClass && fileContents && !referencesResult.symbolNames.some((s) => fileContents.indexOf(s) >= 0)) {
+                if (
+                    !checkConstructorUsagesForClass &&
+                    fileContents &&
+                    !referencesResult.symbolNames.some((s) => fileContents.indexOf(s) >= 0)
+                ) {
                     // No possible match at this seed version; re-examine only after the seed (and thus the
                     // symbol-name set) grows past the watermark recorded above.
                     continue;
@@ -493,6 +515,7 @@ export class ReferencesProvider {
                     curSourceFileInfo.uri,
                     includeDeclaration,
                     referencesResult,
+                    checkConstructorUsagesForClass,
                     previousResultRanges
                 );
 

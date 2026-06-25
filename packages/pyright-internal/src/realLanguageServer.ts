@@ -154,7 +154,7 @@ export abstract class RealLanguageServer extends LanguageServerBase {
             const pythonAnalysisSection =
                 (await this.getConfiguration(workspace.rootUri, 'basedpyright.analysis')) ||
                 // this is undocumented, but we support the old section names for backwards compatibility with the pycharm pyright plugin
-                (await this.getConfiguration(workspace.rootUri, 'python.analysis'));
+                pythonSection?.analysis;
             if (pythonAnalysisSection) {
                 const typeshedPaths = pythonAnalysisSection.typeshedPaths;
                 if (typeshedPaths && Array.isArray(typeshedPaths) && typeshedPaths.length > 0) {

@@ -27,6 +27,7 @@ import { ParseFileResults } from '../parser/parser';
 import { createDocRangeDefault, deduplicateLocations, prepareFinder } from './navigationUtils';
 import { LanguageServerInterface } from '../common/languageServerInterface';
 import { ParseTreeWalker } from '../analyzer/parseTreeWalker';
+import at from '@core-js/pure/es/array/at';
 
 export type ImplementationCallback = (locations: DocumentRange[]) => void;
 
@@ -129,7 +130,7 @@ export class ImplementationProvider {
         // there might be more than 1 nonImportDeclarations.
         // But I think it'll work ok even if there's more than 1,
         // because assignability to all of their classes should be the same.
-        const declaration = declarationResult.nonImportDeclarations.at(0);
+        const declaration = at(declarationResult.nonImportDeclarations, 0);
         if (!declaration) {
             return;
         }

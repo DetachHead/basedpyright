@@ -23,8 +23,6 @@
         "checkJs": true,
         "experimentalDecorators": true,
         // TS 6.0 compat flags. Track removing these in a follow-up.
-        // "types: ['*']" preserves pre-6.0 behavior of auto-including all @types packages.
-        "types": ["*"],
         // Silences "baseUrl is deprecated" warning; baseUrl is removed in TS 7, so this must
         // be addressed before the next major upgrade.
         "ignoreDeprecations": "6.0",

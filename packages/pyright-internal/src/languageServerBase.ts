@@ -637,10 +637,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         inlayHints.on(async (params, token) => this.onInlayHints(params, token));
 
         const semanticTokens = this.connection.languages.semanticTokens;
-        semanticTokens.on(async (params, token) =>
-            // @ts-expect-error https://github.com/microsoft/vscode-languageserver-node/issues/1784
-            this.onSemanticTokens(params, token)
-        );
+        semanticTokens.on(async (params, token) => this.onSemanticTokens(params, token));
 
         this.connection.onDidOpenTextDocument(async (params) => this.onDidOpenTextDocument(params));
         this.connection.onDidChangeTextDocument(async (params) => this.onDidChangeTextDocument(params));
