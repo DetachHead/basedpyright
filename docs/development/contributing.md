@@ -19,13 +19,13 @@ we recommend using vscode, as there are project configuration files in the repo 
     this will install all dependencies required for the project (pyprojectx, uv, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules`
 2. press "Yes" when prompted by vscode to use the newly created virtualenv
 
-you can now run any node/npm commands from inside the venv.
+you can now run any node/pnpm commands from inside the venv.
 
 ## Debugging
 
 !!! note
 
-    these instructions assume you are using VSCode/VSCodium. if you are using another editor, npm tasks can be run via the command line with `npm run script-name`. you can view all the available scripts in the root `./package.json`, but VSCode-specific debug configs will be unavailable.
+    these instructions assume you are using VSCode/VSCodium. if you are using another editor, pnpm tasks can be run via the command line with `pnpm run script-name`. you can view all the available scripts in the root `./package.json`, but VSCode-specific debug configs will be unavailable.
 
 ### CLI
 

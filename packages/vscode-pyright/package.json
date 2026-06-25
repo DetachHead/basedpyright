@@ -2024,11 +2024,13 @@
         "vscode-languageserver-protocol": "^3.17.6-next.13"
     },
     "devDependencies": {
+        "@core-js/types": "^4.0.0-alpha.1",
         "@rspack/cli": "^2.0.5",
         "@rspack/core": "^2.0.5",
         "@types/node": "^25.9.2",
         "@types/vscode": "^1.101.0",
         "@vscode/vsce": "^3.9.2",
+        "chalk": "^4.1.2",
         "esbuild-loader": "^4.5.0",
         "form-data": "^4.0.6",
         "ovsx": "^0.8.3",

@@ -251,7 +251,7 @@ dev = [
     { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.9.2" },
     { name = "mkdocs-macros-plugin", specifier = ">=1.2.0" },
     { name = "mkdocs-material", specifier = ">=9.5.37" },
-    { name = "nodejs-wheel", specifier = ">=24.14.1" },
+    { name = "nodejs-wheel", specifier = ">=24.14.1,<25" },
     { name = "pdm-backend", specifier = ">=2.3.0" },
     { name = "pylint", specifier = ">=3.0.0a7" },
     { name = "pytest", specifier = ">=8.2.2" },

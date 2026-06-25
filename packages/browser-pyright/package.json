@@ -25,6 +25,7 @@
         "webpack": "webpack --mode development --progress"
     },
     "devDependencies": {
+        "@core-js/types": "^4.0.0-alpha.1",
         "@types/node": "^25.9.2",
         "shx": "^0.4.0",
         "ts-loader": "^9.5.4",

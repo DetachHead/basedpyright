@@ -2,26 +2,26 @@
     "name": "pyright-root",
     "private": true,
     "scripts": {
-        "build:extension:dev": "cd packages/vscode-pyright && npm run webpack",
-        "build:extension": "cd packages/vscode-pyright && npm run package",
-        "build:cli:dev": "cd packages/pyright && npm run webpack",
-        "watch:extension": "cd packages/vscode-pyright && npm run webpack-dev",
-        "watch:testserver": "cd packages/pyright-internal && npm run webpack:testserver:watch",
-        "check": "npm run check:syncpack && npm run check:eslint && npm run check:prettier",
+        "build:extension:dev": "cd packages/vscode-pyright && pnpm run webpack",
+        "build:extension": "cd packages/vscode-pyright && pnpm run package",
+        "build:cli:dev": "cd packages/pyright && pnpm run webpack",
+        "watch:extension": "cd packages/vscode-pyright && pnpm run webpack-dev",
+        "watch:testserver": "cd packages/pyright-internal && pnpm run webpack:testserver:watch",
+        "check": "pnpm run check:syncpack && pnpm run check:eslint && pnpm run check:prettier",
         "check:syncpack": "syncpack lint",
-        "fix:syncpack": "syncpack fix && npm install",
+        "fix:syncpack": "syncpack fix && pnpm install",
         "check:eslint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint .",
         "fix:eslint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint --fix .",
         "check:prettier": "prettier -c .",
         "fix:prettier": "prettier --write .",
-        "typecheck": "npm exec --workspaces -- tsc --noEmit",
-        "run:cli": "npm run build:cli:dev && node packages/pyright/index.js",
-        "run:langserver": "npm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
+        "typecheck": "pnpm -r exec tsc --noEmit",
+        "run:cli": "pnpm run build:cli:dev && node packages/pyright/index.js",
+        "run:langserver": "pnpm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
         "jest": "cd packages/pyright-internal && jest",
         "update-python-deps": "uv sync --upgrade",
         "update-pyprojectx-lockfile": "python pw --lock",
         "typecheck-python": "uv run --no-sync basedpyright",
-        "typecheck-python:writebaseline": "npm run typecheck-python -- --writebaseline",
+        "typecheck-python:writebaseline": "pnpm run typecheck-python --writebaseline",
         "ruff-check": "uv run --no-sync ruff check --no-cache && uv run --no-sync ruff format --check --diff",
         "ruff-fix": "uv run --no-sync ruff check --no-cache --fix && uv run --no-sync ruff format",
         "pylint": "uv run --no-sync pylint basedpyright build pdm_build.py --ignore-paths build/py_latest/upstream",
@@ -29,7 +29,7 @@
         "generate-docstubs": "uv run --no-sync build/py3_8/generate_docstubs.py",
         "localization-helper": "uv run --no-sync build/py_latest/localization_helper.py",
         "docs": "uv run --no-sync mkdocs serve --livereload",
-        "docs:fast": "npm run docs -- --dirty",
+        "docs:fast": "pnpm run docs --dirty",
         "lsp-inspect": "uv run --no-sync lsp-devtools inspect",
         "lsp-client": "uv run --no-sync lsp-devtools client -- node packages/pyright/langserver.index.js --stdio"
     },
@@ -49,6 +49,7 @@
         "jsonc-parser": "^3.3.1",
         "npm-check-updates": "^19.6.3",
         "p-queue": "^6.6.2",
+        "pnpm": "11.9.0",
         "prettier": "2.8.8",
         "syncpack": "~15.3.1",
         "throw-expression": "^2.0.1",
@@ -60,7 +61,5 @@
     "overrides": {
         "tar": "7.5.11"
     },
-    "workspaces": [
-        "packages/*"
-    ]
+    "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
 }

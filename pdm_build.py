@@ -6,7 +6,7 @@ from shutil import copy, copyfile, copytree
 from subprocess import CompletedProcess  # noqa: S404 no user input
 from typing import TYPE_CHECKING, TypedDict, cast
 
-from nodejs_wheel.executable import npm
+from nodejs_wheel.executable import corepack
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
 
@@ -20,16 +20,16 @@ class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-def run_npm(*args: str):
-    # cast needed because the npm function doesn't have all the overloads from subprocess.run even
-    # though the args are forwarded to it
+def run_corepack(*args: str):
+    # cast needed because the corepack function doesn't have all the overloads from subprocess.run
+    # even though the args are forwarded to it
     result = cast(
         CompletedProcess[str],
-        npm(args, return_completed_process=True, capture_output=True, text=True),
+        corepack(args, return_completed_process=True, capture_output=True, text=True),
     )
     if result.returncode != 0:
         raise Exception(
-            f"the following npm command exited with exit code {result.returncode}: {args}"
+            f"the following corepack command exited with exit code {result.returncode}: {args}"
             f"\n\nstderr:\n{result.stderr}"
         )
 
@@ -50,8 +50,8 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         if context.builder.config_settings.get("regenerate_docstubs") != "false":
             generate_docstubs(overwrite=True)
 
-        run_npm("ci")
-        run_npm("run", "build:cli:dev")
+        run_corepack("enable")
+        run_corepack("pnpm", "run", "build:cli:dev")
 
         if context.target == "editable":
             copy(npm_package_dir / package_json, pypi_package_dir)

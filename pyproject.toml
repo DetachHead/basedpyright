@@ -27,7 +27,7 @@ dependencies = [
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
-    "nodejs-wheel>=24.14.1",
+    "nodejs-wheel>=24.14.1,<25",
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
     "pytest>=8.2.2",
@@ -51,7 +51,9 @@ requires = [
     "pdm-backend>=2.3.0",
     # required for building the pyright npm package to be bundled in the pypi package.
     # cli is required due to dependencies with install scripts that assume node/npm is in the path
-    "nodejs-wheel>=20.13.1",
+    # corepack was removed in node 25 and we need it to install pnpm. we also have pnpm listed as a dev depenency
+    # so we don't have to run it thru corepack after the first install
+    "nodejs-wheel>=20.13.1,<25",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
     "docify>=1.0.0",
@@ -90,7 +92,8 @@ source-includes = [
     "packages/pyright",
     "packages/pyright-internal",
     "package.json",
-    "package-lock.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
     "tsconfig.json",
 ]
 

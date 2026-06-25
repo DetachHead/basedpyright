@@ -112,7 +112,7 @@
         "basedpyright/index.js": true,
         "basedpyright/langserver.index.js": true,
         "docstubs/**/*": true,
-        "package-lock.json": true,
+        "pnpm-lock.yaml": true,
         "uv.lock": true,
         "pw.lock": true,
         "pw": true,
@@ -142,5 +142,7 @@
     // https://github.com/microsoft/vscode-python/issues/25467
     "python.terminal.shellIntegration.enabled": false,
     "zizmor.executablePath": ".vscode/zizmor",
-    "eslint.useFlatConfig": false
+    "eslint.useFlatConfig": false,
+    "npm.scriptRunner": "pnpm",
+    "npm.packageManager": "pnpm"
 }
