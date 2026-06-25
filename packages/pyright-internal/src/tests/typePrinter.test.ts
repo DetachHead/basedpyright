@@ -282,7 +282,7 @@ test('ClassTypes PythonSyntax formats ParamSpec-specialized generic arguments', 
             PrintTypeFlags.PythonSyntax,
             returnTypeCallback
         ),
-        'A[Callable[..., Any], str]'
+        'A[..., str]'
     );
 });
 
