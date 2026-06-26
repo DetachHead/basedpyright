@@ -2040,11 +2040,11 @@
     this will install all dependencies required for the project (pyprojectx, uv, node, typescript, etc.). all dependencies are installed locally to <code>./.venv</code> and <code>./node_modules</code></li>
 <li>press "Yes" when prompted by vscode to use the newly created virtualenv</li>
 </ol>
-<p>you can now run any node/npm commands from inside the venv.</p>
+<p>you can now run any node/pnpm commands from inside the venv.</p>
 <h2 id="debugging">Debugging</h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>these instructions assume you are using VSCode/VSCodium. if you are using another editor, npm tasks can be run via the command line with <code>npm run script-name</code>. you can view all the available scripts in the root <code>./package.json</code>, but VSCode-specific debug configs will be unavailable.</p>
+<p>these instructions assume you are using VSCode/VSCodium. if you are using another editor, pnpm tasks can be run via the command line with <code>pnpm run script-name</code>. you can view all the available scripts in the root <code>./package.json</code>, but VSCode-specific debug configs will be unavailable.</p>
 </div>
 <h3 id="cli">CLI</h3>
 <p>To debug pyright, open the root source directory within VS Code. Open the debug sub-panel and choose “Pyright CLI” from the debug target menu. Click on the green “run” icon or press F5 to build and launch the command-line version in the VS Code debugger. There's also a similar option that provides a slightly faster build/debug loop: make sure you've built the pyright-internal project e.g. with Terminal &gt; Run Build Task &gt; tsc: watch, then choose “Pyright CLI (pyright-internal)”.</p>
