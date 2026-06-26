@@ -22,15 +22,16 @@
         "build:dev": "rspack build -c rspack.config.js --mode development",
         "clean": "shx rm -rf ./dist ./out LICENSE.txt",
         "prepack": "npm run clean && shx cp ../../LICENSE.txt . && npm run build",
-        "webpack": "webpack --mode development --progress"
+        "webpack": "rspack build -c rspack.config.js --mode development"
     },
     "devDependencies": {
         "@core-js/types": "^4.0.0-alpha.1",
+        "@rspack/cli": "^2.0.5",
+        "@rspack/core": "^2.0.5",
         "@types/node": "^25.9.2",
         "shx": "^0.4.0",
         "ts-loader": "^9.5.4",
-        "typescript": "~6.0.3",
-        "webpack-cli": "^5.1.4"
+        "typescript": "~6.0.3"
     },
     "files": [
         "/dist",
