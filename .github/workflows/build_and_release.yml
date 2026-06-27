@@ -121,8 +121,9 @@ jobs:
 
       - name: get currently published npm package version
         if: github.ref == 'refs/heads/main'
-        run: echo ::set-output name=VERSION_INFO::$(uv run pnpm view $(node -p "require(\"./package.json\").name")@=${{ steps.current-version.outputs.CURRENT_VERSION }})
-        id: version-was-changed
+        run: uv run pnpm view $(node -p "require(\"./package.json\").name")@${{ steps.current-version.outputs.CURRENT_VERSION }}
+        continue-on-error: true
+        id: version-exists
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
 
       - name: set version for npm packages
@@ -163,12 +164,12 @@ jobs:
 
       - name: publish package - npm
         # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         run: uv run pnpm publish --no-git-checks
         working-directory: ${{ env.NPM_PACKAGE_DIR }}
       - name: publish package - npm (browser)
         # publish npm & pypi packages, vscode extension and github release if the version in package.json was changed:
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         run: uv run pnpm publish --no-git-checks
         working-directory: ${{ env.BROWSER_NPM_PACKAGE_DIR }}
 
@@ -186,17 +187,17 @@ jobs:
           path: dist
 
       - name: publish package - pypi
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         run: uv publish
 
       # https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
       - name: publish VSIX - visual studio marketplace
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         run: vsce publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.VSCE_TOKEN }} --noVerify
         working-directory: ${{ env.VSIX_DIR }}
 
       - name: publish VSIX - open VSX
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         run: ovsx publish --packagePath ${{ env.VSIX_NAME }} --pat ${{ secrets.OPEN_VSX_TOKEN }}
         working-directory: ${{ env.VSIX_DIR }}
 
@@ -205,7 +206,7 @@ jobs:
           # but i have yet to find a single alternative that works the way i want (automatically creates the tag)
           # zizmor: ignore[archived-uses]
           marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
-        if: github.ref == 'refs/heads/main' && steps.version-was-changed.outputs.VERSION_INFO == ''
+        if: github.ref == 'refs/heads/main' && steps.version-exists.outcome == 'failure'
         with:
           title: v${{ steps.current-version.outputs.CURRENT_VERSION }} (pyright ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }})
           draft: true # so i can write the release notes manually before publishing it
