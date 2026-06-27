@@ -176,7 +176,7 @@ jobs:
       # i think to fix that i need to rewrite pdm_build.py to use the build hooks so we can control it more easily, but i can't get that to work soooo
       - name: set npm package versions back to upstream so pypi package can use it in --version output
         if: github.ref == 'refs/heads/main'
-        run: uv run pnpm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --recursive --no-git-tag-version
+        run: uv run pnpm version ${{ steps.current-version.outputs.CURRENT_UPSTREAM_VERSION }} --recursive --no-git-tag-version --no-git-checks
 
       - name: build package - pypi
         run: uv build --config-setting regenerate_docstubs=false
