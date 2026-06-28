@@ -11,18 +11,15 @@
 //// from superlib import LibBase
 ////
 //// class S12Child(LibBase):
-////     def /*marker12*/[|libm|](self) -> None:
+////     def /*marker12*/libm(self) -> None:
 ////         pass
 
 {
     const rangeMap = helper.getRangesByText();
 
-    const expected = (text: string) => ({
-        definitions: rangeMap
-            .get(text)!
-            .filter((r) => !r.marker)
-            .map((r) => ({ path: r.fileName, range: helper.convertPositionRange(r) })),
-    });
+    const parentRanges = rangeMap
+        .get('libm')!
+        .map((r) => ({ filePath: r.fileName, range: helper.convertPositionRange(r) }));
 
-    helper.verifyFindDefinitions({ marker12: expected('libm') }, 'all');
+    helper.verifyShowTypeHierarchyGetSupertypes({ marker12: { items: parentRanges } });
 }

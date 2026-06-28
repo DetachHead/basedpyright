@@ -18,8 +18,8 @@ import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
-import { MemberAccessFlags, doForEachSubtype, lookUpClassMember } from '../analyzer/typeUtils';
-import { ClassType, TypeCategory, isInstantiableClass } from '../analyzer/types';
+import { doForEachSubtype } from '../analyzer/typeUtils';
+import { ClassType, TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -201,8 +201,6 @@ class DefinitionProviderBase {
             currentNode = currentNode.parent;
         }
 
-        this._addBaseClassMethodDefinitions(node, definitions);
-
         if (definitions.length === 0) {
             return undefined;
         }
@@ -234,47 +232,7 @@ class DefinitionProviderBase {
         }
     }
 
-    // If the position is on the name of a method in its `def` signature, also include
-    // the definitions of the method with the same name found in the direct base classes
-    // (one level of the hierarchy, no transitive MRO walk — mirroring `super()`).
-    private _addBaseClassMethodDefinitions(node: ParseNode, definitions: DocumentRange[]) {
-        if (node.nodeType !== ParseNodeType.Name) {
-            return;
-        }
 
-        const functionNode = node.parent;
-        if (functionNode?.nodeType !== ParseNodeType.Function || functionNode.d.name !== node) {
-            return;
-        }
-
-        const classNode = ParseTreeUtils.getEnclosingClass(functionNode, /* stopAtFunction */ true);
-        if (!classNode) {
-            return;
-        }
-
-        const classType = this.evaluator.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) {
-            return;
-        }
-
-        const methodName = node.d.value;
-        for (const baseClass of classType.shared.baseClasses) {
-            if (!isInstantiableClass(baseClass) || ClassType.isBuiltIn(baseClass, 'object')) {
-                continue;
-            }
-
-            const member = lookUpClassMember(
-                baseClass,
-                methodName,
-                MemberAccessFlags.SkipInstanceMembers | MemberAccessFlags.SkipBaseClasses
-            );
-            if (!member) {
-                continue;
-            }
-
-            this.resolveDeclarations(member.symbol.getDeclarations(), definitions);
-        }
-    }
 }
 
 export class DefinitionProvider extends DefinitionProviderBase {

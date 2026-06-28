@@ -41,9 +41,11 @@ unlike pyright/pylance, basedpyright also supports completions for enum values:
 
 this also works for other types of enums such as `IntEnum` and `StrEnum`
 
-## go to definition on overridden methods
+## type hierarchy for overridden methods
 
-when you run "go to definition" on the name of a method in its `def` signature, basedpyright also includes the location of the method of the same name defined in the **direct** base class(es) (one level of the class hierarchy — it does not walk the full MRO, mirroring the behavior of `super()`). this makes it easy to jump from a method you're overriding to the method it overrides. if multiple results are returned, your editor will show a picker to choose between them.
+when your cursor is on the name of a method in its `def` signature inside a class, basedpyright supports the LSP **type hierarchy** feature (`textDocument/prepareTypeHierarchy` + `typeHierarchy/supertypes`). invoking "show type hierarchy" (or "supertypes") in your editor will navigate to the definition of the same method in the next class in the MRO — mirroring the behavior of `super()`. this makes it easy to jump from a method you're overriding to the method it overrides, without polluting the "go to definition" results.
+
+if the cursor is not on a method `def` inside a class, or if no base class defines a method with the same name, the command does nothing.
 
 see [#355](https://github.com/DetachHead/basedpyright/issues/355).
 

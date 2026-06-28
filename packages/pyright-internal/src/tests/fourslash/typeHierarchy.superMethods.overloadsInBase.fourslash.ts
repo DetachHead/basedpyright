@@ -13,18 +13,15 @@
 ////     def [|m11|](self, a: int = 0) -> None:
 ////         pass
 //// class S11Child(S11Base):
-////     def /*marker11*/[|m11|](self, a: int = 0) -> None:
+////     def /*marker11*/m11(self, a: int = 0) -> None:
 ////         pass
 
 {
     const rangeMap = helper.getRangesByText();
 
-    const expected = (text: string) => ({
-        definitions: rangeMap
-            .get(text)!
-            .filter((r) => !r.marker)
-            .map((r) => ({ path: r.fileName, range: helper.convertPositionRange(r) })),
-    });
+    const parentRanges = rangeMap
+        .get('m11')!
+        .map((r) => ({ filePath: r.fileName, range: helper.convertPositionRange(r) }));
 
-    helper.verifyFindDefinitions({ marker11: expected('m11') }, 'all');
+    helper.verifyShowTypeHierarchyGetSupertypes({ marker11: { items: parentRanges } });
 }

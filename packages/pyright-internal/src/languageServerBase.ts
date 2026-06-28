@@ -89,6 +89,10 @@ import {
     SemanticTokens,
     SemanticTokensParams,
     TextEdit,
+    TypeHierarchyItem,
+    TypeHierarchyPrepareParams,
+    TypeHierarchySubtypesParams,
+    TypeHierarchySupertypesParams,
     WillSaveTextDocumentParams,
 } from 'vscode-languageserver-protocol';
 
@@ -135,6 +139,7 @@ import { Position, Range, TextRange } from './common/textRange';
 import { Uri } from './common/uri/uri';
 import { AnalyzerServiceExecutor } from './languageService/analyzerServiceExecutor';
 import { CallHierarchyProvider } from './languageService/callHierarchyProvider';
+import { TypeHierarchyProvider } from './languageService/typeHierarchyProvider';
 import { InlayHintsProvider } from './languageService/inlayHintsProvider';
 import { CompletionItemData, CompletionMap, CompletionProvider } from './languageService/completionProvider';
 import { DefinitionFilter, DefinitionProvider, TypeDefinitionProvider } from './languageService/definitionProvider';
@@ -626,6 +631,11 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
         callHierarchy.onIncomingCalls(async (params, token) => this.onCallHierarchyIncomingCalls(params, token));
         callHierarchy.onOutgoingCalls(async (params, token) => this.onCallHierarchyOutgoingCalls(params, token));
 
+        const typeHierarchy = this.connection.languages.typeHierarchy;
+        typeHierarchy.onPrepare(async (params, token) => this.onTypeHierarchyPrepare(params, token));
+        typeHierarchy.onSupertypes(async (params, token) => this.onTypeHierarchySupertypes(params, token));
+        typeHierarchy.onSubtypes(async (params, token) => this.onTypeHierarchySubtypes(params, token));
+
         const inlayHints = this.connection.languages.inlayHint;
         inlayHints.on(async (params, token) => this.onInlayHints(params, token));
 
@@ -772,6 +782,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                     workDoneProgress: true,
                 },
                 callHierarchyProvider: true,
+                typeHierarchyProvider: true,
                 inlayHintProvider: true,
                 semanticTokensProvider: {
                     legend: SemanticTokensProviderLegend,
@@ -1313,6 +1324,54 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         return workspace.service.run((program) => {
             return new CallHierarchyProvider(program, uri, params.item.range.start, token, this).getOutgoingCalls();
+        }, token);
+    }
+
+    protected async onTypeHierarchyPrepare(
+        params: TypeHierarchyPrepareParams,
+        token: CancellationToken
+    ): Promise<TypeHierarchyItem[] | null> {
+        const uri = this.convertLspUriStringToUri(params.textDocument.uri);
+
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices) {
+            return null;
+        }
+
+        return workspace.service.run((program) => {
+            return new TypeHierarchyProvider(program, uri, params.position, token).onPrepare();
+        }, token);
+    }
+
+    protected async onTypeHierarchySupertypes(
+        params: TypeHierarchySupertypesParams,
+        token: CancellationToken
+    ): Promise<TypeHierarchyItem[] | null> {
+        const uri = this.convertLspUriStringToUri(params.item.uri);
+
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices) {
+            return null;
+        }
+
+        return workspace.service.run((program) => {
+            return new TypeHierarchyProvider(program, uri, params.item.selectionRange.start, token).getSupertypes();
+        }, token);
+    }
+
+    protected async onTypeHierarchySubtypes(
+        params: TypeHierarchySubtypesParams,
+        token: CancellationToken
+    ): Promise<TypeHierarchyItem[] | null> {
+        const uri = this.convertLspUriStringToUri(params.item.uri);
+
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices) {
+            return null;
+        }
+
+        return workspace.service.run((program) => {
+            return new TypeHierarchyProvider(program, uri, params.item.selectionRange.start, token).getSubtypes();
         }, token);
     }
 

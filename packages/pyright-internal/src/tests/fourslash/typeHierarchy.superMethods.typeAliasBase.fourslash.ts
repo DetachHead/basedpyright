@@ -10,18 +10,15 @@
 ////         pass
 //// S14Alias: TypeAlias = S14Base
 //// class S14Child(S14Alias):
-////     def /*marker14*/[|m14|](self) -> None:
+////     def /*marker14*/m14(self) -> None:
 ////         pass
 
 {
     const rangeMap = helper.getRangesByText();
 
-    const expected = (text: string) => ({
-        definitions: rangeMap
-            .get(text)!
-            .filter((r) => !r.marker)
-            .map((r) => ({ path: r.fileName, range: helper.convertPositionRange(r) })),
-    });
+    const parentRanges = rangeMap
+        .get('m14')!
+        .map((r) => ({ filePath: r.fileName, range: helper.convertPositionRange(r) }));
 
-    helper.verifyFindDefinitions({ marker14: expected('m14') }, 'all');
+    helper.verifyShowTypeHierarchyGetSupertypes({ marker14: { items: parentRanges } });
 }
