@@ -39,8 +39,6 @@ To debug the VS Code extension:
 2. Select “Pyright extension” from the debug target menu.
 3. Click on the green “run” icon or press F5 to build and launch a second copy of VS Code with the extension.
 4. Within the second VS Code instance, open a python source file so the pyright extension is loaded.
-5. Return to the first instance of VS Code and select “Pyright extension attach server” from the debug target menu.
-6. Click the green “run” icon to attach the debugger to the process that hosts the type checker.
 
 To debug the VS Code extension in watch mode, you can do the above, but select “Pyright extension (watch mode)”. When pyright's source is saved, an incremental build will occur, and you can either reload the second VS Code window or relaunch it to start using the updated code. Note that the watcher stays open when debugging stops, so you may need to stop it (or close VS Code) if you want to perform packaging steps without the output potentially being overwritten.
 
