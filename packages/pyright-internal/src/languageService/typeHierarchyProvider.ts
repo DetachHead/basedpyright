@@ -143,7 +143,7 @@ export class TypeHierarchyProvider {
                 name: methodName,
                 kind: SymbolKind.Method,
                 detail: classNode.d.name.d.value,
-                uri: this._fileUri.toString(),
+                uri: fileInfo.fileUri.toString(),
                 range: funcRange,
                 selectionRange: nameRange,
             },
@@ -164,7 +164,7 @@ export class TypeHierarchyProvider {
             {
                 name: nameNode.d.value,
                 kind: SymbolKind.Class,
-                uri: this._fileUri.toString(),
+                uri: fileInfo.fileUri.toString(),
                 range: classRange,
                 selectionRange: nameRange,
             },
@@ -310,6 +310,16 @@ export class TypeHierarchyProvider {
         const maybeClass = node.parent;
         if (maybeClass?.nodeType === ParseNodeType.Class && maybeClass.d.name === node) {
             return { kind: 'class', nameNode: node, classNode: maybeClass };
+        }
+
+        // Type reference context: cursor on a type name used in an annotation (x: Foo, def f(x: Foo), -> Foo)
+        // Resolve to the class definition so the hierarchy is rooted there, not at the usage site.
+        const type = this._program.evaluator?.getType(node);
+        if (!type || !isInstantiableClass(type)) return undefined;
+        if (type.shared.fullName.startsWith('builtins.')) return undefined;
+        const decl = type.shared.declaration;
+        if (decl?.node.nodeType === ParseNodeType.Class) {
+            return { kind: 'class', nameNode: decl.node.d.name, classNode: decl.node };
         }
 
         return undefined;
