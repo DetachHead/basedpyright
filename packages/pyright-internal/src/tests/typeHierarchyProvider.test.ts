@@ -99,8 +99,6 @@ test('subtypes class: selectionRange is name range', () => {
     );
 });
 
-// ─── range should enclose the full declaration (currently failing = bug scope) ─
-
 function posLe(a: { line: number; character: number }, b: { line: number; character: number }) {
     return a.line < b.line || (a.line === b.line && a.character <= b.character);
 }

@@ -3,7 +3,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT license.
  *
- * Logic that provides type hierarchy (supertypes) for overridden methods
+ * Logic that provides type hierarchy (supertypes and subtypes) for overridden methods
  * and class inheritance.
  */
 
@@ -14,7 +14,7 @@ import { getFileInfo } from '../analyzer/analyzerNodeInfo';
 import { Declaration } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
-import { ClassNode, FunctionNode, NameNode } from '../parser/parseNodes';
+import { ClassNode, FunctionNode, NameNode, ParseNodeType } from '../parser/parseNodes';
 import { MemberAccessFlags, lookUpClassMember } from '../analyzer/typeUtils';
 import { ClassType, isInstantiableClass } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
@@ -22,7 +22,6 @@ import { ProgramView } from '../common/extensibility';
 import { convertOffsetsToRange, convertPositionToOffset } from '../common/positionUtils';
 import { Position, Range } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
-import { ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
 import { ClassTreeWalker } from './implementationProvider';
 

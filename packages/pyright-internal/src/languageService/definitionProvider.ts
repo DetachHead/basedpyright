@@ -129,7 +129,7 @@ class DefinitionProviderBase {
         protected readonly offset: number,
         private readonly _filter: DefinitionFilter,
         protected readonly token: CancellationToken
-    ) { }
+    ) {}
 
     getDefinitionsForNode(node: ParseNode, offset: number) {
         throwIfCancellationRequested(this.token);
