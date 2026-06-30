@@ -59,6 +59,7 @@ import { Uri } from '../../../common/uri/uri';
 import { UriEx, getFileSpec } from '../../../common/uri/uriUtils';
 import { convertToWorkspaceEdit } from '../../../common/workspaceEditUtils';
 import { CallHierarchyProvider } from '../../../languageService/callHierarchyProvider';
+import { TypeHierarchyProvider } from '../../../languageService/typeHierarchyProvider';
 import { CompletionOptions, CompletionProvider } from '../../../languageService/completionProvider';
 import {
     DefinitionFilter,
@@ -1375,6 +1376,104 @@ export class TestState {
                     assert.ok(
                         expectedFilePath?.filter((e) =>
                             this._deepEqual(a.to.uri, Uri.file(e, this.serviceProvider).toString())
+                        ).length >= 1
+                    );
+                }
+            }
+        }
+    }
+
+    verifyShowTypeHierarchyGetSupertypes(map: {
+        [marker: string]:
+            | {
+                  items: _.FourSlashTypeHierarchyItem[];
+              }
+            | null;
+    }) {
+        this.analyze();
+        for (const marker of this.getMarkers()) {
+            const fileName = marker.fileName;
+            const name = this.getMarkerName(marker);
+
+            if (!(name in map)) {
+                continue;
+            }
+
+            const position = this.convertOffsetToPosition(fileName, marker.position);
+            const fileUri = Uri.file(fileName, this.serviceProvider);
+            const provider = new TypeHierarchyProvider(this.program, fileUri, position, CancellationToken.None);
+
+            const expected = map[name];
+            if (expected === null) {
+                const prepareItems = provider.onPrepare();
+                assert.strictEqual(prepareItems, null, `${name}: expected onPrepare to return null`);
+                continue;
+            }
+
+            const supertypes = provider.getSupertypes();
+            const expectedFilePaths = expected.items.map((x) => x.filePath);
+            const expectedRanges = expected.items.map((x) => x.range);
+
+            assert.strictEqual(supertypes?.length ?? 0, expectedFilePaths.length, `${name} has failed`);
+
+            if (supertypes) {
+                for (const item of supertypes) {
+                    assert.strictEqual(
+                        expectedRanges.filter((e) => this._deepEqual(item.selectionRange, e)).length,
+                        1
+                    );
+                    assert.ok(
+                        expectedFilePaths.filter((e) =>
+                            this._deepEqual(item.uri, Uri.file(e, this.serviceProvider).toString())
+                        ).length >= 1
+                    );
+                }
+            }
+        }
+    }
+
+    verifyShowTypeHierarchyGetSubtypes(map: {
+        [marker: string]:
+            | {
+                  items: _.FourSlashTypeHierarchyItem[];
+              }
+            | null;
+    }) {
+        this.analyze();
+        for (const marker of this.getMarkers()) {
+            const fileName = marker.fileName;
+            const name = this.getMarkerName(marker);
+
+            if (!(name in map)) {
+                continue;
+            }
+
+            const position = this.convertOffsetToPosition(fileName, marker.position);
+            const fileUri = Uri.file(fileName, this.serviceProvider);
+            const provider = new TypeHierarchyProvider(this.program, fileUri, position, CancellationToken.None);
+
+            const expected = map[name];
+            if (expected === null) {
+                const prepareItems = provider.onPrepare();
+                assert.strictEqual(prepareItems, null, `${name}: expected onPrepare to return null`);
+                continue;
+            }
+
+            const subtypes = provider.getSubtypes();
+            const expectedFilePaths = expected.items.map((x) => x.filePath);
+            const expectedRanges = expected.items.map((x) => x.range);
+
+            assert.strictEqual(subtypes?.length ?? 0, expectedFilePaths.length, `${name} has failed`);
+
+            if (subtypes) {
+                for (const item of subtypes) {
+                    assert.strictEqual(
+                        expectedRanges.filter((e) => this._deepEqual(item.selectionRange, e)).length,
+                        1
+                    );
+                    assert.ok(
+                        expectedFilePaths.filter((e) =>
+                            this._deepEqual(item.uri, Uri.file(e, this.serviceProvider).toString())
                         ).length >= 1
                     );
                 }

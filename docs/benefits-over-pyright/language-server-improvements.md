@@ -41,6 +41,14 @@ unlike pyright/pylance, basedpyright also supports completions for enum values:
 
 this also works for other types of enums such as `IntEnum` and `StrEnum`
 
+## type hierarchy for overridden methods
+
+when your cursor is on the name of a method in its `def` signature inside a class, basedpyright supports the LSP **type hierarchy** feature (`textDocument/prepareTypeHierarchy` + `typeHierarchy/supertypes`). invoking "show type hierarchy" (or "supertypes") in your editor will navigate to the definition of the same method in the next class in the MRO — mirroring the behavior of `super()`. this makes it easy to jump from a method you're overriding to the method it overrides, without polluting the "go to definition" results.
+
+if the cursor is not on a method `def` inside a class, or if no base class defines a method with the same name, the command does nothing.
+
+see [#355](https://github.com/DetachHead/basedpyright/issues/355).
+
 ## improved diagnostic severity system
 
 in pyright, certain diagnostics such as unreachable and unused code are always reported as a hint and cannot be disabled even when the associated diagnostic rule is disabled (and in the case of unreachable code, [the diagnostic is not reported in most cases where the hint is reported](./fixes-for-rules.md#reportunreachable)).
