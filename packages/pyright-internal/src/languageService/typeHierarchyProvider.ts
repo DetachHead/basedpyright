@@ -11,6 +11,7 @@ import { CancellationToken, SymbolKind } from 'vscode-languageserver';
 import { TypeHierarchyItem } from 'vscode-languageserver-types';
 
 import { getFileInfo } from '../analyzer/analyzerNodeInfo';
+import { Declaration } from '../analyzer/declaration';
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
 import { ClassNode, FunctionNode, NameNode } from '../parser/parseNodes';
@@ -19,7 +20,7 @@ import { ClassType, isInstantiableClass } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { ProgramView } from '../common/extensibility';
 import { convertOffsetsToRange, convertPositionToOffset } from '../common/positionUtils';
-import { Position } from '../common/textRange';
+import { Position, Range } from '../common/textRange';
 import { Uri } from '../common/uri/uri';
 import { ParseNodeType } from '../parser/parseNodes';
 import { ParseFileResults } from '../parser/parser';
@@ -86,6 +87,14 @@ export class TypeHierarchyProvider {
         } else {
             return this._subtypesClass(ctx);
         }
+    }
+
+    // LSP spec: range must enclose the full declaration; selectionRange (the name) must be contained within it.
+    // decl.range is always the name range, so we recompute range from the AST node.
+    private _fullRangeForDecl(decl: Declaration): Range {
+        const lines = this._program.getParseResults(decl.uri)?.tokenizerOutput.lines;
+        if (!lines) return decl.range;
+        return convertOffsetsToRange(decl.node.start, decl.node.start + decl.node.length, lines);
     }
 
     private _getClassType(classNode: ClassNode): ClassType | undefined {
@@ -192,7 +201,7 @@ export class TypeHierarchyProvider {
                 kind: SymbolKind.Method,
                 detail: superClassName,
                 uri: decl.uri.toString(),
-                range: decl.range,
+                range: this._fullRangeForDecl(decl),
                 selectionRange: decl.range,
             });
         }
@@ -218,7 +227,7 @@ export class TypeHierarchyProvider {
                 name: baseClass.shared.name,
                 kind: SymbolKind.Class,
                 uri: decl.uri.toString(),
-                range: decl.range,
+                range: this._fullRangeForDecl(decl),
                 selectionRange: decl.range,
             });
         }
@@ -246,7 +255,7 @@ export class TypeHierarchyProvider {
                     kind: SymbolKind.Method,
                     detail: foundClass.shared.name,
                     uri: decl.uri.toString(),
-                    range: decl.range,
+                    range: this._fullRangeForDecl(decl),
                     selectionRange: decl.range,
                 });
             }
@@ -271,7 +280,7 @@ export class TypeHierarchyProvider {
                 name: foundClass.shared.name,
                 kind: SymbolKind.Class,
                 uri: decl.uri.toString(),
-                range: decl.range,
+                range: this._fullRangeForDecl(decl),
                 selectionRange: decl.range,
             });
         });
