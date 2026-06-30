@@ -19,7 +19,7 @@ import { SourceMapper, isStubFile } from '../analyzer/sourceMapper';
 import { SynthesizedTypeInfo } from '../analyzer/symbol';
 import { TypeEvaluator, TypeResult } from '../analyzer/typeEvaluatorTypes';
 import { doForEachSubtype } from '../analyzer/typeUtils';
-import { ClassType, TypeCategory } from '../analyzer/types';
+import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { appendArray } from '../common/collectionUtils';
 import { isDefined } from '../common/core';
@@ -129,7 +129,7 @@ class DefinitionProviderBase {
         protected readonly offset: number,
         private readonly _filter: DefinitionFilter,
         protected readonly token: CancellationToken
-    ) {}
+    ) { }
 
     getDefinitionsForNode(node: ParseNode, offset: number) {
         throwIfCancellationRequested(this.token);
@@ -231,8 +231,6 @@ class DefinitionProviderBase {
             definitions.push({ uri: fileInfo.fileUri, range });
         }
     }
-
-
 }
 
 export class DefinitionProvider extends DefinitionProviderBase {

@@ -15,7 +15,7 @@ import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { isUserCode } from '../analyzer/sourceFileInfoUtils';
 import { ClassNode, FunctionNode, NameNode } from '../parser/parseNodes';
 import { MemberAccessFlags, lookUpClassMember } from '../analyzer/typeUtils';
-import { isInstantiableClass } from '../analyzer/types';
+import { ClassType, isInstantiableClass } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
 import { ProgramView } from '../common/extensibility';
 import { convertOffsetsToRange, convertPositionToOffset } from '../common/positionUtils';
@@ -88,12 +88,42 @@ export class TypeHierarchyProvider {
         }
     }
 
+    private _getClassType(classNode: ClassNode): ClassType | undefined {
+        const classType = this._program.evaluator?.getTypeOfClass(classNode)?.classType;
+        return classType && isInstantiableClass(classType) ? classType : undefined;
+    }
+
+    private _walkDirectSubclasses(classType: ClassType, callback: (foundClass: ClassType) => void): void {
+        for (const fileInfo of this._program.getSourceFileInfoList()) {
+            throwIfCancellationRequested(this._token);
+            if (!isUserCode(fileInfo) && !fileInfo.isOpenByClient) continue;
+            if (fileInfo.contents.indexOf('class') < 0) continue;
+
+            const parseResults = this._program.getParseResults(fileInfo.uri);
+            if (!parseResults) continue;
+
+            const walker = new ClassTreeWalker(fileInfo.uri, parseResults, (foundNode) => {
+                const foundClass = this._program.evaluator?.getTypeOfClass(foundNode)?.classType;
+                if (!foundClass) return;
+
+                const isDirect = foundClass.shared.baseClasses.some(
+                    (b) => isInstantiableClass(b) && b.shared === classType.shared
+                );
+                if (!isDirect) return;
+
+                callback(foundClass);
+            });
+            walker.walk(parseResults.parserOutput.parseTree);
+            this._program.handleMemoryHighUsage();
+        }
+    }
+
     private _prepareMethod(ctx: MethodContext): TypeHierarchyItem[] | null {
         const { nameNode, functionNode, classNode } = ctx;
         const methodName = nameNode.d.value;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const fileInfo = getFileInfo(nameNode);
         const nameRange = convertOffsetsToRange(nameNode.start, nameNode.start + nameNode.length, fileInfo.lines);
@@ -114,8 +144,8 @@ export class TypeHierarchyProvider {
     private _prepareClass(ctx: ClassContext): TypeHierarchyItem[] | null {
         const { nameNode, classNode } = ctx;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const fileInfo = getFileInfo(nameNode);
         const nameRange = convertOffsetsToRange(nameNode.start, nameNode.start + nameNode.length, fileInfo.lines);
@@ -136,8 +166,8 @@ export class TypeHierarchyProvider {
         const { nameNode, classNode } = ctx;
         const methodName = nameNode.d.value;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const superMember = lookUpClassMember(
             classType,
@@ -146,6 +176,7 @@ export class TypeHierarchyProvider {
             classType
         );
         if (!superMember || !isInstantiableClass(superMember.classType)) return null;
+        if (superMember.classType.shared.fullName === 'builtins.object') return null;
 
         const decls = superMember.symbol.getDeclarations();
         if (decls.length === 0) return null;
@@ -172,8 +203,8 @@ export class TypeHierarchyProvider {
     private _supertypesClass(ctx: ClassContext): TypeHierarchyItem[] | null {
         const { classNode } = ctx;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const items: TypeHierarchyItem[] = [];
 
@@ -199,46 +230,27 @@ export class TypeHierarchyProvider {
         const { nameNode, classNode } = ctx;
         const methodName = nameNode.d.value;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const items: TypeHierarchyItem[] = [];
 
-        for (const fileInfo of this._program.getSourceFileInfoList()) {
-            throwIfCancellationRequested(this._token);
-            if (!isUserCode(fileInfo) && !fileInfo.isOpenByClient) continue;
-            if (fileInfo.contents.indexOf('class') < 0) continue;
+        this._walkDirectSubclasses(classType, (foundClass) => {
+            const overrideDecls = foundClass.shared.fields.get(methodName)?.getDeclarations();
+            if (!overrideDecls || overrideDecls.length === 0) return;
 
-            const parseResults = this._program.getParseResults(fileInfo.uri);
-            if (!parseResults) continue;
-
-            const walker = new ClassTreeWalker(fileInfo.uri, parseResults, (foundNode, uri) => {
-                const foundClass = this._program.evaluator!.getTypeOfClass(foundNode)?.classType;
-                if (!foundClass) return;
-
-                const isDirect = foundClass.shared.baseClasses.some(
-                    (b) => isInstantiableClass(b) && b.shared === classType.shared
-                );
-                if (!isDirect) return;
-
-                const overrideDecls = foundClass.shared.fields.get(methodName)?.getDeclarations();
-                if (!overrideDecls || overrideDecls.length === 0) return;
-
-                for (const decl of overrideDecls) {
-                    if (decl.uri.isEmpty()) continue;
-                    items.push({
-                        name: methodName,
-                        kind: SymbolKind.Method,
-                        detail: foundClass.shared.name,
-                        uri: decl.uri.toString(),
-                        range: decl.range,
-                        selectionRange: decl.range,
-                    });
-                }
-            });
-            walker.walk(parseResults.parserOutput.parseTree);
-            this._program.handleMemoryHighUsage();
-        }
+            for (const decl of overrideDecls) {
+                if (decl.uri.isEmpty()) continue;
+                items.push({
+                    name: methodName,
+                    kind: SymbolKind.Method,
+                    detail: foundClass.shared.name,
+                    uri: decl.uri.toString(),
+                    range: decl.range,
+                    selectionRange: decl.range,
+                });
+            }
+        });
 
         return items.length > 0 ? items : null;
     }
@@ -246,42 +258,23 @@ export class TypeHierarchyProvider {
     private _subtypesClass(ctx: ClassContext): TypeHierarchyItem[] | null {
         const { classNode } = ctx;
 
-        const classType = this._program.evaluator!.getTypeOfClass(classNode)?.classType;
-        if (!classType || !isInstantiableClass(classType)) return null;
+        const classType = this._getClassType(classNode);
+        if (!classType) return null;
 
         const items: TypeHierarchyItem[] = [];
 
-        for (const fileInfo of this._program.getSourceFileInfoList()) {
-            throwIfCancellationRequested(this._token);
-            if (!isUserCode(fileInfo) && !fileInfo.isOpenByClient) continue;
-            if (fileInfo.contents.indexOf('class') < 0) continue;
+        this._walkDirectSubclasses(classType, (foundClass) => {
+            const decl = foundClass.shared.declaration;
+            if (!decl || decl.uri.isEmpty()) return;
 
-            const parseResults = this._program.getParseResults(fileInfo.uri);
-            if (!parseResults) continue;
-
-            const walker = new ClassTreeWalker(fileInfo.uri, parseResults, (foundNode, uri) => {
-                const foundClass = this._program.evaluator!.getTypeOfClass(foundNode)?.classType;
-                if (!foundClass) return;
-
-                const isDirect = foundClass.shared.baseClasses.some(
-                    (b) => isInstantiableClass(b) && b.shared === classType.shared
-                );
-                if (!isDirect) return;
-
-                const decl = foundClass.shared.declaration;
-                if (!decl || decl.uri.isEmpty()) return;
-
-                items.push({
-                    name: foundClass.shared.name,
-                    kind: SymbolKind.Class,
-                    uri: decl.uri.toString(),
-                    range: decl.range,
-                    selectionRange: decl.range,
-                });
+            items.push({
+                name: foundClass.shared.name,
+                kind: SymbolKind.Class,
+                uri: decl.uri.toString(),
+                range: decl.range,
+                selectionRange: decl.range,
             });
-            walker.walk(parseResults.parserOutput.parseTree);
-            this._program.handleMemoryHighUsage();
-        }
+        });
 
         return items.length > 0 ? items : null;
     }
@@ -298,7 +291,7 @@ export class TypeHierarchyProvider {
         // Method context: cursor on function name inside a class def
         const maybeFn = node.parent;
         if (maybeFn?.nodeType === ParseNodeType.Function && maybeFn.d.name === node) {
-            const classNode = ParseTreeUtils.getEnclosingClass(maybeFn, /* stopAtFunction */ true);
+            const classNode = ParseTreeUtils.getEnclosingClass(maybeFn, true);
             if (classNode) {
                 return { kind: 'method', nameNode: node, functionNode: maybeFn, classNode };
             }
