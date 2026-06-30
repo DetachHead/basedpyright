@@ -90,7 +90,8 @@
             "sourceMaps": true,
             "outFiles": [
                 "${workspaceRoot}/packages/vscode-pyright/dist/**/*.js"
-            ]
+            ],
+            "autoAttachChildProcesses": true
         },
         {
             "name": "Pyright extension (watch)",
@@ -109,7 +110,8 @@
             "sourceMaps": true,
             "outFiles": [
                 "${workspaceRoot}/packages/vscode-pyright/dist/**/*.js"
-            ]
+            ],
+            "autoAttachChildProcesses": true
         },
         {
             "name": "Pyright attach server",
