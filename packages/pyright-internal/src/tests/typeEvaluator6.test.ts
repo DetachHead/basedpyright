@@ -103,6 +103,13 @@ test('OverloadImpl2', () => {
     TestUtils.validateResults(analysisResults, 2);
 });
 
+test('OverloadImplInference1', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['overloadImplInference1.py']);
+    TestUtils.validateResultsButBased(analysisResults, {
+        infos: [{ line: 42, message: 'revealed type is "int | T"' }],
+    });
+});
+
 test('OverloadOverlap1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
 
