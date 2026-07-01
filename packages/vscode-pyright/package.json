@@ -99,6 +99,16 @@
                 "command": "basedpyright.writeBaseline",
                 "title": "Write new errors to baseline",
                 "category": "basedpyright"
+            },
+            {
+                "command": "basedpyright.explorer.createNewModule",
+                "title": "Create Python module",
+                "category": "basedpyright"
+            },
+            {
+                "command": "basedpyright.explorer.createNewPackage",
+                "title": "Create Python package",
+                "category": "basedpyright"
             }
         ],
         "menus": {
@@ -108,6 +118,18 @@
                     "title": "Pyright: Organize Imports",
                     "group": "Pyright",
                     "when": "editorLangId == python"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "basedpyright.explorer.createNewModule",
+                    "group": "2_workspace",
+                    "when": "!listMultiSelection && resourceScheme == 'file' && explorerResourceIsFolder"
+                },
+                {
+                    "command": "basedpyright.explorer.createNewPackage",
+                    "group": "2_workspace",
+                    "when": "!listMultiSelection && resourceScheme == 'file' && explorerResourceIsFolder"
                 }
             ],
             "commandPalette": [

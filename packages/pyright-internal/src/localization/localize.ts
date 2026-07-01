@@ -1735,6 +1735,26 @@ export namespace Localizer {
 
     export namespace Service {
         export const longOperation = () => getRawString('Service.longOperation');
+        export const invalidArgsCreateModule = () => getRawString('Service.invalidArgsCreateModule');
+        export const invalidArgsCreatePackage = () => getRawString('Service.invalidArgsCreatePackage');
+        export const invalidTargetDirectory = () => getRawString('Service.invalidTargetDirectory');
+        export const invalidPythonNameForbidden = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameForbidden'));
+        export const invalidPythonNameUnicode = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameUnicode'));
+        export const invalidPythonNameNonIdentifier = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameNonIdentifier'));
+        export const invalidPythonNameDot = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.invalidPythonNameDot'));
+        export const dirNotExist = () => new ParameterizedString<{ path: string }>(getRawString('Service.dirNotExist'));
+        export const moduleAlreadyExists = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleAlreadyExists'));
+        export const packageAlreadyExists = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.packageAlreadyExists'));
+        export const moduleCreated = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.moduleCreated'));
+        export const packageCreated = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Service.packageCreated'));
     }
 }
 

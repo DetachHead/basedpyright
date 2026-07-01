@@ -36,7 +36,7 @@ import { getPyTypedInfo, PyTypedInfo } from './pyTypedUtils';
 import { ScopeType } from './scope';
 import { getScopeForNode } from './scopeUtils';
 import { Symbol, SymbolTable } from './symbol';
-import { isDunderName, isPrivateOrProtectedName } from './symbolNameUtils';
+import { isDunderName, isLegalModulePartName, isPrivateOrProtectedName } from './symbolNameUtils';
 import {
     ClassType,
     FunctionParam,
@@ -471,7 +471,7 @@ export class PackageTypeVerifier {
                     } else {
                         if (
                             !isPrivateOrProtectedName(nameWithoutExtension) &&
-                            this._isLegalModulePartName(nameWithoutExtension)
+                            isLegalModulePartName(nameWithoutExtension)
                         ) {
                             if (isModuleSingleFile) {
                                 if (modulePath.endsWith(`.${nameWithoutExtension}`)) {
@@ -484,7 +484,7 @@ export class PackageTypeVerifier {
                     }
                 }
             } else if (isDirectory && !isModuleSingleFile) {
-                if (!isPrivateOrProtectedName(entry.name) && this._isLegalModulePartName(entry.name)) {
+                if (!isPrivateOrProtectedName(entry.name) && isLegalModulePartName(entry.name)) {
                     this._addPublicModulesRecursive(
                         dirPath.combinePaths(entry.name),
                         isModuleSingleFile,
@@ -494,13 +494,6 @@ export class PackageTypeVerifier {
                 }
             }
         });
-    }
-
-    private _isLegalModulePartName(name: string): boolean {
-        // PEP8 indicates that all module names should be lowercase
-        // with underscores. It doesn't talk about non-ASCII
-        // characters, but it appears that's the convention.
-        return !!name.match(/[a-z_]+/);
     }
 
     private _shouldIgnoreType(report: PackageTypeReport, fullTypeName: string) {
