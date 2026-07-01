@@ -688,6 +688,8 @@ export interface DataClassBehaviors {
     keywordOnly?: boolean;
     frozen?: boolean;
     frozenDefault?: boolean;
+    // Pydantic-specific: when true, accept both field name and alias in __init__
+    populateByName?: boolean;
     fieldDescriptorNames: string[];
 }
 
