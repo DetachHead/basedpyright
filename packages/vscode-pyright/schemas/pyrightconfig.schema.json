@@ -1023,6 +1023,21 @@
       "title": "Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`",
       "default": ""
     },
+    "allowedUntypedLibraries": {
+      "type": "array",
+      "title": "Suppress issues related to unknown types when functions and classes are imported from certain modules. This affects the rules `reportUnknownVariableType`, `reportUnknownMemberType`, and `reportMissingTypeStubs`. The option name should be a list of module names, for example, `[\"library\", \"module.submodule\"]`. By default, no modules are configured.",
+      "items": {
+        "type": "string",
+        "title": "File or directory to include in type analysis",
+        "pattern": "^(.*)$",
+        "default": []
+      }
+    },
+    "failOnWarnings": {
+      "type": "boolean",
+      "title": "Whether to exit with a non-zero exit code in the CLI if any \"warning\" diagnostics are reported. Has no effect on the language server. This is equivalent to the `--warnings` CLI argument.",
+      "default": true
+    },
     "executionEnvironments": {
       "type": "array",
       "title": "Analysis settings to use for specified subdirectories of code",
