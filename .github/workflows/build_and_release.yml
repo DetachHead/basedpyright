@@ -97,13 +97,13 @@ jobs:
           name: docstubs
           path: docstubs
 
-      - run: ./pw uv sync --config-setting regenerate_docstubs=false
+      - run: ./gg.cmd uv sync --config-setting regenerate_docstubs=false
 
-      - name: add pyprojectx and npm scripts to PATH
+      - name: add gg and npm scripts to PATH
         # using both relative and absolute path for npm scripts because some binaries are in package-specific node_modules/.bin
         # directories and some are in the root one, and both need to work when the cwd is a package directory
         run: |
-          realpath ./.pyprojectx/main >> $GITHUB_PATH
+          realpath ./gg >> $GITHUB_PATH
           realpath ./node_modules/.bin >> $GITHUB_PATH
           echo ./node_modules/.bin >> $GITHUB_PATH
 

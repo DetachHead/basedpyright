@@ -79,18 +79,19 @@
         {
           "label": "install dependencies",
           "type": "shell",
-          "command": "./pw",
+          "command": "uv",
           // need to always reinstall the current project because docstubs may be outdated
-          "args": ["uv", "sync", "--reinstall-package", "basedpyright"],
+          "args": ["sync", "--reinstall-package", "basedpyright"],
           "presentation": {
             "clear": true
           },
           "problemMatcher": [],
+          // TODO: don't think this is needed anymore since switching to gg, but i don't dev on windows anymore so cbf testing it
           // https://github.com/microsoft/vscode/issues/160891#issuecomment-2915280629
-          "windows": {
-            "command": "&'${command:python.interpreterPath}'",
-            "args": ["pw", "uv", "sync", "--reinstall-package", "basedpyright"]
-          }
+          //   "windows": {
+          //     "command": "&'${command:python.interpreterPath}'",
+          //     "args": ["pw", "uv", "sync", "--reinstall-package", "basedpyright"]
+          //   }
         },
         {
             "label": "bump version",

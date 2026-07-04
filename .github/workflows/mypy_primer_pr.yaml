@@ -55,11 +55,10 @@ jobs:
           persist-credentials: false
           submodules: true
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
-      - name: Install dependencies
+      - name: add gg aliases to PATH
         run: |
           cd pyright_to_test
-          ./pw --install-context mypy_primer
-          realpath ./.pyprojectx/mypy_primer >> $GITHUB_PATH
+          realpath ./gg >> $GITHUB_PATH
       - name: Run mypy_primer
         shell: bash
         env:

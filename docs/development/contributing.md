@@ -14,9 +14,9 @@ we recommend using vscode, as there are project configuration files in the repo 
 
 1. hit `F1` > `Tasks: Run task` > `install dependencies`, or run the following command:
     ```
-    ./pw uv sync
+    ./gg.cmd uv sync
     ```
-    this will install all dependencies required for the project (pyprojectx, uv, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules`
+    this will install all dependencies required for the project ([gg](https://github.com/eirikb/gg), uv, node, typescript, etc.). all dependencies are installed locally to `./.venv` and `./node_modules`
 2. press "Yes" when prompted by vscode to use the newly created virtualenv
 
 you can now run any node/pnpm commands from inside the venv.

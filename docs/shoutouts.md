@@ -24,6 +24,6 @@ used for [our builtin docstrings support](./benefits-over-pyright/pylance-featur
 
 this project made the basedpyright pypi package possible, which significantly simplified the process of installing pyright for python developers who aren't familiar with nodejs and npm. since we started using it in basedpyright, it has since been adopted by [the unofficial pyright pypi package](https://github.com/RobertCraigie/pyright-python/issues/231#issuecomment-2366599865) as well.
 
-## [pyprojectx](https://github.com/pyprojectx/pyprojectx)
+## [pyprojectx](https://github.com/pyprojectx/pyprojectx) & [gg](https://github.com/eirikb/gg)
 
-this tool makes working on multiple different python projects so much less stressful. instead of installing all these project management tools like pdm, uv, etc. globally you can install and pin them inside your project without ever having to install anything first.
+These tools makes it far less stressful to set up dev/build environments for projects that would otherwise require you to globally install various tools such as uv, NodeJS, pnpm, etc. instead of installing these tools globally (or being forced to deal with docker), you can pin them inside your project, and manage them per-project like you can with all your other dependencies, all without having to install anything globally, thanks to their wrapper scripts.

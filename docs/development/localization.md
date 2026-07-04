@@ -19,7 +19,7 @@ Run the script:
 
 ```shell
 # use uv
-./pw uv run build/py_latest/localization_helper.py
+./gg.cmd uv run build/py_latest/localization_helper.py
 # or from inside the venv
 npm run localization-helper
 ```

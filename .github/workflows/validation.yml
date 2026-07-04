@@ -19,23 +19,22 @@ jobs:
           persist-credentials: false
           submodules: true # needed to typecheck mypy_primer
 
-      # need to use pw script at least once even when activating the context so that the wrapper installs pyprojectx
-      - run: ./pw uv sync --locked
+      - name: add gg aliases to PATH
+        run: realpath ./gg >> $GITHUB_PATH
 
-      - name: activate pyprojectx context
-        run: realpath ./.pyprojectx/main >> $GITHUB_PATH
+      - run: uv sync --locked
 
       - name: typescript typecheck
-        run: uv run npm run typecheck
+        run: pnpm run typecheck
 
       - name: zizmor
         # intentionally exclude workflows from the mypy_primer submodule. https://github.com/zizmorcore/zizmor/issues/784
         run: uv run zizmor .github --persona=auditor
 
-      - run: uv run npm run check
+      - run: pnpm run check
 
       - name: python typecheck
-        run: uv run npm run typecheck-python
+        run: pnpm run typecheck-python
 
       - name: ruff check
         run: uv run ruff check --output-format github
@@ -44,7 +43,7 @@ jobs:
         run: uv run ruff format --check --diff
 
       - name: pylint
-        run: uv run npm run pylint
+        run: pnpm run pylint
 
       - name: validate docs
         run: uv run mkdocs build --strict
@@ -65,18 +64,18 @@ jobs:
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         id: install_python
 
-      - run: ./pw uv sync
+      - run: ./gg.cmd uv sync
 
       # ideally we would do the same thing with ./node_modules/.bin to ensure that the version of node from nodejs-wheel
       # is always used, but it seems to be impossible to prevent github actions from using its own node version
-      - name: add pyprojectx to PATH (linux)
+      - name: add gg aliases to PATH (linux)
         if: runner.os != 'Windows'
         run: |
-          realpath ./.pyprojectx/main >> $GITHUB_PATH
-      - name: add pyprojectx to PATH (windows)
+          realpath ./gg >> $GITHUB_PATH
+      - name: add gg aliases to PATH (windows)
         if: runner.os == 'Windows'
         run: |
-          echo (resolve-path "./.pyprojectx/main").path | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo (resolve-path "./gg").path | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: python tests
         run: uv run npm run test-python -- -m "not needs_all_docstubs"

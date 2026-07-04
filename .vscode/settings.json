@@ -69,7 +69,7 @@
     },
     "explorer.compactFolders": false,
     "search.exclude": {
-        "pw": true
+        "gg.cmd": true
     },
     "python.terminal.activateEnvInCurrentTerminal": true,
     "editor.acceptSuggestionOnCommitCharacter": false,
@@ -84,24 +84,23 @@
     // even though python.terminal.activateEnvInCurrentTerminal is enabled, we still need to add the venv's script folder to the PATH
     // because vscode's npm tasks do not run with the activated venv
     "terminal.integrated.env.windows": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main;${workspaceFolder}/node_modules/.bin;${workspaceFolder}/.venv/Scripts;${env:PATH}"
+        "PATH": "${workspaceFolder}/gg;${workspaceFolder}/node_modules/.bin;${workspaceFolder}/.venv/Scripts;${env:PATH}"
     },
     "terminal.integrated.env.osx": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
+        "PATH": "${workspaceFolder}/gg:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
     },
     "terminal.integrated.env.linux": {
-        "PATH": "${workspaceFolder}/.pyprojectx/main:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
+        "PATH": "${workspaceFolder}/gg:${workspaceFolder}/node_modules/.bin:${workspaceFolder}/.venv/bin:${env:PATH}"
     },
     "task.problemMatchers.neverPrompt": true,
     "editor.unicodeHighlight.nonBasicASCII": true,
     "ruff.nativeServer": true,
     "js/ts.inlayHints.parameterNames.enabled": "literals",
     "js/ts.inlayHints.enumMemberValues.enabled": true,
-    "jest.jestCommandLine": "node_modules/.bin/pnpm run jest",
+    "jest.jestCommandLine": "./gg.cmd pnpm run jest",
     "jest.useJest30": true,
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
-        ".pyprojectx/**/*": true,
         ".pytest_cache/**/*": true,
         ".venv/**/*": true,
         "**/dist/**/*": true,
@@ -112,9 +111,7 @@
         "docstubs/**/*": true,
         "pnpm-lock.yaml": true,
         "uv.lock": true,
-        "pw.lock": true,
-        "pw": true,
-        "pw.bat": true
+        "gg.cmd": true,
     },
     // package.json file copied into the pypi package
     // this is a top-level folder but the ** is still needed due to https://github.com/microsoft/vscode/issues/92114

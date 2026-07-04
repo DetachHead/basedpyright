@@ -19,7 +19,6 @@
         "run:langserver": "pnpm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
         "jest": "cd packages/pyright-internal && node_modules/.bin/jest",
         "update-python-deps": "uv sync --upgrade",
-        "update-pyprojectx-lockfile": "python pw --lock",
         "typecheck-python": "uv run --no-sync basedpyright",
         "typecheck-python:writebaseline": "pnpm run typecheck-python --writebaseline",
         "ruff-check": "uv run --no-sync ruff check --no-cache && uv run --no-sync ruff format --check --diff",
