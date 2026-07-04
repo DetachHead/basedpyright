@@ -3,10 +3,9 @@ from __future__ import annotations
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
-from subprocess import CompletedProcess  # noqa: S404 no user input
+from subprocess import run  # noqa: S404 no user input
 from typing import TYPE_CHECKING, TypedDict, cast
 
-from nodejs_wheel.executable import corepack
 from pdm.backend.hooks.base import BuildHookInterface
 from typing_extensions import override
 
@@ -18,20 +17,6 @@ if TYPE_CHECKING:
 
 class PackageJson(TypedDict):
     bin: dict[str, str]
-
-
-def run_corepack(*args: str):
-    # cast needed because the corepack function doesn't have all the overloads from subprocess.run
-    # even though the args are forwarded to it
-    result = cast(
-        CompletedProcess[str],
-        corepack(args, return_completed_process=True, capture_output=True, text=True),
-    )
-    if result.returncode != 0:
-        raise Exception(
-            f"the following corepack command exited with exit code {result.returncode}: {args}"
-            f"\n\nstderr:\n{result.stderr}"
-        )
 
 
 # https://github.com/pdm-project/pdm-backend/issues/247
@@ -50,8 +35,13 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         if context.builder.config_settings.get("regenerate_docstubs") != "false":
             generate_docstubs(overwrite=True)
 
-        run_corepack("enable")
-        run_corepack("pnpm", "run", "build:cli:dev")
+        _ = run(  # noqa: S602
+            "./gg.cmd pnpm run build:cli:dev",
+            capture_output=True,
+            check=True,
+            text=True,
+            shell=True,
+        )
 
         if context.target == "editable":
             copy(npm_package_dir / package_json, pypi_package_dir)

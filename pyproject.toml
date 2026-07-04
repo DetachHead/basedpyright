@@ -27,7 +27,6 @@ dependencies = [
 dev = [
     "pylint>=3.0.0a7",
     "ruff>=0.2.2",
-    "nodejs-wheel>=24.14.1,<25",
     "pdm-backend>=2.3.0",
     "typing_extensions>=4.12.2",
     "pytest>=8.2.2",
@@ -49,11 +48,6 @@ lochelper = ["rich>=13.0", "textual>=0.70.0"]
 build-backend = "pdm.backend"
 requires = [
     "pdm-backend>=2.3.0",
-    # required for building the pyright npm package to be bundled in the pypi package.
-    # cli is required due to dependencies with install scripts that assume node/npm is in the path
-    # corepack was removed in node 25 and we need it to install pnpm. we also have pnpm listed as a dev depenency
-    # so we don't have to run it thru corepack after the first install
-    "nodejs-wheel>=20.13.1,<25",
     # used in pdm_build.py:
     "typing_extensions>=4.12.2",
     "docify>=1.0.0",
@@ -66,12 +60,6 @@ repository = "https://github.com/detachhead/basedpyright"
 basedpyright = 'basedpyright.pyright:main'
 basedpyright-langserver = 'basedpyright.langserver:main'
 
-[tool.pyprojectx]
-lock-python-version = "3.8"
-main = ["uv"]
-# ideally this would be in an uv dependency group but in the ci we need to install it outside of the project's venv
-# so this is the easiest way to do it
-mypy_primer = "-e ./mypy_primer"
 
 [tool.uv]
 default-groups = ["dev", "docstubs", "lochelper"]
@@ -95,6 +83,8 @@ source-includes = [
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "tsconfig.json",
+    "gg.cmd",
+    "gg.toml",
 ]
 
 [tool.pylint.MASTER]
@@ -203,25 +193,9 @@ max-line-length = 200
 [tool.basedpyright]
 pythonVersion = "3.8"
 # https://github.com/DetachHead/basedpyright/issues/31
-ignore = [
-    "pw",
-    "basedpyright/dist",
-    "packages",
-    "docstubs",
-    "node_modules",
-    ".pyprojectx",
-    ".venv",
-]
-exclude = [
-    "pw",
-    "basedpyright/dist",
-    "packages",
-    "docstubs",
-    "node_modules",
-    ".pyprojectx",
-    ".venv",
-]
-reportImplicitStringConcatenation = false # conflicts with ruff formatter
+ignore = ["basedpyright/dist", "packages", "docstubs", "node_modules", ".venv"]
+exclude = ["basedpyright/dist", "packages", "docstubs", "node_modules", ".venv"]
+reportImplicitStringConcatenation = false                                        # conflicts with ruff formatter
 reportIncompatibleUnannotatedOverride = 'error'
 reportUnannotatedClassAttribute = 'none'
 
@@ -239,7 +213,6 @@ line-length = 100
 preview = true
 unsafe-fixes = true
 extend-exclude = [
-    "pw",
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
     "packages/pyright-internal/src/tests/samples",
