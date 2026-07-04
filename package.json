@@ -17,7 +17,7 @@
         "typecheck": "pnpm -r exec tsc --noEmit",
         "run:cli": "pnpm run build:cli:dev && node packages/pyright/index.js",
         "run:langserver": "pnpm run build:cli:dev && node packages/pyright/langserver.index.js --stdio",
-        "jest": "cd packages/pyright-internal && jest",
+        "jest": "cd packages/pyright-internal && node_modules/.bin/jest",
         "update-python-deps": "uv sync --upgrade",
         "update-pyprojectx-lockfile": "python pw --lock",
         "typecheck-python": "uv run --no-sync basedpyright",

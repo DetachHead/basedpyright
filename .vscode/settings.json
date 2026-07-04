@@ -97,10 +97,8 @@
     "ruff.nativeServer": true,
     "js/ts.inlayHints.parameterNames.enabled": "literals",
     "js/ts.inlayHints.enumMemberValues.enabled": true,
-    // this is a hack to make the jest vscode extension use the venv's version of node (from nodejs-wheel),
-    // since it ignores the PATH from terminal.integrated.env. this is not used when debugging tests.
-    // the run config for that is in launch.json (vscode-jest-tests.v2)
-    "jest.jestCommandLine": "\"./.vscode/jest\"",
+    "jest.jestCommandLine": "node_modules/.bin/pnpm run jest",
+    "jest.useJest30": true,
     "files.readonlyInclude": {
         ".pdm-build/**/*": true,
         ".pyprojectx/**/*": true,
@@ -141,6 +139,8 @@
     "workbench.editor.revealIfOpen": true,
     // https://github.com/microsoft/vscode-python/issues/25467
     "python.terminal.shellIntegration.enabled": false,
+    // this is a hack to make the zizmor vscode extension use the venv's version of zizmor,
+    // since it ignores the PATH from terminal.integrated.env.
     "zizmor.executablePath": ".vscode/zizmor",
     "eslint.useFlatConfig": false,
     "npm.scriptRunner": "pnpm",
