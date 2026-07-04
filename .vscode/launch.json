@@ -7,7 +7,7 @@
             "type": "node",
             "name": "vscode-jest-tests.v2",
             "request": "launch",
-            "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "program": "${workspaceFolder}/packages/pyright-internal/node_modules/jest/bin/jest",
             "args": [
                 "--runInBand",
                 "--watchAll=false",
@@ -22,7 +22,6 @@
             "runtimeExecutable": "${workspaceFolder}/.venv/bin/node",
             "windows": {
                 "runtimeExecutable": "${workspaceFolder}/.venv/Scripts/node.exe",
-                "program": "${workspaceFolder}/node_modules/jest/bin/jest"
             }
         },
         {
