@@ -28,6 +28,7 @@ jobs:
     env:
       REPO_KEY: ${{ secrets.GH_TOKEN }}
       USERNAME: github-actions[bot]
+      GG_GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
         # zizmor: ignore[artipacked]

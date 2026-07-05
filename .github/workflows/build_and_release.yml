@@ -10,6 +10,7 @@ env:
   BROWSER_NPM_PACKAGE_DIR: packages/browser-pyright
   # prevent uv from constantly reinstalling the project and overwriting docstubs
   UV_NO_SYNC: true
+  GG_GITHUB_TOKEN: ${{ github.token }}
 
 on: push
 
