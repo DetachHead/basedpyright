@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GG_GITHUB_TOKEN: ${{ github.token }}
+
 jobs:
   static_checks:
     runs-on: ubuntu-latest

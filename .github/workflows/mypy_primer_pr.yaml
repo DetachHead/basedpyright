@@ -17,6 +17,7 @@ name: Run mypy_primer on PR
 
 env:
   PYRIGHT_DISABLE_GITHUB_ACTIONS_OUTPUT: true
+  GG_GITHUB_TOKEN: ${{ github.token }}
 
 on:
   # Run on the creation or update of a PR.
