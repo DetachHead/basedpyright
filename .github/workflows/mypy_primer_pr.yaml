@@ -60,6 +60,7 @@ jobs:
         run: |
           cd pyright_to_test
           realpath ./gg >> $GITHUB_PATH
+      - run: uv --version
       - name: Run mypy_primer
         shell: bash
         env:
