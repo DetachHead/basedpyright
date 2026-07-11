@@ -66,8 +66,15 @@ jobs:
           name: docstubs-linux-and-macos
           path: docstubs
       - name: generate docstubs for each python version
-        run: ./build/generateAllDocstubs.sh
-        shell: bash
+        # https://github.com/eirikb/gg/issues/291
+        run: |
+          $ErrorActionPreference = "Stop"
+          foreach ($pythonVersion in "3.14", "3.13", "3.12", "3.11", "3.10", "3.9") {
+              ./gg.cmd uv sync --only-group=docstubs --no-install-project --python $pythonVersion
+              ./gg.cmd uv run --no-sync build/py3_8/generate_docstubs.py
+          }
+        # https://github.com/eirikb/gg/issues/292
+        shell: powershell
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: docstubs

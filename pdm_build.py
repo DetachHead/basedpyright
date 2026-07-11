@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
@@ -35,13 +36,13 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         if context.builder.config_settings.get("regenerate_docstubs") != "false":
             generate_docstubs(overwrite=True)
 
+        command = "pnpm run build:cli:dev"
+        # subprocess.run always uses cmd which doesn't work with ./
+        gg_executable = "gg.cmd" if sys.platform == "win32" else "./gg.cmd"
         try:
+            # need shell because gg.cmd doesn't work otherwise for some reason...
             _ = run(  # noqa: S602
-                "./gg.cmd pnpm run build:cli:dev",
-                capture_output=True,
-                check=True,
-                text=True,
-                shell=True,
+                f"{gg_executable} {command}", capture_output=True, check=True, text=True, shell=True
             )
         except CalledProcessError as e:
             # whats the point of capture_output if `CalledProcessError` doesn't include the stderr
