@@ -3,7 +3,7 @@ from __future__ import annotations
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
-from subprocess import run  # noqa: S404 no user input
+from subprocess import CalledProcessError, run  # noqa: S404 no user input
 from typing import TYPE_CHECKING, TypedDict, cast
 
 from pdm.backend.hooks.base import BuildHookInterface
@@ -35,13 +35,18 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         if context.builder.config_settings.get("regenerate_docstubs") != "false":
             generate_docstubs(overwrite=True)
 
-        _ = run(  # noqa: S602
-            "./gg.cmd pnpm run build:cli:dev",
-            capture_output=True,
-            check=True,
-            text=True,
-            shell=True,
-        )
+        try:
+            _ = run(  # noqa: S602
+                "./gg.cmd pnpm run build:cli:dev",
+                capture_output=True,
+                check=True,
+                text=True,
+                shell=True,
+            )
+        except CalledProcessError as e:
+            # whats the point of capture_output if `CalledProcessError` doesn't include the stderr
+            # anyway and whats the point of typeshed if everything is typed as `Any`????????????
+            raise Exception(f"{e.stdout=}\n{e.stderr=}") from e  # pyright: ignore[reportAny]
 
         if context.target == "editable":
             copy(npm_package_dir / package_json, pypi_package_dir)
