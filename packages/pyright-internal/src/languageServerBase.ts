@@ -63,6 +63,8 @@ import {
     RenameFilesParams,
     RenameParams,
     ResultProgressReporter,
+    SelectionRange,
+    SelectionRangeParams,
     SignatureHelp,
     SignatureHelpParams,
     SymbolInformation,
@@ -148,6 +150,7 @@ import { canNavigateToFile } from './languageService/navigationUtils';
 import { ReferencesProvider } from './languageService/referencesProvider';
 import { ImplementationProvider } from './languageService/implementationProvider';
 import { RenameProvider } from './languageService/renameProvider';
+import { SelectionRangeProvider } from './languageService/selectionRangeProvider';
 import { SignatureHelpProvider } from './languageService/signatureHelpProvider';
 import { WorkspaceSymbolProvider } from './languageService/workspaceSymbolProvider';
 import { Localizer, setLocaleOverride } from './localization/localize';
@@ -620,6 +623,8 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         this.connection.onDocumentHighlight(async (params, token) => this.onDocumentHighlight(params, token));
 
+        this.connection.onSelectionRanges(async (params, token) => this.onSelectionRanges(params, token));
+
         this.connection.onSignatureHelp(async (params, token) => this.onSignatureHelp(params, token));
 
         this.connection.onCompletion((params, token) => this.onCompletion(params, token));
@@ -758,6 +763,7 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
                 workspaceSymbolProvider: { workDoneProgress: true },
                 hoverProvider: { workDoneProgress: true },
                 documentHighlightProvider: { workDoneProgress: true },
+                selectionRangeProvider: true,
                 renameProvider: { prepareProvider: true, workDoneProgress: true },
                 completionProvider: {
                     triggerCharacters: this.client.hasVisualStudioExtensionsCapability
@@ -1076,6 +1082,21 @@ export abstract class LanguageServerBase implements LanguageServerInterface, Dis
 
         return workspace.service.run((program) => {
             return new DocumentHighlightProvider(program, uri, params.position, token).getDocumentHighlight();
+        }, token);
+    }
+
+    protected async onSelectionRanges(
+        params: SelectionRangeParams,
+        token: CancellationToken
+    ): Promise<SelectionRange[] | null | undefined> {
+        const uri = this.convertLspUriStringToUri(params.textDocument.uri);
+        const workspace = await this.getWorkspaceForFile(uri);
+        if (workspace.disableLanguageServices) {
+            return undefined;
+        }
+
+        return workspace.service.run((program) => {
+            return new SelectionRangeProvider(program, uri, params.positions, token).getSelectionRanges();
         }, token);
     }
 
