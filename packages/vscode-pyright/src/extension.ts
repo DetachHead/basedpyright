@@ -53,6 +53,108 @@ let languageClient: LanguageClient | undefined;
 
 const pythonPathChangedListenerMap = new Map<string, string>();
 
+// Hand-written subset of the ms-python.vscode-python-envs API (no npm types exist).
+// https://github.com/microsoft/vscode-python-environments/blob/main/src/api.ts
+interface PythonEnvironmentExecutionInfo {
+    readonly run: { readonly executable: string };
+}
+interface PythonEnvironment {
+    readonly envId: { readonly id: string; readonly managerId: string };
+    readonly environmentPath: Uri;
+    readonly execInfo?: PythonEnvironmentExecutionInfo;
+}
+interface DidChangeEnvironmentEventArgs {
+    readonly uri: Uri | undefined;
+}
+interface PythonEnvsApi {
+    getEnvironment(scope: Uri | undefined): Promise<PythonEnvironment | undefined>;
+    readonly onDidChangeEnvironment?: (listener: (e: DidChangeEnvironmentEventArgs) => void) => { dispose(): void };
+}
+
+/**
+ * Check whether the user has opted into the new Python Environments
+ * extension (`ms-python.vscode-python-envs`).
+ */
+function useEnvsExtension(): boolean {
+    return workspace.getConfiguration('python').get<boolean>('useEnvironmentsExtension', false);
+}
+
+/**
+ * Try to acquire the python-envs API.  Returns `undefined` when the
+ * extension is not installed or the setting is off.
+ */
+async function getEnvsApi(log: (message: string) => void): Promise<PythonEnvsApi | undefined> {
+    if (!useEnvsExtension()) {
+        return undefined;
+    }
+    const ext = extensions.getExtension('ms-python.vscode-python-envs');
+    if (!ext) {
+        log(
+            'python.useEnvironmentsExtension is true but ms-python.vscode-python-envs is not installed; using classic API'
+        );
+        return undefined;
+    }
+    try {
+        const api = ext.isActive ? ext.exports : await ext.activate();
+        return api as PythonEnvsApi;
+    } catch (error) {
+        log(`Exception occurred when activating ms-python.vscode-python-envs: ${JSON.stringify(error)}`);
+        return undefined;
+    }
+}
+
+/**
+ * Resolve the python executable path for the given scope (a workspace folder, or
+ * undefined for the active/global interpreter) from the new python-envs API.
+ * Prefers `execInfo.run.executable`, falling back to the environment path.
+ * Returns `undefined` on miss/throw so callers can fall back to the classic API.
+ */
+async function getPythonPathFromEnvsApi(
+    envsApi: PythonEnvsApi,
+    log: (message: string) => void,
+    scopeUri: Uri | undefined,
+    postConfigChanged: () => void
+): Promise<string | undefined> {
+    try {
+        installEnvsChangedListener(envsApi, scopeUri, postConfigChanged);
+        const env = await envsApi.getEnvironment(scopeUri);
+        if (!env) {
+            log('No pythonPath provided by Python Environments extension');
+            return undefined;
+        }
+        const result = env.execInfo?.run.executable ?? env.environmentPath.fsPath;
+        log(`Received pythonPath from Python Environments extension: ${result}`);
+        return result;
+    } catch (error) {
+        log(
+            `Exception occurred when attempting to read pythonPath from Python Environments extension: ${JSON.stringify(
+                error
+            )}`
+        );
+        return undefined;
+    }
+}
+
+/**
+ * Subscribe to python-envs interpreter changes for a scope and trigger a config
+ * refresh, mirroring the classic `installPythonPathChangedListener`. Reuses
+ * `pythonPathChangedListenerMap` so we install at most one listener per scope
+ * across both APIs (only one API resolves the path for a given scope).
+ */
+function installEnvsChangedListener(envsApi: PythonEnvsApi, scopeUri: Uri | undefined, postConfigChanged: () => void) {
+    if (!envsApi.onDidChangeEnvironment) {
+        return;
+    }
+    const uriString = scopeUri ? scopeUri.toString() : '';
+    if (pythonPathChangedListenerMap.has(uriString)) {
+        return;
+    }
+    envsApi.onDidChangeEnvironment(() => {
+        postConfigChanged();
+    });
+    pythonPathChangedListenerMap.set(uriString, uriString);
+}
+
 // Request a heap size of 3GB. This is reasonable for modern systems.
 const defaultHeapSize = 3072;
 
@@ -117,10 +219,29 @@ export async function activate(context: ExtensionContext) {
     let serverOptions: ServerOptions | undefined = undefined;
     const bundlePath = context.asAbsolutePath(path.join('dist', 'server.js'));
     if (workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
-        const pythonApi = await PythonExtension.api();
         const isWindows = os.platform() === 'win32';
         const executableName = `basedpyright-langserver${isWindows ? '.exe' : ''}`;
-        const executableDir = path.join(pythonApi.environments.getActiveEnvironmentPath().path, '..');
+
+        // When the new Python Environments API is active, resolve the environment
+        // from it (matching what Pylance reads), otherwise use the classic API.
+        let interpreterPath: string | undefined;
+        const envsApi = await getEnvsApi((message) => console.log(message));
+        if (envsApi) {
+            try {
+                const env = await envsApi.getEnvironment(undefined);
+                interpreterPath = env?.execInfo?.run.executable ?? env?.environmentPath.fsPath;
+            } catch (error) {
+                console.warn(
+                    `failed to read active environment from Python Environments extension: ${JSON.stringify(error)}`
+                );
+            }
+        }
+        if (interpreterPath === undefined) {
+            const pythonApi = await PythonExtension.api();
+            interpreterPath = pythonApi.environments.getActiveEnvironmentPath().path;
+        }
+        const executableDir = path.join(interpreterPath, '..');
+
         const originalExecutablePath = path.join(executableDir, executableName);
         if (existsSync(originalExecutablePath)) {
             console.log('using pyright executable:', originalExecutablePath);
@@ -406,6 +527,18 @@ async function getPythonPathFromPythonExtension(
     scopeUri: Uri | undefined,
     postConfigChanged: () => void
 ): Promise<string | undefined> {
+    // When python.useEnvironmentsExtension is on, the interpreter is managed by
+    // ms-python.vscode-python-envs (what Pylance reads), otherwise use the classic API.
+    const log = (message: string) => outputChannel.appendLine(message);
+    const envsApi = await getEnvsApi(log);
+    if (envsApi) {
+        const result = await getPythonPathFromEnvsApi(envsApi, log, scopeUri, postConfigChanged);
+        if (result !== undefined) {
+            return result;
+        }
+        log('Python Environments extension returned no interpreter, use classic API');
+    }
+
     try {
         const extension = extensions.getExtension('ms-python.python');
         if (!extension) {
