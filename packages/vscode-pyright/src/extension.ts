@@ -56,6 +56,43 @@ const pythonPathChangedListenerMap = new Map<string, string>();
 // Request a heap size of 3GB. This is reasonable for modern systems.
 const defaultHeapSize = 3072;
 
+async function createStdioServerOptions(
+    context: ExtensionContext,
+    executablePath: string,
+    cancellationStrategy: FileBasedCancellationStrategy
+): Promise<ServerOptions> {
+    const isWindows = os.platform() === 'win32';
+    let resolvedPath = executablePath;
+
+    // on windows we make a copy of the exe to avoid locking it, which would otherwise cause crashes when you try to
+    // update/uninstall basedpyright while vscode is open. this only seems to be an issue on windows
+    if (isWindows) {
+        const copiedExecutablePath = path.join(
+            path.dirname(executablePath),
+            `_vscode_copy_${path.basename(executablePath)}`
+        );
+        try {
+            await cp(executablePath, copiedExecutablePath, { force: true });
+            resolvedPath = copiedExecutablePath;
+        } catch (e) {
+            console.warn(`failed to create copy at ${copiedExecutablePath}, falling back to using the real one`);
+        }
+    }
+
+    const transport = TransportKind.stdio;
+    const originalCliArgs = cancellationStrategy.getCommandLineArguments();
+    if (context.extensionMode === ExtensionMode.Development) {
+        return {
+            command: context.asAbsolutePath(
+                `../../.venv/${isWindows ? 'Scripts/lsp-devtools.exe' : 'bin/lsp-devtools'}`
+            ),
+            args: ['agent', '--', resolvedPath, ...originalCliArgs],
+            transport,
+        };
+    }
+    return { command: resolvedPath, args: originalCliArgs, transport };
+}
+
 export async function activate(context: ExtensionContext) {
     const pyrightLanguageServerEnabled = !workspace.getConfiguration('basedpyright').get('disableLanguageServices');
     const languageServerSetting = workspace.getConfiguration('python').get('languageServer');
@@ -115,8 +152,26 @@ export async function activate(context: ExtensionContext) {
 
     cancellationStrategy = new FileBasedCancellationStrategy();
     let serverOptions: ServerOptions | undefined = undefined;
+    // Human-readable description of which language server executable was selected, logged to the
+    // "basedpyright" output channel once the client (and thus its output channel) exists.
+    let serverExecutableDescription: string | undefined;
     const bundlePath = context.asAbsolutePath(path.join('dist', 'server.js'));
-    if (workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
+
+    const explicitExecutablePath = workspace.getConfiguration('basedpyright').get<string>('executablePath');
+    if (explicitExecutablePath) {
+        if (existsSync(explicitExecutablePath)) {
+            console.log('using pyright executable from basedpyright.executablePath:', explicitExecutablePath);
+            serverExecutableDescription = `using executable from basedpyright.executablePath: ${explicitExecutablePath}`;
+            serverOptions = await createStdioServerOptions(context, explicitExecutablePath, cancellationStrategy!);
+        } else {
+            console.warn(
+                `basedpyright.executablePath is set to ${explicitExecutablePath} but no file exists there, ` +
+                    `falling back to importStrategy`
+            );
+        }
+    }
+
+    if (!serverOptions && workspace.getConfiguration('basedpyright').get('importStrategy') === 'fromEnvironment') {
         const pythonApi = await PythonExtension.api();
         const isWindows = os.platform() === 'win32';
         const executableName = `basedpyright-langserver${isWindows ? '.exe' : ''}`;
@@ -124,35 +179,8 @@ export async function activate(context: ExtensionContext) {
         const originalExecutablePath = path.join(executableDir, executableName);
         if (existsSync(originalExecutablePath)) {
             console.log('using pyright executable:', originalExecutablePath);
-            let executablePath = originalExecutablePath;
-
-            // on windows we make a copy of the exe to avoid locking it, which would otherwise cause crashes when you try to
-            // update/uninstall basedpyright while vscode is open. this only seems to be an issue on windows
-            if (isWindows) {
-                const copiedExecutablePath = path.join(executableDir, `_vscode_copy_${executableName}`);
-                try {
-                    await cp(originalExecutablePath, copiedExecutablePath, { force: true });
-                    executablePath = copiedExecutablePath;
-                } catch (e) {
-                    console.warn(
-                        `failed to create copy at ${copiedExecutablePath}, falling back to using the real one`
-                    );
-                }
-            }
-
-            const transport = TransportKind.stdio;
-            const originalCliArgs = cancellationStrategy.getCommandLineArguments();
-            if (context.extensionMode === ExtensionMode.Development) {
-                serverOptions = {
-                    command: context.asAbsolutePath(
-                        `../../.venv/${isWindows ? 'Scripts/lsp-devtools.exe' : 'bin/lsp-devtools'}`
-                    ),
-                    args: ['agent', '--', executablePath, ...originalCliArgs],
-                    transport,
-                };
-            } else {
-                serverOptions = { command: executablePath, args: originalCliArgs, transport };
-            }
+            serverExecutableDescription = `using executable from active Python environment: ${originalExecutablePath}`;
+            serverOptions = await createStdioServerOptions(context, originalExecutablePath, cancellationStrategy!);
         } else {
             console.warn(
                 `failed to find pyright executable at ${originalExecutablePath}, falling back to bundled at ${bundlePath}`
@@ -161,6 +189,7 @@ export async function activate(context: ExtensionContext) {
     }
     if (!serverOptions) {
         console.log('using bundled pyright');
+        serverExecutableDescription = 'using bundled executable';
 
         const runOptions = { execArgv: [`--max-old-space-size=${defaultHeapSize}`] };
         const debugOptions = { execArgv: ['--nolazy', '--inspect=6600', `--max-old-space-size=${defaultHeapSize}`] };
@@ -275,6 +304,13 @@ export async function activate(context: ExtensionContext) {
     // Create the language client and start the client.
     const client = new LanguageClient('basedpyright', toolName, serverOptions, clientOptions);
     languageClient = client;
+
+    // Report the selected language server executable in the "basedpyright" output channel so users
+    // can confirm which binary is running (mirrors the console.log above, which only reaches the
+    // extension host log / dev tools console).
+    if (serverExecutableDescription) {
+        client.outputChannel.appendLine(serverExecutableDescription);
+    }
 
     // Register our custom commands.
     const textEditorCommands = [Commands.orderImports];

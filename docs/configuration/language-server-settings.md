@@ -99,6 +99,8 @@ however these settings are still supported to maintain compatibility with pyrigh
 
 as mentioned [above](#discouraged-settings), it's recommended to configure these settings [using a config file](./config-files.md) instead.
 
+**basedpyright.executablePath** [path]: Path to the `basedpyright-langserver` executable. When set, this overrides the executable that would otherwise be discovered via `basedpyright.importStrategy`. This is useful when basedpyright is installed in a different environment than the active Python interpreter (for example, a dedicated virtualenv or conda environment kept separate from your project's interpreter). The path is ignored (with a warning) if no file exists there, falling back to the normal `basedpyright.importStrategy` behavior.
+
 **basedpyright.analysis.baselineFile** [path]: Path to a baseline file that contains a list of diagnostics that should be ignored. defaults to `./.basedpyright/baseline.json`. [more info](../benefits-over-pyright/baseline.md)
 
 ## where do i configure these settings?

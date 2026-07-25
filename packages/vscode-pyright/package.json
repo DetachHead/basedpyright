@@ -1944,6 +1944,12 @@
                     "description": "Whether to use the version of pyright installed in the project (recommended) or the one bundled with the extension (not recommended).",
                     "scope": "resource"
                 },
+                "basedpyright.executablePath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to the basedpyright-langserver executable. When set, this overrides the executable discovered via basedpyright.importStrategy — useful when basedpyright is installed in a different environment than the active Python interpreter. Ignored if the path does not exist.",
+                    "scope": "resource"
+                },
                 "basedpyright.analysis.inlayHints.variableTypes": {
                     "type": "boolean",
                     "default": true,
