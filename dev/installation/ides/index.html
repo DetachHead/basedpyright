@@ -2184,20 +2184,12 @@ their docs, linked above.</p>
 </div>
 </div>
 <h2 id="pycharm">PyCharm</h2>
-<p>PyCharm users can enable native basedpyright support in the settings:</p>
+<p>PyCharm users can enable basedpyright support in the settings:</p>
 <ol>
-<li>Go to <strong>Python &gt; Tools &gt; Pyright</strong> in the Settings dialog.</li>
-<li>Select the <strong>Enable</strong> checkbox.</li>
-<li>
-<p>In the Execution mode setting, select how PyCharm should search for the executable:</p>
-<p><strong>Interpreter</strong> mode (recommended): PyCharm searches for an executable installed in your interpreter. To install the basedpyright package for the selected interpreter, click <em>Install basedpyright</em>.</p>
-<p><strong>Path</strong> mode: PyCharm searches for an executable in <code>$PATH</code>. If the executable is not found, you can specify the path by clicking the Browse... icon.</p>
-</li>
-<li>
-<p>Select which options should be enabled.</p>
-</li>
+<li>Go to <strong>Python &gt; Tools &gt; External Tools</strong> in the Settings dialog.</li>
+<li>Click the <strong>On/Off</strong> toggle next to <strong>basedpyright</strong> in the list of external tools.</li>
 </ol>
-<p>For more information, refer to <a href="https://www.jetbrains.com/help/pycharm/lsp-tools.html#pyright">PyCharm documentation</a>.</p>
+<p>For more information, refer to <a href="https://www.jetbrains.com/help/pycharm/lsp-tools.html#external-tools-settings">PyCharm documentation</a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">pinning basedpyright as a development dependency to your project (recommended)</p>
 <p>you should commit the following generated config file, so that others working on your repo don't have to manually configure it themselves:</p>
