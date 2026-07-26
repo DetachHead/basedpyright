@@ -10,6 +10,7 @@
  */
 
 import { PythonExtension } from '@vscode/python-extension';
+import type { PythonEnvironmentApi } from '@vscode/python-environments';
 import { existsSync } from 'fs';
 import os from 'os';
 import * as path from 'path';
@@ -53,24 +54,6 @@ let languageClient: LanguageClient | undefined;
 
 const pythonPathChangedListenerMap = new Map<string, string>();
 
-// Hand-written subset of the ms-python.vscode-python-envs API (no npm types exist).
-// https://github.com/microsoft/vscode-python-environments/blob/main/src/api.ts
-interface PythonEnvironmentExecutionInfo {
-    readonly run: { readonly executable: string };
-}
-interface PythonEnvironment {
-    readonly envId: { readonly id: string; readonly managerId: string };
-    readonly environmentPath: Uri;
-    readonly execInfo?: PythonEnvironmentExecutionInfo;
-}
-interface DidChangeEnvironmentEventArgs {
-    readonly uri: Uri | undefined;
-}
-interface PythonEnvsApi {
-    getEnvironment(scope: Uri | undefined): Promise<PythonEnvironment | undefined>;
-    readonly onDidChangeEnvironment?: (listener: (e: DidChangeEnvironmentEventArgs) => void) => { dispose(): void };
-}
-
 /**
  * Check whether the user has opted into the new Python Environments
  * extension (`ms-python.vscode-python-envs`).
@@ -83,7 +66,7 @@ function useEnvsExtension(): boolean {
  * Try to acquire the python-envs API.  Returns `undefined` when the
  * extension is not installed or the setting is off.
  */
-async function getEnvsApi(log: (message: string) => void): Promise<PythonEnvsApi | undefined> {
+async function getEnvsApi(log: (message: string) => void): Promise<PythonEnvironmentApi | undefined> {
     if (!useEnvsExtension()) {
         return undefined;
     }
@@ -96,7 +79,7 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnvsApi
     }
     try {
         const api = ext.isActive ? ext.exports : await ext.activate();
-        return api as PythonEnvsApi;
+        return api as PythonEnvironmentApi;
     } catch (error) {
         log(`Exception occurred when activating ms-python.vscode-python-envs: ${JSON.stringify(error)}`);
         return undefined;
@@ -110,7 +93,7 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnvsApi
  * Returns `undefined` on miss/throw so callers can fall back to the classic API.
  */
 async function getPythonPathFromEnvsApi(
-    envsApi: PythonEnvsApi,
+    envsApi: PythonEnvironmentApi,
     log: (message: string) => void,
     scopeUri: Uri | undefined,
     postConfigChanged: () => void
@@ -141,7 +124,11 @@ async function getPythonPathFromEnvsApi(
  * `pythonPathChangedListenerMap` so we install at most one listener per scope
  * across both APIs (only one API resolves the path for a given scope).
  */
-function installEnvsChangedListener(envsApi: PythonEnvsApi, scopeUri: Uri | undefined, postConfigChanged: () => void) {
+function installEnvsChangedListener(
+    envsApi: PythonEnvironmentApi,
+    scopeUri: Uri | undefined,
+    postConfigChanged: () => void
+) {
     if (!envsApi.onDidChangeEnvironment) {
         return;
     }

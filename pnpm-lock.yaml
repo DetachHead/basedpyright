@@ -327,6 +327,9 @@ importers:
       '@types/vscode':
         specifier: ^1.101.0
         version: 1.125.0
+      '@vscode/python-environments':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@vscode/vsce':
         specifier: ^3.9.2
         version: 3.9.2
@@ -1405,6 +1408,10 @@ packages:
     resolution: {integrity: sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==}
     cpu: [x64]
     os: [win32]
+
+  '@vscode/python-environments@1.0.0':
+    resolution: {integrity: sha512-utsAkb9lX8jVJxTR11aFu5Z2LWNwmHp3Ki+tmNNTiHVY71gNcwgYRrnwRhdE6+DFj3sLznjvcE/dCaAgXX9ohA==}
+    engines: {node: '>=22.21.1', vscode: ^1.110.0}
 
   '@vscode/python-extension@1.0.6':
     resolution: {integrity: sha512-q7KYf+mymM67G0yS6xfhczFwu2teBi5oXHVdNgtCsYhErdSOkwMPtE291SqQahrjTcgKxn7O56i1qb1EQR6o4w==}
@@ -5340,6 +5347,8 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
+
+  '@vscode/python-environments@1.0.0': {}
 
   '@vscode/python-extension@1.0.6': {}
 
