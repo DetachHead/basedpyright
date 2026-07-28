@@ -10,7 +10,7 @@
  */
 
 import { PythonExtension } from '@vscode/python-extension';
-import type { PythonEnvironmentApi } from '@vscode/python-environments';
+import { EXTENSION_ID as pythonEnvsExtensionId, type PythonEnvironmentApi } from '@vscode/python-environments';
 import { existsSync } from 'fs';
 import os from 'os';
 import * as path from 'path';
@@ -70,18 +70,16 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnviron
     if (!useEnvsExtension()) {
         return undefined;
     }
-    const ext = extensions.getExtension('ms-python.vscode-python-envs');
+    const ext = extensions.getExtension(pythonEnvsExtensionId);
     if (!ext) {
-        log(
-            'python.useEnvironmentsExtension is true but ms-python.vscode-python-envs is not installed; using classic API'
-        );
+        log(`python.useEnvironmentsExtension is true but ${pythonEnvsExtensionId} is not installed; using classic API`);
         return undefined;
     }
     try {
         const api = ext.isActive ? ext.exports : await ext.activate();
         return api as PythonEnvironmentApi;
     } catch (error) {
-        log(`Exception occurred when activating ms-python.vscode-python-envs: ${JSON.stringify(error)}`);
+        log(`Exception occurred when activating ${pythonEnvsExtensionId}: ${JSON.stringify(error)}`);
         return undefined;
     }
 }
