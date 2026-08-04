@@ -93,7 +93,7 @@ bad-names = ["foo", "bar", "baz", "retval"]
 load-plugins = [
     # we don't use all of these but enabling them all for completeness since there's no error if a rule is not found
     "pylint.extensions.bad_builtin",
-    "pylint.extensions.broad_try_caluse",
+    "pylint.extensions.broad_try_clause",
     "pylint.extensions.check_elif",
     "pylint.extensions.code_style",
     "pylint.extensions.comparetozero",
