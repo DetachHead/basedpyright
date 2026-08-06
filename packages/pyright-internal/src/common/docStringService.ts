@@ -9,6 +9,7 @@
 import { MarkupKind } from 'vscode-languageserver-types';
 import { convertDocStringToMarkdown, convertDocStringToPlainText } from '../analyzer/docStringConversion';
 import {
+    cleanAndSplitDocString,
     extractAttributeDocumentation,
     extractParameterDocumentation,
     extractReturnDocumentation,
@@ -55,7 +56,11 @@ export class PyrightDocStringService implements DocStringService {
         return convertDocStringToPlainText(docString);
     }
 
-    convertDocStringToMarkdown(docString: string, _forceLiteral?: boolean, _sourceFileUri?: Uri): string {
+    convertDocStringToMarkdown(docString: string, forceLiteral?: boolean, _sourceFileUri?: Uri): string {
+        if (forceLiteral) {
+            const cleaned = cleanAndSplitDocString(docString).join('\n');
+            return _wrapInLiteralCodeBlock(cleaned);
+        }
         return convertDocStringToMarkdown(docString);
     }
 
@@ -75,4 +80,18 @@ export class PyrightDocStringService implements DocStringService {
         // No need to clone, no internal state
         return this;
     }
+}
+
+const backtickRunRegExp = /`+/g;
+
+function _wrapInLiteralCodeBlock(content: string): string {
+    let maxRun = 0;
+    for (const m of content.matchAll(backtickRunRegExp)) {
+        if (m[0].length > maxRun) {
+            maxRun = m[0].length;
+        }
+    }
+    const fenceLength = Math.max(3, maxRun + 1);
+    const fence = '`'.repeat(fenceLength);
+    return fence + 'text\n' + content + '\n' + fence;
 }
