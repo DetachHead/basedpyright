@@ -1116,6 +1116,82 @@ Remote Python Call (RPyC)
 
         _testConvertToMarkdown(docstring, markdown);
     });
+
+    test('ForceLiteralWrapsInCodeBlock', () => {
+        const docstring = `Summary line.
+
+Extended description that spans
+multiple lines.
+`;
+
+        const expected = '```text\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
+
+    test('ForceLiteralStripsCommonIndent', () => {
+        const docstring = 'Header line\n    indented\n        deeper indent\n';
+        const expected = '```text\n' + 'Header line\nindented\n    deeper indent' + '\n```';
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
+
+    test('ForceLiteralEmptyDocstring', () => {
+        const docstring = '';
+        const expected = '```text\n\n```';
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
+
+    test('ForceLiteralDefaultIsFalse', () => {
+        const docstring = 'A\nB';
+        const expected = 'A\nB';
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
+
+    test('ForceLiteralEscapesNestedBackticks', () => {
+        const docstring = [
+            'Summary line.',
+            '',
+            'Example:',
+            '',
+            '```python',
+            'x = 1',
+            '```',
+            '',
+            'Trailing prose with `inline code`.',
+        ].join('\n');
+
+        const expected = [
+            '````text',
+            'Summary line.',
+            '',
+            'Example:',
+            '',
+            '```python',
+            'x = 1',
+            '```',
+            '',
+            'Trailing prose with `inline code`.',
+            '````',
+        ].join('\n');
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
+
+    test('ForceLiteralEscapesFourBackticks', () => {
+        const docstring = 'Has a ```` nested fence.';
+        const expected = '`````text\n' + 'Has a ```` nested fence.' + '\n`````';
+
+        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
+        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+    });
 }
 
 describe('Doc String Conversion', () => {
