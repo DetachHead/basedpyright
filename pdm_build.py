@@ -4,7 +4,10 @@ import sys
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
-from subprocess import CalledProcessError, run  # noqa: S404 no user input
+from subprocess import (  # ruff: ignore[suspicious-subprocess-import] no user input
+    CalledProcessError,
+    run,
+)
 from typing import TYPE_CHECKING, TypedDict, cast
 
 from pdm.backend.hooks.base import BuildHookInterface
@@ -41,7 +44,7 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
         gg_executable = "gg.cmd" if sys.platform == "win32" else "./gg.cmd"
         try:
             # need shell because gg.cmd doesn't work otherwise for some reason...
-            _ = run(  # noqa: S602
+            _ = run(  # ruff: ignore[subprocess-popen-with-shell-equals-true]
                 f"{gg_executable} {command}", capture_output=True, check=True, text=True, shell=True
             )
         except CalledProcessError as e:

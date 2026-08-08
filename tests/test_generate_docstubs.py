@@ -16,7 +16,7 @@ from pytest import mark
 
 
 def needs_all_docstubs[T, **P](
-    condition_to_run_locally: bool,  # noqa: FBT001
+    condition_to_run_locally: bool,  # ruff: ignore[boolean-type-hint-positional-argument]
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(fn: Callable[P, T]) -> Callable[P, T]:
         @wraps(fn)
