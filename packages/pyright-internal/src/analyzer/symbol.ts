@@ -73,8 +73,11 @@ export const enum SymbolFlags {
     // considered ClassVars unless they are found in a dataclass.
     FinalVarInClassBody = 1 << 13,
 
+    // Indicates that the symbol is a KW_ONLY separator in a dataclass.
+    DataClassKeywordOnly = 1 << 14,
+
     // Indicates that the symbol is a private import in a local module.
-    PrivateLocalImport = 1 << 14,
+    PrivateLocalImport = 1 << 15,
 }
 
 let nextSymbolId = 1;
@@ -193,6 +196,14 @@ export class Symbol {
 
     isInitVar() {
         return !!(this._flags & SymbolFlags.InitVar);
+    }
+
+    setIsDataClassKeywordOnly() {
+        this._flags |= SymbolFlags.DataClassKeywordOnly;
+    }
+
+    isDataClassKeywordOnly() {
+        return !!(this._flags & SymbolFlags.DataClassKeywordOnly);
     }
 
     setIsInDunderAll() {

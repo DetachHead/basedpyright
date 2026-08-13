@@ -727,7 +727,8 @@ function narrowTypeBasedOnLiteralPattern(
                 isLiteralType(literalType) &&
                 isClassInstance(expandedSubtype) &&
                 isLiteralType(expandedSubtype) &&
-                evaluator.assignType(literalType, expandedSubtype)
+                (evaluator.assignType(literalType, expandedSubtype) ||
+                    isIntLiteralPatternEqualToBool(literalType, expandedSubtype))
             ) {
                 return undefined;
             }
@@ -753,6 +754,16 @@ function narrowTypeBasedOnLiteralPattern(
     }
 
     return evaluator.mapSubtypesExpandTypeVars(type, /* options */ undefined, (expandedSubtype, unexpandedSubtype) => {
+        if (
+            isClassInstance(literalType) &&
+            isLiteralType(literalType) &&
+            isClassInstance(expandedSubtype) &&
+            isLiteralType(expandedSubtype) &&
+            isIntLiteralPatternEqualToBool(literalType, expandedSubtype)
+        ) {
+            return expandedSubtype;
+        }
+
         if (evaluator.assignType(expandedSubtype, literalType)) {
             // We have to be careful here because the runtime uses an equality
             // check, but the expandedSubtype could be a superclass that is not
@@ -790,6 +801,23 @@ function narrowTypeBasedOnLiteralPattern(
     });
 }
 
+function isIntLiteralPatternEqualToBool(patternType: ClassType, subjectType: ClassType): boolean {
+    // Numeric literal patterns use equality, so 0 and 1 also match False and True.
+    // The inverse isn't true because singleton bool patterns use identity.
+    if (!ClassType.isBuiltIn(patternType, 'int') || !ClassType.isBuiltIn(subjectType, 'bool')) {
+        return false;
+    }
+
+    const patternValue = patternType.priv.literalValue;
+    const subjectValue = subjectType.priv.literalValue;
+    if ((typeof patternValue !== 'number' && typeof patternValue !== 'bigint') || typeof subjectValue !== 'boolean') {
+        return false;
+    }
+
+    const boolAsNumber = subjectValue ? 1 : 0;
+    return typeof patternValue === 'bigint' ? patternValue === BigInt(boolAsNumber) : patternValue === boolAsNumber;
+}
+
 // When a class pattern matches a generic class whose type parameters have an
 // upper bound (e.g. `class Thing[T: bool]`), the constraint solver may leave the
 // parameters unsolved (Unknown) because the subject carries no type arguments.
@@ -811,10 +839,14 @@ function specializeBoundedMatchTypeParams(
     const typeArgs = matchType.shared.typeParams.map((param, index) => {
         const specializedArg = solvedTypeArgs?.[index];
 
-        // Keep an argument unless it is genuinely Unknown. A bare in-scope TypeVar
-        // (e.g. a subject `Thing[S]` from a generic function `def f[S: bool]`) is a
-        // legitimately narrowed argument and must not be widened to the bound.
-        if (specializedArg && !containsAnyOrUnknown(specializedArg, /* recurse */ true)) {
+        // Keep an argument unless it is the unsolved sentinel (a bare top-level
+        // Unknown left by the constraint solver when the subject carried no type
+        // arguments). A concrete argument that is merely implicitly parameterized -
+        // e.g. bare `list` (`list[Unknown]`) or `dict` (`dict[Unknown, Unknown]`) - is
+        // a real, solved type and must be preserved rather than widened to the bound.
+        // A bare in-scope TypeVar (e.g. a subject `Thing[S]` from a generic function
+        // `def f[S: bool]`) is likewise a legitimately narrowed argument.
+        if (specializedArg && !isUnknown(specializedArg)) {
             return specializedArg;
         }
 

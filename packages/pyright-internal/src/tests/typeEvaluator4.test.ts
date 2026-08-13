@@ -284,6 +284,11 @@ test('MemberAccess28', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
+test('MemberAccess29', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['memberAccess29.py']);
+    TestUtils.validateResults(analysisResults, 3);
+});
+
 test('DataClassNamedTuple1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassNamedTuple1.py']);
 
@@ -429,7 +434,7 @@ test('DataClassKwOnly1', () => {
     configOptions.defaultPythonVersion = pythonVersion3_10;
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['dataclassKwOnly1.py'], configOptions);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 5);
 });
 
 test('DataClassKwOnly2', () => {

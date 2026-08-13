@@ -134,6 +134,9 @@ AGENTS.md
 # Generated benchmark output
 packages/pyright-internal/src/tests/benchmarks/.generated/
 
+# perfCompare.py cached commit bundles
+/build/perfCompare/
+
 # python stuff
 **/__pycache__
 # while this isn't usually needed in venvs created by uv (which we use in this project) because they contain their own `.gitignore` file, some contributors may want to create venvs with other tools and with different names (eg. `.venv3.14`)

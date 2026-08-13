@@ -166,6 +166,87 @@ interface NarrowExprOptions {
     allowDiscriminatedNarrowing?: boolean;
 }
 
+function isStaticClassAssignmentTarget(target: ExpressionNode): boolean {
+    switch (target.nodeType) {
+        case ParseNodeType.Name:
+            return true;
+
+        case ParseNodeType.TypeAnnotation:
+            return isStaticClassAssignmentTarget(target.d.valueExpr);
+
+        case ParseNodeType.Tuple:
+        case ParseNodeType.List:
+            return target.d.items.every((item) => isStaticClassAssignmentTarget(item));
+
+        case ParseNodeType.Unpack:
+            return isStaticClassAssignmentTarget(target.d.expr);
+
+        default:
+            return false;
+    }
+}
+
+function getCalledBuiltInName(
+    scope: Scope,
+    expression: ExpressionNode,
+    visitedSymbols = new Set<Symbol>()
+): string | undefined {
+    if (expression.nodeType === ParseNodeType.Name) {
+        const symbolWithScope = scope.lookUpSymbolRecursive(expression.d.value);
+        if (!symbolWithScope || visitedSymbols.has(symbolWithScope.symbol)) {
+            return undefined;
+        }
+        visitedSymbols.add(symbolWithScope.symbol);
+
+        if (symbolWithScope.scope.type === ScopeType.Builtin) {
+            return expression.d.value;
+        }
+
+        const declarations = symbolWithScope.symbol.getDeclarations();
+        const declaration = declarations[declarations.length - 1];
+        if (
+            declaration?.type === DeclarationType.Variable &&
+            (declaration.inferredTypeSource?.nodeType === ParseNodeType.Name ||
+                declaration.inferredTypeSource?.nodeType === ParseNodeType.MemberAccess)
+        ) {
+            return getCalledBuiltInName(scope, declaration.inferredTypeSource, visitedSymbols);
+        }
+
+        if (
+            declaration?.type === DeclarationType.Alias &&
+            declaration.moduleName === 'builtins' &&
+            declaration.symbolName
+        ) {
+            return declaration.symbolName;
+        }
+    } else if (
+        expression.nodeType === ParseNodeType.MemberAccess &&
+        expression.d.leftExpr.nodeType === ParseNodeType.Name
+    ) {
+        const symbolWithScope = scope.lookUpSymbolRecursive(expression.d.leftExpr.d.value);
+        const declarations = symbolWithScope?.symbol.getDeclarations() ?? [];
+        const declaration = declarations[declarations.length - 1];
+        if (
+            declaration?.type === DeclarationType.Alias &&
+            declaration.moduleName === 'builtins' &&
+            !declaration.symbolName
+        ) {
+            return expression.d.member.d.value;
+        }
+    }
+
+    return undefined;
+}
+
+function doesCallExposeClassNamespace(scope: Scope, node: CallNode): boolean {
+    const builtInName = getCalledBuiltInName(scope, node.d.leftExpr);
+    return (
+        builtInName === 'exec' ||
+        (builtInName === 'eval' && node.d.args.length === 1) ||
+        ((builtInName === 'locals' || builtInName === 'vars') && node.d.args.length === 0)
+    );
+}
+
 // For each flow node within an execution context, we'll add a small
 // amount to the complexity factor. Without this, the complexity
 // calculation fails to take into account large numbers of non-cyclical
@@ -542,12 +623,35 @@ export class Binder extends ParseTreeWalker {
 
                 this._addImplicitSymbolToCurrentScope('__doc__', node, 'str | None');
                 this._addImplicitSymbolToCurrentScope('__module__', node, 'str');
-                this._addImplicitSymbolToCurrentScope('__qualname__', node, 'str');
 
                 this._dunderSlotsEntries = undefined;
                 if (!this._moduleSymbolOnly) {
                     // Analyze the suite.
                     this.walk(node.d.suite);
+                }
+
+                // `__qualname__` is exposed via the metaclass (`type`) rather than as a
+                // class/instance attribute, unlike `__doc__`/`__module__`. We handle it
+                // after walking the suite so we can tell whether the class body already
+                // declared it.
+                const existingQualname = this._currentScope.lookUpSymbol('__qualname__');
+                if (existingQualname) {
+                    // The class explicitly declares `__qualname__` (e.g. typeshed `type`,
+                    // `function`, or a user `__qualname__ = "..."`). Keep that real
+                    // declaration untouched so hover, go-to-definition, and completion all
+                    // resolve to it. We must not append a synthetic empty-range Intrinsic
+                    // declaration on top, because declaration-selecting consumers (e.g.
+                    // `getLastTypedDeclarationForSymbol`) would otherwise resolve to the
+                    // empty range instead of the real declaration. We still mark it as
+                    // ignored for protocol matching, matching the implicit-dunder treatment.
+                    existingQualname.setIsIgnoredForProtocolMatch();
+                } else {
+                    // The class does not declare `__qualname__`. Add it as a non-class
+                    // member so it is name-resolvable within the class body (e.g.
+                    // `print(__qualname__)`) but is not exposed as a class/instance
+                    // attribute. Otherwise instance access (`instance.__qualname__`) would
+                    // incorrectly resolve instead of reporting an attribute-access error.
+                    this._addImplicitSymbolToCurrentScope('__qualname__', node, 'str', /* isClassMember */ false);
                 }
 
                 if (this._dunderSlotsEntries) {
@@ -714,6 +818,12 @@ export class Binder extends ParseTreeWalker {
             () => {
                 AnalyzerNodeInfo.setScope(node, this._currentScope);
 
+                const enclosingClass = ParseTreeUtils.getEnclosingClass(node);
+                if (enclosingClass) {
+                    // Lambdas create the same implicit __class__ closure as named functions.
+                    this._addImplicitSymbolToCurrentScope('__class__', node, '__class__');
+                }
+
                 this._deferBinding(() => {
                     // Create a start node for the lambda.
                     this._currentFlowNode = this._createStartFlowNode();
@@ -754,6 +864,10 @@ export class Binder extends ParseTreeWalker {
     }
 
     override visitCall(node: CallNode): boolean {
+        if (this._currentScope.type === ScopeType.Class && doesCallExposeClassNamespace(this._currentScope, node)) {
+            this._currentScope.hasPotentiallyDynamicSymbolTable = true;
+        }
+
         this._disableTrueFalseTargets(() => {
             this.walk(node.d.leftExpr);
 
@@ -1112,9 +1226,26 @@ export class Binder extends ParseTreeWalker {
                             isExpressionUnderstood = false;
                         }
                     });
+                } else if (expr.nodeType === ParseNodeType.Dictionary) {
+                    expr.d.items.forEach((dictionaryEntryNode) => {
+                        if (
+                            dictionaryEntryNode.nodeType === ParseNodeType.DictionaryKeyEntry &&
+                            dictionaryEntryNode.d.keyExpr.nodeType === ParseNodeType.StringList &&
+                            dictionaryEntryNode.d.keyExpr.d.strings.length === 1 &&
+                            dictionaryEntryNode.d.keyExpr.d.strings[0].nodeType === ParseNodeType.String
+                        ) {
+                            this._dunderSlotsEntries!.push(dictionaryEntryNode.d.keyExpr);
+                        } else {
+                            isExpressionUnderstood = false;
+                        }
+                    });
                 } else {
                     isExpressionUnderstood = false;
                 }
+
+                this._currentScope.setHasNonEmptySlots(
+                    this._dunderSlotsEntries.some((entry) => entry.d.strings[0].d.value !== '__dict__')
+                );
 
                 if (!isExpressionUnderstood) {
                     this._dunderSlotsEntries = undefined;
@@ -1475,6 +1606,7 @@ export class Binder extends ParseTreeWalker {
 
         postIfLabel.affectedExpressions = this._trackCodeFlowExpressions(() => {
             const constExprValue = this._evaluateStaticBoolExpr(node.d.testExpr);
+            AnalyzerNodeInfo.setStaticConditionValue(node, constExprValue);
 
             this._bindConditional(node.d.testExpr, thenLabel, elseLabel);
 
@@ -1903,7 +2035,7 @@ export class Binder extends ParseTreeWalker {
 
     override visitImportFrom(node: ImportFromNode): boolean {
         const typingSymbolsOfInterest = ['Final', 'ClassVar', 'Annotated'];
-        const dataclassesSymbolsOfInterest = ['InitVar'];
+        const dataclassesSymbolsOfInterest = ['InitVar', 'KW_ONLY'];
         const importInfo = AnalyzerNodeInfo.getImportInfo(node.d.module);
 
         AnalyzerNodeInfo.setFlowNode(node, this._currentFlowNode!);
@@ -3718,6 +3850,10 @@ export class Binder extends ParseTreeWalker {
     }
 
     private _bindPossibleTupleNamedTarget(target: ExpressionNode, addedSymbols?: Map<string, Symbol>) {
+        if (this._currentScope.type === ScopeType.Class && !isStaticClassAssignmentTarget(target)) {
+            this._currentScope.hasPotentiallyDynamicSymbolTable = true;
+        }
+
         switch (target.nodeType) {
             case ParseNodeType.Name: {
                 this._bindNameToScope(this._currentScope, target, addedSymbols);
@@ -3752,10 +3888,11 @@ export class Binder extends ParseTreeWalker {
 
     private _addImplicitSymbolToCurrentScope(
         nameValue: string,
-        node: ModuleNode | ClassNode | FunctionNode,
-        type: IntrinsicType
+        node: ModuleNode | ClassNode | FunctionNode | LambdaNode,
+        type: IntrinsicType,
+        isClassMember = true
     ) {
-        const symbol = this._addSymbolToCurrentScope(nameValue, /* isInitiallyUnbound */ false);
+        const symbol = this._addSymbolToCurrentScope(nameValue, /* isInitiallyUnbound */ false, isClassMember);
         if (symbol) {
             symbol.addDeclaration({
                 type: DeclarationType.Intrinsic,
@@ -3772,7 +3909,7 @@ export class Binder extends ParseTreeWalker {
     }
 
     // Adds a new symbol with the specified name if it doesn't already exist.
-    private _addSymbolToCurrentScope(nameValue: string, isInitiallyUnbound: boolean) {
+    private _addSymbolToCurrentScope(nameValue: string, isInitiallyUnbound: boolean, isClassMember = true) {
         let symbol = this._currentScope.lookUpSymbol(nameValue);
 
         if (!symbol) {
@@ -3782,7 +3919,7 @@ export class Binder extends ParseTreeWalker {
                 symbolFlags |= SymbolFlags.InitiallyUnbound;
             }
 
-            if (this._currentScope.type === ScopeType.Class) {
+            if (this._currentScope.type === ScopeType.Class && isClassMember) {
                 symbolFlags |= SymbolFlags.ClassMember;
             }
 
@@ -4074,6 +4211,17 @@ export class Binder extends ParseTreeWalker {
                                 symbolWithScope.symbol.setIsInitVar();
                             }
                         }
+                    }
+
+                    if (this._isDataclassesAnnotation(typeAnnotation, 'KW_ONLY')) {
+                        symbolWithScope.symbol.setIsDataClassKeywordOnly();
+                    } else if (
+                        typeAnnotation.nodeType === ParseNodeType.Index &&
+                        this._isTypingAnnotation(typeAnnotation.d.leftExpr, 'Annotated') &&
+                        typeAnnotation.d.items.length > 0 &&
+                        this._isDataclassesAnnotation(typeAnnotation.d.items[0].d.valueExpr, 'KW_ONLY')
+                    ) {
+                        symbolWithScope.symbol.setIsDataClassKeywordOnly();
                     }
                 }
 
@@ -4399,6 +4547,30 @@ export class Binder extends ParseTreeWalker {
     private _addWildcardImportedModuleAlias(node: ImportFromNode, localSymbol: Symbol, importedSymbol: Symbol) {
         const importedModuleAliasDecl = this._getMultipartModuleAliasDeclaration(importedSymbol);
         if (!importedModuleAliasDecl) {
+            return false;
+        }
+
+        // The imported symbol may be both an implicitly-imported submodule and a
+        // class/function/variable of the same name (e.g. a package that re-exports
+        // a class whose name matches a submodule). In that case the non-module
+        // declaration appears later in the declaration list and "wins" when the
+        // symbol is resolved. Only treat this wildcard re-export as a pure submodule
+        // re-export when the module alias is the symbol's last declaration;
+        // otherwise fall through so a normal alias declaration is created that
+        // resolves to the winning symbol.
+        //
+        // We compare against the raw last declaration (not getLastTypedDeclarationForSymbol)
+        // on purpose: a module alias is a DeclarationType.Alias, which hasTypeForDeclaration
+        // treats as untyped, so it never appears among a symbol's typed declarations.
+        // The evaluator resolves alias symbols (like this one, whose declarations are all
+        // imports) by declaration order, so the last declaration is the relevant "winner"
+        // here. When this guard falls through, the alias created by the caller resolves to
+        // the winning (e.g. class) declaration and intentionally has no submoduleFallback:
+        // the class shadows the submodule, so submodule member access through the
+        // re-exported name is no longer offered. The genuine-submodule case (where the
+        // module alias is the last declaration) keeps its module/submodule behavior.
+        const importedDecls = importedSymbol.getDeclarations();
+        if (importedDecls[importedDecls.length - 1] !== importedModuleAliasDecl) {
             return false;
         }
 

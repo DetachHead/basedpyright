@@ -2,7 +2,7 @@
     "name": "basedpyright",
     "displayName": "basedpyright",
     "description": "a fork of pyright with various type checking improvements, pylance features and more.",
-    "version": "1.1.411",
+    "version": "1.1.412",
     "license": "MIT",
     "author": {
         "name": "detachhead"

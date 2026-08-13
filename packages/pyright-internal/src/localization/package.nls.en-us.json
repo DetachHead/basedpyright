@@ -243,6 +243,7 @@
         "dataClassBaseClassNotFrozen": "A frozen class cannot inherit from a class that is not frozen",
         "dataClassConverterFunction": "Argument of type \"{argType}\" is not a valid converter for field \"{fieldName}\" of type \"{fieldType}\"",
         "dataClassConverterOverloads": "No overloads of \"{funcName}\" are valid converters for field \"{fieldName}\" of type \"{fieldType}\"",
+        "dataClassDuplicateKwOnly": "\"{name}\" is a duplicate KW_ONLY separator; only one is allowed within a dataclass",
         "dataClassFieldInheritedDefault": "\"{fieldName}\" overrides a field of the same name but is missing a default value",
         "dataClassFieldWithDefault": "Fields without default values cannot appear after fields with default values",
         "dataClassFieldWithPrivateName": "Dataclass field cannot use private name",
@@ -311,6 +312,19 @@
         "dictInAnnotation": "Dictionary expression not allowed in type expression",
         "dictKeyValuePairs": "Dictionary entries must contain key/value pairs",
         "dictUnpackIsNotMapping": "Expected mapping for dictionary unpack operator",
+        "disjointBaseFunction": {
+            "message": "@disjoint_base cannot be applied to a function",
+            "comment": "{Locked='@disjoint_base'}"
+        },
+        "disjointBaseIncompatible": "Base classes have incompatible disjoint bases: {bases}",
+        "disjointBaseProtocol": {
+            "message": "@disjoint_base cannot be applied to a Protocol class",
+            "comment": "{Locked='@disjoint_base','Protocol'}"
+        },
+        "disjointBaseTypedDict": {
+            "message": "@disjoint_base cannot be applied to a TypedDict class",
+            "comment": "{Locked='@disjoint_base','TypedDict'}"
+        },
         "dunderAllSymbolNotPresent": {
             "message": "\"{name}\" is specified in __all__ but is not present in module",
             "comment": "{Locked='__all__'}"

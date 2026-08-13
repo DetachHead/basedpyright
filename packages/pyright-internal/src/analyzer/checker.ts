@@ -145,6 +145,7 @@ import {
     EnumLiteral,
     FunctionParam,
     FunctionType,
+    FunctionTypeFlags,
     ModuleType,
     OverloadedType,
     Type,
@@ -372,6 +373,8 @@ export class Checker extends ParseTreeWalker {
 
             this._validateOverloadDecoratorConsistency(classTypeResult.classType);
 
+            this._validateDisjointBaseClass(classTypeResult.classType, node.d.name);
+
             this._validateMultipleInheritanceBaseClasses(classTypeResult.classType, node.d.name);
 
             this._validateMultipleInheritanceCompatibility(classTypeResult.classType, node.d.name);
@@ -429,6 +432,15 @@ export class Checker extends ParseTreeWalker {
             const keywordNames = new Set<string>();
             const paramDetails = getParamListDetails(functionTypeResult.functionType);
 
+            // If this function is the implementation of an overloaded function,
+            // its signature is ignored by the type checker (only the @overload
+            // signatures define the function's type). Per the typing spec, the
+            // implementation's parameters are allowed to remain unannotated, so
+            // skip the unknown/missing parameter type checks for it.
+            const isOverloadImplementation =
+                isOverloaded(functionTypeResult.decoratedType) &&
+                !FunctionType.isOverloaded(functionTypeResult.functionType);
+
             // Report any unknown or missing parameter types.
             node.d.params.forEach((param, index) => {
                 if (param.d.name) {
@@ -473,8 +485,8 @@ export class Checker extends ParseTreeWalker {
                         const paramType = FunctionType.getParamType(functionTypeResult.functionType, paramIndex);
 
                         if (
-                            this._fileInfo.diagnosticRuleSet.reportUnknownParameterType !== 'none' ||
-                            this._fileInfo.diagnosticRuleSet.reportAny !== 'none'
+                            !isOverloadImplementation && (this._fileInfo.diagnosticRuleSet.reportUnknownParameterType !== 'none' ||
+                            this._fileInfo.diagnosticRuleSet.reportAny !== 'none')
                         ) {
                             if (
                                 isUnknown(paramType) ||
@@ -521,7 +533,11 @@ export class Checker extends ParseTreeWalker {
                             }
                         }
 
-                        if (!hasAnnotation && this._fileInfo.diagnosticRuleSet.reportMissingParameterType !== 'none') {
+                        if (
+                            !isOverloadImplementation &&
+                            !hasAnnotation &&
+                            this._fileInfo.diagnosticRuleSet.reportMissingParameterType !== 'none'
+                        ) {
                             this._evaluator.addDiagnostic(
                                 DiagnosticRule.reportMissingParameterType,
                                 LocMessage.paramAnnotationMissing().format({ name: param.d.name.d.value }),
@@ -4679,32 +4695,59 @@ export class Checker extends ParseTreeWalker {
         });
     }
 
-    // Verifies the rules specified in PEP 589 about TypedDict classes.
-    // They cannot have statements other than type annotations, doc
-    // strings, and "pass" statements or ellipses.
+    // Verifies the rules specified for TypedDict class bodies.
+    // They cannot have statements other than type annotations, doc strings,
+    // "pass" statements, ellipses, and statically evaluable if statements.
     private _validateTypedDictClassSuite(suiteNode: SuiteNode) {
         const emitBadStatementError = (node: ParseNode) => {
             this._evaluator.addDiagnostic(DiagnosticRule.reportGeneralTypeIssues, LocMessage.typedDictBadVar(), node);
         };
 
-        suiteNode.d.statements.forEach((statement) => {
-            if (!AnalyzerNodeInfo.isCodeUnreachable(statement)) {
-                if (statement.nodeType === ParseNodeType.StatementList) {
-                    for (const substatement of statement.d.statements) {
-                        if (
-                            substatement.nodeType !== ParseNodeType.TypeAnnotation &&
-                            substatement.nodeType !== ParseNodeType.Ellipsis &&
-                            substatement.nodeType !== ParseNodeType.StringList &&
-                            substatement.nodeType !== ParseNodeType.Pass
-                        ) {
-                            emitBadStatementError(substatement);
-                        }
-                    }
-                } else {
-                    emitBadStatementError(statement);
-                }
+        function validateStatement(statement: StatementNode) {
+            if (AnalyzerNodeInfo.isCodeUnreachable(statement)) {
+                return;
             }
-        });
+
+            if (statement.nodeType === ParseNodeType.StatementList) {
+                for (const substatement of statement.d.statements) {
+                    if (
+                        substatement.nodeType !== ParseNodeType.TypeAnnotation &&
+                        substatement.nodeType !== ParseNodeType.Ellipsis &&
+                        substatement.nodeType !== ParseNodeType.StringList &&
+                        substatement.nodeType !== ParseNodeType.Pass
+                    ) {
+                        emitBadStatementError(substatement);
+                    }
+                }
+
+                return;
+            }
+
+            if (statement.nodeType === ParseNodeType.If) {
+                const conditionValue = AnalyzerNodeInfo.getStaticConditionValue(statement);
+                if (conditionValue === undefined) {
+                    emitBadStatementError(statement);
+                    return;
+                }
+
+                const reachableSuite = conditionValue ? statement.d.ifSuite : statement.d.elseSuite;
+                if (reachableSuite?.nodeType === ParseNodeType.If) {
+                    validateStatement(reachableSuite);
+                } else if (reachableSuite) {
+                    validateSuite(reachableSuite);
+                }
+
+                return;
+            }
+
+            emitBadStatementError(statement);
+        }
+
+        function validateSuite(suite: SuiteNode) {
+            suite.d.statements.forEach((statement) => validateStatement(statement));
+        }
+
+        validateSuite(suiteNode);
     }
 
     private _validateTypeGuardFunction(node: FunctionNode, functionType: FunctionType, isMethod: boolean) {
@@ -5774,6 +5817,52 @@ export class Checker extends ParseTreeWalker {
         }
     }
 
+    // Verifies that a class has a unique most-derived disjoint base.
+    private _validateDisjointBaseClass(classType: ClassType, errorNode: ParseNode) {
+        if (classType.shared.baseClasses.length < 2) {
+            return;
+        }
+
+        const candidates: ClassType[] = [];
+
+        for (const baseClass of classType.shared.baseClasses) {
+            if (!isInstantiableClass(baseClass)) {
+                // An unknown base may introduce an unknown disjoint base, but it
+                // cannot make two already-incompatible known bases compatible,
+                // so keep collecting the known candidates.
+                continue;
+            }
+
+            const candidate = ClassType.getDisjointBase(baseClass);
+            if (!candidate) {
+                // The base class is invalid or its disjoint base is unknown; an
+                // unknown disjoint base cannot relate two otherwise-incompatible
+                // known candidates, so keep collecting the known candidates.
+                continue;
+            }
+
+            if (!candidates.some((existingCandidate) => ClassType.isSameGenericClass(existingCandidate, candidate))) {
+                candidates.push(candidate);
+            }
+        }
+
+        if (candidates.length > 1 && !ClassType.getMostDerivedDisjointBase(candidates)) {
+            this._evaluator.addDiagnostic(
+                DiagnosticRule.reportGeneralTypeIssues,
+                LocMessage.disjointBaseIncompatible().format({
+                    // `object` is a disjoint base but is compatible with every
+                    // other disjoint base, so including it in the reported names
+                    // would be misleading. Filter it out.
+                    bases: candidates
+                        .filter((candidate) => !ClassType.isBuiltIn(candidate, 'object'))
+                        .map((candidate) => `"${candidate.shared.name}"`)
+                        .join(', '),
+                }),
+                errorNode
+            );
+        }
+    }
+
     /**
      * gets the actual base classes (excluding fake base classes like `Generic` and `Protocol`)
      */
@@ -6044,10 +6133,31 @@ export class Checker extends ParseTreeWalker {
             const diagAddendum = new DiagnosticAddendum();
 
             if (isFunctionOrOverloaded(overrideType)) {
-                if (
-                    !this._evaluator.validateOverrideMethod(
+                // If one base defines the member as a plain callable variable and a
+                // sibling base overrides it with a real method, bind the method's "self"
+                // so the two are compared as plain callables (mirrors the single-base
+                // override handling in `_validateBaseClassOverride`). This is
+                // load-bearing for parametered callables (e.g. `Callable[[int], None]`
+                // vs `def cb(self, value: int)`): without binding, the method's extra
+                // "self" causes a spurious arity mismatch. See the `DiamondParam*`
+                // samples in methodOverride7.py.
+                const childClassSelf = ClassType.cloneAsInstance(
+                    selfSpecializeClass(childClassType, { useBoundTypeVars: true })
+                );
+                const { baseType: overriddenTypeForComparison, overrideType: overrideTypeForComparison } =
+                    this._getCallableVariableOverrideComparison(
+                        overriddenClassAndSymbol.symbol,
+                        overrideClassAndSymbol.symbol,
                         overriddenType,
                         overrideType,
+                        childClassType,
+                        childClassSelf
+                    );
+
+                if (
+                    !this._evaluator.validateOverrideMethod(
+                        overriddenTypeForComparison,
+                        overrideTypeForComparison,
                         /* baseClass */ undefined,
                         diagAddendum,
                         /* enforceParamNameMatch */ true
@@ -6233,7 +6343,7 @@ export class Checker extends ParseTreeWalker {
         memberName: string,
         errorNode: ParseNode
     ) {
-        const propMethodInfo: [string, (c: ClassType) => FunctionType | undefined][] = [
+        const propMethodInfo: [string, (c: ClassType) => FunctionType | OverloadedType | undefined][] = [
             ['fget', (c) => c.priv.fgetInfo?.methodType],
             ['fset', (c) => c.priv.fsetInfo?.methodType],
             ['fdel', (c) => c.priv.fdelInfo?.methodType],
@@ -6253,6 +6363,10 @@ export class Checker extends ParseTreeWalker {
                     this._evaluator.getTypeClassType()
                 );
 
+                // Overloaded accessors (e.g. overloaded property setters) are
+                // represented as an OverloadedType rather than a FunctionType.
+                // Override-compatibility checking for overloaded accessors is not
+                // yet performed; only single-function accessors are validated here.
                 if (isFunction(baseClassMethodType)) {
                     if (!subclassPropMethod) {
                         // The method is missing.
@@ -6699,7 +6813,7 @@ export class Checker extends ParseTreeWalker {
                 overrideFunction = impl;
             }
         } else if (isClassInstance(overrideType) && ClassType.isPropertyClass(overrideType)) {
-            if (overrideType.priv.fgetInfo) {
+            if (overrideType.priv.fgetInfo && isFunction(overrideType.priv.fgetInfo.methodType)) {
                 overrideFunction = overrideType.priv.fgetInfo.methodType;
             }
         }
@@ -6757,7 +6871,7 @@ export class Checker extends ParseTreeWalker {
                 }
             }
         } else if (isClassInstance(overrideType) && ClassType.isPropertyClass(overrideType)) {
-            if (overrideType.priv.fgetInfo) {
+            if (overrideType.priv.fgetInfo && isFunction(overrideType.priv.fgetInfo.methodType)) {
                 overrideFunction = overrideType.priv.fgetInfo.methodType;
             }
         }
@@ -6778,6 +6892,89 @@ export class Checker extends ParseTreeWalker {
             LocMessage.overriddenMethodNotFound().format({ name: funcNode.d.name.d.value }),
             funcNode.d.name
         );
+    }
+
+    // If a base class member is a plain callable variable (e.g. `x: Callable[..., None]`)
+    // and the override is a real method, accessing the override on an instance binds its
+    // "self" parameter, leaving a signature that should be compared against the base
+    // callable. This helper detects that asymmetry and returns adjusted types: the bound
+    // override and the base callable, both marked static so the override comparison does
+    // not skip the first parameter as an unbound "self". All other cases are returned
+    // unchanged. This matches the behavior of other type checkers, which allow overriding
+    // a callable attribute with a method.
+    //
+    // Note: this validates only the read direction (the bound override is compatible with
+    // the base callable). A method is effectively read-only, so this intentionally does not
+    // attempt to preserve assignability of the mutable callable attribute; that asymmetry
+    // matches other type checkers and does not trigger `reportIncompatibleVariableOverride`
+    // because the override is a function, not a variable.
+    private _getCallableVariableOverrideComparison(
+        baseSymbol: Symbol,
+        overrideSymbol: Symbol,
+        baseType: Type,
+        overrideType: FunctionType | OverloadedType,
+        childClassType: ClassType,
+        childClassSelf: ClassType
+    ): { baseType: Type; overrideType: FunctionType | OverloadedType } {
+        const baseDecls = baseSymbol.getDeclarations();
+        const baseIsCallableVariable =
+            baseDecls.length > 0 && baseDecls.every((decl) => decl.type === DeclarationType.Variable);
+        const overrideIsMethod = overrideSymbol
+            .getDeclarations()
+            .some((decl) => decl.type === DeclarationType.Function);
+
+        if (!baseIsCallableVariable || !overrideIsMethod) {
+            return { baseType, overrideType };
+        }
+
+        const boundOverrideType = this._evaluator.bindFunctionToClassOrObject(
+            childClassSelf,
+            overrideType,
+            childClassType
+        );
+
+        if (!boundOverrideType) {
+            return { baseType, overrideType };
+        }
+
+        // Mark both the base callable and the bound override as static so the
+        // override comparison does not skip the first parameter as an unbound
+        // "self" (see the `i === 0` self/cls skip in typeEvaluator's
+        // `validateOverrideMethodInternal`). Without this, the bound override
+        // keeps its instance-method flag and its first real parameter would be
+        // silently dropped during the comparison.
+        const staticBaseType = isFunction(baseType) ? this._markFunctionStatic(baseType) : baseType;
+
+        if (isFunction(boundOverrideType)) {
+            return {
+                baseType: staticBaseType,
+                overrideType: this._markFunctionStatic(boundOverrideType),
+            };
+        }
+
+        if (isOverloaded(boundOverrideType)) {
+            // An overloaded method binds to an overloaded callable. Apply the
+            // same static normalization to every overload (and the
+            // implementation, if present) so an incompatible first parameter in
+            // an overloaded override is still caught rather than skipped as
+            // "self".
+            const staticOverloads = OverloadedType.getOverloads(boundOverrideType).map((overload) =>
+                this._markFunctionStatic(overload)
+            );
+            const impl = OverloadedType.getImplementation(boundOverrideType);
+            const staticImpl = impl && isFunction(impl) ? this._markFunctionStatic(impl) : impl;
+
+            return {
+                baseType: staticBaseType,
+                overrideType: OverloadedType.create(staticOverloads, staticImpl),
+            };
+        }
+
+        return { baseType, overrideType: boundOverrideType };
+    }
+
+    private _markFunctionStatic(functionType: FunctionType): FunctionType {
+        return FunctionType.cloneWithNewFlags(functionType, functionType.shared.flags | FunctionTypeFlags.StaticMethod);
     }
 
     private _validateBaseClassOverride(
@@ -6906,10 +7103,27 @@ export class Checker extends ParseTreeWalker {
                 // false positives.
                 const enforceParamNameMatch = !SymbolNameUtils.isDunderName(memberName);
 
-                if (
-                    this._evaluator.validateOverrideMethod(
+                // If the base class member is a plain callable variable
+                // (e.g. `x: Callable[..., None]`) rather than an actual method,
+                // bind the override method's "self" so the two are compared as
+                // plain callables. The declaration scans needed to detect this
+                // are computed inside this helper, so the common method-vs-method
+                // path and the exempt/private/TypedDict early-returns above pay
+                // nothing extra.
+                const { baseType: baseTypeForComparison, overrideType: overrideTypeForComparison } =
+                    this._getCallableVariableOverrideComparison(
+                        baseClassAndSymbol.symbol,
+                        overrideSymbol,
                         baseType,
                         overrideType,
+                        childClassType,
+                        childClassSelf
+                    );
+
+                if (
+                    this._evaluator.validateOverrideMethod(
+                        baseTypeForComparison,
+                        overrideTypeForComparison,
                         childClassType,
                         diagAddendum,
                         enforceParamNameMatch
@@ -7222,7 +7436,7 @@ export class Checker extends ParseTreeWalker {
         overrideSymbol: Symbol,
         memberName: string
     ) {
-        const propMethodInfo: [string, (c: ClassType) => FunctionType | undefined][] = [
+        const propMethodInfo: [string, (c: ClassType) => FunctionType | OverloadedType | undefined][] = [
             ['fget', (c) => c.priv.fgetInfo?.methodType],
             ['fset', (c) => c.priv.fsetInfo?.methodType],
             ['fdel', (c) => c.priv.fdelInfo?.methodType],
@@ -7242,6 +7456,10 @@ export class Checker extends ParseTreeWalker {
                     this._evaluator.getTypeClassType()
                 );
 
+                // Overloaded accessors (e.g. overloaded property setters) are
+                // represented as an OverloadedType rather than a FunctionType.
+                // Override-compatibility checking for overloaded accessors is not
+                // yet performed; skip them rather than misreporting.
                 if (!isFunction(baseClassMethodType)) {
                     return;
                 }

@@ -872,7 +872,7 @@ test('Classes1', () => {
 test('Classes3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['classes3.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 6);
 });
 
 test('Classes4', () => {
@@ -1003,6 +1003,14 @@ test('MethodOverride6', () => {
     TestUtils.validateResults(analysisResults2, 3);
 });
 
+test('MethodOverride7', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+
+    configOptions.diagnosticRuleSet.reportIncompatibleMethodOverride = 'error';
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['methodOverride7.py'], configOptions);
+    TestUtils.validateResults(analysisResults, 4);
+});
+
 test('Enum1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enum1.py']);
 
@@ -1091,6 +1099,18 @@ test('Enum14', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enum14.py']);
 
     TestUtils.validateResults(analysisResults, 3);
+});
+
+test('Enum15', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enum15.py']);
+
+    TestUtils.validateResults(analysisResults, 31);
+});
+
+test('Enum16', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enum16.py']);
+
+    TestUtils.validateResults(analysisResults, 38);
 });
 
 test('EnumAuto1', () => {
