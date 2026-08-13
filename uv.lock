@@ -212,6 +212,7 @@ dev = [
     { name = "mkdocs-awesome-pages-plugin", version = "2.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8.1'" },
     { name = "mkdocs-macros-plugin" },
     { name = "mkdocs-material" },
+    { name = "nodejs-wheel" },
     { name = "pdm-backend", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pdm-backend", version = "2.4.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "pylint", version = "3.2.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
@@ -250,6 +251,7 @@ dev = [
     { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.9.2" },
     { name = "mkdocs-macros-plugin", specifier = ">=1.2.0" },
     { name = "mkdocs-material", specifier = ">=9.5.37" },
+    { name = "nodejs-wheel", specifier = ">=24.14.1,<25" },
     { name = "pdm-backend", specifier = ">=2.3.0" },
     { name = "pylint", specifier = ">=3.0.0a7" },
     { name = "pytest", specifier = ">=8.2.2" },
@@ -1577,6 +1579,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e2/a9/a0c57aee75f77794adaf35322f8b6404cbd0f89ad45c87197a937764b7d0/natsort-8.4.0.tar.gz", hash = "sha256:45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581", size = 76575, upload-time = "2023-06-20T04:17:19.925Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl", hash = "sha256:4732914fb471f56b5cce04d7bae6f164a592c7712e1c85f9ef585e197299521c", size = 38268, upload-time = "2023-06-20T04:17:17.522Z" },
+]
+
+[[package]]
+name = "nodejs-wheel"
+version = "24.16.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nodejs-wheel-binaries" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/02/ea/69c332dde5ea3596492afe35748cdd07437a7d1f5cb251f61868193df539/nodejs_wheel-24.16.0.tar.gz", hash = "sha256:23c75d52ad1c3274c15045e80b1a898c1f5b13ac66d09d15514939125869fb41", size = 2966, upload-time = "2026-05-30T16:52:08.875Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/d1/e595c9e360c216ea1422e7b701caf4c7e841d91349c146f92d2bc885ab8a/nodejs_wheel-24.16.0-py3-none-any.whl", hash = "sha256:0d20f5651d0c93bb951a013c31de4f58901be53287010438bb9757cdec198529", size = 3986, upload-time = "2026-05-30T16:51:37.837Z" },
 ]
 
 [[package]]
