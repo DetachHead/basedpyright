@@ -485,8 +485,9 @@ export class Checker extends ParseTreeWalker {
                         const paramType = FunctionType.getParamType(functionTypeResult.functionType, paramIndex);
 
                         if (
-                            !isOverloadImplementation && (this._fileInfo.diagnosticRuleSet.reportUnknownParameterType !== 'none' ||
-                            this._fileInfo.diagnosticRuleSet.reportAny !== 'none')
+                            !isOverloadImplementation &&
+                            (this._fileInfo.diagnosticRuleSet.reportUnknownParameterType !== 'none' ||
+                                this._fileInfo.diagnosticRuleSet.reportAny !== 'none')
                         ) {
                             if (
                                 isUnknown(paramType) ||

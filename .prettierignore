@@ -14,6 +14,7 @@ docs/development/internals.md
 docs/getting_started/**/*.md
 docs/usage/**/*.md
 .github/agents/**/*.md
+.github/plans/**/*.md
 .github/copilot-instructions.md
 architecture/**/*
 

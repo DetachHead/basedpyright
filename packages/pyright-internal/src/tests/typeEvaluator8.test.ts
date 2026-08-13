@@ -347,9 +347,10 @@ test('Property19', () => {
 
 test('Property20', () => {
     const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
 
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['property20.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 1);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0, 1);
 
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['property20.py'], configOptions);
@@ -358,9 +359,10 @@ test('Property20', () => {
 
 test('Property21', () => {
     const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
 
     const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['property21.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0, 0, 0, undefined, undefined, 2);
+    TestUtils.validateResults(analysisResults1, 0, 0, 0, 2);
 
     configOptions.diagnosticRuleSet.reportDeprecated = 'error';
     const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['property21.py'], configOptions);

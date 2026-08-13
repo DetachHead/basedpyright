@@ -37,6 +37,7 @@ import {
     ModuleType,
     OverloadedType,
     Type,
+    TypeCategory,
     TypeVarType,
     UnknownType,
 } from './types';
@@ -127,7 +128,10 @@ export function clonePropertyWithSetter(
     prop = prop as ClassType;
 
     // if it's an abstract property, mark the parameter as accessed
-    if (prop.priv?.fgetInfo?.methodType && FunctionType.isAbstractMethod(prop.priv.fgetInfo.methodType)) {
+    if (
+        prop.priv?.fgetInfo?.methodType.category === TypeCategory.Function &&
+        FunctionType.isAbstractMethod(prop.priv.fgetInfo.methodType)
+    ) {
         // first parameter is self, there should only ever be one other parameter.
         const setterParam = errorNode.d.params[1];
         if (setterParam) {
