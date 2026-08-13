@@ -193,9 +193,23 @@ max-line-length = 200
 [tool.basedpyright]
 pythonVersion = "3.8"
 # https://github.com/DetachHead/basedpyright/issues/31
-ignore = ["basedpyright/dist", "packages", "docstubs", "node_modules", ".venv"]
-exclude = ["basedpyright/dist", "packages", "docstubs", "node_modules", ".venv"]
-reportImplicitStringConcatenation = false                                        # conflicts with ruff formatter
+ignore = [
+    "basedpyright/dist",
+    "packages",
+    "docstubs",
+    "node_modules",
+    ".venv",
+    "mypy_primer/build",
+]
+exclude = [
+    "basedpyright/dist",
+    "packages",
+    "docstubs",
+    "node_modules",
+    ".venv",
+    "mypy_primer/build",
+]
+reportImplicitStringConcatenation = false # conflicts with ruff formatter
 reportIncompatibleUnannotatedOverride = 'error'
 reportUnannotatedClassAttribute = 'none'
 
