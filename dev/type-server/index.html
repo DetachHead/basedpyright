@@ -8,31 +8,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.basedpyright.com/dev/usage/type-stubs/">
+        <link rel="canonical" href="https://docs.basedpyright.com/dev/type-server/">
       
       
-        <link rel="prev" href="../type-inference/">
+        <link rel="prev" href="../installation/prek-hook/">
       
       
-        <link rel="next" href="../typed-libraries/">
+        <link rel="next" href="../configuration/command-line/">
       
       
         
       
       
-      <link rel="icon" href="../../img/favicon.ico">
+      <link rel="icon" href="../img/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Type stubs - basedpyright</title>
+        <title>Pyright Type Server - basedpyright</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#type-stub-files" class="md-skip">
+        <a href="#pyright-type-server" class="md-skip">
           Skip to content
         </a>
       
@@ -98,9 +98,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="basedpyright" class="md-header__button md-logo" aria-label="basedpyright" data-md-component="logo">
+    <a href=".." title="basedpyright" class="md-header__button md-logo" aria-label="basedpyright" data-md-component="logo">
       
-  <img src="../../img/logo_black.png" alt="logo">
+  <img src="../img/logo_black.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Type stubs
+              Pyright Type Server
             
           </span>
         </div>
@@ -243,9 +243,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="basedpyright" class="md-nav__button md-logo" aria-label="basedpyright" data-md-component="logo">
+    <a href=".." title="basedpyright" class="md-nav__button md-logo" aria-label="basedpyright" data-md-component="logo">
       
-  <img src="../../img/logo_black.png" alt="logo">
+  <img src="../img/logo_black.png" alt="logo">
 
     </a>
     basedpyright
@@ -272,7 +272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -374,7 +374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/baseline/" class="md-nav__link">
+      <a href="../benefits-over-pyright/baseline/" class="md-nav__link">
         
   
   
@@ -402,7 +402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/better-defaults/" class="md-nav__link">
+      <a href="../benefits-over-pyright/better-defaults/" class="md-nav__link">
         
   
   
@@ -430,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/dataclass-transform/" class="md-nav__link">
+      <a href="../benefits-over-pyright/dataclass-transform/" class="md-nav__link">
         
   
   
@@ -458,7 +458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
+      <a href="../benefits-over-pyright/errors-on-invalid-configuration/" class="md-nav__link">
         
   
   
@@ -486,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
+      <a href="../benefits-over-pyright/fixes-for-rules/" class="md-nav__link">
         
   
   
@@ -514,7 +514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
+      <a href="../benefits-over-pyright/improved-ci-integration/" class="md-nav__link">
         
   
   
@@ -542,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-generic-narrowing/" class="md-nav__link">
+      <a href="../benefits-over-pyright/improved-generic-narrowing/" class="md-nav__link">
         
   
   
@@ -570,7 +570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-reportUninitializedInstanceVariable/" class="md-nav__link">
+      <a href="../benefits-over-pyright/improved-reportUninitializedInstanceVariable/" class="md-nav__link">
         
   
   
@@ -598,7 +598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/improved-translations/" class="md-nav__link">
+      <a href="../benefits-over-pyright/improved-translations/" class="md-nav__link">
         
   
   
@@ -626,7 +626,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/language-server-improvements/" class="md-nav__link">
+      <a href="../benefits-over-pyright/language-server-improvements/" class="md-nav__link">
         
   
   
@@ -654,7 +654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
+      <a href="../benefits-over-pyright/new-diagnostic-rules/" class="md-nav__link">
         
   
   
@@ -682,7 +682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pylance-features/" class="md-nav__link">
+      <a href="../benefits-over-pyright/pylance-features/" class="md-nav__link">
         
   
   
@@ -710,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
+      <a href="../benefits-over-pyright/pypi-package-vscode-pinning/" class="md-nav__link">
         
   
   
@@ -800,7 +800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/command-line-and-language-server/" class="md-nav__link">
+      <a href="../installation/command-line-and-language-server/" class="md-nav__link">
         
   
   
@@ -828,7 +828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/ides/" class="md-nav__link">
+      <a href="../installation/ides/" class="md-nav__link">
         
   
   
@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/prek-hook/" class="md-nav__link">
+      <a href="../installation/prek-hook/" class="md-nav__link">
         
   
   
@@ -888,10 +888,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../type-server/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pyright Type Server
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -907,6 +934,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-the-type-server-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is the Type Server Protocol?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-type-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the type server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notebook-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notebook support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#virtual-file-redirection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Virtual file redirection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-pyright" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to Pyright
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Relationship to Pyright">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-layout-two-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code layout: two packages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -977,7 +1096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/command-line/" class="md-nav__link">
+      <a href="../configuration/command-line/" class="md-nav__link">
         
   
   
@@ -1005,7 +1124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/comments/" class="md-nav__link">
+      <a href="../configuration/comments/" class="md-nav__link">
         
   
   
@@ -1033,7 +1152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/config-files/" class="md-nav__link">
+      <a href="../configuration/config-files/" class="md-nav__link">
         
   
   
@@ -1061,7 +1180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/environment-variables/" class="md-nav__link">
+      <a href="../configuration/environment-variables/" class="md-nav__link">
         
   
   
@@ -1089,7 +1208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/language-server-settings/" class="md-nav__link">
+      <a href="../configuration/language-server-settings/" class="md-nav__link">
         
   
   
@@ -1179,7 +1298,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting_started/features/" class="md-nav__link">
+      <a href="../getting_started/features/" class="md-nav__link">
         
   
   
@@ -1207,7 +1326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting_started/getting-started/" class="md-nav__link">
+      <a href="../getting_started/getting-started/" class="md-nav__link">
         
   
   
@@ -1235,7 +1354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting_started/type-concepts/" class="md-nav__link">
+      <a href="../getting_started/type-concepts/" class="md-nav__link">
         
   
   
@@ -1267,10 +1386,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1296,11 +1413,11 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
@@ -1321,7 +1438,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1339,7 +1456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../builtins/" class="md-nav__link">
+      <a href="../usage/builtins/" class="md-nav__link">
         
   
   
@@ -1367,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../commands/" class="md-nav__link">
+      <a href="../usage/commands/" class="md-nav__link">
         
   
   
@@ -1395,7 +1512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../import-resolution/" class="md-nav__link">
+      <a href="../usage/import-resolution/" class="md-nav__link">
         
   
   
@@ -1423,7 +1540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../import-statements/" class="md-nav__link">
+      <a href="../usage/import-statements/" class="md-nav__link">
         
   
   
@@ -1451,7 +1568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../mypy-comparison/" class="md-nav__link">
+      <a href="../usage/mypy-comparison/" class="md-nav__link">
         
   
   
@@ -1479,7 +1596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../type-concepts-advanced/" class="md-nav__link">
+      <a href="../usage/type-concepts-advanced/" class="md-nav__link">
         
   
   
@@ -1507,7 +1624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../type-inference/" class="md-nav__link">
+      <a href="../usage/type-inference/" class="md-nav__link">
         
   
   
@@ -1532,35 +1649,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Type stubs
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../usage/type-stubs/" class="md-nav__link">
         
   
   
@@ -1576,102 +1668,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#type-stub-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type Stub Files
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Type Stub Files">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#importance-of-type-stub-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Importance of Type Stub Files
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Generating Type Stubs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs-in-your-ide" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs in your IDE
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs-from-command-line" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs from Command Line
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cleaning-up-generated-type-stubs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cleaning Up Generated Type Stubs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1684,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../typed-libraries/" class="md-nav__link">
+      <a href="../usage/typed-libraries/" class="md-nav__link">
         
   
   
@@ -1776,7 +1772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/contributing/" class="md-nav__link">
+      <a href="../development/contributing/" class="md-nav__link">
         
   
   
@@ -1804,7 +1800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/internals/" class="md-nav__link">
+      <a href="../development/internals/" class="md-nav__link">
         
   
   
@@ -1832,7 +1828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/localization/" class="md-nav__link">
+      <a href="../development/localization/" class="md-nav__link">
         
   
   
@@ -1860,7 +1856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/upstream/" class="md-nav__link">
+      <a href="../development/upstream/" class="md-nav__link">
         
   
   
@@ -1895,7 +1891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../shoutouts/" class="md-nav__link">
+      <a href="../shoutouts/" class="md-nav__link">
         
   
   
@@ -1932,6 +1928,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1940,75 +1938,69 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#type-stub-files" class="md-nav__link">
+  <a href="#what-is-the-type-server-protocol" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type Stub Files
+        What is the Type Server Protocol?
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Type Stub Files">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-type-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the type server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notebook-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notebook support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#virtual-file-redirection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Virtual file redirection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-pyright" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to Pyright
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Relationship to Pyright">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#importance-of-type-stub-files" class="md-nav__link">
+  <a href="#code-layout-two-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Importance of Type Stub Files
+        Code layout: two packages
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Generating Type Stubs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs-in-your-ide" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs in your IDE
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-type-stubs-from-command-line" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Generating Type Stubs from Command Line
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cleaning-up-generated-type-stubs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cleaning Up Generated Type Stubs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2037,59 +2029,57 @@
   
 
 
-  <h1>Type stubs</h1>
-
-<h2 id="type-stub-files">Type Stub Files</h2>
-<p>Type stubs are “.pyi” files that specify the public interface for a library. They use a variant of the Python syntax that allows for “...” to be used in place of any implementation details. Type stubs define the public contract for the library.</p>
-<h3 id="importance-of-type-stub-files">Importance of Type Stub Files</h3>
-<p>Regardless of the search path, Pyright always attempts to resolve an import with a type stub (“.pyi”) file before falling back to a python source (“.py”) file. If a type stub cannot be located for an external import, Pyright will try to use inline type information if the module is part of a package that contains a “py.typed” file (defined in <a href="https://www.python.org/dev/peps/pep-0561/">PEP 561</a>). If the module is part of a package that doesn’t contain a “py.typed” file, Pyright will treat all of the symbols imported from these modules as having type “Unknown”, and wildcard imports (of the form <code>from foo import *</code>) will not populate the module’s namespace with specific symbol names.</p>
-<p>If <code>reportMissingTypeStubs</code> reports a third-party package that already contains type annotations in its source files, the package may be missing the <code>py.typed</code> marker file. Adding that marker is the package maintainer's way to opt in to PEP 561 inline typing. If you cannot update the package, use a type stub package or a custom stub as described below.</p>
-<p>Why does Pyright not attempt (by default) to determine types from imported python sources? There are several reasons.</p>
-<ol>
-<li>Imported libraries can be quite large, so analyzing them can require significant time and computation.</li>
-<li>Some libraries are thin shims on top of native (C++) libraries. Little or no type information would be inferable in these cases.</li>
-<li>Some libraries override Python’s default loader logic. Static analysis is not possible in these cases.</li>
-<li>Type information inferred from source files is often of low value because many types cannot be inferred correctly. Even if concrete types can be inferred, generic type definitions cannot.</li>
-<li>Type analysis would expose all symbols from an imported module, even those that are not meant to be exposed by the author. Unlike many other languages, Python offers no way of differentiating between a symbol that is meant to be exported and one that isn’t.</li>
-</ol>
-<p>If you’re serious about static type checking for your Python source base, it’s highly recommended that you consume “py.typed” packages or use type stub files for all external imports. If you are unable to find a type stub for a particular library, the recommended approach is to create a custom type stub file that defines the portion of that module’s interface used by your code. More library maintainers have started to provide inlined types or type stub files.</p>
-<h3 id="generating-type-stubs">Generating Type Stubs</h3>
-<p>If you use only a few classes, methods or functions within a library, writing a type stub file by hand is feasible. For large libraries, this can become tedious and error-prone. Pyright can generate “draft” versions of type stub files for you.</p>
-<p>To generate a type stub file from within VS Code, enable the reportMissingTypeStubs” setting in your pyrightconfig.json file or by adding a comment <code># pyright: reportMissingTypeStubs=true</code> to individual source files. Make sure you have the target library installed in the python environment that pyright is configured to use for import resolution. Optionally specify a “stubPath” in your pyrightconfig.json file. This is where pyright will generate your type stub files. By default, the stubPath is set to "./typings".</p>
-<h4 id="generating-type-stubs-in-your-ide">Generating Type Stubs in your IDE</h4>
-<p>If “reportMissingTypeStubs” is enabled, pyright will highlight any imports that have no type stub. Hover over the error message, and you will see a “Quick Fix” link. Clicking on this link will reveal a popup menu item titled “Create Type Stub For XXX”. The example below shows a missing typestub for the <code>django</code> library.</p>
-<p><img alt="Pyright" src="../CreateTypeStub1.png" /></p>
-<p>Click on the menu item to create the type stub. Depending on the size of the library, it may take pyright tens of seconds to analyze the library and generate type stub files. Once complete, you should see a message in VS Code indicating success or failure.</p>
-<p><img alt="Pyright" src="../CreateTypeStub2.png" /></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>these instructions are specific to VScode, but this functionality is also available in <a href="../../installation/ides/">other supported editors</a> as well, since this functionality is built into <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction">the language server</a>.</p>
+<h1 id="pyright-type-server">Pyright Type Server</h1>
+<div class="admonition danger">
+<p class="admonition-title">Not supported in basedpyright</p>
+<p>The "type server protocol" is a desperate attempt from microsoft to prevent pylance from becoming obsolete by outsourcing its type checking to other language servers like basedpyright, <a href="https://docs.astral.sh/ty/">ty</a> or <a href="https://pyrefly.org/">pyrefly</a> -- while continuing to keep certain language server features exclusive to pylance.</p>
+<p>This protocol benefits nobody except microsoft. It adds needless complexity to any language server that chooses to support it. Basedpyright does not support it and strongly advises other language servers to avoid supporting it as well.</p>
+<p>For more info see <a href="https://github.com/microsoft/pylance-release/discussions/7180#discussioncomment-13227687">here</a> and <a href="https://github.com/astral-sh/ty/issues/1190#issuecomment-3374369203">here</a></p>
 </div>
-<h4 id="generating-type-stubs-from-command-line">Generating Type Stubs from Command Line</h4>
-<p>The command-line version of pyright can also be used to generate type stubs. As with the IDE version, it must be run within the context of your configured project. Then type <code>pyright --createstub [import-name]</code>.</p>
-<p>For example:
-<code>pyright --createstub django</code></p>
-<h4 id="cleaning-up-generated-type-stubs">Cleaning Up Generated Type Stubs</h4>
-<p>Pyright can give you a head start by creating type stubs, but you will typically need to clean up the first draft, fixing various errors and omissions that pyright was not able to infer from the original library code.</p>
-<p>A few common situations that need to be cleaned up:</p>
-<ol>
-<li>
-<p>When generating a “.pyi” file, pyright removes any imports that are not referenced. Sometimes libraries import symbols that are meant to be simply re-exported from a module even though they are not referenced internally to that module. In such cases, you will need to manually add back these imports. Pyright does not perform this import culling in <code>__init__.pyi</code> files because this re-export technique is especially common in such files.</p>
-</li>
-<li>
-<p>Some libraries attempt to import modules within a try statement. These constructs don’t work well in type stub files because they cannot be evaluated statically. Pyright omits any try statements when creating “.pyi” files, so you may need to add back in these import statements.</p>
-</li>
-<li>
-<p>Decorator functions are especially problematic for static type analyzers. Unless properly typed, they completely hide the signature of any class or function they are applied to. For this reason, it is highly recommended that you enable the “reportUntypedFunctionDecorator” and “reportUntypedClassDecorator” switches in pyrightconfig.json. Most decorators simply return the same function they are passed. Those can easily be annotated with a TypeVar like this:</p>
-</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span>
-
-<span class="n">_FuncT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;_FuncT&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">my_decorator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">_FuncT</span><span class="p">],</span> <span class="n">_FuncT</span><span class="p">]:</span> <span class="o">...</span>
+<p>In addition to the <a href="../configuration/command-line/">command-line tool</a> and the <a href="../configuration/language-server-settings/">language server</a>, Pyright ships a <strong>type server</strong> that speaks the Type Server Protocol (TSP). It is distributed as a separate npm package, <code>pyright-typeserver</code>, and is exposed through the <code>pyright-typeserver</code> executable.</p>
+<h2 id="what-is-the-type-server-protocol">What is the Type Server Protocol?</h2>
+<p>The Language Server Protocol (LSP) is designed around editor features (completions, hover, go-to-definition, and so on). Some tools instead need direct access to a Python type checker's <em>type information</em> — the inferred type of an expression, the declared type of a symbol, resolved imports, and search paths — without going through editor-oriented requests.</p>
+<p>The Type Server Protocol is a JSON-RPC protocol, layered on top of the same transport as LSP, that exposes this type information directly. A client can open Python documents in the usual LSP way (<code>textDocument/didOpen</code>, <code>textDocument/didChange</code>, …) and then ask the type server questions such as:</p>
+<ul>
+<li><code>typeServer/getComputedType</code> — the inferred type at a parse node.</li>
+<li><code>typeServer/getDeclaredType</code> — the declared type of a declaration.</li>
+<li><code>typeServer/getExpectedType</code> — the expected (contextual) type at a node.</li>
+<li><code>typeServer/resolveImport</code> — resolve an import to a file on disk.</li>
+<li><code>typeServer/getPythonSearchPaths</code> — the search paths used for import resolution.</li>
+<li><code>typeServer/getSnapshot</code> — the current analysis snapshot version, used to keep type queries consistent with the document state.</li>
+</ul>
+<h2 id="running-the-type-server">Running the type server</h2>
+<p>The type server communicates over stdio, just like the language server:</p>
+<div class="highlight"><pre><span></span><code>pyright-typeserver<span class="w"> </span>--stdio
 </code></pre></div>
+<p>It is not intended to be run interactively; it is started by a client (for example, an editor extension or a code-generation tool) that drives it over the protocol.</p>
+<h2 id="notebook-support">Notebook support</h2>
+<p>The type server understands Jupyter notebooks. When a client sends <code>notebookDocument/didOpen</code>, <code>notebookDocument/didChange</code>, and <code>notebookDocument/didClose</code>, the server models the notebook as a linear chain of chained cell source files so that names defined in earlier cells are visible in later cells, matching notebook execution semantics.</p>
+<h2 id="virtual-file-redirection">Virtual file redirection</h2>
+<p>The type server supports redirecting the contents of a file on disk to a virtual document supplied by the client. This is used, for example, by stub generators that synthesize a merged view of a module and want the type server to analyze the synthesized contents in place of the file on disk. Clients drive this through the <code>pyright/setVirtualFileRedirect</code> and <code>pyright/removeVirtualFileRedirect</code> notifications.</p>
+<h2 id="relationship-to-pyright">Relationship to Pyright</h2>
+<p>The type server is built on the same analyzer, binder, and type evaluator as the Pyright command-line tool and language server. It reuses Pyright's <code>Service</code> / <code>Program</code> / <code>SourceFile</code> infrastructure, so type results are identical to what Pyright's other front ends produce.</p>
+<h3 id="code-layout-two-packages">Code layout: two packages</h3>
+<p>The type server is split across two packages, following the same convention Pyright uses for its command-line tool and language server:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packages/pyright-internal/src/typeServer/</code></td>
+<td><strong>All of the actual code.</strong> The server, protocol definitions, notebook support, virtual-file redirection, the file system layer, and the tests all live here. This is the only package with real implementation.</td>
+</tr>
+<tr>
+<td><code>packages/pyright-typeserver/</code></td>
+<td><strong>The distributable wrapper.</strong> A thin bundling shim (rspack config, <code>package.json</code>, and a bin entry point) that packages the code above into the publishable <code>pyright-typeserver</code> npm package. It contains no logic — its <code>nodeMain.ts</code> simply calls <code>main()</code> from <code>pyright-internal</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>This mirrors how <code>pyright-internal</code> holds all of the parser/checker/evaluator logic while the <code>pyright</code> package is just the thin CLI and language-server bundle. Keeping the code in <code>pyright-internal</code> means the type server shares the exact same <code>vscode-languageserver</code> copy and analyzer internals as the rest of Pyright, rather than pulling in a duplicate or mismatched set of dependencies.</p>
 
 
 
@@ -2183,10 +2173,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "content.code.copy", "navigation.top", "navigation.instant"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.indexes", "content.code.copy", "navigation.top", "navigation.instant"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

@@ -890,6 +890,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../type-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pyright Type Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
@@ -911,10 +938,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -932,8 +959,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1113,10 +1140,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1134,8 +1161,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1273,10 +1300,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1294,8 +1321,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1875,10 +1902,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -1896,8 +1923,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2620,9 +2647,10 @@
 <p>If only one overload remains, it is the “winner”.</p>
 </li>
 <li>
-<p>If more than one overload remains, the “winner” is chosen based on the order in which the overloads are declared. In general, the first remaining overload is the “winner”. There are two exceptions to this rule.
+<p>If more than one overload remains, the “winner” is chosen based on the order in which the overloads are declared. In general, the first remaining overload is the “winner”. There are three exceptions to this rule.
     Exception 1: When an <code>*args</code> (unpacked) argument matches a <code>*args</code> parameter in one of the overload signatures, this overrides the normal order-based rule.
-    Exception 2: When two or more overloads match because an argument evaluates to <code>Any</code> or <code>Unknown</code>, the matching overload is ambiguous. In this case, pyright examines the return types of the remaining overloads and eliminates types that are duplicates or are subsumed by (i.e. proper subtypes of) other types in the list. If only one type remains after this coalescing step, that type is used. If more than one type remains after this coalescing step, the type of the call expression evaluates to <code>Unknown</code>. For example, if two overloads are matched due to an argument that evaluates to <code>Any</code>, and those two overloads have return types of <code>str</code> and <code>LiteralString</code>, pyright will coalesce this to just <code>str</code> because <code>LiteralString</code> is a proper subtype of <code>str</code>. If the two overloads have return types of <code>str</code> and <code>bytes</code>, the call expression will evaluate to <code>Unknown</code> because <code>str</code> and <code>bytes</code> have no overlap.</p>
+    Exception 2: When multiple overloads match because an argument contains <code>Any</code> or <code>Unknown</code> in an invariant type argument, pyright applies the <a href="https://typing.python.org/en/latest/spec/overload.html#step-5">overload materialization rule</a>. An overload that accepts all possible materializations of every argument eliminates all subsequent overloads. If multiple overloads with non-equivalent return types remain, the call evaluates to <code>Any</code> when the ambiguity is caused by a nested <code>Any</code>, or <code>Unknown</code> when it is caused by a nested <code>Unknown</code>.
+    Exception 3: When two or more overloads match because an argument itself evaluates to <code>Any</code> or <code>Unknown</code>, the matching overload is ambiguous. In this case, pyright examines the return types of the remaining overloads and eliminates types that are duplicates or are subsumed by (i.e. proper subtypes of) other types in the list. If only one type remains after this coalescing step, that type is used. If more than one type remains after this coalescing step, the type of the call expression evaluates to <code>Unknown</code>. For example, if two overloads are matched due to an argument that evaluates to <code>Any</code>, and those two overloads have return types of <code>str</code> and <code>LiteralString</code>, pyright will coalesce this to just <code>str</code> because <code>LiteralString</code> is a proper subtype of <code>str</code>. If the two overloads have return types of <code>str</code> and <code>bytes</code>, the call expression will evaluate to <code>Unknown</code> because <code>str</code> and <code>bytes</code> have no overlap.</p>
 </li>
 <li>
 <p>If no overloads remain, Pyright considers whether any of the arguments are union types. If so, these union types are expanded into their constituent subtypes, and the entire process of overload matching is repeated with the expanded argument types. If two or more overloads match, the union of their respective return types form the final return type for the call expression. This "union expansion" can result in a combinatoric explosion if many arguments evaluate to union types. For example, if four arguments are present, and they all evaluate to unions that expand to ten subtypes, this could result in 10^4 combinations. Pyright expands unions for arguments left to right and halts expansion when the number of signatures exceeds 64.</p>
