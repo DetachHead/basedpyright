@@ -1,5 +1,13 @@
 # Pyright Type Server
 
+!!! danger "Not supported in basedpyright"
+
+    The "type server protocol" is a desperate attempt from microsoft to prevent pylance from becoming obsolete by outsourcing its type checking to other language servers like basedpyright, [ty](https://docs.astral.sh/ty/) or [pyrefly](https://pyrefly.org/) -- while continuing to keep certain language server features exclusive to pylance.
+
+    This protocol benefits nobody except microsoft. It adds needless complexity to any language server that chooses to support it. Basedpyright does not support it and strongly advises other language servers to avoid supporting it as well.
+
+    For more info see [here](https://github.com/microsoft/pylance-release/discussions/7180#discussioncomment-13227687) and [here](https://github.com/astral-sh/ty/issues/1190#issuecomment-3374369203)
+
 In addition to the [command-line tool](command-line.md) and the [language server](settings.md), Pyright ships a **type server** that speaks the Type Server Protocol (TSP). It is distributed as a separate npm package, `pyright-typeserver`, and is exposed through the `pyright-typeserver` executable.
 
 ## What is the Type Server Protocol?

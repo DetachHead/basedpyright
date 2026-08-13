@@ -215,6 +215,7 @@ unsafe-fixes = true
 extend-exclude = [
     "packages/pyright-internal/typeshed-fallback",
     "docstubs",
+    "packages/pyright-internal/src/typeServer",
     "packages/pyright-internal/src/tests/samples",
     "packages/pyright-internal/src/tests/benchmarkData",
     "build/py_latest/upstream",

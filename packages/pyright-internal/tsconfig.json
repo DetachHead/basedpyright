@@ -21,5 +21,6 @@
         "out",
         "debug.js",
         "src/tests/lsp/rspack.testserver.config.js",
+        "src/typeServer",
     ]
 }

@@ -1,5 +1,6 @@
 packages:
   - 'packages/*'
+  - '!packages/pyright-typeserver' # not supported in basedpyright
 allowBuilds:
   '@vscode/vsce-sign': false
   esbuild: false
