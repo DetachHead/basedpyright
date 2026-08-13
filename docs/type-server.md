@@ -8,7 +8,7 @@
 
     For more info see [here](https://github.com/microsoft/pylance-release/discussions/7180#discussioncomment-13227687) and [here](https://github.com/astral-sh/ty/issues/1190#issuecomment-3374369203)
 
-In addition to the [command-line tool](command-line.md) and the [language server](settings.md), Pyright ships a **type server** that speaks the Type Server Protocol (TSP). It is distributed as a separate npm package, `pyright-typeserver`, and is exposed through the `pyright-typeserver` executable.
+In addition to the [command-line tool](./configuration/command-line.md) and the [language server](./configuration/language-server-settings.md), Pyright ships a **type server** that speaks the Type Server Protocol (TSP). It is distributed as a separate npm package, `pyright-typeserver`, and is exposed through the `pyright-typeserver` executable.
 
 ## What is the Type Server Protocol?
 
