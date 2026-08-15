@@ -1064,9 +1064,8 @@ dtype : str, np.dtype, or ExtensionDtype, optional
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    function _testConvertToMarkdown(docstring: string, expectedMarkdown: string) {
-        const actualMarkdown = docStringService.convertDocStringToMarkdown(docstring);
-
+    function _testConvertToMarkdown(docstring: string, expectedMarkdown: string, forceLiteral?: boolean) {
+        const actualMarkdown = docStringService.convertDocStringToMarkdown(docstring, forceLiteral);
         assert.equal(_normalizeLineEndings(actualMarkdown).trim(), _normalizeLineEndings(expectedMarkdown).trim());
     }
 
@@ -1124,34 +1123,60 @@ Extended description that spans
 multiple lines.
 `;
 
-        const expected = '```text\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
+        const markdown = '```\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralStripsCommonIndent', () => {
         const docstring = 'Header line\n    indented\n        deeper indent\n';
-        const expected = '```text\n' + 'Header line\nindented\n    deeper indent' + '\n```';
+        const markdown = '```\n' + 'Header line\nindented\n    deeper indent' + '\n```';
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralEmptyDocstring', () => {
         const docstring = '';
-        const expected = '```text\n\n```';
+        const markdown = '```\n\n```';
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralWhitespaceOnlyDocstring', () => {
+        const docstring = '\n   \n';
+        const markdown = '```\n\n```';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralDefaultIsFalse', () => {
         const docstring = 'A\nB';
-        const expected = 'A\nB';
+        const markdown = 'A\nB';
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('ForceLiteralPreservesMarkupVerbatim', () => {
+        // The literal path must not run the reST/markup converter.
+        const docstring = [
+            'Does **bold** and `inline` survive?',
+            '',
+            ':param x: some param',
+            '**Note:** `code` stays as-is.',
+        ].join('\n');
+
+        const markdown = '```\n' + docstring + '\n```';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralHandlesTabsAndCarriageReturns', () => {
+        // Tabs expand to 8 spaces; carriage returns are stripped; common indent is removed.
+        const docstring = 'Summary:\r\n    param: value\r\n\tTabbed line\r\n';
+
+        const markdown = '```\n' + 'Summary:\nparam: value\n    Tabbed line' + '\n```';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralEscapesNestedBackticks', () => {
@@ -1167,8 +1192,8 @@ multiple lines.
             'Trailing prose with `inline code`.',
         ].join('\n');
 
-        const expected = [
-            '````text',
+        const markdown = [
+            '````',
             'Summary line.',
             '',
             'Example:',
@@ -1181,16 +1206,14 @@ multiple lines.
             '````',
         ].join('\n');
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralEscapesFourBackticks', () => {
         const docstring = 'Has a ```` nested fence.';
-        const expected = '`````text\n' + 'Has a ```` nested fence.' + '\n`````';
+        const markdown = '`````\n' + 'Has a ```` nested fence.' + '\n`````';
 
-        const actual = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ true);
-        assert.equal(_normalizeLineEndings(actual).trim(), _normalizeLineEndings(expected).trim());
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 }
 

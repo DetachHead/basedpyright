@@ -93,5 +93,5 @@ function _wrapInLiteralCodeBlock(content: string): string {
     }
     const fenceLength = Math.max(3, maxRun + 1);
     const fence = '`'.repeat(fenceLength);
-    return fence + 'text\n' + content + '\n' + fence;
+    return fence + '\n' + content + '\n' + fence;
 }
