@@ -1123,28 +1123,28 @@ Extended description that spans
 multiple lines.
 `;
 
-        const markdown = '```\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
+        const markdown = '```text\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralStripsCommonIndent', () => {
         const docstring = 'Header line\n    indented\n        deeper indent\n';
-        const markdown = '```\n' + 'Header line\nindented\n    deeper indent' + '\n```';
+        const markdown = '```text\n' + 'Header line\nindented\n    deeper indent' + '\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralEmptyDocstring', () => {
         const docstring = '';
-        const markdown = '```\n\n```';
+        const markdown = '```text\n\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralWhitespaceOnlyDocstring', () => {
         const docstring = '\n   \n';
-        const markdown = '```\n\n```';
+        const markdown = '```text\n\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
@@ -1165,7 +1165,7 @@ multiple lines.
             '**Note:** `code` stays as-is.',
         ].join('\n');
 
-        const markdown = '```\n' + docstring + '\n```';
+        const markdown = '```text\n' + docstring + '\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
@@ -1174,7 +1174,7 @@ multiple lines.
         // Tabs expand to 8 spaces; carriage returns are stripped; common indent is removed.
         const docstring = 'Summary:\r\n    param: value\r\n\tTabbed line\r\n';
 
-        const markdown = '```\n' + 'Summary:\nparam: value\n    Tabbed line' + '\n```';
+        const markdown = '```text\n' + 'Summary:\nparam: value\n    Tabbed line' + '\n```';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
@@ -1193,7 +1193,7 @@ multiple lines.
         ].join('\n');
 
         const markdown = [
-            '````',
+            '````text',
             'Summary line.',
             '',
             'Example:',
@@ -1211,7 +1211,7 @@ multiple lines.
 
     test('ForceLiteralEscapesFourBackticks', () => {
         const docstring = 'Has a ```` nested fence.';
-        const markdown = '`````\n' + 'Has a ```` nested fence.' + '\n`````';
+        const markdown = '`````text\n' + 'Has a ```` nested fence.' + '\n`````';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });

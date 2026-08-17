@@ -602,7 +602,7 @@ test('TypedDict doc string', async () => {
     state.openFile(marker1.fileName);
 
     state.verifyHover('markdown', {
-        marker: '```python\n(class) TypedDict\n```\n---\n```\nA simple typed namespace. At runtime it is equivalent to a plain dict.\n```',
+        marker: '```python\n(class) TypedDict\n```\n---\n```text\nA simple typed namespace. At runtime it is equivalent to a plain dict.\n```',
     });
 });
 
