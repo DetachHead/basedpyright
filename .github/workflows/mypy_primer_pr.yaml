@@ -49,12 +49,20 @@ jobs:
         shard-index: [0, 1, 2, 3, 4, 5, 6, 7]
       fail-fast: false
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      # this is gross, we need to checkout the repo twice because the primer can't be run from within the same repo it's being tested on.
+      # ideally we'd just cd out into the parent directory, but mypy_primer/uv is installed with gg which doesn't work when run from outside the project directory
+      - name: checkout repo with submodules (checkout to run mypy_primer from)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: true
+      - name: checkout repo without submodules (checkout to run primer against)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           path: pyright_to_test
           fetch-depth: 0
           persist-credentials: false
-          submodules: true
       - name: add gg aliases to PATH
         run: |
           cd pyright_to_test
