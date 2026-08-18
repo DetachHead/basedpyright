@@ -55,7 +55,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           submodules: true
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       - name: add gg aliases to PATH
         run: |
           cd pyright_to_test
