@@ -64,6 +64,7 @@ jobs:
         with:
           persist-credentials: false
 
+      # TODO: remove this, see TODO below about the venv steps
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         id: install_python
 
