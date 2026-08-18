@@ -1171,7 +1171,7 @@ multiple lines.
     });
 
     test('ForceLiteralHandlesTabsAndCarriageReturns', () => {
-        // Tabs expand to 8 spaces; carriage returns are stripped; common indent is removed.
+        // Tabs expand to 4 spaces; carriage returns are stripped; common indent is removed.
         const docstring = 'Summary:\r\n    param: value\r\n\tTabbed line\r\n';
 
         const markdown = '```text\n' + 'Summary:\nparam: value\n    Tabbed line' + '\n```';
