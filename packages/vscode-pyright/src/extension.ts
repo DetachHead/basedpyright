@@ -10,7 +10,7 @@
  */
 
 import { PythonExtension } from '@vscode/python-extension';
-import { EXTENSION_ID as pythonEnvsExtensionId, type PythonEnvironmentApi } from '@vscode/python-environments';
+import { PythonEnvironments, type PythonEnvironmentApi } from '@vscode/python-environments';
 import { existsSync } from 'fs';
 import os from 'os';
 import * as path from 'path';
@@ -70,16 +70,10 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnviron
     if (!useEnvsExtension()) {
         return undefined;
     }
-    const ext = extensions.getExtension(pythonEnvsExtensionId);
-    if (!ext) {
-        log(`python.useEnvironmentsExtension is true but ${pythonEnvsExtensionId} is not installed; using classic API`);
-        return undefined;
-    }
     try {
-        const api = ext.isActive ? ext.exports : await ext.activate();
-        return api as PythonEnvironmentApi;
+        return await PythonEnvironments.api();
     } catch (error) {
-        log(`Exception occurred when activating ${pythonEnvsExtensionId}: ${JSON.stringify(error)}`);
+        log(`Exception occurred when activating Python Environments extension: ${JSON.stringify(error)}`);
         return undefined;
     }
 }
