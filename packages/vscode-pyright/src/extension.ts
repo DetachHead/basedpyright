@@ -97,7 +97,7 @@ async function getPythonPathFromEnvsApi(
     postConfigChanged: () => void
 ): Promise<string | undefined> {
     try {
-        installEnvsChangedListener(envsApi, scopeUri, postConfigChanged);
+        installPythonPathChangedListener(envsApi.onDidChangeEnvironment, scopeUri, postConfigChanged);
         const env = await envsApi.getEnvironment(scopeUri);
         if (!env) {
             log('No pythonPath provided by Python Environments extension');
@@ -114,30 +114,6 @@ async function getPythonPathFromEnvsApi(
         );
         return undefined;
     }
-}
-
-/**
- * Subscribe to python-envs interpreter changes for a scope and trigger a config
- * refresh, mirroring the classic `installPythonPathChangedListener`. Reuses
- * `pythonPathChangedListenerMap` so we install at most one listener per scope
- * across both APIs (only one API resolves the path for a given scope).
- */
-function installEnvsChangedListener(
-    envsApi: PythonEnvironmentApi,
-    scopeUri: Uri | undefined,
-    postConfigChanged: () => void
-) {
-    if (!envsApi.onDidChangeEnvironment) {
-        return;
-    }
-    const uriString = scopeUri ? scopeUri.toString() : '';
-    if (pythonPathChangedListenerMap.has(uriString)) {
-        return;
-    }
-    envsApi.onDidChangeEnvironment(() => {
-        postConfigChanged();
-    });
-    pythonPathChangedListenerMap.set(uriString, uriString);
 }
 
 // Request a heap size of 3GB. This is reasonable for modern systems.
@@ -217,7 +193,9 @@ export async function activate(context: ExtensionContext) {
                 interpreterPath = env?.execInfo?.run.executable ?? env?.environmentPath.fsPath;
             } catch (error) {
                 console.warn(
-                    `failed to read active environment from Python Environments extension, falling back to the old API: ${JSON.stringify(error)}`
+                    `failed to read active environment from Python Environments extension, falling back to the old API: ${JSON.stringify(
+                        error
+                    )}`
                 );
             }
         }
@@ -569,10 +547,14 @@ async function getPythonPathFromPythonExtension(
 }
 
 function installPythonPathChangedListener(
-    onDidChangeExecutionDetails: (callback: () => void) => void,
+    onDidChangeExecutionDetails: ((callback: () => void) => void) | undefined,
     scopeUri: Uri | undefined,
     postConfigChanged: () => void
 ) {
+    if (!onDidChangeExecutionDetails) {
+        return;
+    }
+
     const uriString = scopeUri ? scopeUri.toString() : '';
 
     // No need to install another listener for this URI if
