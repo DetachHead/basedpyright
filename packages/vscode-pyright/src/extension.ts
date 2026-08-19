@@ -217,7 +217,7 @@ export async function activate(context: ExtensionContext) {
                 interpreterPath = env?.execInfo?.run.executable ?? env?.environmentPath.fsPath;
             } catch (error) {
                 console.warn(
-                    `failed to read active environment from Python Environments extension: ${JSON.stringify(error)}`
+                    `failed to read active environment from Python Environments extension, falling back to the old API: ${JSON.stringify(error)}`
                 );
             }
         }
@@ -521,7 +521,7 @@ async function getPythonPathFromPythonExtension(
         if (result !== undefined) {
             return result;
         }
-        log('Python Environments extension returned no interpreter, use classic API');
+        log('Python Environments extension returned no interpreter, using classic API');
     }
 
     try {
