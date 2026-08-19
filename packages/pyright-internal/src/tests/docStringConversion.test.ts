@@ -448,7 +448,7 @@ ${singleTick}FooBar${singleTick} is interesting.
     });
 
     test('CodeBlockDirective', () => {
-        const docstring = `Take a look at this 
+        const docstring = `Take a look at this
     .. code-block:: Python
 
     if foo:
@@ -1116,35 +1116,35 @@ Remote Python Call (RPyC)
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('ForceLiteralWrapsInCodeBlock', () => {
+    test('ForceLiteralUsesParagraphBreaks', () => {
         const docstring = `Summary line.
 
 Extended description that spans
 multiple lines.
 `;
 
-        const markdown = '```text\n' + 'Summary line.\n\nExtended description that spans\nmultiple lines.' + '\n```';
+        const markdown = 'Summary line.\n\nExtended description that spans\n\nmultiple lines.';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralStripsCommonIndent', () => {
         const docstring = 'Header line\n    indented\n        deeper indent\n';
-        const markdown = '```text\n' + 'Header line\nindented\n    deeper indent' + '\n```';
+        const markdown = 'Header line\n\nindented\n\n&nbsp;&nbsp;&nbsp;&nbsp;deeper indent';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralEmptyDocstring', () => {
         const docstring = '';
-        const markdown = '```text\n\n```';
+        const markdown = '';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     test('ForceLiteralWhitespaceOnlyDocstring', () => {
         const docstring = '\n   \n';
-        const markdown = '```text\n\n```';
+        const markdown = '';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
@@ -1156,8 +1156,8 @@ multiple lines.
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('ForceLiteralPreservesMarkupVerbatim', () => {
-        // The literal path must not run the reST/markup converter.
+    test('ForceLiteralConvertsMarkupToMarkdown', () => {
+        // The newline-based path still runs the normal Markdown converter.
         const docstring = [
             'Does **bold** and `inline` survive?',
             '',
@@ -1165,7 +1165,13 @@ multiple lines.
             '**Note:** `code` stays as-is.',
         ].join('\n');
 
-        const markdown = '```text\n' + docstring + '\n```';
+        const markdown = [
+            'Does \\*\\*bold\\*\\* and `inline` survive?',
+            '',
+            ':param x: some param',
+            '',
+            '\\*\\*Note:\\*\\* `code` stays as-is.',
+        ].join('\n');
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
@@ -1174,12 +1180,12 @@ multiple lines.
         // Tabs expand to 4 spaces; carriage returns are stripped; common indent is removed.
         const docstring = 'Summary:\r\n    param: value\r\n\tTabbed line\r\n';
 
-        const markdown = '```text\n' + 'Summary:\nparam: value\n    Tabbed line' + '\n```';
+        const markdown = 'Summary:\n\nparam: value\n\n&nbsp;&nbsp;&nbsp;&nbsp;Tabbed line';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
-    test('ForceLiteralEscapesNestedBackticks', () => {
+    test('ForceLiteralPreservesNestedCodeBlock', () => {
         const docstring = [
             'Summary line.',
             '',
@@ -1193,25 +1199,25 @@ multiple lines.
         ].join('\n');
 
         const markdown = [
-            '````text',
             'Summary line.',
             '',
             'Example:',
             '',
             '```python',
+            '',
             'x = 1',
+            '',
             '```',
             '',
             'Trailing prose with `inline code`.',
-            '````',
         ].join('\n');
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
-    test('ForceLiteralEscapesFourBackticks', () => {
+    test('ForceLiteralConvertsDoubleBackticks', () => {
         const docstring = 'Has a ```` nested fence.';
-        const markdown = '`````text\n' + 'Has a ```` nested fence.' + '\n`````';
+        const markdown = 'Has a `` nested fence.';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
