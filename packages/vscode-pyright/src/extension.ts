@@ -73,7 +73,8 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnviron
     try {
         return await PythonEnvironments.api();
     } catch (error) {
-        log(`Exception occurred when activating Python Environments extension: ${JSON.stringify(error)}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`Exception occurred when activating Python Environments extension: ${errorMessage}`);
         return undefined;
     }
 }
@@ -98,11 +99,8 @@ async function getPythonPathFromEnvsApi(
         log(`Received pythonPath from Python Environments extension: ${result}`);
         return result;
     } catch (error) {
-        log(
-            `Exception occurred when attempting to read pythonPath from Python Environments extension: ${JSON.stringify(
-                error
-            )}`
-        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log(`Exception occurred when attempting to read pythonPath from Python Environments extension: ${errorMessage}`);
         return undefined;
     }
 }
