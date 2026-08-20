@@ -71,6 +71,7 @@ jobs:
         shell: bash
         env:
           shard_index: ${{ matrix.shard-index }}
+          GG_HIDE_DOWNLOAD_PROGRESS: 1
         run: |
           cd pyright_to_test
           echo "new commit"
@@ -83,8 +84,6 @@ jobs:
 
           echo ''
           cd ..
-          # download gg before running primer to workaround https://github.com/eirikb/gg/issues/309
-          ./gg.cmd --version
           # fail action if exit code isn't zero or one
           (
             mypy_primer \
