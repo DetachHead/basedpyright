@@ -1,6 +1,6 @@
 [aliases]
-uv = "gh/astral-sh/uv@0.12.3"
+uv = "gh/astral-sh/uv@0.12.5"
 # when bumping pnpm here remember to also bump theversion in the top-level package.json (i don't remember why i had to specify it in both gg and package.json...)
-pnpm = "gh/pnpm/pnpm@11.20"
+pnpm = "gh/pnpm/pnpm@11.22"
 # we run mypy primer in a separate isolated venv because it can't run in the same venv as the version of basedpyright it's testing
 mypy_primer = "uv tool run --from ./mypy_primer mypy_primer"
