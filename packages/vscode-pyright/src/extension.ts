@@ -81,23 +81,20 @@ async function getEnvsApi(log: (message: string) => void): Promise<PythonEnviron
 /**
  * Resolve the python executable path for the given scope (a workspace folder, or
  * undefined for the active/global interpreter) from the new python-envs API.
- * Prefers `execInfo.run.executable`, falling back to the environment path.
  * Returns `undefined` on miss/throw so callers can fall back to the classic API.
  */
 async function getPythonPathFromEnvsApi(
     envsApi: PythonEnvironmentApi,
     log: (message: string) => void,
-    scopeUri: Uri | undefined,
-    postConfigChanged: () => void
+    scopeUri: Uri | undefined
 ): Promise<string | undefined> {
     try {
-        installPythonPathChangedListener(envsApi.onDidChangeEnvironment, scopeUri, postConfigChanged);
         const env = await envsApi.getEnvironment(scopeUri);
         if (!env) {
             log('No pythonPath provided by Python Environments extension');
             return undefined;
         }
-        const result = env.execInfo?.run.executable ?? env.environmentPath.fsPath;
+        const result = env.execInfo.run.executable;
         log(`Received pythonPath from Python Environments extension: ${result}`);
         return result;
     } catch (error) {
@@ -182,16 +179,7 @@ export async function activate(context: ExtensionContext) {
         let interpreterPath: string | undefined;
         const envsApi = await getEnvsApi((message) => console.log(message));
         if (envsApi) {
-            try {
-                const env = await envsApi.getEnvironment(undefined);
-                interpreterPath = env?.execInfo?.run.executable ?? env?.environmentPath.fsPath;
-            } catch (error) {
-                console.warn(
-                    `failed to read active environment from Python Environments extension, falling back to the old API: ${JSON.stringify(
-                        error
-                    )}`
-                );
-            }
+            interpreterPath = await getPythonPathFromEnvsApi(envsApi, console.log, undefined);
         }
         if (interpreterPath === undefined) {
             const pythonApi = await PythonExtension.api();
@@ -489,7 +477,8 @@ async function getPythonPathFromPythonExtension(
     const log = (message: string) => outputChannel.appendLine(message);
     const envsApi = await getEnvsApi(log);
     if (envsApi) {
-        const result = await getPythonPathFromEnvsApi(envsApi, log, scopeUri, postConfigChanged);
+        installPythonPathChangedListener(envsApi.onDidChangeEnvironment, scopeUri, postConfigChanged);
+        const result = await getPythonPathFromEnvsApi(envsApi, log, scopeUri);
         if (result !== undefined) {
             return result;
         }
@@ -541,14 +530,10 @@ async function getPythonPathFromPythonExtension(
 }
 
 function installPythonPathChangedListener(
-    onDidChangeExecutionDetails: ((callback: () => void) => void) | undefined,
+    onDidChangeExecutionDetails: (callback: () => void) => void,
     scopeUri: Uri | undefined,
     postConfigChanged: () => void
 ) {
-    if (!onDidChangeExecutionDetails) {
-        return;
-    }
-
     const uriString = scopeUri ? scopeUri.toString() : '';
 
     // No need to install another listener for this URI if
