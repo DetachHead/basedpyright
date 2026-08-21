@@ -100,7 +100,9 @@ async function getPythonPathFromEnvsApi(
         return result;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        log(`Exception occurred when attempting to read pythonPath from Python Environments extension: ${errorMessage}`);
+        log(
+            `Exception occurred when attempting to read pythonPath from Python Environments extension: ${errorMessage}`
+        );
         return undefined;
     }
 }
