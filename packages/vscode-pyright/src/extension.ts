@@ -179,7 +179,8 @@ export async function activate(context: ExtensionContext) {
         let interpreterPath: string | undefined;
         const envsApi = await getEnvsApi((message) => console.log(message));
         if (envsApi) {
-            interpreterPath = await getPythonPathFromEnvsApi(envsApi, console.log, undefined);
+            // TODO: support multi-root workspaces: https://github.com/DetachHead/basedpyright/issues/991
+            interpreterPath = await getPythonPathFromEnvsApi(envsApi, console.log, workspace.workspaceFolders?.[0].uri);
         }
         if (interpreterPath === undefined) {
             const pythonApi = await PythonExtension.api();
