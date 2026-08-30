@@ -9,7 +9,6 @@
 import { MarkupKind } from 'vscode-languageserver-types';
 import { convertDocStringToMarkdown, convertDocStringToPlainText } from '../analyzer/docStringConversion';
 import {
-    cleanAndSplitDocString,
     extractAttributeDocumentation,
     extractParameterDocumentation,
     extractReturnDocumentation,
@@ -57,11 +56,7 @@ export class PyrightDocStringService implements DocStringService {
     }
 
     convertDocStringToMarkdown(docString: string, forceLiteral?: boolean, _sourceFileUri?: Uri): string {
-        if (forceLiteral) {
-            const cleaned = cleanAndSplitDocString(docString).join('\n\n');
-          return convertDocStringToMarkdown(cleaned);
-        }
-        return convertDocStringToMarkdown(docString);
+        return convertDocStringToMarkdown(docString, forceLiteral);
     }
 
     extractParameterDocumentation(functionDocString: string, paramName: string): string | undefined {
