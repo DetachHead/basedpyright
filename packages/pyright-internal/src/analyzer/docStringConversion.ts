@@ -126,14 +126,12 @@ class DocStringConverter {
     private _tableState: RestTableState | undefined;
     private _lastBacktickString: string | undefined;
 
-    private _forceLiteral: boolean;
     private _lastLineWasPlainText = false;
 
-    constructor(input: string, forceLiteral = false) {
+    constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
         this._input = input;
         this._lines = cleanAndSplitDocString(input);
-        this._forceLiteral = forceLiteral;
     }
 
     convert(): string {
