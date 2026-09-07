@@ -448,7 +448,7 @@ ${singleTick}FooBar${singleTick} is interesting.
     });
 
     test('CodeBlockDirective', () => {
-        const docstring = `Take a look at this 
+        const docstring = `Take a look at this
     .. code-block:: Python
 
     if foo:
@@ -1064,11 +1064,12 @@ dtype : str, np.dtype, or ExtensionDtype, optional
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    function _testConvertToMarkdown(docstring: string, expectedMarkdown: string) {
-        const actualMarkdown = docStringService.convertDocStringToMarkdown(docstring);
-
+    function _testConvertToMarkdown(docstring: string, expectedMarkdown: string, forceLiteral?: boolean) {
+        const actualMarkdown = docStringService.convertDocStringToMarkdown(docstring, forceLiteral);
         assert.equal(_normalizeLineEndings(actualMarkdown).trim(), _normalizeLineEndings(expectedMarkdown).trim());
     }
+
+    const hardBreak = '  \n';
 
     function _testConvertToPlainText(docstring: string, expectedPlainText: string) {
         const actualMarkdown = docStringService.convertDocStringToPlainText(docstring);
@@ -1115,6 +1116,176 @@ Remote Python Call (RPyC)
 `;
 
         _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('ForceLiteralUsesParagraphBreaks', () => {
+        const docstring = `Summary line.
+
+Extended description that spans
+multiple lines.
+`;
+
+        const markdown = 'Summary line.\n\n' + 'Extended description that spans' + hardBreak + 'multiple lines.';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralStripsCommonIndent', () => {
+        const docstring = 'Header line\n    indented\n        deeper indent\n';
+
+        // Common indent (4) is removed; surviving relative indent renders as&nbsp;-prefixed
+        // text joined by hard breaks instead of paragraph breaks.
+        const markdown = 'Header line' + hardBreak + 'indented' + hardBreak + '&nbsp;&nbsp;&nbsp;&nbsp;deeper indent';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralEmptyDocstring', () => {
+        const docstring = '';
+        const markdown = '';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralWhitespaceOnlyDocstring', () => {
+        const docstring = '\n   \n';
+        const markdown = '';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralDefaultIsFalse', () => {
+        const docstring = 'A\nB';
+        const markdown = 'A\nB';
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('ForceLiteralConvertsMarkupToMarkdown', () => {
+        // The converter still runs, so inline code is preserved and markdown chars escaped;
+        // the `**Note:**` line is itself claimed by the field-list catch-all (it matches
+        // `name: value`), which forces a preceding break — so no hard break is welded on.
+        const docstring = [
+            'Does **bold** and `inline` survive?',
+            '',
+            ':param x: some param',
+            '**Note:** `code` stays as-is.',
+        ].join('\n');
+
+        const markdown = [
+            'Does \\*\\*bold\\*\\* and `inline` survive?',
+            '',
+            ':param x: some param' + hardBreak + '\\*\\*Note:\\*\\* `code` stays as-is.',
+        ].join('\n');
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralHandlesTabsAndCarriageReturns', () => {
+        // Carriage returns are stripped; removing the common indent leaves 4 spaces from the expanded tab.
+        // The `param: value` line is claimed by the field-list path (which forces its own breaks);
+        // the tab-indented line goes through the plain-text path with nbsp indent.
+        const docstring = 'Summary:\r\n    param: value\r\n\tTabbed line\r\n';
+
+        const markdown = 'Summary:' + hardBreak + 'param: value' + hardBreak + '&nbsp;&nbsp;&nbsp;&nbsp;Tabbed line';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralPreservesNestedCodeBlock', () => {
+        const docstring = [
+            'Summary line.',
+            '',
+            'Example:',
+            '',
+            '```python',
+            'x = 1',
+            '```',
+            '',
+            'Trailing prose with `inline code`.',
+        ].join('\n');
+
+        const markdown = [
+            'Summary line.',
+            '',
+            'Example:',
+            '',
+            '```python',
+            'x = 1',
+            '```',
+            '',
+            'Trailing prose with `inline code`.',
+        ].join('\n');
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralConvertsDoubleBackticks', () => {
+        const docstring = 'Has a ```` nested fence.';
+        const markdown = 'Has a `` nested fence.';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralPreservesPlainTextLayout', () => {
+        const docstring = [
+            'First line.',
+            'Second line.',
+            'Third line.',
+            '',
+            'Example:',
+            '    Indented line.',
+            '        Deeper line.',
+        ].join('\n');
+
+        const markdown =
+            ['First line.', 'Second line.', 'Third line.'].join(hardBreak) +
+            '\n\n' +
+            ['Example:', '&nbsp;&nbsp;&nbsp;&nbsp;Indented line.', '&nbsp;'.repeat(8) + 'Deeper line.'].join(hardBreak);
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralBlankLineStaysParagraphBreak', () => {
+        const docstring = 'Summary.\n\nLine one\nLine two\n';
+
+        const markdown = 'Summary.\n\n' + 'Line one' + hardBreak + 'Line two';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralDoctestStaysOneBlock', () => {
+        const docstring = '>>> x = 1\n>>> x + 1\n2\n';
+
+        const markdown = ['```', '>>> x = 1', '>>> x + 1', '2', '```'].join('\n');
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralFencedCodeBlockUnchanged', () => {
+        const docstring = ['```python', 'x = 1', 'print(x)', '```'].join('\n');
+
+        const markdown = ['```python', 'x = 1', 'print(x)', '```'].join('\n');
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralExplicitFalseMatchesDefault', () => {
+        const docstring = [
+            'super() -> same as super(__class__, <first argument>)',
+            'super(type) -> unbound super object',
+        ].join('\n');
+
+        const withExplicitFalse = docStringService.convertDocStringToMarkdown(docstring, /* forceLiteral */ false);
+        const withDefault = docStringService.convertDocStringToMarkdown(docstring);
+        assert.equal(withExplicitFalse, withDefault);
+        assert.equal(
+            _normalizeLineEndings(withDefault).trim(),
+            [
+                'super() -&gt; same as super(\\_\\_class\\_\\_, &lt;first argument&gt;)',
+                'super(type) -&gt; unbound super object',
+            ].join('\n')
+        );
     });
 }
 

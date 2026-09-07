@@ -19,8 +19,8 @@ import { cleanAndSplitDocString } from './docStringUtils';
 // The restructured npm library was evaluated, and while it worked well for
 // parsing valid input, it was going to be more difficult to handle invalid
 // RST input.
-export function convertDocStringToMarkdown(docString: string): string {
-    return new DocStringConverter(docString).convert();
+export function convertDocStringToMarkdown(docString: string, forceLiteral = false): string {
+    return new DocStringConverter(docString, forceLiteral).convert();
 }
 
 //  Converts a docstring to a plaintext, human readable form. This will
@@ -126,7 +126,9 @@ class DocStringConverter {
     private _tableState: RestTableState | undefined;
     private _lastBacktickString: string | undefined;
 
-    constructor(input: string) {
+    private _lastLineWasPlainText = false;
+
+    constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
         this._input = input;
         this._lines = cleanAndSplitDocString(input);
@@ -258,7 +260,13 @@ class DocStringConverter {
 
         const line = this._formatPlainTextIndent(this._currentLine());
 
+        if (this._forceLiteral && this._lastLineWasPlainText) {
+            this._convertTrailingSoftLineBreak();
+        }
+
         this._appendTextLine(line);
+        // Must come after _appendTextLine, which resets the flag on entry.
+        this._lastLineWasPlainText = true;
         this._eatLine();
     }
 
@@ -267,23 +275,12 @@ class DocStringConverter {
         const prevIndent = this._prevIndent();
         const currIndent = this._currentIndent();
 
-        if (
-            currIndent > prevIndent &&
-            !_isUndefinedOrWhitespace(prev) &&
-            !this._builder.endsWith(MarkdownLineBreak) &&
-            !this._builder.endsWith('\n\n') &&
-            !_isHeader(prev)
-        ) {
-            this._builder = this._builder.slice(0, -1) + MarkdownLineBreak;
+        if (currIndent > prevIndent && !_isUndefinedOrWhitespace(prev) && !_isHeader(prev)) {
+            this._convertTrailingSoftLineBreak();
         }
 
-        if (
-            prevIndent > currIndent &&
-            !_isUndefinedOrWhitespace(prev) &&
-            !this._builder.endsWith(MarkdownLineBreak) &&
-            !this._builder.endsWith('\n\n')
-        ) {
-            this._builder = this._builder.slice(0, -1) + MarkdownLineBreak;
+        if (prevIndent > currIndent && !_isUndefinedOrWhitespace(prev)) {
+            this._convertTrailingSoftLineBreak();
         }
 
         if (prevIndent === 0 || this._builder.endsWith(MarkdownLineBreak) || this._builder.endsWith('\n\n')) {
@@ -292,6 +289,16 @@ class DocStringConverter {
             line = line.trimStart();
         }
         return line;
+    }
+
+    private _convertTrailingSoftLineBreak(): void {
+        if (
+            this._builder.endsWith('\n') &&
+            !this._builder.endsWith(MarkdownLineBreak) &&
+            !this._builder.endsWith('\n\n')
+        ) {
+            this._builder = this._builder.slice(0, -1) + MarkdownLineBreak;
+        }
     }
 
     private _convertIndent(line: string) {
@@ -308,6 +315,8 @@ class DocStringConverter {
     }
 
     private _appendTextLine(line: string): void {
+        this._lastLineWasPlainText = false;
+
         line = this._preprocessTextLine(line);
 
         const parts = line.split('`');
@@ -841,6 +850,8 @@ class DocStringConverter {
     }
 
     private _appendLine(line?: string): void {
+        this._lastLineWasPlainText = false;
+
         if (!_isUndefinedOrWhitespace(line)) {
             this._builder += line + '\n';
             this._skipAppendEmptyLine = false;

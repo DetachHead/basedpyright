@@ -55,8 +55,8 @@ export class PyrightDocStringService implements DocStringService {
         return convertDocStringToPlainText(docString);
     }
 
-    convertDocStringToMarkdown(docString: string, _forceLiteral?: boolean, _sourceFileUri?: Uri): string {
-        return convertDocStringToMarkdown(docString);
+    convertDocStringToMarkdown(docString: string, forceLiteral?: boolean, _sourceFileUri?: Uri): string {
+        return convertDocStringToMarkdown(docString, forceLiteral);
     }
 
     extractParameterDocumentation(functionDocString: string, paramName: string): string | undefined {
