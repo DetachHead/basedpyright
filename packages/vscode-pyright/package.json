@@ -2017,6 +2017,7 @@
         "webpack-dev": "npm run clean && rspack build -c rspack.config.js --mode development --watch"
     },
     "dependencies": {
+        "@vscode/python-environments": "^1.0.0",
         "@vscode/python-extension": "^1.0.5",
         "vscode-jsonrpc": "^9.0.0-next.8",
         "vscode-languageclient": "^10.0.0-next.16",
