@@ -5,4 +5,5 @@ allowBuilds:
   '@vscode/vsce-sign': false
   esbuild: false
   keytar: false
+  pnpm: false
   unrs-resolver: false
