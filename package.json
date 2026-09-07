@@ -25,7 +25,7 @@
         "ruff-fix": "uv run --no-sync ruff check --no-cache --fix && uv run --no-sync ruff format",
         "pylint": "uv run --no-sync pylint basedpyright build pdm_build.py --ignore-paths build/py_latest/upstream",
         "test-python": "uv run --no-sync pytest tests",
-        "generate-docstubs": "uv run --no-sync build/py3_8/generate_docstubs.py",
+        "generate-docstubs": "uv run --no-sync build/py_old/generate_docstubs.py",
         "localization-helper": "uv run --no-sync build/py_latest/localization_helper.py",
         "docs": "uv run --no-sync mkdocs serve --livereload",
         "docs:fast": "pnpm run docs --dirty",

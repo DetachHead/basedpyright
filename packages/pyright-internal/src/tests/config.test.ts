@@ -21,7 +21,7 @@ import {
 import { ConsoleInterface, NullConsole } from '../common/console';
 import { TaskListPriority } from '../common/diagnostic';
 import { combinePaths, normalizePath, normalizeSlashes } from '../common/pathUtils';
-import { pythonVersion3_13, pythonVersion3_8, pythonVersion3_9 } from '../common/pythonVersion';
+import { pythonVersion3_10, pythonVersion3_13, pythonVersion3_9 } from '../common/pythonVersion';
 import { RealTempFile, createFromRealFileSystem } from '../common/realFileSystem';
 import { createServiceProvider } from '../common/serviceProviderExtensions';
 import { Uri } from '../common/uri/uri';
@@ -426,7 +426,7 @@ describe(`config test'}`, () => {
         );
         // ensure it defaults to the basedpyright project root's python version of the version from either section in the config.
         // https://github.com/microsoft/pyright/pull/9735
-        tExpect(configOptions.defaultPythonVersion!).toStrictEqual(pythonVersion3_8);
+        tExpect(configOptions.defaultPythonVersion!).toStrictEqual(pythonVersion3_10);
         assert(!analysisResult?.fatalErrorOccurred);
     });
 
