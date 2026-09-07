@@ -1,0 +1,7 @@
+nav:
+  - index.md
+  - benefits-over-pyright
+  - installation
+  - '*'
+  - development
+  - shoutouts.md
