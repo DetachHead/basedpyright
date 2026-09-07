@@ -1023,6 +1023,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environment variables
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -1038,6 +1055,48 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#locale-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Locale Configuration
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporary-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Temporary Directories
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1747,6 +1806,11 @@
                       
                     
                     
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
                   
                   <div class="md-sidebar__inner">
                     
@@ -1758,6 +1822,36 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#locale-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Locale Configuration
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporary-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Temporary Directories
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1776,6 +1870,16 @@
 
 
 <h1 id="environment-variables">Environment variables</h1>
+<h2 id="locale-configuration">Locale Configuration</h2>
+<p>Pyright provides diagnostic messages that are translated to multiple languages, which are improved in basedpyright thanks to <a href="../../development/localization/">community-contributed translations</a>. By default, basedpyright uses the default locale of the operating system. You can override the desired locale through the use of one of the following environment variables, listed in priority order.</p>
+<div class="highlight"><pre><span></span><code>LC_ALL=&quot;de&quot;
+LC_MESSAGES=&quot;en-us&quot;
+LANG=&quot;zh_CN&quot;
+LANGUAGE=&quot;fr&quot;
+</code></pre></div>
+<p>The locale specifiers can be <code>xx-xx</code> or <code>xx_XX</code> in basedpyright. The latter form is used in unix-like platforms, which is not supported in pyright.</p>
+<p>When running in VS Code, the editor's locale takes precedence. Setting these environment variables applies only when using pyright outside of VS Code.</p>
+<h2 id="temporary-directories">Temporary Directories</h2>
 <p>If Pyright fails to create a temporary directory (for example in remote/server environments where the OS temp directory doesn't exist or isn't writable), you can override the temp directory root:</p>
 <ul>
 <li><code>PYRIGHT_TMPDIR</code>: Absolute path to a directory that Pyright can use for temporary files/directories. Pyright will create it if needed.</li>
