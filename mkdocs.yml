@@ -35,7 +35,7 @@ theme:
         icon: material/brightness-4
         name: Switch to system preference
   favicon: img/favicon.ico
-  logo: img/logo_black.png
+  logo: img/logo.png
   icon:
     repo: fontawesome/brands/github
 markdown_extensions:
@@ -55,19 +55,13 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 plugins:
   - search
-  - awesome-pages
+  - awesome-nav
   # https://github.com/wilhelmer/mkdocs-unused-files/issues/12
+  # TODO: figure out if this is also an issue in zensical once it supports this https://github.com/zensical/backlog/issues/6
   # - unused_files
   - macros:
       module_name: build/py_latest/docs_macros
       on_undefined: strict
-nav:
-  - index.md
-  - ... | benefits-over-pyright/**/*.md
-  - ... | installation/**/*.md
-  - ...
-  - ... | development/**/*.md
-  - ... | shoutouts.md
 exclude_docs: |
   /configuration.md
 repo_url: https://github.com/detachhead/basedpyright
