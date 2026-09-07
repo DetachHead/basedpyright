@@ -8,4 +8,4 @@ we accept translation fixes in basedpyright. [see the localization guidelines](.
 
 ## fixed country code format for linux
 
-in pyright, you can configure the locale using [environment variables](../configuration/config-files.md#locale-configuration) in `"en-US"` format. this format is commonly used on windows, but linux uses the `"en_US"` format instead. unlike pyright, basedpyright supports both formats.
+in pyright, you can configure the locale using [environment variables](../configuration/environment-variables.md#locale-configuration) in `"en-US"` format. this format is commonly used on windows, but linux uses the `"en_US"` format instead. unlike pyright, basedpyright supports both formats.
