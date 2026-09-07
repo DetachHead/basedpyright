@@ -1,6 +1,6 @@
 {
     "files": {
-        "./build/py3_8/generate_docstubs.py": [
+        "./build/py_old/generate_docstubs.py": [
             {
                 "code": "reportUnusedCallResult",
                 "range": {

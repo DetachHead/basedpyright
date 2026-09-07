@@ -9,15 +9,13 @@ readme = "README.md"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     # required by the basedpyright cli & langserver wrapper scripts. only binaries are required (no cli)
     # since the user shouldn't have a node/npm binary unknowingly added to their PATH
@@ -64,14 +62,12 @@ basedpyright-langserver = 'basedpyright.langserver:main'
 
 [tool.uv]
 default-groups = ["dev", "docstubs", "lochelper"]
-# transient dependency of docify. needed because there's no single version with wheels for 3.8-3.13 and it fails to build when there's no wheels
-no-build-package = ["libcst"]
 exclude-newer = "1 week"
 
 
 [tool.pdm.version]
 source = "call"
-getter = "build.py3_8.version:get"
+getter = "build.py_old.version:get"
 
 [tool.pdm.build]
 excludes = ["tests/", "pdm_build.py"]
@@ -192,7 +188,7 @@ score = "no"
 max-line-length = 200
 
 [tool.basedpyright]
-pythonVersion = "3.8"
+pythonVersion = "3.10"
 # https://github.com/DetachHead/basedpyright/issues/31
 ignore = [
     "basedpyright/dist",
@@ -222,7 +218,7 @@ executionEnvironments = [
 
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py310"
 respect-gitignore = true
 line-length = 100
 preview = true

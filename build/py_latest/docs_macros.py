@@ -6,7 +6,7 @@ from subprocess import run as stupid_run
 from typing import TYPE_CHECKING
 
 # execution environment moment
-from build.py3_8.version import get  # pyright: ignore[reportMissingTypeStubs]
+from build.py_old.version import get  # pyright: ignore[reportMissingTypeStubs]
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

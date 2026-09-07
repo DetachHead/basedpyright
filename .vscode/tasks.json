@@ -97,7 +97,7 @@
             "label": "bump version",
             "type": "shell",
             "command": "${command:python.interpreterPath}",
-            "args": ["build/py3_8/version.py", "${input:version}"],
+            "args": ["build/py_old/version.py", "${input:version}"],
             "presentation": {
               "clear": true
             },
