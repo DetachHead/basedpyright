@@ -4,6 +4,7 @@
 **/out/**
 **/typeshed-fallback/**
 docstubs
+site
 
 *.json
 
@@ -18,6 +19,7 @@ docs/usage/**/*.md
 .github/plans/**/*.md
 .github/copilot-instructions.md
 architecture/**/*
+build/benchmark/**/*
 
 **/.venv/**
 mypy_primer

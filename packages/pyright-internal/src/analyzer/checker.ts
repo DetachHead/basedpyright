@@ -3982,12 +3982,12 @@ export class Checker extends ParseTreeWalker {
                         return;
                     }
 
-                // The presence of a decorator can change how the function is used (e.g. a
-                // Flask `@app.route(...)` handler is registered via a decorator side effect),
-                // so back off from reporting it as unaccessed if any decorator is present.
-                if (decl.node.d.decorators.length > 0) {
-                    return;
-                }
+                    // The presence of a decorator can change how the function is used (e.g. a
+                    // Flask `@app.route(...)` handler is registered via a decorator side effect),
+                    // so back off from reporting it as unaccessed if any decorator is present.
+                    if (decl.node.d.decorators.length > 0) {
+                        return;
+                    }
 
                     nameNode = decl.node.d.name;
                     rule = DiagnosticRule.reportUnusedFunction;
@@ -8117,15 +8117,31 @@ export class Checker extends ParseTreeWalker {
 
     private _reportDuplicateImports() {
         const importedNames: string[] = [];
-        getTopLevelImports(
-            this._moduleNode,
-            /* includeImplicitImports */ false,
-            this._nodeInfo
-        ).orderedImports.forEach((importStatement) => {
-            if (importStatement.node.nodeType === ParseNodeType.ImportFrom) {
-                importStatement.node.d.imports.forEach((importFromAs) => {
-                    const node = importFromAs.d.alias ?? importFromAs.d.name;
-                    const name = node.d.value;
+        getTopLevelImports(this._moduleNode, /* includeImplicitImports */ false, this._nodeInfo).orderedImports.forEach(
+            (importStatement) => {
+                if (importStatement.node.nodeType === ParseNodeType.ImportFrom) {
+                    importStatement.node.d.imports.forEach((importFromAs) => {
+                        const node = importFromAs.d.alias ?? importFromAs.d.name;
+                        const name = node.d.value;
+                        if (importedNames.includes(name)) {
+                            this._evaluator.addDiagnostic(
+                                DiagnosticRule.reportDuplicateImport,
+                                LocMessage.duplicateImport().format({ importName: name }),
+                                node
+                            );
+                        }
+                        importedNames.push(name);
+                    });
+                } else if (importStatement.subnode) {
+                    let node: NameNode | ImportNode;
+                    let name: string;
+                    if (importStatement.subnode.d.alias) {
+                        node = importStatement.subnode.d.alias;
+                        name = node.d.value;
+                    } else {
+                        node = importStatement.node;
+                        name = importStatement.moduleName;
+                    }
                     if (importedNames.includes(name)) {
                         this._evaluator.addDiagnostic(
                             DiagnosticRule.reportDuplicateImport,
@@ -8134,26 +8150,8 @@ export class Checker extends ParseTreeWalker {
                         );
                     }
                     importedNames.push(name);
-                });
-            } else if (importStatement.subnode) {
-                let node: NameNode | ImportNode;
-                let name: string;
-                if (importStatement.subnode.d.alias) {
-                    node = importStatement.subnode.d.alias;
-                    name = node.d.value;
-                } else {
-                    node = importStatement.node;
-                    name = importStatement.moduleName;
                 }
-                if (importedNames.includes(name)) {
-                    this._evaluator.addDiagnostic(
-                        DiagnosticRule.reportDuplicateImport,
-                        LocMessage.duplicateImport().format({ importName: name }),
-                        node
-                    );
-                }
-                importedNames.push(name);
             }
-        });
+        );
     }
 }

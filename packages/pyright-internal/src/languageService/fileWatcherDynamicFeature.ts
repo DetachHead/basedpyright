@@ -21,7 +21,9 @@ import { Workspace } from '../workspaceFactory';
 import { isDefined } from '../common/core';
 import { configFileName } from '../common/pathConsts';
 
-export class FileWatcherDynamicFeature<TWorkspace extends Workspace = Workspace> extends DynamicFeature<DidChangeWatchedFilesRegistrationOptions> {
+export class FileWatcherDynamicFeature<
+    TWorkspace extends Workspace = Workspace
+> extends DynamicFeature<DidChangeWatchedFilesRegistrationOptions> {
     protected override type = DidChangeWatchedFilesNotification.type;
     constructor(
         connection: Connection,
