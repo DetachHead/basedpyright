@@ -65,7 +65,13 @@ export function getTypeOfOperatorNode(
             return getTypeOfUnaryOperation(evaluator, node, EvalFlags.None, undefined);
         }
         case ParseNodeType.BinaryOperation: {
-            return getTypeOfBinaryOperation(evaluator, node, EvalFlags.None, undefined);
+            return getTypeOfBinaryOperation(
+                evaluator,
+                node,
+                EvalFlags.None,
+                undefined,
+                evaluator.getAnalyzerNodeInfoReader()
+            );
         }
         case ParseNodeType.AugmentedAssignment: {
             return getTypeOfAugmentedAssignment(evaluator, node, undefined);

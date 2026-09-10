@@ -295,8 +295,13 @@ export const validateResultsButBased = (
         result = allResults;
     }
     for (const [diagnosticType] of entries(result)) {
-        // TODO: this is gross, also update it so that you can specify expected notebook cells
-        if (diagnosticType === 'fileUri' || diagnosticType === 'parseResults' || diagnosticType === 'cell') {
+        // TODO: this is gross, also update it so that you can specify expected notebook cells and figure out what moduleScope is
+        if (
+            diagnosticType === 'fileUri' ||
+            diagnosticType === 'parseResults' ||
+            diagnosticType === 'cell' ||
+            diagnosticType === 'moduleScope'
+        ) {
             continue;
         }
         const actualResult = result[diagnosticType].map(

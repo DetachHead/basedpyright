@@ -66,13 +66,15 @@ export class SourceEnumerator {
     // them are naturally skipped.
     private readonly _discoveredConfigFiles = new Map<string, Uri>();
 
+    private readonly _longOperationLimitInMs: number;
+
     constructor(
         include: FileSpec[],
         private _excludes: FileSpec[],
         private _autoExcludeVenv: boolean,
         private _fs: FileSystem,
         private _console: ConsoleInterface,
-        private _fileEnumerationTimeoutInSec: number | undefined
+        fileEnumerationTimeoutInSec?: number
     ) {
         this._includesToExplore = include.slice(0).reverse();
 
@@ -80,6 +82,9 @@ export class SourceEnumerator {
         // itself be a symlink) so we can bound enumeration to directories that
         // physically live under one of the workspace's include roots.
         this._includeRoots = include.map((spec) => tryRealpath(_fs, spec.wildcardRoot) ?? spec.wildcardRoot);
+
+        this._longOperationLimitInMs =
+            fileEnumerationTimeoutInSec === undefined ? 10000 : fileEnumerationTimeoutInSec * 1000;
 
         this._console.log(`Searching for source files`);
     }
@@ -125,15 +130,12 @@ export class SourceEnumerator {
         this._elapsedTimeInMs += Date.now() - startTime;
 
         if (!this._loggedLongOperationError) {
-            const longOperationLimitInMs =
-                this._fileEnumerationTimeoutInSec === undefined ? 10000 : this._fileEnumerationTimeoutInSec * 1000;
-
             // If this is taking a long time, log an error to help the user
             // diagnose and mitigate the problem.
             if (this._isSlowEnumeration()) {
                 this._console.error(
                     `Enumeration of workspace source files is taking longer than ${
-                        longOperationLimitInMs * 0.001
+                        this._longOperationLimitInMs * 0.001
                     } seconds.\n` +
                         'This may be because:\n' +
                         '* You have opened your home directory or entire hard drive as a workspace\n' +
@@ -158,7 +160,9 @@ export class SourceEnumerator {
     }
 
     private _isSlowEnumeration(): boolean {
-        return this._elapsedTimeInMs >= longOperationLimitInMs && this._numFilesVisited >= nFilesToSuggestSubfolder;
+        return (
+            this._elapsedTimeInMs >= this._longOperationLimitInMs && this._numFilesVisited >= nFilesToSuggestSubfolder
+        );
     }
 
     private _recordSymlinkedDirectoryRoot(root: Uri): void {

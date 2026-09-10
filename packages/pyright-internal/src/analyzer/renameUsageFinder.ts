@@ -31,7 +31,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
         this._lines = fileToCheck.tokenizerOutput.lines;
         this._oldModuleName =
             'parserOutput' in oldFile
-                ? getFileInfo(oldFile.parserOutput.parseTree).moduleName
+                ? getFileInfo(oldFile.parserOutput.parseTree, _program.analyzerNodeInfoContext).moduleName
                 : this._uriToModuleName(oldFile);
 
         this._newModuleName = this._uriToModuleName(newUri);
@@ -42,7 +42,7 @@ export class RenameUsageFinder extends ParseTreeWalker {
     // ideally this would be covered by visitName, but it seems that for performance reasons,
     // TypeEvaluator.getType doesn't evaluate types on `NameNode`s in import statements
     override visitModuleName = (node: ModuleNameNode): boolean => {
-        const importInfo = getImportInfo(node);
+        const importInfo = getImportInfo(node, this._program.analyzerNodeInfoContext);
         // if it's a relative import we need to evaluate the parts of the name that would otherwise appear before the
         //leading dots
         const currentNameParts = importInfo?.isRelative

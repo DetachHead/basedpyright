@@ -118,7 +118,13 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
             // prevent inlay hints from appearing on enum members
             if (classType && ClassType.isEnumClass(classType)) {
                 ClassType.getSymbolTable(classType).forEach((symbol, name) => {
-                    const symbolType = transformTypeForEnumMember(evaluator, classType, name, true);
+                    const symbolType = transformTypeForEnumMember(
+                        evaluator,
+                        classType,
+                        name,
+                        this._program.analyzerNodeInfoReader,
+                        true
+                    );
                     if (symbolType) {
                         const nameNode = symbol.getDeclarations()[0]?.node;
                         if (nameNode) {

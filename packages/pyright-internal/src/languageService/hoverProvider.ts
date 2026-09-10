@@ -374,7 +374,7 @@ export class HoverProvider {
                             /* resolvedDecl */ undefined
                         );
                         if (!documentationAdded) {
-                            this._addDocumentationForSynthesizedTypes(results.parts, declInfo.synthesizedTypes);
+                            this._addDocumentationForSynthesizedTypes(parts, declInfo.synthesizedTypes);
                         }
                     } else if (!infoNode.parent || infoNode.parent.nodeType !== ParseNodeType.ModuleName) {
                         // If we had no declaration, see if we can provide a minimal tooltip. We'll skip

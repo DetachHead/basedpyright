@@ -68,6 +68,7 @@ interface ClassMemberAccess {
 export class SemanticTokensWalker extends ParseTreeWalker {
     builtinModules = new Set<string>(['builtins', '__builtins__']);
     items: SemanticTokenItem[] = [];
+    private readonly _nodeInfo = this._evaluator.getAnalyzerNodeInfoReader();
 
     constructor(private readonly _evaluator: TypeEvaluator) {
         super();
@@ -89,7 +90,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
         if (node.d.isAsync) {
             modifiers.push(SemanticTokenModifiers.async);
         }
-        const decl = getDeclaration(node);
+        const decl = getDeclaration(node, this._nodeInfo);
         const tokenType = this._getFunctionTokenType(node.d.name, decl, decls, undefined, modifiers);
         this._addItemForNameNode(node.d.name, tokenType, modifiers);
         // parameters & return type are covered by visitName
@@ -740,7 +741,7 @@ export class SemanticTokensWalker extends ParseTreeWalker {
                 FunctionType.isInstanceMethod(parentType) ||
                 FunctionType.isConstructorMethod(parentType));
 
-        if (!(isMethodParam && getScopeForNode(node)?.type === ScopeType.Class)) {
+        if (!(isMethodParam && getScopeForNode(node, this._nodeInfo)?.type === ScopeType.Class)) {
             return (
                 this._getVariableTokenType(node.d.name, type, declarations, modifiers, true) ??
                 SemanticTokenTypes.parameter

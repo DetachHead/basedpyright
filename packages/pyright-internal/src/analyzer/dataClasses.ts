@@ -1352,10 +1352,11 @@ export function isDataclassFieldConstructor(type: Type, fieldDescriptorNames: st
 function guardBasedFeature(
     evaluator: TypeEvaluator,
     node: ParseNode,
+    nodeInfo: AnalyzerNodeInfoAccessor,
     makeDiagnostic: () => [DiagnosticRule, string]
 ): boolean {
     // TODO: find better module for this when we have a new based experiment
-    if (AnalyzerNodeInfo.getFileInfo(node).diagnosticRuleSet.enableBasedFeatures) {
+    if (nodeInfo.getFileInfo(node).diagnosticRuleSet.enableBasedFeatures) {
         return false;
     } else {
         const diagAddendum = new DiagnosticAddendum();
@@ -1520,7 +1521,7 @@ export function validateDataClassTransformDecorator(
 
             case 'skip_replace': {
                 if (
-                    guardBasedFeature(evaluator, arg.d.valueExpr, () => [
+                    guardBasedFeature(evaluator, arg.d.valueExpr, nodeInfo, () => [
                         DiagnosticRule.reportGeneralTypeIssues,
                         LocMessage.dataClassTransformUnknownArgument().format({ name: arg.d.name!.d.value }),
                     ])

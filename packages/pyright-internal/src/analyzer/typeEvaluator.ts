@@ -3870,7 +3870,7 @@ export function createTypeEvaluator(
 
     function isNotTypeCheckingBlock(node: ParseNode): boolean {
         //TODO: abstract this logic, its used in isNodeReachable as well
-        const flowNode = AnalyzerNodeInfo.getFlowNode(node);
+        const flowNode = AnalyzerNodeInfo.getFlowNode(node, nodeInfo);
         if (!flowNode) {
             if (node.parent) {
                 return isNotTypeCheckingBlock(node.parent);
@@ -5017,7 +5017,7 @@ export function createTypeEvaluator(
                             )
                         ) {
                             if (annotationType) {
-                                const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(target);
+                                const liveScopeIds = ParseTreeUtils.getTypeVarScopesForNode(target, nodeInfo);
                                 annotationType = makeTypeVarsBound(annotationType, liveScopeIds);
                             }
 
@@ -21947,7 +21947,13 @@ export function createTypeEvaluator(
                     const suiteInNotTypeChecking =
                         node.d.suite.d.statements.length > 0 && isNotTypeCheckingBlock(node.d.suite.d.statements[0]);
                     if (!subjectTypeResult.isIncomplete && !suiteInNotTypeChecking) {
-                        checkForUnusedPattern(evaluatorInterface, node.d.pattern, subjectType, nodeInfo, node.parent.d.expr);
+                        checkForUnusedPattern(
+                            evaluatorInterface,
+                            node.d.pattern,
+                            subjectType,
+                            nodeInfo,
+                            node.parent.d.expr
+                        );
                     }
                 }
                 break;
@@ -24237,7 +24243,7 @@ export function createTypeEvaluator(
                     };
                 }
                 if (declaration.intrinsicType === 'IPython.display.display') {
-                    const fileInfo = AnalyzerNodeInfo.getFileInfo(declaration.node);
+                    const fileInfo = AnalyzerNodeInfo.getFileInfo(declaration.node, nodeInfo);
                     const lookupResult = fileInfo.importLookup({
                         importingFileUri: fileInfo.fileUri,
                         nameParts: ['IPython', 'display'],

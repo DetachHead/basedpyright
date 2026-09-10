@@ -26,7 +26,7 @@ import { CommandController } from './commands/commandController';
 import { ConfigOptions, SignatureDisplayType } from './common/configOptions';
 import { ConsoleWithLogLevel, LogLevel, convertLogLevel } from './common/console';
 import { isDefined, isString } from './common/core';
-import { resolvePathWithEnvVariables } from './common/envVarUtils';
+import { resolvePathStringWithEnvVariables, resolvePathWithEnvVariables } from './common/envVarUtils';
 import { FileSystem, TempFile } from './common/fileSystem';
 import { Host } from './common/host';
 import { ServerSettings } from './common/languageServerInterface';

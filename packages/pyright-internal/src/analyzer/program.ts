@@ -1268,6 +1268,8 @@ export class Program {
             originalFileInfo.isThirdPartyImport,
             originalFileInfo.isThirdPartyPyTypedPresent,
             this._editModeTracker,
+            this._baselineHandler,
+            () => sourceFileInfo.cellIndex(),
             this._console,
             this._logTracker,
             originalFileInfo.ipythonMode

@@ -660,7 +660,7 @@ export function getTypeNarrowingCallback(
                         evaluator,
                         arg1Type,
                         evaluator.getTypeOfExpression(arg0Expr).type,
-                        getFileInfo(testExpression).diagnosticRuleSet.strictGenericNarrowing
+                        nodeInfo.getFileInfo(testExpression).diagnosticRuleSet.strictGenericNarrowing
                     );
                     const isIncomplete = !!callTypeResult.isIncomplete || !!arg1TypeResult.isIncomplete;
 
@@ -2027,7 +2027,7 @@ function narrowTypeForInstance(
                 // protocol to make sure it keeps the generics when narrowing, but this is only needed for
                 // isinstance checks because you can't specify generics to it
                 (!isTypeIsCheck &&
-                    getFileInfo(errorNode).diagnosticRuleSet.strictGenericNarrowing &&
+                    nodeInfo.getFileInfo(errorNode).diagnosticRuleSet.strictGenericNarrowing &&
                     isFunction(subtype))
             ) {
                 if (isFunction(subtype)) {
