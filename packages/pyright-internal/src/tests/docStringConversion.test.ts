@@ -1246,6 +1246,122 @@ multiple lines.
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
+    test('ForceLiteralPreservesEqualIndentContinuation', () => {
+        const docstring = [
+            'Replace each character in the string using the given translation table.',
+            '',
+            '  table',
+            '    Translation table, which must be a mapping of Unicode ordinals',
+            '    to Unicode ordinals, strings, or None.',
+            '',
+            'The table must implement lookup/indexing via __getitem__, for',
+            'instance a dictionary or list.',
+        ].join('\n');
+
+        const markdown =
+            'Replace each character in the string using the given translation table.\n\n' +
+            [
+                '&nbsp;&nbsp;table',
+                '&nbsp;&nbsp;&nbsp;&nbsp;Translation table, which must be a mapping of Unicode ordinals',
+                '&nbsp;&nbsp;&nbsp;&nbsp;to Unicode ordinals, strings, or None.',
+            ].join(hardBreak) +
+            '\n\n' +
+            [
+                'The table must implement lookup/indexing via \\_\\_getitem\\_\\_, for',
+                'instance a dictionary or list.',
+            ].join(hardBreak);
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test.each([singleTick, doubleTick])('ForceLiteralPreservesMultilineInlineCode (%s)', (delimiter) => {
+        const docstring = [
+            'Summary.',
+            '',
+            `  Use ${delimiter}first`,
+            `  second${delimiter} here.`,
+            '  More prose.',
+            '',
+            'End.',
+        ].join('\n');
+
+        const markdown =
+            'Summary.\n\n' +
+            ['&nbsp;&nbsp;Use `first', 'second` here.', '&nbsp;&nbsp;More prose.'].join(hardBreak) +
+            '\n\nEnd.';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test.each([false, true])('MultilineInlineCodeIndentChangePreservesExistingBehavior (%s)', (forceLiteral) => {
+        for (const delimiter of [singleTick, doubleTick]) {
+            const docstring = [
+                'Summary.',
+                '',
+                `  Use ${delimiter}first`,
+                `    second${delimiter} here.`,
+                '',
+                'End.',
+            ].join('\n');
+            const markdown =
+                'Summary.\n\n' +
+                ['&nbsp;&nbsp;Use `first', '&nbsp;&nbsp;&nbsp;&nbsp;second` here.'].join(hardBreak) +
+                '\n\nEnd.';
+
+            _testConvertToMarkdown(docstring, markdown, forceLiteral);
+        }
+    });
+
+    test.each([false, true])('UnclosedInlineCodePreservesExistingParagraphHandling (%s)', (forceLiteral) => {
+        const docstring = ['Use `unclosed', '', 'Next _paragraph_.', '  indented', 'End.'].join('\n');
+
+        const markdown = 'Use `unclosed\n\n' + ['Next _paragraph_.', '&nbsp;&nbsp;indented', 'End.`'].join(hardBreak);
+
+        _testConvertToMarkdown(docstring, markdown, forceLiteral);
+    });
+
+    test('ForceLiteralPreservesFieldListBodyContinuation', () => {
+        const docstring = [':param x: This is x.', '    continued here.', '    more of the body.', '', 'End.'].join(
+            '\n'
+        );
+
+        const markdown =
+            [
+                ':param x: This is x.',
+                '&nbsp;&nbsp;&nbsp;&nbsp;continued here.',
+                '&nbsp;&nbsp;&nbsp;&nbsp;more of the body.',
+            ].join(hardBreak) + '\n\nEnd.';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test.each([false, true])('MultilineIndentLevels (%s)', (forceLiteral) => {
+        const docstring = [
+            'Summary.',
+            '',
+            '  level 2',
+            '      level 4',
+            '      level 4 more',
+            '  done',
+            '',
+            'Footer.',
+        ].join('\n');
+
+        const markdown =
+            'Summary.\n\n' +
+            [
+                '&nbsp;&nbsp;level 2',
+                '&nbsp;'.repeat(6) +
+                    'level 4' +
+                    (forceLiteral ? hardBreak + '&nbsp;'.repeat(6) : '\n') +
+                    'level 4 more',
+                '&nbsp;&nbsp;done',
+            ].join(hardBreak) +
+            '\n\nFooter.';
+
+        _testConvertToMarkdown(docstring, markdown, forceLiteral);
+    });
+
     test('ForceLiteralBlankLineStaysParagraphBreak', () => {
         const docstring = 'Summary.\n\nLine one\nLine two\n';
 
