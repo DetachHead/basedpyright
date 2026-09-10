@@ -6,9 +6,13 @@ on:
       - created
 
 permissions:
-  actions: write
-  contents: read
-  pull-requests: read
+  actions: write # zizmor: ignore[excessive-permissions] from upstream
+  contents: read # idk
+  pull-requests: read # idk
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   trigger:

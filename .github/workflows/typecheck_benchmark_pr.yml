@@ -1,6 +1,8 @@
 name: Type checker benchmark
 run-name: 'Type checker benchmark for PR #${{ inputs.pr_number }}'
 
+permissions: {}
+
 env:
   BENCHMARK_RUNNER_CLASS: 'github-ubuntu-latest'
   NODE_VERSION: '24.15.0'
@@ -106,10 +108,12 @@ jobs:
       - name: Compare with baseline
         id: comparison
         continue-on-error: true
+        env:
+          baseline_path: '${{ steps.baseline.outputs.path }}'
         run: |
           set +e
           python build/benchmark/compare_benchmarks.py \
-            "${{ steps.baseline.outputs.path }}" \
+            "$baseline_path" \
             build/benchmark/results/latest-linux-x64.json \
             --fail-on-preparation-error \
             --markdown-output build/benchmark/results/report.md
@@ -134,9 +138,9 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: read
-      pull-requests: write
+      actions: read # idk
+      contents: read # idk
+      pull-requests: write # idk
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
