@@ -1413,6 +1413,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extra-path-glob-expansion" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extra Path Glob Expansion
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#configuring-your-python-environment" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1934,6 +1945,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extra-path-glob-expansion" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extra Path Glob Expansion
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#configuring-your-python-environment" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2056,7 +2078,7 @@
 <p>Try to resolve relative to the <strong>root directory</strong> of the execution environment. If no execution environments are specified in the config file, use the root of the workspace. For more information about execution environments, refer to the <a href="../../configuration/config-files/#execution-environment-options">configuration documentation</a>.</p>
 </li>
 <li>
-<p>Try to resolve using any of the <strong>extra paths</strong> defined for the execution environment in the config file. If no execution environment applies, use the <code>basedpyright.analysis.extraPaths</code> setting. Extra paths are searched in the order in which they are provided in the config file or setting.</p>
+<p>Try to resolve using any of the <strong>extra paths</strong> defined for the execution environment in the config file. If no execution environment applies, use the <code>basedpyright.analysis.extraPaths</code> setting. Extra paths are searched in the order in which they are provided in the config file or setting. Extra path entries may contain glob patterns, which are expanded to matching directories; see <a href="#extra-path-glob-expansion">Extra path glob expansion</a>.</p>
 </li>
 <li>
 <p>If no execution environment is configured, try to resolve using the <strong>local directory <code>src</code></strong>. It is common for Python projects to place local source files within a directory of this name.</p>
@@ -2082,6 +2104,36 @@
 <p>For an absolute import, if all of the above attempts fail, attempt to import a module from the same directory as the importing file and parent directories that are also children of the root workspace. This accommodates cases where it is assumed that a Python script will be executed from one of these subdirectories rather than from the root directory.</p>
 </li>
 </ol>
+<h3 id="extra-path-glob-expansion">Extra Path Glob Expansion</h3>
+<p>Each entry in <code>extraPaths</code> may contain glob wildcards. This applies to every source of extra paths: the top-level <code>extraPaths</code> config entry, an execution environment's <code>extraPaths</code>, and the <code>python.analysis.extraPaths</code> setting. Glob entries are expanded to the set of matching directories before import resolution, using the same wildcard syntax as <code>include</code>, <code>exclude</code>, and <code>ignore</code>:</p>
+<ul>
+<li><code>*</code> matches any sequence of characters within a single path segment.</li>
+<li><code>**</code> matches any number of characters, including path separators (a recursive directory wildcard).</li>
+<li><code>?</code> matches a single character.</li>
+</ul>
+<p>Only <strong>directories</strong> are matched; a file is never added as an extra path. An entry that contains no wildcard character is treated as a literal path and, as before, is not required to exist. An empty or whitespace-only entry is ignored. Relative entries are resolved against the same base directory as literal extra paths (the config file's directory for config entries, or the project root for the setting).</p>
+<p>Expansion is deterministic and preserves the order-sensitive contract of <code>extraPaths</code> (extra paths are searched in the order in which they are provided):</p>
+<ol>
+<li><strong>In-place expansion.</strong> A glob entry is replaced, at its position in the list, by the directories it matches, sorted in ascending order by their path. The comparison is case-sensitive and ordinal (paths are compared by Unicode code point after normalizing to NFC), so it is independent of the user's locale, culture, Unicode normalization form, and operating system, and the expanded order is identical everywhere. Locale-aware collation is deliberately not used.</li>
+<li><strong>Precedence on duplicates.</strong> When the same directory would be produced more than once, an explicit (non-wildcard) entry always wins and keeps its own position, even relative to an earlier glob; among glob entries, the earlier glob in the list wins. The losing duplicate is dropped. Two literal entries that resolve to the same path keep the first occurrence.</li>
+</ol>
+<p>The comparison used for de-duplication drops a trailing path separator and is <strong>case-sensitive</strong>: two entries that differ only in case are treated as distinct, because case affects the resolved module name. Symbolic links are <strong>not</strong> resolved — the matched path is used as-is so that it maps to the intended module name — but symbolic-link cycles are guarded against during expansion, the same way they are when scanning <code>include</code> file specs.</p>
+<p>A glob that matches no directory contributes nothing; this is not an error. The fully resolved extra paths, after expansion, are written to the log when verbose logging is enabled.</p>
+<p>Glob expansion applies only to local (<code>file</code>-scheme) paths. An entry on a virtual or non-<code>file</code> filesystem is treated as a literal path (its wildcards are not expanded), so glob syntax has no effect on virtual workspaces.</p>
+<p>De-duplication and ordering are computed independently for each resolved <code>extraPaths</code> list. Because an execution environment's <code>extraPaths</code> overrides (rather than merges with) the default <code>extraPaths</code>, expansion runs on whichever list applies to a given file.</p>
+<p>For example, consider this directory layout:</p>
+<div class="highlight"><pre><span></span><code>libs/
+├── auth/src/
+├── core/src/
+└── shared/src/
+</code></pre></div>
+<p>Given <code>extraPaths</code> of <code>["libs/shared/src", "libs/*/src"]</code>:</p>
+<ul>
+<li><code>libs/shared/src</code> is a literal entry, so it keeps its position at the front of the list.</li>
+<li><code>libs/*/src</code> expands, in ascending order, to <code>libs/auth/src</code>, <code>libs/core/src</code>, and <code>libs/shared/src</code>, but <code>libs/shared/src</code> is dropped from the expansion because the literal entry already owns that path.</li>
+</ul>
+<p>The resulting order is <code>libs/shared/src</code>, <code>libs/auth/src</code>, <code>libs/core/src</code>.</p>
+<p>When two globs match the same directory, the earlier glob keeps it. For example, over a tree that contains <code>external/pip310_numpy/site-packages</code>, the list <code>["external/pip310_*/site-packages", "external/pip3??_numpy/site-packages"]</code> contributes that directory from the first glob and drops it from the second.</p>
 <h3 id="configuring-your-python-environment">Configuring Your Python Environment</h3>
 <p>Pyright does not require a Python environment to be configured if all imports can be resolved using local files and type stubs. If a Python environment is configured, it will attempt to use the packages installed in the <code>site-packages</code> subdirectory during import resolution.</p>
 <p>Pyright uses the following mechanisms (in priority order) to determine which Python environment to use:</p>
