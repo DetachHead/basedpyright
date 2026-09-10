@@ -48,7 +48,7 @@ test('type stub generation returns files without writing to the file system', as
     assert.strictEqual(result.files.length, 1);
     assert.strictEqual(result.files[0].uri.toString(), stubUri.toString());
     assert.strictEqual(result.files[0].kind, 'stub');
-    assert.match(result.files[0].contents, /def answer\(\): # -> Literal\[42\]:/);
+    assert.match(result.files[0].contents, /def answer\(\) -> Literal\[42\]:/);
 });
 
 test.each([
@@ -473,7 +473,7 @@ test('partial generation appends the package marker to generated stubs', () => {
             },
         ]
     );
-    assert.match(result.files[0].contents, /def answer\(\): # -> Literal\[42\]:/);
+    assert.match(result.files[0].contents, /def answer\(\) -> Literal\[42\]:/);
     assert.strictEqual(result.files[1].contents, 'partial\n');
 });
 

@@ -61,10 +61,14 @@ const transform = {
     ],
 };
 
+const esmModules = ['pyright-to-gitlab-ci'];
+
 module.exports = {
     testEnvironment: 'node',
     roots: ['<rootDir>/src/tests'],
     transform,
+    // https://github.com/jestjs/jest/issues/12984#issuecomment-1198204906
+    transformIgnorePatterns: [`node_modules/(?!(?:.pnpm/)?(${esmModules.join('|')}))`],
     // Place jest's transform cache inside node_modules so the existing node_modules CI cache
     // preserves it across runs.
     cacheDirectory: '<rootDir>/node_modules/.cache/jest',
