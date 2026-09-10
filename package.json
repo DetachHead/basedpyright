@@ -5,7 +5,7 @@
     "scripts": {
         "installPinnedPackageManager": "node ./build/installPinnedPackageManager.js",
         "test": "pnpm --dir packages/pyright-internal test",
-        "build:extension:dev": "pnpm --dir run webpack",
+        "build:extension:dev": "pnpm --dir packages/vscode-pyright run webpack",
         "build:extension": "pnpm --dir packages/vscode-pyright run package",
         "build:cli:dev": "pnpm --dir packages/pyright run webpack",
         "watch:extension": "pnpm --dir packages/vscode-pyright run webpack-dev",
