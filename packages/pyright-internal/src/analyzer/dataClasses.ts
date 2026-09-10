@@ -25,8 +25,7 @@ import {
     ParseNodeType,
     TypeAnnotationNode,
 } from '../parser/parseNodes';
-import * as AnalyzerNodeInfo from './analyzerNodeInfo';
-import { getFileInfo } from './analyzerNodeInfo';
+import { AnalyzerNodeInfoAccessor } from './analyzerNodeInfo';
 import { ConstraintSolution } from './constraintSolution';
 import { ConstraintTracker } from './constraintTracker';
 import { createFunctionFromConstructor, getBoundInitMethod } from './constructors';
@@ -193,7 +192,8 @@ export function synthesizeDataClassMethods(
     isNamedTuple: boolean,
     skipSynthesizeInit: boolean,
     hasExistingInitMethod: boolean,
-    skipSynthesizeHash: boolean
+    skipSynthesizeHash: boolean,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ) {
     assert(ClassType.isDataClass(classType) || isNamedTuple);
 
@@ -230,7 +230,7 @@ export function synthesizeDataClassMethods(
     let replaceType: FunctionType | undefined;
     if (
         PythonVersion.isGreaterOrEqualTo(
-            AnalyzerNodeInfo.getFileInfo(node).executionEnvironment.pythonVersion,
+            nodeInfo.getFileInfo(node).executionEnvironment.pythonVersion,
             pythonVersion3_13
         )
     ) {
@@ -332,6 +332,7 @@ export function synthesizeDataClassMethods(
             let variableTypeEvaluator: EntryTypeEvaluator | undefined;
             let hasDefault = false;
             let isDefaultFactory = false;
+            let isFieldSpecifierWithoutDefault = false;
             let isKeywordOnly = ClassType.isDataClassKeywordOnly(classType) || sawKeywordOnlySeparator;
             let defaultExpr: ExpressionNode | undefined;
             let includeInInit = true;
@@ -382,7 +383,7 @@ export function synthesizeDataClassMethods(
                     ) {
                         const initArg = statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'init');
                         if (initArg && initArg.d.valueExpr) {
-                            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                            const fileInfo = nodeInfo.getFileInfo(node);
                             includeInInit =
                                 evaluateStaticBoolExpression(
                                     initArg.d.valueExpr,
@@ -401,7 +402,7 @@ export function synthesizeDataClassMethods(
 
                         const kwOnlyArg = statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'kw_only');
                         if (kwOnlyArg && kwOnlyArg.d.valueExpr) {
-                            const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                            const fileInfo = nodeInfo.getFileInfo(node);
                             isKeywordOnly =
                                 evaluateStaticBoolExpression(
                                     kwOnlyArg.d.valueExpr,
@@ -436,6 +437,8 @@ export function synthesizeDataClassMethods(
                         if (defaultFactoryArg?.d.valueExpr) {
                             defaultExpr = defaultFactoryArg.d.valueExpr;
                         }
+
+                        isFieldSpecifierWithoutDefault = !hasDefault;
 
                         const aliasArg = statement.d.rightExpr.d.args.find((arg) => arg.d.name?.d.value === 'alias');
                         if (aliasArg) {
@@ -576,9 +579,15 @@ export function synthesizeDataClassMethods(
                     if (insertIndex >= 0) {
                         const oldEntry = fullDataClassEntries[insertIndex];
 
-                        // While this isn't documented behavior, it appears that the dataclass implementation
-                        // causes overridden variables to "inherit" default values from parent classes.
-                        if (!dataClassEntry.hasDefault && oldEntry.hasDefault && oldEntry.includeInInit) {
+                        // A bare annotation (`x: int`) inherits a parent field's default at
+                        // runtime. An explicit `field()` with no default or default_factory
+                        // does not, so the synthesized __init__ parameter is required.
+                        if (
+                            !dataClassEntry.hasDefault &&
+                            oldEntry.hasDefault &&
+                            oldEntry.includeInInit &&
+                            !isFieldSpecifierWithoutDefault
+                        ) {
                             dataClassEntry.hasDefault = true;
                             dataClassEntry.defaultExpr = oldEntry.defaultExpr;
                             hasDefault = true;
@@ -695,7 +704,13 @@ export function synthesizeDataClassMethods(
 
                     if (entry.converter) {
                         const fieldType = effectiveType;
-                        effectiveType = getConverterInputType(evaluator, entry.converter, effectiveType, entry.name);
+                        effectiveType = getConverterInputType(
+                            evaluator,
+                            entry.converter,
+                            effectiveType,
+                            entry.name,
+                            nodeInfo
+                        );
                         symbolTable.set(
                             entry.name,
                             getDescriptorForConverterField(
@@ -706,7 +721,8 @@ export function synthesizeDataClassMethods(
                                 entry.converter,
                                 entry.name,
                                 fieldType,
-                                effectiveType
+                                effectiveType,
+                                nodeInfo
                             )
                         );
 
@@ -719,9 +735,9 @@ export function synthesizeDataClassMethods(
                                 defaultType = entry.type;
                             } else {
                                 const defaultExpr = entry.defaultExpr;
-                                const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+                                const fileInfo = nodeInfo.getFileInfo(node);
                                 const flags = fileInfo.isStubFile ? EvalFlags.ConvertEllipsisToAny : EvalFlags.None;
-                                const liveTypeVars = getTypeVarScopesForNode(entry.defaultExpr);
+                                const liveTypeVars = getTypeVarScopesForNode(entry.defaultExpr, nodeInfo);
                                 const boundEffectiveType = makeTypeVarsBound(effectiveType, liveTypeVars);
 
                                 // Use speculative mode here so we don't cache the results.
@@ -1015,7 +1031,8 @@ function getConverterInputType(
     evaluator: TypeEvaluator,
     converterNode: ArgumentNode,
     fieldType: Type,
-    fieldName: string
+    fieldName: string,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ): Type {
     // Use speculative mode here so we don't cache the results.
     // We'll want to re-evaluate this expression later, potentially
@@ -1033,7 +1050,7 @@ function getConverterInputType(
     // Create synthesized function of the form Callable[[T], fieldType] which
     // will be used to check compatibility of the provided converter.
     const typeVar = TypeVarType.createInstance('__converterInput');
-    typeVar.priv.scopeId = getScopeIdForNode(converterNode);
+    typeVar.priv.scopeId = getScopeIdForNode(converterNode, nodeInfo);
     const targetFunction = FunctionType.createSynthesizedInstance('');
     targetFunction.shared.typeVarScopeId = typeVar.priv.scopeId;
     targetFunction.shared.declaredReturnType = fieldType;
@@ -1158,9 +1175,10 @@ function getDescriptorForConverterField(
     converterNode: ParseNode,
     fieldName: string,
     getType: Type,
-    setType: Type
+    setType: Type,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ): Symbol {
-    const fileInfo = getFileInfo(dataclassNode);
+    const fileInfo = nodeInfo.getFileInfo(dataclassNode);
     const typeMetaclass = evaluator.getBuiltInType(dataclassNode, 'type');
     const descriptorName = `__converterDescriptor_${fieldName}`;
 
@@ -1175,7 +1193,7 @@ function getDescriptorForConverterField(
         isInstantiableClass(typeMetaclass) ? typeMetaclass : UnknownType.create()
     );
 
-    const scopeId = getScopeIdForNode(converterNode);
+    const scopeId = getScopeIdForNode(converterNode, nodeInfo);
     descriptorClass.shared.typeVarScopeId = scopeId;
 
     // Make the descriptor generic, copying the type parameters from the dataclass.
@@ -1351,7 +1369,8 @@ function guardBasedFeature(
 
 export function validateDataClassTransformDecorator(
     evaluator: TypeEvaluator,
-    node: CallNode
+    node: CallNode,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ): DataClassBehaviors | undefined {
     const behaviors: DataClassBehaviors = {
         skipGenerateInit: false,
@@ -1366,7 +1385,7 @@ export function validateDataClassTransformDecorator(
         fieldDescriptorNames: [],
     };
 
-    const fileInfo = AnalyzerNodeInfo.getFileInfo(node);
+    const fileInfo = nodeInfo.getFileInfo(node);
 
     // Parse the arguments to the call.
     node.d.args.forEach((arg) => {
@@ -1585,9 +1604,10 @@ function applyDataClassBehaviorOverride(
     classType: ClassType,
     argName: string,
     argValueExpr: ExpressionNode,
-    behaviors: DataClassBehaviors
+    behaviors: DataClassBehaviors,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ) {
-    const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
+    const fileInfo = nodeInfo.getFileInfo(errorNode);
     const value = evaluateStaticBoolExpression(argValueExpr, fileInfo.executionEnvironment, fileInfo.definedConstants);
 
     applyDataClassBehaviorOverrideValue(evaluator, errorNode, classType, argName, value, behaviors);
@@ -1712,7 +1732,8 @@ export function applyDataClassClassBehaviorOverrides(
     errorNode: ParseNode,
     classType: ClassType,
     args: Arg[],
-    defaultBehaviors: DataClassBehaviors
+    defaultBehaviors: DataClassBehaviors,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ) {
     let sawFrozenArg = false;
 
@@ -1732,7 +1753,8 @@ export function applyDataClassClassBehaviorOverrides(
                 classType,
                 arg.name.d.value,
                 arg.valueExpression,
-                behaviors
+                behaviors,
+                nodeInfo
             );
 
             if (arg.name.d.value === 'frozen') {
@@ -1761,13 +1783,15 @@ export function applyDataClassDecorator(
     errorNode: ParseNode,
     classType: ClassType,
     defaultBehaviors: DataClassBehaviors,
-    callNode: CallNode | undefined
+    callNode: CallNode | undefined,
+    nodeInfo: AnalyzerNodeInfoAccessor
 ) {
     applyDataClassClassBehaviorOverrides(
         evaluator,
         errorNode,
         classType,
         (callNode?.d.args ?? []).map((arg) => evaluator.convertNodeToArg(arg)),
-        defaultBehaviors
+        defaultBehaviors,
+        nodeInfo
     );
 }

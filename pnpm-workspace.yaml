@@ -1,8 +1,13 @@
 packages:
   - 'packages/*'
   - '!packages/pyright-typeserver' # not supported in basedpyright
+lockfileIncludeTarballUrl: false
+strictDepBuilds: false
 allowBuilds:
-  '@vscode/vsce-sign': false
-  esbuild: false
-  keytar: false
-  unrs-resolver: false
+  '@vscode/vsce-sign': true
+  esbuild: true
+  keytar: true
+  unrs-resolver: true
+
+overrides:
+  tar: '7.5.11'

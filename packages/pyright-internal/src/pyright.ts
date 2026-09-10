@@ -23,7 +23,14 @@ import { AnalysisResults } from './analyzer/analysis';
 import { PackageTypeReport, TypeKnownStatus } from './analyzer/packageTypeReport';
 import { PackageTypeVerifier } from './analyzer/packageTypeVerifier';
 import { AnalyzerService } from './analyzer/service';
-import { TypeStubWriter } from './analyzer/typeStubWriter';
+import {
+    collectTypeStubSourceFileUris,
+    createTypeStubGenerationPlan,
+    generateTypeStubFiles,
+    ResolvedTypeStubTargetWithSources,
+    resolveTypeStubTarget,
+} from './analyzer/typeStubGeneration';
+import { writeGeneratedTypeStubFiles } from './analyzer/typeStubOutput';
 import { maxSourceFileSize } from './analyzer/sourceFile';
 import { SourceFileInfo } from './analyzer/sourceFileInfo';
 import { initializeDependencies } from './common/asyncInitialization';
@@ -407,10 +414,6 @@ async function processArgs(): Promise<ExitStatus> {
         options.configSettings.baselineFile = combinePaths(process.cwd(), normalizePath(args['baselinefile']));
     }
 
-    if (args.createstub) {
-        options.languageServerSettings.typeStubTargetImportName = args.createstub;
-    }
-
     if (args.skipunannotated) {
         options.configSettings.analyzeUnannotatedFunctions = false;
     }
@@ -481,6 +484,7 @@ async function processArgs(): Promise<ExitStatus> {
         hostFactory: () => new FullAccessHost(serviceProvider),
         // Refresh service 2 seconds after the last library file change is detected.
         libraryReanalysisTimeProvider: () => 2 * 1000,
+        skipScanningUserFiles: !!args.createstub,
         shouldRunAnalysis: () => true,
     });
 
@@ -611,8 +615,14 @@ async function runSingleThreaded(
     output: ConsoleInterface
 ) {
     const watch = args.watch !== undefined;
+    let typeStubTarget: ResolvedTypeStubTargetWithSources | undefined;
 
     const exitStatus = createDeferred<ExitStatus>();
+    const reportTypeStubError = (error: unknown) => {
+        const message = error instanceof Error ? error.message : '';
+        console.error(`Error occurred when creating type stub: ${message}`);
+        exitStatus.resolve(ExitStatus.FatalError);
+    };
 
     service.setCompletionCallback((results) => {
         if (results.fatalErrorOccurred) {
@@ -630,28 +640,22 @@ async function runSingleThreaded(
         if (args.createstub) {
             try {
                 try {
-                    const typeStubTargetInfo = service.getTypeStubTargetInfo();
-                    new TypeStubWriter(service.backgroundAnalysisProgram.program).writeTypeStub(
-                        {
-                            targetImportPath: typeStubTargetInfo.targetImportPath,
-                            targetIsSingleFile: typeStubTargetInfo.targetIsSingleFile,
-                            outputPath: typeStubTargetInfo.outputPath,
-                            stubPath: typeStubTargetInfo.stubPath,
-                        },
+                    if (!typeStubTarget) {
+                        throw new Error(`Import '${args.createstub}' could not be resolved`);
+                    }
+                    const plan = createTypeStubGenerationPlan(typeStubTarget);
+                    const result = generateTypeStubFiles(
+                        service.backgroundAnalysisProgram.program,
+                        plan,
                         cancellationNone
                     );
+                    writeGeneratedTypeStubFiles(service.fs, result.files);
                 } finally {
                     service.dispose();
                 }
                 console.info(`Type stub was created for '${args.createstub}'`);
             } catch (err) {
-                let errMessage = '';
-                if (err instanceof Error) {
-                    errMessage = err.message;
-                }
-
-                console.error(`Error occurred when creating type stub: ${errMessage}`);
-                exitStatus.resolve(ExitStatus.FatalError);
+                reportTypeStubError(err);
                 return;
             }
             exitStatus.resolve(ExitStatus.NoErrors);
@@ -689,6 +693,23 @@ async function runSingleThreaded(
 
     // This will trigger the analyzer.
     service.setOptions(options);
+    if (args.createstub) {
+        try {
+            typeStubTarget = resolveTypeStubTarget(
+                service.getImportResolver(),
+                service.getConfigOptions(),
+                args.createstub
+            );
+            service.backgroundAnalysisProgram.setAllowedThirdPartyImports([args.createstub]);
+            service.backgroundAnalysisProgram.setTrackedFiles([
+                ...collectTypeStubSourceFileUris(service.fs, typeStubTarget, cancellationNone),
+            ]);
+        } catch (error) {
+            service.dispose();
+            reportTypeStubError(error);
+            return exitStatus.promise;
+        }
+    }
     service.enumerateSourceFiles(0);
 
     return await exitStatus.promise;

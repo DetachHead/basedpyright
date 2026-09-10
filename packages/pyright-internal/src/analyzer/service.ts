@@ -27,7 +27,7 @@ import { EditableProgram, ProgramView } from '../common/extensibility';
 import { FileSystem } from '../common/fileSystem';
 import { FileWatcher, FileWatcherEventType, ignoredWatchEventFunction } from '../common/fileWatcher';
 import { Host, HostFactory, NoAccessHost } from '../common/host';
-import { configFileName, defaultStubsDirectory, pyprojectTomlName } from '../common/pathConsts';
+import { configFileName, defaultExcludes, defaultStubsDirectory, pyprojectTomlName } from '../common/pathConsts';
 import { getFileName, isRootedDiskPath, normalizeSlashes } from '../common/pathUtils';
 import { PythonVersion } from '../common/pythonVersion';
 import { ServiceKeys } from '../common/serviceKeys';
@@ -42,7 +42,7 @@ import {
     getFileSpec,
     hasPythonExtension,
     isDirectory,
-    isFile,
+    tryRealpath,
     tryStat,
 } from '../common/uri/uriUtils';
 import { AnalysisCompleteCallback } from './analysis';
@@ -52,7 +52,7 @@ import {
     InvalidatedReason,
 } from './backgroundAnalysisProgram';
 import { ImportLogger } from './importLogger';
-import { ImportResolver, ImportResolverFactory, createImportedModuleDescriptor } from './importResolver';
+import { ImportResolver, ImportResolverFactory } from './importResolver';
 import { ChangedRange, MaxAnalysisTime, Program } from './program';
 import { findPythonSearchPaths } from './pythonPathUtils';
 import {
@@ -104,11 +104,9 @@ export interface AnalyzerServiceOptions {
     shouldRunAnalysis: () => boolean;
 }
 
-export interface TypeStubTargetInfo {
-    outputPath: Uri;
-    stubPath: Uri;
-    targetImportPath: Uri;
-    targetIsSingleFile: boolean;
+interface AnalyzerServiceCloneOptions {
+    backgroundAnalysis?: IBackgroundAnalysis;
+    fileSystem?: FileSystem;
 }
 
 interface ConfigFileContents {
@@ -130,9 +128,8 @@ export class AnalyzerService {
 
     private _instanceName: string;
     private _executionRootUri: Uri;
-    private _typeStubTargetUri: Uri | undefined;
-    private _typeStubTargetIsSingleFile = false;
     private _sourceFileWatcher: FileWatcher | undefined;
+    private readonly _sourceFileWatcherSymlinkDirectories = new UriMap<true>();
     private _reloadConfigTimer: any;
     private _libraryReanalysisTimer: any;
     private _primaryConfigFileUri: Uri | undefined;
@@ -239,19 +236,18 @@ export class AnalyzerService {
         this._instanceName = instanceName;
     }
 
-    clone(
-        instanceName: string,
-        serviceId: string,
-        backgroundAnalysis?: IBackgroundAnalysis,
-        fileSystem?: FileSystem
-    ): AnalyzerService {
+    clone(instanceName: string, serviceId: string, options: AnalyzerServiceCloneOptions = {}): AnalyzerService {
+        // Share the current effective configuration, but keep transient tracked-file and import state on each Program.
         const service = new AnalyzerService(instanceName, this._serviceProvider, {
             ...this.options,
             serviceId,
-            backgroundAnalysis,
+            backgroundAnalysis: options.backgroundAnalysis,
+            configOptions: this._configOptions,
             skipScanningUserFiles: true,
-            fileSystem,
+            fileSystem: options.fileSystem,
         });
+        service.backgroundAnalysisProgram.setConfigOptions(service.getConfigOptions());
+        service.backgroundAnalysisProgram.setImportResolver(service.getImportResolver());
 
         // Cloned service will use whatever user files the service currently has.
         const userFiles = this.getUserFiles();
@@ -497,8 +493,8 @@ export class AnalyzerService {
         return Array.from(results.matches.values());
     }
 
-    test_shouldHandleSourceFileWatchChanges(uri: Uri, isFile: boolean) {
-        return this._shouldHandleSourceFileWatchChanges(uri, isFile);
+    test_shouldHandleSourceFileWatchChanges(uri: Uri, isFile: boolean, event?: FileWatcherEventType) {
+        return this._shouldHandleSourceFileWatchChanges(uri, isFile, event);
     }
 
     test_setOnInvalidatedCallback(onInvalidated: ((reason: InvalidatedReason) => void) | undefined) {
@@ -507,35 +503,6 @@ export class AnalyzerService {
 
     test_shouldHandleLibraryFileWatchChanges(uri: Uri, libSearchUris: Uri[]) {
         return this._shouldHandleLibraryFileWatchChanges(uri, libSearchUris);
-    }
-
-    getTypeStubTargetInfo(): TypeStubTargetInfo {
-        const stubPath =
-            this._configOptions.stubPath ??
-            this.fs.realCasePath(this._configOptions.projectRoot.resolvePaths(defaultStubsDirectory));
-
-        // we cast _console to ConsoleInterface because console.error is allowed here since the usages throw errors immediately after
-        // but we still want to know if any upstream changes come in that don't
-
-        if (!this._typeStubTargetUri || !this._typeStubTargetImportName) {
-            const errMsg = `Import '${this._typeStubTargetImportName}'` + ` could not be resolved`;
-            (this._console as ConsoleInterface).error(errMsg);
-            throw new Error(errMsg);
-        }
-
-        const typeStubInputTargetParts = this._typeStubTargetImportName.split('.');
-        if (typeStubInputTargetParts[0].length === 0) {
-            const errMsg = `Import '${this._typeStubTargetImportName}'` + ` could not be resolved`;
-            (this._console as ConsoleInterface).error(errMsg);
-            throw new Error(errMsg);
-        }
-
-        return {
-            outputPath: stubPath.resolvePaths(typeStubInputTargetParts[0]),
-            stubPath,
-            targetImportPath: this._typeStubTargetUri,
-            targetIsSingleFile: this._typeStubTargetIsSingleFile,
-        };
     }
 
     invalidateAndScheduleReanalysis(reason: InvalidatedReason) {
@@ -794,10 +761,6 @@ export class AnalyzerService {
         return !!this._configOptions.verboseOutput;
     }
 
-    private get _typeStubTargetImportName() {
-        return this._commandLineOptions?.languageServerSettings.typeStubTargetImportName;
-    }
-
     // Calculates the effective options based on the command-line options,
     // an optional config file, and default values.
     private _getConfigOptions(host: Host, commandLineOptions: CommandLineOptions): ConfigOptions {
@@ -940,7 +903,8 @@ export class AnalyzerService {
                     config.configFileJsonObj,
                     config.configFileDirUri,
                     // TODO: will this ever be a different console to this._console?
-                    this.serviceProvider.console()
+                    this.serviceProvider.console(),
+                    this.fs
                 );
             }
         }
@@ -955,8 +919,6 @@ export class AnalyzerService {
         executionRoot: Uri,
         commandLineOptions: CommandLineOptions
     ) {
-        const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
-
         // If no include paths were provided, assume that all files within
         // the project should be included.
         if (configOptions.include.length === 0) {
@@ -964,18 +926,39 @@ export class AnalyzerService {
             configOptions.include.push(getFileSpec(projectRoot, '.'));
         }
 
-        // If there was no explicit set of excludes, add a few common ones to
-        // avoid long scan times.
-        if (configOptions.exclude.length === 0) {
-            defaultExcludes.forEach((exclude) => {
-                this._console.info(`Auto-excluding ${exclude}`);
-                configOptions.exclude.push(getFileSpec(projectRoot, exclude));
-            });
+        // Record whether the user explicitly provided any excludes before we (optionally) add
+        // the default excludes below. Consumers (e.g. Pylance's workspace routing) use this to
+        // distinguish files orphaned only by implicit defaults from files the user explicitly
+        // excluded.
+        configOptions.userSpecifiedExcludes = configOptions.exclude.length > 0;
 
-            if (configOptions.autoExcludeVenv === undefined) {
-                configOptions.autoExcludeVenv = true;
-            }
+        // Add the built-in default excludes unless the user turned them off via the
+        // `useDefaultExcludes` setting (defaults to on). When enabled, these defaults are applied
+        // additively on top of any user-specified excludes and, like any other exclude, take
+        // precedence over `include` — a directory auto-detected as a virtual environment stays
+        // excluded even when it is explicitly included. When disabled, no default excludes are
+        // added and virtual-environment auto-detection is left off, so nothing is auto-excluded.
+        const useDefaultExcludes = commandLineOptions.configSettings.useDefaultExcludes ?? true;
+        if (useDefaultExcludes) {
+            // Deduplicate against patterns the user already listed (by compiled regex source) so
+            // specifying a custom exclude never silently drops — or duplicates — the defaults.
+            const existingExcludeRegExps = new Set(configOptions.exclude.map((spec) => spec.regExp.source));
+            defaultExcludes.forEach((exclude) => {
+                const fileSpec = getFileSpec(projectRoot, exclude);
+                if (existingExcludeRegExps.has(fileSpec.regExp.source)) {
+                    return;
+                }
+
+                this._console.info(`Auto-excluding ${exclude}`);
+                existingExcludeRegExps.add(fileSpec.regExp.source);
+                configOptions.exclude.push(fileSpec);
+            });
         }
+
+        // Virtual-environment auto-detection is part of the default-exclude set, so it follows the
+        // same `useDefaultExcludes` gate. Assigning it unconditionally (rather than behind an
+        // `=== undefined` guard) is idempotent because this method is its single writer.
+        configOptions.autoExcludeVenv = useDefaultExcludes;
 
         if (!configOptions.defaultExtraPaths) {
             configOptions.ensureDefaultExtraPaths(
@@ -1446,75 +1429,7 @@ export class AnalyzerService {
     // have changed. Unconditional dirtying is needed in the case where
     // configuration options have changed.
     private _updateTrackedFileList(markFilesDirtyUnconditionally: boolean) {
-        // Are we in type stub generation mode? If so, we need to search
-        // for a different set of files.
-        if (this._typeStubTargetImportName) {
-            const execEnv = this._configOptions.findExecEnvironment(this._executionRootUri);
-            const moduleDescriptor = createImportedModuleDescriptor(this._typeStubTargetImportName);
-            const importResult = this._backgroundAnalysisProgram.importResolver.resolveImport(
-                Uri.empty(),
-                execEnv,
-                moduleDescriptor
-            );
-
-            if (importResult.isImportFound) {
-                const filesToImport: Uri[] = [];
-
-                // Determine the directory that contains the root package.
-                const finalResolvedPath = importResult.resolvedUris[importResult.resolvedUris.length - 1];
-                const isFinalPathFile = isFile(this.fs, finalResolvedPath);
-                const isFinalPathInitFile =
-                    isFinalPathFile && finalResolvedPath.stripAllExtensions().fileName === '__init__';
-
-                let rootPackagePath = finalResolvedPath;
-
-                if (isFinalPathFile) {
-                    // If the module is a __init__.pyi? file, use its parent directory instead.
-                    rootPackagePath = rootPackagePath.getDirectory();
-                }
-
-                for (let i = importResult.resolvedUris.length - 2; i >= 0; i--) {
-                    if (!importResult.resolvedUris[i].isEmpty()) {
-                        rootPackagePath = importResult.resolvedUris[i];
-                    } else {
-                        // If there was no file corresponding to this portion
-                        // of the name path, assume that it's contained
-                        // within its parent directory.
-                        rootPackagePath = rootPackagePath.getDirectory();
-                    }
-                }
-
-                if (isDirectory(this.fs, rootPackagePath)) {
-                    this._typeStubTargetUri = rootPackagePath;
-                } else if (isFile(this.fs, rootPackagePath)) {
-                    // This can occur if there is a "dir/__init__.py" at the same level as a
-                    // module "dir/module.py" that is specifically targeted for stub generation.
-                    this._typeStubTargetUri = rootPackagePath.getDirectory();
-                }
-
-                if (finalResolvedPath.isEmpty()) {
-                    this._typeStubTargetIsSingleFile = false;
-                } else {
-                    filesToImport.push(finalResolvedPath);
-                    this._typeStubTargetIsSingleFile = importResult.resolvedUris.length === 1 && !isFinalPathInitFile;
-                }
-
-                // Add the implicit import paths.
-                importResult.filteredImplicitImports?.forEach((implicitImport) => {
-                    if (ImportResolver.isSupportedImportSourceFile(implicitImport.uri)) {
-                        filesToImport.push(implicitImport.uri);
-                    }
-                });
-
-                this._backgroundAnalysisProgram.setAllowedThirdPartyImports([this._typeStubTargetImportName]);
-                this._backgroundAnalysisProgram.setTrackedFiles(filesToImport);
-            } else {
-                // TODO: whats this and should the error cause a non-zero exit code?
-                (this._console as ConsoleInterface).error(`Import '${this._typeStubTargetImportName}' not found`);
-            }
-
-            this._requireTrackedFileUpdate = false;
-        } else if (!this.options.skipScanningUserFiles) {
+        if (!this.options.skipScanningUserFiles) {
             // Allocate a new source enumerator. We'll call this
             // repeatedly until all source files are found.
             this._sourceEnumerator = new SourceEnumerator(
@@ -1579,13 +1494,20 @@ export class AnalyzerService {
                     // Make sure path is the true case.
                     uri = this.fs.realCasePath(uri);
 
-                    const eventInfo = getEventInfo(this.fs, this._console, this._program, event, uri);
+                    const eventInfo = getEventInfo(
+                        this.fs,
+                        this._console,
+                        this._program,
+                        event,
+                        uri,
+                        this._sourceFileWatcherSymlinkDirectories.has(uri)
+                    );
                     if (!eventInfo) {
                         // no-op event, return.
                         return;
                     }
 
-                    if (!this._shouldHandleSourceFileWatchChanges(uri, eventInfo.isFile)) {
+                    if (!this._shouldHandleSourceFileWatchChanges(uri, eventInfo.isFile, eventInfo.event)) {
                         return;
                     }
 
@@ -1627,8 +1549,9 @@ export class AnalyzerService {
             console: NoErrorConsole,
             program: Program,
             event: FileWatcherEventType,
-            path: Uri
-        ) {
+            path: Uri,
+            wasSymlinkedDirectory: boolean
+        ): { event: FileWatcherEventType; isFile: boolean } | undefined {
             // Due to the way we implemented file watcher, we will only get 2 events; 'add' and 'change'.
             // Here, we will convert those 2 to 3 events. 'add', 'change' and 'unlink';
             const stats = tryStat(fs, path);
@@ -1649,7 +1572,7 @@ export class AnalyzerService {
                     const isFile = !!program.getSourceFile(path) || path.fileName === _pyTypedMarkerFileName;
 
                     // If not, check whether it is a part of the workspace at all.
-                    if (!isFile && !program.containsSourceFileIn(path)) {
+                    if (!isFile && !program.containsSourceFileIn(path) && !wasSymlinkedDirectory) {
                         // There is no source file under the given path. There is nothing we need to do.
                         return undefined;
                     }
@@ -1666,7 +1589,9 @@ export class AnalyzerService {
         }
     }
 
-    private _shouldHandleSourceFileWatchChanges(path: Uri, isFile: boolean) {
+    private _shouldHandleSourceFileWatchChanges(path: Uri, isFile: boolean, event?: FileWatcherEventType) {
+        const wasSymlinkedDirectory = event === 'unlink' && this._sourceFileWatcherSymlinkDirectories.delete(path);
+
         if (isFile) {
             const isPyTypedMarkerFile = path.fileName === _pyTypedMarkerFileName;
 
@@ -1698,14 +1623,24 @@ export class AnalyzerService {
         }
 
         const parentPath = path.getDirectory();
+        const realPath = event === 'add' ? tryRealpath(this.fs, path) : undefined;
+        const realParentPath = realPath ? tryRealpath(this.fs, parentPath) : undefined;
+        const isSymlinkedDirectory =
+            !!realPath && !!realParentPath && realPath.key !== realParentPath.combinePaths(path.fileName).key;
+
+        // Remember added symlink leaves before applying package filters so their removal can be classified as an unlink.
+        if (isSymlinkedDirectory) {
+            this._sourceFileWatcherSymlinkDirectories.set(path, true);
+        }
+
         const hasInit =
             parentPath.startsWith(this._configOptions.projectRoot) &&
             (this.fs.existsSync(parentPath.initPyUri) || this.fs.existsSync(parentPath.initPyiUri));
 
-        // We don't have any file under the given path and its parent folder doesn't have __init__ then this folder change
-        // doesn't have any meaning to us.
+        // A newly-added symlink can make a previously unresolved import resolvable even when the program doesn't
+        // contain files under its lexical path yet.
         if (!hasInit && !this._program.containsSourceFileIn(path)) {
-            return false;
+            return wasSymlinkedDirectory || isSymlinkedDirectory;
         }
 
         return true;

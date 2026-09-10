@@ -11,8 +11,10 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import * as AnalyzerNodeInfo from '../analyzer/analyzerNodeInfo';
 import { ImportResolver } from '../analyzer/importResolver';
 import { Program } from '../analyzer/program';
+import { Scope } from '../analyzer/scope';
 import { NameTypeWalker } from '../analyzer/testWalker';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { ConfigOptions, ExecutionEnvironment, getStandardDiagnosticRuleSet } from '../common/configOptions';
@@ -53,6 +55,7 @@ export interface FileAnalysisResult {
     fileUri: Uri;
     cell?: number | undefined;
     parseResults?: ParseFileResults | undefined;
+    moduleScope?: Scope | undefined;
     errors: Diagnostic[];
     warnings: Diagnostic[];
     infos: Diagnostic[];
@@ -208,11 +211,14 @@ export function getAnalysisResults(
         const sourceFile = sourceFileInfo.sourceFile;
         if (sourceFile) {
             const diagnostics = sourceFile.getDiagnostics(configOptions) || [];
-            const fileUri = sourceFile.getUri();
+            const parseResults = sourceFile.getParseResults();
             const analysisResult: FileAnalysisResult = {
-                fileUri,
+                fileUri: sourceFile.getUri(),
                 cell: sourceFileInfo.cellIndex(),
-                parseResults: sourceFile.getParseResults(),
+                parseResults,
+                moduleScope: parseResults
+                    ? AnalyzerNodeInfo.getScope(parseResults.parserOutput.parseTree, program.analyzerNodeInfoContext)
+                    : undefined,
                 errors: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Error),
                 warnings: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Warning),
                 infos: diagnostics.filter((diag) => diag.category === DiagnosticCategory.Information),

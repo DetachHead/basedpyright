@@ -394,6 +394,7 @@ test('include literals in expression completion', async () => {
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'key_a'",
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'key_a'" },
                 },
             ],
@@ -423,6 +424,7 @@ test('include literals in set key', async () => {
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'key_a'",
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'key_a'" },
                 },
             ],
@@ -452,6 +454,7 @@ test('include literals in dict key', async () => {
                 {
                     kind: CompletionItemKind.Constant,
                     label: '"key_a"',
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: '"key_a"' },
                 },
             ],
@@ -1512,6 +1515,33 @@ test('typed dict key constructor completion', async () => {
     });
 });
 
+test('functional NamedTuple fields are included in class completions', async () => {
+    const code = `
+// @filename: test.py
+//// from typing import Any, NamedTuple
+////
+//// Point = NamedTuple("Point", [("x", Any), ("y", Any)])
+//// Point.[|/*marker*/|]
+    `;
+
+    const state = parseAndGetTestState(code).state;
+
+    await state.verifyCompletion('included', MarkupKind.Markdown, {
+        marker: {
+            completions: [
+                {
+                    label: 'x',
+                    kind: CompletionItemKind.Variable,
+                },
+                {
+                    label: 'y',
+                    kind: CompletionItemKind.Variable,
+                },
+            ],
+        },
+    });
+});
+
 test('import from completion for namespace package', async () => {
     const code = `
 // @filename: test.py
@@ -2356,11 +2386,13 @@ test('nested TypedDict completion with Unpack - without other fields', async () 
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'a'",
+                    detail: 'int',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'a'" },
                 },
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'b'",
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'b'" },
                 },
             ],
@@ -2395,11 +2427,13 @@ test('nested TypedDict completion with Unpack - with other fields', async () => 
                 {
                     kind: CompletionItemKind.Constant,
                     label: '"a"',
+                    detail: 'int',
                     textEdit: { range: state.getPositionRange('marker'), newText: '"a"' },
                 },
                 {
                     kind: CompletionItemKind.Constant,
                     label: '"b"',
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: '"b"' },
                 },
             ],
@@ -2430,11 +2464,13 @@ test('simple nested TypedDict completion - no Unpack', async () => {
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'a'",
+                    detail: 'int',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'a'" },
                 },
                 {
                     kind: CompletionItemKind.Constant,
                     label: "'b'",
+                    detail: 'str',
                     textEdit: { range: state.getPositionRange('marker'), newText: "'b'" },
                 },
             ],
@@ -2468,6 +2504,7 @@ test('TypedDict subscript completion with Literal assignment target', async () =
                 {
                     kind: CompletionItemKind.Constant,
                     label: '"value"',
+                    detail: 'SomeLiterals',
                     textEdit: { range: state.getPositionRange('marker'), newText: '"value"' },
                 },
             ],

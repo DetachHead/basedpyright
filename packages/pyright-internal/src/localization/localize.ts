@@ -133,6 +133,10 @@ export function setForceEnglishDiagnostics(force: boolean) {
     forceEnglishDiagnostics = force;
 }
 
+export function getDiagnosticLocale(): string {
+    return forceEnglishDiagnostics ? 'en' : getLocaleFromEnv().toLowerCase();
+}
+
 export function getLocaleFromEnv(): string {
     if (localeOverride) {
         return localeOverride;
@@ -1256,6 +1260,7 @@ export namespace Localizer {
             new ParameterizedString<{ names: string }>(getRawString('Diagnostic.variadicTypeParamTooManyClass'));
         export const walrusIllegal = () => getRawString('Diagnostic.walrusIllegal');
         export const walrusNotAllowed = () => getRawString('Diagnostic.walrusNotAllowed');
+        export const walrusNotAllowedInComprehension = () => getRawString('Diagnostic.walrusNotAllowedInComprehension');
         export const wildcardInFunction = () => getRawString('Diagnostic.wildcardInFunction');
         export const wildcardPatternTypeUnknown = () => getRawString('Diagnostic.wildcardPatternTypeUnknown');
         export const wildcardPatternTypeAny = () => getRawString('Diagnostic.wildcardPatternTypeAny');
@@ -1702,6 +1707,12 @@ export namespace Localizer {
         export const installStubs = () =>
             new ParameterizedString<{ packageName: string }>(getRawString('DiagnosticAddendum.installStubs'));
         export const enableBasedFeatures = () => getRawString('DiagnosticAddendum.enableBasedFeatures');
+    }
+
+    export namespace CallHierarchy {
+        export const library = () => getRawString('CallHierarchy.library');
+        export const standardLibrary = () => getRawString('CallHierarchy.standardLibrary');
+        export const workspace = () => getRawString('CallHierarchy.workspace');
     }
 
     export namespace CodeAction {

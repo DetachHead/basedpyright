@@ -512,6 +512,12 @@ test('ForLoop2', () => {
     TestUtils.validateResults(analysisResults, 7);
 });
 
+test('ForLoop3', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['forLoop3.py']);
+
+    TestUtils.validateResults(analysisResults, 2);
+});
+
 test('Comprehension1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['comprehension1.py']);
 
@@ -1121,6 +1127,12 @@ test('EnumAuto1', () => {
 
 test('EnumGenNextValue1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enumGenNextValue1.py']);
+
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('EnumNarrowing1', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['enumNarrowing1.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });

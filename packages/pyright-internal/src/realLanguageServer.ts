@@ -209,9 +209,9 @@ export abstract class RealLanguageServer extends LanguageServerBase {
 
                 const extraPaths = pythonAnalysisSection.extraPaths;
                 if (extraPaths && Array.isArray(extraPaths) && extraPaths.length > 0) {
-                    serverSettings.extraPaths = extraPaths
+                    serverSettings.extraPathFileSpecs = extraPaths
                         .filter((p) => p && isString(p))
-                        .map((p) => resolvePathWithEnvVariables(workspace, p, workspaces))
+                        .map((p) => resolvePathStringWithEnvVariables(workspace, p, workspaces))
                         .filter(isDefined);
                 }
 

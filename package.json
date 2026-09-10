@@ -1,12 +1,15 @@
 {
     "name": "pyright-root",
     "private": true,
+    "packageManager": "pnpm@11.21.0",
     "scripts": {
-        "build:extension:dev": "cd packages/vscode-pyright && pnpm run webpack",
-        "build:extension": "cd packages/vscode-pyright && pnpm run package",
-        "build:cli:dev": "cd packages/pyright && pnpm run webpack",
-        "watch:extension": "cd packages/vscode-pyright && pnpm run webpack-dev",
-        "watch:testserver": "cd packages/pyright-internal && pnpm run webpack:testserver:watch",
+        "installPinnedPackageManager": "node ./build/installPinnedPackageManager.js",
+        "test": "pnpm --dir packages/pyright-internal test",
+        "build:extension:dev": "pnpm --dir run webpack",
+        "build:extension": "pnpm --dir packages/vscode-pyright run package",
+        "build:cli:dev": "pnpm --dir packages/pyright run webpack",
+        "watch:extension": "pnpm --dir packages/vscode-pyright run webpack-dev",
+        "watch:testserver": "pnpm --dir packages/pyright-internal run webpack:testserver:watch",
         "check": "pnpm run check:syncpack && pnpm run check:eslint && pnpm run check:prettier",
         "check:syncpack": "syncpack lint",
         "fix:syncpack": "syncpack fix && pnpm install",
@@ -54,9 +57,7 @@
         "tmp": "^0.2.7",
         "typescript": "~6.0.3",
         "word-wrap": "1.2.5",
+        "yaml": "^2.9.0",
         "yargs": "^16.2.0"
-    },
-    "overrides": {
-        "tar": "7.5.11"
     }
 }

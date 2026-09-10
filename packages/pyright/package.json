@@ -2,7 +2,7 @@
     "name": "basedpyright",
     "displayName": "basedpyright",
     "description": "a fork of pyright with various type checking improvements, pylance features and more.",
-    "version": "1.1.412",
+    "version": "1.1.414",
     "license": "MIT",
     "author": {
         "name": "detachhead"
@@ -18,7 +18,7 @@
     "scripts": {
         "build": "rspack build -c rspack.config.js --mode production",
         "clean": "shx rm -rf ./dist ./out LICENSE.txt",
-        "prepack": "npm run clean && shx cp ../../LICENSE.txt . && npm run build",
+        "prepack": "pnpm run clean && shx cp ../../LICENSE.txt . && pnpm run build",
         "webpack": "rspack build -c rspack.config.js --mode development"
     },
     "optionalDependencies": {
@@ -26,8 +26,8 @@
     },
     "devDependencies": {
         "@core-js/types": "^4.0.0-alpha.1",
-        "@rspack/cli": "^2.0.5",
-        "@rspack/core": "^2.0.5",
+        "@rspack/cli": "^2.1.3",
+        "@rspack/core": "^2.1.3",
         "@types/is-ci": "^3.0.4",
         "@types/node": "^25.9.2",
         "copy-webpack-plugin": "^14.0.0",
@@ -46,8 +46,5 @@
         "basedpyright-langserver": "langserver.index.js",
         "pyright": "index.js",
         "pyright-langserver": "langserver.index.js"
-    },
-    "overrides": {
-        "tar": "7.5.11"
     }
 }

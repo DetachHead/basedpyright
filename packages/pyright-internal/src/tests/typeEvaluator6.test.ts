@@ -137,7 +137,7 @@ test('OverloadOverlap1', () => {
 
     configOptions.diagnosticRuleSet.reportOverlappingOverload = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['overloadOverlap1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 16);
+    TestUtils.validateResults(analysisResults, 18);
 });
 
 test('TypeGuard1', () => {
@@ -174,6 +174,11 @@ test('TypeIs3', () => {
 
 test('TypeIs4', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIs4.py']);
+    TestUtils.validateResults(analysisResults, 0);
+});
+
+test('TypeIs5', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIs5.py']);
     TestUtils.validateResults(analysisResults, 0);
 });
 

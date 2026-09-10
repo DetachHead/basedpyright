@@ -699,12 +699,15 @@ export class ImportResolver {
 
     // Intended to be overridden by subclasses to provide additional stub
     // resolving capabilities. Return undefined if no stubs were found for
-    // this import.
+    // this import. `bestResultSoFar` is the best import resolved so far (from
+    // site-packages/local/etc.) so subclasses can decide whether their stubs
+    // should override it.
     protected resolveImportEx(
         sourceFileUri: Uri,
         execEnv: ExecutionEnvironment,
         moduleDescriptor: ImportedModuleDescriptor,
         importName: string,
+        bestResultSoFar: ImportResult | undefined,
         importLogger?: ImportLogger,
         allowPyi = true
     ): ImportResult | undefined {
@@ -1727,6 +1730,7 @@ export class ImportResolver {
             execEnv,
             moduleDescriptor,
             importName,
+            bestResultSoFar,
             importLogger,
             allowPyi
         );
