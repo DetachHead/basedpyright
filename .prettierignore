@@ -19,7 +19,7 @@ docs/usage/**/*.md
 .github/plans/**/*.md
 .github/copilot-instructions.md
 architecture/**/*
-build/benchmark/**/*
+build/py_latest/upstream/**/*
 
 **/.venv/**
 mypy_primer
