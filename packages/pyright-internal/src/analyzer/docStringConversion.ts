@@ -283,7 +283,12 @@ class DocStringConverter {
             this._convertTrailingSoftLineBreak();
         }
 
-        if (prevIndent === 0 || this._builder.endsWith(MarkdownLineBreak) || this._builder.endsWith('\n\n')) {
+        if (
+            (this._forceLiteral && !this._insideInlineCode) ||
+            prevIndent === 0 ||
+            this._builder.endsWith(MarkdownLineBreak) ||
+            this._builder.endsWith('\n\n')
+        ) {
             line = this._convertIndent(line);
         } else {
             line = line.trimStart();
