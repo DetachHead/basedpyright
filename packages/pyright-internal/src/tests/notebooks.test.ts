@@ -6,7 +6,7 @@ import { ErrorTrackingNullConsole, typeAnalyzeSampleFiles, validateResultsButBas
 
 test('symbol from previous cell', () => {
     const analysisResults = typeAnalyzeSampleFiles(['notebook.ipynb']);
-    tExpect(analysisResults.length).toStrictEqual(2);
+    tExpect(analysisResults.length).toStrictEqual(3);
     validateResultsButBased(analysisResults[0], {
         errors: [],
     });
@@ -19,6 +19,9 @@ test('symbol from previous cell', () => {
                 message: 'Type "int" is not assignable to declared type "str"\n  "int" is not assignable to "str"',
             },
         ],
+    });
+    validateResultsButBased(analysisResults[2], {
+        errors: [],
     });
 });
 
