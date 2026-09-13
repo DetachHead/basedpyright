@@ -1,11 +1,21 @@
 version: 2
 updates:
+  # we deliberately don't include npm dependnecies because most of them come from upstream and they get updated with a custom dependency bump script or something
   - package-ecosystem: 'github-actions'
     directory: '/'
     groups:
       github-actions:
         patterns: ['*']
-    schedule:
-      interval: 'weekly'
     cooldown:
       default-days: 7
+    multi-ecosystem-group: 'all'
+  - package-ecosystem: 'uv'
+    directory: '/'
+    patterns:
+      - '*'
+    multi-ecosystem-group: 'all'
+
+multi-ecosystem-groups:
+  all:
+    schedule:
+      interval: 'weekly'
