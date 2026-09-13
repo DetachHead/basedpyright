@@ -90,7 +90,7 @@ def func7(val: Any):
     else:
         reveal_type(val, expected_text="Any")
 
-    reveal_type(val, expected_text="int | Any")
+    reveal_type(val, expected_text="Any")
 
 
 class CParent: ...

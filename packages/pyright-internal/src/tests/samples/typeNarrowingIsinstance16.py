@@ -9,11 +9,11 @@ class ClassA:
             reveal_type(other, expected_text="type[Self@ClassA]")
 
         if issubclass(other, (int, cls)):
-            reveal_type(other, expected_text="type[Self@ClassA] | type[int]")
+            reveal_type(other, expected_text="type[int] | type[Self@ClassA]")
 
     def baz(self, other: object):
         if isinstance(other, type(self)):
             reveal_type(other, expected_text="Self@ClassA")
 
         if isinstance(other, (int, type(self))):
-            reveal_type(other, expected_text="Self@ClassA | int")
+            reveal_type(other, expected_text="int | Self@ClassA")
