@@ -83,7 +83,7 @@ module.exports = async (_, { mode }) => {
                         .map((file) => [
                             '/' +
                                 path
-                                    .join('typeshed', path.relative(typeshedFallback, file.parentPath), file.name)
+                                    .join('typeshed-fallback', path.relative(typeshedFallback, file.parentPath), file.name)
                                     .replaceAll(path.win32.sep, path.posix.sep),
                             readFileSync(path.join(file.parentPath, file.name), { encoding: 'utf8' }),
                         ])
