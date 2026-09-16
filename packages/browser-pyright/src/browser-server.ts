@@ -76,7 +76,7 @@ export class PyrightBrowserServer extends RealLanguageServer {
         const { files } = params.initializationOptions;
         if (typeof files === 'object') {
             const initialFiles = {
-                // virtual module generated in webpack config
+                // virtual module defined in rspack.config.js
                 ...require('typeshed-json'),
                 ...files,
             } as InitialFiles;
