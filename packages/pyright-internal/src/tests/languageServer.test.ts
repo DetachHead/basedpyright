@@ -46,6 +46,16 @@ import { tExpect } from 'typed-jest-expect';
 /** objects from `sendRequest` don't work with assertions and i cant figure out why */
 const assertEqual = <T>(actual: T, expected: T) => expect(JSON.parse(JSON.stringify(actual))).toStrictEqual(expected);
 
+const range = (startLine: number, startCharacter: number, endLine: number, endCharacter: number) => ({
+    start: { line: startLine, character: startCharacter },
+    end: { line: endLine, character: endCharacter },
+});
+
+const edits = (uri: string, edits: { range: ReturnType<typeof range>; newText: string }[]) => ({
+    edits,
+    textDocument: { uri, version: null },
+});
+
 describe(`Basic language server tests`, () => {
     let serverInfo: PyrightServerInfo | undefined;
     async function runLanguageServer(
@@ -70,6 +80,17 @@ describe(`Basic language server tests`, () => {
         //TODO: why is this needed for the rename tests to work?
         await sleep(500);
         return result;
+    }
+
+    /** opens the file at the `marker` in `code`, then asks the server for the edits needed to move `oldUri` to `newUri` */
+    async function renameFiles(code: string, oldUri: string, newUri: string) {
+        const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
+        openFile(serverInfo, 'marker');
+        return await serverInfo.connection.sendRequest(
+            WillRenameFilesRequest.type,
+            { files: [{ oldUri, newUri }] },
+            CancellationToken.None
+        );
     }
 
     afterEach(async () => {
@@ -865,42 +886,185 @@ describe(`Basic language server tests`, () => {
                     documentChanges: [],
                 });
             });
-            test('move file (currently not supported so no edits should be created)', async () => {
+            test('move module to another directory', async () => {
                 const code = `
 // @filename: foo/bar.py
 //// # empty file [|/*marker*/|]
 ////
 // @filename: baz.py
-//// import foo
-//// foo
+//// import foo.bar
+//// foo.bar
 ////
 `;
-                const serverInfo = await runLanguageServer(DEFAULT_WORKSPACE_ROOT, code, true);
-                openFile(serverInfo, 'marker');
-                const marker = serverInfo.testData.markerPositions.get('marker')!;
-                const result = await serverInfo.connection.sendRequest(
-                    WillRenameFilesRequest.type,
-                    {
-                        files: [{ oldUri: marker.fileUri.toString(), newUri: 'file:///src/bar.py' }],
-                    },
-                    CancellationToken.None
-                );
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/bar.py');
                 assertEqual(result, {
                     documentChanges: [
-                        {
-                            edits: [],
-                            textDocument: {
-                                uri: 'file:///src/baz.py',
-                                version: null,
-                            },
-                        },
-                        {
-                            edits: [],
-                            textDocument: {
-                                uri: marker.fileUri.toString(),
-                                version: null,
-                            },
-                        },
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 7, 0, 14), newText: 'bar' },
+                            { range: range(1, 0, 1, 7), newText: 'bar' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                    ],
+                });
+            });
+            test('move module into a package', async () => {
+                const code = `
+// @filename: bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: foo/__init__.py
+////
+// @filename: baz.py
+//// import bar
+//// bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/bar.py', 'file:///src/foo/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/bar.py', []),
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 7, 0, 10), newText: 'foo.bar' },
+                            { range: range(1, 0, 1, 3), newText: 'foo.bar' },
+                        ]),
+                        edits('file:///src/foo/__init__.py', []),
+                    ],
+                });
+            });
+            test('move and rename module', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// import foo.bar
+//// foo.bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/qux/baz.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 7, 0, 14), newText: 'qux.baz' },
+                            { range: range(1, 0, 1, 7), newText: 'qux.baz' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move module into a package with the same name', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: baz.py
+//// import foo.bar
+//// foo.bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/foo/bar/baz.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 11, 0, 14), newText: 'bar.baz' },
+                            { range: range(1, 4, 1, 7), newText: 'bar.baz' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                    ],
+                });
+            });
+            test('move module out of a package to take its name', async () => {
+                const code = `
+// @filename: foo/bar/baz.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: baz.py
+//// import foo.bar.baz
+//// foo.bar.baz
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar/baz.py', 'file:///src/foo/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 11, 0, 18), newText: 'bar' },
+                            { range: range(1, 4, 1, 11), newText: 'bar' },
+                        ]),
+                        edits('file:///src/foo/bar/baz.py', []),
+                    ],
+                });
+            });
+            test('move module - alias', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: baz.py
+//// import foo.bar as qux
+//// qux
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [{ range: range(0, 7, 0, 14), newText: 'bar' }]),
+                        edits('file:///src/foo/bar.py', []),
+                    ],
+                });
+            });
+            test('move package', async () => {
+                const code = `
+// @filename: foo/bar/baz.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// import foo.bar.baz
+//// foo.bar.baz
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar', 'file:///src/qux/bar');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 7, 0, 14), newText: 'qux.bar' },
+                            { range: range(1, 0, 1, 7), newText: 'qux.bar' },
+                        ]),
+                        edits('file:///src/foo/bar/baz.py', []),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move package - relative imports inside it are unchanged', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// baz = 1 [|/*marker*/|]
+////
+// @filename: foo/qux.py
+//// from .bar import baz
+//// baz
+////
+// @filename: pkg/__init__.py
+////
+// @filename: baz.py
+//// import foo.bar
+//// foo.bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo', 'file:///src/pkg/foo');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 7, 0, 10), newText: 'pkg.foo' },
+                            { range: range(1, 0, 1, 3), newText: 'pkg.foo' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/qux.py', []),
+                        edits('file:///src/pkg/__init__.py', []),
                     ],
                 });
             });
@@ -1282,6 +1446,203 @@ describe(`Basic language server tests`, () => {
                                 version: null,
                             },
                         },
+                    ],
+                });
+            });
+            test('move module to another package', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// from foo import bar
+//// bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/qux/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [{ range: range(0, 5, 0, 8), newText: 'qux' }]),
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move module to top level', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: baz.py
+//// from foo import bar
+//// bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [{ range: range(0, 0, 0, 19), newText: 'import bar' }]),
+                        edits('file:///src/foo/bar.py', []),
+                    ],
+                });
+            });
+            test('move module to top level - alias', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: baz.py
+//// from foo import bar as qux
+//// qux
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [{ range: range(0, 0, 0, 26), newText: 'import bar as qux' }]),
+                        edits('file:///src/foo/bar.py', []),
+                    ],
+                });
+            });
+            test('move module out of a statement that imports other names too', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: foo/other.py
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// from foo import bar, other
+//// bar
+//// other
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/qux/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(0, 16, 0, 21), newText: '' },
+                            { range: range(0, 26, 0, 26), newText: '\nfrom qux import bar' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/other.py', []),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move module out of a statement that imports other names too - last name, indented', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: foo/other.py
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// def f():
+////     from foo import other, bar as b
+////     return other, b
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/qux/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [
+                            { range: range(1, 25, 1, 35), newText: '' },
+                            { range: range(1, 35, 1, 35), newText: '\n    from qux import bar as b' },
+                        ]),
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/other.py', []),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move module out of the package - relative import', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: foo/baz.py
+//// from . import bar
+//// bar
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/baz.py', [{ range: range(0, 0, 0, 17), newText: 'import bar' }]),
+                    ],
+                });
+            });
+            test('move module to a sibling package - relative import', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: foo/baz.py
+//// from . import bar
+//// bar
+////
+// @filename: qux/__init__.py
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/qux/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/baz.py', [{ range: range(0, 5, 0, 6), newText: 'qux' }]),
+                        edits('file:///src/qux/__init__.py', []),
+                    ],
+                });
+            });
+            test('move module into a subpackage - relative import', async () => {
+                const code = `
+// @filename: foo/bar.py
+//// baz = 1 [|/*marker*/|]
+////
+// @filename: foo/sub/__init__.py
+////
+// @filename: foo/baz.py
+//// from . import bar
+//// from .bar import baz
+//// bar, baz
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar.py', 'file:///src/foo/sub/bar.py');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/foo/bar.py', []),
+                        edits('file:///src/foo/baz.py', [
+                            { range: range(0, 5, 0, 6), newText: '.sub' },
+                            { range: range(1, 6, 1, 9), newText: 'sub.bar' },
+                        ]),
+                        edits('file:///src/foo/sub/__init__.py', []),
+                    ],
+                });
+            });
+            test('move package', async () => {
+                const code = `
+// @filename: foo/bar/baz.py
+//// # empty file [|/*marker*/|]
+////
+// @filename: qux/__init__.py
+////
+// @filename: baz.py
+//// from foo.bar import baz
+////
+`;
+                const result = await renameFiles(code, 'file:///src/foo/bar', 'file:///src/qux/bar');
+                assertEqual(result, {
+                    documentChanges: [
+                        edits('file:///src/baz.py', [{ range: range(0, 5, 0, 12), newText: 'qux.bar' }]),
+                        edits('file:///src/foo/bar/baz.py', []),
+                        edits('file:///src/qux/__init__.py', []),
                     ],
                 });
             });
