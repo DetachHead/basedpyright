@@ -74,7 +74,7 @@ def deco2(
 
 def deco2(
     x: Callable[[], T | None] = lambda: None,
-) -> Callable[[Callable[P, T]], Callable[P, T | None]]: ...
+) -> Callable[[Callable[P, T]], Callable[P, T]] | Callable[[Callable[P, T]], Callable[P, T | None]]: ...
 
 
 @deco2(x=dict)

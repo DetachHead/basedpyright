@@ -84,7 +84,7 @@ def overloaded_converter(s: str) -> int: ...
 def overloaded_converter(s: list[str]) -> int: ...
 
 
-def overloaded_converter(s: float | str | list[str], *args: str) -> int | float | str:
+def overloaded_converter(s: float | str | list[str], *args: str) -> int | str:
     return 0
 
 
@@ -141,8 +141,8 @@ def wrong_converter_overload(s: float) -> str: ...
 def wrong_converter_overload(s: str) -> str: ...
 
 
-def wrong_converter_overload(s: float | str) -> int | str:
-    return 1
+def wrong_converter_overload(s: float | str) -> str:
+    return ""
 
 
 class Errors(ModelBase):

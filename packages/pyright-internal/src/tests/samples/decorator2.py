@@ -14,8 +14,8 @@ def atomic(*, savepoint: bool = True) -> Callable[[F], F]: ...
 
 
 def atomic(
-    __func: Optional[Callable[..., None]] = None, *, savepoint: bool = True
-) -> Union[Callable[[], None], Callable[[F], F]]: ...
+    __func: F | None = None, *, savepoint: bool = True
+) -> Union[F, Callable[[F], F]]: ...
 
 
 @atomic
