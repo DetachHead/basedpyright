@@ -1,3 +1,12 @@
 .md-grid {
     max-width: 1600px;
 }
+
+body:not([data-md-color-scheme="slate"]) {
+    a:has(code) {
+        --md-typeset-a-color: hsl(35, 100%, 30%);
+        code {
+            background-color: hsl(35, 70%, 93%);
+        }
+    }
+}
