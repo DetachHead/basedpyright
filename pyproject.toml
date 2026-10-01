@@ -14,6 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -211,8 +212,8 @@ reportIncompatibleUnannotatedOverride = 'error'
 reportUnannotatedClassAttribute = 'none'
 
 executionEnvironments = [
-    { root = 'build/py_latest', pythonVersion = '3.14' },
-    { root = 'tests', pythonVersion = '3.14' },
+    { root = 'build/py_latest', pythonVersion = '3.15' },
+    { root = 'tests', pythonVersion = '3.15' },
     { root = 'mypy_primer', pythonVersion = '3.11' },
 ]
 
