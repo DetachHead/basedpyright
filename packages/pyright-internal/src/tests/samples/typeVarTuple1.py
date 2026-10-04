@@ -53,9 +53,11 @@ BadName = TypeVarTuple("Ts1")
 Ts2 = TypeVarTuple("Ts2", int, str)
 
 # This should generate TypeVarTuple cannot be covariant.
+# based no error
 Ts3 = TypeVarTuple("Ts3", covariant=True)
 
 # This should generate TypeVarTuple cannot be contravariant.
+# based no error
 Ts4 = TypeVarTuple("Ts4", contravariant=True)
 
 # This should generate TypeVarTuple does not accept other keyword arguments.
