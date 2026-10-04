@@ -4,10 +4,7 @@ import sys
 from json import loads
 from pathlib import Path
 from shutil import copy, copyfile, copytree
-from subprocess import (  # ruff: ignore[suspicious-subprocess-import] no user input
-    CalledProcessError,
-    run,
-)
+from subprocess import CalledProcessError, run  # ruff: ignore[suspicious-subprocess-import] no user input
 from typing import TYPE_CHECKING, TypedDict, cast
 
 from pdm.backend.hooks.base import BuildHookInterface
