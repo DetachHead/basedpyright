@@ -20,8 +20,9 @@ class PackageJson(TypedDict):
     bin: dict[str, str]
 
 
-# https://github.com/pdm-project/pdm-backend/issues/247
-class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
+# ideally reportImplicitAbstractClass should be reported here due to https://github.com/pdm-project/pdm-backend/issues/247
+# but it doesn't. see https://github.com/DetachHead/basedpyright/issues/1183#issuecomment-5978610052
+class Hook(BuildHookInterface):
     @override
     def pdm_build_update_files(self, context: Context, files: dict[str, Path]):
         if context.target not in {"editable", "wheel"}:
@@ -65,4 +66,5 @@ class Hook(BuildHookInterface):  # pyright:ignore[reportImplicitAbstractClass]
 
 
 # https://github.com/pdm-project/pdm/issues/2945
-pdm_build_update_files = Hook().pdm_build_update_files  # pyright:ignore[reportAbstractUsage]
+# reportAbstractUsage should be reported here, see comment above
+pdm_build_update_files = Hook().pdm_build_update_files
