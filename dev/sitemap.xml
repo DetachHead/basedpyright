@@ -43,18 +43,6 @@
         <loc>https://docs.basedpyright.com/dev/benefits-over-pyright/pypi-package-vscode-pinning/</loc>
       </url>
       <url>
-        <loc>https://docs.basedpyright.com/dev/installation/command-line-and-language-server/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/installation/ides/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/installation/prek-hook/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/type-server/</loc>
-      </url>
-      <url>
         <loc>https://docs.basedpyright.com/dev/configuration/command-line/</loc>
       </url>
       <url>
@@ -70,6 +58,18 @@
         <loc>https://docs.basedpyright.com/dev/configuration/language-server-settings/</loc>
       </url>
       <url>
+        <loc>https://docs.basedpyright.com/dev/development/contributing/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/development/internals/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/development/localization/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/development/upstream/</loc>
+      </url>
+      <url>
         <loc>https://docs.basedpyright.com/dev/getting_started/features/</loc>
       </url>
       <url>
@@ -77,6 +77,21 @@
       </url>
       <url>
         <loc>https://docs.basedpyright.com/dev/getting_started/type-concepts/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/installation/command-line-and-language-server/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/installation/ides/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/installation/prek-hook/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/shoutouts/</loc>
+      </url>
+      <url>
+        <loc>https://docs.basedpyright.com/dev/type-server/</loc>
       </url>
       <url>
         <loc>https://docs.basedpyright.com/dev/usage/builtins/</loc>
@@ -104,20 +119,5 @@
       </url>
       <url>
         <loc>https://docs.basedpyright.com/dev/usage/typed-libraries/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/development/contributing/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/development/internals/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/development/localization/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/development/upstream/</loc>
-      </url>
-      <url>
-        <loc>https://docs.basedpyright.com/dev/shoutouts/</loc>
       </url>
 </urlset>
