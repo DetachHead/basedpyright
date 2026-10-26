@@ -258,6 +258,7 @@ export async function activate(context: ExtensionContext) {
         documentSelector: [
             { scheme: 'file', language: 'python' },
             { scheme: 'untitled', language: 'python' },
+            { scheme: 'git', language: 'python' },
             { notebook: '*', language: 'python' },
         ],
         synchronize: {
