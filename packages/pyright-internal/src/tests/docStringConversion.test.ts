@@ -112,10 +112,10 @@ Heading 4
 
         const markdown = `Foo:
 
-Args:  
-&nbsp;&nbsp;&nbsp;&nbsp;foo (Foo): Foo!  
-&nbsp;&nbsp;&nbsp;&nbsp;\\*args: These are positional args.  
-&nbsp;&nbsp;&nbsp;&nbsp;\\*\\*kwargs: These are named args.
+**Args:**
+* \`foo\` (\`Foo\`): Foo!
+* \`*args\`: These are positional args.
+* \`**kwargs\`: These are named args.
 `;
 
         _testConvertToMarkdown(docstring, markdown);
@@ -664,9 +664,10 @@ na\\_filter : bool, default True`;
              param1: description`;
 
         const markdown = `
-3. Google (variant 1):  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Args:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;param1: description`;
+3. Google (variant 1):
+
+**Args:**
+* \`param1\`: description`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -679,10 +680,11 @@ na\\_filter : bool, default True`;
              param2 (type): description`;
 
         const markdown = `
-4. Google (variant 2):  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Args:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;param1 (type): description  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;param2 (type): description`;
+4. Google (variant 2):
+
+**Args:**
+* \`param1\` (\`type\`): description
+* \`param2\` (\`type\`): description`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -712,12 +714,12 @@ Example function with types documented in the docstring.
 return types are annotated according to \`PEP 484\`\\_, they do not need to be
 included in the docstring:
 
-Args:  
-&nbsp;&nbsp;&nbsp;&nbsp;param1 (int): The first parameter.  
-&nbsp;&nbsp;&nbsp;&nbsp;param2 (str): The second parameter.
+**Args:**
+* \`param1\` (\`int\`): The first parameter.
+* \`param2\` (\`str\`): The second parameter.
 
-Returns:  
-&nbsp;&nbsp;&nbsp;&nbsp;bool: The return value. True for success, False otherwise.`;
+**Returns:**
+* \`bool\`: The return value. True for success, False otherwise.`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -729,20 +731,405 @@ Returns:
     Args:
         param1 (int|bool): The first parameter.
         param2 (list[str] with others): The second parameter.
+        mapping (dict[str, int], optional): The mapping.
 
     Returns:
         bool: The return value. True for success, False otherwise.
+        dict[str, int]: The mapping.
 `;
 
         const markdown = `
 Example function with types documented in the docstring.
 
-Args:  
-&nbsp;&nbsp;&nbsp;&nbsp;param1 (int|bool): The first parameter.  
-&nbsp;&nbsp;&nbsp;&nbsp;param2 (list\\[str\\] with others): The second parameter.
+**Args:**
+* \`param1\` (\`int|bool\`): The first parameter.
+* \`param2\` (\`list[str] with others\`): The second parameter.
+* \`mapping\` (\`dict[str, int]\`, optional): The mapping.
 
-Returns:  
-&nbsp;&nbsp;&nbsp;&nbsp;bool: The return value. True for success, False otherwise.`;
+**Returns:**
+* \`bool\`: The return value. True for success, False otherwise.
+* \`dict[str, int]\`: The mapping.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStylePylanceRendering', () => {
+        const docstring = `Calculates the final price after applying a percentage discount.
+
+Args:
+    price (float): Base price of the item. Must be positive.
+    discount (float, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
+
+Returns:
+    float: Final price after discount.
+
+Raises:
+    ValueError: If price is negative or discount is outside the range [0.0, 1.0].
+
+Example:
+    >>> calculate_discount(100.0, 0.2)
+    80.0
+`;
+
+        const markdown = `Calculates the final price after applying a percentage discount.
+
+**Args:**
+* \`price\` (\`float\`): Base price of the item. Must be positive.
+* \`discount\` (\`float\`, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
+
+**Returns:**
+* \`float\`: Final price after discount.
+
+**Raises:**
+* \`ValueError\`: If price is negative or discount is outside the range \\[0.0, 1.0\\].
+
+**Example:**
+\`\`\`python
+>>> calculate_discount(100.0, 0.2)
+80.0
+\`\`\``;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleMultilineDescriptions', () => {
+        const docstring = `Build a repeated greeting.
+
+Args:
+    name: The person to greet.
+        This continuation line checks multiline parameter descriptions.
+    times (int): Number of repetitions.
+        Must be at least one.
+
+Returns:
+    str: The greetings joined with spaces.
+`;
+
+        const markdown = `Build a repeated greeting.
+
+**Args:**
+* \`name\`: The person to greet.
+  This continuation line checks multiline parameter descriptions.
+* \`times\` (\`int\`): Number of repetitions.
+  Must be at least one.
+
+**Returns:**
+* \`str\`: The greetings joined with spaces.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleUntypedSections', () => {
+        const docstring = `Compute a value.
+
+Returns:
+    The computed value.
+
+Raises:
+    If the input is empty.
+`;
+
+        const markdown = `Compute a value.
+
+**Returns:**
+* The computed value.
+
+**Raises:**
+* If the input is empty.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleSectionsIgnoredWhenForceLiteral', () => {
+        const docstring = 'Summary.\n\nArgs:\n    param1 (int): The first parameter.\n';
+
+        const markdown = 'Summary.\n\nArgs:' + hardBreak + '&nbsp;&nbsp;&nbsp;&nbsp;param1 (int): The first parameter.';
+
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    // The first physical line is trimmed rather than dedented, so an Example header
+    // there collapses its body to the same indent. The body is still part of the section.
+    test('GoogleStyleExampleHeaderFirstLineWithDoctest', () => {
+        const docstring = `Example:
+    >>> f(1)
+    2`;
+
+        const markdown = `**Example:**
+\`\`\`python
+>>> f(1)
+2
+\`\`\``;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExampleHeaderFirstLineWithProse', () => {
+        const docstring = `Example:
+    This example is prose, not code.
+    It has *markdown* in it.`;
+
+        const markdown = `**Example:**
+This example is prose, not code.
+It has \\*markdown\\* in it.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExampleProseThenDoctest', () => {
+        const docstring = `Summary.
+
+Example:
+    Call it like this.
+
+    >>> f(1)
+    2
+`;
+
+        const markdown = `Summary.
+
+**Example:**
+Call it like this.
+
+\`\`\`python
+>>> f(1)
+2
+\`\`\``;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExampleSentenceIsNotCode', () => {
+        const docstring = `Example:
+    Call it (once).
+    Then read the result.
+`;
+
+        const markdown = `**Example:**
+Call it (once).
+Then read the result.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+
+        _testConvertToMarkdown(
+            'Example:\n    x = 1\n',
+            '**Example:**\n```python\nx = 1\n```'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    if you pass None, it returns 0.\n    Then check the result.\n',
+            '**Example:**\nif you pass None, it returns 0.\nThen check the result.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    if x:\n        print(x)\n',
+            '**Example:**\n```python\nif x:\n    print(x)\n```'
+        );
+        _testConvertToMarkdown('Example:\n    [1, 2, 3]\n', '**Example:**\n```python\n[1, 2, 3]\n```');
+        _testConvertToMarkdown('Example:\n    result[0]\n', '**Example:**\n```python\nresult[0]\n```');
+    });
+
+    test('GoogleStyleUnicodeParamName', () => {
+        const docstring = `Summary.
+
+Args:
+    name: the name
+    이름: the korean name
+`;
+
+        const markdown = `Summary.
+
+**Args:**
+* \`name\`: the name
+* \`이름\`: the korean name`;
+
+        _testConvertToMarkdown(docstring, markdown);
+
+        const raises = `Raises:
+    ValueError: bad
+    값오류: also bad
+`;
+        _testConvertToMarkdown(raises, '**Raises:**\n* `ValueError`: bad\n* `값오류`: also bad');
+    });
+
+    test('GoogleStyleParagraphSections', () => {
+        const docstring = `Summary.
+
+Args:
+    name: The person to greet. This description
+    continues at the same indent.
+    times (int): Number of repetitions.
+
+Returns:
+    A dict mapping keys to the corresponding table row data
+    fetched. Each row is represented as a tuple of strings. For
+    example:
+
+Yields:
+    The next row, or None when the
+    iterator is exhausted.
+`;
+
+        const markdown = `Summary.
+
+**Args:**
+* \`name\`: The person to greet. This description continues at the same indent.
+* \`times\` (\`int\`): Number of repetitions.
+
+**Returns:**
+* A dict mapping keys to the corresponding table row data fetched. Each row is represented as a tuple of strings. For example:
+
+**Yields:**
+* The next row, or None when the iterator is exhausted.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleReturnColonIsNotAType', () => {
+        const docstring = `Compute a value.
+
+Returns:
+    A mapping of name: id.
+`;
+
+        const markdown = `Compute a value.
+
+**Returns:**
+* A mapping of name: id.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleConfigHeadingIsNotASection', () => {
+        const yaml = `The yaml looks like:
+
+    args:
+        foo: 1
+        bar: 2
+`;
+        const yamlMarkdown =
+            'The yaml looks like:\n\nargs:' +
+            hardBreak +
+            '&nbsp;&nbsp;&nbsp;&nbsp;foo: 1' +
+            hardBreak +
+            '&nbsp;&nbsp;&nbsp;&nbsp;bar: 2';
+        _testConvertToMarkdown(yaml, yamlMarkdown);
+
+        const prose = `Parameters:
+    not a google section, just a heading
+    followed by prose.
+`;
+        _testConvertToMarkdown(prose, 'Parameters:\nnot a google section, just a heading\nfollowed by prose.');
+    });
+
+    test('GoogleStyleSingularHeaders', () => {
+        const docstring = `Summary.
+
+Return:
+    int: The value.
+
+Yield:
+    str: Each item.
+
+Raise:
+    ValueError: On failure.
+`;
+
+        const markdown = `Summary.
+
+**Return:**
+* \`int\`: The value.
+
+**Yield:**
+* \`str\`: Each item.
+
+**Raise:**
+* \`ValueError\`: On failure.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleKeywordAndOtherParameters', () => {
+        const docstring = `Summary.
+
+Keyword Args:
+    key (str): A keyword.
+    other: Another.
+
+Keyword Arguments:
+    flag (bool, optional): A flag.
+
+Other Parameters:
+    extra (int): Extra.
+`;
+
+        const markdown = `Summary.
+
+**Keyword Args:**
+* \`key\` (\`str\`): A keyword.
+* \`other\`: Another.
+
+**Keyword Arguments:**
+* \`flag\` (\`bool\`, optional): A flag.
+
+**Other Parameters:**
+* \`extra\` (\`int\`): Extra.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleFirstLineHeaderCollapsedBody', () => {
+        const docstring = [
+            'Args:',
+            '        x (int): the value.',
+            '            Must be positive.',
+            '        y: other.',
+        ].join('\n');
+
+        const markdown = `**Args:**
+* \`x\` (\`int\`): the value.
+  Must be positive.
+* \`y\`: other.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleIndentedFirstLineHeaderCollapsedBody', () => {
+        const docstring = ['    Args:', '        x (int): the value.'].join('\n');
+
+        const markdown = `**Args:**
+* \`x\` (\`int\`): the value.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleFirstLineHeaderKeepsFollowingSection', () => {
+        const docstring = [
+            'Args:',
+            '        x (int): the value.',
+            '    Returns:',
+            '        int: the result.',
+        ].join('\n');
+
+        const markdown = `**Args:**
+* \`x\` (\`int\`): the value.
+
+**Returns:**
+* \`int\`: the result.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExampleSectionEndsImmediately', () => {
+        const docstring = `Summary.
+
+Example:
+
+Trailing prose.`;
+
+        const markdown = `Summary.
+
+**Example:**
+
+Trailing prose.`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
