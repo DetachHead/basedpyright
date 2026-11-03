@@ -805,6 +805,15 @@ class DocStringConverter {
             return;
         }
 
+        // A bare "*:" marks keyword-only arguments. It is not a parameter name,
+        // so it must not be joined onto the previous description.
+        if (text === '*:' || text === '*:') {
+            this._append('* ');
+            this._appendTextLine(text);
+            this._googleEntryOpen = false;
+            return;
+        }
+
         const kind = this._googleSectionKind;
         const newEntry = !this._googleProseBody && kind !== undefined && _looksLikeSectionEntry(kind, text);
         if (newEntry) {
@@ -1206,7 +1215,8 @@ function _looksLikeGoogleParamEntry(line: string): boolean {
 
     const head = line.slice(0, colonOffset).trim();
     // \p{L} so a non-English name is its own bullet, not a wrap of the previous one.
-    return /^(?:\*{1,2})?[\p{L}_][\p{L}\p{N}_]*(?:\s*\([^()\n]*\))?$/u.test(head);
+    // A dot is allowed only when a letter follows, so "foo.bar" is a name and "e.g." is not.
+    return /^(?:\*{1,2})?[\p{L}_][\p{L}\p{N}_]*(?:\.[\p{L}_][\p{L}\p{N}_]*)*(?:\s*\([^()\n]*\))?$/u.test(head);
 }
 
 function _looksLikeSectionEntry(kind: GoogleSectionKind, line: string): boolean {
@@ -1228,7 +1238,12 @@ function _looksLikeTypedEntry(line: string): boolean {
         prev = stripped;
         stripped = stripped.replace(/\[[^\[\]]*\]/g, '');
     }
-    return /^[\p{L}_][\p{L}\p{N}_.]*(?:\s*\|\s*[\p{L}_][\p{L}\p{N}_.]*)*$/u.test(stripped.trim());
+    stripped = stripped.trim();
+    // "Note:" and "Warning:" are sentences, not types or exception names.
+    if (/^(?:note|warning|see|example|otherwise|caution)$/i.test(stripped)) {
+        return false;
+    }
+    return /^[\p{L}_][\p{L}\p{N}_.]*(?:\s*\|\s*[\p{L}_][\p{L}\p{N}_.]*)*$/u.test(stripped);
 }
 
 function _looksLikeExampleCode(line: string): boolean {
@@ -1243,7 +1258,17 @@ function _looksLikeExampleCode(line: string): boolean {
         return true;
     }
 
-    // "if you pass None" is a sentence. "if x:" is a statement.
+    // "if x:" and "with open(path):" are statements.
+    // "for example:", "if the user is an admin:", and "with care: do not ..." are sentences.
+    if (/^for\s+example\b/i.test(text) || /^(?:if|elif|while|except|with)\s+(?:the|a|an|you|when)\b/.test(text)) {
+        return false;
+    }
+    if (/^(?:else|try|finally)\b(?!\s*:)/.test(text)) {
+        return false;
+    }
+    if (/^with\b/.test(text) && !/[(\]]/.test(text) && !/\bas\b/.test(text) && !/^with\s+\w+\s*:(?:\s*#.*)?$/.test(text)) {
+        return false;
+    }
     if (/^(?:if|elif|else|for|while|with|try|except|finally)\b.*:/.test(text)) {
         return true;
     }

@@ -927,6 +927,38 @@ Then read the result.`;
         _testConvertToMarkdown('Example:\n    result[0]\n', '**Example:**\n```python\nresult[0]\n```');
     });
 
+    test('GoogleStyleExampleKeywordSentenceIsNotCode', () => {
+        _testConvertToMarkdown(
+            'Example:\n    for example: pass None\n    Then stop.\n',
+            '**Example:**\nfor example: pass None\nThen stop.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    if the user is an admin:\n    allow the request.\n',
+            '**Example:**\nif the user is an admin:\nallow the request.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    except when the file is missing:\n    the function returns None.\n',
+            '**Example:**\nexcept when the file is missing:\nthe function returns None.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    with care: do not call this twice.\n',
+            '**Example:**\nwith care: do not call this twice.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    else the value is kept:\n    and returned.\n',
+            '**Example:**\nelse the value is kept:\nand returned.'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    for x in items:\n        print(x)\n',
+            '**Example:**\n```python\nfor x in items:\n    print(x)\n```'
+        );
+        _testConvertToMarkdown(
+            'Example:\n    with open(path) as f:\n        print(f)\n',
+            '**Example:**\n```python\nwith open(path) as f:\n    print(f)\n```'
+        );
+        _testConvertToMarkdown('Example:\n    except ValueError:\n        return 0\n', '**Example:**\n```python\nexcept ValueError:\n    return 0\n```');
+    });
+
     test('GoogleStyleUnicodeParamName', () => {
         const docstring = `Summary.
 
@@ -996,6 +1028,36 @@ Returns:
 * A mapping of name: id.`;
 
         _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleNoteIsNotAType', () => {
+        _testConvertToMarkdown(
+            'Returns:\n    Note: this can be None if the key is missing.\n',
+            '**Returns:**\n* Note: this can be None if the key is missing.'
+        );
+        _testConvertToMarkdown(
+            'Raises:\n    Warning: this is not an exception.\n',
+            '**Raises:**\n* Warning: this is not an exception.'
+        );
+        _testConvertToMarkdown('Returns:\n    int: The value.\n', '**Returns:**\n* `int`: The value.');
+    });
+
+    test('GoogleStyleDottedAttributeName', () => {
+        _testConvertToMarkdown(
+            'Attributes:\n    eggs: count.\n    foo.bar: The bar.\n',
+            '**Attributes:**\n* `eggs`: count.\n* `foo.bar`: The bar.'
+        );
+        _testConvertToMarkdown(
+            'Attributes:\n    foo.bar (int): The bar.\n    eggs: count.\n',
+            '**Attributes:**\n* `foo.bar` (`int`): The bar.\n* `eggs`: count.'
+        );
+    });
+
+    test('GoogleStyleKeywordOnlySeparator', () => {
+        _testConvertToMarkdown(
+            'Args:\n    x: positional.\n    *:\n    y: keyword only.\n',
+            '**Args:**\n* `x`: positional.\n* \\*:\n* `y`: keyword only.'
+        );
     });
 
     test('GoogleStyleConfigHeadingIsNotASection', () => {
