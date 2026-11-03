@@ -99,11 +99,7 @@ const LiteralBlockReplacements: RegExpReplacement[] = [
     { exp: /`:[\w_\-+:.]+:/g, replacement: '`' },
 ];
 
-// Google-style docstring section headers
-// (https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
-// Spelling matches the style guide, so a YAML key like "args:" is not a section.
-// Singular aliases match extractReturnDocumentation. Keyword Args / Keyword Arguments /
-// Other Parameters are the param-style sections napoleon recognizes in addition to Args.
+// Google section headers. Case-sensitive, so "args:" is not a section.
 const GoogleSectionHeaderRegExp =
     /^\s*(Keyword\s+Args|Keyword\s+Arguments|Other\s+Parameters|Args|Arguments|Parameters|Returns?|Yields?|Raises?|Attributes|Examples?)\s*:\s*$/;
 
@@ -129,6 +125,7 @@ class DocStringConverter {
     private _input: string;
 
     private _lines: string[];
+    // Indent before dedent. A first-line "Args:" can collapse onto its body.
     private _rawIndents: number[];
     private _rawIndexes: number[];
     private _lineNum = 0;
@@ -755,6 +752,7 @@ class DocStringConverter {
             }
         }
 
+        // Example body is prose or a code sample, not "name: description" bullets.
         if (this._googleSectionKind === 'example') {
             this._appendExampleLine();
             this._eatLine();
@@ -857,9 +855,7 @@ class DocStringConverter {
         return false;
     }
 
-    // A line at or above the header indent ends the section, except when cleanAndSplitDocString
-    // collapsed a first-line header's body onto that indent. Sibling sections in a normal
-    // docstring stay distinguishable by cleaned indent, so this exception is only for that collapse.
+    // A dedented line ends the section, unless a first-line header's body collapsed onto that indent.
     private _lineEndsGoogleSection(lineIndex: number): boolean {
         if (_countLeadingSpaces(this._lines[lineIndex]) > this._googleHeaderIndent) {
             return false;
@@ -1186,6 +1182,7 @@ function _isHeader(line: string | undefined): boolean {
     return line !== undefined && (line.match(/^\s*[#`~=-]{3,}/)?.length ?? 0) > 0;
 }
 
+// Only called after a Google header matches. reST (:param) and epytext (@param) do not match.
 function _isAmbiguousGoogleHeader(header: string): boolean {
     switch (header.toLowerCase().replace(/\s+/g, ' ')) {
         case 'keyword args':
@@ -1258,13 +1255,29 @@ function _looksLikeExampleCode(line: string): boolean {
         return true;
     }
 
-    // "if x:" and "with open(path):" are statements.
-    // "for example:", "if the user is an admin:", and "with care: do not ..." are sentences.
-    if (/^for\s+example\b/i.test(text) || /^(?:if|elif|while|except|with)\s+(?:the|a|an|you|when)\b/.test(text)) {
+    // "for x in y:" is a statement. "for instance:" and "for example:" are sentences.
+    if (/^for\b/.test(text) && !/^for\s+\S+\s+in\b/.test(text)) {
+        return false;
+    }
+    // "if the user is an admin:" is a sentence. "if x:" is a statement.
+    if (/^(?:if|elif|while|except|with)\s+(?:the|a|an|you|when)\b/.test(text)) {
         return false;
     }
     if (/^(?:else|try|finally)\b(?!\s*:)/.test(text)) {
         return false;
+    }
+    // "if possible: avoid calling this twice." is a sentence. "if x: return 0" is a statement.
+    // shortcut: "if possible:" with nothing after the colon is still code; upgrade if those sentences show up.
+    const colon = text.indexOf(':');
+    if (colon >= 0 && /^(?:if|elif|while|except|with)\b/.test(text)) {
+        const after = text.slice(colon + 1).trim();
+        if (
+            after &&
+            !/^(?:#|return\b|raise\b|yield\b|assert\b|pass\b)/.test(after) &&
+            !/^[\p{L}_][\p{L}\p{N}_.]*\s*[(\[=]/u.test(after)
+        ) {
+            return false;
+        }
     }
     if (/^with\b/.test(text) && !/[(\]]/.test(text) && !/\bas\b/.test(text) && !/^with\s+\w+\s*:(?:\s*#.*)?$/.test(text)) {
         return false;

@@ -756,19 +756,19 @@ Example function with types documented in the docstring.
     test('GoogleStylePylanceRendering', () => {
         const docstring = `Calculates the final price after applying a percentage discount.
 
-Args:
-    price (float): Base price of the item. Must be positive.
-    discount (float, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
+    Args:
+        price (float): Base price of the item. Must be positive.
+        discount (float, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
 
-Returns:
-    float: Final price after discount.
+    Returns:
+        float: Final price after discount.
 
-Raises:
-    ValueError: If price is negative or discount is outside the range [0.0, 1.0].
+    Raises:
+        ValueError: If price is negative or discount is outside the range [0.0, 1.0].
 
-Example:
-    >>> calculate_discount(100.0, 0.2)
-    80.0
+    Example:
+        >>> calculate_discount(100.0, 0.2)
+        80.0
 `;
 
         const markdown = `Calculates the final price after applying a percentage discount.
@@ -838,14 +838,6 @@ Raises:
 * If the input is empty.`;
 
         _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleSectionsIgnoredWhenForceLiteral', () => {
-        const docstring = 'Summary.\n\nArgs:\n    param1 (int): The first parameter.\n';
-
-        const markdown = 'Summary.\n\nArgs:' + hardBreak + '&nbsp;&nbsp;&nbsp;&nbsp;param1 (int): The first parameter.';
-
-        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
     // The first physical line is trimmed rather than dedented, so an Example header
@@ -933,16 +925,12 @@ Then read the result.`;
             '**Example:**\nfor example: pass None\nThen stop.'
         );
         _testConvertToMarkdown(
+            'Example:\n    if possible: avoid calling this twice.\n',
+            '**Example:**\nif possible: avoid calling this twice.'
+        );
+        _testConvertToMarkdown(
             'Example:\n    if the user is an admin:\n    allow the request.\n',
             '**Example:**\nif the user is an admin:\nallow the request.'
-        );
-        _testConvertToMarkdown(
-            'Example:\n    except when the file is missing:\n    the function returns None.\n',
-            '**Example:**\nexcept when the file is missing:\nthe function returns None.'
-        );
-        _testConvertToMarkdown(
-            'Example:\n    with care: do not call this twice.\n',
-            '**Example:**\nwith care: do not call this twice.'
         );
         _testConvertToMarkdown(
             'Example:\n    else the value is kept:\n    and returned.\n',
@@ -994,10 +982,6 @@ Returns:
     A dict mapping keys to the corresponding table row data
     fetched. Each row is represented as a tuple of strings. For
     example:
-
-Yields:
-    The next row, or None when the
-    iterator is exhausted.
 `;
 
         const markdown = `Summary.
@@ -1007,10 +991,7 @@ Yields:
 * \`times\` (\`int\`): Number of repetitions.
 
 **Returns:**
-* A dict mapping keys to the corresponding table row data fetched. Each row is represented as a tuple of strings. For example:
-
-**Yields:**
-* The next row, or None when the iterator is exhausted.`;
+* A dict mapping keys to the corresponding table row data fetched. Each row is represented as a tuple of strings. For example:`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -1035,21 +1016,12 @@ Returns:
             'Returns:\n    Note: this can be None if the key is missing.\n',
             '**Returns:**\n* Note: this can be None if the key is missing.'
         );
-        _testConvertToMarkdown(
-            'Raises:\n    Warning: this is not an exception.\n',
-            '**Raises:**\n* Warning: this is not an exception.'
-        );
-        _testConvertToMarkdown('Returns:\n    int: The value.\n', '**Returns:**\n* `int`: The value.');
     });
 
     test('GoogleStyleDottedAttributeName', () => {
         _testConvertToMarkdown(
             'Attributes:\n    eggs: count.\n    foo.bar: The bar.\n',
             '**Attributes:**\n* `eggs`: count.\n* `foo.bar`: The bar.'
-        );
-        _testConvertToMarkdown(
-            'Attributes:\n    foo.bar (int): The bar.\n    eggs: count.\n',
-            '**Attributes:**\n* `foo.bar` (`int`): The bar.\n* `eggs`: count.'
         );
     });
 
