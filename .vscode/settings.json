@@ -136,9 +136,6 @@
     "workbench.editor.revealIfOpen": true,
     // https://github.com/microsoft/vscode-python/issues/25467
     "python.terminal.shellIntegration.enabled": false,
-    // this is a hack to make the zizmor vscode extension use the venv's version of zizmor,
-    // since it ignores the PATH from terminal.integrated.env.
-    "zizmor.executablePath": ".vscode/zizmor",
     "eslint.useFlatConfig": false,
     "npm.scriptRunner": "pnpm",
     "npm.packageManager": "pnpm"
