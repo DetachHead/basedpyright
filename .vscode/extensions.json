@@ -10,6 +10,7 @@
         "redhat.vscode-yaml",
         "github.vscode-github-actions",
         "Orta.vscode-jest",
-        "jota0222.multi-formatter"
+        "jota0222.multi-formatter",
+        "detachhead.vsenv"
     ]
 }
