@@ -1,7 +1,7 @@
 {
     "name": "pyright-root",
     "private": true,
-    "packageManager": "pnpm@11.21.0",
+    "packageManager": "pnpm@12.18.0",
     "scripts": {
         "installPinnedPackageManager": "node ./build/installPinnedPackageManager.js",
         "test": "pnpm --dir packages/pyright-internal test",
