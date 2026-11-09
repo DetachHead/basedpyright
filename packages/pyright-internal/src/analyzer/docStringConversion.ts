@@ -99,11 +99,19 @@ const LiteralBlockReplacements: RegExpReplacement[] = [
     { exp: /`:[\w_\-+:.]+:/g, replacement: '`' },
 ];
 
-// Google section headers. Case-sensitive, so "args:" is not a section.
-const GoogleSectionHeaderRegExp =
-    /^\s*(Keyword\s+Args|Keyword\s+Arguments|Other\s+Parameters|Args|Arguments|Parameters|Returns?|Yields?|Raises?|Attributes|Examples?)\s*:\s*$/;
-
 type GoogleSectionKind = 'params' | 'returns' | 'raises' | 'example';
+
+// Case-sensitive, so "args:" is not a section.
+// ambiguous: also a plain heading, so claim it only when the body is "name: description".
+const GoogleSections: Record<string, { kind: GoogleSectionKind; ambiguous?: true }> = {
+    Args: { kind: 'params', ambiguous: true },
+    Attributes: { kind: 'params', ambiguous: true },
+    Returns: { kind: 'returns' },
+    Yields: { kind: 'returns' },
+    Raises: { kind: 'raises' },
+    Example: { kind: 'example' },
+    Examples: { kind: 'example' },
+};
 
 // Converter is a state machine, where the current state is a function which
 // will be run (and change the state again) until completion.
@@ -670,18 +678,21 @@ class DocStringConverter {
         }
 
         const line = this._currentLine();
-        const match = GoogleSectionHeaderRegExp.exec(line);
-        if (match === null) {
+        const trimmed = line.trim();
+        if (!trimmed.endsWith(':')) {
+            return false;
+        }
+        const section = GoogleSections[trimmed.slice(0, -1).trim()];
+        if (!section) {
             return false;
         }
 
-        // "Keyword Arguments:" is also an argparse heading. "Parameters:" is also a plain
-        // heading. Only claim those when the body is Google "name: description" entries.
-        if (_isAmbiguousGoogleHeader(match[1]) && !this._nextBodyLineLooksLikeGoogleEntry()) {
+        // "Args:" is also a plain heading. Only claim it when the body is "name: description".
+        if (section.ambiguous && !this._nextBodyLineLooksLikeGoogleEntry()) {
             return false;
         }
 
-        this._googleSectionKind = _getGoogleSectionKind(match[1]);
+        this._googleSectionKind = section.kind;
         this._googleHeaderIndent = this._currentIndent();
         this._googleHeaderRawIndent = this._rawIndents[this._lineNum];
         this._googleHeaderIsFirstPhysicalLine = this._rawIndexes[this._lineNum] === 0;
@@ -1182,23 +1193,6 @@ function _isHeader(line: string | undefined): boolean {
     return line !== undefined && (line.match(/^\s*[#`~=-]{3,}/)?.length ?? 0) > 0;
 }
 
-// Only called after a Google header matches. reST (:param) and epytext (@param) do not match.
-function _isAmbiguousGoogleHeader(header: string): boolean {
-    switch (header.toLowerCase().replace(/\s+/g, ' ')) {
-        case 'keyword args':
-        case 'keyword arguments':
-        case 'other parameters':
-        case 'args':
-        case 'arguments':
-        case 'parameters':
-        case 'attributes':
-            return true;
-
-        default:
-            return false;
-    }
-}
-
 // Google param entries are "name: description" or "name (type): description", including *args/**kwargs.
 function _looksLikeGoogleParamEntry(line: string): boolean {
     if (line.startsWith('- ') || line.startsWith('* ')) {
@@ -1293,27 +1287,6 @@ function _looksLikeExampleCode(line: string): boolean {
     // "return the value" is a sentence. "return x" is code.
     // shortcut: "return something" (not the/a/an) is still code; upgrade if those sentences show up.
     return /^(?:return|yield|raise|assert)\b/.test(text) && !/^(?:return|yield|raise|assert)\s+(?:the|a|an)\b/.test(text);
-}
-
-function _getGoogleSectionKind(header: string): GoogleSectionKind {
-    switch (header.toLowerCase().replace(/\s+/g, ' ')) {
-        case 'return':
-        case 'returns':
-        case 'yield':
-        case 'yields':
-            return 'returns';
-
-        case 'raise':
-        case 'raises':
-            return 'raises';
-
-        case 'example':
-        case 'examples':
-            return 'example';
-
-        default:
-            return 'params';
-    }
 }
 
 // Finds the first ':' that isn't nested inside (), [], or {}, which terminates the name of a

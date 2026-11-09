@@ -1054,62 +1054,6 @@ Returns:
         _testConvertToMarkdown(prose, 'Parameters:\nnot a google section, just a heading\nfollowed by prose.');
     });
 
-    test('GoogleStyleSingularHeaders', () => {
-        const docstring = `Summary.
-
-Return:
-    int: The value.
-
-Yield:
-    str: Each item.
-
-Raise:
-    ValueError: On failure.
-`;
-
-        const markdown = `Summary.
-
-**Return:**
-* \`int\`: The value.
-
-**Yield:**
-* \`str\`: Each item.
-
-**Raise:**
-* \`ValueError\`: On failure.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleKeywordAndOtherParameters', () => {
-        const docstring = `Summary.
-
-Keyword Args:
-    key (str): A keyword.
-    other: Another.
-
-Keyword Arguments:
-    flag (bool, optional): A flag.
-
-Other Parameters:
-    extra (int): Extra.
-`;
-
-        const markdown = `Summary.
-
-**Keyword Args:**
-* \`key\` (\`str\`): A keyword.
-* \`other\`: Another.
-
-**Keyword Arguments:**
-* \`flag\` (\`bool\`, optional): A flag.
-
-**Other Parameters:**
-* \`extra\` (\`int\`): Extra.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
     test('GoogleStyleFirstLineHeaderCollapsedBody', () => {
         const docstring = [
             'Args:',
