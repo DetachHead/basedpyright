@@ -5,7 +5,7 @@ import { compareDiagnostics, Diagnostic, DiagnosticCategory } from './common/dia
 import { fileExists } from './common/uri/uriUtils';
 import { FileSystem } from './common/fileSystem';
 import { pluralize } from './common/stringUtils';
-import { diffArrays } from 'diff';
+import { ChangeObject, diffArrays } from 'diff';
 import { assert } from './common/debug';
 import { Range } from './common/textRange';
 import { add, isEqual } from 'lodash';
@@ -214,15 +214,16 @@ export class BaselineHandler {
         if (!baselinedErrorsForFile) {
             return diagnostics;
         }
+        //@ts-expect-error https://github.com/kpdecker/jsdiff/issues/741
         const diff = diffArrays(baselinedErrorsForFile, diagnostics, {
-            comparator: (baselinedDiagnostic, diagnostic) =>
+            comparator: (baselinedDiagnostic: BaselinedDiagnostic, diagnostic: Diagnostic) =>
                 baselinedDiagnostic.code === diagnostic.getRule() &&
                 baselinedDiagnostic.range.startColumn === diagnostic.range.start.character &&
                 baselinedDiagnostic.range.endColumn === diagnostic.range.end.character &&
                 //for backwards compatibility with old baseline files, only check this if it's present
                 (baselinedDiagnostic.range.lineCount === undefined ||
                     baselinedDiagnostic.range.lineCount === lineCount(diagnostic.range)),
-        });
+        }) as ChangeObject<Array<BaselinedDiagnostic | Diagnostic>>[];
         const result = [];
         for (const change of diff) {
             if (change.removed) {
