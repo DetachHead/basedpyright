@@ -37,5 +37,5 @@ def func2(arg: T2) -> T2:
     if isinstance(arg, str):
         reveal_type(arg, expected_text="str*")
 
-    reveal_type(arg, expected_text="str* | object*")
+    reveal_type(arg, expected_text="T2@func2")
     return arg
