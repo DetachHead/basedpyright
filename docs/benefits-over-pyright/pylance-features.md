@@ -104,9 +104,9 @@ or if you're using a different version of typeshed, you can use the `--if-needed
 python -m docify path/to/typeshed/stdlib --if-needed --in-place
 ```
 
-## renaming packages and modules
+## renaming and moving packages and modules
 
-when renaming a package or module, basedpyright will update all usages to the new name, just like pylance does:
+when renaming a package or module, or moving it to a different directory, basedpyright will update all imports and usages to point to the new location, just like pylance does:
 
 ![](https://github.com/user-attachments/assets/6207fe90-027a-4227-a1ed-d2c4406ad38c)
 
