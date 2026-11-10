@@ -31,8 +31,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: zizmor
-        # intentionally exclude workflows from the mypy_primer submodule. https://github.com/zizmorcore/zizmor/issues/784
-        run: uv run zizmor .github --persona=auditor
+        run: uv run zizmor . --persona=auditor
 
       - run: pnpm run check
 
