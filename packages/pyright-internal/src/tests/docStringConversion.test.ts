@@ -689,6 +689,34 @@ na\\_filter : bool, default True`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
+    test('MixedRestAndGoogleFields', () => {
+        const docstring = `Summary.
+
+:param old: rest description
+
+Args:
+    new (int): google description
+
+:return: rest result
+
+Returns:
+    int: google result`;
+
+        const markdown = `Summary.
+
+:param old: rest description
+
+**Args:**
+* \`new\` (\`int\`): google description
+
+:return: rest result
+
+**Returns:**
+* \`int\`: google result`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
     test('Googlewithreturntypes', () => {
         const docstring = `
     Example function with types documented in the docstring.
@@ -971,6 +999,50 @@ The result is an integer.`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
+    test('GoogleStyleExampleProseAfterInferredCode', () => {
+        _testConvertToMarkdown(
+            'Example:\n    x = 1\n\n    The value is one.\n    More detail follows.\n',
+            '**Example:**\n```python\nx = 1\n```\n\nThe value is one.\nMore detail follows.'
+        );
+    });
+
+    test.each([
+        ['text = """first', 'The second line.'],
+        ['text = f"""first', 'The second line.'],
+        ['values = [', 'The second line.'],
+    ])('GoogleStyleExampleKeepsProseLookingCodeInOpenExpression: %s', (first, continuation) => {
+        const closing = first.endsWith('[') ? ']' : '"""';
+        _testConvertToMarkdown(
+            `Example:\n    ${first}\n\n    ${continuation}\n    ${closing}\n`,
+            `**Example:**\n\`\`\`python\n${first}\n\n${continuation}\n${closing}\n\`\`\``
+        );
+    });
+
+    test('GoogleStyleExampleKeepsCodeAfterBlankLine', () => {
+        _testConvertToMarkdown(
+            'Example:\n    x = 1\n\n    print(x)\n',
+            '**Example:**\n```python\nx = 1\n\nprint(x)\n```'
+        );
+    });
+
+    test('GoogleStyleExampleProseAfterMultipleCodeParagraphs', () => {
+        _testConvertToMarkdown(
+            'Example:\n    x = 1\n\n    print(x)\n\n\n    The result is 1.\n',
+            '**Example:**\n```python\nx = 1\n\nprint(x)\n```\n\nThe result is 1.'
+        );
+    });
+
+    test('GoogleStyleExplicitFenceKeepsProseLookingCode', () => {
+        _testConvertToMarkdown(
+            'Example:\n    ```python\n    x = 1\n\n    The result is 1.\n    ```\n',
+            '**Example:**\n```python\nx = 1\n\nThe result is 1.\n```'
+        );
+    });
+
+    test('GoogleStyleExampleKeepsAmbiguousLineInCode', () => {
+        _testConvertToMarkdown('Example:\n    x = 1\n\n    value\n', '**Example:**\n```python\nx = 1\n\nvalue\n```');
+    });
+
     test('GoogleStyleNestedContinuationIndentation', () => {
         const docstring = `Args:
     x: Options:
@@ -1092,6 +1164,35 @@ Then read the result.`;
         );
     });
 
+    test.each([
+        '이름.값 = 1',
+        'result[0]',
+        'if x: result [0]',
+        'if x: return 0',
+        'if x: # comment',
+        'for x in items:',
+        'with resource:',
+        'else:',
+        'def example():',
+        'import module',
+        'from module import value',
+        'return value',
+    ])('GoogleStyleExampleCodeDetection: %s', (line) => {
+        _testConvertToMarkdown(`Example:\n    ${line}\n`, `**Example:**\n\`\`\`python\n${line}\n\`\`\``);
+    });
+
+    test.each([
+        ['values [1] are ok.', 'values \\[1\\] are ok.'],
+        ['for example: try this.', 'for example: try this.'],
+        ['if possible: avoid this.', 'if possible: avoid this.'],
+        ['if the value is missing:', 'if the value is missing:'],
+        ['with the result:', 'with the result:'],
+        ['return the value.', 'return the value.'],
+        ['elsewhere: ordinary prose.', 'elsewhere: ordinary prose.'],
+    ])('GoogleStyleExampleProseDetection: %s', (line, rendered) => {
+        _testConvertToMarkdown(`Example:\n    ${line}\n`, `**Example:**\n${rendered}`);
+    });
+
     test('GoogleStyleUnicodeParamName', () => {
         const docstring = `Summary.
 
@@ -1113,6 +1214,20 @@ Args:
     값오류: also bad
 `;
         _testConvertToMarkdown(raises, '**Raises:**\n* `ValueError`: bad\n* `값오류`: also bad');
+    });
+
+    test('GoogleStyleCombiningMarksInParameterNames', () => {
+        _testConvertToMarkdown(
+            'Args:\n    cafe\u0301 (str): first parameter.\n    *𐐀\u0301: second parameter.\n    nested.cafe\u0301: third parameter.\n',
+            '**Args:**\n* `cafe\u0301` (`str`): first parameter.\n* `*𐐀\u0301`: second parameter.\n* `nested.cafe\u0301`: third parameter.'
+        );
+    });
+
+    test('GoogleStyleInvalidParameterNamesRemainContinuations', () => {
+        _testConvertToMarkdown(
+            'Args:\n    first: description.\n    \u0301name: continuation.\n    1name: continuation.\n    e.g.: continuation.\n',
+            '**Args:**\n* `first`: description. \u0301name: continuation. 1name: continuation. e.g.: continuation.'
+        );
     });
 
     test('GoogleStyleParagraphSections', () => {
@@ -1160,6 +1275,24 @@ Returns:
         _testConvertToMarkdown(
             'Returns:\n    Note: this can be None if the key is missing.\n',
             '**Returns:**\n* Note: this can be None if the key is missing.'
+        );
+    });
+
+    test('GoogleStyleTypedEntriesWithUnionsAndNestedTypes', () => {
+        _testConvertToMarkdown(
+            'Returns:\n    dict[str, list[int]] | 이름.자료: a value.\n    str | None: another value.\n',
+            '**Returns:**\n* `dict[str, list[int]] | 이름.자료`: a value.\n* `str | None`: another value.'
+        );
+        _testConvertToMarkdown(
+            'Returns:\n    int: a value.\n    str | 1: a continuation.\n    wArNiNg: another continuation.\n',
+            '**Returns:**\n* `int`: a value. str | 1: a continuation. wArNiNg: another continuation.'
+        );
+    });
+
+    test('GoogleStyleParameterTypeWithNestedSeparators', () => {
+        _testConvertToMarkdown(
+            'Args:\n    mapping (dict[str, dict[str, int]], optional): a mapping.\n',
+            '**Args:**\n* `mapping` (`dict[str, dict[str, int]]`, optional): a mapping.'
         );
     });
 

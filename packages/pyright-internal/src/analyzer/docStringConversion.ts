@@ -6,6 +6,9 @@
  * Python doc string to markdown/plain text format conversion.
  */
 
+import { isIdentifierChar, isIdentifierStartChar } from '../parser/characters';
+import { Tokenizer } from '../parser/tokenizer';
+import { TokenType } from '../parser/tokenizerTypes';
 import { cleanAndSplitDocString, cleanAndSplitDocStringLines } from './docStringUtils';
 
 // Converts a docstring to markdown format.
@@ -127,6 +130,22 @@ interface GoogleCodeBlockState {
     fence: string;
     indent: number;
     outputIndent: string;
+    startLine: number;
+}
+
+interface GoogleSectionState {
+    kind: GoogleSectionKind;
+    headerIndent: number;
+    headerRawIndent: number;
+    headerIsFirstPhysicalLine: boolean;
+    collapsedBody: boolean;
+    bodyIndent: number;
+    bodyStarted: boolean;
+    proseBody: boolean; // Returns/Yields began with prose rather than a type.
+    entryOpen: boolean; // Same-indent text can continue the current entry.
+    codeBlock: GoogleCodeBlockState | undefined;
+    continuationIndent: number | undefined;
+    afterCodeBlock: boolean;
 }
 
 class DocStringConverter {
@@ -152,21 +171,7 @@ class DocStringConverter {
 
     private _lastLineWasPlainText = false;
 
-    private _googleSectionKind: GoogleSectionKind | undefined;
-    private _googleHeaderIndent = 0;
-    private _googleHeaderRawIndent = 0;
-    private _googleHeaderIsFirstPhysicalLine = false;
-    // Set when a first-line header's body was dedented back to the header indent.
-    private _googleCollapsedBody = false;
-    private _googleBodyIndent = 0;
-    private _googleBodyStarted = false;
-    // Returns/Yields whose first line is a sentence, not "type: description".
-    private _googleProseBody = false;
-    // False after a blank line, so the next sentence starts a new bullet instead of joining.
-    private _googleEntryOpen = false;
-    private _googleCodeBlock: GoogleCodeBlockState | undefined;
-    private _googleContinuationIndent: number | undefined;
-    private _googleAfterCodeBlock = false;
+    private _google: GoogleSectionState | undefined;
 
     constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
@@ -204,8 +209,8 @@ class DocStringConverter {
         ) {
             // See what the current backtick block is. We want to match it.
             this._trimOutputAndAppendLine(this._lastBacktickString || '```');
-        } else if (this._state === this._parseGoogleSection && this._googleCodeBlock) {
-            this._closeGoogleCodeBlock();
+        } else if (this._state === this._parseGoogleSection && this._google?.codeBlock) {
+            this._closeGoogleCodeBlock(this._google);
         } else if (this._insideInlineCode) {
             this._trimOutputAndAppendLine('`', /* noNewLine */ true);
         }
@@ -292,10 +297,6 @@ class DocStringConverter {
         }
 
         if (this._beginList()) {
-            return;
-        }
-
-        if (this._beginGoogleSection()) {
             return;
         }
 
@@ -643,9 +644,14 @@ class DocStringConverter {
     // 4. Google (variant 2):
     //      Args:
     //          param1 (type): description
+    // Called from _parseText after code, directive, and list checks; Google sections take priority over fields.
     private _beginFieldList(): boolean {
         if (this._insideInlineCode) {
             return false;
+        }
+
+        if (this._beginGoogleSection()) {
+            return true;
         }
 
         let line = this._currentLine();
@@ -704,17 +710,20 @@ class DocStringConverter {
             return false;
         }
 
-        this._googleSectionKind = section.kind;
-        this._googleHeaderIndent = this._currentIndent();
-        this._googleHeaderRawIndent = this._rawIndents[this._lineNum];
-        this._googleHeaderIsFirstPhysicalLine = this._rawIndexes[this._lineNum] === 0;
-        this._googleCollapsedBody = false;
-        this._googleBodyStarted = false;
-        this._googleProseBody = false;
-        this._googleEntryOpen = false;
-        this._googleCodeBlock = undefined;
-        this._googleContinuationIndent = undefined;
-        this._googleAfterCodeBlock = false;
+        this._google = {
+            kind: section.kind,
+            headerIndent: this._currentIndent(),
+            headerRawIndent: this._rawIndents[this._lineNum],
+            headerIsFirstPhysicalLine: this._rawIndexes[this._lineNum] === 0,
+            collapsedBody: false,
+            bodyIndent: 0,
+            bodyStarted: false,
+            proseBody: false,
+            entryOpen: false,
+            codeBlock: undefined,
+            continuationIndent: undefined,
+            afterCodeBlock: false,
+        };
 
         // Start the section header on its own paragraph.
         this._builder = this._builder.replace(/\n*$/, '\n\n');
@@ -726,89 +735,103 @@ class DocStringConverter {
     }
 
     private _parseGoogleSection(): void {
+        const google = this._google;
+        if (google === undefined) {
+            return;
+        }
         if (this._currentLineOrUndefined() === undefined) {
-            this._finishGoogleSection();
+            this._finishGoogleSection(google);
             return;
         }
 
         if (_isUndefinedOrWhitespace(this._currentLine())) {
             // The section ends if the next non-blank line is dedented (or there is none).
             // Otherwise, the blank line separates entries within the section body.
-            for (let i = this._lineNum + 1; i < this._lines.length; i++) {
-                const line = this._lines[i];
+            let nextLineIndex = this._lineNum + 1;
+            for (; nextLineIndex < this._lines.length; nextLineIndex++) {
+                const line = this._lines[nextLineIndex];
                 if (_isUndefinedOrWhitespace(line)) {
                     continue;
                 }
-                if (this._lineEndsGoogleSection(i)) {
-                    this._finishGoogleSection();
+                if (this._lineEndsGoogleSection(google, nextLineIndex)) {
+                    this._finishGoogleSection(google);
                     return;
                 }
                 break;
             }
 
-            if (this._googleCodeBlock?.kind === 'doctest') {
-                this._closeGoogleCodeBlock();
-            } else if (this._googleCodeBlock) {
+            const block = google.codeBlock;
+            if (
+                block?.kind === 'doctest' ||
+                (block?.kind === 'example' &&
+                    nextLineIndex < this._lines.length &&
+                    _countLeadingSpaces(this._lines[nextLineIndex]) === block.indent &&
+                    _looksLikeProseSentence(this._lines[nextLineIndex]) &&
+                    !_isWithinPythonExpression(this._lines, block.startLine, nextLineIndex))
+            ) {
+                this._closeGoogleCodeBlock(google);
+            } else if (google.codeBlock) {
                 // Blank lines inside code are content, not paragraph separators.
                 this._append('\n');
                 this._eatLine();
                 return;
             }
-            this._googleEntryOpen = false;
-            this._googleAfterCodeBlock = false;
+            google.entryOpen = false;
+            google.afterCodeBlock = false;
             this._appendLine();
             this._eatLine();
             return;
         }
 
-        if (this._lineEndsGoogleSection(this._lineNum)) {
+        if (this._lineEndsGoogleSection(google, this._lineNum)) {
             // Dedented line: the section is over. Leave the line for the normal parser.
-            this._finishGoogleSection();
+            this._finishGoogleSection(google);
             return;
         }
 
-        if (!this._googleBodyStarted) {
-            this._googleBodyStarted = true;
-            this._googleBodyIndent = this._currentIndent();
+        if (!google.bodyStarted) {
+            google.bodyStarted = true;
+            google.bodyIndent = this._currentIndent();
             // First physical line is trimmed, not dedented, so its body can land at the
             // same cleaned indent. Remember that so later entries are not treated as a dedent.
             if (
-                this._googleHeaderIsFirstPhysicalLine &&
-                this._rawIndents[this._lineNum] > this._googleHeaderRawIndent &&
-                this._googleBodyIndent <= this._googleHeaderIndent
+                google.headerIsFirstPhysicalLine &&
+                this._rawIndents[this._lineNum] > google.headerRawIndent &&
+                google.bodyIndent <= google.headerIndent
             ) {
-                this._googleCollapsedBody = true;
+                google.collapsedBody = true;
             }
         }
 
-        if (this._googleCodeBlock) {
-            if (this._currentIndent() >= this._googleCodeBlock.indent) {
-                this._appendGoogleCodeLine();
+        if (google.codeBlock) {
+            if (this._currentIndent() >= google.codeBlock.indent) {
+                this._appendGoogleCodeLine(google);
                 this._eatLine();
                 return;
             }
-            this._closeGoogleCodeBlock();
+            this._closeGoogleCodeBlock(google);
         }
 
-        if (this._beginGoogleCodeBlock()) {
+        if (this._beginGoogleCodeBlock(google)) {
             this._eatLine();
             return;
         }
 
         // Example body is prose or a code sample, not "name: description" bullets.
-        if (this._googleSectionKind === 'example') {
+        if (google.kind === 'example') {
             this._appendTextLine(this._currentLine().trimStart());
         } else {
-            this._appendGoogleBodyLine();
+            this._appendGoogleBodyLine(google);
         }
         this._eatLine();
     }
 
-    private _beginGoogleCodeBlock(): boolean {
+    // Fences and doctests work in every section; only Example sections infer code from its contents.
+    private _beginGoogleCodeBlock(google: GoogleSectionState): boolean {
         const line = this._currentLine();
         const match = line.match(CodeBlockStartRegExp);
         const isDoctest = line.trimStart().startsWith('>>>');
-        if (!match && !isDoctest && !(this._googleSectionKind === 'example' && _looksLikeExampleCode(line))) {
+        if (!match && !isDoctest && !(google.kind === 'example' && _looksLikeExampleCode(line))) {
             return false;
         }
 
@@ -816,44 +839,49 @@ class DocStringConverter {
             kind: match ? 'fenced' : isDoctest ? 'doctest' : 'example',
             fence: match ? match[1] : '```',
             indent: this._currentIndent(),
-            outputIndent: this._googleSectionKind === 'example' ? '' : ' '.repeat(this._getGoogleContinuationIndent()),
+            outputIndent: google.kind === 'example' ? '' : ' '.repeat(this._getGoogleContinuationIndent(google)),
+            startLine: this._lineNum,
         };
-        this._googleCodeBlock = block;
-        this._googleAfterCodeBlock = false;
+        google.codeBlock = block;
+        google.afterCodeBlock = false;
         this._appendLine(block.outputIndent + block.fence + (match ? match[2] : 'python'));
         if (!match) {
-            this._appendGoogleCodeLine();
+            this._appendGoogleCodeLine(google);
         }
         return true;
     }
 
-    private _appendGoogleCodeLine(): void {
-        const block = this._googleCodeBlock!;
+    private _appendGoogleCodeLine(google: GoogleSectionState): void {
+        const block = google.codeBlock;
+        if (block === undefined) {
+            return;
+        }
         const line = this._currentLine();
         if (block.kind === 'fenced' && line.trim() === block.fence && this._currentIndent() === block.indent) {
             this._appendLine(block.outputIndent + block.fence);
-            this._googleCodeBlock = undefined;
-            this._googleAfterCodeBlock = true;
+            google.codeBlock = undefined;
+            google.afterCodeBlock = true;
             return;
         }
         this._appendLine(block.outputIndent + line.slice(Math.min(this._currentIndent(), block.indent)));
     }
 
-    private _appendGoogleBodyLine(): void {
-        const deeper = this._currentIndent() > this._googleBodyIndent;
+    // Deeper lines continue an entry; at body indent, recognize a new entry or join wrapped prose.
+    private _appendGoogleBodyLine(google: GoogleSectionState): void {
+        const deeper = this._currentIndent() > google.bodyIndent;
         const text = this._currentLine().trim();
 
         // Lock prose mode from the first line. A later wrap such as "example:" must not
         // become a fake type just because it looks like a name.
-        if (!this._googleEntryOpen && this._googleSectionKind === 'returns' && !deeper && !_looksLikeTypedEntry(text)) {
-            this._googleProseBody = true;
+        if (!google.entryOpen && google.kind === 'returns' && !deeper && !_looksLikeTypedEntry(text)) {
+            google.proseBody = true;
         }
 
         if (deeper) {
-            this._append(' '.repeat(this._getGoogleContinuationIndent()));
+            this._append(' '.repeat(this._getGoogleContinuationIndent(google)));
             this._appendTextLine(this._currentLine().trimStart());
-            this._googleEntryOpen = true;
-            this._googleAfterCodeBlock = false;
+            google.entryOpen = true;
+            google.afterCodeBlock = false;
             return;
         }
 
@@ -862,40 +890,40 @@ class DocStringConverter {
         if (text === '*:') {
             this._append('* ');
             this._appendTextLine(text);
-            this._googleEntryOpen = false;
-            this._googleAfterCodeBlock = false;
+            google.entryOpen = false;
+            google.afterCodeBlock = false;
             return;
         }
 
-        const kind = this._googleSectionKind;
-        const newEntry = !this._googleProseBody && kind !== undefined && _looksLikeSectionEntry(kind, text);
+        const kind = google.kind;
+        const newEntry = !google.proseBody && _looksLikeSectionEntry(kind, text);
         if (newEntry) {
-            this._appendGoogleEntry(text);
-            this._googleEntryOpen = true;
+            this._appendGoogleEntry(google, text);
+            google.entryOpen = true;
             return;
         }
 
         // Same-indent wrap of a sentence, or a Returns/Yields paragraph.
-        if (this._googleAfterCodeBlock) {
+        if (google.afterCodeBlock) {
             this._append('  ');
             this._appendTextLine(text);
-        } else if (this._googleEntryOpen && this._builder.endsWith('\n') && !this._builder.endsWith('\n\n')) {
+        } else if (google.entryOpen && this._builder.endsWith('\n') && !this._builder.endsWith('\n\n')) {
             this._joinGoogleWrappedLine(text);
         } else {
-            this._googleContinuationIndent = undefined;
+            google.continuationIndent = undefined;
             this._append('* ');
             this._appendTextLine(text);
         }
-        this._googleEntryOpen = true;
-        this._googleAfterCodeBlock = false;
+        google.entryOpen = true;
+        google.afterCodeBlock = false;
     }
 
-    private _getGoogleContinuationIndent(): number {
-        if (this._currentIndent() <= this._googleBodyIndent) {
+    private _getGoogleContinuationIndent(google: GoogleSectionState): number {
+        if (this._currentIndent() <= google.bodyIndent) {
             return 2;
         }
-        this._googleContinuationIndent ??= this._currentIndent();
-        return 2 + Math.max(0, this._currentIndent() - this._googleContinuationIndent);
+        google.continuationIndent ??= this._currentIndent();
+        return 2 + Math.max(0, this._currentIndent() - google.continuationIndent);
     }
 
     private _joinGoogleWrappedLine(line: string): void {
@@ -923,37 +951,38 @@ class DocStringConverter {
     }
 
     // A dedented line ends the section, unless a first-line header's body collapsed onto that indent.
-    private _lineEndsGoogleSection(lineIndex: number): boolean {
-        if (_countLeadingSpaces(this._lines[lineIndex]) > this._googleHeaderIndent) {
+    private _lineEndsGoogleSection(google: GoogleSectionState, lineIndex: number): boolean {
+        if (_countLeadingSpaces(this._lines[lineIndex]) > google.headerIndent) {
             return false;
         }
 
         const collapsedBodyLine =
-            this._googleHeaderIsFirstPhysicalLine &&
-            this._rawIndents[lineIndex] > this._googleHeaderRawIndent &&
-            (!this._googleBodyStarted || this._googleCollapsedBody);
+            google.headerIsFirstPhysicalLine &&
+            this._rawIndents[lineIndex] > google.headerRawIndent &&
+            (!google.bodyStarted || google.collapsedBody);
         return !collapsedBodyLine;
     }
 
-    private _finishGoogleSection(): void {
-        this._closeGoogleCodeBlock();
+    private _finishGoogleSection(google: GoogleSectionState): void {
+        this._closeGoogleCodeBlock(google);
+        this._google = undefined; // parsing state is done, reset the state variable back to void.
         this._popState();
     }
 
-    private _closeGoogleCodeBlock(): void {
-        if (!this._googleCodeBlock) {
+    private _closeGoogleCodeBlock(google: GoogleSectionState): void {
+        if (!google.codeBlock) {
             return;
         }
 
-        this._trimOutputAndAppendLine(this._googleCodeBlock.outputIndent + this._googleCodeBlock.fence);
-        this._googleCodeBlock = undefined;
-        this._googleAfterCodeBlock = true;
+        this._trimOutputAndAppendLine(google.codeBlock.outputIndent + google.codeBlock.fence);
+        google.codeBlock = undefined;
+        google.afterCodeBlock = true;
     }
 
-    private _appendGoogleEntry(line: string): void {
-        this._googleContinuationIndent = undefined;
-        this._googleAfterCodeBlock = false;
-        const colonOffset = _findTopLevelColon(line);
+    private _appendGoogleEntry(google: GoogleSectionState, line: string): void {
+        google.continuationIndent = undefined;
+        google.afterCodeBlock = false;
+        const colonOffset = _findTopLevelSeparator(line, ':');
         if (colonOffset === undefined || !line.slice(0, colonOffset).trim()) {
             // Not a 'name: description' entry, so render it as a plain bullet item.
             this._append('* ');
@@ -965,7 +994,7 @@ class DocStringConverter {
         const description = line.slice(colonOffset + 1).trim();
 
         let prefix: string;
-        if (this._googleSectionKind === 'params') {
+        if (google.kind === 'params') {
             const match = head.match(/^(.*?)\s*\(([^()]*)\)$/);
             if (match !== null) {
                 // The parenthesized text may hold a type plus extra markers, e.g. '(float, optional)'.
@@ -1252,128 +1281,212 @@ function _isHeader(line: string | undefined): boolean {
     return line !== undefined && (line.match(/^\s*[#`~=-]{3,}/)?.length ?? 0) > 0;
 }
 
+function _looksLikeSectionEntry(kind: GoogleSectionKind, line: string): boolean {
+    return kind === 'params' ? _looksLikeGoogleParamEntry(line) : _looksLikeTypedEntry(line);
+}
+
 // Google param entries are "name: description" or "name (type): description", including *args/**kwargs.
 function _looksLikeGoogleParamEntry(line: string): boolean {
     if (line.startsWith('- ') || line.startsWith('* ')) {
         return false;
     }
 
-    const colonOffset = _findTopLevelColon(line);
+    const colonOffset = _findTopLevelSeparator(line, ':');
     if (colonOffset === undefined || !line.slice(0, colonOffset).trim()) {
         return false;
     }
 
     const head = line.slice(0, colonOffset).trim();
-    // \p{L} so a non-English name is its own bullet, not a wrap of the previous one.
-    // A dot is allowed only when a letter follows, so "foo.bar" is a name and "e.g." is not.
-    return /^(?:\*{1,2})?[\p{L}_][\p{L}\p{N}_]*(?:\.[\p{L}_][\p{L}\p{N}_]*)*(?:\s*\([^()\n]*\))?$/u.test(head);
+    const nameWithoutVariadicMarker = head.replace(/^\*{1,2}/, ''); // Remove a leading * or **.
+    const nameWithoutTypeAnnotation = nameWithoutVariadicMarker.replace(/\s*\([^()\n]*\)$/, ''); // Remove a trailing (type) without nested parentheses.
+    return nameWithoutTypeAnnotation.split('.').every(_isGoogleParamNamePart);
 }
 
-function _looksLikeSectionEntry(kind: GoogleSectionKind, line: string): boolean {
-    return kind === 'params' ? _looksLikeGoogleParamEntry(line) : _looksLikeTypedEntry(line);
+function _isGoogleParamNamePart(name: string): boolean {
+    if (!name) {
+        return false;
+    }
+
+    let first = true;
+    for (const character of name) {
+        const char = character.charCodeAt(0);
+        const nextChar = character.length === 2 ? character.charCodeAt(1) : undefined;
+        if (!(first ? isIdentifierStartChar(char, nextChar) : isIdentifierChar(char, nextChar))) {
+            return false;
+        }
+        first = false;
+    }
+    return true;
 }
 
-// "int: ...", "int | None: ...", "dict[str, int]: ...", "ValueError: ...".
-// Not a sentence that contains a colon ("A mapping of name: id.").
-// shortcut: "X or Y" is not a type head; upgrade if those returns show up as plain bullets.
 function _looksLikeTypedEntry(line: string): boolean {
-    const colonOffset = _findTopLevelColon(line);
+    const colonOffset = _findTopLevelSeparator(line, ':');
     if (colonOffset === undefined || !line.slice(0, colonOffset).trim()) {
         return false;
     }
 
-    let stripped = line.slice(0, colonOffset).trim();
-    let prev = '';
-    while (stripped !== prev) {
-        prev = stripped;
-        stripped = stripped.replace(/\[[^[\]]*\]/g, '');
+    let type = line.slice(0, colonOffset).trim();
+    // Remove innermost type arguments first, leaving unmatched brackets in place.
+    let closeBracket = type.indexOf(']');
+    while (closeBracket !== -1) {
+        const openBracket = type.lastIndexOf('[', closeBracket);
+        if (openBracket === -1) {
+            closeBracket = type.indexOf(']', closeBracket + 1);
+        } else {
+            type = type.slice(0, openBracket) + type.slice(closeBracket + 1);
+            closeBracket = type.indexOf(']', openBracket);
+        }
     }
-    stripped = stripped.trim();
+    type = type.trim();
     // "Note:" and "Warning:" are sentences, not types or exception names.
-    if (/^(?:note|warning|see|example|otherwise|caution)$/i.test(stripped)) {
+    if (['note', 'warning', 'see', 'example', 'otherwise', 'caution'].includes(type.toLowerCase())) {
         return false;
     }
-    return /^[\p{L}_][\p{L}\p{N}_.]*(?:\s*\|\s*[\p{L}_][\p{L}\p{N}_.]*)*$/u.test(stripped);
+    return type.split('|').every((part) => _isGoogleTypeName(part.trim()));
+}
+
+function _isGoogleTypeName(name: string): boolean {
+    // Dots are allowed anywhere after the first character, including a trailing dot.
+    return /^[\p{Letter}_][\p{Letter}\p{Number}_.]*$/u.test(name);
+}
+
+function _looksLikeProseSentence(line: string): boolean {
+    const text = line.trim();
+    if (!['.', '!', '?'].some((ending) => text.endsWith(ending))) {
+        return false;
+    }
+
+    const words = text.slice(0, -1).split(/\s+/);
+    return (
+        words.length > 1 &&
+        /^\p{Uppercase_Letter}/u.test(words[0]) &&
+        words.every((word) => /^[\p{Letter}\p{Mark}\p{Number}'’.,-]+$/u.test(word))
+    );
+}
+
+function _isWithinPythonExpression(lines: string[], startLine: number, nextLine: number): boolean {
+    const prefix = lines.slice(startLine, nextLine).join('\n') + '\n';
+    const tokens = new Tokenizer().tokenize(prefix + lines[nextLine]).tokens;
+    let bracketDepth = 0;
+    let fStringDepth = 0;
+    for (let i = 0; i < tokens.count; i++) {
+        const token = tokens.getItemAt(i);
+        if (token.start >= prefix.length) {
+            break;
+        }
+        if (
+            (token.type === TokenType.String || token.type === TokenType.FStringMiddle) &&
+            token.start + token.length > prefix.length
+        ) {
+            return true;
+        }
+        if (token.type === TokenType.FStringStart) {
+            fStringDepth++;
+        } else if (token.type === TokenType.FStringEnd) {
+            fStringDepth--;
+        } else if (
+            token.type === TokenType.OpenParenthesis ||
+            token.type === TokenType.OpenBracket ||
+            token.type === TokenType.OpenCurlyBrace
+        ) {
+            bracketDepth++;
+        } else if (
+            token.type === TokenType.CloseParenthesis ||
+            token.type === TokenType.CloseBracket ||
+            token.type === TokenType.CloseCurlyBrace
+        ) {
+            bracketDepth--;
+        }
+    }
+    return bracketDepth !== 0 || fStringDepth !== 0 || prefix.trimEnd().endsWith('\\');
 }
 
 function _looksLikeExampleCode(line: string): boolean {
     const text = line.trim();
-    if (text.startsWith('>>>') || text.startsWith('...') || /^[[{(]/.test(text)) {
+    if (text.startsWith('>>>') || text.startsWith('...') || ['[', '{', '('].some((prefix) => text.startsWith(prefix))) {
         return true;
     }
 
     // "Call it (once)." is not code. "x = 1", "foo()" and "result[0]" are.
     // No space before "[", so a sentence like "values [1] are ok" stays text.
-    if (/^[\p{L}_][\p{L}\p{N}_.]*(?:\s*[(=]|\[)/u.test(text)) {
+    if (_looksLikeNameOperation(text, false)) {
         return true;
     }
 
+    const keyword = text.match(/^\w+/)?.[0] ?? '';
+    const afterKeyword = text.slice(keyword.length);
+    const conditionalKeywords = ['if', 'elif', 'while', 'except', 'with'];
+
     // "for x in y:" is a statement. "for instance:" and "for example:" are sentences.
-    if (/^for\b/.test(text) && !/^for\s+\S+\s+in\b/.test(text)) {
+    if (keyword === 'for' && !/^\s+\S+\s+in\b/.test(afterKeyword)) {
         return false;
     }
     // "if the user is an admin:" is a sentence. "if x:" is a statement.
-    if (/^(?:if|elif|while|except|with)\s+(?:the|a|an|you|when)\b/.test(text)) {
+    if (conditionalKeywords.includes(keyword) && /^\s+(the|a|an|you|when)\b/.test(afterKeyword)) {
         return false;
     }
-    if (/^(?:else|try|finally)\b(?!\s*:)/.test(text)) {
+    if (['else', 'try', 'finally'].includes(keyword) && !afterKeyword.trimStart().startsWith(':')) {
         return false;
     }
     // "if possible: avoid calling this twice." is a sentence. "if x: return 0" is a statement.
     // shortcut: "if possible:" with nothing after the colon is still code; upgrade if those sentences show up.
     const colon = text.indexOf(':');
-    if (colon >= 0 && /^(?:if|elif|while|except|with)\b/.test(text)) {
+    if (colon >= 0 && conditionalKeywords.includes(keyword)) {
         const after = text.slice(colon + 1).trim();
         if (
             after &&
-            !/^(?:#|return\b|raise\b|yield\b|assert\b|pass\b)/.test(after) &&
-            !/^[\p{L}_][\p{L}\p{N}_.]*\s*[([=]/u.test(after)
+            !after.startsWith('#') &&
+            !['return', 'raise', 'yield', 'assert', 'pass'].includes(after.match(/^\w+/)?.[0] ?? '') &&
+            !_looksLikeNameOperation(after, true)
         ) {
             return false;
         }
     }
     if (
-        /^with\b/.test(text) &&
-        !/[(\]]/.test(text) &&
+        keyword === 'with' &&
+        !text.includes('(') &&
+        !text.includes(']') &&
         !/\bas\b/.test(text) &&
-        !/^with\s+\w+\s*:(?:\s*#.*)?$/.test(text)
+        !/^\s+\w+\s*:(?:\s*#.*)?$/.test(afterKeyword)
     ) {
         return false;
     }
-    if (/^(?:if|elif|else|for|while|with|try|except|finally)\b.*:/.test(text)) {
+    if (
+        [...conditionalKeywords, 'else', 'for', 'try', 'finally'].includes(keyword) &&
+        /^[^\r\n\u2028\u2029]*:/.test(afterKeyword)
+    ) {
         return true;
     }
 
-    if (/^(?:def|class)\b.*[:(]/.test(text) || /^import\s+\S/.test(text) || /^from\s+\S+\s+import\b/.test(text)) {
+    if (
+        (['def', 'class'].includes(keyword) && /^[^\r\n\u2028\u2029]*[:(]/.test(afterKeyword)) ||
+        (keyword === 'import' && /^\s+\S/.test(afterKeyword)) ||
+        (keyword === 'from' && /^\s+\S+\s+import\b/.test(afterKeyword))
+    ) {
         return true;
     }
 
     // "return the value" is a sentence. "return x" is code.
     // shortcut: "return something" (not the/a/an) is still code; upgrade if those sentences show up.
+    return ['return', 'yield', 'raise', 'assert'].includes(keyword) && !/^\s+(the|a|an)\b/.test(afterKeyword);
+}
+
+function _looksLikeNameOperation(text: string, allowSpaceBeforeBracket: boolean): boolean {
+    const name = text.match(/^[\p{Letter}_][\p{Letter}\p{Number}_.]*/u)?.[0];
+    if (!name) {
+        return false;
+    }
+
+    const afterName = text.slice(name.length);
+    const operation = afterName.trimStart();
     return (
-        /^(?:return|yield|raise|assert)\b/.test(text) && !/^(?:return|yield|raise|assert)\s+(?:the|a|an)\b/.test(text)
+        operation.startsWith('(') ||
+        operation.startsWith('=') ||
+        (operation.startsWith('[') && (allowSpaceBeforeBracket || operation === afterName))
     );
 }
 
-// Finds the first ':' that isn't nested inside (), [], or {}, which terminates the name of a
-// Google-style entry (e.g. 'param1 (dict[str, int]): description').
-function _findTopLevelColon(text: string): number | undefined {
-    let depth = 0;
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        if (char === '[' || char === '(' || char === '{') {
-            depth++;
-        } else if (char === ']' || char === ')' || char === '}') {
-            depth--;
-        } else if (char === ':' && depth === 0) {
-            return i;
-        }
-    }
-    return undefined;
-}
-
-// Splits 'text' on the first top-level 'separator' (e.g. 'float, optional' -> ['float', ' optional']).
-function _splitTopLevel(text: string, separator: string): [string, string] | undefined {
+function _findTopLevelSeparator(text: string, separator: string): number | undefined {
     let depth = 0;
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
@@ -1382,8 +1495,13 @@ function _splitTopLevel(text: string, separator: string): [string, string] | und
         } else if (char === ']' || char === ')' || char === '}') {
             depth--;
         } else if (char === separator && depth === 0) {
-            return [text.slice(0, i), text.slice(i + 1)];
+            return i;
         }
     }
     return undefined;
+}
+
+function _splitTopLevel(text: string, separator: string): [string, string] | undefined {
+    const offset = _findTopLevelSeparator(text, separator);
+    return offset === undefined ? undefined : [text.slice(0, offset), text.slice(offset + 1)];
 }
