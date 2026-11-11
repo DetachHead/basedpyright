@@ -122,6 +122,13 @@ interface RestTableState {
     inHeader: boolean;
 }
 
+interface GoogleCodeBlockState {
+    kind: 'fenced' | 'doctest' | 'example';
+    fence: string;
+    indent: number;
+    outputIndent: string;
+}
+
 class DocStringConverter {
     private _builder = '';
     private _skipAppendEmptyLine = true;
@@ -157,7 +164,9 @@ class DocStringConverter {
     private _googleProseBody = false;
     // False after a blank line, so the next sentence starts a new bullet instead of joining.
     private _googleEntryOpen = false;
-    private _googleExampleFenceOpen = false;
+    private _googleCodeBlock: GoogleCodeBlockState | undefined;
+    private _googleContinuationIndent: number | undefined;
+    private _googleAfterCodeBlock = false;
 
     constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
@@ -195,8 +204,8 @@ class DocStringConverter {
         ) {
             // See what the current backtick block is. We want to match it.
             this._trimOutputAndAppendLine(this._lastBacktickString || '```');
-        } else if (this._state === this._parseGoogleSection && this._googleExampleFenceOpen) {
-            this._closeGoogleExampleFence();
+        } else if (this._state === this._parseGoogleSection && this._googleCodeBlock) {
+            this._closeGoogleCodeBlock();
         } else if (this._insideInlineCode) {
             this._trimOutputAndAppendLine('`', /* noNewLine */ true);
         }
@@ -300,7 +309,7 @@ class DocStringConverter {
 
         const line = this._formatPlainTextIndent(this._currentLine());
 
-        if (this._forceLiteral && this._lastLineWasPlainText) {
+        if (this._forceLiteral && this._lastLineWasPlainText && !this._insideInlineCode) {
             this._convertTrailingSoftLineBreak();
         }
 
@@ -645,6 +654,7 @@ class DocStringConverter {
         if (line.startsWith('@')) {
             this._appendLine();
             this._appendTextLine(line);
+            this._lastLineWasPlainText = true;
             this._eatLine();
             return true;
         }
@@ -665,6 +675,7 @@ class DocStringConverter {
             // force indent for fields
             line = this._convertIndent(line);
             this._appendTextLine(line);
+            this._lastLineWasPlainText = true;
             this._eatLine();
             return true;
         }
@@ -682,10 +693,11 @@ class DocStringConverter {
         if (!trimmed.endsWith(':')) {
             return false;
         }
-        const section = GoogleSections[trimmed.slice(0, -1).trim()];
-        if (!section) {
+        const sectionName = trimmed.slice(0, -1).trim();
+        if (!Object.prototype.hasOwnProperty.call(GoogleSections, sectionName)) {
             return false;
         }
+        const section = GoogleSections[sectionName];
 
         // "Args:" is also a plain heading. Only claim it when the body is "name: description".
         if (section.ambiguous && !this._nextBodyLineLooksLikeGoogleEntry()) {
@@ -700,7 +712,9 @@ class DocStringConverter {
         this._googleBodyStarted = false;
         this._googleProseBody = false;
         this._googleEntryOpen = false;
-        this._googleExampleFenceOpen = false;
+        this._googleCodeBlock = undefined;
+        this._googleContinuationIndent = undefined;
+        this._googleAfterCodeBlock = false;
 
         // Start the section header on its own paragraph.
         this._builder = this._builder.replace(/\n*$/, '\n\n');
@@ -732,11 +746,16 @@ class DocStringConverter {
                 break;
             }
 
-            if (this._googleExampleFenceOpen) {
-                // A blank line ends a code sample. A later >>> can open another.
-                this._closeGoogleExampleFence();
+            if (this._googleCodeBlock?.kind === 'doctest') {
+                this._closeGoogleCodeBlock();
+            } else if (this._googleCodeBlock) {
+                // Blank lines inside code are content, not paragraph separators.
+                this._append('\n');
+                this._eatLine();
+                return;
             }
             this._googleEntryOpen = false;
+            this._googleAfterCodeBlock = false;
             this._appendLine();
             this._eatLine();
             return;
@@ -744,8 +763,7 @@ class DocStringConverter {
 
         if (this._lineEndsGoogleSection(this._lineNum)) {
             // Dedented line: the section is over. Leave the line for the normal parser.
-            this._closeGoogleExampleFence();
-            this._popState();
+            this._finishGoogleSection();
             return;
         }
 
@@ -763,33 +781,62 @@ class DocStringConverter {
             }
         }
 
-        // Example body is prose or a code sample, not "name: description" bullets.
-        if (this._googleSectionKind === 'example') {
-            this._appendExampleLine();
+        if (this._googleCodeBlock) {
+            if (this._currentIndent() >= this._googleCodeBlock.indent) {
+                this._appendGoogleCodeLine();
+                this._eatLine();
+                return;
+            }
+            this._closeGoogleCodeBlock();
+        }
+
+        if (this._beginGoogleCodeBlock()) {
             this._eatLine();
             return;
         }
 
-        this._appendGoogleBodyLine();
+        // Example body is prose or a code sample, not "name: description" bullets.
+        if (this._googleSectionKind === 'example') {
+            this._appendTextLine(this._currentLine().trimStart());
+        } else {
+            this._appendGoogleBodyLine();
+        }
         this._eatLine();
     }
 
-    private _appendExampleLine(): void {
+    private _beginGoogleCodeBlock(): boolean {
         const line = this._currentLine();
-        const trimmed = line.trimStart();
-        // Open the fence only for code. A prose example must not become a Python block.
-        if (!this._googleExampleFenceOpen && _looksLikeExampleCode(trimmed)) {
-            this._appendLine('```python');
-            this._googleExampleFenceOpen = true;
+        const match = line.match(CodeBlockStartRegExp);
+        const isDoctest = line.trimStart().startsWith('>>>');
+        if (!match && !isDoctest && !(this._googleSectionKind === 'example' && _looksLikeExampleCode(line))) {
+            return false;
         }
 
-        if (!this._googleExampleFenceOpen) {
-            this._appendTextLine(trimmed);
+        const block: GoogleCodeBlockState = {
+            kind: match ? 'fenced' : isDoctest ? 'doctest' : 'example',
+            fence: match ? match[1] : '```',
+            indent: this._currentIndent(),
+            outputIndent: this._googleSectionKind === 'example' ? '' : ' '.repeat(this._getGoogleContinuationIndent()),
+        };
+        this._googleCodeBlock = block;
+        this._googleAfterCodeBlock = false;
+        this._appendLine(block.outputIndent + block.fence + (match ? match[2] : 'python'));
+        if (!match) {
+            this._appendGoogleCodeLine();
+        }
+        return true;
+    }
+
+    private _appendGoogleCodeLine(): void {
+        const block = this._googleCodeBlock!;
+        const line = this._currentLine();
+        if (block.kind === 'fenced' && line.trim() === block.fence && this._currentIndent() === block.indent) {
+            this._appendLine(block.outputIndent + block.fence);
+            this._googleCodeBlock = undefined;
+            this._googleAfterCodeBlock = true;
             return;
         }
-
-        const extraIndent = this._currentIndent() - this._googleBodyIndent;
-        this._appendLine(extraIndent > 0 ? ' '.repeat(extraIndent) + trimmed : trimmed);
+        this._appendLine(block.outputIndent + line.slice(Math.min(this._currentIndent(), block.indent)));
     }
 
     private _appendGoogleBodyLine(): void {
@@ -798,28 +845,25 @@ class DocStringConverter {
 
         // Lock prose mode from the first line. A later wrap such as "example:" must not
         // become a fake type just because it looks like a name.
-        if (
-            !this._googleEntryOpen &&
-            this._googleSectionKind === 'returns' &&
-            !deeper &&
-            !_looksLikeTypedEntry(text)
-        ) {
+        if (!this._googleEntryOpen && this._googleSectionKind === 'returns' && !deeper && !_looksLikeTypedEntry(text)) {
             this._googleProseBody = true;
         }
 
         if (deeper) {
-            this._append('  ');
+            this._append(' '.repeat(this._getGoogleContinuationIndent()));
             this._appendTextLine(this._currentLine().trimStart());
             this._googleEntryOpen = true;
+            this._googleAfterCodeBlock = false;
             return;
         }
 
         // A bare "*:" marks keyword-only arguments. It is not a parameter name,
         // so it must not be joined onto the previous description.
-        if (text === '*:' || text === '*:') {
+        if (text === '*:') {
             this._append('* ');
             this._appendTextLine(text);
             this._googleEntryOpen = false;
+            this._googleAfterCodeBlock = false;
             return;
         }
 
@@ -832,13 +876,26 @@ class DocStringConverter {
         }
 
         // Same-indent wrap of a sentence, or a Returns/Yields paragraph.
-        if (this._googleEntryOpen && this._builder.endsWith('\n') && !this._builder.endsWith('\n\n')) {
+        if (this._googleAfterCodeBlock) {
+            this._append('  ');
+            this._appendTextLine(text);
+        } else if (this._googleEntryOpen && this._builder.endsWith('\n') && !this._builder.endsWith('\n\n')) {
             this._joinGoogleWrappedLine(text);
         } else {
+            this._googleContinuationIndent = undefined;
             this._append('* ');
             this._appendTextLine(text);
         }
         this._googleEntryOpen = true;
+        this._googleAfterCodeBlock = false;
+    }
+
+    private _getGoogleContinuationIndent(): number {
+        if (this._currentIndent() <= this._googleBodyIndent) {
+            return 2;
+        }
+        this._googleContinuationIndent ??= this._currentIndent();
+        return 2 + Math.max(0, this._currentIndent() - this._googleContinuationIndent);
     }
 
     private _joinGoogleWrappedLine(line: string): void {
@@ -858,8 +915,7 @@ class DocStringConverter {
 
             const cleanedIndent = _countLeadingSpaces(this._lines[i]);
             const isBody =
-                cleanedIndent > headerIndent ||
-                (headerIsFirstPhysicalLine && this._rawIndents[i] > headerRawIndent);
+                cleanedIndent > headerIndent || (headerIsFirstPhysicalLine && this._rawIndents[i] > headerRawIndent);
             return isBody && _looksLikeGoogleParamEntry(this._lines[i].trim());
         }
 
@@ -880,20 +936,23 @@ class DocStringConverter {
     }
 
     private _finishGoogleSection(): void {
-        this._closeGoogleExampleFence();
+        this._closeGoogleCodeBlock();
         this._popState();
     }
 
-    private _closeGoogleExampleFence(): void {
-        if (!this._googleExampleFenceOpen) {
+    private _closeGoogleCodeBlock(): void {
+        if (!this._googleCodeBlock) {
             return;
         }
 
-        this._trimOutputAndAppendLine('```');
-        this._googleExampleFenceOpen = false;
+        this._trimOutputAndAppendLine(this._googleCodeBlock.outputIndent + this._googleCodeBlock.fence);
+        this._googleCodeBlock = undefined;
+        this._googleAfterCodeBlock = true;
     }
 
     private _appendGoogleEntry(line: string): void {
+        this._googleContinuationIndent = undefined;
+        this._googleAfterCodeBlock = false;
         const colonOffset = _findTopLevelColon(line);
         if (colonOffset === undefined || !line.slice(0, colonOffset).trim()) {
             // Not a 'name: description' entry, so render it as a plain bullet item.
@@ -1227,7 +1286,7 @@ function _looksLikeTypedEntry(line: string): boolean {
     let prev = '';
     while (stripped !== prev) {
         prev = stripped;
-        stripped = stripped.replace(/\[[^\[\]]*\]/g, '');
+        stripped = stripped.replace(/\[[^[\]]*\]/g, '');
     }
     stripped = stripped.trim();
     // "Note:" and "Warning:" are sentences, not types or exception names.
@@ -1239,7 +1298,7 @@ function _looksLikeTypedEntry(line: string): boolean {
 
 function _looksLikeExampleCode(line: string): boolean {
     const text = line.trim();
-    if (text.startsWith('>>>') || text.startsWith('...') || /^[\[{(]/.test(text)) {
+    if (text.startsWith('>>>') || text.startsWith('...') || /^[[{(]/.test(text)) {
         return true;
     }
 
@@ -1268,12 +1327,17 @@ function _looksLikeExampleCode(line: string): boolean {
         if (
             after &&
             !/^(?:#|return\b|raise\b|yield\b|assert\b|pass\b)/.test(after) &&
-            !/^[\p{L}_][\p{L}\p{N}_.]*\s*[(\[=]/u.test(after)
+            !/^[\p{L}_][\p{L}\p{N}_.]*\s*[([=]/u.test(after)
         ) {
             return false;
         }
     }
-    if (/^with\b/.test(text) && !/[(\]]/.test(text) && !/\bas\b/.test(text) && !/^with\s+\w+\s*:(?:\s*#.*)?$/.test(text)) {
+    if (
+        /^with\b/.test(text) &&
+        !/[(\]]/.test(text) &&
+        !/\bas\b/.test(text) &&
+        !/^with\s+\w+\s*:(?:\s*#.*)?$/.test(text)
+    ) {
         return false;
     }
     if (/^(?:if|elif|else|for|while|with|try|except|finally)\b.*:/.test(text)) {
@@ -1286,7 +1350,9 @@ function _looksLikeExampleCode(line: string): boolean {
 
     // "return the value" is a sentence. "return x" is code.
     // shortcut: "return something" (not the/a/an) is still code; upgrade if those sentences show up.
-    return /^(?:return|yield|raise|assert)\b/.test(text) && !/^(?:return|yield|raise|assert)\s+(?:the|a|an)\b/.test(text);
+    return (
+        /^(?:return|yield|raise|assert)\b/.test(text) && !/^(?:return|yield|raise|assert)\s+(?:the|a|an)\b/.test(text)
+    );
 }
 
 // Finds the first ':' that isn't nested inside (), [], or {}, which terminates the name of a

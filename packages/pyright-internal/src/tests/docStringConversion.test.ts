@@ -840,6 +840,151 @@ Raises:
         _testConvertToMarkdown(docstring, markdown);
     });
 
+    test('GoogleStyleDoctestInReturns', () => {
+        const docstring = `Compute a value.
+
+Returns:
+    int: The computed value.
+
+    >>> compute(1)
+    2
+
+Raises:
+    ValueError: Invalid input.`;
+
+        const markdown = `Compute a value.
+
+**Returns:**
+* ${singleTick}int${singleTick}: The computed value.
+
+  ${tripleTick}python
+  >>> compute(1)
+  2
+  ${tripleTick}
+
+**Raises:**
+* ${singleTick}ValueError${singleTick}: Invalid input.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleFencedCodeInArgs', () => {
+        const docstring = `Args:
+    x: An example value.
+        ${tripleTick}python
+        print("<value>")
+        ${tripleTick}
+    y: Another value.`;
+
+        const markdown = `**Args:**
+* ${singleTick}x${singleTick}: An example value.
+  ${tripleTick}python
+  print("<value>")
+  ${tripleTick}
+* ${singleTick}y${singleTick}: Another value.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test.each(['fenced', 'doctest'])('GoogleStyleContinuationAfterCodeBlock (%s)', (kind) => {
+        const code =
+            kind === 'fenced' ? `${tripleTick}python\n        f()\n        ${tripleTick}` : '>>> f()\n        1';
+        const docstring = `Args:
+    x: Example:
+        ${code}
+    More detail.`;
+
+        const content = kind === 'fenced' ? 'f()' : '>>> f()\n  1';
+        const markdown = `**Args:**
+* ${singleTick}x${singleTick}: Example:
+  ${tripleTick}python
+  ${content}
+  ${tripleTick}
+  More detail.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleCodeBlockKeepsNestedIndentation', () => {
+        const docstring = `Args:
+    x: Options:
+        - outer
+            ${tripleTick}python
+            f()
+            ${tripleTick}
+            More detail.`;
+
+        const markdown = `**Args:**
+* ${singleTick}x${singleTick}: Options:
+  - outer
+      ${tripleTick}python
+      f()
+      ${tripleTick}
+      More detail.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExplicitExampleFence', () => {
+        const docstring = `Example:
+    ${tripleTick}python
+    x = [1]
+    ${tripleTick}`;
+
+        const markdown = `**Example:**
+${tripleTick}python
+x = [1]
+${tripleTick}`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test.each([1, 2])('GoogleStyleExampleCodeKeepsBlankLines (%d)', (blankLines) => {
+        const docstring = `Example:
+    text = """first
+${'\n'.repeat(blankLines)}    second"""`;
+
+        const markdown = `**Example:**
+${tripleTick}python
+text = """first
+${'\n'.repeat(blankLines)}second"""
+${tripleTick}`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleExampleProseAfterDoctest', () => {
+        const docstring = `Example:
+    >>> f(1)
+    2
+
+    The result is an integer.`;
+
+        const markdown = `**Example:**
+${tripleTick}python
+>>> f(1)
+2
+${tripleTick}
+
+The result is an integer.`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
+    test('GoogleStyleNestedContinuationIndentation', () => {
+        const docstring = `Args:
+    x: Options:
+        - outer
+            - inner`;
+
+        const markdown = `**Args:**
+* ${singleTick}x${singleTick}: Options:
+  - outer
+      - inner`;
+
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
     // The first physical line is trimmed rather than dedented, so an Example header
     // there collapses its body to the same indent. The body is still part of the section.
     test('GoogleStyleExampleHeaderFirstLineWithDoctest', () => {
@@ -903,10 +1048,7 @@ Then read the result.`;
 
         _testConvertToMarkdown(docstring, markdown);
 
-        _testConvertToMarkdown(
-            'Example:\n    x = 1\n',
-            '**Example:**\n```python\nx = 1\n```'
-        );
+        _testConvertToMarkdown('Example:\n    x = 1\n', '**Example:**\n```python\nx = 1\n```');
         _testConvertToMarkdown(
             'Example:\n    if you pass None, it returns 0.\n    Then check the result.\n',
             '**Example:**\nif you pass None, it returns 0.\nThen check the result.'
@@ -944,7 +1086,10 @@ Then read the result.`;
             'Example:\n    with open(path) as f:\n        print(f)\n',
             '**Example:**\n```python\nwith open(path) as f:\n    print(f)\n```'
         );
-        _testConvertToMarkdown('Example:\n    except ValueError:\n        return 0\n', '**Example:**\n```python\nexcept ValueError:\n    return 0\n```');
+        _testConvertToMarkdown(
+            'Example:\n    except ValueError:\n        return 0\n',
+            '**Example:**\n```python\nexcept ValueError:\n    return 0\n```'
+        );
     });
 
     test('GoogleStyleUnicodeParamName', () => {
@@ -1054,6 +1199,14 @@ Returns:
         _testConvertToMarkdown(prose, 'Parameters:\nnot a google section, just a heading\nfollowed by prose.');
     });
 
+    test.each(['constructor', 'toString'])('GoogleStyleInheritedNameIsNotASection (%s)', (name) => {
+        const docstring = `${name}:
+    Plain text.`;
+        const markdown = `${name}:
+Plain text.`;
+        _testConvertToMarkdown(docstring, markdown);
+    });
+
     test('GoogleStyleFirstLineHeaderCollapsedBody', () => {
         const docstring = [
             'Args:',
@@ -1080,12 +1233,9 @@ Returns:
     });
 
     test('GoogleStyleFirstLineHeaderKeepsFollowingSection', () => {
-        const docstring = [
-            'Args:',
-            '        x (int): the value.',
-            '    Returns:',
-            '        int: the result.',
-        ].join('\n');
+        const docstring = ['Args:', '        x (int): the value.', '    Returns:', '        int: the result.'].join(
+            '\n'
+        );
 
         const markdown = `**Args:**
 * \`x\` (\`int\`): the value.
@@ -1611,6 +1761,26 @@ multiple lines.
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
+    test('ForceLiteralDoesNotAddSpacesInsideInlineCode', () => {
+        const docstring = `Use ${singleTick}first
+second${singleTick} here.`;
+        const markdown = `Use ${singleTick}first
+second${singleTick} here.`;
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
+    test('ForceLiteralPreservesProseAfterField', () => {
+        const docstring = `Summary.
+name: value
+Following text.
+Last line.`;
+        const markdown = `Summary.  
+name: value  
+Following text.  
+Last line.`;
+        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
+    });
+
     test('ForceLiteralPreservesEqualIndentContinuation', () => {
         const docstring = [
             'Replace each character in the string using the given translation table.',
@@ -1652,7 +1822,9 @@ multiple lines.
 
         const markdown =
             'Summary.\n\n' +
-            ['&nbsp;&nbsp;Use `first', 'second` here.', '&nbsp;&nbsp;More prose.'].join(hardBreak) +
+            '&nbsp;&nbsp;Use `first\nsecond` here.' +
+            hardBreak +
+            '&nbsp;&nbsp;More prose.' +
             '\n\nEnd.';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
