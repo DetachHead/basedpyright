@@ -31,5 +31,5 @@ helper.verifyHover('markdown', {
     marker2: '```python\n(function) def func2() -> None\n```',
     marker3: '```python\n(function) def func3() -> None\n```',
     marker4:
-        '```python\n(function) def func4(a: int, b: int, c: int) -> None\n```\n---\n**Args:**\n* `a` (`int`): description\n* `b` (`int|bool`): 한국어\n* `c` (`int`): description',
+        '```python\n(function) def func4(a: int, b: int, c: int) -> None\n```\n---\n**Args:**\n\n* `a` (`int`): description\n* `b` (`int|bool`): 한국어\n* `c` (`int`): description',
 });
