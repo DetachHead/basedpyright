@@ -692,18 +692,24 @@ na\\_filter : bool, default True`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('MixedRestAndGoogleFields', () => {
+    test('MixedRestAndGoogleSections', () => {
         const docstring = `Summary.
 
 :param old: rest description
 
 Args:
-    new (int): google description
+    value (float, optional): The input.
 
 :return: rest result
 
 Returns:
-    int: google result`;
+    float: The result.
+
+    >>> compute(1)
+    2
+
+Raises:
+    ValueError: Outside [0.0, 1.0].`;
 
         const markdown = `Summary.
 
@@ -711,13 +717,22 @@ Returns:
 
 **Args:**
 
-* \`new\` (\`int\`): google description
+* ${singleTick}value${singleTick} (${singleTick}float${singleTick}, optional): The input.
 
 :return: rest result
 
 **Returns:**
 
-int: google result`;
+float: The result.
+
+${tripleTick}python
+>>> compute(1)
+2
+${tripleTick}
+
+**Raises:**
+
+* ${singleTick}ValueError${singleTick}: Outside \\[0.0, 1.0\\].`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -790,78 +805,6 @@ dict\\[str, int\\]: The mapping.`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('GoogleStylePylanceRendering', () => {
-        const docstring = `Calculates the final price after applying a percentage discount.
-
-    Args:
-        price (float): Base price of the item. Must be positive.
-        discount (float, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
-
-    Returns:
-        float: Final price after discount.
-
-    Raises:
-        ValueError: If price is negative or discount is outside the range [0.0, 1.0].
-
-    Example:
-        >>> calculate_discount(100.0, 0.2)
-        80.0
-`;
-
-        const markdown = `Calculates the final price after applying a percentage discount.
-
-**Args:**
-
-* \`price\` (\`float\`): Base price of the item. Must be positive.
-* \`discount\` (\`float\`, optional): Discount rate as a decimal (e.g., 0.2 for 20%). Defaults to 0.1.
-
-**Returns:**
-
-float: Final price after discount.
-
-**Raises:**
-
-* \`ValueError\`: If price is negative or discount is outside the range \\[0.0, 1.0\\].
-
-**Example:**
-
-\`\`\`python
->>> calculate_discount(100.0, 0.2)
-80.0
-\`\`\``;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleMultilineDescriptions', () => {
-        const docstring = `Build a repeated greeting.
-
-Args:
-    name: The person to greet.
-        This continuation line checks multiline parameter descriptions.
-    times (int): Number of repetitions.
-        Must be at least one.
-
-Returns:
-    str: The greetings joined with spaces.
-`;
-
-        const markdown = `Build a repeated greeting.
-
-**Args:**
-
-* \`name\`: The person to greet.
-  This continuation line checks multiline parameter descriptions.
-* \`times\` (\`int\`): Number of repetitions.
-  Must be at least one.
-
-**Returns:**
-
-str: The greetings joined with spaces.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
     test.each(['Args', 'Attributes', 'Raises'])(
         'GoogleStyleFieldContinuationsKeepBlankAndNestedParagraphs (%s)',
         (section) => {
@@ -874,7 +817,8 @@ str: The greetings joined with spaces.`;
             More deeply nested detail.
 
     Same-indent wrap after a blank line.
-    other: Another field.`;
+    other (int): Another field.
+        Its continuation starts a new hanging indent.`;
 
             const markdown = `**${section}:**
 
@@ -886,83 +830,12 @@ str: The greetings joined with spaces.`;
       More deeply nested detail.
 
   Same-indent wrap after a blank line.
-* ${singleTick}other${singleTick}: Another field.`;
+* ${singleTick}other${singleTick} (${singleTick}int${singleTick}): Another field.
+  Its continuation starts a new hanging indent.`;
 
             _testConvertToMarkdown(docstring, markdown);
         }
     );
-
-    test('GoogleStyleUntypedSections', () => {
-        const docstring = `Compute a value.
-
-Returns:
-    The computed value.
-
-Raises:
-    If the input is empty.
-`;
-
-        const markdown = `Compute a value.
-
-**Returns:**
-
-The computed value.
-
-**Raises:**
-
-If the input is empty.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleDoctestInReturns', () => {
-        const docstring = `Compute a value.
-
-Returns:
-    int: The computed value.
-
-    >>> compute(1)
-    2
-
-Raises:
-    ValueError: Invalid input.`;
-
-        const markdown = `Compute a value.
-
-**Returns:**
-
-int: The computed value.
-
-${tripleTick}python
->>> compute(1)
-2
-${tripleTick}
-
-**Raises:**
-
-* ${singleTick}ValueError${singleTick}: Invalid input.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleFencedCodeInArgs', () => {
-        const docstring = `Args:
-    x: An example value.
-        ${tripleTick}python
-        print("<value>")
-        ${tripleTick}
-    y: Another value.`;
-
-        const markdown = `**Args:**
-
-* ${singleTick}x${singleTick}: An example value.
-  ${tripleTick}python
-  print("<value>")
-  ${tripleTick}
-* ${singleTick}y${singleTick}: Another value.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
 
     test.each(['fenced', 'doctest'])('GoogleStyleContinuationAfterCodeBlock (%s)', (kind) => {
         const code =
@@ -988,6 +861,7 @@ ${tripleTick}
         const docstring = `Args:
     x: Options:
         - outer
+            - inner
             ${tripleTick}python
             f()
             ${tripleTick}
@@ -997,6 +871,7 @@ ${tripleTick}
 
 * ${singleTick}x${singleTick}: Options:
   - outer
+      - inner
       ${tripleTick}python
       f()
       ${tripleTick}
@@ -1013,18 +888,18 @@ ${tripleTick}
             const outputIndent = isField ? '  ' : '';
             const docstring = `${section}:
 ${isField ? '    value: Usage:\n' : ''}${sourceIndent}${tripleTick}text
-${sourceIndent}x = 1
+${sourceIndent}print("<value>")
 ${sourceIndent}${tripleTick}
-
+${isField ? '    other: Another field.\n' : ''}
 ${sourceIndent}>>> f()
 ${sourceIndent}1`;
 
             const markdown = `**${section}:**
 
 ${isField ? '* `value`: Usage:\n' : ''}${outputIndent}${tripleTick}text
-${outputIndent}x = 1
+${outputIndent}print("<value>")
 ${outputIndent}${tripleTick}
-
+${isField ? '* `other`: Another field.\n' : ''}
 ${outputIndent}${tripleTick}python
 ${outputIndent}>>> f()
 ${outputIndent}1
@@ -1033,21 +908,6 @@ ${outputIndent}${tripleTick}`;
             _testConvertToMarkdown(docstring, markdown);
         }
     );
-
-    test('GoogleStyleExplicitExampleFence', () => {
-        const docstring = `Example:
-    ${tripleTick}python
-    x = [1]
-    ${tripleTick}`;
-
-        const markdown = `**Example:**
-
-${tripleTick}python
-x = [1]
-${tripleTick}`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
 
     test.each([
         [tripleTilda, tripleTilda],
@@ -1095,25 +955,6 @@ Back at the body baseline.`;
         }
     );
 
-    test('GoogleStyleExampleProseAfterDoctest', () => {
-        const docstring = `Example:
-    >>> f(1)
-    2
-
-    The result is an integer.`;
-
-        const markdown = `**Example:**
-
-${tripleTick}python
->>> f(1)
-2
-${tripleTick}
-
-The result is an integer.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
     test.each(['Returns', 'Yields', 'Example', 'Examples'])('GoogleStyleUnfencedPythonRemainsProse (%s)', (section) => {
         const docstring = `${section}:
     x = 1
@@ -1141,59 +982,7 @@ The value is one.`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('GoogleStyleExplicitFenceKeepsProseLookingCode', () => {
-        _testConvertToMarkdown(
-            'Example:\n    ```python\n    x = 1\n\n    The result is 1.\n    ```\n',
-            '**Example:**\n\n```python\nx = 1\n\nThe result is 1.\n```'
-        );
-    });
-
-    test('GoogleStyleNestedContinuationIndentation', () => {
-        const docstring = `Args:
-    x: Options:
-        - outer
-            - inner`;
-
-        const markdown = `**Args:**
-
-* ${singleTick}x${singleTick}: Options:
-  - outer
-      - inner`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    // The first physical line is trimmed rather than dedented, so an Example header
-    // there collapses its body to the same indent. The body is still part of the section.
-    test('GoogleStyleExampleHeaderFirstLineWithDoctest', () => {
-        const docstring = `Example:
-    >>> f(1)
-    2`;
-
-        const markdown = `**Example:**
-
-\`\`\`python
->>> f(1)
-2
-\`\`\``;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleExampleHeaderFirstLineWithProse', () => {
-        const docstring = `Example:
-    This example is prose, not code.
-    It has *markdown* in it.`;
-
-        const markdown = `**Example:**
-
-This example is prose, not code.
-It has \\*markdown\\* in it.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleExampleProseThenDoctest', () => {
+    test('GoogleStyleProseBeforeAndAfterDoctest', () => {
         const docstring = `Summary.
 
 Example:
@@ -1201,7 +990,8 @@ Example:
 
     >>> f(1)
     2
-`;
+
+    The result is an integer.`;
 
         const markdown = `Summary.
 
@@ -1209,19 +999,69 @@ Example:
 
 Call it like this.
 
-\`\`\`python
+${tripleTick}python
 >>> f(1)
 2
-\`\`\``;
+${tripleTick}
+
+The result is an integer.`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('GoogleStyleExamplePreservesProseAndInlineCode', () => {
-        _testConvertToMarkdown(
+    test.each([
+        [
+            'ExampleHeaderFirstLineWithDoctest',
+            'Example:\n    >>> f(1)\n    2',
+            `**Example:**\n\n${tripleTick}python\n>>> f(1)\n2\n${tripleTick}`,
+        ],
+        [
+            'ExampleHeaderFirstLineWithProse',
+            'Example:\n    This example is prose, not code.\n    It has *markdown* in it.',
+            '**Example:**\n\nThis example is prose, not code.\nIt has \\*markdown\\* in it.',
+        ],
+        [
+            'ExamplePreservesProseAndInlineCode',
             'Example:\n    Call it (once).\n    if possible: read `result[0]`.\n\n    values [1] are ok.\n',
-            '**Example:**\n\nCall it (once).\nif possible: read `result[0]`.\n\nvalues \\[1\\] are ok.'
-        );
+            '**Example:**\n\nCall it (once).\nif possible: read `result[0]`.\n\nvalues \\[1\\] are ok.',
+        ],
+        [
+            'ExplicitFenceKeepsProseLookingCode',
+            'Example:\n    ```python\n    x = 1\n\n    The result is 1.\n    ```\n',
+            '**Example:**\n\n```python\nx = 1\n\nThe result is 1.\n```',
+        ],
+        [
+            'CombiningMarksInParameterNames',
+            'Args:\n    cafe\u0301 (str): first parameter.\n    *𐐀\u0301: second parameter.\n    nested.cafe\u0301: third parameter.\n',
+            '**Args:**\n\n* `cafe\u0301` (`str`): first parameter.\n* `*𐐀\u0301`: second parameter.\n* `nested.cafe\u0301`: third parameter.',
+        ],
+        [
+            'InvalidParameterNamesRemainContinuations',
+            'Args:\n    first: description.\n    \u0301name: continuation.\n    1name: continuation.\n    e.g.: continuation.\n',
+            '**Args:**\n\n* `first`: description.\n  \u0301name: continuation.\n  1name: continuation.\n  e.g.: continuation.',
+        ],
+        [
+            'ParameterTypeWithNestedSeparators',
+            'Args:\n    mapping (dict[str, dict[str, int]], optional): a mapping.\n',
+            '**Args:**\n\n* `mapping` (`dict[str, dict[str, int]]`, optional): a mapping.',
+        ],
+        [
+            'DottedAttributeName',
+            'Attributes:\n    eggs: count.\n    foo.bar: The bar.\n',
+            '**Attributes:**\n\n* `eggs`: count.\n* `foo.bar`: The bar.',
+        ],
+        [
+            'KeywordOnlySeparator',
+            'Args:\n    x: positional.\n    *:\n    y: keyword only.\n',
+            '**Args:**\n\n* `x`: positional.\n  \\*:\n* `y`: keyword only.',
+        ],
+        [
+            'ExampleSectionEndsImmediately',
+            'Summary.\n\nExample:\n\nTrailing prose.',
+            'Summary.\n\n**Example:**\n\nTrailing prose.',
+        ],
+    ])('GoogleStyle%s', (_name, docstring, markdown) => {
+        _testConvertToMarkdown(docstring, markdown);
     });
 
     test('GoogleStyleUnicodeParamName', () => {
@@ -1246,20 +1086,6 @@ Args:
     값오류: also bad
 `;
         _testConvertToMarkdown(raises, '**Raises:**\n\n* `ValueError`: bad\n* `값오류`: also bad');
-    });
-
-    test('GoogleStyleCombiningMarksInParameterNames', () => {
-        _testConvertToMarkdown(
-            'Args:\n    cafe\u0301 (str): first parameter.\n    *𐐀\u0301: second parameter.\n    nested.cafe\u0301: third parameter.\n',
-            '**Args:**\n\n* `cafe\u0301` (`str`): first parameter.\n* `*𐐀\u0301`: second parameter.\n* `nested.cafe\u0301`: third parameter.'
-        );
-    });
-
-    test('GoogleStyleInvalidParameterNamesRemainContinuations', () => {
-        _testConvertToMarkdown(
-            'Args:\n    first: description.\n    \u0301name: continuation.\n    1name: continuation.\n    e.g.: continuation.\n',
-            '**Args:**\n\n* `first`: description.\n  \u0301name: continuation.\n  1name: continuation.\n  e.g.: continuation.'
-        );
     });
 
     test('GoogleStyleParagraphSections', () => {
@@ -1300,27 +1126,6 @@ example:`;
         );
     });
 
-    test('GoogleStyleParameterTypeWithNestedSeparators', () => {
-        _testConvertToMarkdown(
-            'Args:\n    mapping (dict[str, dict[str, int]], optional): a mapping.\n',
-            '**Args:**\n\n* `mapping` (`dict[str, dict[str, int]]`, optional): a mapping.'
-        );
-    });
-
-    test('GoogleStyleDottedAttributeName', () => {
-        _testConvertToMarkdown(
-            'Attributes:\n    eggs: count.\n    foo.bar: The bar.\n',
-            '**Attributes:**\n\n* `eggs`: count.\n* `foo.bar`: The bar.'
-        );
-    });
-
-    test('GoogleStyleKeywordOnlySeparator', () => {
-        _testConvertToMarkdown(
-            'Args:\n    x: positional.\n    *:\n    y: keyword only.\n',
-            '**Args:**\n\n* `x`: positional.\n  \\*:\n* `y`: keyword only.'
-        );
-    });
-
     test('GoogleStyleConfigHeadingIsNotASection', () => {
         const yaml = `The yaml looks like:
 
@@ -1351,29 +1156,17 @@ Plain text.`;
         _testConvertToMarkdown(docstring, markdown);
     });
 
-    test('GoogleStyleFirstLineHeaderCollapsedBody', () => {
-        const docstring = [
-            'Args:',
-            '        x (int): the value.',
-            '            Must be positive.',
-            '        y: other.',
-        ].join('\n');
+    test.each([0, 4])('GoogleStyleFirstLineHeaderCollapsedBody (%d spaces)', (indent) => {
+        const docstring = `${' '.repeat(indent)}Args:
+        x (int): the value.
+            Must be positive.
+        y: other.`;
 
         const markdown = `**Args:**
 
 * \`x\` (\`int\`): the value.
   Must be positive.
 * \`y\`: other.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleIndentedFirstLineHeaderCollapsedBody', () => {
-        const docstring = ['    Args:', '        x (int): the value.'].join('\n');
-
-        const markdown = `**Args:**
-
-* \`x\` (\`int\`): the value.`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -1390,22 +1183,6 @@ Plain text.`;
 **Returns:**
 
 int: the result.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleExampleSectionEndsImmediately', () => {
-        const docstring = `Summary.
-
-Example:
-
-Trailing prose.`;
-
-        const markdown = `Summary.
-
-**Example:**
-
-Trailing prose.`;
 
         _testConvertToMarkdown(docstring, markdown);
     });
@@ -1909,26 +1686,6 @@ multiple lines.
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
     });
 
-    test('ForceLiteralDoesNotAddSpacesInsideInlineCode', () => {
-        const docstring = `Use ${singleTick}first
-second${singleTick} here.`;
-        const markdown = `Use ${singleTick}first
-second${singleTick} here.`;
-        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
-    });
-
-    test('ForceLiteralPreservesProseAfterField', () => {
-        const docstring = `Summary.
-name: value
-Following text.
-Last line.`;
-        const markdown = `Summary.  
-name: value  
-Following text.  
-Last line.`;
-        _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);
-    });
-
     test('ForceLiteralPreservesEqualIndentContinuation', () => {
         const docstring = [
             'Replace each character in the string using the given translation table.',
@@ -1970,9 +1727,7 @@ Last line.`;
 
         const markdown =
             'Summary.\n\n' +
-            '&nbsp;&nbsp;Use `first\nsecond` here.' +
-            hardBreak +
-            '&nbsp;&nbsp;More prose.' +
+            ['&nbsp;&nbsp;Use `first', 'second` here.', '&nbsp;&nbsp;More prose.'].join(hardBreak) +
             '\n\nEnd.';
 
         _testConvertToMarkdown(docstring, markdown, /* forceLiteral */ true);

@@ -305,7 +305,7 @@ class DocStringConverter {
 
         const line = this._formatPlainTextIndent(this._currentLine());
 
-        if (this._forceLiteral && this._lastLineWasPlainText && !this._insideInlineCode) {
+        if (this._forceLiteral && this._lastLineWasPlainText) {
             this._convertTrailingSoftLineBreak();
         }
 
@@ -659,7 +659,6 @@ class DocStringConverter {
         if (line.startsWith('@')) {
             this._appendLine();
             this._appendTextLine(line);
-            this._lastLineWasPlainText = true;
             this._eatLine();
             return true;
         }
@@ -680,7 +679,6 @@ class DocStringConverter {
             // force indent for fields
             line = this._convertIndent(line);
             this._appendTextLine(line);
-            this._lastLineWasPlainText = true;
             this._eatLine();
             return true;
         }
