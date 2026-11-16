@@ -8,7 +8,7 @@
 
 import { isIdentifierChar, isIdentifierStartChar } from '../parser/characters';
 
-import { cleanAndSplitDocString, cleanAndSplitDocStringLines } from './docStringUtils';
+import { cleanAndSplitDocString } from './docStringUtils';
 
 // Converts a docstring to markdown format.
 //
@@ -158,9 +158,6 @@ class DocStringConverter {
     private _input: string;
 
     private _lines: string[];
-    // Indent before dedent. A first-line "Args:" can collapse onto its body.
-    private _rawIndents: number[];
-    private _rawIndexes: number[];
     private _lineNum = 0;
 
     private _blockIndent = 0;
@@ -175,10 +172,7 @@ class DocStringConverter {
     constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
         this._input = input;
-        const cleaned = cleanAndSplitDocStringLines(input);
-        this._lines = cleaned.map((line) => line.text);
-        this._rawIndents = cleaned.map((line) => line.rawIndent);
-        this._rawIndexes = cleaned.map((line) => line.rawIndex);
+        this._lines = cleanAndSplitDocString(input);
     }
 
     convert(): string {
@@ -844,21 +838,12 @@ class DocStringConverter {
         return false;
     }
 
-    private _isIndentedBlockLine(headerLine: number, lineIndex: number, allowCollapsedBody = true): boolean {
-        return (
-            _countLeadingSpaces(this._lines[lineIndex]) > _countLeadingSpaces(this._lines[headerLine]) ||
-            (allowCollapsedBody &&
-                this._rawIndexes[headerLine] === 0 &&
-                this._rawIndents[lineIndex] > this._rawIndents[headerLine])
-        );
+    private _isIndentedBlockLine(headerLine: number, lineIndex: number): boolean {
+        return _countLeadingSpaces(this._lines[lineIndex]) > _countLeadingSpaces(this._lines[headerLine]);
     }
 
     private _lineEndsSection(section: SectionState, lineIndex: number): boolean {
-        // Cleaning can collapse a first-physical-line header onto its body's indent.
-        const allowCollapsedBody =
-            section.bodyIndent === undefined ||
-            section.bodyIndent <= _countLeadingSpaces(this._lines[section.headerLine]);
-        return !this._isIndentedBlockLine(section.headerLine, lineIndex, allowCollapsedBody);
+        return !this._isIndentedBlockLine(section.headerLine, lineIndex);
     }
 
     private _finishSection(section: SectionState): void {

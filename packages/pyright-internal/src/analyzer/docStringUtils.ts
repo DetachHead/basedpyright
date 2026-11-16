@@ -12,19 +12,7 @@
 const docStringCrRegEx = /\r/g;
 const docStringTabRegEx = /\t/g;
 
-export interface CleanedDocStringLine {
-    text: string;
-    // Indent of the corresponding raw line, measured after tab expansion and before dedent.
-    rawIndent: number;
-    // Index into the CR/tab-normalized raw lines, before leading/trailing blanks are stripped.
-    rawIndex: number;
-}
-
 export function cleanAndSplitDocString(rawString: string): string[] {
-    return cleanAndSplitDocStringLines(rawString).map((line) => line.text);
-}
-
-export function cleanAndSplitDocStringLines(rawString: string): CleanedDocStringLine[] {
     // Remove carriage returns and replace tabs.
     const unescaped = rawString.replace(docStringCrRegEx, '').replace(docStringTabRegEx, '        ');
 
@@ -48,21 +36,15 @@ export function cleanAndSplitDocStringLines(rawString: string): CleanedDocString
         leftSpacesToRemove = 0;
     }
 
-    // Trim the lines. Keep raw indent so callers can tell a first-line header apart from its
-    // body: the first physical line is trimmed rather than dedented, which can collapse that gap.
-    const cleaned: CleanedDocStringLine[] = [];
-    lines.forEach((line, index) => {
-        const rawIndent = line.length - line.trimStart().length;
-        const text = index === 0 ? line.trim() : line.slice(leftSpacesToRemove).trimEnd();
-        cleaned.push({ text, rawIndent, rawIndex: index });
-    });
+    // Trim the lines.
+    const cleaned = lines.map((line, index) => (index === 0 ? line.trim() : line.slice(leftSpacesToRemove).trimEnd()));
 
     // Strip off leading and trailing blank lines.
-    while (cleaned.length > 0 && cleaned[0].text.length === 0) {
+    while (cleaned.length > 0 && cleaned[0].length === 0) {
         cleaned.shift();
     }
 
-    while (cleaned.length > 0 && cleaned[cleaned.length - 1].text.length === 0) {
+    while (cleaned.length > 0 && cleaned[cleaned.length - 1].length === 0) {
         cleaned.pop();
     }
 

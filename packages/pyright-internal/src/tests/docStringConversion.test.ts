@@ -808,7 +808,8 @@ dict\\[str, int\\]: The mapping.`;
     test.each(['Args', 'Attributes', 'Raises'])(
         'GoogleStyleFieldContinuationsKeepBlankAndNestedParagraphs (%s)',
         (section) => {
-            const docstring = `${section}:
+            const docstring = `
+${section}:
     value: First line.
         A deeper continuation.
         nested: still part of the description.
@@ -840,7 +841,8 @@ dict\\[str, int\\]: The mapping.`;
     test.each(['fenced', 'doctest'])('GoogleStyleContinuationAfterCodeBlock (%s)', (kind) => {
         const code =
             kind === 'fenced' ? `${tripleTick}python\n        f()\n        ${tripleTick}` : '>>> f()\n        1';
-        const docstring = `Args:
+        const docstring = `
+Args:
     x: Example:
         ${code}
     More detail.`;
@@ -858,7 +860,8 @@ dict\\[str, int\\]: The mapping.`;
     });
 
     test('GoogleStyleCodeBlockKeepsNestedIndentation', () => {
-        const docstring = `Args:
+        const docstring = `
+Args:
     x: Options:
         - outer
             - inner
@@ -886,7 +889,8 @@ dict\\[str, int\\]: The mapping.`;
             const isField = ['Args', 'Attributes', 'Raises'].includes(section);
             const sourceIndent = isField ? '        ' : '    ';
             const outputIndent = isField ? '  ' : '';
-            const docstring = `${section}:
+            const docstring = `
+${section}:
 ${isField ? '    value: Usage:\n' : ''}${sourceIndent}${tripleTick}text
 ${sourceIndent}print("<value>")
 ${sourceIndent}${tripleTick}
@@ -918,7 +922,7 @@ ${outputIndent}${tripleTick}`;
             `${tripleTick}python\nx = 1\n${topLevelCloser}\n\nafter`
         );
         _testConvertToMarkdown(
-            `Example:\n    ${tripleTick}python\n    x = 1\n    ${candidate}\n    after`,
+            `\nExample:\n    ${tripleTick}python\n    x = 1\n    ${candidate}\n    after`,
             `**Example:**\n\n${tripleTick}python\nx = 1\n${candidate}\nafter\n${tripleTick}`
         );
     });
@@ -926,7 +930,8 @@ ${outputIndent}${tripleTick}`;
     test.each(['Returns', 'Yields', 'Example', 'Examples', 'Raises'])(
         'GoogleStyleProseSeparatesHeadingAndPreservesLayout (%s)',
         (section) => {
-            const docstring = `${section}:
+            const docstring = `
+${section}:
     First paragraph.
     Same-indent continuation.
 
@@ -956,7 +961,8 @@ Back at the body baseline.`;
     );
 
     test.each(['Returns', 'Yields', 'Example', 'Examples'])('GoogleStyleUnfencedPythonRemainsProse (%s)', (section) => {
-        const docstring = `${section}:
+        const docstring = `
+${section}:
     x = 1
     if x:
         print(x)
@@ -1011,12 +1017,7 @@ The result is an integer.`;
 
     test.each([
         [
-            'ExampleHeaderFirstLineWithDoctest',
-            'Example:\n    >>> f(1)\n    2',
-            `**Example:**\n\n${tripleTick}python\n>>> f(1)\n2\n${tripleTick}`,
-        ],
-        [
-            'ExampleHeaderFirstLineWithProse',
+            'ExampleHeaderWithProse',
             'Example:\n    This example is prose, not code.\n    It has *markdown* in it.',
             '**Example:**\n\nThis example is prose, not code.\nIt has \\*markdown\\* in it.',
         ],
@@ -1061,7 +1062,7 @@ The result is an integer.`;
             'Summary.\n\n**Example:**\n\nTrailing prose.',
         ],
     ])('GoogleStyle%s', (_name, docstring, markdown) => {
-        _testConvertToMarkdown(docstring, markdown);
+        _testConvertToMarkdown('\n' + docstring, markdown);
     });
 
     test('GoogleStyleUnicodeParamName', () => {
@@ -1081,7 +1082,8 @@ Args:
 
         _testConvertToMarkdown(docstring, markdown);
 
-        const raises = `Raises:
+        const raises = `
+Raises:
     ValueError: bad
     값오류: also bad
 `;
@@ -1121,7 +1123,7 @@ example:`;
 
     test.each(['Returns', 'Yields'])('GoogleStyleTypePrefixesRemainProse (%s)', (section) => {
         _testConvertToMarkdown(
-            `${section}:\n    int: a value.\n    dict[str, list[int]] | 이름.자료: another value.\n\n    Note: a mapping of name: id.\n    Use explicit \`str | None\` markup.\n`,
+            `\n${section}:\n    int: a value.\n    dict[str, list[int]] | 이름.자료: another value.\n\n    Note: a mapping of name: id.\n    Use explicit \`str | None\` markup.\n`,
             `**${section}:**\n\nint: a value.\ndict\\[str, list\\[int\\]\\] | 이름.자료: another value.\n\nNote: a mapping of name: id.\nUse explicit \`str | None\` markup.`
         );
     });
@@ -1153,37 +1155,6 @@ example:`;
     Plain text.`;
         const markdown = `${name}:
 Plain text.`;
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test.each([0, 4])('GoogleStyleFirstLineHeaderCollapsedBody (%d spaces)', (indent) => {
-        const docstring = `${' '.repeat(indent)}Args:
-        x (int): the value.
-            Must be positive.
-        y: other.`;
-
-        const markdown = `**Args:**
-
-* \`x\` (\`int\`): the value.
-  Must be positive.
-* \`y\`: other.`;
-
-        _testConvertToMarkdown(docstring, markdown);
-    });
-
-    test('GoogleStyleFirstLineHeaderKeepsFollowingSection', () => {
-        const docstring = ['Args:', '        x (int): the value.', '    Returns:', '        int: the result.'].join(
-            '\n'
-        );
-
-        const markdown = `**Args:**
-
-* \`x\` (\`int\`): the value.
-
-**Returns:**
-
-int: the result.`;
-
         _testConvertToMarkdown(docstring, markdown);
     });
 
