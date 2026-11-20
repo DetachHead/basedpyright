@@ -124,19 +124,11 @@ interface RestTableState {
     inHeader: boolean;
 }
 
-interface CodeBlockState {
-    kind: 'fenced' | 'doctest';
-    fence: string;
-    indent: number;
-    outputIndent: string;
-}
-
 interface SectionState {
     kind: SectionKind;
     headerLine: number;
     bodyIndent: number | undefined;
     entryOpen: boolean;
-    codeBlock: CodeBlockState | undefined;
     continuationIndent: number | undefined;
 }
 
@@ -161,6 +153,7 @@ class DocStringConverter {
     private _lineNum = 0;
 
     private _blockIndent = 0;
+    private _blockOutputIndent = '';
 
     private _tableState: RestTableState | undefined;
     private _lastBacktickString: string | undefined;
@@ -201,9 +194,7 @@ class DocStringConverter {
             this._state === this._parseLiteralBlock
         ) {
             // See what the current backtick block is. We want to match it.
-            this._trimOutputAndAppendLine(this._lastBacktickString || '```');
-        } else if (this._state === this._parseSection && this._section?.codeBlock) {
-            this._closeSectionCodeBlock(this._section);
+            this._trimOutputAndAppendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
         } else if (this._insideInlineCode) {
             this._trimOutputAndAppendLine('`', /* noNewLine */ true);
         }
@@ -255,7 +246,8 @@ class DocStringConverter {
     }
 
     private _popState(): void {
-        this._state = this._stateStack.splice(0, 1)[0];
+        this._state = this._stateStack.pop() ?? this._parseText;
+        this._blockOutputIndent = '';
 
         if (this._state === this._parseText) {
             // Terminate inline code when leaving a block.
@@ -484,8 +476,8 @@ class DocStringConverter {
         this._appendLine(outputIndent + this._currentLine().slice(Math.min(this._currentIndent(), indent)));
     }
 
-    private _beginMinIndentCodeBlock(state: State): void {
-        this._appendLine('```');
+    private _beginMinIndentCodeBlock(state: State, fence = '```'): void {
+        this._appendLine(fence);
         this._pushAndSetState(state);
         this._blockIndent = this._currentIndent();
     }
@@ -493,11 +485,13 @@ class DocStringConverter {
     private _beginBacktickBlock(): boolean {
         const match = this._currentLine().match(CodeBlockStartRegExp);
         if (match !== null) {
+            const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
             this._blockIndent = this._currentIndent();
+            this._blockOutputIndent = outputIndent;
             this._lastBacktickString = match[1];
 
             // Remove indentation and preserve language tag.
-            this._appendLine(match[1] + match[2]);
+            this._appendLine(outputIndent + match[1] + match[2]);
 
             this._pushAndSetState(this._parseBacktickBlock);
             this._eatLine();
@@ -507,40 +501,75 @@ class DocStringConverter {
     }
 
     private _parseBacktickBlock(): void {
+        if (
+            this._section &&
+            !_isUndefinedOrWhitespace(this._currentLine()) &&
+            (this._currentLineIsOutsideBlock() || this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
+            if (this._lineEndsSection(this._section, this._lineNum)) {
+                this._appendLine();
+            }
+            this._popState();
+            return;
+        }
+
         // Only match closing ``` at same indent level of opening.
-        if (CodeBlockEndRegExp.test(this._currentLine()) && this._currentIndent() === this._blockIndent) {
-            const match = this._currentLine().match(CodeBlockEndRegExp);
-            this._lastBacktickString = match ? match[1] : '```';
-            this._appendLine(this._lastBacktickString);
-            this._appendLine();
+        const isClosingFence = this._section
+            ? this._currentLine().trim() === this._lastBacktickString
+            : CodeBlockEndRegExp.test(this._currentLine());
+        if (isClosingFence && this._currentIndent() === this._blockIndent) {
+            if (!this._section) {
+                const match = this._currentLine().match(CodeBlockEndRegExp);
+                this._lastBacktickString = match ? match[1] : '```';
+            }
+            this._appendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
+            if (!this._section) {
+                this._appendLine();
+            }
             this._popState();
         } else {
-            this._appendCodeLine();
+            this._appendCodeLine(this._section ? this._blockIndent : 0, this._blockOutputIndent);
         }
 
         this._eatLine();
     }
 
     private _beginDocTest(): boolean {
-        if (!DoctestRegExp.test(this._currentLine())) {
+        const isDoctest = this._section
+            ? this._currentLine().trimStart().startsWith('>>>')
+            : DoctestRegExp.test(this._currentLine());
+        if (!isDoctest) {
             return false;
         }
 
-        this._beginMinIndentCodeBlock(this._parseDocTest);
-        this._appendCodeLine(this._blockIndent);
+        const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+        this._blockOutputIndent = outputIndent;
+        this._lastBacktickString = '```';
+        this._beginMinIndentCodeBlock(this._parseDocTest, outputIndent + '```' + (this._section ? 'python' : ''));
+        this._appendCodeLine(this._blockIndent, outputIndent);
         this._eatLine();
         return true;
     }
 
     private _parseDocTest(): void {
-        if (this._currentLineIsOutsideBlock() || _isUndefinedOrWhitespace(this._currentLine())) {
-            this._trimOutputAndAppendLine('```');
-            this._appendLine();
+        if (
+            this._currentLineIsOutsideBlock() ||
+            _isUndefinedOrWhitespace(this._currentLine()) ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + '```');
+            if (
+                !this._section ||
+                (!_isUndefinedOrWhitespace(this._currentLine()) && this._lineEndsSection(this._section, this._lineNum))
+            ) {
+                this._appendLine();
+            }
             this._popState();
             return;
         }
 
-        this._appendCodeLine(this._blockIndent);
+        this._appendCodeLine(this._blockIndent, this._blockOutputIndent);
         this._eatLine();
     }
 
@@ -600,12 +629,12 @@ class DocStringConverter {
             return;
         }
 
-        this._appendCodeLine();
+        this._appendLine(this._currentLine());
         this._eatLine();
     }
 
     private _parseLiteralBlockSingleLine(): void {
-        this._appendCodeLine();
+        this._appendLine(this._currentLine());
         this._appendLine('```');
         this._appendLine();
         this._popState();
@@ -706,7 +735,6 @@ class DocStringConverter {
             headerLine: this._lineNum,
             bodyIndent: undefined,
             entryOpen: false,
-            codeBlock: undefined,
             continuationIndent: undefined,
         };
 
@@ -727,9 +755,6 @@ class DocStringConverter {
         }
 
         if (_isUndefinedOrWhitespace(this._currentLine())) {
-            if (section.codeBlock?.kind === 'doctest') {
-                this._closeSectionCodeBlock(section);
-            }
             if (section.bodyIndent === undefined) {
                 this._appendLine();
             } else {
@@ -740,67 +765,19 @@ class DocStringConverter {
         }
 
         if (this._lineEndsSection(section, this._lineNum)) {
-            this._finishSection(section);
+            this._section = undefined;
+            this._popState();
             return;
         }
 
         section.bodyIndent ??= this._currentIndent();
 
-        if (section.codeBlock) {
-            if (this._currentIndent() >= section.codeBlock.indent) {
-                this._appendSectionCodeLine(section);
-                this._eatLine();
-                return;
-            }
-            this._closeSectionCodeBlock(section);
-        }
-
-        if (this._beginSectionCodeBlock(section)) {
-            this._eatLine();
+        if (this._beginBacktickBlock() || this._beginDocTest()) {
             return;
         }
 
         this._appendSectionBodyLine(section);
         this._eatLine();
-    }
-
-    private _beginSectionCodeBlock(section: SectionState): boolean {
-        const line = this._currentLine();
-        const match = line.match(CodeBlockStartRegExp);
-        const isDoctest = line.trimStart().startsWith('>>>');
-        if (!match && !isDoctest) {
-            return false;
-        }
-
-        const block: CodeBlockState = {
-            kind: match ? 'fenced' : 'doctest',
-            fence: match ? match[1] : '```',
-            indent: this._currentIndent(),
-            outputIndent: ' '.repeat(this._getContinuationIndent(section)),
-        };
-        section.codeBlock = block;
-        this._appendLine(block.outputIndent + block.fence + (match ? match[2] : 'python'));
-        if (!match) {
-            this._appendSectionCodeLine(section);
-        }
-        return true;
-    }
-
-    private _appendSectionCodeLine(section: SectionState): void {
-        const block = section.codeBlock;
-        if (block === undefined) {
-            return;
-        }
-        if (
-            block.kind === 'fenced' &&
-            this._currentLine().trim() === block.fence &&
-            this._currentIndent() === block.indent
-        ) {
-            this._appendLine(block.outputIndent + block.fence);
-            section.codeBlock = undefined;
-            return;
-        }
-        this._appendCodeLine(block.indent, block.outputIndent);
     }
 
     private _appendSectionBodyLine(section: SectionState): void {
@@ -844,21 +821,6 @@ class DocStringConverter {
 
     private _lineEndsSection(section: SectionState, lineIndex: number): boolean {
         return !this._isIndentedBlockLine(section.headerLine, lineIndex);
-    }
-
-    private _finishSection(section: SectionState): void {
-        this._closeSectionCodeBlock(section);
-        this._section = undefined;
-        this._popState();
-    }
-
-    private _closeSectionCodeBlock(section: SectionState): void {
-        if (!section.codeBlock) {
-            return;
-        }
-
-        this._trimOutputAndAppendLine(section.codeBlock.outputIndent + section.codeBlock.fence);
-        section.codeBlock = undefined;
     }
 
     private _appendFieldEntry(entry: FieldEntry): void {
@@ -1064,7 +1026,7 @@ class DocStringConverter {
                 this._appendLine('```');
                 this._appendLine();
             } else if (directiveType === 'code-block') {
-                this._appendDirectiveBlock = true;
+                this._popState();
                 this._beginMinIndentCodeBlock(this._parseLiteralBlock);
                 this._eatLine();
                 return;

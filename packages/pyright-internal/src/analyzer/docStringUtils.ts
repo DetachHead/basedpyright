@@ -37,18 +37,25 @@ export function cleanAndSplitDocString(rawString: string): string[] {
     }
 
     // Trim the lines.
-    const cleaned = lines.map((line, index) => (index === 0 ? line.trim() : line.slice(leftSpacesToRemove).trimEnd()));
+    const trimmedLines: string[] = [];
+    lines.forEach((line, index) => {
+        if (index === 0) {
+            trimmedLines.push(line.trim());
+        } else {
+            trimmedLines.push(line.slice(leftSpacesToRemove).trimEnd());
+        }
+    });
 
     // Strip off leading and trailing blank lines.
-    while (cleaned.length > 0 && cleaned[0].length === 0) {
-        cleaned.shift();
+    while (trimmedLines.length > 0 && trimmedLines[0].length === 0) {
+        trimmedLines.shift();
     }
 
-    while (cleaned.length > 0 && cleaned[cleaned.length - 1].length === 0) {
-        cleaned.pop();
+    while (trimmedLines.length > 0 && trimmedLines[trimmedLines.length - 1].length === 0) {
+        trimmedLines.pop();
     }
 
-    return cleaned;
+    return trimmedLines;
 }
 
 /**
