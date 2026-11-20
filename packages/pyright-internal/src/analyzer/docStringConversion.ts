@@ -584,7 +584,8 @@ class DocStringConverter {
 
         // Find the previous paragraph and check that it ends with ::
         let i = this._lineNum - 2;
-        for (; i >= 0; i--) {
+        const minLine = this._section ? this._section.headerLine + 1 : 0;
+        for (; i >= minLine; i--) {
             const line = this._lineAt(i);
             if (_isUndefinedOrWhitespace(line)) {
                 continue;
@@ -598,7 +599,7 @@ class DocStringConverter {
             return false;
         }
 
-        if (i < 0) {
+        if (i < minLine) {
             return false;
         }
 
@@ -609,7 +610,10 @@ class DocStringConverter {
             return true;
         }
 
-        this._beginMinIndentCodeBlock(this._parseLiteralBlock);
+        const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+        this._blockOutputIndent = outputIndent;
+        this._lastBacktickString = '```';
+        this._beginMinIndentCodeBlock(this._parseLiteralBlock, outputIndent + '```');
         return true;
     }
 
@@ -622,14 +626,21 @@ class DocStringConverter {
         }
 
         const prev = this._lineAt(this._lineNum - 1);
-        if (this._currentLineIsOutsideBlock() && _isUndefinedOrWhitespace(prev)) {
-            this._trimOutputAndAppendLine('```');
+        if (
+            (this._currentLineIsOutsideBlock() && _isUndefinedOrWhitespace(prev)) ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + '```');
             this._appendLine();
             this._popState();
             return;
         }
 
-        this._appendLine(this._currentLine());
+        if (this._section) {
+            this._appendCodeLine(this._blockIndent, this._blockOutputIndent);
+        } else {
+            this._appendLine(this._currentLine());
+        }
         this._eatLine();
     }
 
@@ -647,7 +658,8 @@ class DocStringConverter {
         }
 
         this._pushAndSetState(this._parseDirective);
-        this._blockIndent = this._nextBlockIndent();
+        const nextIndent = this._nextBlockIndent();
+        this._blockIndent = nextIndent > this._currentIndent() ? nextIndent : 0;
         this._appendDirectiveBlock = false;
         return true;
     }
@@ -719,7 +731,7 @@ class DocStringConverter {
         if (!trimmed.endsWith(':')) {
             return false;
         }
-        const sectionName = trimmed.slice(0, -1).trim();
+        const sectionName = trimmed.slice(0, -1);
         if (!Object.prototype.hasOwnProperty.call(GoogleSections, sectionName)) {
             return false;
         }
@@ -727,6 +739,15 @@ class DocStringConverter {
 
         // "Args:" is also a plain heading. Only claim it when the body is "name: description".
         if (section.ambiguous && !this._nextBodyLineLooksLikeGoogleEntry()) {
+            return false;
+        }
+
+        const nextLine = this._lineAt(this._lineNum + 1);
+        if (
+            nextLine !== undefined &&
+            !_isUndefinedOrWhitespace(nextLine) &&
+            !this._isIndentedBlockLine(this._lineNum, this._lineNum + 1)
+        ) {
             return false;
         }
 
@@ -772,7 +793,13 @@ class DocStringConverter {
 
         section.bodyIndent ??= this._currentIndent();
 
-        if (this._beginBacktickBlock() || this._beginDocTest()) {
+        if (
+            this._beginBacktickBlock() ||
+            this._beginLiteralBlock() ||
+            this._beginDocTest() ||
+            this._beginDirective() ||
+            this._beginTableBlock()
+        ) {
             return;
         }
 
@@ -790,8 +817,16 @@ class DocStringConverter {
             section.entryOpen = true;
             this._appendFieldEntry(entry);
         } else {
-            this._append(' '.repeat(this._getContinuationIndent(section)));
-            this._appendTextLine(this._currentLine().trimStart());
+            const indent = this._getContinuationIndent(section);
+            const trimmed = this._currentLine().trimStart();
+            const asteriskMatch = !this._insideInlineCode ? LeadingAsteriskListRegExp.exec(trimmed) : null;
+            if (asteriskMatch) {
+                this._append(' '.repeat(indent || 1) + asteriskMatch[0]);
+                this._appendTextLine(trimmed.slice(asteriskMatch[0].length));
+            } else {
+                this._append(' '.repeat(indent));
+                this._appendTextLine(trimmed);
+            }
         }
     }
 
@@ -869,7 +904,11 @@ class DocStringConverter {
     //    | Header      | Title       |
     //    | Paragraph   | Text        |
     private _parseTableBlock(): void {
-        if (_isUndefinedOrWhitespace(this._currentLineOrUndefined()) || !this._tableState) {
+        if (
+            _isUndefinedOrWhitespace(this._currentLineOrUndefined()) ||
+            !this._tableState ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
             this._tableState = undefined;
             this._popState();
             return;
@@ -1027,7 +1066,10 @@ class DocStringConverter {
                 this._appendLine();
             } else if (directiveType === 'code-block') {
                 this._popState();
-                this._beginMinIndentCodeBlock(this._parseLiteralBlock);
+                const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+                this._blockOutputIndent = outputIndent;
+                this._lastBacktickString = '```';
+                this._beginMinIndentCodeBlock(this._parseLiteralBlock, outputIndent + '```');
                 this._eatLine();
                 return;
             }
@@ -1044,7 +1086,11 @@ class DocStringConverter {
     }
 
     private _parseDirectiveBlock(): void {
-        if (!_isUndefinedOrWhitespace(this._currentLineOrUndefined()) && this._currentLineIsOutsideBlock()) {
+        if (
+            !_isUndefinedOrWhitespace(this._currentLineOrUndefined()) &&
+            (this._currentLineIsOutsideBlock() ||
+                (this._section && this._lineEndsSection(this._section, this._lineNum)))
+        ) {
             this._popState();
             return;
         }

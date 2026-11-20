@@ -1038,8 +1038,66 @@ The value is one.`;
             'Summary.\n\nExample:\n\nTrailing prose.',
             'Summary.\n\n**Example:**\n\nTrailing prose.',
         ],
+        [
+            'AsteriskBulletsPreserved',
+            'Returns:\n    * first\n    * *second*\n\nArgs:\n    x: Options:\n        * opt1\n',
+            '**Returns:**\n\n * first\n * \\*second\\*\n\n**Args:**\n\n* `x`: Options:\n  * opt1',
+        ],
+        [
+            'NonSectionHeadingsNotPromoted',
+            'Returns:\nNone if missing.\n\nReturns :\n    Indented text.',
+            'Returns:\nNone if missing.\n\nReturns :  \n&nbsp;&nbsp;&nbsp;&nbsp;Indented text.',
+        ],
     ])('GoogleStyle%s', (_name, docstring, markdown) => {
         _testConvertToMarkdown('\n' + docstring, markdown);
+    });
+
+    test('GoogleStyleRestConstructsInSections', () => {
+        const docstring = `
+Args:
+    config: Format::
+
+        {"a": 1}
+
+    other: Another.
+
+Returns:
+    .. versionadded:: 1.0
+        Added in 1.0.
+
+    Summary.
+
+    .. note:: oneliner
+
+    ========= =========
+    Key       Value
+    --------- ---------
+    a         1
+    ========= =========
+`;
+
+        const markdown = `**Args:**
+
+* \`config\`: Format:
+
+  ${tripleTick}
+  {"a": 1}
+  ${tripleTick}
+
+* \`other\`: Another.
+
+**Returns:**
+
+Summary.
+
+
+|    Key    |    Value |
+|---------|---------|
+|    a     |    1|
+
+<br/>`;
+
+        _testConvertToMarkdown(docstring, markdown);
     });
 
     test('GoogleStyleUnicodeParamName', () => {
