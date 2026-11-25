@@ -38,6 +38,7 @@ theme:
   logo: img/logo.png
   icon:
     repo: fontawesome/brands/github
+  custom_dir: docs/overrides
 markdown_extensions:
   - pymdownx.snippets
   - admonition
