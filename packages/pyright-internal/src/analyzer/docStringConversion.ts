@@ -6,6 +6,8 @@
  * Python doc string to markdown/plain text format conversion.
  */
 
+import { isIdentifierChar, isIdentifierStartChar } from '../parser/characters';
+
 import { cleanAndSplitDocString } from './docStringUtils';
 
 // Converts a docstring to markdown format.
@@ -99,6 +101,20 @@ const LiteralBlockReplacements: RegExpReplacement[] = [
     { exp: /`:[\w_\-+:.]+:/g, replacement: '`' },
 ];
 
+type SectionKind = 'fields' | 'prose';
+
+// Case-sensitive, so "args:" is not a section.
+// ambiguous: also a plain heading, so claim it only when the body is "name: description".
+const GoogleSections: Record<string, { kind: SectionKind; ambiguous?: true }> = {
+    Args: { kind: 'fields', ambiguous: true },
+    Attributes: { kind: 'fields', ambiguous: true },
+    Returns: { kind: 'prose' },
+    Yields: { kind: 'prose' },
+    Raises: { kind: 'fields' },
+    Example: { kind: 'prose' },
+    Examples: { kind: 'prose' },
+};
+
 // Converter is a state machine, where the current state is a function which
 // will be run (and change the state again) until completion.
 type State = () => void;
@@ -106,6 +122,21 @@ type State = () => void;
 interface RestTableState {
     header: string;
     inHeader: boolean;
+}
+
+interface SectionState {
+    kind: SectionKind;
+    headerLine: number;
+    bodyIndent: number | undefined;
+    entryOpen: boolean;
+    continuationIndent: number | undefined;
+}
+
+interface FieldEntry {
+    name: string;
+    type?: string;
+    qualifier?: string;
+    description: string;
 }
 
 class DocStringConverter {
@@ -122,11 +153,14 @@ class DocStringConverter {
     private _lineNum = 0;
 
     private _blockIndent = 0;
+    private _blockOutputIndent = '';
 
     private _tableState: RestTableState | undefined;
     private _lastBacktickString: string | undefined;
 
     private _lastLineWasPlainText = false;
+
+    private _section: SectionState | undefined;
 
     constructor(input: string, private _forceLiteral = false) {
         this._state = this._parseText;
@@ -160,7 +194,7 @@ class DocStringConverter {
             this._state === this._parseLiteralBlock
         ) {
             // See what the current backtick block is. We want to match it.
-            this._trimOutputAndAppendLine(this._lastBacktickString || '```');
+            this._trimOutputAndAppendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
         } else if (this._insideInlineCode) {
             this._trimOutputAndAppendLine('`', /* noNewLine */ true);
         }
@@ -202,10 +236,6 @@ class DocStringConverter {
         return this._currentIndent() < this._blockIndent;
     }
 
-    private _currentLineWithinBlock(): string {
-        return this._currentLine().substr(this._blockIndent);
-    }
-
     private _pushAndSetState(next: State): void {
         if (this._state === this._parseText) {
             this._insideInlineCode = false;
@@ -216,7 +246,8 @@ class DocStringConverter {
     }
 
     private _popState(): void {
-        this._state = this._stateStack.splice(0, 1)[0];
+        this._state = this._stateStack.pop() ?? this._parseText;
+        this._blockOutputIndent = '';
 
         if (this._state === this._parseText) {
             // Terminate inline code when leaving a block.
@@ -441,8 +472,12 @@ class DocStringConverter {
         this._state = this._parseText;
     }
 
-    private _beginMinIndentCodeBlock(state: State): void {
-        this._appendLine('```');
+    private _appendCodeLine(indent = 0, outputIndent = ''): void {
+        this._appendLine(outputIndent + this._currentLine().slice(Math.min(this._currentIndent(), indent)));
+    }
+
+    private _beginMinIndentCodeBlock(state: State, fence = '```'): void {
+        this._appendLine(fence);
         this._pushAndSetState(state);
         this._blockIndent = this._currentIndent();
     }
@@ -450,11 +485,13 @@ class DocStringConverter {
     private _beginBacktickBlock(): boolean {
         const match = this._currentLine().match(CodeBlockStartRegExp);
         if (match !== null) {
+            const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
             this._blockIndent = this._currentIndent();
+            this._blockOutputIndent = outputIndent;
             this._lastBacktickString = match[1];
 
             // Remove indentation and preserve language tag.
-            this._appendLine(match[1] + match[2]);
+            this._appendLine(outputIndent + match[1] + match[2]);
 
             this._pushAndSetState(this._parseBacktickBlock);
             this._eatLine();
@@ -464,40 +501,75 @@ class DocStringConverter {
     }
 
     private _parseBacktickBlock(): void {
+        if (
+            this._section &&
+            !_isUndefinedOrWhitespace(this._currentLine()) &&
+            (this._currentLineIsOutsideBlock() || this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
+            if (this._lineEndsSection(this._section, this._lineNum)) {
+                this._appendLine();
+            }
+            this._popState();
+            return;
+        }
+
         // Only match closing ``` at same indent level of opening.
-        if (CodeBlockEndRegExp.test(this._currentLine()) && this._currentIndent() === this._blockIndent) {
-            const match = this._currentLine().match(CodeBlockEndRegExp);
-            this._lastBacktickString = match ? match[1] : '```';
-            this._appendLine(this._lastBacktickString);
-            this._appendLine();
+        const isClosingFence = this._section
+            ? this._currentLine().trim() === this._lastBacktickString
+            : CodeBlockEndRegExp.test(this._currentLine());
+        if (isClosingFence && this._currentIndent() === this._blockIndent) {
+            if (!this._section) {
+                const match = this._currentLine().match(CodeBlockEndRegExp);
+                this._lastBacktickString = match ? match[1] : '```';
+            }
+            this._appendLine(this._blockOutputIndent + (this._lastBacktickString || '```'));
+            if (!this._section) {
+                this._appendLine();
+            }
             this._popState();
         } else {
-            this._appendLine(this._currentLine());
+            this._appendCodeLine(this._section ? this._blockIndent : 0, this._blockOutputIndent);
         }
 
         this._eatLine();
     }
 
     private _beginDocTest(): boolean {
-        if (!DoctestRegExp.test(this._currentLine())) {
+        const isDoctest = this._section
+            ? this._currentLine().trimStart().startsWith('>>>')
+            : DoctestRegExp.test(this._currentLine());
+        if (!isDoctest) {
             return false;
         }
 
-        this._beginMinIndentCodeBlock(this._parseDocTest);
-        this._appendLine(this._currentLineWithinBlock());
+        const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+        this._blockOutputIndent = outputIndent;
+        this._lastBacktickString = '```';
+        this._beginMinIndentCodeBlock(this._parseDocTest, outputIndent + '```' + (this._section ? 'python' : ''));
+        this._appendCodeLine(this._blockIndent, outputIndent);
         this._eatLine();
         return true;
     }
 
     private _parseDocTest(): void {
-        if (this._currentLineIsOutsideBlock() || _isUndefinedOrWhitespace(this._currentLine())) {
-            this._trimOutputAndAppendLine('```');
-            this._appendLine();
+        if (
+            this._currentLineIsOutsideBlock() ||
+            _isUndefinedOrWhitespace(this._currentLine()) ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + '```');
+            if (
+                !this._section ||
+                (!_isUndefinedOrWhitespace(this._currentLine()) && this._lineEndsSection(this._section, this._lineNum))
+            ) {
+                this._appendLine();
+            }
             this._popState();
             return;
         }
 
-        this._appendLine(this._currentLineWithinBlock());
+        this._appendCodeLine(this._blockIndent, this._blockOutputIndent);
         this._eatLine();
     }
 
@@ -512,7 +584,8 @@ class DocStringConverter {
 
         // Find the previous paragraph and check that it ends with ::
         let i = this._lineNum - 2;
-        for (; i >= 0; i--) {
+        const minLine = this._section ? this._section.headerLine + 1 : 0;
+        for (; i >= minLine; i--) {
             const line = this._lineAt(i);
             if (_isUndefinedOrWhitespace(line)) {
                 continue;
@@ -526,7 +599,7 @@ class DocStringConverter {
             return false;
         }
 
-        if (i < 0) {
+        if (i < minLine) {
             return false;
         }
 
@@ -537,7 +610,10 @@ class DocStringConverter {
             return true;
         }
 
-        this._beginMinIndentCodeBlock(this._parseLiteralBlock);
+        const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+        this._blockOutputIndent = outputIndent;
+        this._lastBacktickString = '```';
+        this._beginMinIndentCodeBlock(this._parseLiteralBlock, outputIndent + '```');
         return true;
     }
 
@@ -550,14 +626,21 @@ class DocStringConverter {
         }
 
         const prev = this._lineAt(this._lineNum - 1);
-        if (this._currentLineIsOutsideBlock() && _isUndefinedOrWhitespace(prev)) {
-            this._trimOutputAndAppendLine('```');
+        if (
+            (this._currentLineIsOutsideBlock() && _isUndefinedOrWhitespace(prev)) ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
+            this._trimOutputAndAppendLine(this._blockOutputIndent + '```');
             this._appendLine();
             this._popState();
             return;
         }
 
-        this._appendLine(this._currentLine());
+        if (this._section) {
+            this._appendCodeLine(this._blockIndent, this._blockOutputIndent);
+        } else {
+            this._appendLine(this._currentLine());
+        }
         this._eatLine();
     }
 
@@ -575,7 +658,8 @@ class DocStringConverter {
         }
 
         this._pushAndSetState(this._parseDirective);
-        this._blockIndent = this._nextBlockIndent();
+        const nextIndent = this._nextBlockIndent();
+        this._blockIndent = nextIndent > this._currentIndent() ? nextIndent : 0;
         this._appendDirectiveBlock = false;
         return true;
     }
@@ -594,9 +678,14 @@ class DocStringConverter {
     // 4. Google (variant 2):
     //      Args:
     //          param1 (type): description
+    // Called from _parseText after code, directive, and list checks; Google sections take priority over fields.
     private _beginFieldList(): boolean {
         if (this._insideInlineCode) {
             return false;
+        }
+
+        if (this._beginGoogleSection()) {
+            return true;
         }
 
         let line = this._currentLine();
@@ -632,6 +721,156 @@ class DocStringConverter {
         return false;
     }
 
+    private _beginGoogleSection(): boolean {
+        if (this._forceLiteral || this._insideInlineCode) {
+            return false;
+        }
+
+        const line = this._currentLine();
+        const trimmed = line.trim();
+        if (!trimmed.endsWith(':')) {
+            return false;
+        }
+        const sectionName = trimmed.slice(0, -1);
+        if (!Object.prototype.hasOwnProperty.call(GoogleSections, sectionName)) {
+            return false;
+        }
+        const section = GoogleSections[sectionName];
+
+        // "Args:" is also a plain heading. Only claim it when the body is "name: description".
+        if (section.ambiguous && !this._nextBodyLineLooksLikeGoogleEntry()) {
+            return false;
+        }
+
+        const nextLine = this._lineAt(this._lineNum + 1);
+        if (
+            nextLine !== undefined &&
+            !_isUndefinedOrWhitespace(nextLine) &&
+            !this._isIndentedBlockLine(this._lineNum, this._lineNum + 1)
+        ) {
+            return false;
+        }
+
+        this._section = {
+            kind: section.kind,
+            headerLine: this._lineNum,
+            bodyIndent: undefined,
+            entryOpen: false,
+            continuationIndent: undefined,
+        };
+
+        // Start the section header on its own paragraph.
+        this._builder = this._builder.replace(/\n*$/, '\n\n');
+        this._appendLine('**' + line.trim() + '**');
+        this._appendLine();
+        this._eatLine();
+
+        this._pushAndSetState(this._parseSection);
+        return true;
+    }
+
+    private _parseSection(): void {
+        const section = this._section;
+        if (section === undefined) {
+            return;
+        }
+
+        if (_isUndefinedOrWhitespace(this._currentLine())) {
+            if (section.bodyIndent === undefined) {
+                this._appendLine();
+            } else {
+                this._append('\n');
+            }
+            this._eatLine();
+            return;
+        }
+
+        if (this._lineEndsSection(section, this._lineNum)) {
+            this._section = undefined;
+            this._popState();
+            return;
+        }
+
+        section.bodyIndent ??= this._currentIndent();
+
+        if (
+            this._beginBacktickBlock() ||
+            this._beginLiteralBlock() ||
+            this._beginDocTest() ||
+            this._beginDirective() ||
+            this._beginTableBlock()
+        ) {
+            return;
+        }
+
+        this._appendSectionBodyLine(section);
+        this._eatLine();
+    }
+
+    private _appendSectionBodyLine(section: SectionState): void {
+        const entry =
+            section.kind === 'fields' && this._currentIndent() === section.bodyIndent
+                ? _parseFieldEntry(this._currentLine().trim())
+                : undefined;
+        if (entry) {
+            section.continuationIndent = undefined;
+            section.entryOpen = true;
+            this._appendFieldEntry(entry);
+        } else {
+            const indent = this._getContinuationIndent(section);
+            const trimmed = this._currentLine().trimStart();
+            const asteriskMatch = !this._insideInlineCode ? LeadingAsteriskListRegExp.exec(trimmed) : null;
+            if (asteriskMatch) {
+                this._append(' '.repeat(indent || 1) + asteriskMatch[0]);
+                this._appendTextLine(trimmed.slice(asteriskMatch[0].length));
+            } else {
+                this._append(' '.repeat(indent));
+                this._appendTextLine(trimmed);
+            }
+        }
+    }
+
+    private _getContinuationIndent(section: SectionState): number {
+        if (!section.entryOpen) {
+            return Math.max(0, this._currentIndent() - section.bodyIndent!);
+        }
+        if (this._currentIndent() <= section.bodyIndent!) {
+            return 2;
+        }
+        section.continuationIndent ??= this._currentIndent();
+        return 2 + Math.max(0, this._currentIndent() - section.continuationIndent);
+    }
+
+    private _nextBodyLineLooksLikeGoogleEntry(): boolean {
+        for (let i = this._lineNum + 1; i < this._lines.length; i++) {
+            if (!_isUndefinedOrWhitespace(this._lines[i])) {
+                return this._isIndentedBlockLine(this._lineNum, i) && !!_parseFieldEntry(this._lines[i].trim());
+            }
+        }
+        return false;
+    }
+
+    private _isIndentedBlockLine(headerLine: number, lineIndex: number): boolean {
+        return _countLeadingSpaces(this._lines[lineIndex]) > _countLeadingSpaces(this._lines[headerLine]);
+    }
+
+    private _lineEndsSection(section: SectionState, lineIndex: number): boolean {
+        return !this._isIndentedBlockLine(section.headerLine, lineIndex);
+    }
+
+    private _appendFieldEntry(entry: FieldEntry): void {
+        this._append(`* \`${entry.name}\``);
+        if (entry.type) {
+            this._append(` (\`${entry.type}\`${entry.qualifier ? `, ${entry.qualifier}` : ''})`);
+        }
+        this._append(': ');
+        if (entry.description) {
+            this._appendTextLine(entry.description);
+        } else {
+            this._builder += '\n';
+        }
+    }
+
     private _beginTableBlock(): boolean {
         if (this._insideInlineCode) {
             return false;
@@ -665,7 +904,11 @@ class DocStringConverter {
     //    | Header      | Title       |
     //    | Paragraph   | Text        |
     private _parseTableBlock(): void {
-        if (_isUndefinedOrWhitespace(this._currentLineOrUndefined()) || !this._tableState) {
+        if (
+            _isUndefinedOrWhitespace(this._currentLineOrUndefined()) ||
+            !this._tableState ||
+            (this._section && this._lineEndsSection(this._section, this._lineNum))
+        ) {
             this._tableState = undefined;
             this._popState();
             return;
@@ -822,8 +1065,11 @@ class DocStringConverter {
                 this._appendLine('```');
                 this._appendLine();
             } else if (directiveType === 'code-block') {
-                this._appendDirectiveBlock = true;
-                this._beginMinIndentCodeBlock(this._parseLiteralBlock);
+                this._popState();
+                const outputIndent = this._section ? ' '.repeat(this._getContinuationIndent(this._section)) : '';
+                this._blockOutputIndent = outputIndent;
+                this._lastBacktickString = '```';
+                this._beginMinIndentCodeBlock(this._parseLiteralBlock, outputIndent + '```');
                 this._eatLine();
                 return;
             }
@@ -840,7 +1086,11 @@ class DocStringConverter {
     }
 
     private _parseDirectiveBlock(): void {
-        if (!_isUndefinedOrWhitespace(this._currentLineOrUndefined()) && this._currentLineIsOutsideBlock()) {
+        if (
+            !_isUndefinedOrWhitespace(this._currentLineOrUndefined()) &&
+            (this._currentLineIsOutsideBlock() ||
+                (this._section && this._lineEndsSection(this._section, this._lineNum)))
+        ) {
             this._popState();
             return;
         }
@@ -893,4 +1143,70 @@ function _isUndefinedOrWhitespace(s: string | undefined): boolean {
 
 function _isHeader(line: string | undefined): boolean {
     return line !== undefined && (line.match(/^\s*[#`~=-]{3,}/)?.length ?? 0) > 0;
+}
+
+function _parseFieldEntry(line: string): FieldEntry | undefined {
+    const parts = _splitTopLevel(line, ':');
+    if (!parts || !parts[0].trim()) {
+        return undefined;
+    }
+
+    const head = parts[0].trim();
+    const annotation = head.match(/^(.*?)\s*\(([^()]*)\)$/);
+    const name = annotation ? annotation[1] : head;
+    if (
+        line.startsWith('- ') ||
+        line.startsWith('* ') ||
+        !name
+            .replace(/^\*{1,2}/, '')
+            .split('.')
+            .every(_isParameterNamePart)
+    ) {
+        return undefined;
+    }
+
+    const entry: FieldEntry = { name, description: parts[1].trim() };
+    if (annotation) {
+        const typeParts = _splitTopLevel(annotation[2], ',');
+        entry.type = (typeParts ? typeParts[0] : annotation[2]).trim();
+        entry.qualifier = typeParts?.[1].trim();
+    }
+    return entry;
+}
+
+function _isParameterNamePart(name: string): boolean {
+    if (!name) {
+        return false;
+    }
+
+    let first = true;
+    for (const character of name) {
+        const char = character.charCodeAt(0);
+        const nextChar = character.length === 2 ? character.charCodeAt(1) : undefined;
+        if (!(first ? isIdentifierStartChar(char, nextChar) : isIdentifierChar(char, nextChar))) {
+            return false;
+        }
+        first = false;
+    }
+    return true;
+}
+
+function _findTopLevelSeparator(text: string, separator: string): number | undefined {
+    let depth = 0;
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '[' || char === '(' || char === '{') {
+            depth++;
+        } else if (char === ']' || char === ')' || char === '}') {
+            depth--;
+        } else if (char === separator && depth === 0) {
+            return i;
+        }
+    }
+    return undefined;
+}
+
+function _splitTopLevel(text: string, separator: string): [string, string] | undefined {
+    const offset = _findTopLevelSeparator(text, separator);
+    return offset === undefined ? undefined : [text.slice(0, offset), text.slice(offset + 1)];
 }
