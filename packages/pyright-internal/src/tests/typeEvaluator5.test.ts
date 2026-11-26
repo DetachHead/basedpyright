@@ -118,6 +118,24 @@ test('AutoVariance5', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
+test('ParamSpecVariance1', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'error';
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['paramSpecVariance1.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {});
+});
+
+test('TypeVarTupleVariance1', () => {
+    const configOptions = new ConfigOptions(Uri.empty());
+    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'error';
+    configOptions.diagnosticRuleSet.reportUnusedParameter = 'none';
+
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeVarTupleVariance1.py'], configOptions);
+    TestUtils.validateResultsButBased(analysisResults, {});
+});
+
 test('TypeAliasStatement1', () => {
     const configOptions = new ConfigOptions(Uri.empty());
     configOptions.defaultPythonVersion = pythonVersion3_12;
