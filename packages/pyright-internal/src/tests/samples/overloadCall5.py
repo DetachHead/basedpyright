@@ -22,7 +22,7 @@ def func1(__iter1: Iterable[_T1], __iter2: Iterable[_T2]) -> Tuple[_T1, _T2]: ..
 def func1(*iterables: Iterable[_T1]) -> float: ...
 
 
-def func1(*iterables: Iterable[_T1 | _T2]) -> Tuple[_T1 | _T2, ...] | float: ...
+def func1(*iterables: Iterable[_T1 | _T2]) -> Tuple[_T1 | _T2, ...] | float: ... # pyright: ignore the too wide error
 
 
 def test1(x: Iterable[int]):
