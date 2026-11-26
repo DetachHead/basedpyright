@@ -1,7 +1,7 @@
 name: Trigger type checker benchmark
 
 on:
-  issue_comment:
+  issue_comment: # zizmor: ignore[dangerous-triggers] https://github.com/woodruffw/gha-hazmat/issues/9
     types:
       - created
 

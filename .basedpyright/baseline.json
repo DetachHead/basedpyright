@@ -5318,6 +5318,22 @@
                 }
             },
             {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 88,
+                    "endColumn": 94,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 88,
+                    "endColumn": 94,
+                    "lineCount": 1
+                }
+            },
+            {
                 "code": "reportUnknownMemberType",
                 "range": {
                     "startColumn": 8,
@@ -6042,6 +6058,46 @@
                     "endColumn": 26,
                     "lineCount": 1
                 }
+            },
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 13,
+                    "lineCount": 3
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 18,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 18,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 18,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 18,
+                    "endColumn": 26,
+                    "lineCount": 1
+                }
             }
         ],
         "./mypy_primer/mypy_primer/utils.py": [
@@ -6546,6 +6602,38 @@
                 "range": {
                     "startColumn": 41,
                     "endColumn": 61,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnknownVariableType",
+                "range": {
+                    "startColumn": 8,
+                    "endColumn": 17,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnknownMemberType",
+                "range": {
+                    "startColumn": 20,
+                    "endColumn": 30,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnknownMemberType",
+                "range": {
+                    "startColumn": 20,
+                    "endColumn": 46,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportUnusedCallResult",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 68,
                     "lineCount": 1
                 }
             },
